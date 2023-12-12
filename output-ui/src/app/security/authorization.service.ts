@@ -17,11 +17,19 @@ export abstract class AuthorizationService {
     return null;
   }
 
-  hasRole(rolename: string):boolean {
+  hasRole(rolename: string): boolean {
     return true;
   }
 
-  login(state):void {
+  login(state): void {
 
+  }
+
+  logout(): void {
+
+  }
+
+  details(): void {
+    
   }
 }

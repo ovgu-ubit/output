@@ -1,4 +1,5 @@
 import { AppConfig } from "./src/app.config";
+import { TokenAuthorizationService } from "./src/guards/token.authorization.service";
 import { DOIandTitleDuplicateCheck } from "./src/services/check/doi-and-title-duplicate.service";
 import { MasterExportService } from "./src/services/export/master-export.service";
 import { BASEImportService } from "./src/services/import/base-import.service";
@@ -50,5 +51,6 @@ export default() : AppConfig => ({
     ],
     export_services: [
         {path: 'master', class: MasterExportService},
-    ]
+    ],
+    authorization_service: TokenAuthorizationService
 });
