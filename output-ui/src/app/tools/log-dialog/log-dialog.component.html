@@ -1,0 +1,10 @@
+<div class="container-fluid">
+    <h3>{{data.label}}</h3>
+    <div style="display: flex;justify-content: space-between;">
+        <mat-checkbox [(ngModel)]="this.showErr">Nur Warnungen und Fehler anzeigen</mat-checkbox>
+        <button mat-icon-button matTooltip="Log herunterladen" (click)="downloadRep();"><mat-icon>download</mat-icon></button>
+</div>
+<div *ngFor="let line of text" style="background-color: lightgray;">
+    <div [class]="line.includes('[error]')? 'error' : (line.includes('[warning]')? 'warning':'')" *ngIf="!this.showErr || line.includes('[error]') || line.includes('[warning]')">{{line}}</div>
+</div>
+</div>

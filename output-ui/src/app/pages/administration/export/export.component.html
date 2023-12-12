@@ -1,0 +1,30 @@
+<app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<div class="jumbotron">
+    <div class="container-fluid">
+<mat-accordion>
+    <mat-expansion-panel  *ngFor="let im of this.enrichs, let idx = index">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+            {{im.label}}
+        </mat-panel-title>
+        <mat-panel-description>
+            Status: {{status[idx]}}
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+            <button mat-raised-button (click)="this.startImport(im)" color="primary">Export starten</button>
+            <table style="width: 100%;">
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Anzeigen</th>
+                    <th>Löschen</th>
+                </tr>
+                <tr *ngFor="let rep of this.getReports(im.label)">
+                    <td>{{rep}}</td>
+                    <td><button mat-icon-button (click)="openLog(rep)"><mat-icon>remove_red_eye</mat-icon></button></td>
+                    <td><button mat-icon-button (click)="delete(rep)"><mat-icon>delete</mat-icon></button></td>
+                </tr>
+            </table>
+    </mat-expansion-panel>
+
+  </mat-accordion>
+    </div></div>

@@ -1,0 +1,17 @@
+{
+   "compilerOptions": {
+      "lib":[
+         "es2015",
+         "dom",
+         "es6",
+         "es7"
+      ],
+      "target": "es2017",
+      "module": "CommonJS",
+      "moduleResolution": "node",
+      "outDir": "./dist",
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "sourceMap": true
+   }
+}

@@ -1,0 +1,118 @@
+<div style="margin:8px;">
+    <div style="display: flex;justify-content: space-evenly;">
+        <mat-form-field appearance="fill">
+            <mat-label>Format auswählen</mat-label>
+            <mat-select [compareWith]="compareFormats" [(value)]="this.format">
+                <mat-option *ngFor="let format of this.available_formats" [value]="format">
+                    {{format.name}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+    <form [formGroup]="form" style="display: flex; flex-direction: column;" (ngSubmit)="action()">
+        <mat-form-field appearance="fill">
+            <mat-label>Name</mat-label>
+            <input matInput placeholder="Name" formControlName="name" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>Kodierung</mat-label>
+            <mat-select formControlName="encoding">
+                <mat-option value="UTF-8">UTF-8</mat-option>
+                <mat-option value="ISO-8859-1">ISO-8859-1</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-checkbox formControlName="header">Tabellenüberschrift?</mat-checkbox>
+        <mat-checkbox formControlName="quotes">Textqualifizierer?</mat-checkbox>
+        <mat-form-field *ngIf="this.form.get('quotes').value" appearance="fill">
+            <mat-label>Qualifizierungszeichen</mat-label>
+            <input matInput placeholder="z.B. ' oder ''" formControlName="quoteChar" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>Trennzeichen</mat-label>
+            <input matInput placeholder="z.B. , oder ;" formControlName="delimiter" />
+        </mat-form-field>
+        <mat-form-field appearance="fill" hintLabel="z.B. DD.MM.YYYY">
+            <mat-label>Datumsformat</mat-label>
+            <input matInput placeholder="Datumsformat" formControlName="date_format" />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>ID-Typ der größeren Einheit</mat-label>
+            <input matInput placeholder="Z.B. ISSN" formControlName="id_ge_type" />
+        </mat-form-field>
+        Feld-Abbildungen (Spaltenname oder konstanter Wert mit führendem Dollarzeichen, z.B. $Wert)
+        <div [formGroup]="mapping()" style="display: flex; flex-direction: column;">
+            <mat-form-field appearance="fill">
+                <mat-label>Autoren der Institution</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="author_inst" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Autoren</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="authors" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Titel</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="title" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Publikationsart</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="pub_type" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Open-Access-Kategorie</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="oa_category" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Größere Einheit (Name)</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="greater_entity" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Größere Einheit (ID)</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="id_ge" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Verlag</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="publisher" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Vertrag</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="contract" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Förderer</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="funder" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>DOI</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="doi" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Publikationsdatum (beachte Datumsformat)</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="pub_date" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Link</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="link" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Sprache</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="language" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Rechnungsbetrag in EUR</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="invoice" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Status</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="status" />
+            </mat-form-field>
+        </div>
+
+
+        <button mat-raised-button type="submit" color="primary" class="btn-primary">Format auswählen &
+            speichern</button>&nbsp;
+        <button mat-raised-button type="button" color="warn" class="btn-primary" (click)="this.delete()">Ausgewähltes
+            Format löschen</button>&nbsp;
+        <button mat-raised-button type="reset" color="accent" class="btn-primary"
+            (click)="this.abort()">Abbrechen</button>
+    </form>
+</div>

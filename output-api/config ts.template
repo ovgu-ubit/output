@@ -1,0 +1,54 @@
+import { AppConfig } from "./src/app.config";
+import { DOIandTitleDuplicateCheck } from "./src/services/check/doi-and-title-duplicate.service";
+import { MasterExportService } from "./src/services/export/master-export.service";
+import { BASEImportService } from "./src/services/import/base-import.service";
+import { BibliographyImportService } from "./src/services/import/bibliography-import.service";
+import { CrossrefEnrichService } from "./src/services/import/crossref-enrich.service";
+import { CrossrefImportService } from "./src/services/import/crossref-import.service";
+import { OpenAccessMonitorEnrichService } from "./src/services/import/open-access-monitor-enrich.service";
+import { OpenAccessMonitorImportService } from "./src/services/import/open-access-monitor-import.service";
+import { Output1ImportService } from "./src/services/import/output-1-import.service";
+import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.service";
+import { InitService } from "./src/services/init.service";
+
+export default() : AppConfig => ({
+    searchTags: [
+        "magdeburg",
+        "ovgu",
+        "guericke"
+    ],
+    affiliationTags: [
+        "ovgu",
+        "guericke",
+        "universität magdeburg",
+        "university magdeburg",
+        "university of magdeburg",
+        "universitätsklinikum magdeburg",
+        "universitätsklinik magdeburg",
+        "universitätsfrauenklinik magdeburg",
+        "university hospital magdeburg",
+        "universitätsmedizin magdeburg"
+    ],
+    ror_id: 'https://ror.org/xxxxx',
+    api_key_unpaywall: 'xxx@xxx.de',
+    api_key_oam: 'xxxx',
+    init_service: InitService,
+    import_services: [
+        {path: 'bib', class: BibliographyImportService},
+        {path: 'crossref', class: CrossrefImportService},
+        {path: 'output1', class: Output1ImportService},
+        {path: 'oam', class: OpenAccessMonitorImportService},
+        {path: 'base', class: BASEImportService},
+    ],
+    enrich_services: [
+        {path: 'unpaywall', class: UnpaywallEnrichService},
+        {path: 'crossref', class: CrossrefEnrichService},
+        {path: 'oam', class: OpenAccessMonitorEnrichService},
+    ],
+    check_services: [
+        {path: 'pub_dupl', class: DOIandTitleDuplicateCheck},
+    ],
+    export_services: [
+        {path: 'master', class: MasterExportService},
+    ]
+});

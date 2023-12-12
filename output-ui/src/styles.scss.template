@@ -1,0 +1,182 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$ovgu-primary-map: (
+  50: #fae2e9,
+  100: #f4b7c8,
+  200: #ec89a5,
+  300: #e45a82,
+  400: #dd3768,
+  500: #d71050,
+  600: #c70c4e,
+  700: #b2094a,
+  800: #9e0446,
+  900: #7a003f,
+  contrast: (50: #000000,
+    100: #000000,
+    200: #000000,
+    300: #000000,
+    400: #ffffff,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff)
+);
+
+$ovgu-accent-map: (
+  50: #ffffff,
+  100: #fafafa,
+  200: #f5f5f5,
+  300: #f0f0f0,
+  400: #dedede,
+  500: #c2c2c2,
+  600: #979797,
+  700: #818181,
+  800: #606060,
+  900: #3c3c3c,
+  contrast: (50: #000000,
+    100: #000000,
+    200: #000000,
+    300: #000000,
+    400: #000000,
+    500: #000000,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff)
+);
+
+$ovgu-accent-map2: (
+  50: #f5e4f0,
+  100: #e5bbdb,
+  200: #d48ec5,
+  300: #c260ad,
+  400: #b43c9d,
+  500: #a5138e,
+  600: #980e89,
+  700: #870581,
+  800: #78007a,
+  900: #5c006c,
+  contrast: (50: rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: white,
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white)
+);
+
+/* color */
+$my-palette: mat.$indigo-palette;
+$my-primary-palette: mat.define-palette($ovgu-primary-map, 900);
+$my-accent-palette: mat.define-palette($ovgu-accent-map);
+$my-warn-palette: mat.define-palette($ovgu-accent-map2,100);
+
+/* typography */
+$my-body-level: mat.define-typography-level($font-weight: 400,
+    $font-size: 14px,
+    $line-height: 1,
+    $letter-spacing: normal,
+  );
+
+$my-custom-typography-config: mat.define-typography-config($font-family: 'Roboto, "Helvetica Neue", sans-serif',
+    $body-1: $my-body-level);
+
+/* theme */
+$my-theme: mat.define-light-theme((color: (
+        primary: $my-primary-palette,
+        accent: $my-accent-palette,
+        warn: $my-warn-palette
+      ),
+      typography: $my-custom-typography-config,
+      density: 0,
+    ));
+
+/* toolbar */
+.example-fill-remaining-space {
+  /* This fills the remaining space, by using flexbox.
+         Every toolbar row uses a flexbox row layout. */
+  flex: 1 1 auto;
+}
+button[disabled] {
+  color: mat.get-color-from-palette($my-accent-palette, 600)!important;
+}
+
+.my-container-margin {
+  margin: 25px 25px 25px 0;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.uploadfilecontainer {
+  background-image: url("./assets/cloud-2044823_960_720.png");
+  background-repeat: no-repeat;
+  background-size: 100px;
+  background-position: center;
+  height: 200px;
+  width: 80%;
+  margin: 20px auto;
+  border: 2px dashed #7a003f;
+  border-radius: 10px;
+}
+
+.uploadfilecontainer:hover {
+  cursor: pointer;
+  background-color: #fae2e9;
+  opacity: 0.8;
+}
+
+.files-list {
+  display: flex;
+  justify-content: space-between;
+  width: 80%;
+  margin: 10px auto;
+  background: #ffffff;
+  border: 1px dashed;
+  border-radius: 12px;
+  padding: 5px;
+  color: #7a003f;
+}
+
+.files-list .delete-file {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.files-list .delete-file img {
+  width: 30px;
+}
+
+.mat-mdc-snack-bar-container.success-snackbar {
+  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mdc-snackbar-container-color: #d4edda;
+  --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+
+.mat-mdc-snack-bar-container.danger-snackbar {
+  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mdc-snackbar-container-color: #f8d7da;
+  --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+.mat-mdc-snack-bar-container.warning-snackbar {
+  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mdc-snackbar-container-color: #fff3cd;
+  --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+.mat-mdc-snack-bar-container.info-snackbar {
+  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mdc-snackbar-container-color: #cce5ff;
+  --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+
+@include mat.all-component-themes($my-theme);

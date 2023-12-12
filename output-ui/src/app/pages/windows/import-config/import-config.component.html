@@ -1,0 +1,17 @@
+<table>
+    <tr>
+        <th>Feld</th>
+        <th>Verhalten</th>
+    </tr>
+    <tr *ngFor="let key of this.keys">
+        <td>{{key}}</td>
+        <!--<td>{{this.getValue(key)}}</td>-->
+        <td>
+            <mat-select [(ngModel)]="this.mapping[key]">
+                <mat-option *ngFor="let option of this.getOptions(), let idx = index" [value]="idx">{{option}}</mat-option>
+            </mat-select>
+        </td>
+    </tr>
+</table>
+<button mat-raised-button color="primary" (click)="action()">Konfiguration ändern</button>&nbsp;
+<button mat-raised-button color="primary" (click)="abort()">Abbrechen</button>

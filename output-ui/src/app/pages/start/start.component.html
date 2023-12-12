@@ -1,0 +1,26 @@
+<app-breadcrump path="/" [label]="'Home'"></app-breadcrump>
+<div style="display: flex;flex-flow: row wrap; justify-content: space-evenly;">
+    <mat-card style="max-width: 400px;" routerLink="publications">
+        <mat-card-header>
+            <mat-card-title>Publikationsübersicht</mat-card-title>
+        </mat-card-header>
+        <img mat-card-image src="assets/publications.jpg">
+        <mat-card-content>Alle Publikationen nach Jahr anzeigen</mat-card-content>
+    </mat-card>
+    
+    <mat-card style="max-width: 400px;" routerLink="statistics">
+        <mat-card-header>
+            <mat-card-title>Statistiken</mat-card-title>
+        </mat-card-header>
+        <img mat-card-image src="assets/statistics.jpg">
+        <mat-card-content>Berichte und Diagramme anzeigen</mat-card-content>
+    </mat-card>
+
+    <mat-card style="max-width: 400px;" routerLink="administration">
+        <mat-card-header>
+            <mat-card-title>Verwaltung</mat-card-title>
+        </mat-card-header>
+        <img mat-card-image src="assets/administration.png">
+        <mat-card-content>Imports u.ä. verwalten</mat-card-content>
+    </mat-card>
+</div>

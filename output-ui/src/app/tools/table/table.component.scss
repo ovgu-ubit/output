@@ -1,0 +1,88 @@
+@use '../../../styles.scss' as style;
+@use '@angular/material' as mat;
+
+.table {
+  width: 100%;
+}
+
+.table-wide {
+  display: block;
+  overflow-x: scroll;
+}
+
+
+td.mat-mdc-cell,
+th.mat-mdc-header-cell {
+  border-right: 1px solid lightgray;
+  border-top: none;
+  padding: 0.2rem;
+  font-size: 12px;
+}
+
+td.mat-mdc-cell:first-of-type,
+td.mat-mdc-footer-cell:first-of-type,
+th.mat-mdc-header-cell:first-of-type {
+  padding-right: 2px;
+  padding-left: 2px;
+  padding-top: 2px;
+}
+
+.fill-remaining-space {
+  /* This fills the remaining space, by using flexbox.
+   Every toolbar row uses a flexbox row layout. */
+  flex: 1 1 auto;
+}
+
+mat-mdc-icon.icon-red {
+  color: lightcoral;
+}
+
+a.small {
+  height: 0px;
+}
+
+.smallText {
+  font-size: 15px;
+  display: inline
+}
+
+
+.pageInput {
+  width: 150px;
+}
+
+.mat-mdc-checkbox.mat-accent {
+  --mdc-checkbox-unselected-icon-color : white;
+  --mdc-checkbox-unselected-hover-icon-color: white;
+  --mdc-checkbox-unselected-focus-icon-color: white;
+}
+
+/* table */
+.mat-mdc-row:nth-child(odd)>td.mat-mdc-cell {
+  background-color: mat.get-color-from-palette(style.$my-accent-palette, 50);
+}
+
+.mat-mdc-row:nth-child(even)>td.mat-mdc-cell {
+  background-color: mat.get-color-from-palette(style.$my-accent-palette, 200);
+}
+
+.mat-mdc-row>td.mat-mdc-cell:hover {
+  background-color: mat.get-color-from-palette(style.$my-primary-palette, 50);
+}
+
+tr:hover td {
+  background-color: mat.get-color-from-palette(style.$my-primary-palette, 50) !important;
+}
+
+th.mat-mdc-header-cell {
+  background-color: mat.get-color-from-palette(style.$my-primary-palette, 900) !important;
+  color: mat.get-color-from-palette(style.$my-primary-palette, 900-contrast);
+}
+
+.table_header {
+  background-color: mat.get-color-from-palette(style.$my-accent-palette, 500) !important;
+}
+
+mat-toolbar {
+  margin-bottom: 5px!important;
+}

@@ -1,0 +1,40 @@
+<app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<div class="jumbotron">
+    <div class="container-fluid">
+<mat-accordion>
+    <mat-expansion-panel  *ngFor="let im of this.enrichs, let idx = index">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+            {{im.label}}
+        </mat-panel-title>
+        <mat-panel-description>
+            Status: {{status[idx]}}
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+        <form [formGroup]="forms[im.label]" (ngSubmit)="this.startImport(im)" style="display: flex;justify-content: space-evenly;">
+            <mat-form-field *ngIf="im.path !== 'csv'" appearance="fill">
+                <mat-label>Publikationsjahr</mat-label>
+                <input matInput placeholder="Publikationsjahr" formControlName="reporting_year"/>
+            </mat-form-field>
+            <button mat-raised-button type="button" color="accent" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Anreicherung konfigurieren</button>
+            <button mat-raised-button type="submit" color="primary" [disabled]="this.obs$[im.label]">Anreicherung starten</button>
+        </form>
+            
+            <div *ngIf="this.obs$[im.label]">{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %</div>
+            <mat-progress-bar *ngIf="this.obs$[im.label]" mode="determinate" [value]="(this.obs$[im.label] | async)?.progress*100"></mat-progress-bar>
+            <table style="width: 100%;">
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Anzeigen</th>
+                    <th>Löschen</th>
+                </tr>
+                <tr *ngFor="let rep of this.getReports(im.label)">
+                    <td>{{rep}}</td>
+                    <td><button mat-icon-button (click)="openLog(rep)"><mat-icon>remove_red_eye</mat-icon></button></td>
+                    <td><button mat-icon-button (click)="delete(rep)"><mat-icon>delete</mat-icon></button></td>
+                </tr>
+            </table>
+    </mat-expansion-panel>
+
+  </mat-accordion>
+    </div></div>

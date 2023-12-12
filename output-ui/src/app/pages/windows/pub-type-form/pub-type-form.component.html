@@ -1,0 +1,66 @@
+
+<mat-toolbar color="primary"><h1>Publikationsart</h1></mat-toolbar>
+<div style="padding: 5px">
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()">
+        <mat-form-field *ngIf="this.pub_type?.id" appearance="fill">
+            <mat-label>ID</mat-label>
+            <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <textarea matInput placeholder="Bezeichnung" formControlName="label"> </textarea>
+        </mat-form-field>
+
+        <mat-checkbox formControlName="review">Begutachtet?</mat-checkbox>
+
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                Aliase
+              </mat-panel-title>
+              <mat-panel-description>
+                Werden beim Import auf dieses Institut abgebildet
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+            <table *ngIf="this.pub_type?.aliases && this.pub_type.aliases.length>0" mat-table
+                [dataSource]="this.pub_type.aliases">
+                <ng-container matColumnDef="alias">
+                    <th mat-header-cell *matHeaderCellDef> Alias </th>
+                    <td mat-cell *matCellDef="let element"> {{element.alias}} </td>
+                </ng-container>
+                <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                            (click)="this.deleteAlias(element)"
+                            matTooltip="Alias löschen" [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>delete</mat-icon></button> </td>
+                </ng-container>
+    
+                <tr mat-header-row *matHeaderRowDef="['alias','delete']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['alias','delete'];"></tr>
+            </table>
+            <form [formGroup]="aliasForm" style="display: flex;gap:5px">
+                <mat-form-field appearance="fill">
+                    <mat-label>Alias</mat-label>
+                    <input matInput placeholder="Alias" formControlName="alias" />
+                </mat-form-field>
+                <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
+                    matTooltip="Alias hinzufügen" [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>add</mat-icon></button>
+            </form>
+        </mat-expansion-panel>
+
+        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
+            <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
+                speichern</button>&nbsp;
+            <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                (click)="this.abort()">Abbrechen</button>
+        </div>
+        <ng-template #else1>
+            <div class="form-group" align="center">
+                <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                    (click)="this.abort()">Schließen</button>
+            </div>
+        </ng-template>
+    </form>
+</div>

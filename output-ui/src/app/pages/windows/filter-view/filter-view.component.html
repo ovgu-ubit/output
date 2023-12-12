@@ -1,0 +1,68 @@
+<div style="padding: 5px;">
+    <h1>Erweiterte Filter</h1>
+    <form [formGroup]="form">
+        <ng-container formArrayName="filters">
+            <ng-container *ngFor="let filter of getFiltersControls(); let i = index">
+                <div [formGroup]="filter" style="display: flex;gap: 10px;justify-content: center;">
+                    <mat-form-field style="max-width: 150px;">
+                        <mat-label>Logischer Operator</mat-label>
+                        <mat-select formControlName="join_operator">
+                            <mat-option *ngIf="i===0" value="null"></mat-option>
+                            <ng-container *ngFor="let op of this.joinOps">
+                                <mat-option *ngIf="i !== 0 || op.showFirst" [value]="op.op">
+                                    {{ op.label }}
+                                </mat-option>
+                        </ng-container>
+                        </mat-select>
+                        <mat-error>Bitte wählen Sie eine Operation aus</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Feld</mat-label>
+                        <mat-select formControlName="field">
+                            <mat-option *ngFor="let key of this.keys" [value]="key.key">
+                                {{ key.label }}
+                            </mat-option>
+                        </mat-select>
+                        <mat-error>Bitte wählen Sie ein Feld aus</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="max-width: 200px;">
+                        <mat-label>Vergleichsoperator</mat-label>
+                        <mat-select formControlName="compare_operator">
+                            <ng-container *ngFor="let op of this.compareOps, let idx = index">
+                                <mat-option *ngIf="display(i,op)" [value]="op.op">
+                                    {{ op.label }}
+                                </mat-option>
+                            </ng-container>
+                        </mat-select>
+                        <mat-error>Bitte wählen Sie ein Operator aus</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Suchwert</mat-label>
+                        <input matInput formControlName="value" placeholder="zu suchender Wert">
+                        <mat-error>Bitte geben Sie einen Wert ein</mat-error>
+                    </mat-form-field>
+
+                    <mat-icon *ngIf="i!==0" (click)="deleteRow(i)">
+                        delete_forever</mat-icon>
+                </div>
+            </ng-container>
+        </ng-container>
+        <div style="display: flex;justify-content: center;">
+            <button mat-mini-fab (click)="addRow(false)">
+                <mat-icon>add</mat-icon>
+            </button>
+        </div>
+        <br />
+        <div class="form-group" align="center">
+            <button mat-raised-button type="submit" color="primary" class="btn-primary" (click)="this.action()">Filter
+                anwenden</button>&nbsp;
+            <button mat-raised-button type="reset" color="primary" class="btn-primary" (click)="this.reset()">Filter
+                zurücksetzen</button>&nbsp;
+            <button mat-raised-button color="primary" class="btn-primary"
+                (click)="this.abort()">Abbrechen</button>
+        </div>
+    </form>
+</div>

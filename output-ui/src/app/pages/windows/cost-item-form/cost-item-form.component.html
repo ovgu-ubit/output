@@ -1,0 +1,54 @@
+<mat-toolbar color="primary"><h1>Rechnungsposten</h1></mat-toolbar>
+<div style="padding: 5px">
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()">
+        <mat-form-field *ngIf="this.cost_item?.id" appearance="fill">
+            <mat-label>ID</mat-label>
+            <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <input matInput placeholder="Bezeichnung" formControlName="label"/>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" style="width: 100%;">
+            <mat-label>Kostenart</mat-label>
+            <mat-select [(value)]="this.cost_type">
+                <mat-option *ngFor="let cc of this.costTypes"
+                    [value]="cc.id">{{cc.label}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Betrag in EUR</mat-label>
+            <input matInput type="number" placeholder="Betrag in EUR" formControlName="euro_value"/>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Mehrwertsteuer in EUR</mat-label>
+            <input matInput type="number" placeholder="Mehrwertsteuer in EUR" formControlName="vat"/>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Normaler Preis</mat-label>
+            <input matInput type="number" placeholder="Normaler Preis" formControlName="normal_price"/>
+        </mat-form-field>
+        
+        <mat-form-field appearance="fill">
+            <mat-label>Betrag in Originalwährung</mat-label>
+            <input matInput type="number" placeholder="Betrag in Originalwährung" formControlName="orig_value"/>
+        </mat-form-field>
+        
+        <mat-form-field appearance="fill">
+            <mat-label>Originalwährung</mat-label>
+            <input matInput type="text" placeholder="Originalwährung" formControlName="orig_currency"/>
+        </mat-form-field>
+
+
+        <button mat-raised-button type="submit" color="primary" class="btn-primary">Rechnung
+            speichern</button>&nbsp;
+        <button mat-raised-button type="reset" color="primary" class="btn-primary"
+            (click)="this.abort()">Abbrechen</button>
+    </form>
+</div>

@@ -1,0 +1,25 @@
+// This file can be replaced during build by using the `fileReplacements` array.
+// `ng build` replaces `environment.ts` with `environment.prod.ts`.
+// The list of file replacements can be found in `angular.json`.
+
+import { CookieTokenService } from "src/app/security/cookie.token.service";
+
+export const environment = {
+  institution: '', //short name of the institution to appear in the menu bar
+  authorization_service: CookieTokenService, // service extending AuthorizationService to determine if a user has write privileges
+  production: false, // angular intern for debugging
+  api : '', //server address of the backend api
+  auth_ui: '', //server address of the authentication service frontend for login [only required using CookieTokenService]
+  auth_api: '', //server address of the authentication service backend for logout [only required using CookieTokenService]
+  security: false, //if the login guard is activated or not
+  self: '' //the server address of the output frontend, for redirecting [only required using CookieTokenService]
+};
+
+/*
+ * For easier debugging in development mode, you can import the following file
+ * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
+ *
+ * This import should be commented out in production mode because it will have a negative impact
+ * on performance if an error is thrown.
+ */
+// import 'zone.js/plugins/zone-error';  // Included with Angular CLI.

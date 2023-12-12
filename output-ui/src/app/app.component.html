@@ -1,0 +1,58 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row>
+    <button mat-button [routerLink]="'/'"> <h1>{{title}}</h1> </button>
+    <div style="font-size: 11px;color:white; text-decoration: none;">{{this.version}}</div>
+    <!-- This fills the remaining space of the current row -->
+    <span class="example-fill-remaining-space"></span>
+
+    <div>
+      <button mat-button [routerLink]="'/publications'">
+        <mat-icon>menu_book</mat-icon> Publikationen
+      </button>
+
+      <button mat-button [routerLink]="'/authors'">
+        <mat-icon>person</mat-icon> Autoren
+      </button>
+    </div>
+
+    <button mat-button [matMenuTriggerFor]="masterDataMenu"><mat-icon>table</mat-icon> Stammdaten verwalten </button>
+    <mat-menu #masterDataMenu="matMenu">
+      <button mat-menu-item routerLink="/master-data/institutions"> Institute </button>
+      <button mat-menu-item routerLink="/master-data/contracts"> Verträge </button>
+      <button mat-menu-item routerLink="/master-data/publishers"> Verlage </button>
+      <button mat-menu-item routerLink="/master-data/greater-entities"> Größere Einheiten </button>
+      <button mat-menu-item routerLink="/master-data/funders"> Förderer </button>
+      <button mat-menu-item routerLink="/master-data/pub-types"> Publikationsarten </button>
+      <button mat-menu-item routerLink="/master-data/oa-categories"> Open-Access-Kategorien </button>
+      <button mat-menu-item routerLink="/master-data/cost-centers"> Kostenstellen </button>
+      <button mat-menu-item routerLink="/master-data/cost-types"> Kostenarten </button>
+    </mat-menu>
+
+    <button mat-button [routerLink]="'/statistics'"> <mat-icon>bar_chart</mat-icon> Berichte </button>
+
+    <button mat-button [matMenuTriggerFor]="adminMenu" [disabled]="!this.tokenService.hasRole('writer')"><mat-icon>settings</mat-icon> Verwaltung </button>
+    <mat-menu #adminMenu="matMenu">
+      <button mat-menu-item routerLink="/administration/import"> Imports verwalten </button>
+      <button mat-menu-item routerLink="/administration/enrich"> Anreicherungen verwalten </button>
+      <button mat-menu-item routerLink="/administration/export"> Exportieren </button>
+      <button mat-menu-item routerLink="/administration/plausibility"> Plausibilitätschecks </button>
+    </mat-menu>
+
+    <ng-container *ngIf="!this.user">
+      <button mat-button (click)="this.login()" [disabled]="!(this.security)"> <mat-icon>face</mat-icon> Login
+      </button>
+    </ng-container>
+
+    <ng-container *ngIf="this.user">
+      <button mat-button [matMenuTriggerFor]="loginMenu"> <mat-icon>face</mat-icon> {{user}}
+      </button>
+      <mat-menu #loginMenu="matMenu">
+        <button mat-menu-item (click)="this.details()"> Profil </button>
+        <button mat-menu-item (click)="this.logout()"> Logout </button>
+      </mat-menu>
+    </ng-container>
+    
+    
+  </mat-toolbar-row>
+</mat-toolbar>
+<router-outlet></router-outlet>

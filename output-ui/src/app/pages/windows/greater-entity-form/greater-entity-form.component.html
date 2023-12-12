@@ -1,0 +1,72 @@
+<mat-toolbar color="primary">
+    <h1>Größere Einheit</h1>
+</mat-toolbar>
+<div style="padding: 5px">
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()">
+        <mat-form-field *ngIf="this.ge?.id" appearance="fill">
+            <mat-label>ID</mat-label>
+            <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <textarea matInput placeholder="Bezeichnung" formControlName="label"> </textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Rating</mat-label>
+            <input matInput placeholder="Rating" formControlName="rating" />
+        </mat-form-field>
+
+        <mat-checkbox formControlName="is_doaj">Im DOAJ?</mat-checkbox>
+        Identifikatoren
+        <table *ngIf="this.ge?.identifiers && this.ge.identifiers.length>0" mat-table
+            [dataSource]="this.ge.identifiers">
+            <ng-container matColumnDef="type">
+                <th mat-header-cell *matHeaderCellDef> Art </th>
+                <td mat-cell *matCellDef="let element"> {{element.type}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="value">
+                <th mat-header-cell *matHeaderCellDef> Wert </th>
+                <td mat-cell *matCellDef="let element"> {{element.value}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="delete">
+                <th mat-header-cell *matHeaderCellDef> </th>
+                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                        (click)="this.deleteId(element)"
+                        matTooltip="Identifikator löschen" [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>delete</mat-icon></button> </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+        <form [formGroup]="idForm" style="display: flex;gap:5px">
+            <mat-form-field appearance="fill">
+                <mat-label>Art</mat-label>
+                <input matInput placeholder="Art" formControlName="type" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Wert</mat-label>
+                <input matInput placeholder="Wert" formControlName="value" />
+            </mat-form-field>
+            <button matSuffix mat-icon-button type="button" (click)="this.addId()"
+                matTooltip="Identifikator hinzufügen" [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>add</mat-icon></button>
+        </form>
+
+        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
+            <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
+                speichern</button>&nbsp;
+            <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                (click)="this.abort()">Abbrechen</button>
+        </div>
+        <ng-template #else1>
+            <div class="form-group" align="center">
+                <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                    (click)="this.abort()">Schließen</button>
+            </div>
+        </ng-template>
+    </form>
+</div>

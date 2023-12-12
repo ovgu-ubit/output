@@ -1,0 +1,8 @@
+<nav class="navbar navbar-expand-sm navbar-light pt-1 overflow-hidden">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item" *ngFor="let label of labels; index as i" [ngClass]="{'active': i === this.labels.length-1}">
+            <a *ngIf="this.label" class="bg-dark link-light text-decoration-none" [routerLink]="links?.[i]">{{label}}</a>
+            <a *ngIf="!this.label" class="bg-dark link-light text-decoration-none" [routerLink]="links?.[i]">{{label|titlecase}}</a>
+        </li>
+      </ol>
+</nav>

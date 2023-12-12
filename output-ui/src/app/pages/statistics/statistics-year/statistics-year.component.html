@@ -1,0 +1,69 @@
+<app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<div style="display: flex;flex-flow: row wrap;">
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptions"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+  class="chart"
+></highcharts-chart>
+
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptionsInstitute"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag1"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+
+  class="chart"
+></highcharts-chart>
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptionsOACat"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag2"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+
+  class="chart"
+></highcharts-chart>
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptionsPublisher"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag3"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+
+  class="chart"
+></highcharts-chart>
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptionsPubType"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag4"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+
+  class="chart"
+></highcharts-chart>
+
+</div>

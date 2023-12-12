@@ -1,0 +1,34 @@
+<mat-toolbar color="primary"><h1>Kostenstelle</h1></mat-toolbar>
+<div style="padding: 5px">
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()">
+        <mat-form-field *ngIf="this.cost_center?.id" appearance="fill">
+            <mat-label>ID</mat-label>
+            <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Nummer</mat-label>
+            <input matInput placeholder="Nummer" formControlName="number"/>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <input matInput placeholder="Bezeichnung" formControlName="label"/>
+        </mat-form-field>
+
+
+        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
+            <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
+                speichern</button>&nbsp;
+            <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                (click)="this.abort()">Abbrechen</button>
+        </div>
+        <ng-template #else1>
+            <div class="form-group" align="center">
+                <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                    (click)="this.abort()">Schließen</button>
+            </div>
+        </ng-template>
+    </form>
+</div>
