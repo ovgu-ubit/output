@@ -32,4 +32,4 @@ For some services, extension points are defined where you can inject your custom
 > $ npm start
 
 ### build frontend distributables
-> $ ng build ...
+> $ ng build --configuration {test|production} --base-href /output/
