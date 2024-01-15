@@ -20,6 +20,7 @@ import { PublicationIndex } from '../../../../../output-interfaces/PublicationIn
 import { FilterViewComponent } from '../windows/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
+import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
 
 @Component({
   selector: 'app-publications',
@@ -223,18 +224,20 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   deleteSelected() {
-    //TODO: soft delete option
     if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(this.selection.selected.length + " Publikationen löschen", `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`);
+    let dialogData = new ConfirmDialogModel(
+      this.selection.selected.length + " Publikationen löschen", 
+      `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`
+      );
 
-    let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
-      data: dialogData
+      data: this.selection.selected
     });
 
     dialogRef.afterClosed().subscribe(dialogResult => {
       if (dialogResult) {
-        this.publicationService.delete(this.selection.selected.map(e => { return { id: e.id } })).subscribe({
+        this.publicationService.delete(this.selection.selected.map(e => { return { id: e.id } }), dialogResult.soft).subscribe({
           next: data => {
             this._snackBar.open(`${data['affected']} Publikationen gelöscht`, 'Super!', {
               duration: 5000,

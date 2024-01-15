@@ -193,7 +193,8 @@ export class PublicationService {
                 oa_category: true,
                 contract: true,
                 funders: true
-            }
+            },
+            withDeleted: true
 
         })
     }

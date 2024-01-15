@@ -77,6 +77,7 @@ import { CsvFormatComponent } from './tools/csv-format/csv-format.component';
 import { LogDialogComponent } from './tools/log-dialog/log-dialog.component';
 import { SelectInstituteDialogComponent } from './tools/select-institute-dialog/select-institute-dialog.component';
 import { TableComponent } from './tools/table/table.component';
+import { DeletePublicationDialogComponent } from './tools/delete-publication-dialog/delete-publication-dialog.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -123,7 +124,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
     CostCenterComponent,
     CostTypesComponent,
     CostCenterFormComponent,
-    CostTypeFormComponent
+    CostTypeFormComponent,
+    DeletePublicationDialogComponent
   ],
   imports: [
     BrowserModule,
