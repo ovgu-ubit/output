@@ -159,7 +159,8 @@ export class PublicationService {
         return (await this.pubRepository.findOne({
             where: [
                 { doi: ILike(doi.trim() + '%') },
-                { title: ILike(title.trim() + '%') }]
+                { title: ILike(title.trim() + '%') }],
+            withDeleted: true
         })) !== null;
     }
 

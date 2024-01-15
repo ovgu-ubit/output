@@ -165,7 +165,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                             }
                         } else if (update) {
                             let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
-                            if (orig.locked) continue;
+                            if (orig.locked || orig.delete_date) continue;
                             let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                                 this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                                 return null;
