@@ -89,7 +89,7 @@ export class PublicationService {
         return i;
     }
 
-    public async delete(pubs: Publication[]) {
+    public async delete(pubs: Publication[], soft?:boolean) {
         for (let pub of pubs) {
             let pubE = await this.pubRepository.findOne({where:{id:pub.id},relations:{authorPublications:true, invoices:{cost_items:true}}});
             for (let autPub of pubE.authorPublications) {
@@ -100,7 +100,8 @@ export class PublicationService {
                 await this.invoiceRepository.delete(inv.id);
             }
         }
-        return await this.pubRepository.delete(pubs.map(p => p.id));
+       if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
+       else return await this.pubRepository.softDelete(pubs.map(p => p.id));
     }
 
     public getPublication(id: number, reader:boolean) {

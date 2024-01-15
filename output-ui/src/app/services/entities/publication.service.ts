@@ -34,8 +34,8 @@ export class PublicationService {
     return this.http.post<Publication>(environment.api + 'publications', pub, { withCredentials: true });
   }
 
-  public delete(pubs:Publication[]) {
-    return this.http.delete<Publication[]>(environment.api + 'publications', { withCredentials: true, body: pubs });
+  public delete(pubs:Publication[], soft?) {
+    return this.http.delete<Publication[]>(environment.api + 'publications', { withCredentials: true, body: {publications: pubs, soft} });
   }
 
   public getDefaultReportingYear() {

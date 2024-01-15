@@ -123,8 +123,8 @@ export class PublicationController {
     @Delete()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }])
-    async remove(@Body() body: Publication[]) {
-        return this.publicationService.delete(body);
+    async remove(@Body('publications') publications: Publication[],@Body('soft') soft?: boolean) {
+        return this.publicationService.delete(publications,soft);
     }
 
     @Get('reporting_year')
