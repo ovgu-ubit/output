@@ -178,8 +178,8 @@ export class PublicationService {
      * @param title
      */
     public getPubwithDOIorTitle(doi: string, title: string): Promise<Publication> {
-        if (doi == '') doi = 'empty';
-        if (title == '') title = 'empty';
+        if (!doi) doi = 'empty';
+        if (!title) title = 'empty';
         return this.pubRepository.findOne({
             where: [
                 { doi: ILike(doi.trim() + '%') },

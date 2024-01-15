@@ -116,7 +116,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                     let item = this.getData(data);
                     if (item) {
                         //let orig = publications.find(e => e.doi.toLocaleLowerCase().trim().includes(this.getDOI(item).toLocaleLowerCase().trim()));
-                        let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item).toLocaleLowerCase().trim(), this.getTitle(item).toLocaleLowerCase().trim())
+                        let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                         let pubUpd = await this.mapUpdate(item, orig).catch(e => {
                             this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                             console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)

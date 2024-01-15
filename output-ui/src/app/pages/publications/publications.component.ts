@@ -45,12 +45,12 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer'] },
     { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer'] },
     { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
-    {
+    /*{
       title: 'Anreichern mit', action_function: () => { }, sub_buttons: [
         { title: 'Unpaywall', action_function: this.enrichUnpaywall.bind(this) },
         { title: 'Crossref', action_function: this.enrichCrossref.bind(this) }
       ], roles: ['writer']
-    },
+    },*/
     { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer'] },
   ];
   loading: boolean;
@@ -76,6 +76,17 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   ngOnInit(): void {
     this.loading = true;
+    this.enrichService.getEnrichs().subscribe({
+      next: data => {
+        let sub_buttons = data.map(e => {return {title:e.label, action_function: function(){
+          return this.startEnrich(e.path)
+        }.bind(this)}});
+        this.buttons.push({
+          title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['writer']
+        })
+      }
+    })
+
     let ob$: Observable<any> = this.store.select(selectReportingYear).pipe(concatMap(data => {
       if (data) {
         return of(data);
@@ -292,31 +303,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
   }
 
-  enrichUnpaywall() {
+  startEnrich(name:string) {
     if (this.selection.selected.length === 0) return;
     let save = []
     for (let pub of this.selection.selected) {
       if (!pub.locked) save.push(pub.id);
     }
-    this.enrichService.startID('unpaywall', save).subscribe({
-      next: data => {
-        this._snackBar.open(`Anreichern wurde gestartet`, 'Super!', {
-          duration: 5000,
-          panelClass: [`success-snackbar`],
-          verticalPosition: 'top'
-        })
-        this.update();
-      }
-    })
-  }
-
-  enrichCrossref() {
-    if (this.selection.selected.length === 0) return;
-    let save = []
-    for (let pub of this.selection.selected) {
-      if (!pub.locked) save.push(pub.id);
-    }
-    this.enrichService.startID('crossref', save).subscribe({
+    this.enrichService.startID(name, save).subscribe({
       next: data => {
         this._snackBar.open(`Anreichern wurde gestartet`, 'Super!', {
           duration: 5000,
