@@ -78,9 +78,10 @@ export class PublicationController {
         description: 'The YOP that should be reported.',
         example: "2022"
     })
-    async index(@Query('yop') yop: number, @Query('filter') filter: ((p:Publication) => boolean)) : Promise<PublicationIndex[]> {
-        if (!yop) throw new BadRequestException('no reporting year');
-        return await this.publicationService.index(yop);
+    async index(@Query('yop') yop: number, @Query('soft') soft?: boolean) : Promise<PublicationIndex[]> {
+        if (!yop && !soft) throw new BadRequestException('reporting year or soft has to be given');
+        if (yop) return await this.publicationService.index(yop);
+        else return await this.publicationService.softIndex();
     }
 
     @Post()

@@ -18,6 +18,10 @@ export class PublicationService {
     return this.http.get<PublicationIndex[]>(environment.api + 'publications/publicationIndex?yop='+yop, { withCredentials: true });
   }
 
+  public softIndex() {
+    return this.http.get<PublicationIndex[]>(environment.api + 'publications/publicationIndex?soft=true', { withCredentials: true });
+  }
+
   public getPublications(yop:number) {
     return this.http.get<Publication[]>(environment.api + 'publications?yop='+yop, { withCredentials: true });
   }

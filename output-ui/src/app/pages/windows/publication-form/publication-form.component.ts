@@ -82,6 +82,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       add_info: [''],
       import_date: [''],
       edit_date: [''],
+      delete_date: [''],
       dataSource: [''],
       second_pub: [''],
       status: [''],
@@ -679,5 +680,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
       }
     });
+  }
+
+  restore() {
+    this.pub.delete_date = null;
+    this.form.get('delete_date').setValue(null)
   }
 }

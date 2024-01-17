@@ -40,7 +40,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Erweiterte Filter', action_function: this.extendedFilters.bind(this) },
-        { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) }
+        { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) }
       ]
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer'] },
@@ -99,6 +100,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       this.reporting_year = data
       return this.publicationService.index(this.reporting_year).pipe(map(data => {
         this.publications = data;
+        this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
         this.loading = false;
       }));
@@ -134,15 +136,22 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.destroy$.next('');
   }
 
-  update(): void {
+  update(soft?:boolean): void {
     this.loading = true;
-    this.publicationService.index(this.reporting_year).subscribe({
+    if (!soft) this.publicationService.index(this.reporting_year).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
+        this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    })
+    }); else this.publicationService.softIndex().subscribe({
+      next: data => {
+        this.loading = false;
+        this.publications = data;
+        this.name = 'Soft-deleted Publikationen';
+        this.table.update(this.publications);
+      }, error: err => console.log(err)});
   }
 
   edit(row: any) {
@@ -417,9 +426,22 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
   }
 
+  softdeletes() {
+    this._snackBar.open(`Ansicht wurde geändert`, 'Super!', {
+      duration: 5000,
+      panelClass: [`success-snackbar`],
+      verticalPosition: 'top'
+    });
+    this.store.dispatch(resetViewConfig())
+    this.store.dispatch(resetReportingYear())
+    this.filteredIDs = [];
+    this.update(true);
+  }
+
+  name = 'Publikationen des Jahres ';
 
   getName() {
-    return 'Publikationen des Jahres ' + this.reporting_year;
+    return this.name;
   }
 
   getLink() {
