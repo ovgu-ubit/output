@@ -20,6 +20,7 @@ import { PublicationIndex } from '../../../../../output-interfaces/PublicationIn
 import { FilterViewComponent } from '../windows/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
+import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
 
 @Component({
   selector: 'app-publications',
@@ -39,7 +40,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Erweiterte Filter', action_function: this.extendedFilters.bind(this) },
-        { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) }
+        { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) }
       ]
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer'] },
@@ -98,6 +100,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       this.reporting_year = data
       return this.publicationService.index(this.reporting_year).pipe(map(data => {
         this.publications = data;
+        this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
         this.loading = false;
       }));
@@ -133,15 +136,22 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.destroy$.next('');
   }
 
-  update(): void {
+  update(soft?:boolean): void {
     this.loading = true;
-    this.publicationService.index(this.reporting_year).subscribe({
+    if (!soft) this.publicationService.index(this.reporting_year).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
+        this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    })
+    }); else this.publicationService.softIndex().subscribe({
+      next: data => {
+        this.loading = false;
+        this.publications = data;
+        this.name = 'Soft-deleted Publikationen';
+        this.table.update(this.publications);
+      }, error: err => console.log(err)});
   }
 
   edit(row: any) {
@@ -223,18 +233,20 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   deleteSelected() {
-    //TODO: soft delete option
     if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(this.selection.selected.length + " Publikationen löschen", `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`);
+    let dialogData = new ConfirmDialogModel(
+      this.selection.selected.length + " Publikationen löschen", 
+      `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`
+      );
 
-    let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
-      data: dialogData
+      data: this.selection.selected
     });
 
     dialogRef.afterClosed().subscribe(dialogResult => {
       if (dialogResult) {
-        this.publicationService.delete(this.selection.selected.map(e => { return { id: e.id } })).subscribe({
+        this.publicationService.delete(this.selection.selected.map(e => { return { id: e.id } }), dialogResult.soft).subscribe({
           next: data => {
             this._snackBar.open(`${data['affected']} Publikationen gelöscht`, 'Super!', {
               duration: 5000,
@@ -414,9 +426,22 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
   }
 
+  softdeletes() {
+    this._snackBar.open(`Ansicht wurde geändert`, 'Super!', {
+      duration: 5000,
+      panelClass: [`success-snackbar`],
+      verticalPosition: 'top'
+    });
+    this.store.dispatch(resetViewConfig())
+    this.store.dispatch(resetReportingYear())
+    this.filteredIDs = [];
+    this.update(true);
+  }
+
+  name = 'Publikationen des Jahres ';
 
   getName() {
-    return 'Publikationen des Jahres ' + this.reporting_year;
+    return this.name;
   }
 
   getLink() {
