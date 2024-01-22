@@ -8,7 +8,7 @@
             <th *ngFor="let ent of this.ents, let idx = index">Entität {{idx+1}}</th>
         </tr>
         <tr *ngFor="let attr of this.att_list">
-            <td>{{attr}}</td>
+            <td [style]="this.getStyle(attr)">{{attr}}</td>
             <td *ngFor="let ent of this.ents, let idx = index">{{ent[attr]}}</td>
         </tr>
     </table>
