@@ -28,4 +28,14 @@ export class CombineDialogComponent<T> implements OnInit {
   abort() {
     this.dialogRef.close(null);
   }
+
+  getStyle(att:string) {
+    let style = "background:red;";
+    let value = "";
+    for (let ent of this.ents) {
+      if (!value) value = ent[att];
+      else if (ent[att] != value) return style;
+    }
+    return "";
+  }
 }
