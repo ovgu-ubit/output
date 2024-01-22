@@ -38,11 +38,13 @@
       "reflect-metadata": "^0.1.13",
       "rxjs": "^7.8.1",
       "swagger-ui-express": "^5.0.0",
-      "typeorm": "^0.3.17"
+      "typeorm": "^0.3.17",
+      "xml-js": "^1.6.11"
    },
    "scripts": {
       "prebuild": "rimraf dist",
       "i": "npm i",
+      "audit": "npm audit",
       "build": "nest build",
       "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
       "start": "node -v && cross-env NODE_ENV=dev nest start -c nest-cli.dev.json -p tsconfig.json",
