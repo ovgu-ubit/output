@@ -78,9 +78,10 @@ export class PublicationController {
         description: 'The YOP that should be reported.',
         example: "2022"
     })
-    async index(@Query('yop') yop: number, @Query('filter') filter: ((p:Publication) => boolean)) : Promise<PublicationIndex[]> {
-        if (!yop) throw new BadRequestException('no reporting year');
-        return await this.publicationService.index(yop);
+    async index(@Query('yop') yop: number, @Query('soft') soft?: boolean) : Promise<PublicationIndex[]> {
+        if (!yop && !soft) throw new BadRequestException('reporting year or soft has to be given');
+        if (yop) return await this.publicationService.index(yop);
+        else return await this.publicationService.softIndex();
     }
 
     @Post()
@@ -123,8 +124,8 @@ export class PublicationController {
     @Delete()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }])
-    async remove(@Body() body: Publication[]) {
-        return this.publicationService.delete(body);
+    async remove(@Body('publications') publications: Publication[],@Body('soft') soft?: boolean) {
+        return this.publicationService.delete(publications,soft);
     }
 
     @Get('reporting_year')

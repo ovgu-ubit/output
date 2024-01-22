@@ -18,6 +18,10 @@ export class PublicationService {
     return this.http.get<PublicationIndex[]>(environment.api + 'publications/publicationIndex?yop='+yop, { withCredentials: true });
   }
 
+  public softIndex() {
+    return this.http.get<PublicationIndex[]>(environment.api + 'publications/publicationIndex?soft=true', { withCredentials: true });
+  }
+
   public getPublications(yop:number) {
     return this.http.get<Publication[]>(environment.api + 'publications?yop='+yop, { withCredentials: true });
   }
@@ -34,8 +38,8 @@ export class PublicationService {
     return this.http.post<Publication>(environment.api + 'publications', pub, { withCredentials: true });
   }
 
-  public delete(pubs:Publication[]) {
-    return this.http.delete<Publication[]>(environment.api + 'publications', { withCredentials: true, body: pubs });
+  public delete(pubs:Publication[], soft?) {
+    return this.http.delete<Publication[]>(environment.api + 'publications', { withCredentials: true, body: {publications: pubs, soft} });
   }
 
   public getDefaultReportingYear() {

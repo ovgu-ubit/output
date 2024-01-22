@@ -99,7 +99,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.errors = 0;
         let obs$ = [];
-        let publications = (await this.publicationService.get(this.whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked);
+        let publications = (await this.publicationService.get(this.whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
             this.progress = 0;
             this.status_text = 'Nothing to enrich on ' + new Date();

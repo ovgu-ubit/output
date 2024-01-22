@@ -75,6 +75,53 @@ export class PublicationService {
         return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
+    public softIndex(): Promise<PublicationIndex[]> {
+        let query = this.pubRepository.createQueryBuilder("publication")
+            .leftJoin("publication.publisher", "publisher")
+            .leftJoin("publication.authorPublications", "authorPublications")
+            .leftJoin("authorPublications.author", "author")
+            .leftJoin("authorPublications.institute", "institute")
+            .leftJoin("publication.oa_category", "oa_category")
+            .leftJoin("publication.pub_type", "publication_type")
+            .leftJoin("publication.contract", "contract")
+            .leftJoin("publication.greater_entity", "greater_entity")
+            .select("publication.id", "id")
+            .addSelect("publication.title", "title")
+            .addSelect("publication.locked", "locked")
+            .addSelect("publication.status", "status")
+            .addSelect("publication.dataSource", "data_source")
+            .addSelect("publication.edit_date", "edit_date")
+            .addSelect("publication.import_date", "import_date")
+            .addSelect("publication.link", "link")
+            .addSelect("publication.doi", "doi")
+            .addSelect("publication.authors", "authors")
+            .addSelect("publication.pub_date", "pub_date")
+            .addSelect("publisher.label", "publisher")
+            .addSelect("publication_type.label", "publication_type")
+            .addSelect("oa_category.label", "oa_category")
+            .addSelect("contract.label", "contract")
+            .addSelect("greater_entity.label", "greater_entity")
+            .addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
+            .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
+            .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
+            .withDeleted()
+            .where("publication.delete_date is not null")
+            .groupBy("publication.id")
+            .addGroupBy("publication.title")
+            .addGroupBy("publication.doi")
+            .addGroupBy("publication.authors")
+            .addGroupBy("publication.pub_date")
+            .addGroupBy("publisher.label")
+            .addGroupBy("oa_category.label")
+            .addGroupBy("publication_type.label")
+            .addGroupBy("contract.label")
+            .addGroupBy("greater_entity.label");
+
+        //console.log(query.getSql());
+
+        return query.getRawMany() as Promise<PublicationIndex[]>;
+    }
+
     public async update(pubs: Publication[]) {
         //return this.pubRepository.save(pubs);
         let i = 0;
@@ -89,7 +136,7 @@ export class PublicationService {
         return i;
     }
 
-    public async delete(pubs: Publication[]) {
+    public async delete(pubs: Publication[], soft?:boolean) {
         for (let pub of pubs) {
             let pubE = await this.pubRepository.findOne({where:{id:pub.id},relations:{authorPublications:true, invoices:{cost_items:true}}});
             for (let autPub of pubE.authorPublications) {
@@ -100,7 +147,8 @@ export class PublicationService {
                 await this.invoiceRepository.delete(inv.id);
             }
         }
-        return await this.pubRepository.delete(pubs.map(p => p.id));
+       if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
+       else return await this.pubRepository.softDelete(pubs.map(p => p.id));
     }
 
     public getPublication(id: number, reader:boolean) {
@@ -120,7 +168,7 @@ export class PublicationService {
                 contract: true,
                 funders: true,
                 language: true
-            }
+            }, withDeleted: true
         })
     }
 
@@ -158,7 +206,8 @@ export class PublicationService {
         return (await this.pubRepository.findOne({
             where: [
                 { doi: ILike(doi.trim() + '%') },
-                { title: ILike(title.trim() + '%') }]
+                { title: ILike(title.trim() + '%') }],
+            withDeleted: true
         })) !== null;
     }
 
@@ -191,7 +240,8 @@ export class PublicationService {
                 oa_category: true,
                 contract: true,
                 funders: true
-            }
+            },
+            withDeleted: true
 
         })
     }
