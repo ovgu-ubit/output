@@ -20,6 +20,7 @@ import { Funder } from '../../entity/Funder';
 import { Identifier } from '../../entity/Identifier';
 import { Invoice } from '../../entity/Invoice';
 import * as xmljs from 'xml-js';
+import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 
 @Injectable()
 /**
@@ -30,22 +31,22 @@ export class PubMedImportService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService:LanguageService, 
-        protected http: HttpService, private configService:ConfigService) {
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,
+        protected http: HttpService, private configService: ConfigService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService);
         let tags = this.configService.get('searchTags');
         this.searchText = '('
         for (let tag of tags) {
-            this.searchText+=tag+'[affiliation]+or+'
+            this.searchText += tag + '[affiliation]+or+'
         }
-        this.searchText = this.searchText.slice(0,this.searchText.length-4)+')'
+        this.searchText = this.searchText.slice(0, this.searchText.length - 4) + ')'
     }
 
     name = 'PubMed';
     year = '2023';
     searchText = '';
     max = 9;
-    delay = 200;
+    delay = 250;
     parallelCalls = 1;
 
     private newPublications: Publication[] = [];
@@ -56,17 +57,35 @@ export class PubMedImportService extends AbstractImportService {
     url_search = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
     url_fetch = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
 
-    
-    request(id:number): Observable<any> {
+    protected updateMapping: UpdateMapping = {
+        author_inst: UpdateOptions.APPEND,
+        authors: UpdateOptions.REPLACE_IF_EMPTY,
+        title: UpdateOptions.REPLACE_IF_EMPTY,
+        pub_type: UpdateOptions.REPLACE_IF_EMPTY,
+        oa_category: UpdateOptions.REPLACE_IF_EMPTY,
+        greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
+        publisher: UpdateOptions.IGNORE,
+        contract: UpdateOptions.REPLACE_IF_EMPTY,
+        funder: UpdateOptions.IGNORE,
+        doi: UpdateOptions.REPLACE_IF_EMPTY,
+        pub_date: UpdateOptions.REPLACE_IF_EMPTY,
+        link: UpdateOptions.IGNORE,
+        language: UpdateOptions.REPLACE_IF_EMPTY,
+        license: UpdateOptions.REPLACE_IF_EMPTY,
+        invoice: UpdateOptions.REPLACE_IF_EMPTY,
+        status: UpdateOptions.IGNORE,
+    };
+
+    request(id: number): Observable<any> {
         let url = this.url_fetch + `?db=pubmed&id=${id}`;
-        return this.http.get(url, {responseType: 'document'}).pipe(delay(this.delay));
+        return this.http.get(url, { responseType: 'document' }).pipe(delay(this.delay));
     }
     search(): Observable<any> {
-        let url = this.url_search+ `?db=pubmed&term=${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
-        return this.http.get(url, {responseType: 'document'});
+        let url = this.url_search + `?db=pubmed&term=${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
+        return this.http.get(url, { responseType: 'document' });
     }
     setReportingYear(year: string) {
-       this.year = year;
+        this.year = year;
     }
 
     /**
@@ -76,7 +95,7 @@ export class PubMedImportService extends AbstractImportService {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Import',this.name, by_user);
+        this.report = this.reportService.createReport('Import', this.name, by_user);
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -87,16 +106,16 @@ export class PubMedImportService extends AbstractImportService {
 
         let obs$ = [];
         this.search().pipe(map(resp => {
-            let data = JSON.parse(xmljs.xml2json(resp.data, {compact: true}));
+            let data = JSON.parse(xmljs.xml2json(resp.data, { compact: true }));
             //if (data['eSearchResult']['Count']['_text'] <= this.max) {
-                this.numberOfPublications = Number(data['eSearchResult']['Count']['_text']);
-                let ids = data['eSearchResult']['IdList']['Id'].map(e => e['_text'])
-                for (let id of ids) {
-                    obs$.push(this.request(id))
-                }
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+            this.numberOfPublications = Number(data['eSearchResult']['Count']['_text']);
+            let ids = data['eSearchResult']['IdList']['Id'].map(e => e['_text'])
+            for (let id of ids) {
+                obs$.push(this.request(id))
+            }
+            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
             //} else console.log('Error: Too many results')//TODO
-            if (this.numberOfPublications<=0) {
+            if (this.numberOfPublications <= 0) {
                 //finalize
                 this.progress = 0;
                 this.reportService.finish(this.report, {
@@ -110,8 +129,20 @@ export class PubMedImportService extends AbstractImportService {
         }), concatWith(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
             next: async (data: any) => {
                 if (!data) return;
-                let pub = JSON.parse(xmljs.xml2json(data.data, {compact: true}));
-                console.log(pub['PubmedArticleSet']['PubmedArticle']['MedlineCitation']['Article']['ArticleTitle']['_text'])
+                let pub = JSON.parse(xmljs.xml2json(data.data, { compact: true }));
+                pub = this.getData(pub);
+                //console.log(pub)
+                console.log(pub['PMID']['_text'])
+                console.log(this.importTest(pub))
+                console.log(this.getTitle(pub))
+                console.log(this.getDOI(pub))
+                //console.log(this.getInstAuthors(pub))
+                console.log(this.getAuthors(pub))
+                //console.log(this.getGreaterEntityIdentifier(pub))
+                //console.log(this.getGreaterEntityName(pub))
+                console.log(this.getPubDate(pub))
+                console.log(this.getLanguage(pub))
+                //console.log(pub['PubmedArticleSet']['PubmedArticle']['MedlineCitation']['Article']['ArticleTitle']['_text'])
                 /*try {
                     for (let [idx, pub] of this.getData(data).entries()) {
                         if (!this.getDOI(pub) && !this.getTitle(pub)) {
@@ -175,38 +206,135 @@ export class PubMedImportService extends AbstractImportService {
             }
         });
     }
+    protected getData(element: any) {
+        return element['PubmedArticleSet']['PubmedArticle']['MedlineCitation']
+    }
+
+    protected importTest(element: any): boolean {
+        return element && this.authorsInstitution(element['Article']['AuthorList']['Author']);
+    }
+
+    public authorsInstitution(authors) {
+        if (authors && Array.isArray(authors)) {
+            let aut = authors.filter(author =>
+                this.configService.get('affiliationTags').some(e => {
+                    if (Array.isArray(author['AffiliationInfo'])) {
+                        return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
+                    }
+                    else return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+                }
+                ));
+            return aut.length > 0;
+        } else if (authors) {
+            return this.configService.get('affiliationTags').some(e => {
+                if (Array.isArray(authors['AffiliationInfo'])) {
+                    return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
+                }
+                else return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+            })
+        }
+        else return null;
+    }
+
     protected getDOI(element: any): string {
-        throw new Error('Method not implemented.');
+        if (Array.isArray(element['Article']['ELocationID'])) {
+            return element['Article']['ELocationID'].find(e => e['_attributes']['EIdType'] == 'doi')?._text;
+        } else return element['Article']['ELocationID']['_attributes']['EIdType'] == 'doi' ? element['Article']['ELocationID']['_text'] : '';
     }
     protected getTitle(element: any): string {
-        throw new Error('Method not implemented.');
-    }
-    protected importTest(element: any): boolean {
-        throw new Error('Method not implemented.');
+        return element['Article']['ArticleTitle']['_text']
     }
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; corresponding?: boolean; }[] {
-        throw new Error('Method not implemented.');
+        let authors = element['Article']['AuthorList']['Author'];
+        if (authors && Array.isArray(authors)) {
+            let aut = authors.filter(author =>
+                this.configService.get('affiliationTags').some(e => {
+                    if (Array.isArray(author['AffiliationInfo'])) {
+                        return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
+                    }
+                    else return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+                }
+                ));
+            return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? e['AffiliationInfo'].find(g => this.configService.get('affiliationTags').some(f => g['Affiliation']['_text'].toLowerCase().includes(f)))['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
+        } else if (authors) {
+            if (this.configService.get('affiliationTags').some(e => {
+                if (Array.isArray(authors['AffiliationInfo'])) {
+                    return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
+                }
+                else return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+            })) return [{ first_name: authors['ForeName']['_text'], last_name: authors['LastName']['_text'], affiliation: Array.isArray(authors['AffiliationInfo']) ? authors['AffiliationInfo'].find(e => this.configService.get('affiliationTags').some(f => e['Affiliation']['_text'].includes(f)))['Affiliation']['_text'] : authors['AffiliationInfo']['Affiliation']['_text'] }]
+        } else return [];
     }
     protected getAuthors(element: any): string {
-        throw new Error('Method not implemented.');
+        if (Array.isArray(element['Article']['AuthorList']['Author'])) return this.constructAuthorsString(element['Article']['AuthorList']['Author']) 
+        else return this.constructAuthorsString([element['Article']['AuthorList']['Author']]) 
     }
+    constructAuthorsString(element:any[]):string {
+        let res = '';
+        for (let aut of element) {
+            res+=aut['LastName']['_text']+", "+aut['ForeName']['_text']+"; "
+        }
+        return res.slice(0,res.length-2);
+    }
+
     protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        throw new Error('Method not implemented.');
+        if (element['Article']['Journal'] && element['Article']['Journal']['ISSN']) {
+            if (!Array.isArray(element['Article']['Journal']['ISSN'])) {
+                return [{
+                type: 'issn',
+                value: element['Article']['Journal']['ISSN']['_text']
+            }]} else return element['Article']['Journal']['ISSN'].map(e => {return {type:'issn', value: e['_text']}})
+        }
     }
     protected getGreaterEntityName(element: any): string {
-        throw new Error('Method not implemented.');
+        if (element['Article']['Journal'] && element['Article']['Journal']['Title']) {
+            return element['Article']['Journal']['Title']['_text'];
+        } else return ''
     }
     protected getPublisher(element: any): string {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getPubDate(element: any): Date {
-        throw new Error('Method not implemented.');
+        if (element['Article']['ArticleDate']) {
+            if (Array.isArray(element['Article']['ArticleDate'])) {
+                let e = element['Article']['ArticleDate'].find(e => e['_attributes']['DateType'].includes('elec'));
+                if (e) return new Date(Date.UTC(e['Year']['_text'], Number(e['Month']['_text'])-1, e['Day']['_text']))
+            } else {
+                return new Date(Date.UTC(element['Article']['ArticleDate']['Year']['_text'],Number(element['Article']['ArticleDate']['Month']['_text'])-1,element['Article']['ArticleDate']['Day']['_text']))
+            }
+        } else if (element['Article']['Journal']['JournalIssue']['PubDate']) {
+            if (!element['Article']['Journal']['JournalIssue']['PubDate']['Month'] && !element['Article']['Journal']['JournalIssue']['PubDate']['Day']) return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'],0,1));
+            let mon = element['Article']['Journal']['JournalIssue']['PubDate']['Month']['_text'];
+            if (isNaN(mon)) {
+                mon = this.mapMonToNumber(mon)
+            }
+            if (!element['Article']['Journal']['JournalIssue']['PubDate']['Day']) return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'],Number(mon)-1,1))
+            return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'],Number(mon)-1,element['Article']['Journal']['JournalIssue']['PubDate']['Day']['_text']))
+            
+        }
+        return undefined;
     }
+    mapMonToNumber(monthString) {
+        if (monthString.includes('Jan')) return 1;
+        else if (monthString.includes('Feb')) return 2;
+        else if (monthString.includes('Mar')) return 3;
+        else if (monthString.includes('Apr')) return 4;
+        else if (monthString.includes('May')) return 5;
+        else if (monthString.includes('Jun')) return 6;
+        else if (monthString.includes('Jul')) return 7;
+        else if (monthString.includes('Aug')) return 8;
+        else if (monthString.includes('Sep')) return 9;
+        else if (monthString.includes('Oct')) return 10;
+        else if (monthString.includes('Nov')) return 11;
+        else if (monthString.includes('Dec')) return 12;
+        else return 1;
+    }
+
     protected getLink(element: any): string {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getLanguage(element: any): string {
-        throw new Error('Method not implemented.');
+        return element['Article']['Language']['_text'];
     }
     protected getFunder(element: any): Funder[] {
         throw new Error('Method not implemented.');
