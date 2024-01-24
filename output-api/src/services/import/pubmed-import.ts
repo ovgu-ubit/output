@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
 import { concatWith, delay, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 import { Publication } from '../../entity/Publication';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
@@ -15,7 +16,6 @@ import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
-import { ConfigService } from '@nestjs/config';
 import { Funder } from '../../entity/Funder';
 import { Identifier } from '../../entity/Identifier';
 import { Invoice } from '../../entity/Invoice';
@@ -45,7 +45,7 @@ export class PubMedImportService extends AbstractImportService {
     name = 'PubMed';
     year = '2023';
     searchText = '';
-    max = 9;
+    max = 100;
     delay = 250;
     parallelCalls = 1;
 
@@ -81,7 +81,7 @@ export class PubMedImportService extends AbstractImportService {
         return this.http.get(url, { responseType: 'document' }).pipe(delay(this.delay));
     }
     search(): Observable<any> {
-        let url = this.url_search + `?db=pubmed&term=${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
+        let url = this.url_search + `?db=pubmed&term=${this.year}:${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
         return this.http.get(url, { responseType: 'document' });
     }
     setReportingYear(year: string) {
@@ -133,53 +133,52 @@ export class PubMedImportService extends AbstractImportService {
                 pub = this.getData(pub);
                 //console.log(pub)
                 console.log(pub['PMID']['_text'])
-                console.log(this.importTest(pub))
+                /*console.log(this.importTest(pub))
                 console.log(this.getTitle(pub))
                 console.log(this.getDOI(pub))
-                //console.log(this.getInstAuthors(pub))
+                console.log(this.getInstAuthors(pub))
                 console.log(this.getAuthors(pub))
-                //console.log(this.getGreaterEntityIdentifier(pub))
-                //console.log(this.getGreaterEntityName(pub))
+                console.log(this.getGreaterEntityIdentifier(pub))
+                console.log(this.getGreaterEntityName(pub))
                 console.log(this.getPubDate(pub))
                 console.log(this.getLanguage(pub))
-                //console.log(pub['PubmedArticleSet']['PubmedArticle']['MedlineCitation']['Article']['ArticleTitle']['_text'])
-                /*try {
-                    for (let [idx, pub] of this.getData(data).entries()) {
-                        if (!this.getDOI(pub) && !this.getTitle(pub)) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported '+this.getAuthors(pub) })
-                            continue;
+                console.log(this.getPubType(pub))*/
+                try {
+                    if (!this.getDOI(pub) && !this.getTitle(pub)) {
+                        this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
+                        return;
+                    }
+                    if (this.newPublications.find(e => e.doi && e.doi === this.getDOI(pub)) || this.publicationsUpdate.find(e => e.doi && e.doi === this.getDOI(pub))) {
+                        this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.' })
+                        return;
+                    }
+                    let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                    if (!flag) {
+                        let pubNew = await this.mapNew(pub).catch(e => {
+                            this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message })
+                            //console.log('Error while mapping publication ' + this.getDOI(pub) + ' with title ' + this.getTitle(pub) + ': ' + e.message + ' with stack ' + e.stack)
+                        });
+                        if (pubNew) {
+                            this.newPublications.push(pubNew);
+                            this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                         }
-                        if (this.newPublications.find(e => e.doi && e.doi === this.getDOI(pub)) || this.publicationsUpdate.find(e => e.doi && e.doi === this.getDOI(pub))) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi '+this.getDOI(pub)+' has already been imported.' })
-                            continue;
+                    } else if (update) {
+                        let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                        if (orig.locked || orig.delete_date) return;
+                        let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                            this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                            return null;
+                        })
+                        if (pubUpd?.pub) {
+                            this.publicationsUpdate.push(pubUpd.pub);
+                            this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
                         }
-                        let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
-                        if (!flag) {
-                            let pubNew = await this.mapNew(pub).catch(e => {
-                                this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message })
-                                //console.log('Error while mapping publication ' + this.getDOI(pub) + ' with title ' + this.getTitle(pub) + ': ' + e.message + ' with stack ' + e.stack)
-                            });
-                            if (pubNew) {
-                                this.newPublications.push(pubNew);
-                                this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
-                            }
-                        } else if (update) {
-                            let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
-                            if (orig.locked || orig.delete_date) continue;
-                            let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                                this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
-                                return null;
-                            })
-                            if (pubUpd?.pub) {
-                                this.publicationsUpdate.push(pubUpd.pub);
-                                this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
-                            }
-                        }
+
                     }
                     // Update Progress Value
-                    this.processedPublications += this.getData(data).length;
+                    this.processedPublications++;
                 } catch (e) {
-                    this.numberOfPublications -= this.max_res;
+                    this.numberOfPublications--;
                     this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${e}` })
                 } finally {
                     if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
@@ -193,7 +192,7 @@ export class PubMedImportService extends AbstractImportService {
                         })
                         this.status_text = 'Successfull import on ' + new Date();
                     }
-                }*/
+                }
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
@@ -221,7 +220,7 @@ export class PubMedImportService extends AbstractImportService {
                     if (Array.isArray(author['AffiliationInfo'])) {
                         return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                     }
-                    else return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+                    else if (author['AffiliationInfo']) return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
                 }
                 ));
             return aut.length > 0;
@@ -230,7 +229,7 @@ export class PubMedImportService extends AbstractImportService {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
-                else return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+                else if (authors['AffiliationInfo']) return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
             })
         }
         else return null;
@@ -242,7 +241,9 @@ export class PubMedImportService extends AbstractImportService {
         } else return element['Article']['ELocationID']['_attributes']['EIdType'] == 'doi' ? element['Article']['ELocationID']['_text'] : '';
     }
     protected getTitle(element: any): string {
-        return element['Article']['ArticleTitle']['_text']
+        let e = element['Article']['ArticleTitle']['_text'];
+        if (Array.isArray(e)) return element['Article']['ArticleTitle']['_text'].reduce((acc,v,i) => acc+v,'')
+        else return element['Article']['ArticleTitle']['_text']
     }
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; corresponding?: boolean; }[] {
         let authors = element['Article']['AuthorList']['Author'];
@@ -252,7 +253,7 @@ export class PubMedImportService extends AbstractImportService {
                     if (Array.isArray(author['AffiliationInfo'])) {
                         return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                     }
-                    else return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+                    else if (author['AffiliationInfo']) return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
                 }
                 ));
             return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? e['AffiliationInfo'].find(g => this.configService.get('affiliationTags').some(f => g['Affiliation']['_text'].toLowerCase().includes(f)))['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
@@ -261,29 +262,31 @@ export class PubMedImportService extends AbstractImportService {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
-                else return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+                else if (authors['AffiliationInfo']) return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
             })) return [{ first_name: authors['ForeName']['_text'], last_name: authors['LastName']['_text'], affiliation: Array.isArray(authors['AffiliationInfo']) ? authors['AffiliationInfo'].find(e => this.configService.get('affiliationTags').some(f => e['Affiliation']['_text'].includes(f)))['Affiliation']['_text'] : authors['AffiliationInfo']['Affiliation']['_text'] }]
         } else return [];
     }
     protected getAuthors(element: any): string {
-        if (Array.isArray(element['Article']['AuthorList']['Author'])) return this.constructAuthorsString(element['Article']['AuthorList']['Author']) 
-        else return this.constructAuthorsString([element['Article']['AuthorList']['Author']]) 
+        if (Array.isArray(element['Article']['AuthorList']['Author'])) return this.constructAuthorsString(element['Article']['AuthorList']['Author'])
+        else return this.constructAuthorsString([element['Article']['AuthorList']['Author']])
     }
-    constructAuthorsString(element:any[]):string {
+    constructAuthorsString(element: any[]): string {
         let res = '';
         for (let aut of element) {
-            res+=aut['LastName']['_text']+", "+aut['ForeName']['_text']+"; "
+            if (aut['LastName']) res += aut['LastName']['_text'] + ", " + aut['ForeName']['_text'] + "; "
+            else if (aut['CollectiveName']) res += aut['CollectiveName']['_text']+ "; "
         }
-        return res.slice(0,res.length-2);
+        return res.slice(0, res.length - 2);
     }
 
     protected getGreaterEntityIdentifier(element: any): Identifier[] {
         if (element['Article']['Journal'] && element['Article']['Journal']['ISSN']) {
             if (!Array.isArray(element['Article']['Journal']['ISSN'])) {
                 return [{
-                type: 'issn',
-                value: element['Article']['Journal']['ISSN']['_text']
-            }]} else return element['Article']['Journal']['ISSN'].map(e => {return {type:'issn', value: e['_text']}})
+                    type: 'issn',
+                    value: element['Article']['Journal']['ISSN']['_text']
+                }]
+            } else return element['Article']['Journal']['ISSN'].map(e => { return { type: 'issn', value: e['_text'] } })
         }
     }
     protected getGreaterEntityName(element: any): string {
@@ -298,19 +301,19 @@ export class PubMedImportService extends AbstractImportService {
         if (element['Article']['ArticleDate']) {
             if (Array.isArray(element['Article']['ArticleDate'])) {
                 let e = element['Article']['ArticleDate'].find(e => e['_attributes']['DateType'].includes('elec'));
-                if (e) return new Date(Date.UTC(e['Year']['_text'], Number(e['Month']['_text'])-1, e['Day']['_text']))
+                if (e) return new Date(Date.UTC(e['Year']['_text'], Number(e['Month']['_text']) - 1, e['Day']['_text']))
             } else {
-                return new Date(Date.UTC(element['Article']['ArticleDate']['Year']['_text'],Number(element['Article']['ArticleDate']['Month']['_text'])-1,element['Article']['ArticleDate']['Day']['_text']))
+                return new Date(Date.UTC(element['Article']['ArticleDate']['Year']['_text'], Number(element['Article']['ArticleDate']['Month']['_text']) - 1, element['Article']['ArticleDate']['Day']['_text']))
             }
         } else if (element['Article']['Journal']['JournalIssue']['PubDate']) {
-            if (!element['Article']['Journal']['JournalIssue']['PubDate']['Month'] && !element['Article']['Journal']['JournalIssue']['PubDate']['Day']) return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'],0,1));
+            if (!element['Article']['Journal']['JournalIssue']['PubDate']['Month'] && !element['Article']['Journal']['JournalIssue']['PubDate']['Day']) return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'], 0, 1));
             let mon = element['Article']['Journal']['JournalIssue']['PubDate']['Month']['_text'];
             if (isNaN(mon)) {
                 mon = this.mapMonToNumber(mon)
             }
-            if (!element['Article']['Journal']['JournalIssue']['PubDate']['Day']) return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'],Number(mon)-1,1))
-            return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'],Number(mon)-1,element['Article']['Journal']['JournalIssue']['PubDate']['Day']['_text']))
-            
+            if (!element['Article']['Journal']['JournalIssue']['PubDate']['Day']) return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'], Number(mon) - 1, 1))
+            return new Date(Date.UTC(element['Article']['Journal']['JournalIssue']['PubDate']['Year']['_text'], Number(mon) - 1, element['Article']['Journal']['JournalIssue']['PubDate']['Day']['_text']))
+
         }
         return undefined;
     }
@@ -337,24 +340,29 @@ export class PubMedImportService extends AbstractImportService {
         return element['Article']['Language']['_text'];
     }
     protected getFunder(element: any): Funder[] {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getPubType(element: any): string {
-        throw new Error('Method not implemented.');
+        let pt = element['Article']['PublicationTypeList']['PublicationType'];
+        if (Array.isArray(pt)) {
+            let res = '';
+            for (let e of pt) res += e['_text'] + ";"
+            return res.slice(0, res.length - 1)
+        } else return pt['_text'];
     }
     protected getOACategory(element: any): string {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getContract(element: any): string {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getLicense(element: any): string {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getInvoiceInformation(element: any): Invoice[] {
-        throw new Error('Method not implemented.');
+        return undefined;
     }
     protected getStatus(element: any): number {
-        throw new Error('Method not implemented.');
+        return 0;
     }
 }
