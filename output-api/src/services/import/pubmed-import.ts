@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { concatWith, delay, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { concatWith, delay, map, mergeAll, Observable, queueScheduler, scheduled, concatMap, EMPTY } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { Publication } from '../../entity/Publication';
 import { AuthorService } from '../entities/author.service';
@@ -45,7 +45,7 @@ export class PubMedImportService extends AbstractImportService {
     name = 'PubMed';
     year = '2023';
     searchText = '';
-    max = 100;
+    max = 1000;
     delay = 250;
     parallelCalls = 1;
 
@@ -53,6 +53,8 @@ export class PubMedImportService extends AbstractImportService {
     private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
+
+    obs$ = [];
 
     url_search = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
     url_fetch = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
@@ -80,9 +82,32 @@ export class PubMedImportService extends AbstractImportService {
         let url = this.url_fetch + `?db=pubmed&id=${id}`;
         return this.http.get(url, { responseType: 'document' }).pipe(delay(this.delay));
     }
-    search(): Observable<any> {
+    search(offset?: number): Observable<any> {
         let url = this.url_search + `?db=pubmed&term=${this.year}:${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
-        return this.http.get(url, { responseType: 'document' });
+        if (offset) url += '&retstart=' + offset
+        return this.http.get(url, { responseType: 'document' }).pipe(concatMap(resp => {
+            let data = JSON.parse(xmljs.xml2json(resp.data, { compact: true }));
+            //if (data['eSearchResult']['Count']['_text'] <= this.max) {
+            this.numberOfPublications = Number(data['eSearchResult']['Count']['_text']);
+            let ids = data['eSearchResult']['IdList']['Id'].map(e => e['_text'])
+            for (let id of ids) {
+                this.obs$.push(this.request(id))
+            }
+            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+            //} else console.log('Error: Too many results')//TODO
+            if (this.numberOfPublications <= 0) {
+                //finalize
+                this.progress = 0;
+                this.reportService.finish(this.report, {
+                    status: 'Nothing to import on' + new Date(),
+                    count_import: 0,
+                    count_update: 0
+                })
+                this.status_text = 'Nothing to import on ' + new Date();
+            }
+            if (this.obs$.length < this.numberOfPublications) return this.search(this.obs$.length).pipe(delay(this.delay))
+            else return EMPTY;
+        }));
     }
     setReportingYear(year: string) {
         this.year = year;
@@ -104,29 +129,8 @@ export class PubMedImportService extends AbstractImportService {
 
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with year ${this.year}` })
 
-        let obs$ = [];
-        this.search().pipe(map(resp => {
-            let data = JSON.parse(xmljs.xml2json(resp.data, { compact: true }));
-            //if (data['eSearchResult']['Count']['_text'] <= this.max) {
-            this.numberOfPublications = Number(data['eSearchResult']['Count']['_text']);
-            let ids = data['eSearchResult']['IdList']['Id'].map(e => e['_text'])
-            for (let id of ids) {
-                obs$.push(this.request(id))
-            }
-            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
-            //} else console.log('Error: Too many results')//TODO
-            if (this.numberOfPublications <= 0) {
-                //finalize
-                this.progress = 0;
-                this.reportService.finish(this.report, {
-                    status: 'Nothing to import on' + new Date(),
-                    count_import: 0,
-                    count_update: 0
-                })
-                this.status_text = 'Nothing to import on ' + new Date();
-            }
-            return null;
-        }), concatWith(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
+        this.obs$ = [];
+        this.search().pipe(concatWith(scheduled(this.obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
             next: async (data: any) => {
                 if (!data) return;
                 let pub = JSON.parse(xmljs.xml2json(data.data, { compact: true }));
@@ -236,36 +240,47 @@ export class PubMedImportService extends AbstractImportService {
     }
 
     protected getDOI(element: any): string {
+        if (!element['Article']['ELocationID']) return '';
         if (Array.isArray(element['Article']['ELocationID'])) {
             return element['Article']['ELocationID'].find(e => e['_attributes']['EIdType'] == 'doi')?._text;
         } else return element['Article']['ELocationID']['_attributes']['EIdType'] == 'doi' ? element['Article']['ELocationID']['_text'] : '';
     }
     protected getTitle(element: any): string {
         let e = element['Article']['ArticleTitle']['_text'];
-        if (Array.isArray(e)) return element['Article']['ArticleTitle']['_text'].reduce((acc,v,i) => acc+v,'')
+        if (Array.isArray(e)) return element['Article']['ArticleTitle']['_text'].reduce((acc, v, i) => acc + v, '')
         else return element['Article']['ArticleTitle']['_text']
     }
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; corresponding?: boolean; }[] {
         let authors = element['Article']['AuthorList']['Author'];
         if (authors && Array.isArray(authors)) {
-            let aut = authors.filter(author =>
-                this.configService.get('affiliationTags').some(e => {
-                    if (Array.isArray(author['AffiliationInfo'])) {
-                        return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
-                    }
-                    else if (author['AffiliationInfo']) return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
-                }
-                ));
-            return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? e['AffiliationInfo'].find(g => this.configService.get('affiliationTags').some(f => g['Affiliation']['_text'].toLowerCase().includes(f)))['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
+            let aut = authors.filter(e => this.isInstAuthor(e));
+            return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? this.findAffAuthor(e)['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
         } else if (authors) {
-            if (this.configService.get('affiliationTags').some(e => {
+            if (authors['AffiliationInfo'] && this.configService.get('affiliationTags').some(e => {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
                 else if (authors['AffiliationInfo']) return authors['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
-            })) return [{ first_name: authors['ForeName']['_text'], last_name: authors['LastName']['_text'], affiliation: Array.isArray(authors['AffiliationInfo']) ? authors['AffiliationInfo'].find(e => this.configService.get('affiliationTags').some(f => e['Affiliation']['_text'].includes(f)))['Affiliation']['_text'] : authors['AffiliationInfo']['Affiliation']['_text'] }]
+            })) return [{ first_name: authors['ForeName']['_text'], last_name: authors['LastName']['_text'], affiliation: Array.isArray(authors['AffiliationInfo']) ? this.findAffAuthor(authors)['Affiliation']['_text'] : authors['AffiliationInfo']['Affiliation']['_text'] }]
         } else return [];
     }
+    isInstAuthor(author) {
+        return this.configService.get('affiliationTags').some(e => {
+            if (Array.isArray(author['AffiliationInfo'])) {
+                return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
+            }
+            else if (author['AffiliationInfo']) return author['AffiliationInfo']['Affiliation']['_text'].toLowerCase().includes(e)
+        }
+        );
+    }
+    findAffAuthor(author) {
+        return author['AffiliationInfo'].find(e => this.configService.get('affiliationTags').some(f => {
+            if (Array.isArray(e['Affiliation'])) return e['Affiliation'].some(g => g['_text'].toLowerCase().includes(f))
+            else return e['Affiliation']['_text'].toLowerCase().includes(f)
+        }));
+
+    }
+
     protected getAuthors(element: any): string {
         if (Array.isArray(element['Article']['AuthorList']['Author'])) return this.constructAuthorsString(element['Article']['AuthorList']['Author'])
         else return this.constructAuthorsString([element['Article']['AuthorList']['Author']])
@@ -273,8 +288,10 @@ export class PubMedImportService extends AbstractImportService {
     constructAuthorsString(element: any[]): string {
         let res = '';
         for (let aut of element) {
-            if (aut['LastName']) res += aut['LastName']['_text'] + ", " + aut['ForeName']['_text'] + "; "
-            else if (aut['CollectiveName']) res += aut['CollectiveName']['_text']+ "; "
+            if (aut['LastName']) res += aut['LastName']['_text']
+            if (aut['ForeName']) res += ", " + aut['ForeName']['_text']
+            if (res) res += "; ";
+            //else if (aut['CollectiveName']) res += aut['CollectiveName']['_text']+ "; "
         }
         return res.slice(0, res.length - 2);
     }
