@@ -2,31 +2,10 @@
 
 Steps to run this project:
 
-1. Run `npm i` command to install all dependencies
-2. Setup database settings inside `ormconfig.json` file (see below)
-3. Run `npm start` command
+1. Run `npm run i` and `npm run audit fix` command to install all dependencies
+2. Ensure that environment and app configuration are available (env.(dev|test|prod) and config.ts) using provided templates
+3. Run `npm run start:(dev|test|prod)` command to test if server is working
+4. We recommend using pm2 to run Node.JS servers in production settings
+   1. Run `npm run build`
+   2. Load the available configuration (output-server-test.config.js) into pm2 and save 
 
-{
-   "type": "postgres",
-   "host": "localhost",
-   "port": 5432,
-   "username": "user",
-   "password": "password",
-   "database": "db",
-   "synchronize": true,
-   "logging": false,
-   "entities": [
-      "src/entity/**/*.ts"
-   ],
-   "migrations": [
-      "src/migration/**/*.ts"
-   ],
-   "subscribers": [
-      "src/subscriber/**/*.ts"
-   ],
-   "cli": {
-      "entitiesDir": "src/entity",
-      "migrationsDir": "src/migration",
-      "subscribersDir": "src/subscriber"
-   }
-}
