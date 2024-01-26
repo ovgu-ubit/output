@@ -12,7 +12,7 @@ export class AliasFunder implements IAliasFunder {
         name: 'elementId',
         referencedColumnName: 'id'
     })
-    element: Institute
+    element?: Institute
 
     @PrimaryColumn()
     elementId:number;

@@ -78,6 +78,7 @@ import { LogDialogComponent } from './tools/log-dialog/log-dialog.component';
 import { SelectInstituteDialogComponent } from './tools/select-institute-dialog/select-institute-dialog.component';
 import { TableComponent } from './tools/table/table.component';
 import { DeletePublicationDialogComponent } from './tools/delete-publication-dialog/delete-publication-dialog.component';
+import { AliasFormComponent } from './tools/alias-form/alias-form.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -125,7 +126,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
     CostTypesComponent,
     CostCenterFormComponent,
     CostTypeFormComponent,
-    DeletePublicationDialogComponent
+    DeletePublicationDialogComponent,
+    AliasFormComponent
   ],
   imports: [
     BrowserModule,
