@@ -97,6 +97,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       funder: ['']
     });
     this.form.controls.id.disable();
+    this.form.controls.is_oa.disable();
+    this.form.controls.oa_status.disable();
+    this.form.controls.is_journal_oa.disable();
+    this.form.controls.best_oa_host.disable();
+    this.form.controls.best_oa_license.disable();
     this.loading = true;
   }
 
