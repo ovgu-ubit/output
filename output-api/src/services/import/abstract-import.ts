@@ -520,7 +520,9 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        orig = this.finalize(orig, element);
+        let res = this.finalize(orig, element);
+        orig = res.pub;
+        fields.push(...res.fields)
 
         let pub_ent: Publication;
         if (fields.length>0) pub_ent = (await this.publicationService.save([orig]))[0];
@@ -532,8 +534,8 @@ export abstract class AbstractImportService {
      * @param orig 
      * @param element 
      */
-    protected finalize(orig: Publication, element: any): Publication {
-        return orig;
+    protected finalize(orig: Publication, element: any): {fields:string[], pub: Publication} {
+        return {fields:[],pub:orig};
     }
 
     public status() {

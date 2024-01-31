@@ -122,12 +122,12 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         return 1;
     }
 
-    protected finalize(orig: Publication, element: any): Publication {
+    protected finalize(orig: Publication, element: any): {fields:string[], pub: Publication} {
         orig.is_oa = element['is_oa'];
         orig.oa_status = element['oa_status'];
         orig.is_journal_oa = element['journal_is_oa'];
         orig.best_oa_host = element['best_oa_location']? element['best_oa_location']['host_type'] : null;
         orig.best_oa_license = element['best_oa_location']? element['best_oa_location']['license'] : null;
-        return orig;
+        return {fields: ['is_oa','oa_status','journal_is_oa','best_oa_location','best_oa_license'], pub: orig};
     }
 }
