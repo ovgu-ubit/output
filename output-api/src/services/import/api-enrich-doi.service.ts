@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { catchError, EMPTY, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { catchError, EMPTY, mergeAll, Observable, of, queueScheduler, scheduled } from 'rxjs';
 import { FindManyOptions } from 'typeorm';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
@@ -82,7 +82,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
             }
             else this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${error}` })
             this.errors++;
-            return EMPTY;
+            return of(null);
         }));
     }
 
@@ -128,7 +128,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                         }
                         this.processedPublications++;
                     } else this.errors++;
-                } else this.errors++;
+                } //else this.errors++;
 
                 // Update Progress Value
                 if (this.progress !== 0) this.progress = (this.processedPublications + this.errors) / publications.length;
