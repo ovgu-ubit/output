@@ -32,7 +32,7 @@ export class PublisherService {
   public delete(insts:Publisher[]) {
     return this.http.delete<Publisher[]>(environment.api + 'publisher', { withCredentials: true, body: insts });
   }
-  public combine(id1:number, ids:number[]) {
-    return this.http.post(environment.api + 'publisher/combine', {id1,ids}, { withCredentials: true });
+  public combine(id1:number, ids:number[], aliases?:string[]) {
+    return this.http.post(environment.api + 'publisher/combine', {id1,ids,aliases}, { withCredentials: true });
   }
 }

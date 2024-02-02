@@ -70,8 +70,8 @@ export class PublisherService {
         return query.getRawMany() as Promise<PublisherIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({where:{id:id1}});
+    public async combine(id1: number, ids: number[], alias_strings?:string[]) {
+        let aut1 = await this.repository.findOne({where:{id:id1},relations: {aliases:true}});
         let authors = []
         for (let id of ids) {
             authors.push( await this.repository.findOne({ where: { id }, relations: { publications: true, aliases: true } }))
@@ -90,7 +90,14 @@ export class PublisherService {
             if (!res.label && aut.label) res.label = aut.label;
             if (!res.location && aut.location) res.location = aut.location;
             if (!res.aliases) res.aliases = [];
-            res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasPublisher }))
+            res.aliases = res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } }))
+        }
+        //update aliases
+        if (alias_strings) {
+            for (let alias of alias_strings) {
+                //await this.aliasRepository.save({elementId: res.id, alias})
+                res.aliases.push({elementId: res.id, alias});
+            }
         }
         
         //update publication 1

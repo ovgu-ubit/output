@@ -134,13 +134,14 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
         width: '800px',
         maxHeight: '800px',
         data: {
-          ents: this.selection.selected
+          ents: this.selection.selected,
+          aliases: true
         },
         disableClose: true
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.pubTypeService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
+          this.pubTypeService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id),result.aliases).subscribe({
             next: data => {
               this._snackBar.open(`Publikationsarten wurden zusammengeführt`, 'Super!', {
                 duration: 5000,
