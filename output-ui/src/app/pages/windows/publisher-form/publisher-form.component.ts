@@ -38,7 +38,8 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
       })
     }
     else this.publisher = {
-      label: this.data.publisher.label
+      label: this.data.publisher.label,
+      aliases: []
     }
     this.form.patchValue(this.publisher)
   }
@@ -77,7 +78,7 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
       elementId: this.publisher.id
     })
     this.aliasForm.reset();
-    this.table.dataSource = new MatTableDataSource<AliasPublisher>(this.publisher.aliases);
+    if (this.table) this.table.dataSource = new MatTableDataSource<AliasPublisher>(this.publisher.aliases);
   }
 }
 

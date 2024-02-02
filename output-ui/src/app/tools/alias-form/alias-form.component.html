@@ -1,0 +1,16 @@
+<div class="container-fluid" style="padding: 5px;" [formGroup]="form">
+    <ng-container formArrayName="array">
+        <ng-container *ngFor="let form1 of this.getControls(); let idx = index">
+            <div [formGroup]="form1">
+            <mat-form-field>
+                <mat-label>Zu speichernder Alias</mat-label>
+                <input matInput formControlName="alias" />
+            </mat-form-field>
+            </div>
+        </ng-container>
+    </ng-container>
+<br/>
+<button mat-raised-button color="primary" class="btn-primary" (click)="action()">Fortfahren</button>
+<button mat-raised-button color="primary" class="btn-primary" (click)="abort()">Abbrechen</button>
+
+</div>

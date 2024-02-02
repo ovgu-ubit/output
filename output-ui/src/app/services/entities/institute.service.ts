@@ -35,8 +35,8 @@ export class InstituteService {
     return this.http.delete<Institute[]>(environment.api + 'institute', { withCredentials: true, body: insts });
   }
 
-  public combine(id1:number, ids:number[]) {
-    return this.http.post(environment.api + 'institute/combine', {id1,ids}, { withCredentials: true });
+  public combine(id1:number, ids:number[], aliases?:string[]) {
+    return this.http.post(environment.api + 'institute/combine', {id1,ids,aliases}, { withCredentials: true });
   }
 
   public getSubInstitutes(id:number) {

@@ -34,7 +34,7 @@ export class FunderService {
   public delete(insts:Funder[]) {
     return this.http.delete<Funder[]>(environment.api + 'funder', { withCredentials: true, body: insts });
   }
-  public combine(id1:number, ids:number[]) {
-    return this.http.post(environment.api + 'funder/combine', {id1,ids}, { withCredentials: true });
+  public combine(id1:number, ids:number[], aliases?:string[]) {
+    return this.http.post(environment.api + 'funder/combine', {id1,ids, aliases}, { withCredentials: true });
   }
 }

@@ -11,7 +11,7 @@ export class AliasInstitute implements IAliasInstitute {
         name: 'elementId',
         referencedColumnName: 'id'
     })
-    element: Institute
+    element?: Institute
 
     @PrimaryColumn()
     elementId:number;

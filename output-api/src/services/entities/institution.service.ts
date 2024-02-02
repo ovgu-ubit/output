@@ -178,8 +178,8 @@ export class InstitutionService {
         }
     }
 
-    public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true } });
+    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
+        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } });
         let authors = []
         for (let id of ids) {
             authors.push( await this.repository.findOne({ where: { id}, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } }))
@@ -199,12 +199,23 @@ export class InstitutionService {
                 await this.autRepository.save({ id: auth.id, institutes: newInst })
             }
 
+            for (let alias of aut.aliases) {
+                res.aliases.push({elementId: res.id, alias: alias.alias})
+            }
+
             if (!res.label && aut.label) res.label = aut.label;
             if (!res.short_label && aut.short_label) res.short_label = aut.short_label;
             if (!res.aliases) res.aliases = [];
             res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
             if (!res.authors) res.authors = [];
             res.authors.concat(aut.authors.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
+        }
+        //update aliases
+        if (alias_strings) {
+            for (let alias of alias_strings) {
+                //await this.aliasRepository.save({elementId: res.id, alias})
+                res.aliases.push({elementId: res.id, alias});
+            }
         }
         
         //update publication 1

@@ -13,7 +13,7 @@ export class AliasPubType implements IAliasPubType {
         name: 'elementId',
         referencedColumnName: 'id'
     })
-    element: PublicationType
+    element?: PublicationType
 
     @PrimaryColumn()
     elementId:number;

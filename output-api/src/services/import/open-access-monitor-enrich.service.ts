@@ -137,8 +137,4 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
     protected getStatus(element: any): number {
         return 1;
     }
-
-    protected finalize(orig: Publication, element: any): Publication {
-        return orig;
-    }
 }

@@ -68,32 +68,43 @@ export class FunderService {
         return query.getRawMany() as Promise<FunderIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({where:{id:id1}});
-        let authors = []
+    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
+        let funder1 = await this.repository.findOne({where:{id:id1}, relations: {aliases: true}});
+        let funders:Funder[] = []
         for (let id of ids) {
-            authors.push( await this.repository.findOne({where:{id},relations:{publications:{funders:true}}}))
+            funders.push( await this.repository.findOne({where:{id},relations:{aliases: true, publications:{funders:true}}}))
         }
         
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
+        if (!funder1 || funders.find(e => e === null || e === undefined)) return {error:'find'};
         
-        let res = {...aut1};
+        let res = {...funder1};
 
-        for (let aut of authors) {
+        for (let fund of funders) {
             let pubs = [];
-            for (let pub of aut.publications) {
-                let newF = pub.funders? pub.funders.filter(e => e.id !==aut.id) : [];
-                if (!newF.find(e => e.id === aut1.id)) newF.push(aut1);
+            for (let pub of fund.publications) {
+                let newF = pub.funders? pub.funders.filter(e => e.id !==fund.id) : [];
+                if (!newF.find(e => e.id === funder1.id)) newF.push(funder1);
                 pubs.push({id:pub.id, funders: newF});
             }
+            for (let alias of fund.aliases) {
+                //this.aliasRepository.save({elementId: res.id, alias})
+                res.aliases.push({elementId: res.id, alias: alias.alias})
+            }
             await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.doi && aut.doi) res.doi = aut.doi;
+            if (!res.label && fund.label) res.label = fund.label;
+            if (!res.doi && fund.doi) res.doi = fund.doi;
+        }
+        //update aliases
+        if (alias_strings) {
+            for (let alias of alias_strings) {
+                //await this.aliasRepository.save({elementId: res.id, alias})
+                res.aliases.push({elementId: res.id, alias});
+            }
         }
         
         //update publication 1
         if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({elementId: In(authors.map(e => e.id))}) && await this.repository.delete({id: In(authors.map(e => e.id))})) return res;
+            if (await this.aliasRepository.delete({elementId: In(funders.map(e => e.id))}) && await this.repository.delete({id: In(funders.map(e => e.id))})) return res;
             else return {error:'delete'};
         } else return {error:'update'};
     }

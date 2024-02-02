@@ -82,8 +82,8 @@ export class InstituteController {
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        let res = await this.instService.combine(id1, ids);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
+        let res = await this.instService.combine(id1, ids, aliases);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author')
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second author')
         else return res;
