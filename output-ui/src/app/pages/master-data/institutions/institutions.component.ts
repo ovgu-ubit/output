@@ -140,13 +140,14 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
         width: '800px',
         maxHeight: '800px',
         data: {
-          ents: this.selection.selected
+          ents: this.selection.selected,
+          aliases: true
         },
         disableClose: true
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.instService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
+          this.instService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), result.aliases).subscribe({
             next: data => {
               this._snackBar.open(`Institute wurden zusammengeführt`, 'Super!', {
                 duration: 5000,

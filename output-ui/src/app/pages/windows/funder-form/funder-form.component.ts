@@ -59,6 +59,7 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
     this.funder = {...this.funder, ...this.form.getRawValue()}
     if (!this.funder.id) this.funder.id = undefined;
+    if (!this.funder.doi) this.funder.doi = undefined;
     this.dialogRef.close(this.funder)
   }
 

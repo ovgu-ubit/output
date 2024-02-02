@@ -65,11 +65,11 @@ export class PublicationTypeService {
         return query.getRawMany() as Promise<PublicationTypeIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({where:{id:id1}});
+    public async combine(id1: number, ids: number[], alias_strings?:string[]) {
+        let aut1 = await this.repository.findOne({where:{id:id1}, relations: {aliases:true}});
         let authors = []
         for (let id of ids) {
-            authors.push( await this.repository.findOne({where:{id},relations:{publications:{pub_type:true}}}))
+            authors.push( await this.repository.findOne({where:{id},relations:{publications:{pub_type:true}, aliases: true}}))
         }
         
         if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
@@ -84,6 +84,16 @@ export class PublicationTypeService {
             await this.publicationService.save(pubs)
             if (!res.label && aut.label) res.label = aut.label;
             if (res.review === null && aut.review !== null) res.review = aut.review;
+            for (let alias of aut.aliases) {
+                res.aliases.push({elementId: res.id, alias: alias.alias})
+            }
+        }
+        //update aliases
+        if (alias_strings) {
+            for (let alias of alias_strings) {
+                //await this.aliasRepository.save({elementId: res.id, alias})
+                res.aliases.push({elementId: res.id, alias});
+            }
         }
         
         //update publication 1

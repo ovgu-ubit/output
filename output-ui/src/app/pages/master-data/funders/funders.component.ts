@@ -134,13 +134,14 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
         width: '800px',
         maxHeight: '800px',
         data: {
-          ents: this.selection.selected
+          ents: this.selection.selected,
+          aliases: true
         },
         disableClose: true
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.funderService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
+          this.funderService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), result.aliases).subscribe({
             next: data => {
               this._snackBar.open(`Förderer wurden zusammengeführt`, 'Super!', {
                 duration: 5000,

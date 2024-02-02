@@ -29,7 +29,7 @@ export class PublicationTypeService {
   public delete(insts:PublicationType[]) {
     return this.http.delete<PublicationType[]>(environment.api + 'pub_type', { withCredentials: true, body: insts });
   }
-  public combine(id1:number, ids:number[]) {
-    return this.http.post(environment.api + 'pub_type/combine', {id1,ids}, { withCredentials: true });
+  public combine(id1:number, ids:number[], aliases?:string[]) {
+    return this.http.post(environment.api + 'pub_type/combine', {id1,ids, aliases}, { withCredentials: true });
   }
 }

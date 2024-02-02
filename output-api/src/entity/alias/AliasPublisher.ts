@@ -11,7 +11,7 @@ export class AliasPublisher implements IAliasPublisher {
         name: 'elementId',
         referencedColumnName: 'id'
     })
-    element: Publisher
+    element?: Publisher
 
     @PrimaryColumn()
     elementId:number;

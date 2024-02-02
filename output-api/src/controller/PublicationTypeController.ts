@@ -86,8 +86,8 @@ export class PublicationTypeController {
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        let res = await this.pubTypeService.combine(id1,ids);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
+        let res = await this.pubTypeService.combine(id1,ids, aliases);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publisher') 
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publisher') 
         else return res;
