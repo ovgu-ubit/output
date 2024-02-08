@@ -239,7 +239,12 @@ export class PublicationService {
                 publisher: true,
                 oa_category: true,
                 contract: true,
-                funders: true
+                funders: true,
+                invoices: {
+                    cost_items: {
+                        cost_type: true
+                    }
+                }
             },
             withDeleted: true
 

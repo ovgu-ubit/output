@@ -87,7 +87,11 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
 
     protected getDOI(element: any): string {
-        return element['doi'];
+        let res = element['doi']
+        if (res.includes('doi.org/')) {
+            res = res.slice(res.indexOf('doi.org/')+8)
+        }
+        return res;
     }
     protected getTitle(element: any): string {
         return element['title'];
@@ -166,7 +170,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getOACategory(element: any): string {
         let status = element['open_access']['oa_status']
-        if (status === 'gold' && element['apc_list']['value'] === 0) return 'diamond';
+        if (status === 'gold' && element['apc_list'] && element['apc_list']['value'] === 0) return 'diamond';
         return status;
     }
     protected getContract(element: any): string {
