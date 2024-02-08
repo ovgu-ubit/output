@@ -153,7 +153,7 @@ export class PublicationService {
 
     public getPublication(id: number, reader:boolean) {
         let invoice:any = false;
-        if (reader) invoice = {cost_items: true};
+        if (reader) invoice = {cost_items: {cost_type: true}};
         return this.pubRepository.findOne({
             where: { id }, relations: {
                 oa_category: true,
