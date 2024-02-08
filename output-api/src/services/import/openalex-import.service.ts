@@ -20,19 +20,27 @@ import { CostTypeService } from '../entities/cost-type.service';
 import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
+import { Invoice } from '../../entity/Invoice';
+import { CostType } from '../../entity/CostType';
 
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
 
-    id:string;
+    id: string;
+    costTypeAPC: CostType;
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,
         protected http: HttpService, private configService: ConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, http);
         this.id = this.configService.get('openalex_id')
+        this.costTypeService.findOrSave('Article processing charges').subscribe({
+            next: data => {
+                this.costTypeAPC = data;
+            }
+        })
     }
 
     protected updateMapping: UpdateMapping = {
@@ -72,7 +80,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return response.data.meta['count'];
     }
     protected importTest(element: any): boolean {
-        return element;
+        return element['primary_location']['is_published'];
     }
     protected getData(response: any): any[] {
         return response.data.results;
@@ -92,9 +100,9 @@ export class OpenAlexImportService extends ApiImportOffsetService {
                 let name = aut['author']['display_name']
                 res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
-                    last_name: name.slice(name.lastIndexOf(' ')+1),
-                    orcid: aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/')+1),
-                    affiliation: aut['raw_affiliation_string'],
+                    last_name: name.slice(name.lastIndexOf(' ') + 1),
+                    orcid: aut['author']['orcid']? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1): undefined,
+                    affiliation: aut['raw_affiliation_strings'].reduce((a,v,i) => a+'; '+v),
                     corresponding: aut['is_corresponding']
                 })
             }
@@ -107,34 +115,34 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         for (let aut of authors) {
             res += aut['author']['display_name'] + '; '
         }
-        return res.slice(0,res.length-2);
+        return res.slice(0, res.length - 2);
     }
     protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        if (element['primary_location']['source']['type'].includes('journal')) {
-            return element['primary_location']['source']['issn'].map(e => {return {
-                type: 'issn',
-                value: e
-            }})
-        } 
+        if (element['primary_location']['source'] && element['primary_location']['source']['type'].includes('journal')) {
+            return element['primary_location']['source']['issn']?.map(e => {
+                return {
+                    type: 'issn',
+                    value: e
+                }
+            })
+        }
     }
     protected getGreaterEntityName(element: any): string {
-        return element['primary_location']['source']['display_name'];
+        return element['primary_location']['source']? element['primary_location']['source']['display_name']: undefined;
     }
     protected getPublisher(element: any): string {
-        return element['primary_location']['source']['host_organization_name'];
+        return element['primary_location']['source']? element['primary_location']['source']['host_organization_name'] : undefined;
     }
     protected getPubDate(element: any): Date {
         let data = null;
         if (element['publication_date']) {
             data = element['publication_date'];
         } else if (element['publication_year']) {
-            data = element['publication_year']+'-01-01';
-        } 
+            data = element['publication_year'] + '-01-01';
+        }
         let pubdate = data.split('-');
-        if (data.length === 3) pubdate = new Date(Date.UTC(data[0], data[1]-1, data[2]));
-        else pubdate = new Date(Date.UTC(data[0], 0));
-
-        return pubdate;
+        if (pubdate.length === 3) return new Date(Date.UTC(pubdate[0], pubdate[1] - 1, pubdate[2]));
+        else return new Date(Date.UTC(pubdate[0], 0));
     }
     protected getLanguage(element: any): string {
         return element['language'];
@@ -143,59 +151,51 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return element['primary_location']['landing_page_url'];
     }
     protected getFunder(element: any): Funder[] {
-        return [];
+        if (element['grants']) {
+            return element['grants'].map(e => {return {
+                label: e['funder_display_name']
+            }})
+        }
     }
     protected getPubType(element: any): string {
-        return element['type'];
+        let type = element['type'];
+        if (type === 'article') {
+            if (element['primary_location']['source'] && element['primary_location']['source']['type'] === 'conference') return 'conference proceedings'
+        }
+        return type;
     }
     protected getOACategory(element: any): string {
-        return element['open_access']['oa_status'];
+        let status = element['open_access']['oa_status']
+        if (status === 'gold' && element['apc_list']['value'] === 0) return 'diamond';
+        return status;
     }
     protected getContract(element: any): string {
         return null;
     }
     protected getLicense(element: any): string {
-        if (!element['license']) return null;
-        for (let item of element['license']) {
-            if (item['content-version'] === 'vor') { //version of record
-                if (item['URL'].includes('creativecommons.org/licenses/by/')) return 'cc-by'
-                else if (item['URL'].includes('creativecommons.org/licenses/by-nc/')) return 'cc-by-nc'
-                else if (item['URL'].includes('creativecommons.org/licenses/by-nc-nd/')) return 'cc-by-nc-nd'
-                //else console.log(item['URL']);
-            }
-        }
-        return null;
+        return element['license'];
     }
-    protected getInvoiceInformation(element: any) {
+    protected getInvoiceInformation(element: any): Invoice[] {
+        let elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
+        if (elem) {
+            if (elem['currency'] != 'EUR') {
+                return [{
+                    cost_items: [{
+                        orig_value: element['apc_paid']['value'],
+                        orig_currency: element['apc_paid']['currency'],
+                        cost_type: this.costTypeAPC
+                    }]
+                }]
+            } else return [{
+                cost_items: [{
+                    euro_value: element['apc_paid']['value'],
+                    cost_type: this.costTypeAPC
+                }]
+            }]
+        }
         return [];
     }
     protected getStatus(element: any): number {
         return 1;
     }
-
-    public authorsInstitution(authors) {
-        if (authors) {
-            let aut = authors.filter(author => {
-                author.affiliation = author.affiliation.filter(affiliation => this.affiliationIncludesTags(affiliation));
-                return author.affiliation.length !== 0;
-            });
-            return aut;
-        } else return [];
-    }
-
-    private affiliationIncludesTags(affiliation): boolean {
-        for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
-        }
-        return false;
-    }
-
-    public publicationContainsInstitutionAuthor(publication): boolean {
-        let authors = publication.author;
-        if (!authors || authors.length === 0) authors = publication.editor;
-        let res = this.authorsInstitution(authors).length !== 0;
-        return res;
-    }
-
-
 }

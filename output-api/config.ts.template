@@ -42,6 +42,7 @@ export default() : AppConfig => ({
         {path: 'oam', class: OpenAccessMonitorImportService},
         {path: 'base', class: BASEImportService},
         {path: 'pubmed', class: PubMedImportService},
+        {path: 'openalex', class: OpenAlexImportService},
     ],
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},
