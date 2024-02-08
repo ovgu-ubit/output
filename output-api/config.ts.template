@@ -31,6 +31,7 @@ export default() : AppConfig => ({
         "universitätsmedizin magdeburg"
     ],
     ror_id: 'https://ror.org/xxxxx',
+    openalex_id: 'xxxxx',
     api_key_unpaywall: 'xxx@xxx.de',
     api_key_oam: 'xxxx',
     init_service: InitService,

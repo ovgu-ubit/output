@@ -11,6 +11,7 @@ export interface AppConfig {
     searchTags: string[];
     affiliationTags: string[];
     ror_id? : string;
+    openalex_id? : string;
     api_key_unpaywall? : string;
     api_key_oam? : string;
     init_service: Type<InitService>;
