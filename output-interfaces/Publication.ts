@@ -30,6 +30,7 @@ export interface Publication {
     best_oa_host?: string;
     best_oa_license?: string;
     opus_share_it?: string;
+    locked_at?: Date;
 }
 
 export interface Author {

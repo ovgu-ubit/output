@@ -149,7 +149,7 @@
                     <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Publikationstyp</mat-label>
-                            <mat-select [(value)]="this.pub_type" [disabled]="!this.tokenService.hasRole('writer')">
+                            <mat-select [(value)]="this.pub_type" [disabled]="this.disabled">
                                 <mat-option *ngFor="let pub_type of this.pub_types"
                                     [value]="pub_type.id">{{pub_type.label}}</mat-option>
                             </mat-select>
@@ -165,7 +165,7 @@
                                 formControlName="ge" (keydown.enter)="addGreaterEntity($event.target)" #input_ge>
                             <button type="button" matSuffix mat-icon-button (click)="addGreaterEntity(input_ge)"
                                 matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                                <mat-icon *ngIf="this.tokenService.hasRole('writer'); else else2">edit</mat-icon>
+                                <mat-icon *ngIf="!this.disabled; else else2">edit</mat-icon>
                                 <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
                             </button>
                             <mat-autocomplete #autoGe="matAutocomplete" (optionSelected)="selectedGE($event)">
@@ -193,7 +193,7 @@
                                 (keydown.enter)="addPublisher($event.target)" #input_publ>
                             <button type="button" matSuffix mat-icon-button (click)="addPublisher(input_publ)"
                                 matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                                <mat-icon *ngIf="this.tokenService.hasRole('writer'); else else3">edit</mat-icon>
+                                <mat-icon *ngIf="!this.disabled; else else3">edit</mat-icon>
                                 <ng-template #else3><mat-icon>remove_red_eye</mat-icon></ng-template>
                             </button>
                             <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPubl($event)">
@@ -223,7 +223,7 @@
                     <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Sprache</mat-label>
-                            <mat-select [(value)]="this.language" [disabled]="!this.tokenService.hasRole('writer')">
+                            <mat-select [(value)]="this.language" [disabled]="this.disabled">
                                 <mat-option *ngFor="let lang of this.langs"
                                     [value]="lang.id">{{lang.label}}</mat-option>
                             </mat-select>
@@ -247,7 +247,7 @@
                     <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>OA-Kategorie</mat-label>
-                            <mat-select [(value)]="this.oa_cat" [disabled]="!this.tokenService.hasRole('writer')">
+                            <mat-select [(value)]="this.oa_cat" [disabled]="this.disabled">
                                 <mat-option *ngFor="let oa_cat of this.oa_categories"
                                     [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
                             </mat-select>
@@ -327,7 +327,7 @@
                                 (keydown.enter)="addContract($event.target)" #input_contr>
                             <button type="button" matSuffix mat-icon-button (click)="addContract(input_contr)"
                                 matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                                <mat-icon *ngIf="this.tokenService.hasRole('writer'); else else4">edit</mat-icon>
+                                <mat-icon *ngIf="!this.disabled; else else4">edit</mat-icon>
                                 <ng-template #else4><mat-icon>remove_red_eye</mat-icon></ng-template>
                             </button>
                             <mat-autocomplete #autoContract="matAutocomplete" (optionSelected)="selectedContr($event)">
@@ -341,7 +341,7 @@
                 </div>
 
                 Rechnungen
-                <table *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && this.tokenService.hasRole('writer')"
+                <table *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && !this.disabled"
                     mat-table [dataSource]="this.pub.invoices">
                     <ng-container matColumnDef="date">
                         <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
@@ -372,7 +372,7 @@
                 </table>
                 <button matSuffix mat-icon-button type="button" (click)="this.addInvoice()"
                     matTooltip="Rechnung hinzufügen"
-                    [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>add</mat-icon></button>
+                    [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
 
                 <div class="row justify-content-md-center">
                     <div class="form-group col-md-12">
@@ -471,7 +471,7 @@
         <div *ngIf="this.form.invalid">
             Es müssen noch weitere Pflichtfelder ausgefüllt werden
         </div>
-        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
+        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button *ngIf="!this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
                 anlegen</button>
             <button *ngIf="this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
@@ -482,7 +482,7 @@
         <ng-template #else1>
             <div class="form-group" align="center">
                 <button mat-raised-button type="reset" color="primary" class="btn-primary"
-                    (click)="this.abort()">Schließen</button>
+                    (click)="this.close()">Schließen</button>
             </div>
         </ng-template>
 

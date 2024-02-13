@@ -166,7 +166,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     dialogRef.afterClosed().subscribe(result => {
       this.location.replaceState(this.router.url.split('?')[0])
-      if (result) {
+      if (result && result.title) {
         this.publicationService.save([result]).subscribe({
           next: data => {
             this._snackBar.open(`Publikation geändert`, 'Super!', {
@@ -184,8 +184,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.publicationService.save([result]).subscribe();
       }
-
     });
 
   }

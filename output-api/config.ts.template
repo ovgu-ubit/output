@@ -13,6 +13,7 @@ import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.s
 import { InitService } from "./src/services/init.service";
 
 export default() : AppConfig => ({
+    lock_timeout: 10, //in minutes
     searchTags: [
         "magdeburg",
         "ovgu",

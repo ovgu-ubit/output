@@ -8,6 +8,7 @@ import { InitService } from "./services/init.service";
 import { AuthorizationService } from './guards/authorization.service';
 
 export interface AppConfig {
+    lock_timeout: number; 
     searchTags: string[];
     affiliationTags: string[];
     ror_id? : string;
