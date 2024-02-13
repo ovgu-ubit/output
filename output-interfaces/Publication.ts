@@ -42,6 +42,7 @@ export interface Author {
     orcid?: string;
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
+    locked_at?: Date;
 }
 
 export interface AuthorPublication {
@@ -67,6 +68,7 @@ export interface Contract {
     verification_method?: string;
 	publications?: Publication[];
     identifiers?:ContractIdentifier[];
+    locked_at?: Date;
 }
 
 export interface CostCenter {
@@ -107,6 +109,7 @@ export interface GreaterEntity {
     is_doaj?: boolean;
     identifiers?: Identifier[];
     publications?: Publication[]
+    locked_at?: Date;
 }
 
 export interface Identifier {
@@ -132,6 +135,7 @@ export interface Institute {
 	authors?: Author[];
 	authorPublications?: AuthorPublication[];
     aliases?: AliasInstitute[];
+    locked_at?: Date;
 }
 
 export interface Invoice {
@@ -163,6 +167,7 @@ export interface Publisher {
     label: string;
     location?: string;
     aliases?: AliasPublisher[];
+    locked_at?: Date;
 }
 
 export interface Language {

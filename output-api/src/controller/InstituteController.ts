@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Param, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InstitutionService } from "../services/entities/institution.service";
 import { Institute } from "../entity/Institute";
@@ -27,11 +27,12 @@ export class InstituteController {
     }
 
     @Get('/:id')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Institute
     })
-    async one(@Param('id') id: number): Promise<Institute> {
-        return await this.instService.one(id);
+    async one(@Param('id') id: number, @Req() request: Request): Promise<Institute> {
+        return await this.instService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Post()

@@ -32,4 +32,6 @@ export class Institute implements IInstitute {
     @OneToMany(() => AliasInstitute, ai => ai.element, { cascade : true })
     aliases?: AliasInstitute[];
 
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

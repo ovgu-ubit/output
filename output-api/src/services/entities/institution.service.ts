@@ -21,15 +21,29 @@ export class InstitutionService {
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) { }
 
-    public save(inst: Institute[]) {
+    public save(inst: any[]) {
         return this.repository.save(inst);
     }
 
     public get() {
         return this.repository.find();
     }
-    public one(id: number) {
-        let inst = this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
+    public async one(id: number, writer: boolean) {
+        let inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
+        
+        if (writer && !inst.locked_at) {
+            await this.save([{
+                id: inst.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - inst.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: inst.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }
+        
         return inst;
     }
 

@@ -64,7 +64,7 @@
                 </ng-container>
                 <ng-container matColumnDef="delete">
                     <th mat-header-cell *matHeaderCellDef> </th>
-                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button" [hidden]="this.disabled"
                             (click)="this.deleteAlias(element)"
                             matTooltip="Alias löschen"><mat-icon>delete</mat-icon></button> </td>
                 </ng-container>
@@ -78,11 +78,11 @@
                     <input matInput placeholder="Alias" formControlName="alias" />
                 </mat-form-field>
                 <button matSuffix mat-icon-button type="button" (click)="this.addAlias()" matTooltip="Alias hinzufügen"
-                    [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>add</mat-icon></button>
+                    [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
             </form>
         </mat-expansion-panel>
 
-        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
+        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
                 speichern</button>&nbsp;
             <button mat-raised-button type="reset" color="primary" class="btn-primary"
@@ -91,7 +91,7 @@
         <ng-template #else1>
             <div class="form-group" align="center">
                 <button mat-raised-button type="reset" color="primary" class="btn-primary"
-                    (click)="this.abort()">Schließen</button>
+                    (click)="this.close()">Schließen</button>
             </div>
         </ng-template>
     </form>

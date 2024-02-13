@@ -1,5 +1,5 @@
-import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards } from "@nestjs/common";
-import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards, Req } from "@nestjs/common";
+import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ContractService } from "../services/entities/contract.service";
 import { Contract } from "../entity/Contract";
 import { ContractIndex } from "../../../output-interfaces/PublicationIndex";
@@ -27,11 +27,12 @@ export class ContractController {
     }
 
     @Get('one')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Contract
     })
-    async one(@Query('id') id:number) : Promise<Contract> {
-        return await this.contractService.one(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<Contract> {
+        return await this.contractService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Post()
