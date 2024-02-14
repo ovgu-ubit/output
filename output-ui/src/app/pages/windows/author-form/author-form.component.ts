@@ -111,9 +111,11 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else this.dialogRef.close({ id: this.author.id, locked_at: null })
+        } else if (this.author.id) this.dialogRef.close({ id: this.author.id, locked_at: null })
+        else this.close()
       });
-    } else this.dialogRef.close({ id: this.author.id, locked_at: null })
+    } else if (this.author.id) this.dialogRef.close({ id: this.author.id, locked_at: null })
+    else this.close()
   }
 
   deleteInst(row) {

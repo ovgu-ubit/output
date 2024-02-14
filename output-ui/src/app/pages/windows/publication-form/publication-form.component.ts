@@ -615,9 +615,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else this.dialogRef.close({id: this.pub.id, locked_at: null})
+        } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
+        else this.close()
       });
-    } else this.dialogRef.close({id: this.pub.id, locked_at: null})
+    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
+    else this.close()
   }
 
   action(): void {

@@ -75,6 +75,7 @@ export interface CostCenter {
     id?: number;
     number: string;
     label: string;
+    locked_at?: Date;
 }
 
 export interface CostItem {
@@ -92,6 +93,7 @@ export interface CostItem {
 export interface CostType{
     id?: number;
     label: string;
+    locked_at?: Date;
 }
 
 export interface Funder {
@@ -100,6 +102,7 @@ export interface Funder {
     doi?: string;
     publications?: Publication[];
     aliases?: AliasFunder[];
+    locked_at?: Date;
 }
 
 export interface GreaterEntity {
@@ -153,6 +156,7 @@ export interface OA_Category {
     id?: number;
     label: string;
     is_oa: boolean;
+    locked_at?: Date;
 }
 
 export interface PublicationType {
@@ -160,6 +164,7 @@ export interface PublicationType {
     label: string;
     review: boolean;
     aliases?: AliasPubType[];
+    locked_at?: Date;
 }
 
 export interface Publisher {

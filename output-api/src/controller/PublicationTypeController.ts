@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PublicationTypeService } from "../services/entities/publication-type.service";
 import { AppConfigService } from "../services/app-config.service";
@@ -24,11 +24,12 @@ export class PublicationTypeController {
     }
 
     @Get('one')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: PublicationType
     })
-    async one(@Query('id') id:number) : Promise<PublicationType> {
-        return await this.pubTypeService.one(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<PublicationType> {
+        return await this.pubTypeService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Get("index")

@@ -23,4 +23,7 @@ export class GreaterEntity implements IGreaterEntity {
 
     @OneToMany(() => Publication, (p) => p.greater_entity)
     publications?: Publication[]
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

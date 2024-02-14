@@ -36,11 +36,25 @@ export class InvoiceService {
         return this.ctRepository.find();
     }
     
-    public getCostType(id:number) {
-        return this.ctRepository.findOneBy({id});
+    public async getCostType(id:number, writer:boolean) {
+        let ct = await this.ctRepository.findOneBy({id});
+        
+        if (writer && !ct.locked_at) {
+            await this.saveCT([{
+                id: ct.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.saveCT([{
+                id: ct.id,
+                locked_at: null
+            }]);
+            return this.getCostType(id, writer);
+        }        
+        return ct;
     }
 
-    public saveCT(ct:CostType[]) {
+    public saveCT(ct:any[]) {
         return this.ctRepository.save(ct);
     }
 
@@ -52,11 +66,25 @@ export class InvoiceService {
         return this.ccRepository.find();
     }
     
-    public getCostCenter(id:number) {
-        return this.ccRepository.findOneBy({id});
+    public async getCostCenter(id:number, writer: boolean) {
+        let cc = await this.ccRepository.findOne({where:{id}});
+        
+        if (writer && !cc.locked_at) {
+            await this.saveCC([{
+                id: cc.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - cc.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.saveCC([{
+                id: cc.id,
+                locked_at: null
+            }]);
+            return this.getCostCenter(id, writer);
+        }        
+        return cc;
     }
 
-    public saveCC(cc:CostCenter[]) {
+    public saveCC(cc:any[]) {
         return this.ccRepository.save(cc);
     }
 

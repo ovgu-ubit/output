@@ -75,6 +75,7 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
   }
 
   action() {
+    if (this.form.invalid) return;
     this.publisher = {...this.publisher, ...this.form.getRawValue()}
     this.dialogRef.close(this.publisher)
   }
@@ -95,9 +96,11 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else this.dialogRef.close({ id: this.publisher.id, locked_at: null })
+        } else if (this.publisher.id) this.dialogRef.close({ id: this.publisher.id, locked_at: null })
+        else this.close()
       });
-    } else this.dialogRef.close({ id: this.publisher.id, locked_at: null })
+    } else if (this.publisher.id) this.dialogRef.close({ id: this.publisher.id, locked_at: null })
+    else this.close()
   }
 
   deleteAlias(elem:AliasPublisher) {

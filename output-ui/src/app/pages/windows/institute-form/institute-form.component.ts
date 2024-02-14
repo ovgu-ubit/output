@@ -115,9 +115,11 @@ export class InstituteFormComponent implements OnInit, AfterViewInit {
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else this.dialogRef.close({ id: this.institute.id, locked_at: null })
+        } else if (this.institute.id) this.dialogRef.close({ id: this.institute.id, locked_at: null })
+        else this.close()
       });
-    } else this.dialogRef.close({ id: this.institute.id, locked_at: null })
+    } else if (this.institute.id) this.dialogRef.close({ id: this.institute.id, locked_at: null })
+    else this.close()
   }
 
   selectedSuperInst(event: MatAutocompleteSelectedEvent): void {

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { OACategoryService } from "../services/entities/oa-category.service";
 import { AppConfigService } from "../services/app-config.service";
@@ -25,11 +25,12 @@ export class OACategoryController {
     }
 
     @Get('one')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: OA_Category
     })
-    async one(@Query('id') id:number) : Promise<OA_Category> {
-        return await this.oaService.one(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<OA_Category> {
+        return await this.oaService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Get("index")

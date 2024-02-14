@@ -69,6 +69,7 @@ export class CostCenterComponent implements TableParent<CostCenter>, OnInit{
       }
     })
   }
+
   edit(row: any): void {
     let dialogRef = this.dialog.open(CostCenterFormComponent, {
       width: '800px',
@@ -79,7 +80,7 @@ export class CostCenterComponent implements TableParent<CostCenter>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.ccService.updateCostCenter(result).subscribe({
           next: data => {
             this._snackBar.open(`Kostenstelle geändert`, 'Super!', {
@@ -97,8 +98,9 @@ export class CostCenterComponent implements TableParent<CostCenter>, OnInit{
             console.log(err);
           }
         })
+      }else if (result && result.id) {
+        this.ccService.updateCostCenter(result).subscribe();
       }
-
     });
   }
 

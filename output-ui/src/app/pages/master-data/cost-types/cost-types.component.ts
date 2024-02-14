@@ -68,6 +68,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
       }
     })
   }
+
   edit(row: any): void {
     let dialogRef = this.dialog.open(CostTypeFormComponent, {
       width: '800px',
@@ -78,7 +79,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.ctService.updateCostType(result).subscribe({
           next: data => {
             this._snackBar.open(`Kostenart geändert`, 'Super!', {
@@ -96,8 +97,9 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
             console.log(err);
           }
         })
+      }else if (result && result.id) {
+        this.ctService.updateCostType(result).subscribe();
       }
-
     });
   }
 

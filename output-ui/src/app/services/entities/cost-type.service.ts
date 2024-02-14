@@ -15,7 +15,7 @@ export class CostTypeService {
   }
   
   public getCostType(id:number) {
-    return this.http.get<CostType>(environment.api + 'invoice/cost_type?id='+id, { withCredentials: true });
+    return this.http.get<CostType>(environment.api + 'invoice/cost_type/'+id, { withCredentials: true });
   }
   
   public insertCostType(ct:CostType) {

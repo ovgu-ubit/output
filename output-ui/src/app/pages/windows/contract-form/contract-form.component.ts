@@ -183,6 +183,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
   }
 
   action() {
+    if (this.form.invalid) return;
     this.contract = {...this.contract, ...this.form.getRawValue()}
     if (!this.contract.id) this.contract.id = undefined;
     if (!this.contract.invoice_amount) this.contract.invoice_amount = undefined;
@@ -207,9 +208,11 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else this.dialogRef.close({ id: this.contract.id, locked_at: null })
+        } else if (this.contract.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
+        else this.close()
       });
-    } else this.dialogRef.close({ id: this.contract.id, locked_at: null })
+    } else if (this.contract.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
+    else this.close()
   }
   
   deleteId(elem) {

@@ -14,7 +14,7 @@ export class FunderService {
     constructor(@InjectRepository(Funder) private repository: Repository<Funder>, @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
     private configService: ConfigService, private publicationService:PublicationService) { }
 
-    public save(pub: Funder[]) {
+    public save(pub: any[]) {
         return this.repository.save(pub);
     }
 
@@ -22,8 +22,22 @@ export class FunderService {
         return this.repository.find();
     }
 
-    public one(id:number) {
-        return this.repository.findOne({where:{id}, relations: {aliases:true}});
+    public async one(id:number, writer:boolean) {
+        let funder = await this.repository.findOne({where:{id}, relations: {aliases:true}});
+        
+        if (writer && !funder.locked_at) {
+            await this.save([{
+                id: funder.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - funder.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: funder.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }        
+        return funder;
     }
 
     public async findOrSave(title: string, doi?: string): Promise<Funder> {

@@ -1,11 +1,13 @@
 import { Component, OnInit, Inject,ViewChild,AfterViewInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Funder } from '../../../../../../output-interfaces/Publication';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { FunderService } from 'src/app/services/entities/funder.service';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { AliasFunder } from '../../../../../../output-interfaces/Alias';
 import { AuthorizationService } from 'src/app/security/authorization.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-funder-form',
@@ -20,22 +22,31 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
   });
 
   @ViewChild(MatTable) table: MatTable<AliasFunder>;
+  disabled = false;
 
   funder: Funder;
 
   constructor(public dialogRef: MatDialogRef<FunderFormComponent>, public tokenService: AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private funderService:FunderService) {}
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private funderService:FunderService,
+    private _snackBar:MatSnackBar, private dialog:MatDialog) {}
 
   ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer')) {
-      this.form.disable();
-      this.aliasForm.disable();
+      this.disable();
     }
     if (this.data.funder?.id) {
       this.funderService.getFunder(this.data.funder.id).subscribe({
         next: data => {
           this.funder = data;
           this.form.patchValue(this.funder)
+          if (this.funder.locked_at) {
+            this.disable();
+            this._snackBar.open('Förderer wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+              duration: 5000,
+              panelClass: [`warning-snackbar`],
+              verticalPosition: 'top'
+            })
+          }
         }
       })
     }
@@ -55,6 +66,12 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
     this.form.controls.id.disable();
   }
 
+  disable() {
+    this.disabled = true;
+    this.form.disable();
+    this.aliasForm.disable();
+  }
+
   action() {
     if (this.form.invalid) return;
     this.funder = {...this.funder, ...this.form.getRawValue()}
@@ -63,15 +80,36 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
     this.dialogRef.close(this.funder)
   }
 
-  abort() {
+  close() {
     this.dialogRef.close(null)
   }
 
+  abort() {
+    if (this.form.dirty) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      dialogRef.afterClosed().subscribe(dialogResult => {
+        if (dialogResult) { //save
+          this.action();
+        } else if (this.funder.id) this.dialogRef.close({ id: this.funder.id, locked_at: null })
+        else this.close()
+      });
+    } else if (this.funder.id) this.dialogRef.close({ id: this.funder.id, locked_at: null })
+    else this.close()
+  }
+
   deleteAlias(elem:AliasFunder) {
+    if (this.disabled) return;
     this.funder.aliases = this.funder.aliases.filter((e) => e.alias !== elem.alias)
   }
 
   addAlias() {
+    if (this.disabled) return;
     if (this.aliasForm.invalid) return;
     this.funder.aliases.push({
       alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),

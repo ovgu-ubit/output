@@ -16,4 +16,7 @@ export class OA_Category implements IOA_Category{
 
     @OneToMany(() => Publication, (p) => p.oa_category)
     publications?: Publication[]
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }
