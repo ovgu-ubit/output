@@ -64,12 +64,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   @ViewChild(MatTable) table: MatTable<Invoice>;
 
   today = new Date();
+  disabled = false;
 
-  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, 
+  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService:LanguageService) {
+    private funderService: FunderService, private languageService: LanguageService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: ['', [Validators.required]],
@@ -110,9 +111,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer')) {
-      this.form.disable();
-      this.authorInput.nativeElement.disabled = true;
-      this.funderInput.nativeElement.disabled = true;
+      this.disable();
     }
     if (this.data['id']) {
       this.publicationService.getPublication(this.data['id']).subscribe({
@@ -127,6 +126,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
           if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
           if (this.pub?.locked) this.setLock(true);
+          if (this.pub.locked_at) {
+            this.disable();
+            this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+              duration: 5000,
+              panelClass: [`warning-snackbar`],
+              verticalPosition: 'top'
+            })
+          }
           this.loading = false;
         }
       })
@@ -203,6 +210,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     })
   }
 
+  disable() {
+    this.disabled = true;
+    this.form.disable();
+    this.authorInput.nativeElement.disabled = true;
+    this.funderInput.nativeElement.disabled = true;
+  }
+
   private _filter(value) {
     let filterValue = value.toLowerCase();
     let split = filterValue.split(',').map(e => e.trim());
@@ -246,7 +260,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   editInst(authorPub: AuthorPublication) {
-    if (this.pub.locked || !this.tokenService.hasRole('writer')) return;
+    if (this.pub.locked || this.disabled) return;
     this.selectInstitute(authorPub.author).subscribe({
       next: data => {
         if (data === null || data.id) authorPub.institute = data;
@@ -255,7 +269,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   addAuthor(event) {
-    if (!event.value || !this.tokenService.hasRole('writer')) return;
+    if (!event.value || this.disabled) return;
     let split = event.value.toLocaleLowerCase().split(',').map(e => e.trim());
     if (split.length > 1) {
       let author = this.authors.find(e => e.last_name.toLocaleLowerCase() === split[0] && e.first_name.toLocaleLowerCase() === split[1]);
@@ -474,7 +488,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   removeFunder(funder) {
-    if (!this.tokenService.hasRole('writer')) return;
+    if (this.disabled) return;
     this.pub.funders = this.pub.funders.filter(ap => ap.id !== funder.id)
     this.form.get('funder').setValue('');
   }
@@ -549,13 +563,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   removeAuthor(author) {
-    if (!this.tokenService.hasRole('writer')) return;
+    if (this.disabled) return;
     this.pub.authorPublications = this.pub.authorPublications.filter(ap => ap.author.id !== author.id)
     this.form.get('authors_inst').setValue('');
   }
 
   switchCorresponding(authorPub: AuthorPublication) {
-    if (this.pub.locked || !this.tokenService.hasRole('writer')) return;
+    if (this.pub.locked || this.disabled) return;
     this.pub.authorPublications = this.pub.authorPublications.filter(e => !(e.authorId === authorPub.authorId && e.publicationId === authorPub.publicationId))
     this.pub.authorPublications.push({
       authorId: authorPub.authorId,
@@ -585,8 +599,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.addFunder({ value: event.option.value })
   }
 
+  close() {
+    this.dialogRef.close(null)
+  }
+
   abort(): void {
-    if (this.form.dirty && !this.tokenService.hasRole('writer')) {
+    if (this.form.dirty) {
       let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -595,11 +613,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       });
 
       dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          this.dialogRef.close(this.pub);
-        } else this.dialogRef.close(null)
+        if (dialogResult) { //save
+          this.action();
+        } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
+        else this.close()
       });
-    } else this.dialogRef.close(null)
+    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
+    else this.close()
   }
 
   action(): void {
@@ -610,7 +630,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (!this.form.get('contr').value) this.pub.contract = null;
 
     if (this.edit) {
-      this.pub = { ...this.pub, ...this.form.getRawValue() };
+      this.pub = { ...this.pub, ...this.form.getRawValue(), locked_at: null };
     } else { //new publication
       this.pub = {
         ...this.pub,
@@ -622,6 +642,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
     this.pub.pub_type = this.pub_type !== -1 ? this.pub_types.find(e => e.id === this.pub_type) : null;
     this.pub.oa_category = this.oa_cat !== -1 ? this.oa_categories.find(e => e.id === this.oa_cat) : null;
+    this.pub.language = this.language !== -1 ? this.langs.find(e => e.id === this.language) : null;
     this.dialogRef.close(this.pub);
   }
 
@@ -644,7 +665,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   lock() {
-    if (!this.tokenService.hasRole('writer')) return;
+    if (this.disabled) return;
     this.pub.locked = !this.pub.locked;
     this.setLock(this.pub.locked)
   }
@@ -657,20 +678,22 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-  getCosts(invoice:Invoice) {
+  getCosts(invoice: Invoice) {
     if (!invoice) return '';
     if (invoice.booking_amount) return invoice.booking_amount;
     else {
       if (!invoice.cost_items) return '';
       let sum = 0;
-      for (let ci of invoice.cost_items) sum+=ci.euro_value;
+      for (let ci of invoice.cost_items) sum += ci.euro_value;
       return sum;
     }
   }
+
   deleteInvoice(elem) {
     this.pub.invoices = this.pub.invoices.filter(e => e.id !== elem.id)
   }
-  addInvoice(invoice?:Invoice) {
+
+  addInvoice(invoice?: Invoice) {
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
       maxWidth: "650px",
       data: {

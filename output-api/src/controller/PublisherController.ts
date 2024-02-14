@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PublisherService } from "../services/entities/publisher.service";
 import { Publisher } from "../entity/Publisher";
@@ -22,11 +22,12 @@ export class PublisherController {
     }
 
     @Get('one')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Publisher
     })
-    async one(@Query('id') id:number) : Promise<Publisher> {
-        return await this.publisherService.one(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<Publisher> {
+        return await this.publisherService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Get("index")

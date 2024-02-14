@@ -100,4 +100,7 @@ export class Publication implements IPublication {
     best_oa_host?: string;
     @Column({ nullable: true })
     best_oa_license?: string;
+
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

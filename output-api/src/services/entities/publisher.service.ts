@@ -14,15 +14,29 @@ export class PublisherService {
     constructor(@InjectRepository(Publisher) private repository: Repository<Publisher>, private configService: ConfigService, private publicationService: PublicationService,
         @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>) { }
 
-    public save(pub: Publisher[]) {
+    public save(pub: any[]) {
         return this.repository.save(pub);
     }
 
     public get() {
         return this.repository.find();
     }
-    public one(id: number) {
-        return this.repository.findOne({ where: { id }, relations: { aliases: true } });
+    public async one(id: number, writer:boolean) {
+        let publisher = await this.repository.findOne({ where: { id }, relations: { aliases: true } });
+        
+        if (writer && !publisher.locked_at) {
+            await this.save([{
+                id: publisher.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - publisher.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: publisher.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }        
+        return publisher;
     }
 
     public findOrSave(title: string, location?: string): Observable<Publisher> {

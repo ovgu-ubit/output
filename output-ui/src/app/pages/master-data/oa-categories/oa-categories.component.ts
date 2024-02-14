@@ -98,7 +98,7 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.oaService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Open-Access-Kategorie geändert`, 'Super!', {
@@ -116,8 +116,9 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.oaService.update(result).subscribe();
       }
-
     });
   }
 

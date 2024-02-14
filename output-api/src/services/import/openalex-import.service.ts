@@ -1,10 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
-import { Author } from '../../entity/Author';
 import { Funder } from '../../entity/Funder';
-import { Publication } from '../../entity/Publication';
 import { AuthorService } from '../entities/author.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';

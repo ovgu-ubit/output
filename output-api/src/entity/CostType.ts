@@ -9,4 +9,7 @@ export class CostType implements ICostType {
     
     @Column()
     label: string;
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

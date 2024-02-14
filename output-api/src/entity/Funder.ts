@@ -23,4 +23,7 @@ export class Funder implements IFunder {
 
     @OneToMany(() => AliasFunder, ai => ai.element, { cascade : true })
     aliases?: AliasFunder[];
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

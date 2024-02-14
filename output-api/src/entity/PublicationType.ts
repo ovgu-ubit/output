@@ -20,4 +20,7 @@ export class PublicationType implements IPublicationType {
     
     @OneToMany(() => AliasPubType, ai => ai.element, { cascade : true })
     aliases?: AliasPubType[];
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

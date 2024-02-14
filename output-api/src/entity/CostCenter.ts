@@ -12,4 +12,7 @@ export class CostCenter implements ICostCenter {
     
     @Column()
     label: string;
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

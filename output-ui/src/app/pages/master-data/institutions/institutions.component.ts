@@ -104,7 +104,7 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.instService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Institut geändert`, 'Super!', {
@@ -122,6 +122,8 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.instService.update(result).subscribe();
       }
 
     });

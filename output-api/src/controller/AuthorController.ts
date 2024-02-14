@@ -32,9 +32,10 @@ export class AuthorController {
     }
 
     @Get('/:id')
+    @UseGuards(AccessGuard)
     @ApiParam({ name: 'id', description: 'id for which author object should be obtained' })
-    async one(@Param('id') id:number) {
-        return this.authorService.one(id);
+    async one(@Param('id') id:number, @Req() request: Request) {
+        return this.authorService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Post()

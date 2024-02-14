@@ -104,7 +104,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.last_name) {
         this.authorService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Autor*in geändert`, 'Super!', {
@@ -122,6 +122,8 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.authorService.update(result).subscribe();
       }
 
     });

@@ -31,4 +31,6 @@ export class Author implements IAuthor {
     @OneToMany(() => AuthorPublication, authorPublication => authorPublication.author, { cascade : true })
     authorPublications?: AuthorPublication[];
 
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

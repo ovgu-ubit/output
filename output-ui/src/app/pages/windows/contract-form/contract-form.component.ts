@@ -30,6 +30,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
   
   displayedColumns: string[] = ['type', 'value', 'delete'];
   @ViewChild(MatTable) table: MatTable<ContractIdentifier>;
+  disabled = false;
 
   constructor(public dialogRef: MatDialogRef<ContractFormComponent>, public tokenService: AuthorizationService,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private contractService:ContractService, private publisherService:PublisherService, private dialog: MatDialog, private _snackBar: MatSnackBar) {}
@@ -37,8 +38,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
   
     ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer')) {
-      this.form.disable();
-      this.idForm.disable();
+      this.disable();
     }
     if (this.data.contract.id) {
       this.contractService.getContract(this.data.contract.id).subscribe({
@@ -46,6 +46,14 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
           this.contract = data;
           this.form.patchValue(this.contract)
           this.form.get('publ').setValue(this.contract.publisher?.label)
+          if (this.contract.locked_at) {
+            this.disable();
+            this._snackBar.open('Vertrag wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+              duration: 5000,
+              panelClass: [`warning-snackbar`],
+              verticalPosition: 'top'
+            })
+          }
         }
       })
     }
@@ -63,6 +71,12 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
       }
     })
     this.form.patchValue(this.contract)
+  }
+  
+  disable() {
+    this.disabled = true;
+    this.form.disable();
+    this.idForm.disable();
   }
 
 
@@ -95,13 +109,14 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
   }
   
   selectedPubl(event: MatAutocompleteSelectedEvent): void {
+    if (this.disabled) return;
     this.contract.publisher = this.publishers.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
     this.form.get('publ').setValue(this.contract.publisher.label)
   }
   
   addPublisher(event) {
+    if (this.disabled) return;
     if (!event.value) return;
-    if (!this.tokenService.hasRole('writer')) return;
     this.form.get('publ').disable();
     if (!this.publishers.find(e => e.label === event.value)) {
       let dialogData = new ConfirmDialogModel("Neuer Verlag", `Möchten Sie den Verlag "${event.value}" anlegen?`);
@@ -168,6 +183,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
   }
 
   action() {
+    if (this.form.invalid) return;
     this.contract = {...this.contract, ...this.form.getRawValue()}
     if (!this.contract.id) this.contract.id = undefined;
     if (!this.contract.invoice_amount) this.contract.invoice_amount = undefined;
@@ -176,14 +192,35 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
     this.dialogRef.close(this.contract)
   }
 
-  abort() {
+  close() {
     this.dialogRef.close(null)
+  }
+
+  abort() {
+    if (this.form.dirty) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      dialogRef.afterClosed().subscribe(dialogResult => {
+        if (dialogResult) { //save
+          this.action();
+        } else if (this.contract.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
+        else this.close()
+      });
+    } else if (this.contract.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
+    else this.close()
   }
   
   deleteId(elem) {
+    if (this.disabled) return;
     this.contract.identifiers = this.contract.identifiers.filter(e => e.id !== elem.id)
   }
   addId() {
+    if (this.disabled) return;
     this.contract.identifiers.push({
       type: this.idForm.get('type').value,
       value: this.idForm.get('value').value

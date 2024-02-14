@@ -55,6 +55,7 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   action() {
+    if (this.form.invalid) return;
     this.invoice = { ...this.invoice, ...this.form.getRawValue() }
     if (!this.invoice.id) this.invoice.id = undefined;
     if (!this.invoice.booking_amount) this.invoice.booking_amount = undefined;

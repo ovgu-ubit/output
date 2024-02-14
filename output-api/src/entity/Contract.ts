@@ -1,8 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
 import { Publisher } from "./Publisher";
 import { Contract as IContract} from "../../../output-interfaces/Publication"
 import { Publication } from "./Publication";
-import { Identifier } from "./Identifier";
 import { ContractIdentifier } from "./ContractIdentifier";
 
 @Entity()
@@ -46,4 +45,7 @@ export class Contract implements IContract {
     
     @OneToMany(() => ContractIdentifier, (ide) => ide.contract, {cascade: true})
     identifiers?: ContractIdentifier[];
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

@@ -25,6 +25,7 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
   institutes: Institute[];
   filtered_institutes: Observable<Institute[]>;
   displayedColumns: string[] = ['id', 'label', 'short_label', 'delete'];
+  disabled = false;
 
   @ViewChild(MatTable) table: MatTable<Institute>;
 
@@ -39,6 +40,14 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
         next: data => {
           this.author = data;
           this.form.patchValue(this.author)
+          if (this.author.locked_at) {
+            this.disable();
+            this._snackBar.open('Autor*in wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+              duration: 5000,
+              panelClass: [`warning-snackbar`],
+              verticalPosition: 'top'
+            })
+          }
         }
       })
     }
@@ -70,8 +79,13 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer')) {
-      this.form.disable();
+      this.disable();
     }
+  }
+
+  disable() {
+    this.disabled = true;
+    this.form.disable();
   }
 
   action() {
@@ -81,16 +95,36 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
     this.dialogRef.close(this.author)
   }
 
-  abort() {
+  close() {
     this.dialogRef.close(null)
   }
 
+  abort() {
+    if (this.form.dirty) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      dialogRef.afterClosed().subscribe(dialogResult => {
+        if (dialogResult) { //save
+          this.action();
+        } else if (this.author.id) this.dialogRef.close({ id: this.author.id, locked_at: null })
+        else this.close()
+      });
+    } else if (this.author.id) this.dialogRef.close({ id: this.author.id, locked_at: null })
+    else this.close()
+  }
+
   deleteInst(row) {
+    if (this.disabled) return;
     this.author.institutes = this.author.institutes.filter(e => e.id !== row.id)
   }
 
   addInst(event) {
-    if (!event.value) return;
+    if (!event.value || this.disabled) return;
     if (!this.institutes.find(e => e.label === event.value)) {
       //new institute
       let dialogData = new ConfirmDialogModel("Neues Institut", `Möchten Sie das Institut "${event.value}" anlegen?`);
@@ -125,7 +159,8 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
               })
             }
           });
-        }});      
+        }
+      });
     } else {
       //existing institute
       if (!this.author.institutes) this.author.institutes = [];
@@ -138,13 +173,13 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
   selectedInst(event: MatAutocompleteSelectedEvent): void {
     this.addInst(event.option);
   }
-  
+
   private _filterInst(value: string): Institute[] {
     const filterValue = value.toLowerCase();
 
     return this.institutes.filter(inst => inst?.label.toLowerCase().includes(filterValue) || inst?.short_label?.toLowerCase().includes(filterValue));
   }
-  
+
   enter(event) {
     if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
     return true;

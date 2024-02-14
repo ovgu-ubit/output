@@ -15,7 +15,7 @@ export class TokenAuthorizationService extends AuthorizationService {
     override async verify(context: ExecutionContext) {
         let request = context.switchToHttp().getRequest();
         if (['false', '0'].includes(this.configService.get('AUTH')?.toLowerCase())) { // no authentication required
-            request['user'] = { read: true }
+            request['user'] = { read: true, write: true }
             return true;
         }
         let permissions = this.reflector.get<PermissionDecoration[]>('permissions', context.getHandler());
@@ -40,6 +40,7 @@ export class TokenAuthorizationService extends AuthorizationService {
                             // enrich the request object with user info for further processing
                             req['user'] = payload;
                             req['user']['read'] = payload.permission.find(e => (e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'reader')) || (e.appname === null && e.rolename === 'admin'))
+                            req['user']['write'] = payload.permission.find(e => ((e.appname === 'output' && e.rolename === 'writer') || (e.appname === null && e.rolename === 'admin')))
                             // Case II: if permissions is an empty array, a valid token is required to proceed
                             if (permissions.length === 0) resolve(true);
                             // Case III: if permissions are given, the user is required to posess ANY of them or admin
