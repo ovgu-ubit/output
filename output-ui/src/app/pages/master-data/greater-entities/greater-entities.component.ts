@@ -102,7 +102,7 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.geService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Größere Einheit geändert`, 'Super!', {
@@ -120,6 +120,8 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.geService.update(result).subscribe();
       }
 
     });

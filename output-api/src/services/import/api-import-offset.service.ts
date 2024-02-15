@@ -138,7 +138,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
             do {
                 offset += this.max_res;
                 obs$.push(this.request(offset));
-            } while (offset + this.max_res < this.numberOfPublications)
+            } while (offset + this.max_res <= this.numberOfPublications)
             return null;
         }), concatWith(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
             next: async (data: any) => {

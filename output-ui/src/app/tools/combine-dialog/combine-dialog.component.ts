@@ -46,7 +46,7 @@ export class CombineDialogComponent<T> implements OnInit {
           res = { ...res, aliases:result }
           this.dialogRef.close(res);
         }
-        else this.abort();
+        else this.dialogRef.close(res);
       });
     } else {
       this.dialogRef.close(res);

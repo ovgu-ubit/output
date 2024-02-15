@@ -15,7 +15,7 @@ export class CostCenterService {
   }
   
   public getCostCenter(id:number) {
-    return this.http.get<CostCenter>(environment.api + 'invoice/cost_center?id='+id, { withCredentials: true });
+    return this.http.get<CostCenter>(environment.api + 'invoice/cost_center/'+id, { withCredentials: true });
   }
   
   public insertCostCenter(ct:CostCenter) {

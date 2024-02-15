@@ -21,15 +21,29 @@ export class InstitutionService {
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) { }
 
-    public save(inst: Institute[]) {
+    public save(inst: any[]) {
         return this.repository.save(inst);
     }
 
     public get() {
-        return this.repository.find();
+        return this.repository.find({relations:{aliases:true}});
     }
-    public one(id: number) {
-        let inst = this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
+    public async one(id: number, writer: boolean) {
+        let inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
+        
+        if (writer && !inst.locked_at) {
+            await this.save([{
+                id: inst.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - inst.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: inst.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }
+        
         return inst;
     }
 
@@ -51,11 +65,8 @@ export class InstitutionService {
     public findOrSave(affiliation: string): Observable<Institute> {
         if (!affiliation) return of(null);
         return from(this.identifyInstitution(affiliation)).pipe(concatMap(data => {
-            return from(this.repository.findOne({ where: { label: ILike(data) } })).pipe(concatMap(ge => {
-                return iif(() => !!ge, of(ge), defer(() => from(this.repository.save({ label: data }))));
-            }));
+            return from(this.repository.findOne({ where: { label: ILike(data) } }));
         }));
-
     }
 
     public async identifyInstitution(affiliation: string) {

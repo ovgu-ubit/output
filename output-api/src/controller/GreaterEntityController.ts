@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GreaterEntityService } from "../services/entities/greater-entitiy.service";
 import { GreaterEntity } from "../entity/GreaterEntity";
@@ -22,11 +22,12 @@ export class GreaterEntityController {
     }
 
     @Get('one')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: GreaterEntity
     })
-    async one(@Query('id') id:number) : Promise<GreaterEntity> {
-        return await this.geService.one(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<GreaterEntity> {
+        return await this.geService.one(id, request['user']? request['user']['write'] : false);
     }
 
     @Post()

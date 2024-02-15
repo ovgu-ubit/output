@@ -16,11 +16,25 @@ export class ContractService {
         return this.repository.find();
     }
     
-    public one(id:number) {
-        return this.repository.findOne({where:{id}, relations: {publisher:true, identifiers: true}});
+    public async one(id:number, writer:boolean) {
+        let contract = await this.repository.findOne({where:{id}, relations: {publisher:true, identifiers: true}});
+        
+        if (writer && !contract.locked_at) {
+            await this.save([{
+                id: contract.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - contract.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: contract.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }        
+        return contract;
     }
 
-    public save(contracts:Contract[]) {
+    public save(contracts:any[]) {
         return this.repository.save(contracts);
     }
 

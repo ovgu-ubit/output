@@ -13,6 +13,7 @@ import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.s
 import { InitService } from "./src/services/init.service";
 
 export default() : AppConfig => ({
+    lock_timeout: 10, //in minutes
     searchTags: [
         "magdeburg",
         "ovgu",
@@ -31,6 +32,7 @@ export default() : AppConfig => ({
         "universitätsmedizin magdeburg"
     ],
     ror_id: 'https://ror.org/xxxxx',
+    openalex_id: 'xxxxx',
     api_key_unpaywall: 'xxx@xxx.de',
     api_key_oam: 'xxxx',
     init_service: InitService,
@@ -41,6 +43,7 @@ export default() : AppConfig => ({
         {path: 'oam', class: OpenAccessMonitorImportService},
         {path: 'base', class: BASEImportService},
         {path: 'pubmed', class: PubMedImportService},
+        {path: 'openalex', class: OpenAlexImportService},
     ],
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},

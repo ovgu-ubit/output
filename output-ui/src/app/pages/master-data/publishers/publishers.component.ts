@@ -90,6 +90,7 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
       }
     })
   }
+
   edit(row: any): void {
     let dialogRef = this.dialog.open(PublisherFormComponent, {
       width: '800px',
@@ -100,7 +101,7 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.publisherService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Verlag geändert`, 'Super!', {
@@ -118,8 +119,9 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.publisherService.update(result).subscribe();
       }
-
     });
   }
 

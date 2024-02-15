@@ -20,4 +20,7 @@ export class Publisher implements IPublisher {
     
     @OneToMany(() => AliasPublisher, ai => ai.element, { cascade : true })
     aliases?: AliasPublisher[];
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

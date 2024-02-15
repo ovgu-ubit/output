@@ -18,8 +18,8 @@
         </mat-form-field>
 
 
-        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
-            <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
+        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
+            <button mat-raised-button type="submit" color="primary" class="btn-primary">Kostenstelle
                 speichern</button>&nbsp;
             <button mat-raised-button type="reset" color="primary" class="btn-primary"
                 (click)="this.abort()">Abbrechen</button>
@@ -27,7 +27,7 @@
         <ng-template #else1>
             <div class="form-group" align="center">
                 <button mat-raised-button type="reset" color="primary" class="btn-primary"
-                    (click)="this.abort()">Schließen</button>
+                    (click)="this.close()">Schließen</button>
             </div>
         </ng-template>
     </form>

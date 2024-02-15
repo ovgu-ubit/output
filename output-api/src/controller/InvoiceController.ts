@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InvoiceService } from "../services/entities/invoice.service";
 import { Invoice } from "../entity/Invoice";
@@ -76,12 +76,13 @@ export class InvoiceController {
         return await this.invoiceService.getCostTypes();
     }
     
-    @Get('cost_type')
+    @Get('cost_type/:id')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Invoice
     })
-    async cost_type_one(@Query('id') id:number) : Promise<CostType> {
-        return await this.invoiceService.getCostType(id);
+    async cost_type_one(@Param('id') id:number, @Req() request: Request) : Promise<CostType> {
+        return await this.invoiceService.getCostType(id, request['user']? request['user']['write'] : false);
     }
 
     @Post('cost_type')
@@ -124,19 +125,14 @@ export class InvoiceController {
     
 
     @Get('cost_center')
-    @ApiResponse({
-        type: Invoice
-    })
     async cost_center() : Promise<CostCenter[]> {
         return await this.invoiceService.getCostCenters();
     }
     
-    @Get('cost_center')
-    @ApiResponse({
-        type: Invoice
-    })
-    async cost_center_one(@Query('id') id:number) : Promise<CostCenter> {
-        return await this.invoiceService.getCostCenter(id);
+    @Get('cost_center/:id')
+    @UseGuards(AccessGuard)
+    async cost_center_one(@Param('id') id:number, @Req() request: Request) : Promise<CostCenter> {
+        return await this.invoiceService.getCostCenter(id, request['user']? request['user']['write'] : false);
     }
 
     @Post('cost_center')

@@ -3,6 +3,11 @@
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
 
+        <mat-form-field appearance="fill">
+            <mat-label>Affiliationsangabe</mat-label>
+            <textarea matInput formControlName="affiliation"></textarea>
+        </mat-form-field>
+
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Institut d. Autor*in</mat-label>
             <mat-select [(value)]="this.institute" [compareWith]="compare">

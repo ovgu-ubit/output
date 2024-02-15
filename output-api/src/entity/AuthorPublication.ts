@@ -27,6 +27,9 @@ export class AuthorPublication implements IAuthorPublication {
     })
     publication?: Publication
 
+    @Column({ nullable: true })
+    affiliation?: string;
+
     @ManyToOne(() => Institute)
     @JoinTable()
     institute?: Institute

@@ -104,7 +104,7 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.contractService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Vertrag geändert`, 'Super!', {
@@ -122,6 +122,8 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.contractService.update(result).subscribe();
       }
 
     });

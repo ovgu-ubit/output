@@ -8,14 +8,16 @@ import { Invoice } from '../../entity/Invoice';
 import { CostItem } from '../../entity/CostItem';
 import { Institute } from '../../entity/Institute';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
-    @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
-    @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
-    @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>) { }
+        @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
+        @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
+        @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
+        private configService: ConfigService) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub);
@@ -126,7 +128,7 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
-            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute }; })
+            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation }; })
             if (autPub) {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
@@ -136,9 +138,9 @@ export class PublicationService {
         return i;
     }
 
-    public async delete(pubs: Publication[], soft?:boolean) {
+    public async delete(pubs: Publication[], soft?: boolean) {
         for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({where:{id:pub.id},relations:{authorPublications:true, invoices:{cost_items:true}}});
+            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } } });
             for (let autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
@@ -147,14 +149,14 @@ export class PublicationService {
                 await this.invoiceRepository.delete(inv.id);
             }
         }
-       if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
-       else return await this.pubRepository.softDelete(pubs.map(p => p.id));
+        if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
+        else return await this.pubRepository.softDelete(pubs.map(p => p.id));
     }
 
-    public getPublication(id: number, reader:boolean) {
-        let invoice:any = false;
-        if (reader) invoice = {cost_items: true};
-        return this.pubRepository.findOne({
+    public async getPublication(id: number, reader: boolean, writer: boolean) {
+        let invoice: any = false;
+        if (reader) invoice = { cost_items: { cost_type: true } };
+        let pub = await this.pubRepository.findOne({
             where: { id }, relations: {
                 oa_category: true,
                 invoices: invoice,
@@ -170,10 +172,23 @@ export class PublicationService {
                 language: true
             }, withDeleted: true
         })
+        if (writer && !pub.locked_at) {
+            await this.save([{
+                id: pub.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - pub.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: pub.id,
+                locked_at: null
+            }]);
+            return this.getPublication(id, reader, writer);
+        }
+        return pub;
     }
 
-    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, institute?:Institute) {
-        return this.pubAutRepository.save({ author, publication, corresponding, institute });
+    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute) {
+        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute });
     }
 
     public getAuthorsPublication(pub: Publication) {
@@ -239,7 +254,12 @@ export class PublicationService {
                 publisher: true,
                 oa_category: true,
                 contract: true,
-                funders: true
+                funders: true,
+                invoices: {
+                    cost_items: {
+                        cost_type: true
+                    }
+                }
             },
             withDeleted: true
 
@@ -295,16 +315,16 @@ export class PublicationService {
         let aut1 = await this.pubRepository.findOne({ where: { id: id1 }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true } })
         let authors = []
         for (let id of ids) {
-            authors.push(await this.pubRepository.findOne({ where: { id}, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true } }))
+            authors.push(await this.pubRepository.findOne({ where: { id }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true } }))
         }
-        
-        if (!aut1 || aut1.locked || authors.find(e => e === null || e === undefined || e.locked)) return {error:'find'};
-        
-        let res = {...aut1};
+
+        if (!aut1 || aut1.locked || authors.find(e => e === null || e === undefined || e.locked)) return { error: 'find' };
+
+        let res = { ...aut1 };
         res.authorPublications = undefined;
 
         for (let aut of authors) {
-            for (let ap of aut.authorPublications) await this.pubAutRepository.save({publicationId: res.id, authorId: ap.authorId, corresponding: ap.corresponding})
+            for (let ap of aut.authorPublications) await this.pubAutRepository.save({ publicationId: res.id, authorId: ap.authorId, corresponding: ap.corresponding })
 
             if (!res.pub_type && aut.pub_type) res.pub_type = aut.pub_type;
             if (!res.oa_category && aut.oa_category) res.oa_category = aut.oa_category;
@@ -328,12 +348,12 @@ export class PublicationService {
             if (!res.invoices) res.invoices = [];
             res.invoices.concat(aut.invoices)
         }
-        
+
         //update publication 1
         if (await this.pubRepository.save(res)) {
-            if (await this.pubAutRepository.delete({publicationId: In(authors.map(e => e.id))}) && await this.invoiceRepository.delete({publication: {id: In(authors.map(e => e.id))}}) && await this.pubRepository.delete({id: In(authors.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
+            if (await this.pubAutRepository.delete({ publicationId: In(authors.map(e => e.id)) }) && await this.invoiceRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) && await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
+            else return { error: 'delete' };
+        } else return { error: 'update' };
     }
 
 }

@@ -14,7 +14,7 @@ export class PublicationTypeService {
     constructor(@InjectRepository(PublicationType) private repository: Repository<PublicationType>, @InjectRepository(AliasPubType) private aliasRepository:Repository<AliasPubType>,
     private configService:ConfigService, private publicationService:PublicationService) { }
 
-    public save(pub: PublicationType[]) {
+    public save(pub: any[]) {
         return this.repository.save(pub);
     }
 
@@ -22,8 +22,22 @@ export class PublicationTypeService {
         return this.repository.find();
     }
 
-    public one(id:number) {
-        return this.repository.findOne({where:{id}, relations: {aliases:true}});
+    public async one(id:number, writer:boolean) {
+        let pt = await this.repository.findOne({where:{id}, relations: {aliases:true}});
+        
+        if (writer && !pt.locked_at) {
+            await this.save([{
+                id: pt.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - pt.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: pt.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }        
+        return pt;
     }
 
     public async findOrSave(title: string): Promise<PublicationType> {        

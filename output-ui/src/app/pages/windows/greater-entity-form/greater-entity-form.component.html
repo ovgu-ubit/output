@@ -37,7 +37,7 @@
                 <th mat-header-cell *matHeaderCellDef> </th>
                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
                         (click)="this.deleteId(element)"
-                        matTooltip="Identifikator löschen" [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>delete</mat-icon></button> </td>
+                        matTooltip="Identifikator löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -53,11 +53,11 @@
                 <input matInput placeholder="Wert" formControlName="value" />
             </mat-form-field>
             <button matSuffix mat-icon-button type="button" (click)="this.addId()"
-                matTooltip="Identifikator hinzufügen" [hidden]="!this.tokenService.hasRole('writer')"><mat-icon>add</mat-icon></button>
+                matTooltip="Identifikator hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
         </form>
 
-        <div *ngIf="this.tokenService.hasRole('writer'); else else1" class="form-group" align="center">
-            <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
+        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
+            <button mat-raised-button type="submit" color="primary" class="btn-primary">Größere Einheit
                 speichern</button>&nbsp;
             <button mat-raised-button type="reset" color="primary" class="btn-primary"
                 (click)="this.abort()">Abbrechen</button>
@@ -65,7 +65,7 @@
         <ng-template #else1>
             <div class="form-group" align="center">
                 <button mat-raised-button type="reset" color="primary" class="btn-primary"
-                    (click)="this.abort()">Schließen</button>
+                    (click)="this.close()">Schließen</button>
             </div>
         </ng-template>
     </form>

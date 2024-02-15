@@ -98,7 +98,7 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.pubTypeService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Publikationsart geändert`, 'Super!', {
@@ -116,8 +116,9 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.pubTypeService.update(result).subscribe();
       }
-
     });
   }
 

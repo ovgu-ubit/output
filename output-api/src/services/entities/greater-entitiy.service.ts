@@ -16,7 +16,7 @@ export class GreaterEntityService {
         @InjectRepository(Identifier) private idRepository: Repository<Identifier>, private publicationService:PublicationService,
         private configService:ConfigService) { }
 
-    public async save(pubs: GreaterEntity[]) {
+    public async save(pubs: any[]) {
         for (let pub of pubs) {
             if (!pub.id) pub.id = undefined;
             if (pub.identifiers) {
@@ -32,8 +32,22 @@ export class GreaterEntityService {
         return this.repository.find({relations: {identifiers:true}});
     }
 
-    public one(id:number) {
-        return this.repository.findOne({where: {id},relations: {identifiers:true}});
+    public async one(id:number, writer:boolean) {
+        let ge = await this.repository.findOne({where: {id},relations: {identifiers:true}});
+        
+        if (writer && !ge.locked_at) {
+            await this.save([{
+                id: ge.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - ge.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: ge.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }        
+        return ge;
     }
 
     public async findOrSave(title: string, identifier?: Identifier[]): Promise<GreaterEntity> {

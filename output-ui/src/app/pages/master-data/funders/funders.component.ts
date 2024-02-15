@@ -98,7 +98,7 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.label) {
         this.funderService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Förderer geändert`, 'Super!', {
@@ -116,8 +116,9 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
             console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.funderService.update(result).subscribe();
       }
-
     });
   }
 

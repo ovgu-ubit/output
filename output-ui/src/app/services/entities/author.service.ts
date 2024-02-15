@@ -23,6 +23,10 @@ export class AuthorService {
     return this.http.get<Author>(environment.api + 'authors/'+id, { withCredentials: true });
   }
 
+  public getAuthorForAutPub(id:number) {
+    return this.http.get<Author>(environment.api + 'authors/autpub/'+id, { withCredentials: true });
+  }
+
   public addAuthor(author:Author) {
     return this.http.post<Author>(environment.api + 'authors', author, { withCredentials: true });
   }

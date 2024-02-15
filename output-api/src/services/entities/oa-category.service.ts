@@ -12,7 +12,7 @@ export class OACategoryService {
 
     constructor(@InjectRepository(OA_Category) private repository: Repository<OA_Category>, private configService:ConfigService, private publicationService:PublicationService) { }
 
-    public save(pub: OA_Category[]) {
+    public save(pub: any[]) {
         return this.repository.save(pub);
     }
 
@@ -20,8 +20,22 @@ export class OACategoryService {
         return this.repository.find();
     }
 
-    public one(id:number) {
-        return this.repository.findOne({where:{id}, relations: {}});
+    public async one(id:number, writer: boolean) {
+        let oa = await this.repository.findOne({where:{id}, relations: {}});
+        
+        if (writer && !oa.locked_at) {
+            await this.save([{
+                id: oa.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - oa.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: oa.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }        
+        return oa;
     }
 
     public findOrSave(title: string): Observable<OA_Category> {        

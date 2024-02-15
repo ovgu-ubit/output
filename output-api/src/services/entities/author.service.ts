@@ -9,14 +9,16 @@ import { Publication } from '../../entity/Publication';
 import { AppConfigService } from '../app-config.service';
 import { InstitutionService } from './institution.service';
 import { AppError } from '../../../../output-interfaces/Config';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthorService {
 
-    constructor(@InjectRepository(Author) private repository: Repository<Author>, private configService: AppConfigService,
-        private instService: InstitutionService, @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>) { }
+    constructor(@InjectRepository(Author) private repository: Repository<Author>, private appConfigService: AppConfigService,
+        private instService: InstitutionService, @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
+        private configService:ConfigService) { }
 
-    public save(aut: Author[]) {
+    public save(aut: any[]) {
         return this.repository.save(aut);
     }
 
@@ -24,8 +26,25 @@ export class AuthorService {
         return this.repository.find();
     }
 
-    public one(id:number) {
-        return this.repository.findOne({where: {id}, relations: { authorPublications: true, institutes: true }});
+    public async one(id:number, writer:boolean) {
+        let aut = await this.repository.findOne({where: {id}, relations: { authorPublications: true, institutes: true }});
+        if (writer && !aut.locked_at) {
+            await this.save([{
+                id: aut.id,
+                locked_at: new Date()
+            }]);
+        } else if (writer && (new Date().getTime() - aut.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.save([{
+                id: aut.id,
+                locked_at: null
+            }]);
+            return this.one(id, writer);
+        }
+        return aut;
+    }
+
+    public oneForAutPub(id:number) {
+        return this.repository.findOne({where: {id}, relations: { institutes: true }});
     }
 
     public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<Author> {
@@ -61,15 +80,15 @@ export class AuthorService {
 
             if (flag) return await this.repository.save(author);
             else return author;
-        } else return await this.repository.save({ last_name, first_name, orcid, institute: inst });
+        } else return await this.repository.save({ last_name, first_name, orcid, institutes: [inst] });
         //3. if not found, save
     }
 
     public async combineAuthors(id1: number, ids: number[]) {
-        let aut1: Author = await this.one(id1)
+        let aut1: Author = await this.one(id1, false)
         let authors = []
         for (let id of ids) {
-            authors.push(await this.one(id))
+            authors.push(await this.one(id, false))
         }
         
         if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
@@ -100,7 +119,7 @@ export class AuthorService {
     }
 
     public async index(reporting_year:number): Promise<AuthorIndex[]> {
-        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
         let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.repository.manager.createQueryBuilder()
@@ -119,18 +138,18 @@ export class AuthorService {
                 .addGroupBy("author.last_name")
                 .addGroupBy("author.orcid")
                 , "a")
-            .leftJoin(AuthorPublication, "authorPublication", "authorPublication.authorId = a.id")
-            .leftJoin(Publication, "publication", "publication.id = authorPublication.publicationId")
-            .where('publication.pub_date >= :beginDate', { beginDate })
-            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .leftJoin((sq) => sq
+                .from(AuthorPublication, "authorPublication")
+                .innerJoin("publication","publication", "publication.id = authorPublication.publicationId and publication.pub_date >= :beginDate and publication.pub_date <= :endDate", {beginDate, endDate})
+                , "b", "b.\"authorId\" = a.id")
             .select("a.id", "id")
             .addSelect("a.orcid", "orcid")
             .addSelect("a.title", "title")
             .addSelect("a.first_name", "first_name")
             .addSelect("a.last_name", "last_name")
-            .addSelect("COUNT(\"authorPublication\")", "pub_count")
+            .addSelect("COUNT(b)", "pub_count")
             .addSelect("a.institutes", "institutes")
-            .addSelect("SUM(CASE WHEN \"authorPublication\".\"corresponding\" THEN 1 ELSE 0 END)", "pub_corr_count")
+            .addSelect("SUM(CASE WHEN b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_corr_count")
             .groupBy("a.id")
             .addGroupBy("a.orcid")
             .addGroupBy("a.title")
@@ -146,7 +165,7 @@ export class AuthorService {
 
     public async delete(auts: Author[]) {
         for (let aut of auts) {
-            let autE = await this.one(aut.id);
+            let autE = await this.one(aut.id, false);
             if (autE.authorPublications) for (let autPub of autE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }

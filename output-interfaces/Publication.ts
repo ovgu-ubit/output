@@ -30,6 +30,7 @@ export interface Publication {
     best_oa_host?: string;
     best_oa_license?: string;
     opus_share_it?: string;
+    locked_at?: Date;
 }
 
 export interface Author {
@@ -41,6 +42,7 @@ export interface Author {
     orcid?: string;
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
+    locked_at?: Date;
 }
 
 export interface AuthorPublication {
@@ -50,6 +52,7 @@ export interface AuthorPublication {
     publicationId?: number
     institute?: Institute
     corresponding?: boolean;
+    affiliation?: string;
 }
 
 export interface Contract {
@@ -66,12 +69,14 @@ export interface Contract {
     verification_method?: string;
 	publications?: Publication[];
     identifiers?:ContractIdentifier[];
+    locked_at?: Date;
 }
 
 export interface CostCenter {
     id?: number;
     number: string;
     label: string;
+    locked_at?: Date;
 }
 
 export interface CostItem {
@@ -89,6 +94,7 @@ export interface CostItem {
 export interface CostType{
     id?: number;
     label: string;
+    locked_at?: Date;
 }
 
 export interface Funder {
@@ -97,6 +103,7 @@ export interface Funder {
     doi?: string;
     publications?: Publication[];
     aliases?: AliasFunder[];
+    locked_at?: Date;
 }
 
 export interface GreaterEntity {
@@ -106,6 +113,7 @@ export interface GreaterEntity {
     is_doaj?: boolean;
     identifiers?: Identifier[];
     publications?: Publication[]
+    locked_at?: Date;
 }
 
 export interface Identifier {
@@ -131,6 +139,7 @@ export interface Institute {
 	authors?: Author[];
 	authorPublications?: AuthorPublication[];
     aliases?: AliasInstitute[];
+    locked_at?: Date;
 }
 
 export interface Invoice {
@@ -148,6 +157,7 @@ export interface OA_Category {
     id?: number;
     label: string;
     is_oa: boolean;
+    locked_at?: Date;
 }
 
 export interface PublicationType {
@@ -155,6 +165,7 @@ export interface PublicationType {
     label: string;
     review: boolean;
     aliases?: AliasPubType[];
+    locked_at?: Date;
 }
 
 export interface Publisher {
@@ -162,6 +173,7 @@ export interface Publisher {
     label: string;
     location?: string;
     aliases?: AliasPublisher[];
+    locked_at?: Date;
 }
 
 export interface Language {
