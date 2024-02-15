@@ -576,7 +576,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       author: authorPub.author,
       publicationId: authorPub.publicationId,
       corresponding: !authorPub.corresponding,
-      institute: authorPub.institute
+      institute: authorPub.institute,
+      affiliation: authorPub.affiliation
     })
   }
 

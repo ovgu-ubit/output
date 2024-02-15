@@ -2,7 +2,7 @@
     <ng-container formArrayName="array">
         <ng-container *ngFor="let form1 of this.getControls(); let idx = index">
             <div [formGroup]="form1">
-            <mat-form-field>
+            <mat-form-field style="width: 100%;">
                 <mat-label>Zu speichernder Alias</mat-label>
                 <input matInput formControlName="alias" />
             </mat-form-field>
