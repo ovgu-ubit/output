@@ -25,11 +25,13 @@ async function bootstrap() {
     const cors_origins: string[] = app.get(ConfigService).get<string>('APP_CORS_ORIGINS').split(',');
     const base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
 
+    app.setGlobalPrefix(base_path)
+
     const config = new DocumentBuilder()
         .setTitle('Output API')
         .setDescription('The Output API description')
         .setVersion('2.0')
-        .setBasePath(base_path)
+        //.setBasePath(base_path)
         .build();
     const options: SwaggerDocumentOptions = {
         operationIdFactory: (
