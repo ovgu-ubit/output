@@ -250,7 +250,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   selectInstitute(author: Author): Observable<Institute> {
     let dialogRef = this.dialog.open(SelectInstituteDialogComponent, {
-      maxWidth: "400px",
+      width: "400px",
       data: {
         author,
         authorPub: this.pub.authorPublications.find(e => e.author.id === author.id)

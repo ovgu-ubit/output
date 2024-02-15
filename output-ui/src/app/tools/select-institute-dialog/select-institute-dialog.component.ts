@@ -24,6 +24,7 @@ constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
   @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService:AuthorService, private instService:InstituteService) {}
 
   form = this.formBuilder.group({
+    affiliation: [''],
     institute: [''],
     inst: ['']
   })
@@ -32,6 +33,7 @@ constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
     this.authorService.getAuthor(this.data.author['id']).subscribe({
       next: data => {
         this.author = data;
+        this.form.get('affiliation').setValue(this.data['authorPub']['affiliation'])
         //if (!this.author.institutes || this.author.institutes.length === 0) this.abort();
       }
     })

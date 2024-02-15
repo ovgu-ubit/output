@@ -128,7 +128,7 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
-            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute }; })
+            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation }; })
             if (autPub) {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
@@ -187,8 +187,8 @@ export class PublicationService {
         return pub;
     }
 
-    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, institute?: Institute) {
-        return this.pubAutRepository.save({ author, publication, corresponding, institute });
+    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute) {
+        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute });
     }
 
     public getAuthorsPublication(pub: Publication) {

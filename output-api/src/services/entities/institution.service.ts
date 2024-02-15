@@ -65,11 +65,8 @@ export class InstitutionService {
     public findOrSave(affiliation: string): Observable<Institute> {
         if (!affiliation) return of(null);
         return from(this.identifyInstitution(affiliation)).pipe(concatMap(data => {
-            return from(this.repository.findOne({ where: { label: ILike(data) } })).pipe(concatMap(ge => {
-                return iif(() => !!ge, of(ge), defer(() => from(this.repository.save({ label: data }))));
-            }));
+            return from(this.repository.findOne({ where: { label: ILike(data) } }));
         }));
-
     }
 
     public async identifyInstitution(affiliation: string) {

@@ -76,7 +76,7 @@ export class AuthorService {
 
             if (flag) return await this.repository.save(author);
             else return author;
-        } else return await this.repository.save({ last_name, first_name, orcid, institute: inst });
+        } else return await this.repository.save({ last_name, first_name, orcid, institutes: [inst] });
         //3. if not found, save
     }
 
