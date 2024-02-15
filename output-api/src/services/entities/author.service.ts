@@ -43,6 +43,10 @@ export class AuthorService {
         return aut;
     }
 
+    public oneForAutPub(id:number) {
+        return this.repository.findOne({where: {id}, relations: { institutes: true }});
+    }
+
     public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<Author> {
         if (!last_name || !first_name) return null;
         //1. find an existing entity
@@ -76,7 +80,7 @@ export class AuthorService {
 
             if (flag) return await this.repository.save(author);
             else return author;
-        } else return await this.repository.save({ last_name, first_name, orcid, institute: inst });
+        } else return await this.repository.save({ last_name, first_name, orcid, institutes: [inst] });
         //3. if not found, save
     }
 

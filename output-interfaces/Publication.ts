@@ -52,6 +52,7 @@ export interface AuthorPublication {
     publicationId?: number
     institute?: Institute
     corresponding?: boolean;
+    affiliation?: string;
 }
 
 export interface Contract {

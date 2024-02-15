@@ -183,7 +183,7 @@ export abstract class AbstractImportService {
     async mapNew(item) {
         if (!this.importTest(item)) return null;
 
-        let authors_entities: { author: Author, corresponding: boolean, institute: Institute }[] = [];
+        let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute }[] = [];
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
             for (let aut of authors_inst) {
@@ -191,7 +191,7 @@ export abstract class AbstractImportService {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                   });
                 let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
-                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, institute: inst });
+                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(),institute: inst });
             }
         }
         let ids = this.getGreaterEntityIdentifier(item);
@@ -245,7 +245,7 @@ export abstract class AbstractImportService {
         };
         let pub_ent = (await this.publicationService.save([obj]))[0];
         for (let aut of authors_entities) {
-            await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.institute);
+            await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute);
         }
 
         return pub_ent;
@@ -459,14 +459,15 @@ export abstract class AbstractImportService {
         if (this.updateMapping.author_inst !== UpdateOptions.IGNORE) {
             let existing_aut = await this.publicationService.getAuthorsPublication(orig);
             if (!(this.updateMapping.author_inst === UpdateOptions.REPLACE_IF_EMPTY && existing_aut.length === 0)) {
-                let authors_entities: Author[] = [];
+                let authors_entities: any[] = [];
                 let authors_inst = this.getInstAuthors(element);
                 if (authors_inst) {
                     for (let aut of authors_inst) {
                         let aut_ent = await this.authorService.findOrSave(aut.last_name, aut.first_name, aut.orcid, aut.affiliation).catch(e => {
                             this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                         });
-                        if (aut_ent) authors_entities.push(aut_ent);
+                        let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
+                        if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(),institute: inst });
                     }
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.REPLACE) {
@@ -475,7 +476,7 @@ export abstract class AbstractImportService {
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.APPEND) {
                     for (let aut of authors_entities) if (!existing_aut.find(e => e.authorId === aut.id)) {
-                        await this.publicationService.saveAuthorPublication(aut, orig);
+                        await this.publicationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
                         fields.push('author_inst')
                     }
                 }
