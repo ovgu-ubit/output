@@ -3,6 +3,7 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { SearchFilter } from '../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-filter-view',
@@ -44,22 +45,14 @@ export class FilterViewComponent implements OnInit {
     { key: 'contract', label: 'Vertrag' },
   ]
 
-  yop: number;
-  publications: Publication[];
-
   constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private publicationService: PublicationService) { this.yop = data.yop }
+    @Inject(MAT_DIALOG_DATA) public data: any, private publicationService: PublicationService) { }
 
   ngOnInit(): void {
     this.form = this.formBuilder.group({
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
-    this.publicationService.getPublications(this.yop).subscribe({
-      next: data => {
-        this.publications = data;
-      }
-    })
   }
 
   getFilters() {
@@ -97,12 +90,24 @@ export class FilterViewComponent implements OnInit {
   action(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    let res = this.publications.filter(e => this.getFilterFunction()(e)).map(p => p.id)
-    this.dialogRef.close(res)
+    this.publicationService.filter(this.getFilter()).subscribe({
+      next: data => {
+        this.dialogRef.close(data)
+      }
+    })
+
   }
 
   reset(): void {
     this.dialogRef.close(null)
+  }
+
+  getFilter(): SearchFilter {
+    let res:SearchFilter = {expressions: []}
+
+    
+
+    return res;
   }
 
   getFilterFunction(): ((p: Publication) => boolean) {
