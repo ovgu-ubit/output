@@ -17,7 +17,7 @@ import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { FilterViewComponent } from '../windows/filter-view/filter-view.component';
+import { FilterViewComponent } from '../../tools/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';

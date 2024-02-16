@@ -56,7 +56,7 @@ import { ContractFormComponent } from './pages/windows/contract-form/contract-fo
 import { CostCenterFormComponent } from './pages/windows/cost-center-form/cost-center-form.component';
 import { CostItemFormComponent } from './pages/windows/cost-item-form/cost-item-form.component';
 import { CostTypeFormComponent } from './pages/windows/cost-type-form/cost-type-form.component';
-import { FilterViewComponent } from './pages/windows/filter-view/filter-view.component';
+import { FilterViewComponent } from './tools/filter-view/filter-view.component';
 import { FunderFormComponent } from './pages/windows/funder-form/funder-form.component';
 import { GreaterEntityFormComponent } from './pages/windows/greater-entity-form/greater-entity-form.component';
 import { ImportConfigComponent } from './pages/windows/import-config/import-config.component';

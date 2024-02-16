@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Publication } from '../../entity/Publication';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, ILike, In, Like, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
 import { Author } from '../../entity/Author';
 import { AuthorPublication } from '../../entity/AuthorPublication';
 import { Invoice } from '../../entity/Invoice';
@@ -9,6 +9,7 @@ import { CostItem } from '../../entity/CostItem';
 import { Institute } from '../../entity/Institute';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { ConfigService } from '@nestjs/config';
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
@@ -27,10 +28,7 @@ export class PublicationService {
         return this.pubRepository.find(options);
     }
 
-    public index(yop: number): Promise<PublicationIndex[]> {
-        let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
-
+    public indexQuery() {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.publisher", "publisher")
             .leftJoin("publication.authorPublications", "authorPublications")
@@ -59,8 +57,6 @@ export class PublicationService {
             .addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
             .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
             .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
-            .where('publication.pub_date >= :beginDate', { beginDate })
-            .andWhere('publication.pub_date <= :endDate', { endDate })
             .groupBy("publication.id")
             .addGroupBy("publication.title")
             .addGroupBy("publication.doi")
@@ -70,11 +66,23 @@ export class PublicationService {
             .addGroupBy("oa_category.label")
             .addGroupBy("publication_type.label")
             .addGroupBy("contract.label")
-            .addGroupBy("greater_entity.label");
+            .addGroupBy("greater_entity.label")
 
         //console.log(query.getSql());
+        return query;
+        //return query.getRawMany() as Promise<PublicationIndex[]>;
+    }
 
-        return query.getRawMany() as Promise<PublicationIndex[]>;
+    public index(yop: number): Promise<PublicationIndex[]> {
+        let indexQuery = this.indexQuery();
+
+        let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
+        let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
+
+        return indexQuery
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .getRawMany() as Promise<PublicationIndex[]>;
     }
 
     public softIndex(): Promise<PublicationIndex[]> {
@@ -354,6 +362,97 @@ export class PublicationService {
             if (await this.pubAutRepository.delete({ publicationId: In(authors.map(e => e.id)) }) && await this.invoiceRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) && await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
             else return { error: 'delete' };
         } else return { error: 'update' };
+    }
+
+    async filter(filter: SearchFilter): Promise<PublicationIndex[]> {
+
+        let indexQuery = this.indexQuery();
+        let first = false;
+        for (let expr of filter.expressions) {
+            let compareString;
+            switch (expr.comp) {
+                case CompareOperation.INCLUDES:
+                    compareString = this.getWhereStringIncludes(expr.key, expr.value)
+                    break;
+                case CompareOperation.EQUALS:
+                    compareString = this.getWhereStringEquals(expr.key, expr.value)
+                    break;
+                case CompareOperation.STARTS_WITH:
+                    compareString = this.getWhereStringStartsWith(expr.key, expr.value)
+                    break;
+                case CompareOperation.GREATER_THAN:
+                    compareString = "publication." + expr.key + " > " + expr.value;
+                    break;
+                case CompareOperation.SMALLER_THAN:
+                    compareString = "publication." + expr.key + " < " + expr.value;
+                    break;
+            }
+            switch (expr.op) {
+                case JoinOperation.AND:
+                    if (first) indexQuery = indexQuery.where(compareString);
+                    else indexQuery = indexQuery.andWhere(compareString);
+                    break;
+                case JoinOperation.OR:
+                    if (first) indexQuery = indexQuery.where(compareString);
+                    else indexQuery = indexQuery.orWhere(compareString);
+                    break;
+                case JoinOperation.AND_NOT:
+                    if (first) indexQuery = indexQuery.where(compareString);
+                    else indexQuery = indexQuery.andWhere("NOT "+compareString);
+                    break;
+            }
+        }
+        //console.log(indexQuery.getSql())
+
+        return indexQuery.getRawMany() as Promise<PublicationIndex[]>
+    }
+
+    getWhereStringEquals(key: string, value: string | number) {
+        let where = '';
+        switch (key) {
+            case 'greater_entity':
+            case 'oa_category':
+            case 'pub_type':
+            case 'publisher':
+            case 'contract':
+                where = key + ".label = '" + value + "'";
+                break;
+            default:
+                where = "publication." + key + " = " + value;
+        }
+        return where;
+    }
+
+    getWhereStringIncludes(key: string, value: string | number) {
+        let where = '';
+        switch (key) {
+            case 'greater_entity':
+            case 'oa_category':
+            case 'pub_type':
+            case 'publisher':
+            case 'contract':
+                where = key + ".label ILIKE '%" + value + "%'";
+                break;
+            default:
+                where = "publication." + key + " ILIKE '%" + value + "%'";
+        }
+        return where;
+    }
+
+    getWhereStringStartsWith(key: string, value: string | number) {
+        let where = '';
+        switch (key) {
+            case 'greater_entity':
+            case 'oa_category':
+            case 'pub_type':
+            case 'publisher':
+            case 'contract':
+                where = key + ".label ILIKE '" + value + "%'";
+                break;
+            default:
+                where = "publication." + key + " ILIKE '" + value + "%'";
+        }
+        return where;
     }
 
 }
