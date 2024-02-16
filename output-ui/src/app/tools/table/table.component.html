@@ -28,7 +28,10 @@
                 </ng-container>
               </mat-menu>
             </ng-container>
-            <ng-container *ngIf="!button.sub_buttons || button.sub_buttons.length === 0">
+            <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && button.icon">
+              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)"><mat-icon>{{button.title}}</mat-icon></button>&nbsp;
+            </ng-container>
+            <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && !button.icon">
               <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)">{{button.title}}</button>&nbsp;
             </ng-container>
           </ng-container>

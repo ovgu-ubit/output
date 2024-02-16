@@ -3,7 +3,8 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { SearchFilter } from '../../../../../output-interfaces/Config';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-filter-view',
@@ -14,20 +15,20 @@ export class FilterViewComponent implements OnInit {
 
   form: FormGroup;
 
-  joinOps: { op: string, label: string, showFirst?: boolean }[] = [
-    { op: 'AND', label: 'Und' },
-    { op: 'OR', label: 'Oder' },
-    { op: 'NOT', label: '(Und) Nicht', showFirst:true }
+  joinOps: { op: JoinOperation, label: string, showFirst?: boolean }[] = [
+    { op: JoinOperation.AND, label: 'Und' },
+    { op: JoinOperation.OR, label: 'Oder' },
+    { op: JoinOperation.AND_NOT, label: '(Und) Nicht', showFirst: true }
   ]
-  compareOps: { op: string, label: string, type?:string }[] = [
-    { op: 'INCLUDES', label: 'enthält' },
-    { op: 'EQUALS', label: 'ist genau' },
-    { op: 'STARTS_WITH', label: 'beginnt mit' },
-    { op: 'GREATER_THAN', label: 'größer als', type: 'number' },
-    { op: 'SMALLER_THAN', label: 'kleiner als', type: 'number' },
+  compareOps: { op: CompareOperation, label: string, type?: string }[] = [
+    { op: CompareOperation.INCLUDES, label: 'enthält' },
+    { op: CompareOperation.EQUALS, label: 'ist genau' },
+    { op: CompareOperation.STARTS_WITH, label: 'beginnt mit' },
+    { op: CompareOperation.GREATER_THAN, label: 'größer als', type: 'number' },
+    { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: 'number' },
   ]
 
-  keys: { key: string, label: string, type?:string }[] = [
+  keys: { key: string, label: string, type?: string }[] = [
     { key: 'id', label: 'ID', type: 'number' },
     { key: 'title', label: 'Titel' },
     { key: 'doi', label: 'DOI' },
@@ -45,8 +46,8 @@ export class FilterViewComponent implements OnInit {
     { key: 'contract', label: 'Vertrag' },
   ]
 
-  constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private publicationService: PublicationService) { }
+  constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService,
+    private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     this.form = this.formBuilder.group({
@@ -62,19 +63,19 @@ export class FilterViewComponent implements OnInit {
     return (this.form.controls['filters'] as FormArray).controls as unknown as FormGroup[];
   }
 
-  addRow(first:boolean) {
-    let filterForm: FormGroup = first? this.formBuilder.group({
+  addRow(first: boolean) {
+    let filterForm: FormGroup = first ? this.formBuilder.group({
       join_operator: [''],
       field: ['', Validators.required],
       compare_operator: ['', Validators.required],
       value: ['', Validators.required],
     })
-    : this.formBuilder.group({
-      join_operator: ['', Validators.required],
-      field: ['', Validators.required],
-      compare_operator: ['', Validators.required],
-      value: ['', Validators.required],
-    });
+      : this.formBuilder.group({
+        join_operator: ['', Validators.required],
+        field: ['', Validators.required],
+        compare_operator: ['', Validators.required],
+        value: ['', Validators.required],
+      });
     filterForm.get('compare_operator').setValue(this.compareOps[0].op)
     this.getFilters().push(filterForm)
   }
@@ -93,9 +94,15 @@ export class FilterViewComponent implements OnInit {
     this.publicationService.filter(this.getFilter()).subscribe({
       next: data => {
         this.dialogRef.close(data)
+      },
+      error: err => {
+        this._snackBar.open(`Filter kann nicht angewandt werden, bitte anpassen`, 'Puh...', {
+          duration: 5000,
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
       }
     })
-
   }
 
   reset(): void {
@@ -103,131 +110,25 @@ export class FilterViewComponent implements OnInit {
   }
 
   getFilter(): SearchFilter {
-    let res:SearchFilter = {expressions: []}
-
-    
-
-    return res;
-  }
-
-  getFilterFunction(): ((p: Publication) => boolean) {
-    let res = (p: Publication) => true;
+    let res: SearchFilter = { expressions: [] }
 
     for (let filter of this.getFiltersControls()) {
-      let part: (p: Publication) => boolean;
-      switch (filter.get('compare_operator').value) {
-        case 'INCLUDES':
-          part = this.getCompareFunctionIncludes(filter.get('field').value, filter.get('value').value.trim().toLowerCase());
-          break;
-        case 'EQUALS':
-          part = this.getCompareFunctionEquals(filter.get('field').value, filter.get('value').value.trim().toLowerCase());
-          break;
-        case 'STARTS_WITH':
-          part = this.getCompareFunctionStartsWith(filter.get('field').value, filter.get('value').value.trim().toLowerCase());
-          break;
-        case 'GREATER_THAN':
-          part = this.getCompareFunctionGreaterThan(filter.get('field').value, Number.parseFloat(filter.get('value').value.trim().toLowerCase()));
-          break;
-        case 'SMALLER_THAN':
-          part = this.getCompareFunctionSmallerThan(filter.get('field').value, Number.parseFloat(filter.get('value').value.trim().toLowerCase()));
-          break;
+      let expression:SearchFilterExpression = {
+        op: filter.get('join_operator').value? filter.get('join_operator').value : JoinOperation.AND,
+        key: filter.get('field').value,
+        comp: filter.get('compare_operator').value,
+        value: filter.get('value').value
       }
-      let tmp;
-      switch (filter.get('join_operator').value) {
-        case 'OR':
-          tmp = res.bind({});
-          res = ((p: Publication) => { return tmp(p) || part(p) });
-          break;
-        case 'NOT':
-          tmp = res.bind({});
-          res = ((p: Publication) => { return tmp(p) && !part(p) });
-          break;
-        case 'AND':
-        default:
-          tmp = res.bind({});
-          res = ((p: Publication) => { return tmp(p) && part(p) });
-          break;
-      }
+      res.expressions.push(expression)
     }
+
     return res;
   }
 
-  getCompareFunctionIncludes(field: string, value: string): ((p: Publication) => boolean) {
-    let res: ((p: Publication) => boolean);
-    switch (field) {
-      case 'greater_entity':
-      case 'oa_category':
-      case 'pub_type':
-      case 'publisher':
-      case 'contract':
-        res = (p) => p[field] ? p[field].label.trim().toLowerCase().includes(value) : false;
-        break;
-      default:
-        res = (p) => (p[field] + '').trim().toLowerCase().includes(value);
-        break;
-    }
-    return res;
-  }
-
-  getCompareFunctionEquals(field: string, value: string): ((p: Publication) => boolean) {
-    let res: ((p: Publication) => boolean);
-    switch (field) {
-      case 'greater_entity':
-      case 'oa_category':
-      case 'pub_type':
-      case 'publisher':
-      case 'contract':
-        res = (p) => p[field] ? p[field].label.trim().toLowerCase() === value : false;
-        break;
-      default:
-        res = (p) => ((p[field] + '').trim().toLowerCase()) === (value);
-        break;
-    }
-    return res;
-  }
-
-  getCompareFunctionStartsWith(field: string, value: string): ((p: Publication) => boolean) {
-    let res: ((p: Publication) => boolean);
-    switch (field) {
-      case 'greater_entity':
-      case 'oa_category':
-      case 'pub_type':
-      case 'publisher':
-      case 'contract':
-        res = (p) => p[field] ? p[field].label.trim().toLowerCase().startsWith(value) : false;
-        break;
-      default:
-        res = (p) => (p[field]+ '').trim().toLowerCase().startsWith(value);
-        break;
-    }
-    return res;
-  }
-
-  getCompareFunctionGreaterThan(field: string, value: number): ((p: Publication) => boolean) {
-    let res: ((p: Publication) => boolean);
-    switch (field) {
-      default:
-        res = (p) => (p[field]) > (value);
-        break;
-    }
-    return res;
-  }
-
-  getCompareFunctionSmallerThan(field: string, value: number): ((p: Publication) => boolean) {
-    let res: ((p: Publication) => boolean);
-    switch (field) {
-      default:
-        res = (p) => (p[field]) < (value);
-        break;
-    }
-    return res;
-  }
-
-  display(idx:number, op:{ op: string, label: string, type?:string }): boolean {
+  display(idx:number, op:{ op: CompareOperation, label: string, type?:string }): boolean {
     if (!this.getFiltersControls()[idx].get('field').value) return true;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
     if (op.type && key.type !== op.type) return false;
     return true;
   }
-
 }
