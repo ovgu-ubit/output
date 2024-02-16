@@ -343,10 +343,10 @@ export class PublicationService {
                     compareString = this.getWhereStringStartsWith(expr.key, expr.value)
                     break;
                 case CompareOperation.GREATER_THAN:
-                    compareString = "publication." + expr.key + " > " + expr.value;
+                    compareString = "publication." + expr.key + " > '" + expr.value+"'";
                     break;
                 case CompareOperation.SMALLER_THAN:
-                    compareString = "publication." + expr.key + " < " + expr.value;
+                    compareString = "publication." + expr.key + " < '" + expr.value+"'";
                     break;
             }
             switch (expr.op) {
@@ -364,7 +364,7 @@ export class PublicationService {
                     break;
             }
         }
-        //console.log(indexQuery.getSql())
+        console.log(indexQuery.getSql())
 
         return indexQuery.getRawMany() as Promise<PublicationIndex[]>
     }

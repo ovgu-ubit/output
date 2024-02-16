@@ -20,12 +20,12 @@ export class FilterViewComponent implements OnInit {
     { op: JoinOperation.OR, label: 'Oder' },
     { op: JoinOperation.AND_NOT, label: '(Und) Nicht', showFirst: true }
   ]
-  compareOps: { op: CompareOperation, label: string, type?: string }[] = [
+  compareOps: { op: CompareOperation, label: string, type?: string|string[] }[] = [
     { op: CompareOperation.INCLUDES, label: 'enthält' },
-    { op: CompareOperation.EQUALS, label: 'ist genau' },
+    { op: CompareOperation.EQUALS, label: 'ist genau', type: ['number','date']  },
     { op: CompareOperation.STARTS_WITH, label: 'beginnt mit' },
-    { op: CompareOperation.GREATER_THAN, label: 'größer als', type: 'number' },
-    { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: 'number' },
+    { op: CompareOperation.GREATER_THAN, label: 'größer als', type: ['number','date'] },
+    { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: ['number','date'] },
   ]
 
   keys: { key: string, label: string, type?: string }[] = [
@@ -33,6 +33,7 @@ export class FilterViewComponent implements OnInit {
     { key: 'title', label: 'Titel' },
     { key: 'doi', label: 'DOI' },
     { key: 'authors', label: 'Autoren' },
+    { key: 'pub_date', label: 'Publikationsdatum', type:'date' },
     { key: 'greater_entity', label: 'Größere Einheit' },
     { key: 'oa_category', label: 'OA-Kategorie' },
     { key: 'dataSource', label: 'Datenquelle' },
@@ -125,10 +126,17 @@ export class FilterViewComponent implements OnInit {
     return res;
   }
 
-  display(idx:number, op:{ op: CompareOperation, label: string, type?:string }): boolean {
+  display(idx:number, op:{ op: CompareOperation, label: string, type?:string|string[] }): boolean {
     if (!this.getFiltersControls()[idx].get('field').value) return true;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    if (op.type && key.type !== op.type) return false;
+    if (!Array.isArray(op.type) && key.type !== op.type) return false;
+    else if (Array.isArray(op.type) && !op.type.find(e => e!==key.type)) return false;
     return true;
+  }
+
+  date(idx:number) {
+    if (!this.getFiltersControls()[idx].get('field').value) return false;
+    let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
+    return (key.type == 'date' || key.type.includes('date'))
   }
 }
