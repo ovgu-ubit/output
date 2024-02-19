@@ -39,7 +39,14 @@
                         <mat-error>Bitte wählen Sie ein Operator aus</mat-error>
                     </mat-form-field>
 
-                    <mat-form-field>
+                    <mat-form-field *ngIf="date(i)">
+                        <mat-label>Suchwert</mat-label>
+                        <input matInput [matDatepicker]="picker" formControlName="value">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-datepicker #picker startView="year" color="accent"></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field *ngIf="!date(i)">
                         <mat-label>Suchwert</mat-label>
                         <input matInput formControlName="value" placeholder="zu suchender Wert">
                         <mat-error>Bitte geben Sie einen Wert ein</mat-error>

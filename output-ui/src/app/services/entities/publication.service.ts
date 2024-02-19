@@ -6,6 +6,7 @@ import { Store } from '@ngrx/store';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { selectReportingYear } from '../redux';
+import { SearchFilter } from '../../../../../output-interfaces/Config';
 
 @Injectable({
   providedIn: 'root'
@@ -56,6 +57,10 @@ export class PublicationService {
 
   public combine(id1:number, ids:number[]) {
     return this.http.post(environment.api + 'publications/combine', {id1,ids}, { withCredentials: true });
+  }
+
+  public filter(filter:SearchFilter) {
+    return this.http.post(environment.api + 'publications/filter', {filter}, { withCredentials: true });
   }
 
   public async filterAuthor(id:number) {
