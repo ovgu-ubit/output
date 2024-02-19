@@ -10,7 +10,7 @@
 
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Institut d. Autor*in</mat-label>
-            <mat-select [(value)]="this.institute" [compareWith]="compare">
+            <mat-select [(value)]="this.institute" [compareWith]="compare" [disabled]="this.disabled">
                 <mat-option [value]="null">- keine Angabe -</mat-option>
                 <mat-option *ngFor="let inst of this.author?.institutes"
                     [value]="inst">{{inst.label}}</mat-option>
