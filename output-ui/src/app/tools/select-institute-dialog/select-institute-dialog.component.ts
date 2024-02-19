@@ -7,36 +7,48 @@ import { Observable, map, startWith } from 'rxjs';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import { AliasFormComponent } from '../alias-form/alias-form.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-select-institute-dialog',
   templateUrl: './select-institute-dialog.component.html',
   styleUrls: ['./select-institute-dialog.component.css']
 })
-export class SelectInstituteDialogComponent implements OnInit{
+export class SelectInstituteDialogComponent implements OnInit {
 
-  author:Author;
-  institute:Institute = this.data.authorPub?.institute;
-  
+  author: Author;
+  institute: Institute = this.data.authorPub?.institute;
+
   institutes: Institute[];
   filtered_institutes: Observable<Institute[]>;
 
-constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
-  @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService:AuthorService, private instService:InstituteService,
-  private dialog: MatDialog) {}
+  constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService: AuthorService, private instService: InstituteService,
+    private dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
   form = this.formBuilder.group({
     affiliation: [''],
     institute: [''],
     inst: ['']
   })
+  disabled = false;
 
   ngOnInit(): void {
-    this.authorService.getAuthorForAutPub(this.data.author['id']).subscribe({
+    this.authorService.getAuthor(this.data.author['id']).subscribe({
       next: data => {
         this.author = data;
         this.form.get('affiliation').setValue(this.data['authorPub']['affiliation'])
         //if (!this.author.institutes || this.author.institutes.length === 0) this.abort();
+
+        if (this.author.locked_at) {
+          this.form.disable()
+          this.disabled = true;
+          this._snackBar.open('Autor*in wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+            duration: 5000,
+            panelClass: [`warning-snackbar`],
+            verticalPosition: 'top'
+          })
+        }
       }
     })
     this.instService.getinstitutes().subscribe({
@@ -50,7 +62,7 @@ constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
     })
   }
 
-  compare(i1,i2) {
+  compare(i1, i2) {
     return (i1?.id === i2?.id)
   }
 
@@ -58,12 +70,13 @@ constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
     if (this.institute && !this.author.institutes.find(e => this.institute.id === e.id)) {
       //save institute to author
       this.author.institutes.push(this.institute);
-      this.authorService.update(this.author).subscribe({
-        next: data => {
-          console.log('author institute updated')
-        }
-      })
     }
+    this.author.locked_at = undefined;
+    this.authorService.update(this.author).subscribe({
+      next: data => {
+        console.log('author institute updated')
+      }
+    })
     if (this.form.get('affiliation').value && !this.institute.aliases?.find(e => this.form.get('affiliation').value.includes(e.alias))) {
       //open alias dialog
       let aliases = [this.form.get('affiliation').value];
@@ -78,7 +91,7 @@ constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result && result.length > 0) {
-          this.institute.aliases.push({elementId: this.institute.id, alias: result[0]});
+          this.institute.aliases.push({ elementId: this.institute.id, alias: result[0] });
           this.instService.update(this.institute).subscribe()
         }
         this.dialogRef.close(this.institute);
@@ -86,8 +99,10 @@ constructor(public dialogRef: MatDialogRef<SelectInstituteDialogComponent>,
     }
     else this.dialogRef.close(this.institute);
   }
-  
+
   abort() {
+    this.author.locked_at = undefined;
+    this.authorService.update(this.author).subscribe();
     this.dialogRef.close({});
   }
 
