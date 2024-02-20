@@ -137,6 +137,6 @@ export class FilterViewComponent implements OnInit {
   date(idx:number) {
     if (!this.getFiltersControls()[idx].get('field').value) return false;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    return (key.type == 'date' || key.type.includes('date'))
+    return (key.type == 'date' || key.type?.includes('date'))
   }
 }
