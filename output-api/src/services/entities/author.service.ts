@@ -27,7 +27,7 @@ export class AuthorService {
     }
 
     public async one(id:number, writer:boolean) {
-        let aut = await this.repository.findOne({where: {id}, relations: { authorPublications: true, institutes: true }});
+        let aut = await this.repository.findOne({where: {id}, relations: { institutes: true }});
         if (writer && !aut.locked_at) {
             await this.save([{
                 id: aut.id,
@@ -41,10 +41,6 @@ export class AuthorService {
             return this.one(id, writer);
         }
         return aut;
-    }
-
-    public oneForAutPub(id:number) {
-        return this.repository.findOne({where: {id}, relations: { institutes: true }});
     }
 
     public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<Author> {
@@ -85,10 +81,10 @@ export class AuthorService {
     }
 
     public async combineAuthors(id1: number, ids: number[]) {
-        let aut1: Author = await this.one(id1, false)
+        let aut1: Author = await this.repository.findOne({where: {id:id1}, relations: {authorPublications: true, institutes: true}})
         let authors = []
         for (let id of ids) {
-            authors.push(await this.one(id, false))
+            authors.push(await this.repository.findOne({where: {id}, relations: {authorPublications: true, institutes: true}}))
         }
         
         if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
@@ -165,7 +161,7 @@ export class AuthorService {
 
     public async delete(auts: Author[]) {
         for (let aut of auts) {
-            let autE = await this.one(aut.id, false);
+            let autE = await this.repository.findOne({where: {id:aut.id}, relations: {authorPublications: true, institutes: true}})
             if (autE.authorPublications) for (let autPub of autE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }

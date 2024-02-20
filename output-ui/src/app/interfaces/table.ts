@@ -26,5 +26,6 @@ export interface TableButton {
       roles? : string[]
     }[],
     roles? : string[]; 
+    icon?: boolean;
 }
 

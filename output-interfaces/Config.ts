@@ -63,3 +63,28 @@ export class CSVMapping {
         status?: string;
     }
 }
+
+export class SearchFilter {
+    expressions: SearchFilterExpression[];
+}
+
+export class SearchFilterExpression {
+    op: JoinOperation;
+    key: string;
+    comp: CompareOperation;
+    value: string|number;
+}
+
+export enum CompareOperation {
+    INCLUDES,
+    EQUALS,
+    STARTS_WITH,
+    GREATER_THAN,
+    SMALLER_THAN
+}
+
+export enum JoinOperation {
+    AND,
+    OR,
+    AND_NOT
+}

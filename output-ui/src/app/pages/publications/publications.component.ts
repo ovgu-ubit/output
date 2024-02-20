@@ -17,7 +17,7 @@ import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { FilterViewComponent } from '../windows/filter-view/filter-view.component';
+import { FilterViewComponent } from '../../tools/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
@@ -29,17 +29,18 @@ import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publicati
 })
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
-    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService:EnrichService) { }
+    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService) { }
 
+  name = 'Publikationen des Jahres ';
 
   reporting_year: number;
   filteredIDs: number[];
 
   buttons: TableButton[] = [
+    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true},
     {
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
-        { title: 'Erweiterte Filter', action_function: this.extendedFilters.bind(this) },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
         { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) }
       ]
@@ -62,11 +63,11 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   @ViewChild(TableComponent) table: TableComponent<PublicationIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID'},
+    { colName: 'id', colTitle: 'ID' },
     { colName: 'title', colTitle: 'Titel' },
     { colName: 'doi', colTitle: 'DOI', type: 'doi' },
     { colName: 'authors', colTitle: 'Autoren' },
-    { colName: 'authors_inst', colTitle: 'Autoren '+environment.institution, type: 'authors' },
+    { colName: 'authors_inst', colTitle: 'Autoren ' + environment.institution, type: 'authors' },
     { colName: 'corr_inst', colTitle: 'Corr. Institut' },
     { colName: 'greater_entity', colTitle: 'Größere Einheit' },
     { colName: 'oa_category', colTitle: 'OA-Kategorie' },
@@ -80,9 +81,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.loading = true;
     this.enrichService.getEnrichs().subscribe({
       next: data => {
-        let sub_buttons = data.map(e => {return {title:e.label, action_function: function(){
-          return this.startEnrich(e.path)
-        }.bind(this)}});
+        let sub_buttons = data.map(e => {
+          return {
+            title: e.label, action_function: function () {
+              return this.startEnrich(e.path)
+            }.bind(this)
+          }
+        });
         this.buttons.push({
           title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['writer']
         })
@@ -136,7 +141,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.destroy$.next('');
   }
 
-  update(soft?:boolean): void {
+  update(soft?: boolean): void {
     this.loading = true;
     if (!soft) this.publicationService.index(this.reporting_year).subscribe({
       next: data => {
@@ -151,7 +156,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.publications = data;
         this.name = 'Soft-deleted Publikationen';
         this.table.update(this.publications);
-      }, error: err => console.log(err)});
+      }, error: err => console.log(err)
+    });
   }
 
   edit(row: any) {
@@ -195,9 +201,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     let dialogRef = this.dialog.open(ReportingYearFormComponent, {
       width: '400px',
       disableClose: true,
-      data: { 
+      data: {
         reporting_year: this.reporting_year
-       }
+      }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
@@ -236,9 +242,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   deleteSelected() {
     if (this.selection.selected.length === 0) return;
     let dialogData = new ConfirmDialogModel(
-      this.selection.selected.length + " Publikationen löschen", 
+      this.selection.selected.length + " Publikationen löschen",
       `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`
-      );
+    );
 
     let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
@@ -316,7 +322,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
   }
 
-  startEnrich(name:string) {
+  startEnrich(name: string) {
     if (this.selection.selected.length === 0) return;
     let save = []
     for (let pub of this.selection.selected) {
@@ -391,9 +397,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     let dialogRef = this.dialog.open(FilterViewComponent, {
       width: '800px',
       maxHeight: '800px',
-      data: {
-        yop: this.reporting_year
-      },
       disableClose: false
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -404,26 +407,29 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
             panelClass: [`warning-snackbar`],
             verticalPosition: 'top'
           })
+          this.store.dispatch(resetViewConfig());
         } else {
           this._snackBar.open(`${result.length} Publikationen gefiltert`, 'Super!', {
             duration: 5000,
             panelClass: [`success-snackbar`],
             verticalPosition: 'top'
           });
+          this.store.dispatch(resetViewConfig());
+          /*let viewConfig = {
+            sortDir: 'asc' as SortDirection,
+            filteredIDs: result
+          }
+          this.store.dispatch(setViewConfig({viewConfig}))*/
+          //this.table?.setViewConfig(initialState.viewConfig)
         }
-        //this.filteredIDs = result;
-        this.store.dispatch(resetViewConfig());
-        let viewConfig = {
-          sortDir: 'asc' as SortDirection,
-          filteredIDs: result
-        }
-        this.store.dispatch(setViewConfig({viewConfig}))
-        this.table?.setViewConfig(viewConfig)
+        this.publications = result;
+        this.name = 'Gefilterte Publikationen';
       } else {
         //this.filteredIDs = [];
         this.store.dispatch(resetViewConfig());
         this.table?.setViewConfig(initialState.viewConfig)
       }
+      this.table.update(this.publications);
     });
   }
 
@@ -438,8 +444,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.filteredIDs = [];
     this.update(true);
   }
-
-  name = 'Publikationen des Jahres ';
 
   getName() {
     return this.name;

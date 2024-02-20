@@ -8,6 +8,7 @@ import { AppConfigService } from "../services/app-config.service";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
+import { SearchFilter } from "../../../output-interfaces/Config";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -170,5 +171,27 @@ export class PublicationController {
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publication') 
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publication') 
         else return res;
+    }
+
+    @Post('filter')
+    @ApiBody({
+        description: '<p>JSON Request:</p>',
+        schema: {
+            example: {
+                filter: {
+                    expressions: [
+                        {
+                            op: 0,
+                            key: 'title',
+                            comp: 0,
+                            value: 'test'
+                        }
+                    ]
+                }
+            }
+        }
+    })
+    filter(@Body('filter') filter:SearchFilter) {
+        return this.publicationService.filter(filter);
     }
 }
