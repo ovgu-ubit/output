@@ -1,7 +1,7 @@
 <mat-toolbar color="primary">
-    <h1>Institut</h1>
+    <h1 mat-dialog-title style="color:white">Institut</h1>
 </mat-toolbar>
-<div style="padding: 5px">
+<mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
         <mat-form-field *ngIf="this.institute?.id" appearance="fill">
@@ -95,4 +95,4 @@
             </div>
         </ng-template>
     </form>
-</div>
+</mat-dialog-content>

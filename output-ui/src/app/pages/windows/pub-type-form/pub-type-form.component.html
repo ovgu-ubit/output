@@ -1,6 +1,6 @@
 
-<mat-toolbar color="primary"><h1>Publikationsart</h1></mat-toolbar>
-<div style="padding: 5px">
+<mat-toolbar color="primary"><h1 mat-dialog-title style="color:white">Publikationsart</h1></mat-toolbar>
+<mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
         <mat-form-field *ngIf="this.pub_type?.id" appearance="fill">
@@ -63,4 +63,4 @@
             </div>
         </ng-template>
     </form>
-</div>
+</mat-dialog-content>

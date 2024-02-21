@@ -1,5 +1,5 @@
-<mat-toolbar color="primary"><h1>Autor</h1></mat-toolbar>
-<div style="padding: 5px">
+<mat-toolbar color="primary"><h1 mat-dialog-title style="color:white">Autor</h1></mat-toolbar>
+<mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)"
         (keyup)="escape($event)">
@@ -83,4 +83,4 @@ Institute
             </div>
         </ng-template>
     </form>
-</div>
+</mat-dialog-content>
