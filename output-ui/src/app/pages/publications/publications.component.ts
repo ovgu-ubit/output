@@ -164,7 +164,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
     let dialogRef = this.dialog.open(PublicationFormComponent, {
       width: '800px',
-      maxHeight: '800px',
+      maxHeight: "90%",
       data: {
         id: row.id
       },

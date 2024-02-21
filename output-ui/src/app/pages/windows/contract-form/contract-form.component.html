@@ -1,5 +1,5 @@
-<mat-toolbar color="primary"><h1>Vertrag</h1></mat-toolbar>
-<div style="padding: 5px">
+<mat-toolbar color="primary"><h1 mat-dialog-title style="color:white">Vertrag</h1></mat-toolbar>
+<mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
         <mat-form-field *ngIf="this.contract?.id" appearance="fill">
@@ -124,4 +124,4 @@
             </div>
         </ng-template>
     </form>
-</div>
+</mat-dialog-content>

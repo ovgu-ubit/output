@@ -1,28 +1,23 @@
-<br />
+<mat-toolbar color="primary">
+    <h1 mat-dialog-title style="color:white">Publikation</h1>
+</mat-toolbar>
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
     </div>
 </div>
-<div class="container-fluid" [hidden]="this.loading">
-    <mat-toolbar color="primary">
-        <h1>Publikation</h1>
-    </mat-toolbar>
+    <mat-dialog-content [hidden]="this.loading">
     <form [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
-        (keyup)="escape($event)">
+        (keyup)="escape($event)" style="display: flex; flex-direction: column;justify-content: space-evenly;">
 
-        <div *ngIf="this.edit" class="row justify-content-md-center">
-            <div class="form-group col-md-9">
-                <mat-form-field appearance="fill">
+        <div style="display: flex;flex-direction: row;justify-content: space-evenly;">
+                <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
                     <mat-label>ID</mat-label>
                     <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
                 </mat-form-field>
-            </div>
-            <div class="form-group col-md-2">
-                <mat-form-field appearance="fill" [class]="'status-'+this.form.get('status').value">
+                <mat-form-field [class]="'status-'+this.form.get('status').value" style="max-width: 150px;">
                     <mat-label>Status</mat-label>
                     <input matInput [type]="'number'" placeholder="Status" formControlName="status" />
                 </mat-form-field>
-            </div>
             <button type="button" (click)="this.lock()" mat-icon-button class="form-group col-md-1"
                 matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800">
                 <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
@@ -30,17 +25,11 @@
             </button>
         </div>
 
-        <div class="row justify-content-md-center">
-            <div class="form-group col-md-12">
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Titel</mat-label>
                     <textarea matInput [type]="'text'" placeholder="Titel" formControlName="title"></textarea>
                 </mat-form-field>
-            </div>
-        </div>
 
-        <div class="row justify-content-md-center">
-            <div class="form-group col-md-12">
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>DOI</mat-label>
                     <input matInput [type]="'text'" placeholder="DOI" formControlName="doi" />
@@ -50,11 +39,7 @@
                         <mat-icon>open_in_new</mat-icon>
                     </a>
                 </mat-form-field>
-            </div>
-        </div>
 
-        <div class="row justify-content-md-center">
-            <div class="form-group col-md-12">
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Link</mat-label>
                     <input matInput [type]="'text'" placeholder="Link" formControlName="link" />
@@ -64,8 +49,6 @@
                         <mat-icon>open_in_new</mat-icon>
                     </a>
                 </mat-form-field>
-            </div>
-        </div>
 
         <mat-accordion multi="true">
             <mat-expansion-panel>
@@ -78,17 +61,11 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Autoren</mat-label>
                             <textarea matInput [type]="'text'" placeholder="Autoren"
                                 formControlName="authors"></textarea>
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Autoren der Institution (corr. Autoren markiert):</mat-label>
                             <mat-chip-grid #author_list>
@@ -114,11 +91,7 @@
                                 </mat-option>
                             </mat-autocomplete>
                         </mat-form-field>
-                    </div>
-                </div>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Beteiligte Institute (corr. markiert):</mat-label>
                             <mat-chip-grid #inst_list>
@@ -131,8 +104,6 @@
                             </mat-chip-grid>
                             <input matInput [matChipInputFor]="inst_list" disabled hidden>
                         </mat-form-field>
-                    </div>
-                </div>
 
             </mat-expansion-panel>
             <mat-expansion-panel>
@@ -145,8 +116,6 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Publikationstyp</mat-label>
                             <mat-select [(value)]="this.pub_type" [disabled]="this.disabled">
@@ -154,11 +123,7 @@
                                     [value]="pub_type.id">{{pub_type.label}}</mat-option>
                             </mat-select>
                         </mat-form-field>
-                    </div>
-                </div>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Größere Einheit</mat-label>
                             <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoGe"
@@ -180,12 +145,8 @@
                                 </mat-option>
                             </mat-autocomplete>
                         </mat-form-field>
-                    </div>
-                </div>
 
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Verlag</mat-label>
                             <input type="text" placeholder="Auswählen oder Eingeben" matInput
@@ -203,11 +164,7 @@
                                 </mat-option>
                             </mat-autocomplete>
                         </mat-form-field>
-                    </div>
-                </div>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Publikationsdatum</mat-label>
                             <input matInput [matDatepicker]="picker" formControlName="pub_date">
@@ -216,11 +173,7 @@
                             <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub.pub_date : today"
                                 startView="year" color="accent"></mat-datepicker>
                         </mat-form-field>
-                    </div>
-                </div>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Sprache</mat-label>
                             <mat-select [(value)]="this.language" [disabled]="this.disabled">
@@ -228,8 +181,6 @@
                                     [value]="lang.id">{{lang.label}}</mat-option>
                             </mat-select>
                         </mat-form-field>
-                    </div>
-                </div>
 
             </mat-expansion-panel>
 
@@ -243,8 +194,6 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>OA-Kategorie</mat-label>
                             <mat-select [(value)]="this.oa_cat" [disabled]="this.disabled">
@@ -252,59 +201,39 @@
                                     [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
                             </mat-select>
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+                        
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Zweitveröffentlichung</mat-label>
                             <textarea matInput [type]="'text'" placeholder="Zweitveröffentlichung"
                                 formControlName="second_pub"></textarea>
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Ist OA (lt. Unpaywall)</mat-label>
                             <input matInput [type]="'text'" placeholder="Ist OA" formControlName="is_oa" />
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>OA-Status (lt. Unpaywall)</mat-label>
                             <input matInput [type]="'text'" placeholder="OA-Status" formControlName="oa_status" />
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+                        
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Journal OA (lt. Unpaywall)</mat-label>
                             <input matInput [type]="'text'" placeholder="Journal OA" formControlName="is_journal_oa" />
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+                        
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Beste OA Quelle (lt. Unpaywall)</mat-label>
                             <input matInput [type]="'text'" placeholder="Beste OA Quelle"
                                 formControlName="best_oa_host" />
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+                        
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Beste OA Lizenz (lt. Unpaywall)</mat-label>
                             <input matInput [type]="'text'" placeholder="Beste OA Lizenz"
                                 formControlName="best_oa_license" />
                         </mat-form-field>
-                    </div>
-                </div>
 
             </mat-expansion-panel>
 
@@ -318,8 +247,6 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Vertrag</mat-label>
                             <input type="text" placeholder="Auswählen oder Eingeben" matInput
@@ -337,8 +264,6 @@
                                 </mat-option>
                             </mat-autocomplete>
                         </mat-form-field>
-                    </div>
-                </div>
 
                 Rechnungen
                 <table *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && !this.disabled"
@@ -412,46 +337,30 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Weitere Informationen</mat-label>
                             <textarea matInput [type]="'text'" placeholder="Informationen"
                                 formControlName="add_info"></textarea>
                         </mat-form-field>
-                    </div>
-                </div>
 
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Datenquelle</mat-label>
                             <input matInput [type]="'text'" placeholder="Datenquelle" formControlName="dataSource" />
                         </mat-form-field>
-                    </div>
-                </div>
-
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+                        
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Hinzugefügt am</mat-label>
                             <input matInput [value]="form.get('import_date').value | date: 'dd.MM.YYYY HH:mm:ss'"
                                 readonly />
                         </mat-form-field>
-                    </div>
-                </div>
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
+                        
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Geändert am</mat-label>
                             <input matInput [value]="form.get('edit_date').value | date: 'dd.MM.YYYY HH:mm:ss'"
                                 readonly />
                         </mat-form-field>
-                    </div>
-                </div>
-                <div [hidden]="!this.pub?.delete_date" class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
-                        <mat-form-field appearance="fill" style="width: 100%;">
+
+                        <mat-form-field [hidden]="!this.pub?.delete_date" appearance="fill" style="width: 100%;">
                             <mat-label>Soft-deleted am</mat-label>
                             <input matInput [value]="form.get('delete_date').value | date: 'dd.MM.YYYY HH:mm:ss'"
                                 readonly />
@@ -460,8 +369,6 @@
                                 <mat-icon>recycling</mat-icon>
                             </button>
                         </mat-form-field>
-                    </div>
-                </div>
 
             </mat-expansion-panel>
         </mat-accordion>
@@ -486,5 +393,4 @@
             </div>
         </ng-template>
 
-    </form>
-</div>
+    </form></mat-dialog-content>
