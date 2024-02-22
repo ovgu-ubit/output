@@ -77,7 +77,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return response.data.meta['count'];
     }
     protected importTest(element: any): boolean {
-        return element['primary_location']['is_published'];
+        return true;//element['primary_location']['is_published'];
     }
     protected getData(response: any): any[] {
         return response.data.results;
