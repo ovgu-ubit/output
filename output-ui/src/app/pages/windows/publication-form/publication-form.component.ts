@@ -4,7 +4,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { Observable, map, startWith } from 'rxjs';
+import { EMPTY, Observable, concatWith, map, startWith } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
@@ -107,14 +107,16 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-  }
-
-  ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer')) {
       this.disable();
     }
+  }
+
+  loadData(drop_lock: boolean) {
     if (this.data['id']) {
-      this.publicationService.getPublication(this.data['id']).subscribe({
+      let ob$: Observable<any> = EMPTY;
+      if (drop_lock) ob$ = ob$.pipe(concatWith(this.publicationService.save([{id:this.data['id'], locked_at: null}])))
+      ob$.pipe(concatWith(this.publicationService.getPublication(this.data['id']))).subscribe({
         next: data => {
           this.edit = true;
           this.pub = data;
@@ -208,6 +210,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
       }
     })
+  }
+
+  ngAfterViewInit(): void {
+    this.loadData(false);    
   }
 
   disable() {
@@ -304,7 +310,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 if (this.pub.id) this.pub.authorPublications.push({ author: data, authorId: data.id, publicationId: this.pub.id })
                 else this.pub.authorPublications.push({ author, authorId: author.id })
                 this.form.get('authors_inst').setValue('');
-                this.ngAfterViewInit();
+                this.loadData(true);
               }
             })
           }
@@ -349,7 +355,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   })
                   this.pub.publisher = data[0];
                   this.form.get('publ').setValue(this.pub.publisher.label)
-                  this.ngAfterViewInit();
+                  this.loadData(true);
                 }
               })
             }
@@ -375,7 +381,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               })
               this.pub.publisher = data[0];
               this.form.get('publ').setValue(this.pub.publisher.label)
-              this.ngAfterViewInit();
+              this.loadData(true);
             }
           })
         }
@@ -418,7 +424,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   })
                   this.pub.contract = data[0];
                   this.form.get('contr').setValue(this.pub.contract.label)
-                  this.ngAfterViewInit();
+                  this.loadData(true);
                 }
               })
             }
@@ -444,7 +450,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               })
               this.pub.contract = data[0];
               this.form.get('contr').setValue(this.pub.contract.label)
-              this.ngAfterViewInit();
+              this.loadData(true);
             }
           })
         }
@@ -477,7 +483,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 verticalPosition: 'top'
               })
               this.pub.funders.push(data[0])
-              this.ngAfterViewInit();
+              this.loadData(true);
             }
           })
         }
@@ -527,7 +533,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   })
                   this.pub.greater_entity = data[0];
                   this.form.get('ge').setValue(this.pub.greater_entity.label)
-                  this.ngAfterViewInit();
+                  this.loadData(true);
                 }
               })
             }
@@ -553,7 +559,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               })
               this.pub.greater_entity = data[0];
               this.form.get('ge').setValue(this.pub.greater_entity.label)
-              this.ngAfterViewInit();
+              this.loadData(true);
             }
           })
         }

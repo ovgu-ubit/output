@@ -77,7 +77,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return response.data.meta['count'];
     }
     protected importTest(element: any): boolean {
-        return element['primary_location']['is_published'];
+        return true;//element['primary_location']['is_published'];
     }
     protected getData(response: any): any[] {
         return response.data.results;
@@ -85,7 +85,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
 
     protected getDOI(element: any): string {
         let res = element['doi']
-        if (res.includes('doi.org/')) {
+        if (res?.includes('doi.org/')) {
             res = res.slice(res.indexOf('doi.org/')+8)
         }
         return res;
@@ -97,7 +97,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         let res = [];
         let authors = element['authorships'];
         for (let aut of authors) {
-            if (aut['institutions'].find(e => e['id'].includes(this.id))) {
+            if (aut['institutions'].find(e => e['id']?.includes(this.id))) {
                 let name = aut['author']['display_name']
                 res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
@@ -119,7 +119,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return res.slice(0, res.length - 2);
     }
     protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        if (element['primary_location']['source'] && element['primary_location']['source']['type'].includes('journal')) {
+        if (element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal')) {
             return element['primary_location']['source']['issn']?.map(e => {
                 return {
                     type: 'issn',
