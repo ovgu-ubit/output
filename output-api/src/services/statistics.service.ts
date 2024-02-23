@@ -128,5 +128,24 @@ export class StatisticsService {
 
         return query.getRawMany();
     }
+
+    async contract(reporting_year, filterOptions?:FilterOptions) {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+        let query = this.pubRepository.createQueryBuilder('publication')
+            .leftJoin('publication.contract', 'contract')
+            .leftJoin('publication.authorPublications', 'aut_pub')
+            .select("case when contract.label is not null then contract.label else 'Unbekannt' end", 'contract')
+            .addSelect('count(distinct publication.id)')
+            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .groupBy('contract')
+            .orderBy('count', 'DESC')
+
+        if (filterOptions?.corresponding) query = query.andWhere('authorPublication.corresponding = :corr', { corr: true })
+        if (filterOptions?.instituteId) query = query.andWhere('authorPublication.\"instituteId\" = :instituteId', { instituteId: filterOptions.instituteId })
+
+        return query.getRawMany();
+    }
 }
 

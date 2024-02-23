@@ -38,4 +38,9 @@ export class StatisticController {
     pub_tpye(@Query('year') year:number) {
         return this.statService.pub_type(year);
     }
+
+    @Get('contract')
+    contract(@Query('year') year:number) {
+        return this.statService.contract(year);
+    }
 }

@@ -65,5 +65,18 @@
 
   class="chart"
 ></highcharts-chart>
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptionsContract"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag5"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+
+  class="chart"
+></highcharts-chart>
 
 </div>

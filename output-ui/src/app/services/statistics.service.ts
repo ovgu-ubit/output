@@ -36,4 +36,8 @@ export class StatisticsService {
   pub_type(year:number) {
     return this.http.get<{pub_type, count}[]>(environment.api + 'statistics/pub_type?year='+year)
   }
+
+  contract(year:number) {
+    return this.http.get<{contract, count}[]>(environment.api + 'statistics/contract?year='+year)
+  }
 }

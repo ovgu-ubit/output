@@ -60,6 +60,12 @@ export class StatisticsYearComponent implements OnInit {
     title: {
       text: 'Anteil Publikationsarten'
     }
+  } 
+  chartOptionsContract = {
+    ...this.chartOptions,
+    title: {
+      text: 'Anteil Verträge'
+    }
   }
   chartCallback: Highcharts.ChartCallbackFunction = function (chart) { return null } // function after chart is created
   updateFlag: boolean = false; // set to true if you wish to update the chart
@@ -67,6 +73,7 @@ export class StatisticsYearComponent implements OnInit {
   updateFlag2: boolean = false; // set to true if you wish to update the chart
   updateFlag3: boolean = false; // set to true if you wish to update the chart
   updateFlag4: boolean = false; // set to true if you wish to update the chart
+  updateFlag5: boolean = false; // set to true if you wish to update the chart
   oneToOneFlag: boolean = true; // changing number of series
   runOutsideAngular: boolean = false; // optional boolean, defaults to false
 
@@ -146,6 +153,20 @@ export class StatisticsYearComponent implements OnInit {
           data: chartData
         }]
         this.updateFlag4 = true;
+      }
+    });
+    this.statService.contract(this.year).subscribe({
+      next: data => {
+        let chartData = []
+        for (let e of data) {
+          chartData.push([e.contract, parseFloat(e.count)])
+        }
+        this.chartOptionsContract.series = [{
+          type: 'pie',
+          name: 'Vertrag',
+          data: chartData
+        }]
+        this.updateFlag5 = true;
       }
     });
   }
