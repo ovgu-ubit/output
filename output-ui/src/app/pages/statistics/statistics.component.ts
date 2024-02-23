@@ -1,16 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { StatisticsService } from 'src/app/services/statistics.service';
 import * as Highcharts from 'highcharts';
 import exporting from 'highcharts/modules/exporting';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { Institute } from '../../../../../output-interfaces/Publication';
+import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../output-interfaces/Publication';
 import { Observable, map, startWith } from 'rxjs';
 import { FilterOptions, HighlightOptions } from "../../../../../output-interfaces/Statistics"
 import { InstituteService } from 'src/app/services/entities/institute.service';
-import { Publisher } from '../../../../../output-api/src/entity/Publisher';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { ContractService } from 'src/app/services/entities/contract.service';
+import { OACategoryService } from 'src/app/services/entities/oa-category.service';
+import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
+import { MatSelect } from '@angular/material/select';
 
 @Component({
   selector: 'app-statistics',
@@ -52,6 +55,7 @@ export class StatisticsComponent implements OnInit {
   form:FormGroup = this.formBuilder.group({
     institute: [''],
     publisher: [''],
+    contract: [''],
     corresponding: ['']
   });
   formHighlight:FormGroup = this.formBuilder.group({
@@ -59,14 +63,21 @@ export class StatisticsComponent implements OnInit {
   });
   institutes: Institute[];
   publishers: Publisher[];
+  contracts: Contract[];
+  oa_cats: OA_Category[];
+  pub_types: PublicationType[];
   filtered_institutes: Observable<Institute[]>;
   filtered_publishers: Observable<Publisher[]>;
+  filtered_contracts: Observable<Contract[]>;
   filter: FilterOptions = {};
   highlight: HighlightOptions = {};
   highlightName: string;
 
+  @ViewChild('select_oa') selectOA: MatSelect;
+
   constructor(private statService: StatisticsService, private router:Router, private formBuilder:FormBuilder, 
-    private instService:InstituteService, private publisherService:PublisherService) { }
+    private instService:InstituteService, private publisherService:PublisherService, private contractService:ContractService,
+    private oaService:OACategoryService, private pubTypeService:PublicationTypeService) { }
 
   ngOnInit(): void {
     exporting(Highcharts);
@@ -87,6 +98,25 @@ export class StatisticsComponent implements OnInit {
           startWith(''),
           map(value => this._filterPublisher(value || '')),
         );
+      }
+    })
+    this.contractService.getContracts().subscribe({
+      next: data => {
+        this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.filtered_contracts = this.form.get('contract').valueChanges.pipe(
+          startWith(''),
+          map(value => this._filterContract(value || '')),
+        );
+      }
+    })
+    this.oaService.getOACategories().subscribe({
+      next: data => {
+        this.oa_cats = data.sort((a, b) => a.label.localeCompare(b.label));
+      }
+    })
+    this.pubTypeService.getPubTypes().subscribe({
+      next: data => {
+        this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
       }
     })
   }
@@ -146,6 +176,7 @@ export class StatisticsComponent implements OnInit {
   reset() {
     this.filter = {};
     this.form.reset();
+    this.selectOA.value = null;
   }
 
   resetHighlight() {
@@ -159,16 +190,24 @@ export class StatisticsComponent implements OnInit {
   selectedPublisher(event: MatAutocompleteSelectedEvent): void {
     this.filter = {...this.filter, publisherId: this.publishers.find(e => e.label === event.option.value).id}
   }
+  selectedContract(event: MatAutocompleteSelectedEvent): void {
+    this.filter = {...this.filter, contractId: this.contracts.find(e => e.label === event.option.value).id}
+  }
+  changeOA(event) {
+    this.filter = {...this.filter, oaCatId: this.oa_cats.find(e => e.label === event.value).id}
+  }
 
   private _filterInst(value: string): Institute[] {
     const filterValue = value.toLowerCase();
-
     return this.institutes.filter(pub => pub?.label.toLowerCase().includes(filterValue) || pub?.short_label?.toLowerCase().includes(filterValue));
   }
   private _filterPublisher(value: string): Publisher[] {
     const filterValue = value.toLowerCase();
-
     return this.publishers.filter(pub => pub?.label.toLowerCase().includes(filterValue) || pub?.location?.toLowerCase().includes(filterValue));
+  }
+  private _filterContract(value: string): Contract[] {
+    const filterValue = value.toLowerCase();
+    return this.contracts.filter(pub => pub?.label.toLowerCase().includes(filterValue));
   }
 
   getLink() {
