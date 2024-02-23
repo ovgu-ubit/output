@@ -17,7 +17,7 @@
       <span class="fill-remaining-space"></span>
 
       <span>
-        <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null">
+        <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null" style="display:flex; flex-flow: row wrap">
           <ng-container *ngFor="let button of this.parent.buttons">
             <ng-container *ngIf="button.sub_buttons && button.sub_buttons.length > 0">
               <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)">{{button.title}}<mat-icon>
@@ -43,17 +43,15 @@
 
 
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-2">
-        <mat-form-field style="width: 100%;">
+    <div style="display: flex; flex-flow: row wrap; justify-content: space-between;">
+      <div style="display: flex; flex-direction: row;justify-content: flex-start; gap: 10px">
+        <mat-form-field>
           <input matInput type="text" [(ngModel)]="filterValue" (keyup)="doFilter(filterValue)" placeholder="Filter">
           <button type="button" *ngIf="filterValue" matSuffix mat-icon-button aria-label="Clear"
             (click)="filterValue = '';doFilter(filterValue);">
             <mat-icon>close</mat-icon>
           </button>
         </mat-form-field>
-      </div>
-      <div class="col-md-3">
         <mat-form-field>
           <mat-select [(ngModel)]="columnFilter" (selectionChange)="filterColumn()">
             <mat-option [value]="null">Alle Felder</mat-option>
@@ -63,7 +61,6 @@
           </mat-select>
         </mat-form-field>
       </div>
-      <div class="col-md-2">
         <form [formGroup]="pageForm" (ngSubmit)="goToPage()">
           <mat-form-field class="pageInput">
             <input matInput type="text" placeholder="Seitenzahl" formControlName="pageNumber"
@@ -77,11 +74,8 @@
           </mat-form-field>
 
         </form>
-      </div>
-      <div class="col-md-5">
-        <mat-paginator [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons>
+        <mat-paginator #paginatorTop [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons (page)="handlePageTop($event)">
         </mat-paginator>
-      </div>
     </div>
     <div class="mat-elevation-z8">
       <table mat-table class="table" [class.table-wide]="this.wide" [dataSource]="this.dataSource" matSort
@@ -160,6 +154,9 @@
         <tr mat-row *matRowDef="let row; columns: headerNames;"></tr>
       </table>
     </div>
-
+    <div style="display: flex; justify-content: flex-end;">
+      <mat-paginator #paginatorBottom [pageSize]="10" showFirstLastButtons (page)="handlePageBottom($event)">
+      </mat-paginator>
+  </div>
   </div>
 </div>

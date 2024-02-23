@@ -1,7 +1,7 @@
 import { LiveAnnouncer } from '@angular/cdk/a11y';
-import { Component, Inject, Input, OnInit, Pipe, ViewChild } from '@angular/core';
+import { Component, Inject, Input, OnInit, Pipe, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
@@ -41,7 +41,8 @@ export class TableComponent<T> implements OnInit {
 
   @Input() parent: TableParent<T>;
 
-  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild('paginatorTop') paginator: MatPaginator;
+  @ViewChild('paginatorBottom') paginator2: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
   filterValue: string;
   pageForm: UntypedFormGroup;
@@ -49,6 +50,7 @@ export class TableComponent<T> implements OnInit {
   trunc: number = 60;
   headerNames = [];
   dataSource: MatTableDataSource<T>;
+  dataSource2: MatTableDataSource<T>;
   alerts: Alert[] = [];
 
   columnFilter: string = null;
@@ -81,8 +83,10 @@ export class TableComponent<T> implements OnInit {
   public update(data): void {
     this.data = data;
     this.dataSource = new MatTableDataSource<T>(data);
+    this.dataSource2 = new MatTableDataSource<T>(data);
     this.parent.selection.clear();
     this.dataSource.paginator = this.paginator;
+    this.dataSource2.paginator = this.paginator2;
     this.dataSource.sort = this.sort;
     this.filterColumn();
   }
@@ -236,6 +240,14 @@ export class TableComponent<T> implements OnInit {
       pageSize: this.paginator.pageSize,
       length: this.dataSource.data.length
     });
+    
+    this.paginator2.pageIndex = viewConfig.page? viewConfig.page : this.paginator2.pageIndex;
+    this.paginator2.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator2.pageSize
+    this.paginator2.page.next({
+      pageIndex: this.paginator2.pageIndex,
+      pageSize: this.paginator2.pageSize,
+      length: this.dataSource2.data.length
+    });
 
     this.filterValue = viewConfig.filterValue? viewConfig.filterValue : '';
     this.columnFilter = viewConfig.filterColumn;
@@ -253,6 +265,43 @@ export class TableComponent<T> implements OnInit {
 
   isButtonDisabled(e:TableButton) {
     return e.roles && !e.roles.some(r => this.tokenService.hasRole(r));
+  }
+
+  public handlePageTop(e: any) {
+    let {pageSize} = e;
+
+    this.paginator2.pageSize = pageSize;
+
+    if(!this.paginator.hasNextPage()){
+      this.paginator2.lastPage();
+    }else if(!this.paginator.hasPreviousPage()){
+      this.paginator2.firstPage();
+    }else{
+      if(this.paginator.pageIndex < this.paginator2.pageIndex){
+        this.paginator2.previousPage();
+      } else  if(this.paginator.pageIndex >this.paginator2.pageIndex){
+        this.paginator2.nextPage();
+      }
+    }
+  
+
+
+  }
+
+
+  public handlePageBottom(e: any) {
+
+    if(!this.paginator2.hasNextPage()){
+      this.paginator.lastPage();
+    }else if(!this.paginator2.hasPreviousPage()){
+      this.paginator.firstPage();
+    }else{
+      if(this.paginator2.pageIndex < this.paginator.pageIndex){
+        this.paginator.previousPage();
+      } else  if(this.paginator2.pageIndex > this.paginator.pageIndex){
+        this.paginator.nextPage();
+      }
+    }
   }
 
 }

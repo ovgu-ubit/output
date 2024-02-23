@@ -134,20 +134,8 @@ export class PubMedImportService extends AbstractImportService {
             next: async (data: any) => {
                 if (!data) return;
                 let pub = JSON.parse(xmljs.xml2json(data.data, { compact: true }));
-                pub = this.getData(pub);
-                //console.log(pub)
-                console.log(pub['PMID']['_text'])
-                /*console.log(this.importTest(pub))
-                console.log(this.getTitle(pub))
-                console.log(this.getDOI(pub))
-                console.log(this.getInstAuthors(pub))
-                console.log(this.getAuthors(pub))
-                console.log(this.getGreaterEntityIdentifier(pub))
-                console.log(this.getGreaterEntityName(pub))
-                console.log(this.getPubDate(pub))
-                console.log(this.getLanguage(pub))
-                console.log(this.getPubType(pub))*/
                 try {
+                    pub = this.getData(pub);
                     if (!this.getDOI(pub) && !this.getTitle(pub)) {
                         this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
                         return;
