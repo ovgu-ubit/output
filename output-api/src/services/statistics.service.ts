@@ -21,17 +21,14 @@ export class StatisticsService {
         }
 
         let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.authorPublications', 'aut_pub')
             .select("extract('Year' from publication.pub_date at time zone 'UTC')", 'pub_year')
             .addSelect("count(distinct publication.id)")
             .groupBy('pub_year')
             .orderBy('pub_year')
             .where('publication.id > 0')
 
-        if (highlightOptions?.corresponding) query = query.addSelect('count(distinct CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END)', 'highlight')
 
-        if (filterOptions?.corresponding) query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
-        if (filterOptions?.instituteId) query = query.andWhere('aut_pub.\"instituteId\" in (:...instituteIds)', { instituteIds: instIDs })
+        query = this.addFilter(query, filterOptions, highlightOptions)
 
         return query.getRawMany();
     }
@@ -143,17 +140,27 @@ export class StatisticsService {
         return query.orderBy('value', 'DESC');
     }
 
-    addFilter(query: SelectQueryBuilder<Publication>, filterOptions: FilterOptions) {
+    addFilter(query: SelectQueryBuilder<Publication>, filterOptions: FilterOptions, highlightOptions?:HighlightOptions) {
         let autPub = false;
 
         if (filterOptions?.corresponding) {
             autPub = true;
-            query = query.andWhere('authorPublication.corresponding = :corr', { corr: true })
+            query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
         }
         if (filterOptions?.instituteId) {
             autPub = true;
-            query = query.andWhere('authorPublication.\"instituteId\" = :instituteId', { instituteId: filterOptions.instituteId })
+            query = query.andWhere('aut_pub.\"instituteId\" = :instituteId', { instituteId: filterOptions.instituteId })
         }
+        if (filterOptions?.publisherId) query = query.andWhere('publication.\"publisherId\" = :publisherId', { publisherId: filterOptions.publisherId })
+        if (filterOptions?.contractId) query = query.andWhere('publication.\"contractId\" = :contractId', { contractId: filterOptions.contractId })
+        if (filterOptions?.pubTypeId) query = query.andWhere('publication.\"pubTypeId\" = :pubTypeId', { pubTypeId: filterOptions.pubTypeId })
+        if (filterOptions?.oaCatId) query = query.andWhere('publication.\"oaCatId\" = :oaCatId', { oaCatId: filterOptions.oaCatId })
+
+        if (highlightOptions?.corresponding) {
+            autPub = true;
+            query = query.addSelect('count(distinct CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END)', 'highlight')
+        }
+
         if (autPub) query = query.leftJoin('publication.authorPublications', 'aut_pub')
 
         return query;

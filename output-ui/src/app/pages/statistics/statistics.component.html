@@ -17,15 +17,31 @@
         <input type="text"
         placeholder="Auswählen"
         matInput
-        [matAutocomplete]="autoPublisher"
+        [matAutocomplete]="autoInstitute"
         formControlName="institute"
         #input_publ>
-    <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedInst($event)">
+    <mat-autocomplete #autoInstitute="matAutocomplete" (optionSelected)="selectedInst($event)">
     <mat-option *ngFor="let inst of this.filtered_institutes | async" [value]="inst.label">
         {{inst.label}} ({{inst.short_label}}) 
     </mat-option>
     </mat-autocomplete>
     </mat-form-field>
+
+    
+    <mat-form-field appearance="fill">
+      <mat-label>Nach Verlag filtern</mat-label>
+      <input type="text"
+      placeholder="Auswählen"
+      matInput
+      [matAutocomplete]="autoPublisher"
+      formControlName="publisher"
+      #input_publ>
+  <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPublisher($event)">
+  <mat-option *ngFor="let publ of this.filtered_publishers | async" [value]="publ.label">
+      {{publ.label}} ({{publ.location}}) 
+  </mat-option>
+  </mat-autocomplete>
+  </mat-form-field>
 
       <button mat-raised-button type="submit" color="primary" class="btn-primary">Aktualisieren</button>&nbsp;
       <button mat-raised-button type="reset" color="primary" class="btn-primary" (click)="this.reset()">Zurücksetzen</button>

@@ -9,6 +9,8 @@ import { Institute } from '../../../../../output-interfaces/Publication';
 import { Observable, map, startWith } from 'rxjs';
 import { FilterOptions, HighlightOptions } from "../../../../../output-interfaces/Statistics"
 import { InstituteService } from 'src/app/services/entities/institute.service';
+import { Publisher } from '../../../../../output-api/src/entity/Publisher';
+import { PublisherService } from 'src/app/services/entities/publisher.service';
 
 @Component({
   selector: 'app-statistics',
@@ -49,18 +51,22 @@ export class StatisticsComponent implements OnInit {
 
   form:FormGroup = this.formBuilder.group({
     institute: [''],
+    publisher: [''],
     corresponding: ['']
   });
   formHighlight:FormGroup = this.formBuilder.group({
     corresponding: ['']
   });
   institutes: Institute[];
+  publishers: Publisher[];
   filtered_institutes: Observable<Institute[]>;
+  filtered_publishers: Observable<Publisher[]>;
   filter: FilterOptions = {};
   highlight: HighlightOptions = {};
   highlightName: string;
 
-  constructor(private statService: StatisticsService, private router:Router, private formBuilder:FormBuilder, private instService:InstituteService) { }
+  constructor(private statService: StatisticsService, private router:Router, private formBuilder:FormBuilder, 
+    private instService:InstituteService, private publisherService:PublisherService) { }
 
   ngOnInit(): void {
     exporting(Highcharts);
@@ -71,6 +77,15 @@ export class StatisticsComponent implements OnInit {
         this.filtered_institutes = this.form.get('institute').valueChanges.pipe(
           startWith(''),
           map(value => this._filterInst(value || '')),
+        );
+      }
+    })
+    this.publisherService.getPublishers().subscribe({
+      next: data => {
+        this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.filtered_publishers = this.form.get('publisher').valueChanges.pipe(
+          startWith(''),
+          map(value => this._filterPublisher(value || '')),
         );
       }
     })
@@ -141,11 +156,19 @@ export class StatisticsComponent implements OnInit {
   selectedInst(event: MatAutocompleteSelectedEvent): void {
     this.filter = {...this.filter, instituteId: this.institutes.find(e => e.label === event.option.value).id}
   }
+  selectedPublisher(event: MatAutocompleteSelectedEvent): void {
+    this.filter = {...this.filter, publisherId: this.publishers.find(e => e.label === event.option.value).id}
+  }
 
   private _filterInst(value: string): Institute[] {
     const filterValue = value.toLowerCase();
 
     return this.institutes.filter(pub => pub?.label.toLowerCase().includes(filterValue) || pub?.short_label?.toLowerCase().includes(filterValue));
+  }
+  private _filterPublisher(value: string): Publisher[] {
+    const filterValue = value.toLowerCase();
+
+    return this.publishers.filter(pub => pub?.label.toLowerCase().includes(filterValue) || pub?.location?.toLowerCase().includes(filterValue));
   }
 
   getLink() {
