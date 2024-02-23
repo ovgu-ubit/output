@@ -18,26 +18,26 @@ export class StatisticsService {
   }
 
   corresponding(year:number) {
-    return this.http.get<{count, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year)
+    return this.http.get<{value, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year)
   }
 
-  institute(year:number) {
-    return this.http.get<{institute, count}[]>(environment.api + 'statistics/institute?year='+year)
+  institute(year:number, costs:boolean) {
+    return this.http.get<{institute, value}[]>(environment.api + 'statistics/institute?year='+year+'&costs='+costs)
   }
 
-  oaCat(year:number) {
-    return this.http.get<{oa_cat, count}[]>(environment.api + 'statistics/oa_cat?year='+year)
+  oaCat(year:number, costs:boolean) {
+    return this.http.get<{oa_cat, value}[]>(environment.api + 'statistics/oa_cat?year='+year+'&costs='+costs)
   }
 
-  publisher(year:number) {
-    return this.http.get<{publisher, count}[]>(environment.api + 'statistics/publisher?year='+year)
+  publisher(year:number, costs:boolean) {
+    return this.http.get<{publisher, value}[]>(environment.api + 'statistics/publisher?year='+year+'&costs='+costs)
   }
 
-  pub_type(year:number) {
-    return this.http.get<{pub_type, count}[]>(environment.api + 'statistics/pub_type?year='+year)
+  pub_type(year:number, costs:boolean) {
+    return this.http.get<{pub_type, value}[]>(environment.api + 'statistics/pub_type?year='+year+'&costs='+costs)
   }
 
-  contract(year:number) {
-    return this.http.get<{contract, count}[]>(environment.api + 'statistics/contract?year='+year)
+  contract(year:number, costs:boolean) {
+    return this.http.get<{contract, value}[]>(environment.api + 'statistics/contract?year='+year+'&costs='+costs)
   }
 }

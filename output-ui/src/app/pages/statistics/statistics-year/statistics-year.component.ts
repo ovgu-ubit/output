@@ -78,18 +78,24 @@ export class StatisticsYearComponent implements OnInit {
   runOutsideAngular: boolean = false; // optional boolean, defaults to false
 
   year;
+  costs = false;
 
   constructor(private route: ActivatedRoute, private statService: StatisticsService) { }
 
   ngOnInit(): void {
     exporting(Highcharts);
     this.year = parseInt(this.route.snapshot.paramMap.get('year'));
+    this.loadData(this.costs)
+  }
+
+  loadData(costs:boolean) {
+    this.costs = costs;
     this.statService.corresponding(this.year).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
           chartData.push(['corresponding', parseFloat(e.corresponding)])
-          chartData.push(['sonstige', parseFloat(e.count) - parseFloat(e.corresponding)])
+          chartData.push(['sonstige', parseFloat(e.value) - parseFloat(e.corresponding)])
         }
         this.chartOptions.series = [{
           type: 'pie',
@@ -99,11 +105,11 @@ export class StatisticsYearComponent implements OnInit {
         this.updateFlag = true;
       }
     })
-    this.statService.institute(this.year).subscribe({
+    this.statService.institute(this.year, costs).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.institute, parseFloat(e.count)])
+          chartData.push([e.institute, parseFloat(e.value)])
         }
         this.chartOptionsInstitute.series = [{
           type: 'pie',
@@ -113,11 +119,11 @@ export class StatisticsYearComponent implements OnInit {
         this.updateFlag1 = true;
       }
     });
-    this.statService.oaCat(this.year).subscribe({
+    this.statService.oaCat(this.year, costs).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.oa_cat, parseFloat(e.count)])
+          chartData.push([e.oa_cat, parseFloat(e.value)])
         }
         this.chartOptionsOACat.series = [{
           type: 'pie',
@@ -127,11 +133,11 @@ export class StatisticsYearComponent implements OnInit {
         this.updateFlag2 = true;
       }
     });
-    this.statService.publisher(this.year).subscribe({
+    this.statService.publisher(this.year, costs).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.publisher, parseFloat(e.count)])
+          chartData.push([e.publisher, parseFloat(e.value)])
         }
         this.chartOptionsPublisher.series = [{
           type: 'pie',
@@ -141,11 +147,11 @@ export class StatisticsYearComponent implements OnInit {
         this.updateFlag3 = true;
       }
     });
-    this.statService.pub_type(this.year).subscribe({
+    this.statService.pub_type(this.year, costs).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.pub_type, parseFloat(e.count)])
+          chartData.push([e.pub_type, parseFloat(e.value)])
         }
         this.chartOptionsPubType.series = [{
           type: 'pie',
@@ -155,11 +161,11 @@ export class StatisticsYearComponent implements OnInit {
         this.updateFlag4 = true;
       }
     });
-    this.statService.contract(this.year).subscribe({
+    this.statService.contract(this.year, costs).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.contract, parseFloat(e.count)])
+          chartData.push([e.contract, parseFloat(e.value)])
         }
         this.chartOptionsContract.series = [{
           type: 'pie',

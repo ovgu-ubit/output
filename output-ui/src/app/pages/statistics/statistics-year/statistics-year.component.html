@@ -1,4 +1,6 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<button mat-raised-button color="primary" *ngIf="!this.costs" (click)="this.loadData(true)">Switch to costs</button>
+<button mat-raised-button color="primary" *ngIf="this.costs" (click)="this.loadData(false)">Switch to count</button>
 <div style="display: flex;flex-flow: row wrap;">
 <highcharts-chart 
   [Highcharts]="Highcharts"
