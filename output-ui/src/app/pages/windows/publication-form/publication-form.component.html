@@ -9,7 +9,7 @@
     <form [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
         (keyup)="escape($event)" style="display: flex; flex-direction: column;justify-content: space-evenly;">
 
-        <div style="display: flex;flex-direction: row;justify-content: space-evenly;">
+        <div style="display: flex;flex-direction: row;justify-content: space-between;">
                 <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
                     <mat-label>ID</mat-label>
                     <input matInput [type]="'number'" placeholder="ID" formControlName="id" />

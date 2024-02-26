@@ -8,7 +8,10 @@ import { CrossrefEnrichService } from "./src/services/import/crossref-enrich.ser
 import { CrossrefImportService } from "./src/services/import/crossref-import.service";
 import { OpenAccessMonitorEnrichService } from "./src/services/import/open-access-monitor-enrich.service";
 import { OpenAccessMonitorImportService } from "./src/services/import/open-access-monitor-import.service";
+import { OpenAlexImportService } from "./src/services/import/openalex-import.service";
+import { OpenAPCEnrichService } from "./src/services/import/openapc-enrich.service";
 import { Output1ImportService } from "./src/services/import/output-1-import.service";
+import { PubMedImportService } from "./src/services/import/pubmed-import";
 import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.service";
 import { InitService } from "./src/services/init.service";
 
