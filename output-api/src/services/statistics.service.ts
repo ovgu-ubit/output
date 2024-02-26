@@ -156,10 +156,21 @@ export class StatisticsService {
         if (filterOptions?.pubTypeId) query = query.andWhere('publication.\"pubTypeId\" = :pubTypeId', { pubTypeId: filterOptions.pubTypeId })
         if (filterOptions?.oaCatId) query = query.andWhere('publication.\"oaCategoryId\" = :oaCatId', { oaCatId: filterOptions.oaCatId })
 
+        let highlight = '';
         if (highlightOptions?.corresponding) {
             autPub = true;
-            query = query.addSelect('count(distinct CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END)', 'highlight')
+            highlight += 'aut_pub.corresponding AND '
         }
+        if (highlightOptions?.instituteId) {
+            autPub = true;
+            highlight += 'aut_pub.\"instituteId\" = '+highlightOptions.instituteId+' AND '
+        }
+        if (highlightOptions?.publisherId) highlight += 'publication.\"publisherId\" = '+highlightOptions?.publisherId+' AND '
+        if (highlightOptions?.contractId) highlight += 'publication.\"contractId\" = '+highlightOptions?.contractId+' AND '
+        if (highlightOptions?.pubTypeId) highlight += 'publication.\"pubTypeId\" = '+highlightOptions?.pubTypeId+' AND '
+        if (highlightOptions?.oaCatId) highlight += 'publication.\"oaCategoryId\" = '+highlightOptions?.oaCatId+' AND '
+
+        if (highlight) query = query.addSelect('count(distinct CASE WHEN '+highlight.slice(0,highlight.length-5)+' THEN publication.id ELSE NULL END)', 'highlight')
 
         if (autPub) query = query.leftJoin('publication.authorPublications', 'aut_pub')
 

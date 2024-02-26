@@ -12,6 +12,9 @@
     <div>
       <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
+        
+        <mat-checkbox formControlName="corresponding">corresponding?</mat-checkbox>
+
         <mat-form-field appearance="fill">
           <mat-label>Nach Institut filtern</mat-label>
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoInstitute"
@@ -83,6 +86,57 @@
       <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="formHighlight"
         (ngSubmit)="this.actionHighlight()">
         <mat-checkbox formControlName="corresponding">corresponding?</mat-checkbox>
+
+        <mat-form-field appearance="fill">
+          <mat-label>Nach Institut filtern</mat-label>
+          <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoInstitute1"
+            formControlName="institute" #input_inst>
+          <mat-autocomplete #autoInstitute1="matAutocomplete" (optionSelected)="selectedInst1($event)">
+            <mat-option *ngFor="let inst of this.filtered_institutes1 | async" [value]="inst.label">
+              {{inst.label}} ({{inst.short_label}})
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+          <mat-label>Nach Verlag filtern</mat-label>
+          <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoPublisher1"
+            formControlName="publisher" #input_publ>
+          <mat-autocomplete #autoPublisher1="matAutocomplete" (optionSelected)="selectedPublisher1($event)">
+            <mat-option *ngFor="let publ of this.filtered_publishers1 | async" [value]="publ.label">
+              {{publ.label}} ({{publ.location}})
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+        
+        <mat-form-field appearance="fill">
+          <mat-label>Nach Vertrag filtern</mat-label>
+          <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoContract1"
+            formControlName="contract" #input_contr>
+          <mat-autocomplete #autoContract1="matAutocomplete" (optionSelected)="selectedContract1($event)">
+            <mat-option *ngFor="let con of this.filtered_contracts1 | async" [value]="con.label">
+              {{con.label}}
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+        
+        <mat-form-field appearance="fill">
+          <mat-label>Nach OA-Kategorie filtern</mat-label>
+          <mat-select #select_oa1 (selectionChange)="this.changeOA1($event)">
+            <mat-option></mat-option>
+            <mat-option *ngFor="let oa of this.oa_cats" [value]="oa.label">
+              {{oa.label}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <mat-form-field appearance="fill">
+          <mat-label>Nach Publikationstyp filtern</mat-label>
+          <mat-select #select_PubType1 (selectionChange)="this.changePubType1($event)">
+            <mat-option></mat-option>
+            <mat-option *ngFor="let pt of this.pub_types" [value]="pt.label">
+              {{pt.label}}</mat-option>
+          </mat-select>
+        </mat-form-field>
 
         <button mat-raised-button type="submit" color="primary" class="btn-primary">Aktualisieren</button>&nbsp;
         <button mat-raised-button type="reset" color="primary" class="btn-primary"

@@ -9,4 +9,9 @@ export interface FilterOptions {
 
 export interface HighlightOptions {
     corresponding?: boolean,
+    instituteId?: number,
+    publisherId?: number,
+    contractId?: number,
+    pubTypeId?: number,
+    oaCatId?: number
 }
