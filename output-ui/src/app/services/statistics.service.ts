@@ -17,27 +17,27 @@ export class StatisticsService {
       return {pub_year:Number(e1.pub_year),count:Number(e1.count),highlight:Number(e1.highlight)}})))
   }
 
-  corresponding(year:number) {
-    return this.http.get<{value, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year)
+  corresponding(year:number,filterOptions?:FilterOptions) {
+    return this.http.post<{value, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year,{filterOptions})
   }
 
-  institute(year:number, costs:boolean) {
-    return this.http.get<{institute, value}[]>(environment.api + 'statistics/institute?year='+year+'&costs='+costs)
+  institute(year:number, costs:boolean,filterOptions?:FilterOptions) {
+    return this.http.post<{id, institute, value}[]>(environment.api + 'statistics/institute?year='+year+'&costs='+costs,{filterOptions})
   }
 
-  oaCat(year:number, costs:boolean) {
-    return this.http.get<{oa_cat, value}[]>(environment.api + 'statistics/oa_cat?year='+year+'&costs='+costs)
+  oaCat(year:number, costs:boolean,filterOptions?:FilterOptions) {
+    return this.http.post<{id, oa_cat, value}[]>(environment.api + 'statistics/oa_cat?year='+year+'&costs='+costs,{filterOptions})
   }
 
-  publisher(year:number, costs:boolean) {
-    return this.http.get<{publisher, value}[]>(environment.api + 'statistics/publisher?year='+year+'&costs='+costs)
+  publisher(year:number, costs:boolean,filterOptions?:FilterOptions) {
+    return this.http.post<{id, publisher, value}[]>(environment.api + 'statistics/publisher?year='+year+'&costs='+costs,{filterOptions})
   }
 
-  pub_type(year:number, costs:boolean) {
-    return this.http.get<{pub_type, value}[]>(environment.api + 'statistics/pub_type?year='+year+'&costs='+costs)
+  pub_type(year:number, costs:boolean,filterOptions?:FilterOptions) {
+    return this.http.post<{id, pub_type, value}[]>(environment.api + 'statistics/pub_type?year='+year+'&costs='+costs,{filterOptions})
   }
 
-  contract(year:number, costs:boolean) {
-    return this.http.get<{contract, value}[]>(environment.api + 'statistics/contract?year='+year+'&costs='+costs)
+  contract(year:number, costs:boolean,filterOptions?:FilterOptions) {
+    return this.http.post<{id, contract, value}[]>(environment.api + 'statistics/contract?year='+year+'&costs='+costs,{filterOptions})
   }
 }

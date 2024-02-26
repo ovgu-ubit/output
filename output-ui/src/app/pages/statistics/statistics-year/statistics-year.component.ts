@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import * as Highcharts from 'highcharts';
 import exporting from 'highcharts/modules/exporting';
 import { StatisticsService } from 'src/app/services/statistics.service';
+import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
 
 @Component({
   selector: 'app-statistics-year',
@@ -80,6 +81,12 @@ export class StatisticsYearComponent implements OnInit {
   year;
   costs = false;
 
+  institutes:{id:number, label:string}[] = []
+  oa_cats:{id:number, label:string}[] = []
+  publisher:{id:number, label:string}[] = []
+  constracts:{id:number, label:string}[] = []
+  pub_types:{id:number, label:string}[] = []
+
   constructor(private route: ActivatedRoute, private statService: StatisticsService) { }
 
   ngOnInit(): void {
@@ -90,7 +97,7 @@ export class StatisticsYearComponent implements OnInit {
 
   loadData(costs:boolean) {
     this.costs = costs;
-    this.statService.corresponding(this.year).subscribe({
+    this.statService.corresponding(this.year, this.filter).subscribe({
       next: data => {
         let chartData = []
         for (let e of data) {
@@ -100,13 +107,17 @@ export class StatisticsYearComponent implements OnInit {
         this.chartOptions.series = [{
           type: 'pie',
           name: 'Art',
-          data: chartData
+          data: chartData,
+          events: {click: 
+            (event) => {this.applyFilter(event.point.series.name, event.point.name)}
+          }
         }]
         this.updateFlag = true;
       }
     })
-    this.statService.institute(this.year, costs).subscribe({
+    this.statService.institute(this.year, costs, this.filter).subscribe({
       next: data => {
+        this.institutes = data.map(e => {return {id: e['id'], label: e['institute']}});
         let chartData = []
         for (let e of data) {
           chartData.push([e.institute, parseFloat(e.value)])
@@ -114,13 +125,17 @@ export class StatisticsYearComponent implements OnInit {
         this.chartOptionsInstitute.series = [{
           type: 'pie',
           name: 'Institut',
-          data: chartData
+          data: chartData,
+          events: {click: 
+            (event) => {this.applyFilter(event.point.series.name, event.point.name)}
+          }
         }]
         this.updateFlag1 = true;
       }
     });
-    this.statService.oaCat(this.year, costs).subscribe({
+    this.statService.oaCat(this.year, costs, this.filter).subscribe({
       next: data => {
+        this.oa_cats = data.map(e => {return {id: e['id'], label: e['oa_cat']}});
         let chartData = []
         for (let e of data) {
           chartData.push([e.oa_cat, parseFloat(e.value)])
@@ -128,13 +143,17 @@ export class StatisticsYearComponent implements OnInit {
         this.chartOptionsOACat.series = [{
           type: 'pie',
           name: 'OA-Kategorie',
-          data: chartData
+          data: chartData,
+          events: {click: 
+            (event) => {this.applyFilter(event.point.series.name, event.point.name)}
+          }
         }]
         this.updateFlag2 = true;
       }
     });
-    this.statService.publisher(this.year, costs).subscribe({
+    this.statService.publisher(this.year, costs, this.filter).subscribe({
       next: data => {
+        this.publisher = data.map(e => {return {id: e['id'], label: e['publisher']}});
         let chartData = []
         for (let e of data) {
           chartData.push([e.publisher, parseFloat(e.value)])
@@ -142,13 +161,17 @@ export class StatisticsYearComponent implements OnInit {
         this.chartOptionsPublisher.series = [{
           type: 'pie',
           name: 'Verlag',
-          data: chartData
+          data: chartData,
+          events: {click: 
+            (event) => {this.applyFilter(event.point.series.name, event.point.name)}
+          }
         }]
         this.updateFlag3 = true;
       }
     });
-    this.statService.pub_type(this.year, costs).subscribe({
+    this.statService.pub_type(this.year, costs, this.filter).subscribe({
       next: data => {
+        this.pub_types = data.map(e => {return {id: e['id'], label: e['pub_type']}});
         let chartData = []
         for (let e of data) {
           chartData.push([e.pub_type, parseFloat(e.value)])
@@ -156,13 +179,17 @@ export class StatisticsYearComponent implements OnInit {
         this.chartOptionsPubType.series = [{
           type: 'pie',
           name: 'Publikationsart',
-          data: chartData
+          data: chartData,
+          events: {click: 
+            (event) => {this.applyFilter(event.point.series.name, event.point.name)}
+          }
         }]
         this.updateFlag4 = true;
       }
     });
-    this.statService.contract(this.year, costs).subscribe({
+    this.statService.contract(this.year, costs, this.filter).subscribe({
       next: data => {
+        this.constracts = data.map(e => {return {id: e['id'], label: e['contract']}});
         let chartData = []
         for (let e of data) {
           chartData.push([e.contract, parseFloat(e.value)])
@@ -170,7 +197,10 @@ export class StatisticsYearComponent implements OnInit {
         this.chartOptionsContract.series = [{
           type: 'pie',
           name: 'Vertrag',
-          data: chartData
+          data: chartData,
+          events: {click: 
+            (event) => {this.applyFilter(event.point.series.name, event.point.name)}
+          }
         }]
         this.updateFlag5 = true;
       }
@@ -183,5 +213,38 @@ export class StatisticsYearComponent implements OnInit {
 
   getLabel() {
     return '/Berichte/' + this.year;
+  }
+
+  filter:FilterOptions;
+  filterText:string=''
+
+  applyFilter(series_name: string, cat_name: string) {
+    if (cat_name === 'Unbekannt' || (series_name === 'Art' && cat_name === 'sonstige')) return;
+    this.filterText += series_name+': '+cat_name +' ';
+    if (series_name === 'Art') {
+      if (cat_name === 'corresponding') this.filter = {...this.filter, corresponding: true}
+    } 
+    if (series_name === 'Institut') {
+      this.filter = {...this.filter,instituteId: this.institutes.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'OA-Kategorie') {
+      this.filter = {...this.filter,oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'Vertrag') {
+      this.filter = {...this.filter,contractId: this.constracts.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'Publikationsart') {
+      this.filter = {...this.filter,pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'Verlag') {
+      this.filter = {...this.filter,publisherId: this.publisher.find(e => e.label === cat_name)?.id}
+    }
+    this.loadData(this.costs);
+  }
+
+  resetFilter() {
+    this.filterText = '';
+    this.filter = {};
+    this.loadData(this.costs);
   }
 }

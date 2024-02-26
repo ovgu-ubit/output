@@ -18,7 +18,7 @@ export class StatisticController {
                     
                 },
                 highlightOptions: {
-                    
+
                 }
             }
         }
@@ -27,33 +27,33 @@ export class StatisticController {
         return this.statService.countPubsByYear(filterOptions,highlightOptions);
     }
 
-    @Get('corresponding')
-    corresponding(@Query('year') year:number) {
-        return this.statService.corresponding(year);
+    @Post('corresponding')
+    corresponding(@Query('year') year:number,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.corresponding(year, filterOptions);
     }
 
-    @Get('institute')
-    institute(@Query('year') year:number, @Query('costs') costs:boolean) {
-        return this.statService.institute(year, costs);
+    @Post('institute')
+    institute(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.institute(year, costs, filterOptions);
     }
 
-    @Get('oa_cat')
-    oaCat(@Query('year') year:number, @Query('costs') costs:boolean) {
-        return this.statService.oaCategory(year, costs);
+    @Post('oa_cat')
+    oaCat(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.oaCategory(year, costs, filterOptions);
     }
 
-    @Get('publisher')
-    publisher(@Query('year') year:number, @Query('costs') costs:boolean) {
-        return this.statService.publisher(year, costs);
+    @Post('publisher')
+    publisher(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.publisher(year, costs, filterOptions);
     }
 
-    @Get('pub_type')
-    pub_tpye(@Query('year') year:number, @Query('costs') costs:boolean) {
-        return this.statService.pub_type(year, costs);
+    @Post('pub_type')
+    pub_tpye(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.pub_type(year, costs, filterOptions);
     }
 
-    @Get('contract')
-    contract(@Query('year') year:number, @Query('costs') costs:boolean) {
-        return this.statService.contract(year, costs);
+    @Post('contract')
+    contract(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.contract(year, costs, filterOptions);
     }
 }

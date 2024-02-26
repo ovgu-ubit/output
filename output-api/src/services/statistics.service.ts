@@ -28,7 +28,7 @@ export class StatisticsService {
             .where('publication.id > 0')
 
 
-        query = this.addFilter(query, filterOptions, highlightOptions)
+        query = this.addFilter(query, false, filterOptions, highlightOptions)
 
         return query.getRawMany();
     }
@@ -43,7 +43,7 @@ export class StatisticsService {
             .addSelect('COUNT(distinct (CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END))', 'corresponding')
             .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
 
-        query = this.addFilter(query, filterOptions)
+        query = this.addFilter(query, true, filterOptions)
 
         return query.getRawMany();
     }
@@ -56,11 +56,13 @@ export class StatisticsService {
             .leftJoin('publication.authorPublications', 'aut_pub')
             .leftJoin('aut_pub.institute', 'institute')
             .select("case when institute.label is not null then institute.label else 'Unbekannt' end", 'institute')
+            .addSelect('institute.id','id')
             .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
             .groupBy('institute')
+            .addGroupBy('institute.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, filterOptions)
+        query = this.addFilter(query, true, filterOptions)
 
         return query.getRawMany();
     }
@@ -71,13 +73,14 @@ export class StatisticsService {
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.pubRepository.createQueryBuilder('publication')
             .leftJoin("publication.oa_category", 'oa_cat')
-            .leftJoin('publication.authorPublications', 'aut_pub')
             .select("case when oa_cat.label is not null then oa_cat.label else 'Unbekannt' end", 'oa_cat')
+            .addSelect('oa_cat.id','id')
             .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
             .groupBy('oa_cat')
+            .addGroupBy('oa_cat.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, filterOptions)
+        query = this.addFilter(query, false, filterOptions)
 
         return query.getRawMany();
     }
@@ -88,13 +91,14 @@ export class StatisticsService {
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.pubRepository.createQueryBuilder('publication')
             .leftJoin('publication.publisher', 'publisher')
-            .leftJoin('publication.authorPublications', 'aut_pub')
             .select("case when publisher.label is not null then publisher.label else 'Unbekannt' end", 'publisher')
+            .addSelect('publisher.id','id')
             .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
             .groupBy('publisher')
+            .addGroupBy('publisher.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, filterOptions)
+        query = this.addFilter(query, false, filterOptions)
 
         return query.getRawMany();
     }
@@ -105,13 +109,14 @@ export class StatisticsService {
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.pubRepository.createQueryBuilder('publication')
             .leftJoin('publication.pub_type', 'pub_type')
-            .leftJoin('publication.authorPublications', 'aut_pub')
             .select("case when pub_type.label is not null then pub_type.label else 'Unbekannt' end", 'pub_type')
+            .addSelect('pub_type.id','id')
             .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
             .groupBy('pub_type')
+            .addGroupBy('pub_type.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, filterOptions)
+        query = this.addFilter(query, false, filterOptions)
 
         return query.getRawMany();
     }
@@ -123,11 +128,13 @@ export class StatisticsService {
         let query = this.pubRepository.createQueryBuilder('publication')
             .leftJoin('publication.contract', 'contract')
             .select("case when contract.label is not null then contract.label else 'Unbekannt' end", 'contract')
+            .addSelect('contract.id','id')
             .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
             .groupBy('contract')
+            .addGroupBy('contract.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, filterOptions)
+        query = this.addFilter(query, false, filterOptions)
 
         return query.getRawMany();
     }
@@ -140,9 +147,8 @@ export class StatisticsService {
         return query.orderBy('value', 'DESC');
     }
 
-    addFilter(query: SelectQueryBuilder<Publication>, filterOptions: FilterOptions, highlightOptions?:HighlightOptions) {
+    addFilter(query: SelectQueryBuilder<Publication>, autPubAlready:boolean, filterOptions: FilterOptions, highlightOptions?:HighlightOptions) {
         let autPub = false;
-
         if (filterOptions?.corresponding) {
             autPub = true;
             query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
@@ -172,7 +178,7 @@ export class StatisticsService {
 
         if (highlight) query = query.addSelect('count(distinct CASE WHEN '+highlight.slice(0,highlight.length-5)+' THEN publication.id ELSE NULL END)', 'highlight')
 
-        if (autPub) query = query.leftJoin('publication.authorPublications', 'aut_pub')
+        if (autPub && !autPubAlready) query = query.leftJoin('publication.authorPublications', 'aut_pub')
 
         return query;
     }
