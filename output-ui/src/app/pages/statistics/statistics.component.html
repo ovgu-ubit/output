@@ -53,6 +53,15 @@
               {{oa.label}}</mat-option>
           </mat-select>
         </mat-form-field>
+        
+        <mat-form-field appearance="fill">
+          <mat-label>Nach Publikationstyp filtern</mat-label>
+          <mat-select #select_PubType (selectionChange)="this.changePubType($event)">
+            <mat-option></mat-option>
+            <mat-option *ngFor="let pt of this.pub_types" [value]="pt.label">
+              {{pt.label}}</mat-option>
+          </mat-select>
+        </mat-form-field>
 
         <button mat-raised-button type="submit" color="primary" class="btn-primary">Aktualisieren</button>&nbsp;
         <button mat-raised-button type="reset" color="primary" class="btn-primary"

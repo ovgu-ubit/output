@@ -74,6 +74,7 @@ export class StatisticsComponent implements OnInit {
   highlightName: string;
 
   @ViewChild('select_oa') selectOA: MatSelect;
+  @ViewChild('select_PubType') selectPubType: MatSelect;
 
   constructor(private statService: StatisticsService, private router:Router, private formBuilder:FormBuilder, 
     private instService:InstituteService, private publisherService:PublisherService, private contractService:ContractService,
@@ -177,6 +178,7 @@ export class StatisticsComponent implements OnInit {
     this.filter = {};
     this.form.reset();
     this.selectOA.value = null;
+    this.selectPubType.value = null;
   }
 
   resetHighlight() {
@@ -195,6 +197,9 @@ export class StatisticsComponent implements OnInit {
   }
   changeOA(event) {
     this.filter = {...this.filter, oaCatId: this.oa_cats.find(e => e.label === event.value).id}
+  }
+  changePubType(event) {
+    this.filter = {...this.filter, pubTypeId: this.pub_types.find(e => e.label === event.value).id}
   }
 
   private _filterInst(value: string): Institute[] {
