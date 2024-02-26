@@ -112,11 +112,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-  loadData(drop_lock: boolean) {
+  loadData(notLoadPub: boolean) {
     if (this.data['id']) {
-      let ob$: Observable<any> = EMPTY;
-      if (drop_lock) ob$ = ob$.pipe(concatWith(this.publicationService.save([{id:this.data['id'], locked_at: null}])))
-      ob$.pipe(concatWith(this.publicationService.getPublication(this.data['id']))).subscribe({
+      if (!notLoadPub) this.publicationService.getPublication(this.data['id']).subscribe({
         next: data => {
           this.edit = true;
           this.pub = data;
@@ -405,7 +403,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (dialogResult) {
           let dialogRef1 = this.dialog.open(ContractFormComponent, {
             width: "400px",
-            height: "800px",
+            maxHeight: "800px",
             data: {
               contract: {
                 label: event.value

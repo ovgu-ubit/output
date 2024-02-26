@@ -1,4 +1,14 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<div style="display:flex;flex-flow: row nowrap;justify-content: space-between;">
+  <div>
+    <button mat-raised-button color="primary" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten wechseln</button>
+    <button mat-raised-button color="primary" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl wechseln</button>
+  </div>
+  <div [hidden]="!this.filterText">
+    <span>Filter aktiv | {{this.filterText}}</span>&nbsp;
+    <button mat-raised-button color="accent" (click)="this.resetFilter()">Filter zurücksetzen</button>
+  </div>
+</div>
 <div style="display: flex;flex-flow: row wrap;">
 <highcharts-chart 
   [Highcharts]="Highcharts"
@@ -60,6 +70,19 @@
   [callbackFunction]="chartCallback"
 
   [(update)]="updateFlag4"
+  [oneToOne]="oneToOneFlag"
+  [runOutsideAngular]="runOutsideAngular"
+
+  class="chart"
+></highcharts-chart>
+<highcharts-chart 
+  [Highcharts]="Highcharts"
+
+  [constructorType]="chartConstructor"
+  [options]="chartOptionsContract"
+  [callbackFunction]="chartCallback"
+
+  [(update)]="updateFlag5"
   [oneToOne]="oneToOneFlag"
   [runOutsideAngular]="runOutsideAngular"
 
