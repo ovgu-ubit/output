@@ -181,8 +181,10 @@ export abstract class AbstractImportService {
      * @returns the persisted publication entity
      */
     async mapNew(item) {
-        if (!this.importTest(item)) return null;
-
+        if (!this.importTest(item)) {
+            this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
+            return null;
+        }
         let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute }[] = [];
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
