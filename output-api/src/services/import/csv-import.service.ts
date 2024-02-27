@@ -62,7 +62,7 @@ export class CSVImportService extends AbstractImportService {
     private file: Express.Multer.File;
     private importConfig: CSVMapping;
 
-    protected name = 'CSV Import'
+    protected name = 'CSV-Import'
 
     private path = this.configService.get('CONFIG_PATH');
 
