@@ -364,7 +364,7 @@ export class PublicationService {
                     break;
             }
         }
-        console.log(indexQuery.getSql())
+        //console.log(indexQuery.getSql())
 
         return indexQuery.getRawMany() as Promise<PublicationIndex[]>
     }
