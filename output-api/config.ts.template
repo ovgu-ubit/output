@@ -9,6 +9,7 @@ import { CrossrefImportService } from "./src/services/import/crossref-import.ser
 import { OpenAccessMonitorEnrichService } from "./src/services/import/open-access-monitor-enrich.service";
 import { OpenAccessMonitorImportService } from "./src/services/import/open-access-monitor-import.service";
 import { OpenAlexImportService } from "./src/services/import/openalex-import.service";
+import { OpenAlexEnrichService } from "./src/services/import/openalex-enrich.service";
 import { OpenAPCEnrichService } from "./src/services/import/openapc-enrich.service";
 import { Output1ImportService } from "./src/services/import/output-1-import.service";
 import { PubMedImportService } from "./src/services/import/pubmed-import";
@@ -47,6 +48,7 @@ export default() : AppConfig => ({
         {path: 'base', class: BASEImportService},
         {path: 'pubmed', class: PubMedImportService},
         {path: 'openalex', class: OpenAlexImportService},
+        {path: 'openalex', class: OpenAlexEnrichService},
     ],
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},

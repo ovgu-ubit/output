@@ -69,7 +69,8 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
      * @returns 
      */
     protected createUrl(doi: string) {
-        return `${this.url}${doi}?${this.param_string}`;
+        if (this.param_string) return `${this.url}${doi}?${this.param_string}`;
+        else return `${this.url}${doi}`;
     }
 
     private request(doi: string): Observable<any> {
