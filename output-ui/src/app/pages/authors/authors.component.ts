@@ -37,7 +37,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
 
   @ViewChild(TableComponent) table: TableComponent<AuthorIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'title', colTitle: 'Titel' },
     { colName: 'first_name', colTitle: 'Vorname' },
     { colName: 'last_name', colTitle: 'Nachname' },
