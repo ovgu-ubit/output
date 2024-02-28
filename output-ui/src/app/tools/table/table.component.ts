@@ -1,11 +1,9 @@
-import { LiveAnnouncer } from '@angular/cdk/a11y';
-import { Component, Inject, Input, OnInit, Pipe, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
-import { DomSanitizer } from '@angular/platform-browser';
 import { Alert } from 'src/app/interfaces/alert';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
@@ -58,7 +56,7 @@ export class TableComponent<T> implements OnInit {
 
   filteredIDs:number[] = [];
 
-  constructor(private _liveAnnouncer: LiveAnnouncer, private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
+  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
     public tokenService: AuthorizationService) {
   }
 
@@ -88,6 +86,7 @@ export class TableComponent<T> implements OnInit {
     this.dataSource.paginator = this.paginator;
     this.dataSource2.paginator = this.paginator2;
     this.dataSource.sort = this.sort;
+    this.announceSortChange(this.sort);
     this.filterColumn();
   }
 

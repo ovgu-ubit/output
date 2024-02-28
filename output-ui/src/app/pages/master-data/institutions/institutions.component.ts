@@ -38,12 +38,12 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
 
   @ViewChild(TableComponent) table: TableComponent<InstituteIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID' , type: 'number'},
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'short_label', colTitle: 'Kurzbezeichnung' },
-    { colName: 'sub_inst_count', colTitle: 'Untergeordnete Institute gesamt'},
-    { colName: 'author_count', colTitle: 'Anzahl Autoren' },
-    { colName: 'author_count_total', colTitle: 'Anzahl Autoren gesamt' },
+    { colName: 'sub_inst_count', colTitle: 'Untergeordnete Institute gesamt', type: 'number'},
+    { colName: 'author_count', colTitle: 'Anzahl Autoren', type: 'number' },
+    { colName: 'author_count_total', colTitle: 'Anzahl Autoren gesamt', type: 'number' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs'},
     { colName: 'pub_corr_count', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
   ];

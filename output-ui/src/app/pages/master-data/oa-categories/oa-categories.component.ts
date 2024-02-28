@@ -35,7 +35,7 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
 
   @ViewChild(TableComponent) table: TableComponent<OACategoryIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'is_oa', colTitle: 'Open-Access?', type:'boolean' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },

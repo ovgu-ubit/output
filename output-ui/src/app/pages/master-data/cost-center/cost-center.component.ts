@@ -28,7 +28,7 @@ export class CostCenterComponent implements TableParent<CostCenter>, OnInit{
 
   @ViewChild(TableComponent) table: TableComponent<CostCenter>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'number', colTitle: 'Nummer' },
     { colName: 'label', colTitle: 'Bezeichnung' }
   ];

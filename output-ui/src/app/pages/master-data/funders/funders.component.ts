@@ -35,7 +35,7 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
 
   @ViewChild(TableComponent) table: TableComponent<FunderIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'doi', colTitle: 'DOI', type:'doi' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },
