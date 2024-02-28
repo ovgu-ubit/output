@@ -9,6 +9,7 @@ export const resetReportingYear = createAction('Reset Reporting Year');
 export interface State {
   viewConfig: ViewConfig;
   reporting_year?: number;
+  valid_from: Date;
 }
 
 export interface ViewConfig {
@@ -24,7 +25,7 @@ export interface ViewConfig {
 export const initialState: State = {
   viewConfig: {
     sortDir: 'asc' as SortDirection
-  }
+  }, valid_from: new Date()
 };
 
 export const selectViewConfigState = createFeatureSelector<State>('viewConfigReducer')
@@ -42,7 +43,8 @@ export const viewConfigReducer = createReducer(
   on(setViewConfig, (state, action) => {
     return {
       ...state,
-      viewConfig: action.viewConfig
+      viewConfig: action.viewConfig,
+      valid_from: new Date()
     }
   }),
   on(resetViewConfig, (state, action) => {
@@ -50,19 +52,22 @@ export const viewConfigReducer = createReducer(
       ...state,
       viewConfig: {
         sortDir: 'asc' as SortDirection
-      }
+      },
+      valid_from: new Date()
     }
   }),
   on(setReportingYear, (state, action) => {
     return {
       ...state,
-      reporting_year: action.reporting_year
+      reporting_year: action.reporting_year,
+      valid_from: new Date()
     }
   }),
   on(resetReportingYear, (state, action) => {
     return {
       ...state,
-      reporting_year: undefined
+      reporting_year: undefined,
+      valid_from: new Date()
     }
   }),
 );
@@ -75,8 +80,10 @@ export const hydrationMetaReducer = (
       const storageValue = localStorage.getItem("state");
       if (storageValue) {
         try {
-          return JSON.parse(storageValue);
-        } catch {
+          let state = JSON.parse(storageValue);
+          console.log(new Date().getTime() - Date.parse(state.viewConfigReducer.valid_from))
+          if ((new Date().getTime() - Date.parse(state.viewConfigReducer.valid_from)) < 4*60*60*1000) return state; //if state is older than 4 hours, it is resetted
+        } catch (err) {
           localStorage.removeItem("state");
         }
       }

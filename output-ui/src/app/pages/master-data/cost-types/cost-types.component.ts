@@ -28,7 +28,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
 
   @ViewChild(TableComponent) table: TableComponent<CostType>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' }
   ];
   reporting_year;

@@ -38,7 +38,7 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
 
   @ViewChild(TableComponent) table: TableComponent<PublisherIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'location', colTitle: 'Ort' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },
