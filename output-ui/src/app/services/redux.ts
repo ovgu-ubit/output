@@ -81,7 +81,6 @@ export const hydrationMetaReducer = (
       if (storageValue) {
         try {
           let state = JSON.parse(storageValue);
-          console.log(new Date().getTime() - Date.parse(state.viewConfigReducer.valid_from))
           if ((new Date().getTime() - Date.parse(state.viewConfigReducer.valid_from)) < 4*60*60*1000) return state; //if state is older than 4 hours, it is resetted
         } catch (err) {
           localStorage.removeItem("state");
