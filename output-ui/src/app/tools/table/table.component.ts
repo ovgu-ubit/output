@@ -1,11 +1,9 @@
-import { LiveAnnouncer } from '@angular/cdk/a11y';
-import { Component, Inject, Input, OnInit, Pipe, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSort, Sort } from '@angular/material/sort';
+import { MatSort, Sort, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
-import { DomSanitizer } from '@angular/platform-browser';
 import { Alert } from 'src/app/interfaces/alert';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
@@ -58,7 +56,7 @@ export class TableComponent<T> implements OnInit {
 
   filteredIDs:number[] = [];
 
-  constructor(private _liveAnnouncer: LiveAnnouncer, private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
+  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
     public tokenService: AuthorizationService) {
   }
 
@@ -88,6 +86,7 @@ export class TableComponent<T> implements OnInit {
     this.dataSource.paginator = this.paginator;
     this.dataSource2.paginator = this.paginator2;
     this.dataSource.sort = this.sort;
+    this.announceSortChange(this.sort);
     this.filterColumn();
   }
 
@@ -162,17 +161,19 @@ export class TableComponent<T> implements OnInit {
     return `<a class="link-secondary" href="https://dx.doi.org/${doi}" target="_blank">${doi}</a>`;
   }
 
-  /** Announce the change in sort state for assistive technology. */
   announceSortChange(sortState: Sort) {
-    // This example uses English messages. If your application supports
-    // multiple language, you would internationalize these strings.
-    // Furthermore, you can customize the message to add additional
-    // details about the values being sorted.
     if (sortState?.direction) {
-      this._liveAnnouncer.announce(`Sorted ${sortState.direction}ending`);
-    } else {
-      this._liveAnnouncer.announce('Sorting cleared');
-    }
+      this.dataSource = new MatTableDataSource<T>(this.data.sort((a,b) => {
+        let type = this.headers.find(e => e.colName === sortState.active).type 
+        return this.compare(type, a[sortState.active],b[sortState.active],sortState.direction);
+      }))
+    } 
+  }
+
+  compare(type:string, a:any, b:any, dir:SortDirection) {
+    if (!type || type === 'string' || type == 'authors') return a.localeCompare(b, 'de-DE') * (dir === 'asc' ? 1 : -1);
+    else /*if (type === 'number' || type === 'pubs' || type === 'euro')*/ return (a < b ? -1 : 1) *(dir === 'asc' ? 1: -1)
+    
   }
 
   goToPage() {

@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Post,Body } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { StatisticsService } from "../services/statistics.service";
 import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
 
@@ -10,32 +10,50 @@ export class StatisticController {
     constructor(private statService:StatisticsService ) {}
 
     @Post('count_by_year')
+    @ApiBody({
+        description: '<p>JSON Request:</p>',
+        schema: {
+            example: {
+                filterOptions: {
+                    
+                },
+                highlightOptions: {
+
+                }
+            }
+        }
+    })
     count(@Body('filterOptions') filterOptions:FilterOptions,@Body('highlightOptions') highlightOptions:HighlightOptions) {
         return this.statService.countPubsByYear(filterOptions,highlightOptions);
     }
 
-    @Get('corresponding')
-    corresponding(@Query('year') year:number) {
-        return this.statService.corresponding(year);
+    @Post('corresponding')
+    corresponding(@Query('year') year:number,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.corresponding(year, filterOptions);
     }
 
-    @Get('institute')
-    institute(@Query('year') year:number) {
-        return this.statService.institute(year);
+    @Post('institute')
+    institute(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.institute(year, costs, filterOptions);
     }
 
-    @Get('oa_cat')
-    oaCat(@Query('year') year:number) {
-        return this.statService.oaCategory(year);
+    @Post('oa_cat')
+    oaCat(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.oaCategory(year, costs, filterOptions);
     }
 
-    @Get('publisher')
-    publisher(@Query('year') year:number) {
-        return this.statService.publisher(year);
+    @Post('publisher')
+    publisher(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.publisher(year, costs, filterOptions);
     }
 
-    @Get('pub_type')
-    pub_tpye(@Query('year') year:number) {
-        return this.statService.pub_type(year);
+    @Post('pub_type')
+    pub_tpye(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.pub_type(year, costs, filterOptions);
+    }
+
+    @Post('contract')
+    contract(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.contract(year, costs, filterOptions);
     }
 }

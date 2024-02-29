@@ -63,7 +63,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   @ViewChild(TableComponent) table: TableComponent<PublicationIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'title', colTitle: 'Titel' },
     { colName: 'doi', colTitle: 'DOI', type: 'doi' },
     { colName: 'authors', colTitle: 'Autoren' },
@@ -299,6 +299,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
                   panelClass: [`success-snackbar`],
                   verticalPosition: 'top'
                 })
+                this.update()
               }, error: err => {
                 this._snackBar.open(`Fehler beim Einfügen`, 'Oh oh!', {
                   duration: 5000,

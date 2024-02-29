@@ -35,7 +35,7 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
 
   @ViewChild(TableComponent) table: TableComponent<PublicationTypeIndex>;
   headers: TableHeader[] = [
-    { colName: 'id', colTitle: 'ID' },
+    { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'review', colTitle: 'Begutachtet?', type:'boolean' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },
