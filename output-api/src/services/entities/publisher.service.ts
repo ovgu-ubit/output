@@ -39,23 +39,17 @@ export class PublisherService {
         return publisher;
     }
 
-    public findOrSave(title: string, location?: string): Observable<Publisher> {
-        if (!title) return of(null);
-        return from(this.identifyPublisher(title)).pipe(concatMap(data => {
-            return from(this.repository.findOne({ where: { label: ILike(data) } })).pipe(concatMap(ge => {
-                return iif(() => !!ge, of(ge), defer(() => from(this.repository.save({ label:data, location }))));
-            }))
-        }));
+    public async findOrSave(title: string, doi_prefix?: string, location?: string): Promise<Publisher> {
+        if (!title) return null;
+        let label = await this.identifyPublisher(title);
+        let publisher:Publisher;
+        if (title) publisher = await this.repository.findOne({ where: { label: ILike(label) } })
+        if (!publisher && doi_prefix) publisher = await this.repository.findOne({ where: { doi_prefix: ILike(doi_prefix) } })
+        if (publisher) return publisher;
+        else return this.repository.save({ label, location, doi_prefix });
     }
 
     public async identifyPublisher(title: string) {
-        /*let concs = this.configService.get<{label:string, texts:string[]}[]>('publisherConcordance');
-        for (let conc of concs) {
-            for (let text of conc.texts) if (title.toLocaleLowerCase().trim().includes(text.toLocaleLowerCase().trim())) {
-                return conc.label;
-            }
-        }
-        return title;*/
         let alias = await this.aliasRepository.createQueryBuilder('alias')
             .leftJoinAndSelect('alias.element', 'element')
             .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
@@ -63,6 +57,13 @@ export class PublisherService {
 
         if (alias) return alias.element.label;
         return title;
+    }
+
+    public async findByDOI(doi:string) {
+        let regex = /(10.*)\//g;
+        let found = doi.match(regex);
+        let doi_search = found[0].slice(0,found[0].length-1);
+        return await this.repository.findOne({where: {doi_prefix: ILike(doi_search)}})
     }
 
     public async index(reporting_year:number): Promise<PublisherIndex[]> {
@@ -73,6 +74,7 @@ export class PublisherService {
             .leftJoin("publisher.publications", "publication", "publication.\"publisherId\" = publisher.id and publication.pub_date between :beginDate and :endDate",{beginDate, endDate})
             .select("publisher.id", "id")
             .addSelect("publisher.label", "label")
+            .addSelect("publisher.doi_prefix", "doi_prefix")
             .addSelect("publisher.location", "location")
             .addSelect("COUNT(publication.id)", "pub_count")
             .groupBy("publisher.id")

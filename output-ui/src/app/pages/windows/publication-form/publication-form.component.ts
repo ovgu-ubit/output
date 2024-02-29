@@ -356,7 +356,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   this.loadData(true);
                 }
               })
-            }
+            } 
           });
         } else this.form.get('publ').enable();
       });
@@ -369,7 +369,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         }
       });
       dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
+        if (dialogResult && dialogResult.label) {
           this.publisherService.update(dialogResult).subscribe({
             next: data => {
               this._snackBar.open('Verlag wurde geändert', 'Super!', {
@@ -382,6 +382,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               this.loadData(true);
             }
           })
+        } else if (dialogResult && dialogResult.id) {
+          this.publisherService.update(dialogResult).subscribe();
         }
         this.form.get('publ').enable();
       });
@@ -412,7 +414,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
             this.form.get('contr').enable();
-            if (dialogResult) {
+            if (dialogResult && dialogResult.label) {
               this.contractService.insert(dialogResult).subscribe({
                 next: data => {
                   this._snackBar.open('Vertrag wurde hinzugefügt', 'Super!', {
@@ -438,7 +440,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         }
       });
       dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
+        if (dialogResult && dialogResult.label) {
           this.contractService.update(dialogResult).subscribe({
             next: data => {
               this._snackBar.open('Vertrag wurde geändert', 'Super!', {
@@ -451,6 +453,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               this.loadData(true);
             }
           })
+        } else if (dialogResult && dialogResult.id) {
+          this.publisherService.update(dialogResult).subscribe();
         }
         this.form.get('contr').enable();
       });
@@ -547,7 +551,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         }
       });
       dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
+        if (dialogResult && dialogResult.label) {
           this.geService.update(dialogResult).subscribe({
             next: data => {
               this._snackBar.open('Größere Einheit wurde geändert', 'Super!', {
@@ -560,6 +564,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               this.loadData(true);
             }
           })
+        } else if (dialogResult && dialogResult.id) {
+          this.publisherService.update(dialogResult).subscribe();
         }
         this.form.get('ge').enable();
       });

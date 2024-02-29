@@ -20,6 +20,7 @@ import { CostTypeService } from '../entities/cost-type.service';
 import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class CrossrefImportService extends ApiImportOffsetService {
@@ -116,8 +117,8 @@ export class CrossrefImportService extends ApiImportOffsetService {
     protected getGreaterEntityName(element: any): string {
         return element['container-title'] && element['container-title'].length > 0 ? element['container-title'][0] : null;
     }
-    protected getPublisher(element: any): string {
-        return element['publisher'];
+    protected getPublisher(element: any): Publisher {
+        return {label: element['publisher']};
     }
     protected getPubDate(element: any): Date {
         let data = null;

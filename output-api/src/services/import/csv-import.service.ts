@@ -20,6 +20,7 @@ import { InstitutionService } from '../entities/institution.service';
 import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 /**
@@ -205,10 +206,10 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.greater_entity.startsWith('$')) return this.importConfig.mapping.greater_entity.slice(1, this.importConfig.mapping.greater_entity.length);
         return element[this.importConfig.mapping.greater_entity];
     }
-    protected getPublisher(element: any): string {
+    protected getPublisher(element: any): Publisher {
         if (!this.importConfig.mapping.publisher) return null;
-        if (this.importConfig.mapping.publisher.startsWith('$')) return this.importConfig.mapping.publisher.slice(1, this.importConfig.mapping.publisher.length);
-        return element[this.importConfig.mapping.publisher];
+        if (this.importConfig.mapping.publisher.startsWith('$')) return {label: this.importConfig.mapping.publisher.slice(1, this.importConfig.mapping.publisher.length)};
+        return {label: element[this.importConfig.mapping.publisher]};
     }
     protected getPubDate(element: any): Date {
         if (!this.importConfig.mapping.pub_date) return null;

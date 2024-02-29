@@ -16,6 +16,7 @@ import { ReportItemService } from '../report-item.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class Output1ImportService extends ApiImportOffsetService {
@@ -108,8 +109,8 @@ export class Output1ImportService extends ApiImportOffsetService {
     protected getGreaterEntityName(element: any): string {
         return element['journal'];
     }
-    protected getPublisher(element: any): string {
-        return element['publisher'];
+    protected getPublisher(element: any): Publisher {
+        return {label: element['publisher']};
     }
     protected getPubDate(element: any): Date {
         let item = element['pubDate'];

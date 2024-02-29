@@ -21,6 +21,7 @@ import { CostTypeService } from '../entities/cost-type.service';
 import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
@@ -83,7 +84,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     protected getGreaterEntityName(element: any): string {
         return null;
     }
-    protected getPublisher(element: any): string {
+    protected getPublisher(element: any): Publisher {
         return null;
     }
     protected getPubDate(element: any): Date {

@@ -14,6 +14,9 @@ export class Publisher implements IPublisher {
     
     @Column({ nullable: true })
     location?: string;
+
+    @Column({ nullable: true })
+    doi_prefix?: string;
     
     @OneToMany(() => Publication, (p) => p.publisher)
     publications?: Publication[];
