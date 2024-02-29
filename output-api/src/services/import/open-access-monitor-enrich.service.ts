@@ -21,6 +21,7 @@ import { CostTypeService } from '../entities/cost-type.service';
 import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
@@ -87,8 +88,8 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
     protected getGreaterEntityName(element: any): string {
         return element['journal']['title'];
     }
-    protected getPublisher(element: any): string {
-        return element['publisher']['name'];
+    protected getPublisher(element: any): Publisher {
+        return {label: element['publisher']['name']};
     }
     protected getPubDate(element: any): Date {
         return element['published_date'];

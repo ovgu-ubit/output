@@ -1,6 +1,7 @@
 import { AppConfig } from "./src/app.config";
 import { TokenAuthorizationService } from "./src/guards/token.authorization.service";
 import { DOIandTitleDuplicateCheck } from "./src/services/check/doi-and-title-duplicate.service";
+import { PublisherDOIPrefixService } from "./src/services/check/publisher_doi_prefix.service";
 import { MasterExportService } from "./src/services/export/master-export.service";
 import { BASEImportService } from "./src/services/import/base-import.service";
 import { BibliographyImportService } from "./src/services/import/bibliography-import.service";
@@ -57,6 +58,7 @@ export default() : AppConfig => ({
     ],
     check_services: [
         {path: 'pub_dupl', class: DOIandTitleDuplicateCheck},
+        {path: 'publisher_doi', class: PublisherDOIPrefixService},
     ],
     export_services: [
         {path: 'master', class: MasterExportService},

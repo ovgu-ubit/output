@@ -172,6 +172,7 @@ export interface Publisher {
     id?: number;
     label: string;
     location?: string;
+    doi_prefix?: string;
     aliases?: AliasPublisher[];
     locked_at?: Date;
 }

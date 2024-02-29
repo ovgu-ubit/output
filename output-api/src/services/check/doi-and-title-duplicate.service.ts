@@ -16,7 +16,7 @@ export class DOIandTitleDuplicateCheck extends AbstractPlausibilityService {
     name = 'Publication Duplicate Check'
 
 
-    checkPub(pub: Publication, idx: number) {
+    async checkPub(pub: Publication, idx: number) {
         let res = false;
         if (pub.doi) {
             let dupl = this.publications.find((e, i) => i > idx && e.doi == pub.doi)
