@@ -15,11 +15,6 @@
         </mat-form-field>
 
         <mat-form-field appearance="fill">
-            <mat-label>DOI-Prefix</mat-label>
-            <input matInput placeholder="10." formControlName="doi_prefix" />
-        </mat-form-field>
-
-        <mat-form-field appearance="fill">
             <mat-label>Ort</mat-label>
             <input matInput placeholder="Ort" formControlName="location" />
         </mat-form-field>
@@ -65,7 +60,7 @@
                     DOI-Präfixe
                 </mat-panel-title>
                 <mat-panel-description>
-                    Institutionsteil der DOI von 10. bis zum /
+                    Institutionsteil der DOI beginnend mit 10. bis zum /
                 </mat-panel-description>
             </mat-expansion-panel-header>
             <table #table_doi *ngIf="this.publisher?.doi_prefixes && this.publisher.doi_prefixes.length>0" mat-table

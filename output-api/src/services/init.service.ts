@@ -147,7 +147,6 @@ export class InitService {
 
         publ = {
             label: 'Wiley',
-            doi_prefix: '10.1002'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["wiley", "american geophysical union"];
@@ -296,7 +295,6 @@ export class InitService {
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
         publ = {
             label: 'Elsevier',
-            doi_prefix: '10.1016'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["elsevier", "academic press", "cell press", "churchill livingstone", "lancet publ", "science direct"]
