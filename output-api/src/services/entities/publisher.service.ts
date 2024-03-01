@@ -7,6 +7,8 @@ import { Publisher } from '../../entity/Publisher';
 import { PublisherIndex } from '../../../../output-interfaces/PublicationIndex';
 import { PublicationService } from './publication.service';
 import { AliasPublisher } from '../../entity/alias/AliasPublisher';
+import { PublisherDOI } from '../../entity/PublisherDOI';
+import { Publication } from '../../entity/Publication';
 
 @Injectable()
 export class PublisherService {
@@ -21,9 +23,9 @@ export class PublisherService {
     public get() {
         return this.repository.find();
     }
-    public async one(id: number, writer:boolean) {
-        let publisher = await this.repository.findOne({ where: { id }, relations: { aliases: true } });
-        
+    public async one(id: number, writer: boolean) {
+        let publisher = await this.repository.findOne({ where: { id }, relations: { aliases: true, doi_prefixes: true } });
+
         if (writer && !publisher.locked_at) {
             await this.save([{
                 id: publisher.id,
@@ -35,18 +37,20 @@ export class PublisherService {
                 locked_at: null
             }]);
             return this.one(id, writer);
-        }        
+        }
         return publisher;
     }
 
-    public async findOrSave(title: string, doi_prefix?: string, location?: string): Promise<Publisher> {
+    public async findOrSave(title: string, doi_prefixes?: PublisherDOI[], location?: string): Promise<Publisher> {
         if (!title) return null;
         let label = await this.identifyPublisher(title);
-        let publisher:Publisher;
+        let publisher: Publisher;
         if (title) publisher = await this.repository.findOne({ where: { label: ILike(label) } })
-        if (!publisher && doi_prefix) publisher = await this.repository.findOne({ where: { doi_prefix: ILike(doi_prefix) } })
+        if (!publisher && doi_prefixes) {
+            publisher = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
+        }
         if (publisher) return publisher;
-        else return this.repository.save({ label, location, doi_prefix });
+        else return this.repository.save({ label, location, doi_prefixes });
     }
 
     public async identifyPublisher(title: string) {
@@ -59,48 +63,61 @@ export class PublisherService {
         return title;
     }
 
-    public async findByDOI(doi:string) {
+    public async findByDOI(doi: string) {
         let regex = /(10.*)\//g;
         let found = doi.match(regex);
-        let doi_search = found[0].slice(0,found[0].length-1);
-        return await this.repository.findOne({where: {doi_prefix: ILike(doi_search)}})
+        let doi_search = found[0].slice(0, found[0].length - 1);
+        return await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: ILike(doi_search) } }, relations: { doi_prefixes: true } })
     }
 
-    public async index(reporting_year:number): Promise<PublisherIndex[]> {
-        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+    public async index(reporting_year: number): Promise<PublisherIndex[]> {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
         let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        let query = this.repository.createQueryBuilder("publisher")
-            .leftJoin("publisher.publications", "publication", "publication.\"publisherId\" = publisher.id and publication.pub_date between :beginDate and :endDate",{beginDate, endDate})
-            .select("publisher.id", "id")
-            .addSelect("publisher.label", "label")
-            .addSelect("publisher.doi_prefix", "doi_prefix")
-            .addSelect("publisher.location", "location")
+
+        let query = this.repository.manager.createQueryBuilder()
+            .from((sq) => sq
+                .from("publisher", "publisher")
+                .leftJoin("publisher.doi_prefixes", "doi_prefix")
+                .select("publisher.id", "id")
+                .addSelect("publisher.label", "label")
+                .addSelect("STRING_AGG(DISTINCT doi_prefix.doi_prefix, ';')", "doi_prefix")
+                .addSelect("publisher.location", "location")
+                .groupBy("publisher.id")
+                .addGroupBy("publisher.location")
+                .addGroupBy("publisher.label")
+            , "a")
+            .leftJoin(Publication, "publication", "publication.\"publisherId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+            .select("a.id", "id")
+            .addSelect("a.label", "label")
+            .addSelect("a.doi_prefix", "doi_prefix")
+            .addSelect("a.location", "location")            
             .addSelect("COUNT(publication.id)", "pub_count")
-            .groupBy("publisher.id")
-            .addGroupBy("publisher.location")
-            .addGroupBy("publisher.label")
+            .groupBy("a.id")
+            .addGroupBy("a.location")
+            .addGroupBy("a.label")
+            .addGroupBy("a.doi_prefix")
 
         //console.log(query.getSql());
 
         return query.getRawMany() as Promise<PublisherIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?:string[]) {
-        let aut1 = await this.repository.findOne({where:{id:id1},relations: {aliases:true}});
+    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
+        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { aliases: true } });
         let authors = []
         for (let id of ids) {
-            authors.push( await this.repository.findOne({ where: { id }, relations: { publications: true, aliases: true } }))
+            authors.push(await this.repository.findOne({ where: { id }, relations: { publications: true, aliases: true } }))
         }
-        
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
-        
-        let res = {...aut1};
+
+        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+
+        let res = { ...aut1 };
 
         for (let aut of authors) {
             let pubs = [];
             for (let pub of aut.publications) {
-                pubs.push({id:pub.id, publisher: aut1});
+                pubs.push({ id: pub.id, publisher: aut1 });
             }
             await this.publicationService.save(pubs)
             if (!res.label && aut.label) res.label = aut.label;
@@ -112,15 +129,15 @@ export class PublisherService {
         if (alias_strings) {
             for (let alias of alias_strings) {
                 //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias});
+                res.aliases.push({ elementId: res.id, alias });
             }
         }
-        
+
         //update publication 1
         if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({elementId: In(authors.map(e => e.id))}) && await this.repository.delete({id: In(authors.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
+            if (await this.aliasRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
+            else return { error: 'delete' };
+        } else return { error: 'update' };
     }
 
     public async delete(insts: Publisher[]) {
@@ -132,7 +149,7 @@ export class PublisherService {
             }
 
             await this.publicationService.save(pubs);
-            await this.aliasRepository.delete({elementId: conE.id});
+            await this.aliasRepository.delete({ elementId: conE.id });
         }
         return await this.repository.delete(insts.map(p => p.id));
     }

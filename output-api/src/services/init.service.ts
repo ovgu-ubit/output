@@ -22,6 +22,7 @@ import { AliasPublisher } from "../entity/alias/AliasPublisher";
 import { AliasPubType } from "../entity/alias/AliasPubType";
 import { AliasFunder } from "../entity/alias/AliasFunder";
 import { Language } from "../entity/Language";
+import { PublisherDOI } from "../entity/PublisherDOI";
 
 @Injectable()
 export class InitService {
@@ -38,6 +39,7 @@ export class InitService {
         @InjectRepository(OA_Category) protected oaCategoryRepository: Repository<OA_Category>,
         @InjectRepository(GreaterEntity) protected greaterEntityRepository: Repository<GreaterEntity>,
         @InjectRepository(Publisher) protected publisherRepository: Repository<Publisher>,
+        @InjectRepository(PublisherDOI) protected publisherDOIRepository: Repository<PublisherDOI>,
         @InjectRepository(Contract) protected contractRepository: Repository<Contract>,
         @InjectRepository(Config) protected configRepository: Repository<Config>,
         @InjectRepository(AliasInstitute) protected aliasInstRep: Repository<AliasInstitute>,
@@ -76,9 +78,9 @@ export class InitService {
         ]
 
         let langs: Language[] = [
-            {label: 'Deutsch'},
-            {label: 'Englisch'},
-            {label: 'Sonstige'},
+            { label: 'Deutsch' },
+            { label: 'Englisch' },
+            { label: 'Sonstige' },
         ]
 
         // Save entities to database
@@ -133,14 +135,16 @@ export class InitService {
     }
 
     async addPubl() {
-
         let publ: Publisher = {
             label: 'Springer Nature',
-            doi_prefix: '10.1007'
+            location: 'London/Heidelberg'
         }
         publ = await this.publisherRepository.save(publ);
         let alias = ["springer", "nature", "biomed central", "embo", "science china press", "verl. für sozialwissenschaften", "vieweg", "vs verlag für sozialwissenschaften"];
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+        let doi_prefixes = ['10.1007', '10.1023', '10.1065', '10.1114', '10.1186', '10.1245', '10.1251', '10.1361', '10.1365', '10.1379', '10.1381', '10.1385', '10.1617', '10.1891', '10.3758', '10.4076', '10.4098', '10.4333', '10.5052', '10.5819', '10.7603'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         publ = {
             label: 'Wiley',
             doi_prefix: '10.1002'
@@ -148,26 +152,34 @@ export class InitService {
         publ = await this.publisherRepository.save(publ);
         alias = ["wiley", "american geophysical union"];
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+        doi_prefixes = ['10.1002'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         publ = {
             label: 'MDPI'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["mdpi", "molecular diversity preservation international"];
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+
         publ = {
             label: 'IEEE',
-            doi_prefix: '10.1109'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["ieee", "institute of electrical and electronics engineering"];
+        doi_prefixes = ['10.1109'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
         publ = {
             label: 'ACM',
-            doi_prefix: '10.1145'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["acm", "association for computing"];
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+        doi_prefixes = ['10.1145'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         publ = {
             label: 'DeGruyter'
         }
@@ -176,11 +188,13 @@ export class InitService {
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
         publ = {
             label: 'Taylor & Francis',
-            doi_prefix: '10.1080'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["taylor", "routledge", "cass", "informa uk limited"]
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+        doi_prefixes = ['10.1080'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         publ = {
             label: 'Thieme'
         }
@@ -231,11 +245,13 @@ export class InitService {
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
         publ = {
             label: 'Oxford University Press',
-            doi_prefix: '10.1093'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["oxford univ", "oup", "endocrine society"]
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+        doi_prefixes = ['10.1093'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         publ = {
             label: 'SCITEPRESS'
         }
@@ -285,6 +301,9 @@ export class InitService {
         publ = await this.publisherRepository.save(publ);
         alias = ["elsevier", "academic press", "cell press", "churchill livingstone", "lancet publ", "science direct"]
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
+        doi_prefixes = ['10.1016'];
+        await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+
         publ = {
             label: 'BMJ Publishing Group'
         }

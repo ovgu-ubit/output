@@ -5,7 +5,7 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { AliasPublisher } from '../../../../../../output-interfaces/Alias';
-import { Publisher } from '../../../../../../output-interfaces/Publication';
+import { Publisher, PublisherDOI } from '../../../../../../output-interfaces/Publication';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 
@@ -18,10 +18,12 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
 
   public form: FormGroup;
   public aliasForm: FormGroup;
+  public prefixForm: FormGroup;
 
   publisher:Publisher;
 
-  @ViewChild(MatTable) table: MatTable<AliasPublisher>;
+  @ViewChild('table') table: MatTable<AliasPublisher>;
+  @ViewChild('table_doi') tableDOI: MatTable<PublisherDOI>;
   disabled = false;
 
   constructor(public dialogRef: MatDialogRef<PublisherFormComponent>, public tokenService: AuthorizationService,
@@ -73,6 +75,9 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
     this.aliasForm = this.formBuilder.group({
       alias: ['', Validators.required]
     });
+    this.prefixForm = this.formBuilder.group({
+      doi_prefix: ['', Validators.required],
+    });
   }
 
   action() {
@@ -118,6 +123,22 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
     })
     this.aliasForm.reset();
     if (this.table) this.table.dataSource = new MatTableDataSource<AliasPublisher>(this.publisher.aliases);
+  }
+
+  deletePrefix(elem:PublisherDOI) {
+    if (this.disabled) return;
+    this.publisher.doi_prefixes = this.publisher.doi_prefixes.filter((e) => e.doi_prefix !== elem.doi_prefix)
+  }
+
+  addPrefix() {
+    if (this.disabled) return;
+    if (this.prefixForm.invalid) return;
+    this.publisher.doi_prefixes.push({
+      doi_prefix: this.prefixForm.get('doi_prefix').value.toLocaleLowerCase().trim(),
+      publisherId: this.publisher.id
+    })
+    this.prefixForm.reset();
+    if (this.tableDOI) this.tableDOI.dataSource = new MatTableDataSource<PublisherDOI>(this.publisher.doi_prefixes);
   }
 }
 

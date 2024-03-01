@@ -167,13 +167,13 @@ export class TableComponent<T> implements OnInit {
         let type = this.headers.find(e => e.colName === sortState.active).type 
         return this.compare(type, a[sortState.active],b[sortState.active],sortState.direction);
       }))
-    } 
+      this.dataSource.paginator = this.paginator;
+    }
   }
 
   compare(type:string, a:any, b:any, dir:SortDirection) {
     if (!type || type === 'string' || type == 'authors') return a.localeCompare(b, 'de-DE') * (dir === 'asc' ? 1 : -1);
-    else /*if (type === 'number' || type === 'pubs' || type === 'euro')*/ return (a < b ? -1 : 1) *(dir === 'asc' ? 1: -1)
-    
+    else /*if (type === 'number' || type === 'pubs' || type === 'euro')*/ return (Number(a) < Number(b) ? -1 : 1) *(dir === 'asc' ? 1: -1)
   }
 
   goToPage() {
@@ -270,7 +270,6 @@ export class TableComponent<T> implements OnInit {
 
   public handlePageTop(e: any) {
     let {pageSize} = e;
-
     this.paginator2.pageSize = pageSize;
 
     if(!this.paginator.hasNextPage()){
@@ -284,14 +283,10 @@ export class TableComponent<T> implements OnInit {
         this.paginator2.nextPage();
       }
     }
-  
-
-
   }
 
 
   public handlePageBottom(e: any) {
-
     if(!this.paginator2.hasNextPage()){
       this.paginator.lastPage();
     }else if(!this.paginator2.hasPreviousPage()){
