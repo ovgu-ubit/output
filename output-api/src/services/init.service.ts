@@ -146,7 +146,8 @@ export class InitService {
         await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
 
         publ = {
-            label: 'Wiley'
+            label: 'Wiley',
+            doi_prefix: '10.1002'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["wiley", "american geophysical union"];
@@ -294,7 +295,8 @@ export class InitService {
         alias = ["guericke", "universitätsbibliothek magdeburg"]
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
         publ = {
-            label: 'Elsevier'
+            label: 'Elsevier',
+            doi_prefix: '10.1016'
         }
         publ = await this.publisherRepository.save(publ);
         alias = ["elsevier", "academic press", "cell press", "churchill livingstone", "lancet publ", "science direct"]
