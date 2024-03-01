@@ -2,6 +2,7 @@ import {Entity, PrimaryGeneratedColumn, Column, OneToMany} from "typeorm";
 import { Publisher as IPublisher } from "../../../output-interfaces/Publication"
 import { Publication } from "./Publication";
 import { AliasPublisher } from "./alias/AliasPublisher";
+import { PublisherDOI } from "./PublisherDOI";
 
 @Entity()
 export class Publisher implements IPublisher {
@@ -15,8 +16,8 @@ export class Publisher implements IPublisher {
     @Column({ nullable: true })
     location?: string;
 
-    @Column({ nullable: true })
-    doi_prefix?: string;
+    @OneToMany(() => PublisherDOI, (p) => p.publisher)
+    doi_prefixes?: PublisherDOI[];
     
     @OneToMany(() => Publication, (p) => p.publisher)
     publications?: Publication[];

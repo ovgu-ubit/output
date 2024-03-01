@@ -1,5 +1,4 @@
 import { Column, Entity, JoinColumn, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
-import { Institute } from "../Institute";
 import { AliasFunder as IAliasFunder} from "../../../../output-interfaces/Alias"
 import { Funder } from "../Funder";
 
@@ -12,7 +11,7 @@ export class AliasFunder implements IAliasFunder {
         name: 'elementId',
         referencedColumnName: 'id'
     })
-    element?: Institute
+    element?: Funder
 
     @PrimaryColumn()
     elementId:number;

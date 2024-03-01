@@ -172,9 +172,15 @@ export interface Publisher {
     id?: number;
     label: string;
     location?: string;
-    doi_prefix?: string;
+    doi_prefixes?: PublisherDOI[];
     aliases?: AliasPublisher[];
     locked_at?: Date;
+}
+
+export interface PublisherDOI {
+    publisher?: Publisher;
+    publisherId?: number;
+    doi_prefix: string;
 }
 
 export interface Language {
