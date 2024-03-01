@@ -8,6 +8,7 @@ import { PublisherIndex } from '../../../../output-interfaces/PublicationIndex';
 import { PublicationService } from './publication.service';
 import { AliasPublisher } from '../../entity/alias/AliasPublisher';
 import { PublisherDOI } from '../../entity/PublisherDOI';
+import { Publication } from '../../entity/Publication';
 
 @Injectable()
 export class PublisherService {
@@ -23,7 +24,7 @@ export class PublisherService {
         return this.repository.find();
     }
     public async one(id: number, writer: boolean) {
-        let publisher = await this.repository.findOne({ where: { id }, relations: { aliases: true } });
+        let publisher = await this.repository.findOne({ where: { id }, relations: { aliases: true, doi_prefixes: true } });
 
         if (writer && !publisher.locked_at) {
             await this.save([{
@@ -73,18 +74,29 @@ export class PublisherService {
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
         let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        //TODO too many combinations, find prefixes in subquery
-        let query = this.repository.createQueryBuilder("publisher")
-            .leftJoin("publisher.doi_prefixes", "doi_prefix")
-            .leftJoin("publisher.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
-            .select("publisher.id", "id")
-            .addSelect("publisher.label", "label")
-            .addSelect("STRING_AGG(DISTINCT doi_prefix.doi_prefix, ';')", "doi_prefix")
-            .addSelect("publisher.location", "location")
+
+        let query = this.repository.manager.createQueryBuilder()
+            .from((sq) => sq
+                .from("publisher", "publisher")
+                .leftJoin("publisher.doi_prefixes", "doi_prefix")
+                .select("publisher.id", "id")
+                .addSelect("publisher.label", "label")
+                .addSelect("STRING_AGG(DISTINCT doi_prefix.doi_prefix, ';')", "doi_prefix")
+                .addSelect("publisher.location", "location")
+                .groupBy("publisher.id")
+                .addGroupBy("publisher.location")
+                .addGroupBy("publisher.label")
+            , "a")
+            .leftJoin(Publication, "publication", "publication.\"publisherId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+            .select("a.id", "id")
+            .addSelect("a.label", "label")
+            .addSelect("a.doi_prefix", "doi_prefix")
+            .addSelect("a.location", "location")            
             .addSelect("COUNT(publication.id)", "pub_count")
-            .groupBy("publisher.id")
-            .addGroupBy("publisher.location")
-            .addGroupBy("publisher.label")
+            .groupBy("a.id")
+            .addGroupBy("a.location")
+            .addGroupBy("a.label")
+            .addGroupBy("a.doi_prefix")
 
         //console.log(query.getSql());
 

@@ -16,7 +16,7 @@ export class Publisher implements IPublisher {
     @Column({ nullable: true })
     location?: string;
 
-    @OneToMany(() => PublisherDOI, (p) => p.publisher)
+    @OneToMany(() => PublisherDOI, (p) => p.publisher, { cascade : true })
     doi_prefixes?: PublisherDOI[];
     
     @OneToMany(() => Publication, (p) => p.publisher)
