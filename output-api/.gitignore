@@ -4,6 +4,7 @@ node_modules/
 dist/
 tmp/
 temp/
+log/
 env.*
 !env.template
 config.ts
