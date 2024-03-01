@@ -25,10 +25,10 @@ export abstract class AbstractPlausibilityService {
         this.checked = 0;
         this.identified = 0;
 
-        this.publications = (await this.publicationService.get());
+        this.publications = (await this.publicationService.get({relations: {publisher: true, oa_category: true, pub_type: true, greater_entity: true, contract: true }}));
         for (let [idx, pub] of this.publications.entries()) {
             this.checked++;
-            if (this.checkPub(pub, idx)) this.identified++;
+            if (await this.checkPub(pub, idx)) this.identified++;
         }
 
         //finalize
@@ -41,7 +41,7 @@ export abstract class AbstractPlausibilityService {
         this.status_text = 'Successfull plausibility check on ' + new Date();
     }
 
-    abstract checkPub(pub:Publication, idx:number):boolean;
+    abstract checkPub(pub:Publication, idx:number):Promise<boolean>;
 
     public getName() {
         return this.name;

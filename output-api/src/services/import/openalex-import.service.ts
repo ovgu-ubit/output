@@ -19,6 +19,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Invoice } from '../../entity/Invoice';
 import { CostType } from '../../entity/CostType';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
@@ -131,8 +132,8 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected getGreaterEntityName(element: any): string {
         return element['primary_location']['source']? element['primary_location']['source']['display_name']: undefined;
     }
-    protected getPublisher(element: any): string {
-        return element['primary_location']['source']? element['primary_location']['source']['host_organization_name'] : undefined;
+    protected getPublisher(element: any): Publisher {
+        return element['primary_location']['source']? {label: element['primary_location']['source']['host_organization_name']} : null;
     }
     protected getPubDate(element: any): Date {
         let data = null;

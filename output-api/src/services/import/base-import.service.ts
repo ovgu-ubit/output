@@ -20,6 +20,7 @@ import { CostTypeService } from '../entities/cost-type.service';
 import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class BASEImportService extends ApiImportOffsetService {
@@ -105,8 +106,8 @@ export class BASEImportService extends ApiImportOffsetService {
     protected getGreaterEntityName(element: any): string {
         return element['dcsource']
     }
-    protected getPublisher(element: any): string {
-        return element['dcpublisher'] && element['dcpublisher'].length > 0? element['dcpublisher'][0]: null;
+    protected getPublisher(element: any): Publisher {
+        return element['dcpublisher'] && element['dcpublisher'].length > 0? {label: element['dcpublisher'][0]}: null;
     }
     protected getPubDate(element: any): Date {
         if (!element['dcdate']) return new Date(Date.UTC(element['dcyear'], 0));

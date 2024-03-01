@@ -22,6 +22,7 @@ import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { CostType } from '../../entity/CostType';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class OpenAPCEnrichService extends ApiEnrichDOIService {
@@ -94,8 +95,8 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
     protected getGreaterEntityName(element: any): string {
         return element['journal_full_title'];
     }
-    protected getPublisher(element: any): string {
-        return element['publisher'];
+    protected getPublisher(element: any): Publisher {
+        return {label: element['publisher']};
     }
     protected getPubDate(element: any): Date {
         return null;

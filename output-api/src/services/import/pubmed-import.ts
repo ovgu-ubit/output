@@ -21,6 +21,7 @@ import { Identifier } from '../../entity/Identifier';
 import { Invoice } from '../../entity/Invoice';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 /**
@@ -299,8 +300,8 @@ export class PubMedImportService extends AbstractImportService {
             return element['Article']['Journal']['Title']['_text'];
         } else return ''
     }
-    protected getPublisher(element: any): string {
-        return undefined;
+    protected getPublisher(element: any): Publisher {
+        return null;
     }
     protected getPubDate(element: any): Date {
         if (element['Article']['ArticleDate']) {

@@ -20,6 +20,7 @@ import { Institute } from '../../entity/Institute';
 import { InstitutionService } from '../entities/institution.service';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { LanguageService } from '../entities/language.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 /**
@@ -118,7 +119,7 @@ export abstract class AbstractImportService {
      * retrieves the publisher of an element
      * @param element
      */
-    protected abstract getPublisher(element: any): string;
+    protected abstract getPublisher(element: any): Publisher;
     /**
      * retrieves the publication date of an element in UTC timezone
      * @param element 
@@ -213,7 +214,18 @@ export abstract class AbstractImportService {
             funder_ents = funder_ents.filter((v, i, s) => { return s.indexOf(s.find(f => f.id === v.id)) === i; });
         }
         let pub_type = await this.publicationTypeService.findOrSave(this.getPubType(item));
-        let publisher = await firstValueFrom(this.publisherService.findOrSave(this.getPublisher(item)));
+        
+        let publisher_obj = this.getPublisher(item);
+        let publisher:Publisher;
+        let publisher_ent;
+        if (publisher_obj) {
+            publisher_ent = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefix, publisher.location).catch(e => {
+                this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error'})
+            });
+        }
+        if (!publisher_ent && this.getDOI(item)) publisher_ent = await this.publisherService.findByDOI(this.getDOI(item))
+        if (publisher_ent) publisher = publisher_ent
+
         let oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(item)));
         let contract = await firstValueFrom(this.contractService.findOrSave(this.getContract(item)));
 
@@ -404,12 +416,14 @@ export abstract class AbstractImportService {
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
-                    orig.publisher = await firstValueFrom(this.publisherService.findOrSave(this.getPublisher(element)));
+                    let publisher = await this.getPublisher(element);
+                    orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefix, publisher.location);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
-                orig.publisher = await firstValueFrom(this.publisherService.findOrSave(this.getPublisher(element)));
+                let publisher = await this.getPublisher(element);
+                orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefix, publisher.location);
                 if (orig.publisher) fields.push('publisher')
                 break;
         }

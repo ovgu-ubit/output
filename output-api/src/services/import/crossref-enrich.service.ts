@@ -1,26 +1,23 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
-import { Author } from '../../entity/Author';
+import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
-import { Publication } from '../../entity/Publication';
+import { Identifier } from '../../entity/Identifier';
 import { AuthorService } from '../entities/author.service';
+import { ContractService } from '../entities/contract.service';
+import { CostTypeService } from '../entities/cost-type.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { LanguageService } from '../entities/language.service';
+import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
-import { ApiImportOffsetService } from './api-import-offset.service';
-import { Identifier } from '../../entity/Identifier';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { OACategoryService } from '../entities/oa-category.service';
-import { ContractService } from '../entities/contract.service';
-import { CostTypeService } from '../entities/cost-type.service';
 import { ReportItemService } from '../report-item.service';
-import { InstitutionService } from '../entities/institution.service';
-import { LanguageService } from '../entities/language.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { Publisher } from '../../entity/Publisher';
 
 @Injectable()
 export class CrossrefEnrichService extends ApiEnrichDOIService {
@@ -104,8 +101,8 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     protected getGreaterEntityName(element: any): string {
         return element['container-title'] && element['container-title'].length > 0 ? element['container-title'][0] : null;
     }
-    protected getPublisher(element: any): string {
-        return element['publisher'];
+    protected getPublisher(element: any): Publisher {
+        return {label: element['publisher']};
     }
     protected getPubDate(element: any): Date {
         let data = null;
