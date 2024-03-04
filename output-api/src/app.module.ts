@@ -60,6 +60,7 @@ import { InvoiceController } from "./controller/InvoiceController";
 import appConfig from '../config';
 import { AuthorizationService } from "./guards/authorization.service";
 import { TokenAuthorizationService } from "./guards/token.authorization.service";
+import { PublisherDOI } from "./entity/PublisherDOI";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -83,7 +84,7 @@ const exportz = appConfig().export_services;
       inject: [DatabaseConfigService],
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
-      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, Config, Language,
+      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language,
       AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,

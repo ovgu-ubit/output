@@ -1,5 +1,6 @@
-
-<mat-toolbar color="primary"><h1>Verlag</h1></mat-toolbar>
+<mat-toolbar color="primary">
+    <h1>Verlag</h1>
+</mat-toolbar>
 <div style="padding: 5px">
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
@@ -14,25 +15,20 @@
         </mat-form-field>
 
         <mat-form-field appearance="fill">
-            <mat-label>DOI-Prefix</mat-label>
-            <input matInput placeholder="10." formControlName="doi_prefix" />
-        </mat-form-field>
-
-        <mat-form-field appearance="fill">
             <mat-label>Ort</mat-label>
             <input matInput placeholder="Ort" formControlName="location" />
         </mat-form-field>
 
         <mat-expansion-panel>
             <mat-expansion-panel-header>
-              <mat-panel-title>
-                Aliase
-              </mat-panel-title>
-              <mat-panel-description>
-                Werden beim Import auf dieses Institut abgebildet
-              </mat-panel-description>
+                <mat-panel-title>
+                    Aliase
+                </mat-panel-title>
+                <mat-panel-description>
+                    Werden beim Import auf dieses Institut abgebildet
+                </mat-panel-description>
             </mat-expansion-panel-header>
-            <table *ngIf="this.publisher?.aliases && this.publisher.aliases.length>0" mat-table
+            <table #table *ngIf="this.publisher?.aliases && this.publisher.aliases.length>0" mat-table
                 [dataSource]="this.publisher.aliases">
                 <ng-container matColumnDef="alias">
                     <th mat-header-cell *matHeaderCellDef> Alias </th>
@@ -41,10 +37,10 @@
                 <ng-container matColumnDef="delete">
                     <th mat-header-cell *matHeaderCellDef> </th>
                     <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                            (click)="this.deleteAlias(element)"
-                            matTooltip="Alias löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                            (click)="this.deleteAlias(element)" matTooltip="Alias löschen"
+                            [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
                 </ng-container>
-    
+
                 <tr mat-header-row *matHeaderRowDef="['alias','delete']"></tr>
                 <tr mat-row *matRowDef="let row; columns: ['alias','delete'];"></tr>
             </table>
@@ -53,8 +49,43 @@
                     <mat-label>Alias</mat-label>
                     <input matInput placeholder="Alias" formControlName="alias" />
                 </mat-form-field>
-                <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
-                    matTooltip="Alias hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                <button matSuffix mat-icon-button type="button" (click)="this.addAlias()" matTooltip="Alias hinzufügen"
+                    [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+            </form>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    DOI-Präfixe
+                </mat-panel-title>
+                <mat-panel-description>
+                    Institutionsteil der DOI beginnend mit 10. bis zum /
+                </mat-panel-description>
+            </mat-expansion-panel-header>
+            <table #table_doi *ngIf="this.publisher?.doi_prefixes && this.publisher.doi_prefixes.length>0" mat-table
+                [dataSource]="this.publisher.doi_prefixes">
+                <ng-container matColumnDef="doi_prefix">
+                    <th mat-header-cell *matHeaderCellDef> Präfix </th>
+                    <td mat-cell *matCellDef="let element"> {{element.doi_prefix}} </td>
+                </ng-container>
+                <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                            (click)="this.deletePrefix(element)" matTooltip="Präfix löschen"
+                            [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="['doi_prefix','delete']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['doi_prefix','delete'];"></tr>
+            </table>
+            <form [formGroup]="prefixForm" style="display: flex;gap:5px">
+                <mat-form-field appearance="fill">
+                    <mat-label>DOI-Prefix</mat-label>
+                    <input matInput placeholder="10." formControlName="doi_prefix" />
+                </mat-form-field>
+                <button matSuffix mat-icon-button type="button" (click)="this.addPrefix()" matTooltip="Präfix hinzufügen"
+                    [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
             </form>
         </mat-expansion-panel>
 

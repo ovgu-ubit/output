@@ -219,7 +219,7 @@ export abstract class AbstractImportService {
         let publisher:Publisher;
         let publisher_ent;
         if (publisher_obj) {
-            publisher_ent = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefix, publisher.location).catch(e => {
+            publisher_ent = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location).catch(e => {
                 this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error'})
             });
         }
@@ -417,13 +417,13 @@ export abstract class AbstractImportService {
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
                     let publisher = await this.getPublisher(element);
-                    orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefix, publisher.location);
+                    orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
                 let publisher = await this.getPublisher(element);
-                orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefix, publisher.location);
+                orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
                 if (orig.publisher) fields.push('publisher')
                 break;
         }
