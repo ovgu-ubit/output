@@ -1,5 +1,6 @@
 import { SortDirection } from '@angular/material/sort';
 import { ActionReducer, createAction, createFeatureSelector, createReducer, createSelector, INIT, on, props, UPDATE } from '@ngrx/store';
+import { SearchFilter } from '../../../../output-interfaces/Config';
 
 export const setViewConfig = createAction('Set ViewConfig', props<{ viewConfig: ViewConfig }>());
 export const resetViewConfig = createAction('Reset ViewConfig');
@@ -19,7 +20,7 @@ export interface ViewConfig {
   pageSize?: number;
   filterValue?: string;
   filterColumn?: string;
-  filteredIDs?: number[];
+  filter?: {filter: SearchFilter, paths?: string[]};
 }
 
 export const initialState: State = {

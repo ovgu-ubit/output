@@ -8,6 +8,7 @@ import { Alert } from 'src/app/interfaces/alert';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ViewConfig } from 'src/app/services/redux';
+import { SearchFilter } from '../../../../../output-interfaces/Config';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {
@@ -53,8 +54,6 @@ export class TableComponent<T> implements OnInit {
 
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
-
-  filteredIDs:number[] = [];
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
     public tokenService: AuthorizationService) {
@@ -227,8 +226,7 @@ export class TableComponent<T> implements OnInit {
       page: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
       filterValue: this.filterValue,
-      filterColumn: this.columnFilter,
-      filteredIDs: this.filteredIDs
+      filterColumn: this.columnFilter
     }
     return res;
   }
@@ -259,9 +257,10 @@ export class TableComponent<T> implements OnInit {
     this.dataSource.sort = this.sort;
     this.sort.sortChange.emit();
 
-    this.filteredIDs = viewConfig.filteredIDs;
-    if (this.filteredIDs && this.filteredIDs.length > 0) this.update(this.data.filter(e => this.filteredIDs.includes(e['id'] as number)))
-    else this.update(this.data)
+    /*this.filter = viewConfig.filter;
+    if (this.filter) this.update(this.data.filter(e => this.filteredIDs.includes(e['id'] as number)))
+    else this.update(this.data)*/
+    this.update(this.data);
   }
 
   isButtonDisabled(e:TableButton) {

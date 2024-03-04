@@ -6,6 +6,8 @@ import { AbstractImportService } from "./services/import/abstract-import";
 import { ApiEnrichDOIService } from "./services/import/api-enrich-doi.service";
 import { InitService } from "./services/init.service";
 import { AuthorizationService } from './guards/authorization.service';
+import { AbstractFilterService } from './services/filter/abstract-filter.service';
+import { PublicationIndex } from '../../output-interfaces/PublicationIndex';
 
 export interface AppConfig {
     lock_timeout: number; 
@@ -20,5 +22,6 @@ export interface AppConfig {
     enrich_services: {path: string, class: Type<ApiEnrichDOIService>}[];
     check_services: {path: string, class: Type<AbstractPlausibilityService>}[];
     export_services: {path: string, class: Type<AbstractExportService>}[];
+    filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex>>}[];
     authorization_service: Type<AuthorizationService>;
 }

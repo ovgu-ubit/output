@@ -10,7 +10,7 @@ import { Observable, Subject, concatMap, map, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { initialState, resetReportingYear, resetViewConfig, selectReportingYear, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
+import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectReportingYear, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { TableComponent } from 'src/app/tools/table/table.component';
@@ -21,6 +21,7 @@ import { FilterViewComponent } from '../../tools/filter-view/filter-view.compone
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
+import { SearchFilter } from '../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-publications',
@@ -34,10 +35,10 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   name = 'Publikationen des Jahres ';
 
   reporting_year: number;
-  filteredIDs: number[];
+  filter: {filter:SearchFilter, paths?:string[]};
 
   buttons: TableButton[] = [
-    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true},
+    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true },
     {
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
@@ -76,6 +77,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   ];
 
   publications: PublicationIndex[] = [];
+  viewConfig: ViewConfig;
 
   ngOnInit(): void {
     this.loading = true;
@@ -94,26 +96,35 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       }
     })
 
-    let ob$: Observable<any> = this.store.select(selectReportingYear).pipe(concatMap(data => {
-      if (data) {
-        return of(data);
+    let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
+      this.viewConfig = viewConfig;
+      //this.table?.setViewConfig(viewConfig)
+      if (!this.viewConfig?.filter) {
+        return this.store.select(selectReportingYear).pipe(concatMap(data => {
+          let ob1$: Observable<any>
+          if (data) {
+            ob1$ = of(data);
+          } else {
+            ob1$ = this.publicationService.getDefaultReportingYear();
+          }
+          return ob1$.pipe(concatMap(data => {
+            this.reporting_year = data
+            return this.publicationService.index(this.reporting_year).pipe(map(data => {
+              this.publications = data;
+              this.name = 'Publikationen des Jahres ' + this.reporting_year;
+              this.table.update(this.publications);
+              this.loading = false;
+            }));
+          }))
+        }));
       } else {
-        return this.publicationService.getDefaultReportingYear();
+        return this.publicationService.filter(this.viewConfig.filter.filter, this.viewConfig.filter.paths).pipe(map(data => {
+          this.publications = data;
+          this.name = 'Gefilterte Publikationen';
+          this.table.update(this.publications);
+          this.loading = false;
+        }))
       }
-    }))
-    ob$ = ob$.pipe(concatMap(data => {
-      this.reporting_year = data
-      return this.publicationService.index(this.reporting_year).pipe(map(data => {
-        this.publications = data;
-        this.name = 'Publikationen des Jahres ' + this.reporting_year;
-        this.table.update(this.publications);
-        this.loading = false;
-      }));
-    }));
-    ob$ = ob$.pipe(concatMap(data => {
-      return this.store.select(selectViewConfig).pipe(map(viewConfig => {
-        this.table?.setViewConfig(viewConfig)
-      }))
     }));
     ob$ = ob$.pipe(concatMap(data => {
       return this.route.queryParams.pipe(map(params => {
@@ -123,7 +134,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         }
       }));
     }));
-
     ob$.pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
 
@@ -136,21 +146,30 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
-      viewConfig: (this.table.getViewConfig())
+      viewConfig: {...this.table.getViewConfig(), filter: this.filter}
     }))
     this.destroy$.next('');
   }
 
   update(soft?: boolean): void {
     this.loading = true;
-    if (!soft) this.publicationService.index(this.reporting_year).subscribe({
+    if (!soft && !this.filter) this.publicationService.index(this.reporting_year).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
         this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    }); else this.publicationService.softIndex().subscribe({
+    }); 
+    else if (!soft && this.filter) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
+      next: data => {
+        this.loading = false;
+        this.publications = data;
+        this.name = 'Gefilterte Publikationen'
+        this.table.update(this.publications);
+      }, error: err => console.log(err)
+    }); 
+    else this.publicationService.softIndex().subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -390,7 +409,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
-    this.filteredIDs = [];
+    this.filter = null;
     this.update();
   }
 
@@ -402,35 +421,35 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        if (result.length === 0) {
-          this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
-            duration: 5000,
-            panelClass: [`warning-snackbar`],
-            verticalPosition: 'top'
-          })
-          this.store.dispatch(resetViewConfig());
-        } else {
-          this._snackBar.open(`${result.length} Publikationen gefiltert`, 'Super!', {
-            duration: 5000,
-            panelClass: [`success-snackbar`],
-            verticalPosition: 'top'
-          });
-          this.store.dispatch(resetViewConfig());
-          /*let viewConfig = {
-            sortDir: 'asc' as SortDirection,
-            filteredIDs: result
+        this.filter = result;
+        this.publicationService.filter(result.filter, result.paths).subscribe({
+          next: data => {
+            if (data.length === 0) {
+              this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
+                duration: 5000,
+                panelClass: [`warning-snackbar`],
+                verticalPosition: 'top'
+              })
+            } else {
+              this._snackBar.open(`${data.length} Publikationen gefiltert`, 'Super!', {
+                duration: 5000,
+                panelClass: [`success-snackbar`],
+                verticalPosition: 'top'
+              });
+            }
+            this.publications = data;
+            this.name = 'Gefilterte Publikationen';
+            this.table.update(this.publications);
+          },
+          error: err => {
+            this._snackBar.open(`Filter kann nicht angewandt werden, bitte anpassen`, 'Puh...', {
+              duration: 5000,
+              panelClass: [`danger-snackbar`],
+              verticalPosition: 'top'
+            })
           }
-          this.store.dispatch(setViewConfig({viewConfig}))*/
-          //this.table?.setViewConfig(initialState.viewConfig)
-        }
-        this.publications = result;
-        this.name = 'Gefilterte Publikationen';
-      } else {
-        //this.filteredIDs = [];
-        this.store.dispatch(resetViewConfig());
-        this.table?.setViewConfig(initialState.viewConfig)
+        });
       }
-      this.table.update(this.publications);
     });
   }
 
@@ -442,7 +461,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
-    this.filteredIDs = [];
+    this.filter = null;
     this.update(true);
   }
 

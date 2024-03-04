@@ -16,6 +16,8 @@ import { Output1ImportService } from "./src/services/import/output-1-import.serv
 import { PubMedImportService } from "./src/services/import/pubmed-import";
 import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.service";
 import { InitService } from "./src/services/init.service";
+import { MissingInstAuthorFilterService } from "./src/services/filter/missing-inst-author-filter.service";
+import { MissingInstFilterService } from "./src/services/filter/missing-inst-filter.service";
 
 export default() : AppConfig => ({
     lock_timeout: 10, //in minutes
@@ -62,6 +64,10 @@ export default() : AppConfig => ({
     ],
     export_services: [
         {path: 'master', class: MasterExportService},
+    ],
+    filter_services: [
+        {path: 'no_aut_inst', class: MissingInstAuthorFilterService},
+        {path: 'no_inst', class: MissingInstFilterService},
     ],
     authorization_service: TokenAuthorizationService
 });

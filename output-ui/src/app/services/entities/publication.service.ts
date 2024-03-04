@@ -59,8 +59,12 @@ export class PublicationService {
     return this.http.post(environment.api + 'publications/combine', {id1,ids}, { withCredentials: true });
   }
 
-  public filter(filter:SearchFilter) {
-    return this.http.post(environment.api + 'publications/filter', {filter}, { withCredentials: true });
+  public filter(filter:SearchFilter, paths?:string[]):Observable<PublicationIndex[]> {
+    return this.http.post<PublicationIndex[]>(environment.api + 'publications/filter', {filter, paths}, { withCredentials: true });
+  }
+
+  public getFilters() {
+    return this.http.get<{path:string, label:string}[]>(environment.api + 'publications/filter', { withCredentials: true });
   }
 
   public async filterAuthor(id:number) {
