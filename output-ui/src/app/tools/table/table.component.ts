@@ -257,9 +257,6 @@ export class TableComponent<T> implements OnInit {
     this.dataSource.sort = this.sort;
     this.sort.sortChange.emit();
 
-    /*this.filter = viewConfig.filter;
-    if (this.filter) this.update(this.data.filter(e => this.filteredIDs.includes(e['id'] as number)))
-    else this.update(this.data)*/
     this.update(this.data);
   }
 
