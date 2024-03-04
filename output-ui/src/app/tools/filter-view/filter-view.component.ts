@@ -1,10 +1,11 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit,ViewChild } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatChipListbox } from '@angular/material/chips';
 
 @Component({
   selector: 'app-filter-view',
@@ -14,6 +15,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 export class FilterViewComponent implements OnInit {
 
   form: FormGroup;
+  filters: {path:string, label:string}[];
+  
+  @ViewChild(MatChipListbox) chips: MatChipListbox;
 
   joinOps: { op: JoinOperation, label: string, showFirst?: boolean }[] = [
     { op: JoinOperation.AND, label: 'Und' },
@@ -55,6 +59,11 @@ export class FilterViewComponent implements OnInit {
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
+    this.publicationService.getFilters().subscribe({
+      next: data => {
+        this.filters = data;
+      }
+    })
   }
 
   getFilters() {
@@ -91,19 +100,15 @@ export class FilterViewComponent implements OnInit {
 
   action(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
-    this.publicationService.filter(this.getFilter()).subscribe({
-      next: data => {
-        this.dialogRef.close(data)
-      },
-      error: err => {
-        this._snackBar.open(`Filter kann nicht angewandt werden, bitte anpassen`, 'Puh...', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-      }
-    })
+    
+    let chips = [];
+    if (!Array.isArray(this.chips.selected)) chips = [this.chips.selected.value]
+    else chips = this.chips.selected.map(e => e.value);
+
+    if (this.form.invalid && chips.length === 0) return;
+
+    this.dialogRef.close({filter: this.getFilter(), paths: chips})
+
   }
 
   reset(): void {
@@ -114,6 +119,7 @@ export class FilterViewComponent implements OnInit {
     let res: SearchFilter = { expressions: [] }
 
     for (let filter of this.getFiltersControls()) {
+      if (!filter.get('field').value || !filter.get('value').value) continue;
       let expression:SearchFilterExpression = {
         op: filter.get('join_operator').value? filter.get('join_operator').value : JoinOperation.AND,
         key: filter.get('field').value,

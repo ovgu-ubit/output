@@ -1,6 +1,6 @@
 import { Publication } from "../entity/Publication";
 import { InjectRepository } from "@nestjs/typeorm";
-import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards, Inject, NotFoundException } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Between } from "typeorm";
 import { PublicationService } from "../services/entities/publication.service";
@@ -9,6 +9,8 @@ import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
 import { SearchFilter } from "../../../output-interfaces/Config";
+import { AbstractFilterService } from "../services/filter/abstract-filter.service";
+import { ConfigService } from "@nestjs/config";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -16,7 +18,9 @@ export class PublicationController {
 
     constructor(@InjectRepository(Publication) private repository, 
     private publicationService:PublicationService, 
-    private configService:AppConfigService) { }
+    private appConfigService:AppConfigService,
+    private configService:ConfigService,
+    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex>[]) { }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -136,7 +140,7 @@ export class PublicationController {
         required: false
     })
     getReportingYear(@Query('default') standard:boolean) {
-        if (standard) return this.configService.get('reporting_year');
+        if (standard) return this.appConfigService.get('reporting_year');
         else return this.publicationService.getReportingYears();
     }
 
@@ -152,7 +156,7 @@ export class PublicationController {
         }
     })
     setReportingYear(@Body('year') year:number) {
-        return this.configService.setDefaultReportingYear(year);
+        return this.appConfigService.setDefaultReportingYear(year);
     }
 
     @Post('combine')
@@ -191,7 +195,24 @@ export class PublicationController {
             }
         }
     })
-    filter(@Body('filter') filter:SearchFilter) {
-        return this.publicationService.filter(filter);
+    async filter(@Body('filter') filter:SearchFilter, @Body('paths') paths:string[]) {
+        let res = await this.publicationService.filter(filter);
+        if (paths && paths.length > 0) for (let path of paths) {
+            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
+            if (so === -1) throw new NotFoundException();
+            res = await this.filterServices[so].filter(res)
+        }
+        return res;
+    }
+
+    @Get('filter')
+    get_filter() {
+        let result = [];
+        for (let i=0;i<this.configService.get('filter_services').length;i++) {
+          result.push({
+            path: this.configService.get('filter_services')[i].path, 
+            label:this.filterServices[i].getName()})
+        }
+        return result;
     }
 }

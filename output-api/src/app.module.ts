@@ -66,6 +66,7 @@ const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
 const checks = appConfig().check_services;
 const exportz = appConfig().export_services;
+const filterz = appConfig().filter_services;
 
 @Module({
   imports: [
@@ -127,6 +128,14 @@ const exportz = appConfig().export_services;
         return exportz
       },
       inject: exportz.map(e => e.class)
+    },
+    ...filterz.map(e => e.class),
+    {
+      provide: 'Filters',
+      useFactory: (...filterz) => {
+        return filterz
+      },
+      inject: filterz.map(e => e.class)
     },
   ]
 })
