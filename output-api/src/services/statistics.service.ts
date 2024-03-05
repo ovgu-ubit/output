@@ -61,7 +61,7 @@ export class StatisticsService {
             .groupBy('institute')
             .addGroupBy('institute.id')
 
-        query = this.addStat(query, costs)
+        query = this.addStat(query, costs, costs)
         query = this.addFilter(query, true, filterOptions)
 
         return query.getRawMany();
@@ -139,11 +139,12 @@ export class StatisticsService {
         return query.getRawMany();
     }
 
-    addStat(query: SelectQueryBuilder<Publication>, costs: boolean) {
+    addStat(query: SelectQueryBuilder<Publication>, costs: boolean, corresponding?:boolean) {
         if (!costs) query = query.addSelect('count(distinct publication.id) as value')
         else query = query.leftJoin("publication.invoices", "invoice")
             .leftJoin("invoice.cost_items", "cost_item")
             .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
+        if (corresponding) query = query.andWhere('aut_pub.corresponding')
         return query.orderBy('value', 'DESC');
     }
 
