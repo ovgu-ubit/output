@@ -219,7 +219,7 @@ export abstract class AbstractImportService {
         let publisher:Publisher;
         let publisher_ent;
         if (publisher_obj) {
-            publisher_ent = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location).catch(e => {
+            publisher_ent = await this.publisherService.findOrSave(publisher_obj.label, publisher_obj.doi_prefixes, publisher_obj.location).catch(e => {
                 this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error'})
             });
         }

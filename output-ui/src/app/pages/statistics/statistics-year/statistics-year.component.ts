@@ -23,7 +23,7 @@ export class StatisticsYearComponent implements OnInit {
       text: 'Anteil Corresponding'
     },
     tooltip: {
-      pointFormat: '<b>{point.y:.0f}</b><br>{point.percentage:.1f} %'
+      pointFormat: '<b>{point.y:,.0f}</b><br>{point.percentage:.1f} %'
     },
     plotOptions: {
       pie: {
