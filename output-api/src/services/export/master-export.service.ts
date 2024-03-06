@@ -38,21 +38,33 @@ export class MasterExportService extends AbstractExportService {
             contract: true,
             funders: true
         }});
-        let res = "id;title;doi;authors;authors_inst;corr_authors;greater_entity;publisher;oa_category;pub_type;funders;contract;costs\n";
+        let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;greater_entity;pub_date;publisher;language;oa_category;pub_type;funders;contract;costs;"
+        +"data_source;second_pub;add_info;import_date;edit_date\n";
         for (let pub of pubs) {
             res+=this.format(pub.id);
+            res+=this.format(pub.locked);
+            res+=this.format(pub.status);
             res+=this.format(pub.title);
             res+=this.format(pub.doi);
+            res+=this.format(pub.link);
             res+=this.format(pub.authors);
             res+=this.format(pub.authorPublications?.map(e => {return e.author.last_name+', '+e.author.first_name}).join(' | '));
+            res+=this.format(pub.authorPublications?.map(e => {return e.institute?.label}).join(' | '));
             res+=this.format(pub.authorPublications?.filter(e => e.corresponding).map(e => {return e.author.last_name+', '+e.author.first_name}).join(' | '));
             res+=this.format(pub.greater_entity);
+            res+=this.format(pub.pub_date);
             res+=this.format(pub.publisher);
+            res+=this.format(pub.language);
             res+=this.format(pub.oa_category);
             res+=this.format(pub.pub_type);
             res+=this.format(pub.funders?.map(e => e.label).join(' | '));
             res+=this.format(pub.contract);
             res+=this.format(pub.invoices?.map(e => e.cost_items.map(e => e.euro_value).reduce((v,e) => v+e,0)).reduce((v,e) => v+e,0));
+            res+=this.format(pub.dataSource);
+            res+=this.format(pub.second_pub);
+            res+=this.format(pub.add_info);
+            res+=this.format(pub.import_date);
+            res+=this.format(pub.edit_date);
             res+='\n';
         }
         //res = res.replace(/undefined/g, '');
@@ -69,7 +81,8 @@ export class MasterExportService extends AbstractExportService {
     format(field):string {
         let res = this.quote;
         let value = field? (field.label? field.label : field) : '';
-        res += value.toString().slice(0,10000);
+        if (value instanceof Date || Number.isNaN(value)) res += value.toLocaleString().slice(0,10000);
+        else res += value;
         res += this.quote;
         res += this.sep;
         return res;
