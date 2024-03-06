@@ -170,6 +170,6 @@ export class Output1ImportService extends ApiImportOffsetService {
         } else return [];
     }
     protected getStatus(element: any): number {
-        return 5;
+        return null;
     }
 }
