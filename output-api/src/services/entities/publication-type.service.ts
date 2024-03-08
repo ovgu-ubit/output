@@ -54,9 +54,13 @@ export class PublicationTypeService {
         let alias = await this.aliasRepository.createQueryBuilder('alias')
         .leftJoinAndSelect('alias.element', 'element')
         .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
-        .getOne();
+        .getMany();
 
-        if (alias) return alias.element.label;
+        if (alias && alias.length === 1) return alias[0].element.label;
+        else if (alias && alias.length > 1) {
+            //console.log('ambigious ptype alias '+title+', first type is assigned: '+alias.map(e=> e.element.label).join(', '))
+            return alias[0].element.label;
+        }
         return title;
     }
 
