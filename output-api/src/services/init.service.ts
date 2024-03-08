@@ -65,6 +65,7 @@ export class InitService {
         await this.addPubType();
         await this.addPubl();
         await this.addFunder();
+        await this.addInst();
 
         let apc: CostType[] = [
             { label: 'Article Processing Charges' },
@@ -100,36 +101,62 @@ export class InitService {
     }
 
     async addPubType() {
-        let pt = { label: 'Journal article', review: true };
+        let pt = { label: 'Konferenzbeitrag: Paper', review: true };
         pt = await this.publicationTypeRepository.save(pt);
-        let alias = ["journal-article", "article"];
+        let alias = ["proceeding"];
         await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
 
-        pt = { label: 'Conference proceedings', review: true };
+        pt = { label: 'Artikel Journalartikel', review: true };
         pt = await this.publicationTypeRepository.save(pt);
-        alias = ["proceeding"];
+        alias = ["article", "letter", "erratum"];
         await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
 
-        pt = { label: 'Chapter', review: true };
+        pt = { label: 'Artikel Sammelbandbeitrag', review: true };
         pt = await this.publicationTypeRepository.save(pt);
-        alias = ["book-chapter"];
+        alias = ["chapter", "inbook"];
         await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
 
-        pt = { label: 'Book', review: false };
+        pt = { label: 'Buch Monografie', review: false };
         pt = await this.publicationTypeRepository.save(pt);
         alias = ["book", "monograph"];
         await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
 
+        pt = { label: 'Buch Dissertation', review: true };
+        pt = await this.publicationTypeRepository.save(pt);
+        alias = ["dissertation", "phdthesis", "habilitation"];
+        await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
+
+        pt = { label: 'Sonderheft Zeitschrift', review: false };
+        pt = await this.publicationTypeRepository.save(pt);
+        alias = ["editorial"];
+        await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
+
+        pt = { label: 'Arbeitspapier/Forschungsbericht', review: false };
+        pt = await this.publicationTypeRepository.save(pt);
+        alias = ["report"];
+        await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
+
+        pt = { label: 'Forschungsdaten', review: false };
+        pt = await this.publicationTypeRepository.save(pt);
+        alias = ["dataset","case reports"];
+        await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
+
+        pt = { label: 'Artikel Preprint', review: false };
+        pt = await this.publicationTypeRepository.save(pt);
+        alias = ["preprint","manuscript"];
+        await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
+
         let article: PublicationType[] = [
-            { label: 'Article (non-reviewed)', review: false },
-            { label: 'Dataset', review: false },
-            { label: 'Preprint', review: false },
-            { label: 'Software', review: false },
-            { label: 'PhD thesis', review: true },
-            { label: 'Postdoctoral thesis', review: true },
-            { label: 'Misc.', review: false },
-            { label: 'Unknown', review: null },
-            { label: 'Editorship', review: false }
+            { label: 'Buch Sammelband', review: false },
+            { label: 'Buch Konferenzband', review: false },
+            { label: 'Konferenzbeitrag: Poster', review: true },
+            { label: 'Konferenzbeitrag: Präsentation', review: false },
+            { label: 'Konferenzbeitrag: Meeting Abstract', review: false },
+            { label: 'Beitrag in nicht-wissenschaftlichen Medien', review: true },
+            { label: 'Beitrag in wissenschaftlichen Blogs', review: false },
+            { label: 'Integrierende Ressourcen', review: false },
+            { label: 'Sonstige Publikationen', review: false },
+            { label: 'nicht ermittelbar', review: null }
         ]
         await this.publicationTypeRepository.save(article);
     }
@@ -391,5 +418,9 @@ export class InitService {
         await this.aliasPublRep.save(alias.map(a => { return { element: publ, alias: a } }))
         doi_prefixes = ['10.1106', '10.1177', '10.1528', '10.1622', '10.1630', '10.2968', '10.3317', '10.4135', '10.4219'];
         await this.publisherDOIRepository.save(doi_prefixes.map(a => { return { publisher: publ, doi_prefix: a } }))
+    }
+
+    addInst() {
+
     }
 }

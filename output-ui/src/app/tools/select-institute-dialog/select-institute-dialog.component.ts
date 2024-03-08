@@ -71,13 +71,10 @@ export class SelectInstituteDialogComponent implements OnInit {
       //save institute to author
       this.author.institutes.push(this.institute);
     }
-    this.author.locked_at = undefined;
-    this.authorService.update(this.author).subscribe({
-      next: data => {
-        console.log('author institute updated')
-      }
-    })
-    if (this.form.get('affiliation').value && !this.institute.aliases?.find(e => this.form.get('affiliation').value.includes(e.alias))) {
+    this.author.locked_at = null;
+    this.authorService.update(this.author).subscribe()
+    if (!this.institute) this.dialogRef.close(null)
+    if (this.form.get('affiliation').value && this.institute && !this.institute.aliases?.find(e => this.form.get('affiliation').value.includes(e.alias))) {
       //open alias dialog
       let aliases = [this.form.get('affiliation').value];
 
@@ -101,7 +98,7 @@ export class SelectInstituteDialogComponent implements OnInit {
   }
 
   abort() {
-    this.author.locked_at = undefined;
+    this.author.locked_at = null;
     this.authorService.update(this.author).subscribe();
     this.dialogRef.close({});
   }

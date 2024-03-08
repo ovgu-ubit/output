@@ -80,7 +80,7 @@ export class BASEImportService extends ApiImportOffsetService {
     }
 
     protected getDOI(element: any): string {
-        return element['dcdoi'] && element['dcdoi'].length>0? element['dcdoi'][0]: null;
+        return element['dcdoi'] && element['dcdoi'].length > 0 ? element['dcdoi'][0] : null;
     }
     protected getTitle(element: any): string {
         return element['dctitle'];
@@ -107,7 +107,7 @@ export class BASEImportService extends ApiImportOffsetService {
         return element['dcsource']
     }
     protected getPublisher(element: any): Publisher {
-        return element['dcpublisher'] && element['dcpublisher'].length > 0? {label: element['dcpublisher'][0]}: null;
+        return element['dcpublisher'] && element['dcpublisher'].length > 0 ? { label: element['dcpublisher'][0] } : null;
     }
     protected getPubDate(element: any): Date {
         if (!element['dcdate']) return new Date(Date.UTC(element['dcyear'], 0));
@@ -127,7 +127,7 @@ export class BASEImportService extends ApiImportOffsetService {
         return pubdate;
     }
     protected getLanguage(element: any): string {
-        return element['dclang'] && element['dclang'].length > 0? element['dclang'][0]: null;
+        return element['dclang'] && element['dclang'].length > 0 ? element['dclang'][0] : null;
     }
     protected getLink(element: any): string {
         return element['dclink'];
@@ -139,23 +139,27 @@ export class BASEImportService extends ApiImportOffsetService {
         if (element['dctypenorm'] && element['dctypenorm'].length > 0) {
             switch (element['dctypenorm'][0]) {
                 case 11:
-                    return 'Book'
+                    return 'book'
                 case 111:
-                    return 'Chapter'
+                    return 'chapter'
                 case 12:
-                    return 'Journal'
+                    return 'editorial'
                 case 121:
-                    return 'Journal article'
+                    return 'article'
                 case 13:
-                    return 'Conference proceedings'
+                    return 'proceedings'
+                case 14:
+                    return 'techreport'
                 case 183:
-                    return 'PhD thesis'
+                    return 'dissertation'
+                case 19:
+                    return 'preprint'
                 case 6:
-                    return 'Software'
+                    return 'software'
                 case 7:
-                    return 'Dataset'
+                    return 'dataset'
                 default:
-                    return 'Misc.'
+                    return null;
             }
         } else if (element['dctype']) {
             if (element['dctype'] && element['dctype'].find(e => e.toLowerCase().includes('article'))) return 'Article'
@@ -170,7 +174,7 @@ export class BASEImportService extends ApiImportOffsetService {
         return null;
     }
     protected getLicense(element: any): string {
-        return element['dcrightsnorm'] && element['dcrightsnorm'].length > 0? element['dcrightsnorm'][0] : null;
+        return element['dcrightsnorm'] && element['dcrightsnorm'].length > 0 ? element['dcrightsnorm'][0] : null;
     }
     protected getInvoiceInformation(element: any) {
         return null;
