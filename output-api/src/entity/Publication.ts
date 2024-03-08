@@ -52,6 +52,12 @@ export class Publication implements IPublication {
 
     @Column({ nullable: true,  type: 'timestamptz' })
     pub_date?: Date;
+    @Column({ nullable: true,  type: 'timestamptz' })
+    pub_date_submitted?: Date;
+    @Column({ nullable: true,  type: 'timestamptz' })
+    pub_date_accepted?: Date;
+    @Column({ nullable: true,  type: 'timestamptz' })
+    pub_date_print?: Date;
 
     @Column({ nullable: true })
     link?: string;
@@ -103,4 +109,20 @@ export class Publication implements IPublication {
 
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
+
+    @Column({nullable: true})
+    editors?: string;
+
+    @Column({nullable: true})
+    abstract?: string;
+
+    @Column({nullable: true})
+    citation?: string;
+
+    @Column({nullable: true})
+    page_count?: number;
+    
+    @Column({nullable: true})
+    peer_reviewed?: boolean;
+    
 }

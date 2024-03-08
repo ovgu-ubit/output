@@ -101,7 +101,8 @@ export class GreaterEntityService {
                 .select("ge.id","id")
                 .addSelect("ge.label","label")
                 .addSelect("ge.rating","rating")
-                .addSelect("ge.is_doaj","is_doaj")
+                .addSelect("ge.doaj_since","doaj_since")
+                .addSelect("ge.doaj_until","doaj_until")
                 .addSelect("STRING_AGG(identifier.value, '; ')","identifiers")
                 //.addSelect("STRING_AGG(CONCAT(identifier.value,'(',identifier.type,')'), '; ')","identifiers")
                 .groupBy("ge.id")
@@ -112,13 +113,15 @@ export class GreaterEntityService {
             .select("a.id", "id")
             .addSelect("a.label", "label")
             .addSelect("a.rating", "rating")
-            .addSelect("a.is_doaj", "is_doaj")
+            .addSelect("a.doaj_since", "doaj_since")
+            .addSelect("a.doaj_until", "doaj_until")
             .addSelect("a.identifiers", "identifiers")
             .addSelect("COUNT(\"publication\")", "pub_count")
             .groupBy("a.id")
             .addGroupBy("a.label")
             .addGroupBy("a.rating")
-            .addGroupBy("a.is_doaj")
+            .addGroupBy("a.doaj_since")
+            .addGroupBy("a.doaj_until")
             .addGroupBy("a.identifiers")
 
         //console.log(query.getSql());
@@ -145,7 +148,8 @@ export class GreaterEntityService {
             await this.publicationService.save(pubs)
             if (!res.label && aut.label) res.label = aut.label;
             if (!res.rating && aut.rating) res.rating = aut.rating;
-            if (res.is_doaj === null && aut.is_doaj !== null) res.is_doaj = aut.is_doaj;
+            if (res.doaj_since === null && aut.doaj_since !== null) res.doaj_since = aut.doaj_since;
+            if (res.doaj_until === null && aut.doaj_until !== null) res.doaj_until = aut.doaj_until;
             if (!res.identifiers) res.identifiers = [];
             res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
         }
