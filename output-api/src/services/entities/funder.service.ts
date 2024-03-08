@@ -72,10 +72,12 @@ export class FunderService {
             .select("funder.id","id")
             .addSelect("funder.label","label")
             .addSelect("funder.doi","doi")
+            .addSelect("funder.ror_id","ror_id")
             .addSelect("COUNT(DISTINCT publication.id)","pub_count")
             .groupBy("funder.id")
             .addGroupBy("funder.label")
             .addGroupBy("funder.doi")
+            .addGroupBy("funder.ror_id")
 
         //console.log(query.getSql());
 

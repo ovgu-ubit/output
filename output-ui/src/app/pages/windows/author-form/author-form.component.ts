@@ -71,6 +71,7 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
       first_name: ['', Validators.required],
       last_name: ['', Validators.required],
       orcid: ['', Validators.pattern(/^(\d{4}-){3}\d{3}(\d|X)$/)],
+      gnd_id: ['', Validators.pattern(/^[0-9X-]*$/)],
       inst: ['']
     });
     this.form.controls.id.disable();

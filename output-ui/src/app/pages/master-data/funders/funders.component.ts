@@ -38,6 +38,7 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'doi', colTitle: 'DOI', type:'doi' },
+    { colName: 'ror_id', colTitle: 'ROR ID' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },
   ];
   reporting_year;

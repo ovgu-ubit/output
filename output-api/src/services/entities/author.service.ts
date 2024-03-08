@@ -124,6 +124,7 @@ export class AuthorService {
                 .leftJoin("author.institutes", "institute")
                 .select("author.id", "id")
                 .addSelect("author.orcid", "orcid")
+                .addSelect("author.gnd_id", "gnd_id")
                 .addSelect("author.title", "title")
                 .addSelect("author.first_name", "first_name")
                 .addSelect("author.last_name", "last_name")
@@ -140,6 +141,7 @@ export class AuthorService {
                 , "b", "b.\"authorId\" = a.id")
             .select("a.id", "id")
             .addSelect("a.orcid", "orcid")
+            .addSelect("a.gnd_id", "gnd_id")
             .addSelect("a.title", "title")
             .addSelect("a.first_name", "first_name")
             .addSelect("a.last_name", "last_name")
@@ -152,6 +154,7 @@ export class AuthorService {
             .addGroupBy("a.first_name")
             .addGroupBy("a.last_name")
             .addGroupBy("a.orcid")
+            .addGroupBy("a.gnd_id")
             .addGroupBy("a.institutes")
 
         //console.log(query.getSql());

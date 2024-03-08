@@ -28,6 +28,12 @@
             <input matInput placeholder="ORCID" formControlName="orcid" />
             <mat-error>Bitte geben Sie die ORCID im korrekten Format an (XXXX-XXXX-XXXX-XXXX)</mat-error>
         </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>GND-Nummer</mat-label>
+            <input matInput placeholder="GND-Nummer" formControlName="gnd_id" />
+            <mat-error>Bitte geben Sie die GND-Nummer im korrekten Format an (nur Zahlen, X und Bindestrich)</mat-error>
+        </mat-form-field>
 Institute
         <table *ngIf="this.author?.institutes && this.author.institutes.length>0" mat-table [dataSource]="this.author.institutes">
             <ng-container matColumnDef="id">

@@ -31,6 +31,11 @@ export interface Publication {
     best_oa_license?: string;
     opus_share_it?: string;
     locked_at?: Date;
+    editors?: string;
+    abstract?: string;
+    citation?: string;
+    page_count?: number;
+    peer_reviewed?: boolean;
 }
 
 export interface Author {
@@ -40,6 +45,7 @@ export interface Author {
     title?: string;
     institutes?: Institute[]
     orcid?: string;
+    gnd_id?: string;
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
     locked_at?: Date;
@@ -101,6 +107,7 @@ export interface Funder {
     id?: number;
     label: string;
     doi?: string;
+    ror_id?: string;
     publications?: Publication[];
     aliases?: AliasFunder[];
     locked_at?: Date;
@@ -110,7 +117,8 @@ export interface GreaterEntity {
     id?: number;
     label: string;
     rating?: string;
-    is_doaj?: boolean;
+    doaj_since?: Date;
+    doaj_until?: Date;
     identifiers?: Identifier[];
     publications?: Publication[]
     locked_at?: Date;

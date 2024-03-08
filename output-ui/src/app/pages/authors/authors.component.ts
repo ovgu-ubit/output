@@ -42,6 +42,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
     { colName: 'first_name', colTitle: 'Vorname' },
     { colName: 'last_name', colTitle: 'Nachname' },
     { colName: 'orcid', colTitle: 'ORCID' },
+    { colName: 'gnd_id', colTitle: 'GND-Nr.'},
     { colName: 'institutes', colTitle: 'Institute' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen' , type: 'pubs'},
     { colName: 'pub_corr_count', colTitle: 'Anzahl Publikationen (corr.)' , type: 'pubs'},
