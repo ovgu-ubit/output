@@ -14,6 +14,9 @@ export interface Publication {
     title?: string;
     doi?: string;
     pub_date?: Date;
+    pub_date_print?: Date;
+    pub_date_accepted?: Date;
+    pub_date_submitted?: Date;
     link?: string;
     dataSource?: string;
     language?: Language;

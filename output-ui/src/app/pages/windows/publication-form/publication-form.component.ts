@@ -65,6 +65,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   today = new Date();
   disabled = false;
+  licenses = ['cc-by','cc-by-nc','cc-by-nd','cc-by-sa','cc-by-nc-nd','cc-by-nc-sa','Sonstige']
 
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
@@ -77,8 +78,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       doi: [''],
       link: [''],
       pub_date: ['', [Validators.required]],
+      pub_date_print: [''],
       language: [''],
+      abstract: [''],
+      citation: [''],
       authors: ['', [Validators.required]],
+      editors: [''],
+      page_count: [''],
+      peer_reviewed: [''],
       authors_inst: [''],
       add_info: [''],
       import_date: [''],
@@ -102,7 +109,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.controls.oa_status.disable();
     this.form.controls.is_journal_oa.disable();
     this.form.controls.best_oa_host.disable();
-    this.form.controls.best_oa_license.disable();
     this.loading = true;
   }
 
@@ -126,6 +132,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
           if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
           if (this.pub?.locked) this.setLock(true);
+          if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
           if (this.pub.locked_at) {
             this.disable();
             this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
