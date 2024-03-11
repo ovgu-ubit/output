@@ -79,8 +79,11 @@ export class InitService {
         ]
 
         let langs: Language[] = [
-            { label: 'Deutsch' },
-            { label: 'Englisch' },
+            { label: 'de' },
+            { label: 'en' },
+            { label: 'es' },
+            { label: 'fr' },
+            { label: 'ru' },
             { label: 'Sonstige' },
         ]
 

@@ -59,6 +59,7 @@ export class CostItemFormComponent implements OnInit {
     if (!this.cost_item.cost_type) this.cost_item.cost_type = undefined;
     if (!this.cost_item.euro_value) this.cost_item.euro_value = undefined;
     if (!this.cost_item.orig_value) this.cost_item.orig_value = undefined;
+    if (this.form.get('orig_currency').value) this.cost_item.orig_currency = this.form.get('orig_currency').value;
     if (!this.cost_item.normal_price) this.cost_item.normal_price = undefined;
     if (!this.cost_item.vat) this.cost_item.vat = undefined;
 

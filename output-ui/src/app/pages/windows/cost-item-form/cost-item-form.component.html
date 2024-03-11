@@ -21,7 +21,7 @@
         </mat-form-field>
 
         <mat-form-field appearance="fill">
-            <mat-label>Betrag in EUR</mat-label>
+            <mat-label>Nettobetrag in EUR</mat-label>
             <input matInput type="number" placeholder="Betrag in EUR" formControlName="euro_value"/>
         </mat-form-field>
 
@@ -31,18 +31,22 @@
         </mat-form-field>
 
         <mat-form-field appearance="fill">
-            <mat-label>Normaler Preis</mat-label>
+            <mat-label>Normaler Nettopreis</mat-label>
             <input matInput type="number" placeholder="Normaler Preis" formControlName="normal_price"/>
         </mat-form-field>
         
         <mat-form-field appearance="fill">
-            <mat-label>Betrag in Originalwährung</mat-label>
+            <mat-label>Nettobetrag in Originalwährung</mat-label>
             <input matInput type="number" placeholder="Betrag in Originalwährung" formControlName="orig_value"/>
         </mat-form-field>
         
         <mat-form-field appearance="fill">
             <mat-label>Originalwährung</mat-label>
-            <input matInput type="text" placeholder="Originalwährung" formControlName="orig_currency"/>
+            <mat-select formControlName="orig_currency">
+                <mat-option value="USD">USD</mat-option>
+                <mat-option value="GBP">GBP</mat-option>
+                <mat-option value="CHF">CHF</mat-option>
+            </mat-select>
         </mat-form-field>
 
 

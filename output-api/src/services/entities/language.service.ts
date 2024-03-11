@@ -31,8 +31,11 @@ export class LanguageService {
     
     identifyLanguage(label:string) {
         label = label.toLocaleLowerCase();
-        if (label === 'de' || label === 'ger' || label === 'deutsch') return "Deutsch"
-        else if (label === 'en' || label === 'eng' || label === 'english' || label === 'englisch') return "Englisch"
+        if (label === 'de' || label === 'ger' || label === 'deutsch' || label === 'german') return "de"
+        else if (label === 'en' || label === 'eng' || label === 'english' || label === 'englisch') return "en"
+        else if (label === 'fr' || label === 'fra' || label === 'fre' || label === 'french' || label === 'francaise') return "fr"
+        else if (label === 'es' || label === 'spa' || label === 'spanish' || label === 'espanol') return "es"
+        else if (label === 'ru' || label === 'rus' || label === 'russian' || label === 'русский') return "ru"
         else return "Sonstige";
     }
 
