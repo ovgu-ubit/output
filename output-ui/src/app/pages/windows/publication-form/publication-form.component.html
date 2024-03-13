@@ -62,10 +62,17 @@
                 </mat-expansion-panel-header>
 
                         <mat-form-field appearance="fill" style="width: 100%;">
-                            <mat-label>Autoren</mat-label>
-                            <textarea matInput [type]="'text'" placeholder="Autoren"
+                            <mat-label>Autor*innen</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Autor*innen"
                                 formControlName="authors"></textarea>
                         </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Herausgeber*innen</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Herausgeber*innen"
+                                formControlName="editors"></textarea>
+                        </mat-form-field>
+
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Autoren der Institution (corr. Autoren markiert):</mat-label>
                             <mat-chip-grid #author_list>
@@ -146,6 +153,7 @@
                             </mat-autocomplete>
                         </mat-form-field>
 
+                        <mat-checkbox formControlName="peer_reviewed">Peer-reviewed?</mat-checkbox>
 
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Verlag</mat-label>
@@ -180,6 +188,24 @@
                                 <mat-option *ngFor="let lang of this.langs"
                                     [value]="lang.id">{{lang.label}}</mat-option>
                             </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Zitationsangabe</mat-label>
+                            <input matInput [type]="'text'" placeholder="Zitationsangabe"
+                                formControlName="citation"/>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Seitenzahl</mat-label>
+                            <input matInput [type]="'number'" placeholder="Seitenzahl"
+                                formControlName="page_count"/>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Abstract</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Abstract"
+                                formControlName="abstract"></textarea>
                         </mat-form-field>
 
             </mat-expansion-panel>
