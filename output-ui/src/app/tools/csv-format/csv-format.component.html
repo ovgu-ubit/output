@@ -90,6 +90,18 @@
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="pub_date" />
             </mat-form-field>
             <mat-form-field appearance="fill">
+                <mat-label>Publikationsdatum print (beachte Datumsformat)</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="pub_date_print" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Datum der Akzeptanz (beachte Datumsformat)</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="pub_date_accepted" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Datum der Einreichung (beachte Datumsformat)</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="pub_date_submitted" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
                 <mat-label>Link</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="link" />
             </mat-form-field>
@@ -104,6 +116,26 @@
             <mat-form-field appearance="fill">
                 <mat-label>Status</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="status" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Herausgeber</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="editors" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Abstract</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="abstract" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Zitationsangabe</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="citation" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Seitenzahl</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="page_count"/>
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Peer-reviewed?</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="peer_reviewed" />
             </mat-form-field>
         </div>
 
