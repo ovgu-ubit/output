@@ -59,6 +59,11 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.IGNORE,
+        citation :UpdateOptions.REPLACE_IF_EMPTY,
+        page_count :UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
     protected url = 'https://api.openalex.org/works/doi:';
     protected name = 'OpenAlex';
@@ -188,6 +193,23 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
         return [];
     }
     protected getStatus(element: any): number {
-        return 1;
+        return 0;
+    }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return null;
+    }
+    protected getCitation(element: any): string {
+        if (element['biblio']) return 'Vol. '+element['biblio']['volume']+', No. '+element['biblio']['issue']+', pp. '+element['biblio']['first_page']+'-'+element['biblio']['last_page'];
+    }
+    protected getPageCount(element: any): number {
+        try {
+            return Number(element['biblio']['last_page'])-Number(element['biblio']['first_page'])+1;
+        } catch (e) {return null;}
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return null;
     }
 }

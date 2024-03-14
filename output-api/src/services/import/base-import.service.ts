@@ -55,7 +55,13 @@ export class BASEImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.IGNORE,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.IGNORE,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
+    //e.g.https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi?func=PerformSearch&format=json&query=(guericke)
     protected url = 'https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi?';
     protected max_res: number = 100;
     protected max_res_name = 'hits';
@@ -181,5 +187,20 @@ export class BASEImportService extends ApiImportOffsetService {
     }
     protected getStatus(element: any): number {
         return 1;
+    }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return null;
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        return null;
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return null;
     }
 }

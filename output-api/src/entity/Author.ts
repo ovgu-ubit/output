@@ -18,6 +18,9 @@ export class Author implements IAuthor {
     @Column({ nullable: true })
     title?: string;
 
+    @Column({ nullable: true, unique: true })
+    gnd_id?: string;
+
     @ManyToMany(() => Institute, (inst) => inst.authors, {cascade: true})
     @JoinTable()
     institutes?: Institute[]

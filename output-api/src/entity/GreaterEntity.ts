@@ -15,8 +15,11 @@ export class GreaterEntity implements IGreaterEntity {
     @Column({ nullable: true })
     rating?: string;
 
-    @Column({ nullable: true })
-    is_doaj?: boolean;
+    @Column({ nullable: true, type: 'timestamptz' })
+    doaj_since?: Date;
+
+    @Column({ nullable: true, type: 'timestamptz' })
+    doaj_until?: Date;
 
     @OneToMany(() => Identifier, (ide) => ide.entity, {cascade: true})
     identifiers?: Identifier[];

@@ -1,5 +1,5 @@
-import { AfterViewInit, Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AfterViewInit, Component, ElementRef, Inject, Injectable, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -23,6 +23,16 @@ import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entit
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { environment } from 'src/environments/environment';
+
+@Injectable({ providedIn: 'root' })
+export class PubDateValidator {
+  public pubDateValidator(): ValidatorFn {
+    return (formGroup: FormGroup) => {
+      if (formGroup.get('pub_date').value || formGroup.get('pub_date_print').value || formGroup.get('pub_date_accepted').value || formGroup.get('pub_date_submitted').value) return null;
+      else return {no_pub_date: true }
+    };
+  }
+}
 
 @Component({
   selector: 'app-publication-form',
@@ -65,8 +75,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   today = new Date();
   disabled = false;
+  licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
 
-  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService,
+  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubDateValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
@@ -76,9 +87,17 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       title: ['', [Validators.required]],
       doi: [''],
       link: [''],
-      pub_date: ['', [Validators.required]],
+      pub_date: [''],
+      pub_date_print: [''],
+      pub_date_submitted: [''],
+      pub_date_accepted: [''],
       language: [''],
+      abstract: [''],
+      citation: [''],
       authors: ['', [Validators.required]],
+      editors: [''],
+      page_count: [''],
+      peer_reviewed: [''],
       authors_inst: [''],
       add_info: [''],
       import_date: [''],
@@ -96,13 +115,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       publ: [''],
       contr: [''],
       funder: ['']
+    }, {
+      validators: [this.pubValidator.pubDateValidator()]
     });
     this.form.controls.id.disable();
     this.form.controls.is_oa.disable();
     this.form.controls.oa_status.disable();
     this.form.controls.is_journal_oa.disable();
     this.form.controls.best_oa_host.disable();
-    this.form.controls.best_oa_license.disable();
     this.loading = true;
   }
 
@@ -126,6 +146,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
           if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
           if (this.pub?.locked) this.setLock(true);
+          if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
           if (this.pub.locked_at) {
             this.disable();
             this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
@@ -211,7 +232,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.loadData(false);    
+    this.loadData(false);
   }
 
   disable() {
@@ -356,7 +377,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   this.loadData(true);
                 }
               })
-            } 
+            }
           });
         } else this.form.get('publ').enable();
       });
@@ -636,6 +657,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   action(): void {
     this.submitted = true;
     if (this.form.invalid) return;
+
+
     if (!this.form.get('ge').value) this.pub.greater_entity = null;
     if (!this.form.get('publ').value) this.pub.publisher = null;
     if (!this.form.get('contr').value) this.pub.contract = null;
@@ -648,7 +671,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         title: this.form.get('title').value,
         authors: this.form.get('authors').value,
         dataSource: this.form.get('dataSource').value || 'Manuell hinzugefügt',
-        pub_date: this.form.get('pub_date').value.format(),
+        pub_date: this.form.get('pub_date').value ? this.form.get('pub_date').value.format() : undefined,
+        pub_date_print: this.form.get('pub_date_print').value ? this.form.get('pub_date_print').value.format() : undefined,
+        pub_date_accepted: this.form.get('pub_date_accepted').value ? this.form.get('pub_date_accepted').value.format() : undefined,
+        pub_date_submitted: this.form.get('pub_date_submitted').value ? this.form.get('pub_date_submitted').value.format() : undefined,
       }
     }
     this.pub.pub_type = this.pub_type !== -1 ? this.pub_types.find(e => e.id === this.pub_type) : null;

@@ -40,11 +40,19 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       funder: '',
       doi: '',
       pub_date: '',
+      pub_date_print: '',
+      pub_date_accepted: '',
+      pub_date_submitted: '',
       link: '',
       language: '',
       license: '',
       invoice: '',
       status: '',
+      editors: '',
+      abstract: '',
+      citation: '',
+      page_count: '',
+      peer_reviewed: '',
     }
   }
   kill = new Subject();
@@ -86,11 +94,19 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
         funder: [''],
         doi: [''],
         pub_date: [''],
+        pub_date_print: [''],
+        pub_date_accepted: [''],
+        pub_date_submitted: [''],
         link: [''],
         language: [''],
         license: [''],
         invoice: [''],
         status: [''],
+        editors:[''],
+        abstract: [''],
+        citation: [''],
+        page_count: [''],
+        peer_reviewed: [''],
       })
     })
     this.form.patchValue(this.format)

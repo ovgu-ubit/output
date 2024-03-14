@@ -45,6 +45,11 @@ export class BibliographyImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.IGNORE,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.IGNORE,
+        peer_reviewed :UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://heimdall.ub.ovgu.de/jetty/SRU_Engine/bibliography?';
     protected max_res: number = 100;
@@ -138,5 +143,20 @@ export class BibliographyImportService extends ApiImportOffsetService {
     }
     protected getStatus(element: any): number {
         return 1;
+    }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return null;
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        return null;
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return element['local_expansion'].toLowerCase().includes('begutachtet') && !element['local_expansion'].toLowerCase().includes('nicht begutachtet');
     }
 }

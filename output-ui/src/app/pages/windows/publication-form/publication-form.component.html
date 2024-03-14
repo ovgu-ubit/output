@@ -62,10 +62,17 @@
                 </mat-expansion-panel-header>
 
                         <mat-form-field appearance="fill" style="width: 100%;">
-                            <mat-label>Autoren</mat-label>
-                            <textarea matInput [type]="'text'" placeholder="Autoren"
+                            <mat-label>Autor*innen</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Autor*innen"
                                 formControlName="authors"></textarea>
                         </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Herausgeber*innen</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Herausgeber*innen"
+                                formControlName="editors"></textarea>
+                        </mat-form-field>
+
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Autoren der Institution (corr. Autoren markiert):</mat-label>
                             <mat-chip-grid #author_list>
@@ -146,6 +153,7 @@
                             </mat-autocomplete>
                         </mat-form-field>
 
+                        <mat-checkbox formControlName="peer_reviewed">Peer-reviewed?</mat-checkbox>
 
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Verlag</mat-label>
@@ -175,11 +183,56 @@
                         </mat-form-field>
 
                         <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Publikationsdatum (print)</mat-label>
+                            <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                            <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub.pub_date_print : today"
+                                startView="year" color="accent"></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Datum der Akzeptanz</mat-label>
+                            <input matInput [matDatepicker]="picker3" formControlName="pub_date_accepted">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+                            <mat-datepicker #picker3 [startAt]="this.pub?.pub_date_accepted? this.pub.pub_date_accepted : today"
+                                startView="year" color="accent"></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Datum der Einreichung</mat-label>
+                            <input matInput [matDatepicker]="picker4" formControlName="pub_date_submitted">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
+                            <mat-datepicker #picker4 [startAt]="this.pub?.pub_date_submitted? this.pub.pub_date_submitted : today"
+                                startView="year" color="accent"></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Sprache</mat-label>
                             <mat-select [(value)]="this.language" [disabled]="this.disabled">
                                 <mat-option *ngFor="let lang of this.langs"
                                     [value]="lang.id">{{lang.label}}</mat-option>
                             </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Zitationsangabe</mat-label>
+                            <input matInput [type]="'text'" placeholder="Zitationsangabe"
+                                formControlName="citation"/>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Seitenzahl</mat-label>
+                            <input matInput [type]="'number'" placeholder="Seitenzahl"
+                                formControlName="page_count"/>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Abstract</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Abstract"
+                                formControlName="abstract"></textarea>
                         </mat-form-field>
 
             </mat-expansion-panel>
@@ -231,8 +284,10 @@
                         
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Beste OA Lizenz (lt. Unpaywall)</mat-label>
-                            <input matInput [type]="'text'" placeholder="Beste OA Lizenz"
-                                formControlName="best_oa_license" />
+                            <mat-select formControlName="best_oa_license">
+                                <mat-option [value]="null"></mat-option>
+                                <mat-option *ngFor="let value of this.licenses" [value]="value">{{value}}</mat-option>
+                            </mat-select>
                         </mat-form-field>
 
             </mat-expansion-panel>
@@ -376,7 +431,7 @@
 
         <br />
         <div *ngIf="this.form.invalid">
-            Es müssen noch weitere Pflichtfelder ausgefüllt werden
+            Es müssen noch weitere Pflichtfelder (Titel, Autoren und min. ein Publikationsdatum) ausgefüllt werden
         </div>
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button *ngIf="!this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation

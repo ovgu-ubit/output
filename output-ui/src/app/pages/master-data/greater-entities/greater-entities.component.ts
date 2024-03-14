@@ -40,7 +40,8 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'rating', colTitle: 'Bewertung' },
     { colName: 'identifiers', colTitle: 'Identifikatoren' },
-    { colName: 'is_doaj', colTitle: 'Im DOAJ?', type: 'boolean' },
+    { colName: 'doaj_since', colTitle: 'Im DOAJ seit', type: 'date' },
+    { colName: 'doaj_until', colTitle: 'Im DOAJ bis', type: 'date' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },
   ];
   reporting_year;

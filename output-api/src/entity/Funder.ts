@@ -15,6 +15,9 @@ export class Funder implements IFunder {
     @Column({ unique: true, nullable: true })
     doi?: string;
 
+    @Column({ unique: true, nullable: true })
+    ror_id?: string;
+
     @Column({ nullable: true })
     third_party?: boolean;
 

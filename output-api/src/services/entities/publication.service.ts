@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Publication } from '../../entity/Publication';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
 import { Author } from '../../entity/Author';
 import { AuthorPublication } from '../../entity/AuthorPublication';
 import { Invoice } from '../../entity/Invoice';
@@ -82,6 +82,14 @@ export class PublicationService {
         return indexQuery
             .where('publication.pub_date >= :beginDate', { beginDate })
             .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                .andWhere(new Brackets(qb => {
+                    qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', {beginDate, endDate})
+                    .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', {beginDate, endDate})
+                    .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', {beginDate, endDate})
+                }))
+            }))
             .getRawMany() as Promise<PublicationIndex[]>;
     }
 

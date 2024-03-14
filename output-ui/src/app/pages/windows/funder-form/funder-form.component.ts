@@ -62,6 +62,7 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
       id: [''],
       label: ['', Validators.required],
       doi: [''],
+      ror_id: ['']
     });
     this.form.controls.id.disable();
   }

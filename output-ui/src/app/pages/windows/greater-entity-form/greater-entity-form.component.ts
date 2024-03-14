@@ -23,6 +23,7 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['type', 'value', 'delete'];
   @ViewChild(MatTable) table: MatTable<Identifier>;
   disabled = false;
+  today = new Date();
 
   constructor(public dialogRef: MatDialogRef<GreaterEntityFormComponent>, public tokenService: AuthorizationService,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private geService: GreaterEntityService, private _snackBar:MatSnackBar,
@@ -61,7 +62,8 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
       id: [''],
       label: ['', Validators.required],
       rating: [''],
-      is_doaj: [''],
+      doaj_since: [''],
+      doaj_until: [''],
     });
     this.form.controls.id.disable();
     this.idForm = this.formBuilder.group({
