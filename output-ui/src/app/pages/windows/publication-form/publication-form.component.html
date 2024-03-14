@@ -183,6 +183,33 @@
                         </mat-form-field>
 
                         <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Publikationsdatum (print)</mat-label>
+                            <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                            <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub.pub_date_print : today"
+                                startView="year" color="accent"></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Datum der Akzeptanz</mat-label>
+                            <input matInput [matDatepicker]="picker3" formControlName="pub_date_accepted">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+                            <mat-datepicker #picker3 [startAt]="this.pub?.pub_date_accepted? this.pub.pub_date_accepted : today"
+                                startView="year" color="accent"></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Datum der Einreichung</mat-label>
+                            <input matInput [matDatepicker]="picker4" formControlName="pub_date_submitted">
+                            <mat-hint>T.M.JJJJ</mat-hint>
+                            <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
+                            <mat-datepicker #picker4 [startAt]="this.pub?.pub_date_submitted? this.pub.pub_date_submitted : today"
+                                startView="year" color="accent"></mat-datepicker>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Sprache</mat-label>
                             <mat-select [(value)]="this.language" [disabled]="this.disabled">
                                 <mat-option *ngFor="let lang of this.langs"
@@ -404,7 +431,7 @@
 
         <br />
         <div *ngIf="this.form.invalid">
-            Es müssen noch weitere Pflichtfelder ausgefüllt werden
+            Es müssen noch weitere Pflichtfelder (Titel, Autoren und min. ein Publikationsdatum) ausgefüllt werden
         </div>
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button *ngIf="!this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
