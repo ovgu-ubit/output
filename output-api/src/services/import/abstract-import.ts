@@ -530,7 +530,9 @@ export abstract class AbstractImportService {
 
         if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
             let ids = this.getGreaterEntityIdentifier(element);
-            let ge = await this.geService.findOrSave(this.getGreaterEntityName(element), ids).catch(e => console.log(`GreaterEntityService: ${e['text']} for publication ${orig.id}, must be assigned manually`))
+            let ge = await this.geService.findOrSave(this.getGreaterEntityName(element), ids).catch(e => {
+                this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text:`: ${e['text']} for publication ${orig.id}, must be assigned manually` })
+            })
             if (ge) {
                 orig.greater_entity = ge; //replace if not ignore or not empty (append is also replace if empty)
                 fields.push('greater_entity')
@@ -542,7 +544,9 @@ export abstract class AbstractImportService {
             let funder_ents: Funder[] = []
             if (funders) {
                 for (let funder of funders) {
-                    let funder_ent = await this.funderService.findOrSave(funder.label, funder.doi).catch(e => console.log(`FunderService: ${e['text']} for publication ${orig.id}, must be checked manually`));;
+                    let funder_ent = await this.funderService.findOrSave(funder.label, funder.doi).catch(e => {
+                        this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text:`${e['text']} for publication ${orig.id}, must be checked manually` })
+                    });
                     if (funder_ent) funder_ents.push(funder_ent);
                 }
                 funder_ents = funder_ents.filter((v, i, s) => { return s.indexOf(s.find(f => f.id === v.id)) === i; });

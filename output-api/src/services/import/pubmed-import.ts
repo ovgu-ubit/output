@@ -77,6 +77,11 @@ export class PubMedImportService extends AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.REPLACE_IF_EMPTY,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.IGNORE,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
 
     request(id: number): Observable<any> {
@@ -370,5 +375,27 @@ export class PubMedImportService extends AbstractImportService {
     }
     protected getStatus(element: any): number {
         return 0;
+    }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        try {
+            let pt = element['Article']['Abstract']['AbstractText']['_text'];
+            if (Array.isArray(pt)) {
+                let res = '';
+                for (let e of pt) res += e + ";"
+                return res.slice(0, res.length - 1)
+            } else return pt;
+        } catch (e) {return null};
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        return null;
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return null;
     }
 }

@@ -45,6 +45,11 @@ export class Output1ImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.IGNORE,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.IGNORE,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
     protected url = 'https://service.ub.ovgu.de/output/api/publications_export?';
     //protected url = 'http://localhost:3000/publications_export?';
@@ -170,6 +175,21 @@ export class Output1ImportService extends ApiImportOffsetService {
         } else return [];
     }
     protected getStatus(element: any): number {
+        return null;
+    }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return null;
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        return null;
+    }
+    protected getPeerReviewed(element: any): boolean {
         return null;
     }
 }

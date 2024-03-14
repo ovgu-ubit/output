@@ -66,6 +66,11 @@ export class CSVMapping {
         license?: string;
         invoice?: string;
         status?: string;
+        editors?: string;
+        abstract?: string;
+        citation?: string;
+        page_count?: string;
+        peer_reviewed?: string;
     }
 }
 

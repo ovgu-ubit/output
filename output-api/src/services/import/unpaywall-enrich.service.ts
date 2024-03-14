@@ -51,6 +51,11 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.IGNORE,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.IGNORE,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
     protected url = 'https://api.unpaywall.org/v2/';
     protected param_string = 'email='+this.configService.get('api_key_unpaywall');
@@ -122,13 +127,27 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     protected getStatus(element: any): number {
         return 1;
     }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return null;
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        return null;
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
 
     protected finalize(orig: Publication, element: any): {fields:string[], pub: Publication} {
         orig.is_oa = element['is_oa'];
         orig.oa_status = element['oa_status'];
         orig.is_journal_oa = element['journal_is_oa'];
         orig.best_oa_host = element['best_oa_location']? element['best_oa_location']['host_type'] : null;
-        orig.best_oa_license = element['best_oa_location']? element['best_oa_location']['license'] : null;
         return {fields: ['is_oa','oa_status','journal_is_oa','best_oa_location','best_oa_license'], pub: orig};
     }
 }

@@ -118,25 +118,25 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         } else if (element['published']) {
             pub_date = element['published']['date-parts'][0];
         }
-        if (pub_date.length === 3) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1, pub_date[2]));
-        else if (pub_date.length === 2) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1));
-        else pub_date = new Date(Date.UTC(pub_date[0], 0));
+        if (pub_date && pub_date.length === 3) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1, pub_date[2]));
+        else if (pub_date && pub_date.length === 2) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1));
+        else if (pub_date) pub_date = new Date(Date.UTC(pub_date[0], 0));
 
         if (element['published-print']) {
             pub_date_print = element['published-print']['date-parts'][0];
         } 
-        if (pub_date_print.length === 3) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1, pub_date_print[2]));
-        else if (pub_date_print.length === 2) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1));
-        else pub_date_print = new Date(Date.UTC(pub_date_print[0], 0));
+        if (pub_date_print && pub_date_print.length === 3) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1, pub_date_print[2]));
+        else if (pub_date_print && pub_date_print.length === 2) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1));
+        else if (pub_date_print) pub_date_print = new Date(Date.UTC(pub_date_print[0], 0));
 
         if (element['approved']) {
             pub_date_accepted = element['approved']['date-parts'][0];
         } else if (element['accepted']) {
             pub_date_accepted = element['accepted']['date-parts'][0];
         }
-        if (pub_date_accepted.length === 3) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1, pub_date_accepted[2]));
-        else if (pub_date_accepted.length === 2) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1));
-        else pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], 0));
+        if (pub_date_accepted && pub_date_accepted.length === 3) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1, pub_date_accepted[2]));
+        else if (pub_date_accepted && pub_date_accepted.length === 2) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1));
+        else if (pub_date_accepted) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], 0));
 
 
         return {pub_date, pub_date_print, pub_date_accepted};

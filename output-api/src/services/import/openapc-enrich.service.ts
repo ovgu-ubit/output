@@ -59,6 +59,11 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.IGNORE,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.IGNORE,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
     protected url = 'https://olap.openapc.net/cube/openapc/facts';
     protected name = 'OpenAPC';
@@ -132,5 +137,20 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
     }
     protected getStatus(element: any): number {
         return 1;
+    }
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return null;
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        return null;
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return null;
     }
 }

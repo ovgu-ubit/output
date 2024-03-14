@@ -53,7 +53,12 @@ export class CSVImportService extends AbstractImportService {
         language: UpdateOptions.REPLACE_IF_EMPTY,
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
-        status: UpdateOptions.IGNORE,
+        status: UpdateOptions.REPLACE_IF_EMPTY,
+        editors :UpdateOptions.REPLACE_IF_EMPTY,
+        abstract :UpdateOptions.REPLACE_IF_EMPTY,
+        citation :UpdateOptions.REPLACE_IF_EMPTY,
+        page_count :UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed :UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     private newPublications: Publication[] = [];
@@ -273,6 +278,31 @@ export class CSVImportService extends AbstractImportService {
         if (!this.importConfig.mapping.status) return null;
         if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
         return element[this.importConfig.mapping.status];
+    }
+    protected getEditors(element: any): string {
+        if (!this.importConfig.mapping.editors) return null;
+        if (this.importConfig.mapping.editors.startsWith('$')) return this.importConfig.mapping.editors.slice(1, this.importConfig.mapping.editors.length);
+        return element[this.importConfig.mapping.editors];
+    }
+    protected getAbstract(element: any): string {
+        if (!this.importConfig.mapping.abstract) return null;
+        if (this.importConfig.mapping.abstract.startsWith('$')) return this.importConfig.mapping.abstract.slice(1, this.importConfig.mapping.abstract.length);
+        return element[this.importConfig.mapping.abstract];
+    }
+    protected getCitation(element: any): string {
+        if (!this.importConfig.mapping.citation) return null;
+        if (this.importConfig.mapping.citation.startsWith('$')) return this.importConfig.mapping.citation.slice(1, this.importConfig.mapping.citation.length);
+        return element[this.importConfig.mapping.authors];
+    }
+    protected getPageCount(element: any): number {
+        if (!this.importConfig.mapping.page_count) return null;
+        if (this.importConfig.mapping.page_count.startsWith('$')) return Number(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
+        return element[this.importConfig.mapping.page_count];
+    }
+    protected getPeerReviewed(element: any): boolean {
+        if (!this.importConfig.mapping.peer_reviewed) return null;
+        if (this.importConfig.mapping.peer_reviewed.startsWith('$')) return Boolean(this.importConfig.mapping.peer_reviewed.slice(1, this.importConfig.mapping.peer_reviewed.length));
+        return element[this.importConfig.mapping.peer_reviewed];
     }
 
     getConfigs() {
