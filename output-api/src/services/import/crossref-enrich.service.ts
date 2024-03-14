@@ -52,6 +52,11 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.IGNORE,
+        abstract :UpdateOptions.REPLACE_IF_EMPTY,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
     protected url = 'https://api.crossref.org/works/';
     protected param_string = '';
@@ -104,21 +109,37 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     protected getPublisher(element: any): Publisher {
         return {label: element['publisher']};
     }
-    protected getPubDate(element: any): Date {
-        let data = null;
+    protected getPubDate(element: any) {
+        let pub_date = null;
+        let pub_date_print = null;
+        let pub_date_accepted = null;
         if (element['published-online']) {
-            data = element['published-online']['date-parts'][0];
-        } else if (element['published-print']) {
-            data = element['published-print']['date-parts'][0];
+            pub_date = element['published-online']['date-parts'][0];
         } else if (element['published']) {
-            data = element['published']['date-parts'][0];
+            pub_date = element['published']['date-parts'][0];
         }
-        let pubdate = null;
-        if (data.length === 3) pubdate = new Date(Date.UTC(data[0], data[1]-1, data[2]));
-        else if (data.length === 2) pubdate = new Date(Date.UTC(data[0], data[1]-1));
-        else pubdate = new Date(Date.UTC(data[0], 0));
+        if (pub_date.length === 3) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1, pub_date[2]));
+        else if (pub_date.length === 2) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1));
+        else pub_date = new Date(Date.UTC(pub_date[0], 0));
 
-        return pubdate;
+        if (element['published-print']) {
+            pub_date_print = element['published-print']['date-parts'][0];
+        } 
+        if (pub_date_print.length === 3) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1, pub_date_print[2]));
+        else if (pub_date_print.length === 2) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1));
+        else pub_date_print = new Date(Date.UTC(pub_date_print[0], 0));
+
+        if (element['approved']) {
+            pub_date_accepted = element['approved']['date-parts'][0];
+        } else if (element['accepted']) {
+            pub_date_accepted = element['accepted']['date-parts'][0];
+        }
+        if (pub_date_accepted.length === 3) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1, pub_date_accepted[2]));
+        else if (pub_date_accepted.length === 2) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1));
+        else pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], 0));
+
+
+        return {pub_date, pub_date_print, pub_date_accepted};
     }
     protected getLanguage(element: any): string {
         return element['language'];
@@ -180,6 +201,20 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         let res = this.authorsInstitution(authors).length !== 0;
         return res;
     }
-
+    protected getEditors(element: any): string {
+        return null;
+    }
+    protected getAbstract(element: any): string {
+        return element['abstract'];
+    }
+    protected getCitation(element: any): string {
+        return null;
+    }
+    protected getPageCount(element: any): number {
+        if (element['page'] && element['page'].split('-').length === 2) return Number(element['page'].split('-')[1])-Number(element['page'].split('-')[0])+1
+    }
+    protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
 
 }

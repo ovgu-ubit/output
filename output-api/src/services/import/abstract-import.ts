@@ -61,6 +61,11 @@ export abstract class AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
+        editors :UpdateOptions.REPLACE_IF_EMPTY,
+        abstract :UpdateOptions.REPLACE_IF_EMPTY,
+        citation :UpdateOptions.REPLACE_IF_EMPTY,
+        page_count :UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed :UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     public getUpdateMapping() {
@@ -124,7 +129,7 @@ export abstract class AbstractImportService {
      * retrieves the publication date of an element in UTC timezone
      * @param element 
      */
-    protected abstract getPubDate(element: any): Date;
+    protected abstract getPubDate(element: any): Date | {pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date};
     /**
      * retrieves the link of an element
      * @param element 
@@ -166,10 +171,35 @@ export abstract class AbstractImportService {
      */
     protected abstract getInvoiceInformation(element: any): Invoice[];
     /**
-     * retrieves the invoice information of an element
+     * retrieves the status number of an element
      * @param element 
      */
     protected abstract getStatus(element: any): number;
+    /**
+     * retrieves the editor string of an element
+     * @param element 
+     */
+    protected abstract getEditors(element: any): string;
+    /**
+     * retrieves the abstract of an element
+     * @param element 
+     */
+    protected abstract getAbstract(element: any): string;
+    /**
+     * retrieves a citation string of an element
+     * @param element 
+     */
+    protected abstract getCitation(element: any): string;
+    /**
+     * retrieves the page count of an element
+     * @param element 
+     */
+    protected abstract getPageCount(element: any): number;
+    /**
+     * retrieves the peer reviewed status of an element
+     * @param element 
+     */
+    protected abstract getPeerReviewed(element: any): boolean;
 
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
@@ -252,11 +282,23 @@ export abstract class AbstractImportService {
             oa_category,
             contract,
             dataSource: this.name.trim(),
-            pub_date,
             funders: funder_ents,
             best_oa_license: this.getLicense(item)?.trim(),
-            invoices: inv_info
+            invoices: inv_info,
+            editors: this.getEditors(item)?.trim(),
+            abstract: this.getAbstract(item)?.trim(),
+            citation: this.getCitation(item)?.trim(),
+            page_count: this.getPageCount(item),
+            peer_reviewed: this.getPeerReviewed(item),
         };
+        if (pub_date instanceof Date) obj.pub_date = pub_date;
+        else {
+            obj.pub_date = pub_date.pub_date;
+            obj.pub_date_print = pub_date.pub_date_print;
+            obj.pub_date_accepted = pub_date.pub_date_accepted;
+            obj.pub_date_submitted = pub_date.pub_date_submitted;
+        }
+
         let pub_ent = (await this.publicationService.save([obj]))[0];
         for (let aut of authors_entities) {
             await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute);
@@ -377,20 +419,62 @@ export abstract class AbstractImportService {
                 if (orig.language) fields.push('language')
                 break;
         }
-
+        let pd;
         switch (this.updateMapping.pub_date) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
             case UpdateOptions.APPEND:
-                if (!orig.pub_date) {
-                    orig.pub_date = this.getPubDate(element);
-                    if (orig.pub_date) fields.push('pub_date')
+                pd = this.getPubDate(element);
+                let flag = false;
+                if (pd instanceof Date) {
+                    orig.pub_date = pd;
+                    flag = true;
+                } else {
+                    if (!orig.pub_date) {
+                        orig.pub_date = pd.pub_date;
+                        flag = true;
+                    }
+                    if (!orig.pub_date_print) {
+                        orig.pub_date_print = pd.pub_date_print;
+                        flag = true;
+                    }
+                    if (!orig.pub_date_accepted) {
+                        orig.pub_date_accepted = pd.pub_date_accepted;
+                        flag = true;
+                    }
+                    if (!orig.pub_date_submitted) {
+                        orig.pub_date_submitted = pd.pub_date_submitted;
+                        flag = true;
+                    }
                 }
+                if (flag) fields.push('pub_dates')
                 break;
             case UpdateOptions.REPLACE:
-                orig.pub_date = this.getPubDate(element);
-                if (orig.pub_date) fields.push('pub_date')
+                pd = this.getPubDate(element);
+                if (pd instanceof Date) {
+                    orig.pub_date = pd;
+                    flag = true;
+                }  else {
+                    if (pd.pub_date) {
+                        orig.pub_date = pd.pub_date;
+                        flag = true;
+                    }
+                    if (pd.pub_date_print) {
+                        orig.pub_date_print = pd.pub_date_print;
+                        flag = true;
+                    }
+                    if (pd.pub_date_accepted) {
+                        orig.pub_date_accepted = pd.pub_date_accepted;
+                        flag = true;
+                    }
+                    if (pd.pub_date_submitted) {
+                        orig.pub_date_submitted = pd.pub_date_submitted;
+                        flag = true;
+                    }
+                }
+                
+                if (flag) fields.push('pub_date')
                 break;
         }
 
@@ -534,6 +618,81 @@ export abstract class AbstractImportService {
             case UpdateOptions.REPLACE:
                 orig.status = this.getStatus(element);
                 if (orig.status) fields.push('status')
+                break;
+        }
+        switch (this.updateMapping.editors) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.editors) {
+                    orig.editors = this.getEditors(element);
+                    if (orig.editors) fields.push('editors')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.editors = this.getEditors(element);
+                if (orig.editors) fields.push('editors')
+                break;
+        }
+        switch (this.updateMapping.abstract) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.abstract) {
+                    orig.abstract = this.getAbstract(element);
+                    if (orig.abstract) fields.push('abstract')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.abstract = this.getAbstract(element);
+                if (orig.abstract) fields.push('abstract')
+                break;
+        }
+        switch (this.updateMapping.citation) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.citation) {
+                    orig.citation = this.getCitation(element);
+                    if (orig.citation) fields.push('citation')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.citation = this.getCitation(element);
+                if (orig.citation) fields.push('citation')
+                break;
+        }
+        switch (this.updateMapping.page_count) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.page_count) {
+                    orig.page_count = this.getPageCount(element);
+                    if (orig.page_count) fields.push('page_count')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.page_count = this.getPageCount(element);
+                if (orig.page_count) fields.push('page_count')
+                break;
+        }
+        switch (this.updateMapping.peer_reviewed) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.peer_reviewed) {
+                    orig.peer_reviewed = this.getPeerReviewed(element);
+                    if (orig.peer_reviewed) fields.push('peer_reviewed')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.peer_reviewed = this.getPeerReviewed(element);
+                if (orig.peer_reviewed) fields.push('peer_reviewed')
                 break;
         }
 

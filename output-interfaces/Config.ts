@@ -25,6 +25,11 @@ export class UpdateMapping {
     license: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     invoice: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     status: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
+    editors: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
+    abstract: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
+    citation: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
+    page_count: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
+    peer_reviewed: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
 }
 
 export enum UpdateOptions {
