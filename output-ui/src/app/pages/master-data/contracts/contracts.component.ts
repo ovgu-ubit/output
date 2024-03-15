@@ -15,7 +15,8 @@ import { SortDirection } from '@angular/material/sort';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
-import { resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
+import { ViewConfig, resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
+import { CompareOperation, JoinOperation } from '../../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-contracts',
@@ -239,11 +240,28 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
   
   async showPubs?(id:number,field?:string) {
     this.store.dispatch(resetViewConfig());
-    let res = [];
-    res = await this.publicationService.filterContract(id)
-    let viewConfig = {
+    let viewConfig:ViewConfig = {
       sortDir: 'asc' as SortDirection,
-      filteredIDs: res
+      filter: {
+        filter: {
+          expressions: [{
+            op: JoinOperation.AND,
+            key: 'contract_id',
+            comp: CompareOperation.EQUALS,
+            value: id
+          },{
+            op: JoinOperation.AND,
+            key: 'pub_date',
+            comp: CompareOperation.GREATER_THAN,
+            value: (this.reporting_year-1)+'-12-31 23:59:59'
+          },{
+            op: JoinOperation.AND,
+            key: 'pub_date',
+            comp: CompareOperation.SMALLER_THAN,
+            value: (this.reporting_year+1)+'-01-01 00:00:00'
+          }]
+        }
+      }
     }
     this.store.dispatch(setViewConfig({viewConfig}))
     this.router.navigateByUrl('publications')

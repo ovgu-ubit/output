@@ -90,7 +90,8 @@ export enum CompareOperation {
     EQUALS,
     STARTS_WITH,
     GREATER_THAN,
-    SMALLER_THAN
+    SMALLER_THAN,
+    IN
 }
 
 export enum JoinOperation {

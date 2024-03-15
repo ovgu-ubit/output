@@ -85,46 +85,6 @@ export class InstitutionService {
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let time;
         let result;
-/*
-        let pubs = (await this.pubRepository.find({ where: { pub_date: Between(beginDate, endDate) }, select: { id: true } })).map(e => e.id)
-
-        time = new Date();
-        let tree = await this.repository.findTrees({ relations: ['authorPublications', 'authors'] });
-        result: InstituteIndex[] = [];
-
-        for (let root of tree) {
-            result = result.concat(this.evalSubTree(root, pubs).index)
-        }
-        console.log('FindTrees: ' + (new Date().getTime() - time.getTime()) / 1000)
-*/
-        /////////////////////////////////
-
-  /*     time = new Date();
-        let roots = await this.repository.findRoots({ relations: ['authors'] });
-        result = [];
-        for (let root of roots) {
-            let query = this.repository.createDescendantsQueryBuilder("institute", "institute_closure", root)
-                .leftJoin("author_publication","aut_pub", "aut_pub.\"instituteId\" = institute.id")
-                .leftJoin("publication","pub", "aut_pub.\"publicationId\" = pub.id")
-                .leftJoin("author_institutes_institute","aut_inst", "aut_inst.\"instituteId\" = institute.id")
-                .select("institute.id", "id")
-                .addSelect("institute.label", "label")
-                .addSelect("institute.short_label", "short_label")
-                .addSelect("COUNT(distinct pub.id)", "pub_count")
-                .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_corr_count")
-                .addSelect("COUNT(distinct aut_inst.\"authorId\")", "author_count")
-                .where('pub is NULL')
-                .orWhere('pub_date between :beginDate and :endDate', { beginDate, endDate })
-                .groupBy("institute.id")
-                .addGroupBy("institute.label")
-                .addGroupBy("institute.short_label")
-
-            console.log(query.getSql());
-            result = result.concat(await query.getRawMany());
-        }
-        console.log('FindRoots: ' + (new Date().getTime() - time.getTime()) / 1000)
-*/
-        //////////////////////////////////
 
         time = new Date();
         let instIDs = (await this.repository.find({relations: {authors: true}}))
@@ -150,43 +110,6 @@ export class InstitutionService {
 
 
         return result;
-    }
-
-    evalSubTree(node: Institute, pubs: number[]): { index: InstituteIndex[], pubs: AuthorPublication[], authors: Author[] } {
-        if (!node.sub_institutes || node.sub_institutes.length === 0) {
-            return {
-                index: [{
-                    id: node.id,
-                    label: node.label,
-                    short_label: node.short_label,
-                    pub_count: node.authorPublications.filter((e, i, a) => a.findIndex(el => el.publicationId === e.publicationId) === i && pubs.includes(e.publicationId)).length,
-                    pub_corr_count: node.authorPublications.filter(e => e.corresponding).filter((e, i, a) => a.findIndex(el => el.publicationId === e.publicationId) === i && pubs.includes(e.publicationId)).length,
-                    author_count: node.authors.length,
-                    author_count_total: node.authors.length,
-                    sub_inst_count: 0
-                }], pubs: node.authorPublications, authors: node.authors
-            }
-        } else {
-            let result = { index: [], pubs: [], authors: [] }
-            for (let sub of node.sub_institutes) {
-                result.index = result.index.concat(this.evalSubTree(sub, pubs).index)
-                result.pubs = result.pubs.concat(this.evalSubTree(sub, pubs).pubs)
-                result.authors = result.authors.concat(this.evalSubTree(sub, pubs).authors)
-            }
-            result.pubs = result.pubs.concat(node.authorPublications).filter((e, i, a) => a.findIndex(el => el.publicationId === e.publicationId) === i)
-            result.authors = result.authors.concat(node.authors).filter((e, i, a) => a.findIndex(el => el.id === e.id) === i)
-            result.index.push({
-                id: node.id,
-                label: node.label,
-                short_label: node.short_label,
-                pub_count: result.pubs.filter(e => pubs.includes(e.publicationId)).length,
-                pub_corr_count: result.pubs.filter(e => e.corresponding && pubs.includes(e.publicationId)).length,
-                author_count: node.authors.length,
-                author_count_total: result.authors.length,
-                sub_inst_count: node.sub_institutes.length + result.index.reduce((pv, cv) => cv.sub_inst_count + pv, 0),
-            });
-            return result;
-        }
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {

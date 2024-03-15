@@ -8,7 +8,7 @@ export interface TableParent<T> {
 
   loading: boolean;
   selection: SelectionModel<T>;
-  showPubs?(id:number,field?:string);
+  showPubs?(id:number,field?:string):void;
 }
 
 export interface TableHeader {

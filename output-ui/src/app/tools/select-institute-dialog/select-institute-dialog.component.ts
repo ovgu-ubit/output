@@ -87,11 +87,13 @@ export class SelectInstituteDialogComponent implements OnInit {
         disableClose: true
       });
       dialogRef.afterClosed().subscribe(result => {
+        let inst = this.institute;
         if (result && result.length > 0) {
-          this.institute.aliases.push({ elementId: this.institute.id, alias: result[0] });
-          this.instService.update(this.institute).subscribe()
+          inst = this.institutes.find(e => e.id === this.institute.id)
+          inst.aliases.push({ elementId: this.institute.id, alias: result[0] });
+          this.instService.update(inst).subscribe()
         }
-        this.dialogRef.close(this.institute);
+        this.dialogRef.close(inst);
       });
     }
     else this.dialogRef.close(this.institute);
