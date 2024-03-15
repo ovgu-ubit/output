@@ -14,6 +14,8 @@ import { CompareOperation, JoinOperation, SearchFilter } from '../../../../outpu
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
 
+    funder = false;
+
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
@@ -84,11 +86,11 @@ export class PublicationService {
             .andWhere('publication.pub_date <= :endDate', { endDate })
             .orWhere(new Brackets(qb => {
                 qb.where('publication.pub_date is null')
-                .andWhere(new Brackets(qb => {
-                    qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', {beginDate, endDate})
-                    .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', {beginDate, endDate})
-                    .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', {beginDate, endDate})
-                }))
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
             }))
             .getRawMany() as Promise<PublicationIndex[]>;
     }
@@ -335,6 +337,7 @@ export class PublicationService {
     }
 
     async filter(filter: SearchFilter): Promise<PublicationIndex[]> {
+        this.funder = false;
 
         let indexQuery = this.indexQuery();
         let first = false;
@@ -351,10 +354,13 @@ export class PublicationService {
                     compareString = this.getWhereStringStartsWith(expr.key, expr.value)
                     break;
                 case CompareOperation.GREATER_THAN:
-                    compareString = "publication." + expr.key + " > '" + expr.value+"'";
+                    compareString = "publication." + expr.key + " > '" + expr.value + "'";
                     break;
                 case CompareOperation.SMALLER_THAN:
-                    compareString = "publication." + expr.key + " < '" + expr.value+"'";
+                    compareString = "publication." + expr.key + " < '" + expr.value + "'";
+                    break;
+                case CompareOperation.IN:
+                    compareString = this.getWhereStringIn(expr.key, expr.value)
                     break;
             }
             switch (expr.op) {
@@ -368,12 +374,12 @@ export class PublicationService {
                     break;
                 case JoinOperation.AND_NOT:
                     if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.andWhere("NOT "+compareString);
+                    else indexQuery = indexQuery.andWhere("NOT " + compareString);
                     break;
             }
         }
+        if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
         //console.log(indexQuery.getSql())
-
         return indexQuery.getRawMany() as Promise<PublicationIndex[]>
     }
 
@@ -386,6 +392,31 @@ export class PublicationService {
             case 'publisher':
             case 'contract':
                 where = key + ".label = '" + value + "'";
+                break;
+            case 'author_id':
+                where = '\"authorPublications\".\"authorId\"=' + value;
+                break;
+            case 'author_id_corr':
+                where = '\"authorPublications\".\"authorId\"=' + value + ' and \"authorPublications\".corresponding';
+                break;
+            case 'contract_id':
+                where = 'contract.id=' + value;
+                break;
+            case 'funder_id':
+                where = 'funder.id=' + value;
+                this.funder = true;
+                break;
+            case 'greater_entity_id':
+                where = 'greater_entity.id=' + value;
+                break;
+            case 'oa_category_id':
+                where = 'oa_category.id=' + value;
+                break;
+            case 'pub_type_id':
+                where = 'publication_type.id=' + value;
+                break;
+            case 'publisher_id':
+                where = 'publisher.id=' + value;
                 break;
             default:
                 where = "publication." + key + " = " + value;
@@ -421,6 +452,28 @@ export class PublicationService {
                 break;
             default:
                 where = "publication." + key + " ILIKE '" + value + "%'";
+        }
+        return where;
+    }
+
+    getWhereStringIn(key: string, value: string | number) {
+        let where = '';
+        switch (key) {
+            case 'greater_entity':
+            case 'oa_category':
+            case 'pub_type':
+            case 'publisher':
+            case 'contract':
+                where = key + ".label IN " + value;
+                break;
+            case 'institute_id':
+                where = '\"authorPublications\".\"instituteId\" IN ' + value;
+                break;
+            case 'institute_id_corr':
+                where = '\"authorPublications\".\"instituteId\" IN' + value + ' and \"authorPublications\".corresponding';
+                break;
+            default:
+                where = "publication." + key + " IN " + value;
         }
         return where;
     }

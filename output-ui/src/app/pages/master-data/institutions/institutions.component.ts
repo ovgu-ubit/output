@@ -10,12 +10,13 @@ import { InstituteIndex } from '../../../../../../output-interfaces/PublicationI
 import { InstituteFormComponent } from '../../windows/institute-form/institute-form.component';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
-import { resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
+import { ViewConfig, resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
 import { SortDirection } from '@angular/material/sort';
 import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { CompareOperation, JoinOperation } from '../../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-institutions',
@@ -243,12 +244,55 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
     let ids = await firstValueFrom(this.instService.getSubInstitutes(id));
     ids.push(id);
     this.store.dispatch(resetViewConfig());
-    let res = [];
-    if (field === 'pub_count') res = await this.publicationService.filterInst(ids)
-    else res = await this.publicationService.filterInstCorr(ids)
-    let viewConfig = {
-      sortDir: 'asc' as SortDirection,
-      filteredIDs: res
+    let viewConfig:ViewConfig;
+    if (field === 'pub_count') {
+      viewConfig = {
+        sortDir: 'asc' as SortDirection,
+        filter: {
+          filter: {
+            expressions: [{
+              op: JoinOperation.AND,
+              key: 'institute_id',
+              comp: CompareOperation.IN,
+              value: '('+ids.join(',')+')'
+            },{
+              op: JoinOperation.AND,
+              key: 'pub_date',
+              comp: CompareOperation.GREATER_THAN,
+              value: (this.reporting_year-1)+'-12-31 23:59:59'
+            },{
+              op: JoinOperation.AND,
+              key: 'pub_date',
+              comp: CompareOperation.SMALLER_THAN,
+              value: (this.reporting_year+1)+'-01-01 00:00:00'
+            }]
+          }
+        }
+      }
+    } else {
+        viewConfig = {
+          sortDir: 'asc' as SortDirection,
+          filter: {
+            filter: {
+              expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id_corr',
+                comp: CompareOperation.IN,
+                value: '('+ids.join(',')+')'
+              },{
+                op: JoinOperation.AND,
+                key: 'pub_date',
+                comp: CompareOperation.GREATER_THAN,
+                value: (this.reporting_year-1)+'-12-31 23:59:59'
+              },{
+                op: JoinOperation.AND,
+                key: 'pub_date',
+                comp: CompareOperation.SMALLER_THAN,
+                value: (this.reporting_year+1)+'-01-01 00:00:00'
+              }]
+            }
+          }
+        }
     }
     this.store.dispatch(setViewConfig({viewConfig}))
     this.router.navigateByUrl('publications')

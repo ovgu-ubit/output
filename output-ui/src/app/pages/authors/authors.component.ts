@@ -12,17 +12,18 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { Store } from '@ngrx/store';
-import { resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
+import { ViewConfig, resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
 import { SortDirection } from '@angular/material/sort';
 import { Router } from '@angular/router';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-authors',
   templateUrl: './authors.component.html',
   styleUrls: ['./authors.component.css']
 })
-export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
+export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   buttons: TableButton[] = [
     { title: 'Hinzufügen', action_function: this.addAuthor.bind(this), roles: ['writer'] },
     { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
@@ -32,8 +33,8 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
   selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
 
-  authors:AuthorIndex[] = [];
-  reporting_year:number;
+  authors: AuthorIndex[] = [];
+  reporting_year: number;
 
   @ViewChild(TableComponent) table: TableComponent<AuthorIndex>;
   headers: TableHeader[] = [
@@ -42,14 +43,14 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
     { colName: 'first_name', colTitle: 'Vorname' },
     { colName: 'last_name', colTitle: 'Nachname' },
     { colName: 'orcid', colTitle: 'ORCID' },
-    { colName: 'gnd_id', colTitle: 'GND-Nr.'},
+    { colName: 'gnd_id', colTitle: 'GND-Nr.' },
     { colName: 'institutes', colTitle: 'Institute' },
-    { colName: 'pub_count', colTitle: 'Anzahl Publikationen' , type: 'pubs'},
-    { colName: 'pub_corr_count', colTitle: 'Anzahl Publikationen (corr.)' , type: 'pubs'},
+    { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'pub_corr_count', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
   ];
 
-  constructor(private authorService:AuthorService, private dialog:MatDialog, private _snackBar: MatSnackBar, private store: Store, private publicationService:PublicationService,
-    private router:Router) {}
+  constructor(private authorService: AuthorService, private dialog: MatDialog, private _snackBar: MatSnackBar, private store: Store, private publicationService: PublicationService,
+    private router: Router) { }
 
   ngOnInit(): void {
     this.loading = true;
@@ -61,8 +62,8 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
       }
     }), concatMap(data => {
       this.reporting_year = data;
-      this.headers.find(e => e.colName === 'pub_count').colTitle += ' '+data
-      this.headers.find(e => e.colName === 'pub_corr_count').colTitle += ' '+data
+      this.headers.find(e => e.colName === 'pub_count').colTitle += ' ' + data
+      this.headers.find(e => e.colName === 'pub_corr_count').colTitle += ' ' + data
       return this.authorService.index(data);
     })).subscribe({
       next: data => {
@@ -72,7 +73,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
       }
     })
   }
-  
+
   getName() {
     return 'Autoren';
   }
@@ -84,7 +85,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
   getLabel() {
     return '/Autoren'
   }
-  
+
   update(): void {
     this.loading = true;
     this.authorService.index(this.reporting_year).subscribe({
@@ -100,7 +101,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
       width: '800px',
       maxHeight: '800px',
       data: {
-        author: {id: row.id}
+        author: { id: row.id }
       },
       disableClose: true
     });
@@ -177,7 +178,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
       maxHeight: '800px',
       data: {
         autor: {
-          
+
         }
       },
       disableClose: true
@@ -238,16 +239,59 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit{
     });
   }
 
-  async showPubs?(id:number,field?:string) {
+  async showPubs?(id: number, field?: string) {
     this.store.dispatch(resetViewConfig());
-    let res = [];
-    if (field === 'pub_count') res = await this.publicationService.filterAuthor(id)
-    else res = await this.publicationService.filterAuthorCorr(id)
-    let viewConfig = {
-      sortDir: 'asc' as SortDirection,
-      filteredIDs: res
+    let viewConfig: ViewConfig;
+    if (field === 'pub_count') {
+      viewConfig = {
+        sortDir: 'asc' as SortDirection,
+        filter: {
+          filter: {
+            expressions: [{
+              op: JoinOperation.AND,
+              key: 'author_id',
+              comp: CompareOperation.EQUALS,
+              value: id
+            },{
+              op: JoinOperation.AND,
+              key: 'pub_date',
+              comp: CompareOperation.GREATER_THAN,
+              value: (this.reporting_year-1)+'-12-31 23:59:59'
+            },{
+              op: JoinOperation.AND,
+              key: 'pub_date',
+              comp: CompareOperation.SMALLER_THAN,
+              value: (this.reporting_year+1)+'-01-01 00:00:00'
+            }]
+          }
+        }
+      }
+    } else {
+      viewConfig = {
+        sortDir: 'asc' as SortDirection,
+        filter: {
+          filter: {
+            expressions: [{
+              op: JoinOperation.AND,
+              key: 'author_id_corr',
+              comp: CompareOperation.EQUALS,
+              value: id
+            },{
+              op: JoinOperation.AND,
+              key: 'pub_date',
+              comp: CompareOperation.GREATER_THAN,
+              value: (this.reporting_year-1)+'-12-31 23:59:59'
+            },{
+              op: JoinOperation.AND,
+              key: 'pub_date',
+              comp: CompareOperation.SMALLER_THAN,
+              value: (this.reporting_year+1)+'-01-01 00:00:00'
+            }]
+          }
+        }
+      }
     }
-    this.store.dispatch(setViewConfig({viewConfig}))
+    this.store.dispatch(setViewConfig({ viewConfig }))
     this.router.navigateByUrl('publications')
   }
 }
