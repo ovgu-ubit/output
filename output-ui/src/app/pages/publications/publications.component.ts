@@ -3,8 +3,8 @@ import { Location } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { SortDirection } from '@angular/material/sort';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { ActivatedRoute, Router, UrlSerializer } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject, concatMap, map, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
@@ -22,6 +22,7 @@ import { PublicationFormComponent } from '../windows/publication-form/publicatio
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
 import { SearchFilter } from '../../../../../output-interfaces/Config';
+import { HttpParams } from '@angular/common/http';
 
 @Component({
   selector: 'app-publications',
@@ -30,31 +31,27 @@ import { SearchFilter } from '../../../../../output-interfaces/Config';
 })
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
-    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService) { }
+    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
+    private clipboard: Clipboard, private serializer: UrlSerializer) { }
 
   name = 'Publikationen des Jahres ';
 
   reporting_year: number;
-  filter: {filter:SearchFilter, paths?:string[]};
+  filter: { filter: SearchFilter, paths?: string[] };
 
   buttons: TableButton[] = [
-    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true },
+    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
     {
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
-        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) }
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) },
+        { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
       ]
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer'] },
     { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer'] },
     { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
-    /*{
-      title: 'Anreichern mit', action_function: () => { }, sub_buttons: [
-        { title: 'Unpaywall', action_function: this.enrichUnpaywall.bind(this) },
-        { title: 'Crossref', action_function: this.enrichCrossref.bind(this) }
-      ], roles: ['writer']
-    },*/
     { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer'] },
   ];
   loading: boolean;
@@ -146,7 +143,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
-      viewConfig: {...this.table.getViewConfig(), filter: this.filter}
+      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
     }))
     this.destroy$.next('');
   }
@@ -160,7 +157,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    }); 
+    });
     else if (!soft && this.filter) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
       next: data => {
         this.loading = false;
@@ -168,7 +165,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.name = 'Gefilterte Publikationen'
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    }); 
+    });
     else this.publicationService.softIndex().subscribe({
       next: data => {
         this.loading = false;
@@ -463,6 +460,37 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(resetReportingYear())
     this.filter = null;
     this.update(true);
+  }
+
+  createLink() {
+    this.store.dispatch(setViewConfig({
+      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
+    }))
+    //TODO something
+
+    let tree = this.router.createUrlTree([], { queryParams: { filter: this.filterToQuery() } })
+    let link = environment.self + this.serializer.serialize(tree)
+    if (this.clipboard.copy(link)) {
+      this._snackBar.open(`Link wurde in die Zwischenablage kopiert`, 'Super!', {
+        duration: 5000,
+        panelClass: [`success-snackbar`],
+        verticalPosition: 'top',
+      });
+    }
+  }
+
+  filterToQuery(): string {
+    let res = '';
+    if (!this.filter) return '';
+    for (let expr of this.filter.filter.expressions) {
+      res += expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + ';'
+    }
+    res += this.filter.paths.join(',')
+    return res;
+  }
+
+  queryToFilter() {
+
   }
 
   getName() {
