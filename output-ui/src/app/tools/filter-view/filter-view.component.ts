@@ -129,10 +129,13 @@ export class FilterViewComponent implements OnInit {
     if (this.form.invalid && chips.length === 0) return;
 
     this.dialogRef.close({filter: this.getFilter(), paths: chips})
-
   }
 
   reset(): void {
+    this.dialogRef.close({filter: {expressions: []}, paths: []})
+  }
+
+  resetForm(): void {
     this.form = this.formBuilder.group({
       filters: this.formBuilder.array([])
     })
@@ -149,7 +152,7 @@ export class FilterViewComponent implements OnInit {
     for (let filter of this.getFiltersControls()) {
       if (!filter.get('field').value || !filter.get('value').value) continue;
       let expression:SearchFilterExpression = {
-        op: filter.get('join_operator').value? filter.get('join_operator').value : JoinOperation.AND,
+        op: filter.get('join_operator').value && filter.get('join_operator').value !== 'null'? filter.get('join_operator').value : JoinOperation.AND,
         key: filter.get('field').value,
         comp: filter.get('compare_operator').value,
         value: filter.get('value').value

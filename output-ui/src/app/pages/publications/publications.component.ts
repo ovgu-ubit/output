@@ -170,7 +170,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   update(soft?: boolean): void {
     this.loading = true;
-    if (!soft && !this.filter) this.publicationService.index(this.reporting_year).subscribe({
+    if (!soft && (!this.filter || (this.filter.filter.expressions.length === 0 && this.filter.paths.length === 0))) this.publicationService.index(this.reporting_year).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -178,7 +178,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
-    else if (!soft && this.filter) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
+    else if (!soft && this.filter && (this.filter.filter.expressions.length > 0 || this.filter.paths.length > 0)) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -186,7 +186,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
-    else this.publicationService.softIndex().subscribe({
+    else if (soft) this.publicationService.softIndex().subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -443,7 +443,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (result) {
         this.filter = result;
         this.viewConfig = {...this.viewConfig, filter: {filter: result.filter, paths: result.paths}}
-        this.publicationService.filter(result.filter, result.paths).subscribe({
+        if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.filter(result.filter, result.paths).subscribe({
           next: data => {
             if (data.length === 0) {
               this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
@@ -470,6 +470,14 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
             })
           }
         });
+        else {
+          this._snackBar.open(`Alle Filter zurückgesetzt`, 'Super!', {
+            duration: 5000,
+            panelClass: [`success-snackbar`],
+            verticalPosition: 'top'
+          });
+          this.update()
+        }
       }
     });
   }
