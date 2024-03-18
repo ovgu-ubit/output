@@ -2,7 +2,7 @@
     <h1>Erweiterte Filter</h1>
     Verfügbare Filteransichten
     <mat-chip-listbox multiple="true">
-        <mat-chip-option *ngFor="let filter of this.filters" [value]="filter.path">{{filter.label}}</mat-chip-option>
+        <mat-chip-option *ngFor="let filter of this.filters; let i = index" [value]="filter.path" [selected]="this.selected[filter.path]">{{filter.label}}</mat-chip-option>
       </mat-chip-listbox>
     <form [formGroup]="form">
         <ng-container formArrayName="filters">

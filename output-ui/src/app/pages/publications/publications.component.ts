@@ -4,9 +4,9 @@ import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
-import { ActivatedRoute, Router, UrlSerializer } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router, UrlSerializer } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concatMap, map, of, takeUntil } from 'rxjs';
+import { Observable, Subject, concatMap, firstValueFrom, map, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -21,8 +21,7 @@ import { FilterViewComponent } from '../../tools/filter-view/filter-view.compone
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
-import { SearchFilter } from '../../../../../output-interfaces/Config';
-import { HttpParams } from '@angular/common/http';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-publications',
@@ -32,12 +31,13 @@ import { HttpParams } from '@angular/common/http';
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard, private serializer: UrlSerializer) { }
+    private clipboard: Clipboard) { }
 
   name = 'Publikationen des Jahres ';
 
   reporting_year: number;
   filter: { filter: SearchFilter, paths?: string[] };
+  id;
 
   buttons: TableButton[] = [
     { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
@@ -95,8 +95,21 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
     let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
-      //this.table?.setViewConfig(viewConfig)
-      if (!this.viewConfig?.filter) {
+      return this.route.queryParamMap.pipe(map(params => {
+        if (params.get('id')) {
+          this.id = params.get('id');
+        }
+        this.filter = this.queryToFilter(params);
+        this.viewConfig = {...this.viewConfig, filter: this.filter}
+      }));
+      /*let filter = await this.queryToFilter();
+      if (filter.filter.expressions.length > 0 || filter.paths.length > 0) {
+        this.filter = filter;
+        this.viewConfig = {...viewConfig, filter}
+      }*/
+    }));
+    ob$ = ob$.pipe(concatMap(data => {
+      if (!this.viewConfig?.filter || this.viewConfig?.filter.filter.expressions.length === 0 && this.viewConfig?.filter.paths.length === 0) {
         return this.store.select(selectReportingYear).pipe(concatMap(data => {
           let ob1$: Observable<any>
           if (data) {
@@ -117,20 +130,27 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       } else {
         return this.publicationService.filter(this.viewConfig.filter.filter, this.viewConfig.filter.paths).pipe(map(data => {
           this.publications = data;
+          this.filter = this.viewConfig.filter;
           this.name = 'Gefilterte Publikationen';
           this.table.update(this.publications);
           this.loading = false;
+          if (this.id) {
+            let row = this.publications.find(e => e.id+'' === this.id)
+            this.edit(row);
+          }
         }))
       }
-    }));
-    ob$ = ob$.pipe(concatMap(data => {
+    }))
+
+      
+    /*ob$ = ob$.pipe(concatMap(data => {
       return this.route.queryParams.pipe(map(params => {
         if (params.id) {
           let row = this.publications.find(e => e.id == params.id)
           this.edit(row);
         }
       }));
-    }));
+    }));*/
     ob$.pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
 
@@ -414,11 +434,15 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     let dialogRef = this.dialog.open(FilterViewComponent, {
       width: '800px',
       maxHeight: '800px',
-      disableClose: false
+      disableClose: false,
+      data: {
+        viewConfig: this.viewConfig
+      }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.filter = result;
+        this.viewConfig = {...this.viewConfig, filter: {filter: result.filter, paths: result.paths}}
         this.publicationService.filter(result.filter, result.paths).subscribe({
           next: data => {
             if (data.length === 0) {
@@ -466,10 +490,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(setViewConfig({
       viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
     }))
-    //TODO something
-
-    let tree = this.router.createUrlTree([], { queryParams: { filter: this.filterToQuery() } })
-    let link = environment.self + this.serializer.serialize(tree)
+    let link = environment.self + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
       this._snackBar.open(`Link wurde in die Zwischenablage kopiert`, 'Super!', {
         duration: 5000,
@@ -480,17 +501,37 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   filterToQuery(): string {
-    let res = '';
     if (!this.filter) return '';
+    let res = '?';
     for (let expr of this.filter.filter.expressions) {
-      res += expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + ';'
+      res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
     }
-    res += this.filter.paths.join(',')
+    if (this.filter.filter.expressions.length > 0) res = res.slice(0, res.length - 1) +'&';
+    for (let path of this.filter.paths) {
+      res += 'path=' + path + '&';
+    }
+    if (this.filter.paths.length > 0) res = res.slice(0, res.length - 1);
     return res;
   }
 
-  queryToFilter() {
-
+  queryToFilter(paramMap:ParamMap):{filter:SearchFilter, paths:string[]} {
+    let res = {
+      filter: {
+        expressions: []
+    }, paths: []};
+    let filters = paramMap.getAll('filter');
+    res.paths = paramMap.getAll('path');
+    for (let e of filters) {
+      let split = e.split(',')
+      let expr:SearchFilterExpression = {
+        op: Number(split[0]) as JoinOperation,
+        key: split[1],
+        comp: Number(split[2]) as CompareOperation,
+        value: split[3]
+      }
+      res.filter.expressions.push(expr);
+    }
+    return res;
   }
 
   getName() {

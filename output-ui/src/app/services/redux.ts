@@ -25,7 +25,12 @@ export interface ViewConfig {
 
 export const initialState: State = {
   viewConfig: {
-    sortDir: 'asc' as SortDirection
+    sortDir: 'asc' as SortDirection,
+    filter: {
+      filter: {
+        expressions: []
+      }, paths: []
+    }
   }, valid_from: new Date()
 };
 
