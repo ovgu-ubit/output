@@ -16,6 +16,7 @@ export class FilterViewComponent implements OnInit {
 
   form: FormGroup;
   filters: {path:string, label:string}[];
+  selected=[];
   
   @ViewChild(MatChipListbox) chips: MatChipListbox;
 
@@ -52,7 +53,7 @@ export class FilterViewComponent implements OnInit {
   ]
 
   constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService,
-    private _snackBar: MatSnackBar) { }
+    @Inject(MAT_DIALOG_DATA) public data: any) { }
 
   ngOnInit(): void {
     this.form = this.formBuilder.group({
@@ -62,8 +63,28 @@ export class FilterViewComponent implements OnInit {
     this.publicationService.getFilters().subscribe({
       next: data => {
         this.filters = data;
+        if (this.data.viewConfig?.filter.paths && this.data.viewConfig?.filter.paths.length > 0) {
+          for (let e of this.data.viewConfig?.filter.paths) {
+            let idx = this.filters.findIndex(f => f.path === e);
+            if (idx >= 0) {
+              this.selected[this.filters[idx].path] = true;
+            }
+          }
+        }
       }
     })
+    if (this.data.viewConfig?.filter && this.data.viewConfig?.filter.filter.expressions.length > 0) {
+      let i = 0;
+      for (let e of this.data.viewConfig?.filter.filter.expressions) {
+        if (i !== 0) this.addRow(false);
+        this.getFiltersControls()[i].get('join_operator').setValue(e.op)
+        this.getFiltersControls()[i].get('field').setValue(e.key)
+        this.getFiltersControls()[i].get('compare_operator').setValue(e.comp)
+        this.getFiltersControls()[i].get('value').setValue(e.value)
+        i++;
+      }
+    }
+    
   }
 
   getFilters() {
@@ -108,11 +129,21 @@ export class FilterViewComponent implements OnInit {
     if (this.form.invalid && chips.length === 0) return;
 
     this.dialogRef.close({filter: this.getFilter(), paths: chips})
-
   }
 
   reset(): void {
-    this.dialogRef.close(null)
+    this.dialogRef.close({filter: {expressions: []}, paths: []})
+  }
+
+  resetForm(): void {
+    this.form = this.formBuilder.group({
+      filters: this.formBuilder.array([])
+    })
+    this.addRow(true);
+    if (Array.isArray(this.chips.selected)) this.chips.selected.forEach(i => {
+      i.deselect();
+    });
+    else this.chips.selected.select();
   }
 
   getFilter(): SearchFilter {
@@ -121,7 +152,7 @@ export class FilterViewComponent implements OnInit {
     for (let filter of this.getFiltersControls()) {
       if (!filter.get('field').value || !filter.get('value').value) continue;
       let expression:SearchFilterExpression = {
-        op: filter.get('join_operator').value? filter.get('join_operator').value : JoinOperation.AND,
+        op: filter.get('join_operator').value && filter.get('join_operator').value !== 'null'? filter.get('join_operator').value : JoinOperation.AND,
         key: filter.get('field').value,
         comp: filter.get('compare_operator').value,
         value: filter.get('value').value

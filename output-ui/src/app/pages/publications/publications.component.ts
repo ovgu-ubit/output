@@ -3,10 +3,10 @@ import { Location } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { SortDirection } from '@angular/material/sort';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { ActivatedRoute, ParamMap, Router, UrlSerializer } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concatMap, map, of, takeUntil } from 'rxjs';
+import { Observable, Subject, concat, concatMap, concatWith, firstValueFrom, map, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -21,7 +21,7 @@ import { FilterViewComponent } from '../../tools/filter-view/filter-view.compone
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
-import { SearchFilter } from '../../../../../output-interfaces/Config';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 
 @Component({
   selector: 'app-publications',
@@ -30,31 +30,28 @@ import { SearchFilter } from '../../../../../output-interfaces/Config';
 })
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
-    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService) { }
+    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
+    private clipboard: Clipboard) { }
 
   name = 'Publikationen des Jahres ';
 
   reporting_year: number;
-  filter: {filter:SearchFilter, paths?:string[]};
+  filter: { filter: SearchFilter, paths?: string[] };
+  id;
 
   buttons: TableButton[] = [
-    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true },
+    { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
     {
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
-        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) }
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) },
+        { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
       ]
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer'] },
     { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer'] },
     { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
-    /*{
-      title: 'Anreichern mit', action_function: () => { }, sub_buttons: [
-        { title: 'Unpaywall', action_function: this.enrichUnpaywall.bind(this) },
-        { title: 'Crossref', action_function: this.enrichCrossref.bind(this) }
-      ], roles: ['writer']
-    },*/
     { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer'] },
   ];
   loading: boolean;
@@ -98,42 +95,53 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
     let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
-      //this.table?.setViewConfig(viewConfig)
-      if (!this.viewConfig?.filter) {
-        return this.store.select(selectReportingYear).pipe(concatMap(data => {
-          let ob1$: Observable<any>
-          if (data) {
-            ob1$ = of(data);
-          } else {
-            ob1$ = this.publicationService.getDefaultReportingYear();
+      return this.route.queryParamMap.pipe(map(params => {
+        if (params.get('id')) {
+          this.id = params.get('id');
+        }
+        this.filter = this.queryToFilter(params);
+        if (this.filter) this.viewConfig = { ...this.viewConfig, filter: this.filter }
+      }));
+    }));
+    ob$ = ob$.pipe(concatMap(data => {
+      return this.store.select(selectReportingYear).pipe(concatMap(data => {
+        console.log('next')
+        let ob1$: Observable<any>
+        if (data) {
+          ob1$ = of(data);
+        } else {
+          ob1$ = this.publicationService.getDefaultReportingYear();
+        }
+        return ob1$.pipe(map(data => {
+          this.reporting_year = data;
+        }));
+      }));
+    }))
+
+    ob$ = ob$.pipe(concatMap(data => {
+      if (!this.viewConfig?.filter || this.viewConfig?.filter.filter.expressions.length === 0 && this.viewConfig?.filter.paths.length === 0) {
+        return this.publicationService.index(this.reporting_year).pipe(map(data => {
+          this.publications = data;
+          this.name = 'Publikationen des Jahres ' + this.reporting_year;
+          this.table.update(this.publications);
+          this.loading = false;
+          if (this.id) {
+            this.edit({ id: this.id });
           }
-          return ob1$.pipe(concatMap(data => {
-            this.reporting_year = data
-            return this.publicationService.index(this.reporting_year).pipe(map(data => {
-              this.publications = data;
-              this.name = 'Publikationen des Jahres ' + this.reporting_year;
-              this.table.update(this.publications);
-              this.loading = false;
-            }));
-          }))
         }));
       } else {
         return this.publicationService.filter(this.viewConfig.filter.filter, this.viewConfig.filter.paths).pipe(map(data => {
           this.publications = data;
+          this.filter = this.viewConfig.filter;
           this.name = 'Gefilterte Publikationen';
           this.table.update(this.publications);
           this.loading = false;
+          if (this.id) {
+            this.edit({ id: this.id });
+          }
         }))
       }
-    }));
-    ob$ = ob$.pipe(concatMap(data => {
-      return this.route.queryParams.pipe(map(params => {
-        if (params.id) {
-          let row = this.publications.find(e => e.id == params.id)
-          this.edit(row);
-        }
-      }));
-    }));
+    }))
     ob$.pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
 
@@ -146,30 +154,30 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
-      viewConfig: {...this.table.getViewConfig(), filter: this.filter}
+      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
     }))
     this.destroy$.next('');
   }
 
   update(soft?: boolean): void {
     this.loading = true;
-    if (!soft && !this.filter) this.publicationService.index(this.reporting_year).subscribe({
+    if (!soft && (!this.filter || (this.filter.filter.expressions.length === 0 && this.filter.paths.length === 0))) this.publicationService.index(this.reporting_year).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
         this.name = 'Publikationen des Jahres ' + this.reporting_year;
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    }); 
-    else if (!soft && this.filter) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
+    });
+    else if (!soft && this.filter && (this.filter.filter.expressions.length > 0 || this.filter.paths.length > 0)) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
         this.name = 'Gefilterte Publikationen'
         this.table.update(this.publications);
       }, error: err => console.log(err)
-    }); 
-    else this.publicationService.softIndex().subscribe({
+    });
+    else if (soft) this.publicationService.softIndex().subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -409,6 +417,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
+    this.viewConfig = initialState.viewConfig
     this.filter = null;
     this.update();
   }
@@ -417,12 +426,16 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     let dialogRef = this.dialog.open(FilterViewComponent, {
       width: '800px',
       maxHeight: '800px',
-      disableClose: false
+      disableClose: false,
+      data: {
+        viewConfig: this.viewConfig
+      }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.filter = result;
-        this.publicationService.filter(result.filter, result.paths).subscribe({
+        this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
+        if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.filter(result.filter, result.paths).subscribe({
           next: data => {
             if (data.length === 0) {
               this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
@@ -449,6 +462,14 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
             })
           }
         });
+        else {
+          this._snackBar.open(`Alle Filter zurückgesetzt`, 'Super!', {
+            duration: 5000,
+            panelClass: [`success-snackbar`],
+            verticalPosition: 'top'
+          });
+          this.update()
+        }
       }
     });
   }
@@ -463,6 +484,58 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(resetReportingYear())
     this.filter = null;
     this.update(true);
+  }
+
+  createLink() {
+    this.store.dispatch(setViewConfig({
+      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
+    }))
+    let link = environment.self + 'publications' + this.filterToQuery()
+    if (this.clipboard.copy(link)) {
+      this._snackBar.open(`Link wurde in die Zwischenablage kopiert`, 'Super!', {
+        duration: 5000,
+        panelClass: [`success-snackbar`],
+        verticalPosition: 'top',
+      });
+    }
+  }
+
+  filterToQuery(): string {
+    if (!this.filter) return '';
+    let res = '?';
+    for (let expr of this.filter.filter.expressions) {
+      res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
+    }
+    if (this.filter.filter.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
+    for (let path of this.filter.paths) {
+      res += 'path=' + path + '&';
+    }
+    if (this.filter.paths.length > 0) res = res.slice(0, res.length - 1);
+    return res;
+  }
+
+  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[] } {
+    let flag = false;
+    let res = {
+      filter: {
+        expressions: []
+      }, paths: []
+    };
+    let filters = paramMap.getAll('filter');
+    res.paths = paramMap.getAll('path');
+    for (let e of filters) {
+      let split = e.split(',')
+      let expr: SearchFilterExpression = {
+        op: Number(split[0]) as JoinOperation,
+        key: split[1],
+        comp: Number(split[2]) as CompareOperation,
+        value: split[3]
+      }
+      res.filter.expressions.push(expr);
+      flag = true;
+    }
+    if (flag) return res;
+    else return null;
   }
 
   getName() {

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { firstValueFrom, interval, concatMap, Observable } from 'rxjs';
-import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config'
+import { CSVMapping, SearchFilter, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config'
 
 @Injectable({
   providedIn: 'root'
@@ -43,7 +43,7 @@ export class ExportService {
     }))
   }
 
-  startExport(path:string) {
-    return this.http.post(environment.api + 'export/'+path, {}, { responseType: 'text' })
+  startExport(path:string, filter?:{filter:SearchFilter, paths?:string[]}) {
+    return this.http.post(environment.api + 'export/'+path, {filter}, { responseType: 'text' })
   }
 }

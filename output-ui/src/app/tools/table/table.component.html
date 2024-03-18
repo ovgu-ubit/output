@@ -20,7 +20,8 @@
         <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null" style="display:flex; flex-flow: row wrap">
           <ng-container *ngFor="let button of this.parent.buttons">
             <ng-container *ngIf="button.sub_buttons && button.sub_buttons.length > 0">
-              <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)">{{button.title}}<mat-icon>
+              <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
+              [matTooltipShowDelay]="800">{{button.title}}<mat-icon>
                   keyboard_arrow_down</mat-icon></button>&nbsp;
               <mat-menu #buttonMenu="matMenu" xPosition="before">
                 <ng-container *ngFor="let sub_button of button.sub_buttons;let idx = index">
@@ -29,10 +30,12 @@
               </mat-menu>
             </ng-container>
             <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && button.icon">
-              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)"><mat-icon>{{button.title}}</mat-icon></button>&nbsp;
+              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
+              [matTooltipShowDelay]="800"><mat-icon>{{button.title}}</mat-icon></button>&nbsp;
             </ng-container>
             <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && !button.icon">
-              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)">{{button.title}}</button>&nbsp;
+              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
+              [matTooltipShowDelay]="800">{{button.title}}</button>&nbsp;
             </ng-container>
           </ng-container>
         </div>

@@ -24,8 +24,10 @@ export interface TableButton {
       title: string; 
       action_function: (() => void),
       roles? : string[]
+      tooltip?: string;
     }[],
     roles? : string[]; 
     icon?: boolean;
+    tooltip?: string;
 }
 

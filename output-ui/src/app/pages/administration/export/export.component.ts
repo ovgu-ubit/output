@@ -1,11 +1,12 @@
-import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
-import { ExportService } from 'src/app/services/export.service';
-import { ReportService } from 'src/app/services/report.service';
-import { Observable, Subject, firstValueFrom, from, map, takeUntil } from 'rxjs';
-import { environment } from 'src/environments/environment';
-import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
+import { Component, OnInit, ViewChildren } from '@angular/core';
+import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
+import { Store } from '@ngrx/store';
+import { concatMap, firstValueFrom, from, map } from 'rxjs';
+import { ExportService } from 'src/app/services/export.service';
+import { selectViewConfig } from 'src/app/services/redux';
+import { ReportService } from 'src/app/services/report.service';
+import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
 
 @Component({
   selector: 'app-export',
@@ -14,19 +15,24 @@ import { MatDialog } from '@angular/material/dialog';
 })
 export class ExportComponent implements OnInit {
 
-  constructor(private exportService: ExportService, private reportService: ReportService, private dialog: MatDialog) { }
+  constructor(private exportService: ExportService, private reportService: ReportService, private dialog: MatDialog,
+    private store: Store) { }
 
   reportFiles = [];
   enrichs = [];
   status = [];
+  filter = null;
+  @ViewChildren(MatCheckbox) checkboxes;
 
   async ngOnInit() {
-    this.reportService.getReports('export').subscribe({
-      next: data => {
+    this.store.select(selectViewConfig).pipe(concatMap(data => {
+      this.filter = data.filter;
+      return this.reportService.getReports('export').pipe(map(data => {
         this.reportFiles = data.sort((a, b) => b.localeCompare(a));
-      }
-    })
+      }))
+    })).subscribe();
     this.enrichs = await firstValueFrom(this.exportService.getExports());
+    this.enrichs = this.enrichs.map(e => { return { ...e, filter: false } })
     this.updateStatus();
   }
 
@@ -43,7 +49,10 @@ export class ExportComponent implements OnInit {
   }
 
   startImport(importO) {
-    this.exportService.startExport(importO.path).subscribe({
+    let idx = this.enrichs.findIndex(e => e === importO)
+    let filter = null;
+    if (this.checkboxes.get(idx).checked) filter = this.filter;
+    this.exportService.startExport(importO.path, filter).subscribe({
       next: data => {
         let csvData = new Blob(['\ufeff', data], { type: 'text/csv;charset=utf-8;' });
         let csvURL = null;
