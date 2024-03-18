@@ -2,7 +2,7 @@
 <div class="jumbotron">
     <div class="container-fluid">
 <mat-accordion>
-    <mat-expansion-panel  *ngFor="let im of this.enrichs, let idx = index">
+    <mat-expansion-panel *ngFor="let im of this.enrichs, let idx = index">
       <mat-expansion-panel-header>
         <mat-panel-title>
             {{im.label}}
@@ -11,6 +11,7 @@
             Status: {{status[idx]}}
         </mat-panel-description>
       </mat-expansion-panel-header>
+            <mat-checkbox>Aktuellen Filter verwenden</mat-checkbox> &nbsp;
             <button mat-raised-button (click)="this.startImport(im)" color="primary">Export starten</button>
             <table style="width: 100%;">
                 <tr>

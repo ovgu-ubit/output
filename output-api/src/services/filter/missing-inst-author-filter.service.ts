@@ -5,11 +5,11 @@ import { PublicationService } from "../entities/publication.service";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
 
 @Injectable()
-export class MissingInstAuthorFilterService extends AbstractFilterService<PublicationIndex>{
+export class MissingInstAuthorFilterService extends AbstractFilterService<PublicationIndex|Publication>{
 
     constructor(private pubService: PublicationService) {super()}
 
-    async filter(pubs:PublicationIndex[], options?:any):Promise<PublicationIndex[]> {
+    async filter(pubs:PublicationIndex[]|Publication[], options?:any):Promise<PublicationIndex[]|Publication[]> {
         let res = [];
         for (let pub of pubs) {
             let pub_ent = (await this.pubService.get({where: {id: pub.id}, relations: {authorPublications: true}}))[0];

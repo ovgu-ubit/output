@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
+import { SearchFilter } from '../../../../output-interfaces/Config';
 
 @Injectable()
 /**
@@ -21,7 +22,7 @@ export abstract class AbstractExportService {
     /**
      * main method for exports, should return 
      */
-    public abstract export(by_user?: string);
+    public abstract export(filter?:{filter:SearchFilter, paths:string[]}, by_user?: string);
 
     public getName() {
         return this.name;

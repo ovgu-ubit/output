@@ -102,11 +102,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.filter = this.queryToFilter(params);
         this.viewConfig = {...this.viewConfig, filter: this.filter}
       }));
-      /*let filter = await this.queryToFilter();
-      if (filter.filter.expressions.length > 0 || filter.paths.length > 0) {
-        this.filter = filter;
-        this.viewConfig = {...viewConfig, filter}
-      }*/
     }));
     ob$ = ob$.pipe(concatMap(data => {
       if (!this.viewConfig?.filter || this.viewConfig?.filter.filter.expressions.length === 0 && this.viewConfig?.filter.paths.length === 0) {
@@ -124,6 +119,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
               this.name = 'Publikationen des Jahres ' + this.reporting_year;
               this.table.update(this.publications);
               this.loading = false;
+              if (this.id) {
+                this.edit({id:this.id});
+              }
             }));
           }))
         }));
@@ -135,22 +133,11 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           this.table.update(this.publications);
           this.loading = false;
           if (this.id) {
-            let row = this.publications.find(e => e.id+'' === this.id)
-            this.edit(row);
+            this.edit({id:this.id});
           }
         }))
       }
     }))
-
-      
-    /*ob$ = ob$.pipe(concatMap(data => {
-      return this.route.queryParams.pipe(map(params => {
-        if (params.id) {
-          let row = this.publications.find(e => e.id == params.id)
-          this.edit(row);
-        }
-      }));
-    }));*/
     ob$.pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
 

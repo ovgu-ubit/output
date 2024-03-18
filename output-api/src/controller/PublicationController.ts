@@ -196,7 +196,7 @@ export class PublicationController {
         }
     })
     async filter(@Body('filter') filter:SearchFilter, @Body('paths') paths:string[]) {
-        let res = await this.publicationService.filter(filter);
+        let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (let path of paths) {
             let so = this.configService.get('filter_services').findIndex(e => e.path === path)
             if (so === -1) throw new NotFoundException();

@@ -8,6 +8,7 @@ import { InitService } from "./services/init.service";
 import { AuthorizationService } from './guards/authorization.service';
 import { AbstractFilterService } from './services/filter/abstract-filter.service';
 import { PublicationIndex } from '../../output-interfaces/PublicationIndex';
+import { Publication } from '../../output-interfaces/Publication';
 
 export interface AppConfig {
     lock_timeout: number; 
@@ -22,6 +23,6 @@ export interface AppConfig {
     enrich_services: {path: string, class: Type<ApiEnrichDOIService>}[];
     check_services: {path: string, class: Type<AbstractPlausibilityService>}[];
     export_services: {path: string, class: Type<AbstractExportService>}[];
-    filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex>>}[];
+    filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex|Publication>>}[];
     authorization_service: Type<AuthorizationService>;
 }

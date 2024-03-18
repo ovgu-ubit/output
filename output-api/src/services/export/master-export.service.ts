@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { AbstractExportService } from './abstract-export.service';
 import { PublicationService } from '../entities/publication.service';
 import { ReportItemService } from '../report-item.service';
+import { SearchFilter } from '../../../../output-interfaces/Config';
 
 @Injectable()
 /**
@@ -19,25 +20,12 @@ export class MasterExportService extends AbstractExportService {
 
     protected name = 'Master-Export';
 
-    public async export(by_user?: string) {
+    public async export(filter?:{filter:SearchFilter, paths:string[]},by_user?: string) {
         this.status_text = 'Started on ' + new Date();
         this.report = this.reportService.createReport('Export',this.name, by_user);
 
-        let pubs = await this.publicationService.get({relations: {
-            oa_category: true,
-            invoices: {
-                cost_items: true
-            },
-            authorPublications: {
-                author: true,
-                institute: true
-            },
-            greater_entity: true,
-            pub_type: true,
-            publisher: true,
-            contract: true,
-            funders: true
-        }});
+        let pubs = await this.publicationService.getAll(filter);
+
         let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;greater_entity;pub_date;publisher;language;oa_category;pub_type;funders;contract;costs;"
         +"data_source;second_pub;add_info;import_date;edit_date\n";
         for (let pub of pubs) {

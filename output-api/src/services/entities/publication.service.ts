@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Publication } from '../../entity/Publication';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
@@ -10,6 +10,8 @@ import { Institute } from '../../entity/Institute';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { ConfigService } from '@nestjs/config';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { Publisher } from '../../entity/Publisher';
+import { AbstractFilterService } from '../filter/abstract-filter.service';
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
@@ -20,7 +22,7 @@ export class PublicationService {
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
-        private configService: ConfigService) { }
+        private configService: ConfigService, @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub);
@@ -30,7 +32,32 @@ export class PublicationService {
         return this.pubRepository.find(options);
     }
 
-    public indexQuery() {
+    public async getAll(filter: {filter:SearchFilter, paths:string[]}) {
+        let query = this.pubRepository.createQueryBuilder("publication")
+            .leftJoinAndSelect("publication.publisher", 'publisher')
+            .leftJoinAndSelect("publication.oa_category", "oa_category")
+            .leftJoinAndSelect("publication.pub_type", "publication_type")
+            .leftJoinAndSelect("publication.contract", "contract")
+            .leftJoinAndSelect("publication.greater_entity", "greater_entity")
+            .leftJoinAndSelect("publication.funders", "funders")
+            .leftJoinAndSelect("publication.authorPublications", "authorPublications")
+            .leftJoinAndSelect("authorPublications.author", "author")
+            .leftJoinAndSelect("authorPublications.institute", "institute")
+            .leftJoinAndSelect("publication.invoices", "invoices")
+            .leftJoinAndSelect("invoices.cost_items", "cost_items")
+
+        query = this.filter(filter.filter, query);
+
+        let res = await query.getMany();
+        if (filter.paths && filter.paths.length > 0) for (let path of filter.paths) {
+            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
+            if (so === -1) continue;
+            res = await this.filterServices[so].filter(res) as Publication[]
+        }
+        return res;
+    }
+
+    public indexQuery():SelectQueryBuilder<Publication> {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.publisher", "publisher")
             .leftJoin("publication.authorPublications", "authorPublications")
@@ -185,12 +212,6 @@ export class PublicationService {
         return pub.doi && this.doi_regex.test(pub.doi);
     }
 
-    public filterPublicationsForValidDOI(): Promise<Publication[]> {
-        return this.pubRepository.createQueryBuilder('publication')
-            .where("publication.doi ~* :regexDOI", { regexDOI: '^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$' })
-            .getMany();
-    }
-
     /**
      * @desc checks if title or DOI already already exists in publications from the database
      * @param doi
@@ -205,15 +226,6 @@ export class PublicationService {
                 { title: ILike(title.trim() + '%') }],
             withDeleted: true
         })) !== null;
-    }
-
-    /**
-     * @desc checks if DOI already already exists in publications from the database
-     * @param doi
-     */
-    public checkDOIAlreadyExists(doi: string) {
-        if (!doi) return false;
-        return this.pubRepository.findOneBy({ doi: doi.toLowerCase().trim() }) != null;
     }
 
     /**
@@ -245,40 +257,6 @@ export class PublicationService {
             withDeleted: true
 
         })
-    }
-
-    /**
-   * @desc Remove the URL-part of the given DOI 
-   * @param doi
-   */
-    public cleanDOI(doi) {
-        if (doi) {
-            let replace = /[htps]*:\/\/[a-zA-z.]*.[a-zA-z]*\//;
-            return doi.replace(replace, "");
-        }
-        return '';
-    }
-
-    /**
-     * @desc gets with the DOI and/or Title ONLY the ID of an existing Pub
-     * @param publications
-     * @param doi
-     * @param title
-     */
-    public getIDwithDOIorTitle(publications: Publication[], doi: string, title: string) {
-        let foundTitle = publications.find(e => e.title.toLowerCase() === title.toLowerCase());
-        let foundDOI = publications.find(e => e.doi.toLowerCase() === doi.toLowerCase());
-        if (foundDOI && doi != "") {
-            return foundDOI.id;
-        }
-        if (foundTitle && title != "") {
-            return foundTitle.id;
-        }
-    }
-
-    public processDOI(doi: string): string {
-        if (!doi) return '';
-        return doi.replace('https://doi.org/', '');
     }
 
     getReportingYears() {
@@ -336,10 +314,14 @@ export class PublicationService {
         } else return { error: 'update' };
     }
 
-    async filter(filter: SearchFilter): Promise<PublicationIndex[]> {
+    filterIndex(filter: SearchFilter) {
+        return this.filter(filter, this.indexQuery()).getRawMany();
+    }
+
+    filter(filter: SearchFilter, indexQuery:SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
         this.funder = false;
 
-        let indexQuery = this.indexQuery();
+        //let indexQuery = this.indexQuery();
         let first = false;
         for (let expr of filter.expressions) {
             let compareString;
@@ -380,7 +362,7 @@ export class PublicationService {
         }
         if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
         //console.log(indexQuery.getSql())
-        return indexQuery.getRawMany() as Promise<PublicationIndex[]>
+        return indexQuery;
     }
 
     getWhereStringEquals(key: string, value: string | number) {
