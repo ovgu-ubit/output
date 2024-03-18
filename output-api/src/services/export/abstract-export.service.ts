@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { SearchFilter } from '../../../../output-interfaces/Config';
+import { AbstractFilterService } from '../filter/abstract-filter.service';
+import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { Publication } from '../../entity/Publication';
 
 @Injectable()
 /**
@@ -22,7 +25,7 @@ export abstract class AbstractExportService {
     /**
      * main method for exports, should return 
      */
-    public abstract export(filter?:{filter:SearchFilter, paths:string[]}, by_user?: string);
+    public abstract export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string);
 
     public getName() {
         return this.name;

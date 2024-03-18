@@ -20,7 +20,7 @@ export class PublicationController {
     private publicationService:PublicationService, 
     private appConfigService:AppConfigService,
     private configService:ConfigService,
-    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex>[]) { }
+    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
 
     @Get()
     @UseGuards(AccessGuard)

@@ -4,6 +4,10 @@ import { AbstractExportService } from './abstract-export.service';
 import { PublicationService } from '../entities/publication.service';
 import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
+import { Publication } from '../../entity/Publication';
+import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { AbstractFilterService } from '../filter/abstract-filter.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 /**
@@ -14,17 +18,22 @@ export class MasterExportService extends AbstractExportService {
     quote = '"';
     sep = ';';
 
-    constructor(private publicationService:PublicationService, private reportService:ReportItemService) {
+    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService) {
         super(); 
     }
 
     protected name = 'Master-Export';
 
-    public async export(filter?:{filter:SearchFilter, paths:string[]},by_user?: string) {
+    public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
         this.report = this.reportService.createReport('Export',this.name, by_user);
 
-        let pubs = await this.publicationService.getAll(filter);
+        let pubs = await this.publicationService.getAll(filter.filter);
+        for (let path of filter.paths) {
+            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
+            if (so === -1) continue;
+            pubs = await filterServices[so].filter(pubs) as Publication[]
+        }
 
         let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;greater_entity;pub_date;publisher;language;oa_category;pub_type;funders;contract;costs;"
         +"data_source;second_pub;add_info;import_date;edit_date\n";

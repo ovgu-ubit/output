@@ -22,7 +22,7 @@ export class PublicationService {
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
-        private configService: ConfigService, @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
+        private configService: ConfigService) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub);
@@ -32,7 +32,7 @@ export class PublicationService {
         return this.pubRepository.find(options);
     }
 
-    public async getAll(filter: {filter:SearchFilter, paths:string[]}) {
+    public async getAll(filter: SearchFilter) {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.publisher", 'publisher')
             .leftJoinAndSelect("publication.oa_category", "oa_category")
@@ -46,18 +46,13 @@ export class PublicationService {
             .leftJoinAndSelect("publication.invoices", "invoices")
             .leftJoinAndSelect("invoices.cost_items", "cost_items")
 
-        query = this.filter(filter.filter, query);
+        query = this.filter(filter, query);
 
         let res = await query.getMany();
-        if (filter.paths && filter.paths.length > 0) for (let path of filter.paths) {
-            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
-            if (so === -1) continue;
-            res = await this.filterServices[so].filter(res) as Publication[]
-        }
         return res;
     }
 
-    public indexQuery():SelectQueryBuilder<Publication> {
+    public indexQuery(): SelectQueryBuilder<Publication> {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.publisher", "publisher")
             .leftJoin("publication.authorPublications", "authorPublications")
@@ -318,7 +313,7 @@ export class PublicationService {
         return this.filter(filter, this.indexQuery()).getRawMany();
     }
 
-    filter(filter: SearchFilter, indexQuery:SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
+    filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
         this.funder = false;
 
         //let indexQuery = this.indexQuery();

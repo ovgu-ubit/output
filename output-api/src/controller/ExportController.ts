@@ -7,6 +7,9 @@ import { AbstractExportService } from "../services/export/abstract-export.servic
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
 import { SearchFilter } from "../../../output-interfaces/Config";
+import { Publication } from "../entity/Publication";
+import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
+import { AbstractFilterService } from "../services/filter/abstract-filter.service";
 
 @Controller("export")
 @ApiTags("export")
@@ -14,7 +17,8 @@ export class ExportController {
 
   constructor(private configService:ConfigService,
     private reportService: ReportItemService,
-    @Inject('Exports') private exportServices: AbstractExportService[]) { }
+    @Inject('Exports') private exportServices: AbstractExportService[],
+    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
 
   @Get()
   getExports() {
@@ -67,7 +71,8 @@ export class ExportController {
     //res.setHeader('Content-type', 'text/plain')
     let so = this.configService.get('export_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
-    return this.exportServices[so].export(filter, request['user']);
+
+    return this.exportServices[so].export(filter, this.filterServices, request['user']['id']);
   }
 
   @Get(":path")

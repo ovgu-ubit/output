@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { ActivatedRoute, ParamMap, Router, UrlSerializer } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concatMap, firstValueFrom, map, of, takeUntil } from 'rxjs';
+import { Observable, Subject, concat, concatMap, concatWith, firstValueFrom, map, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -100,30 +100,34 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           this.id = params.get('id');
         }
         this.filter = this.queryToFilter(params);
-        this.viewConfig = {...this.viewConfig, filter: this.filter}
+        if (this.filter) this.viewConfig = { ...this.viewConfig, filter: this.filter }
       }));
     }));
     ob$ = ob$.pipe(concatMap(data => {
+      return this.store.select(selectReportingYear).pipe(concatMap(data => {
+        console.log('next')
+        let ob1$: Observable<any>
+        if (data) {
+          ob1$ = of(data);
+        } else {
+          ob1$ = this.publicationService.getDefaultReportingYear();
+        }
+        return ob1$.pipe(map(data => {
+          this.reporting_year = data;
+        }));
+      }));
+    }))
+
+    ob$ = ob$.pipe(concatMap(data => {
       if (!this.viewConfig?.filter || this.viewConfig?.filter.filter.expressions.length === 0 && this.viewConfig?.filter.paths.length === 0) {
-        return this.store.select(selectReportingYear).pipe(concatMap(data => {
-          let ob1$: Observable<any>
-          if (data) {
-            ob1$ = of(data);
-          } else {
-            ob1$ = this.publicationService.getDefaultReportingYear();
+        return this.publicationService.index(this.reporting_year).pipe(map(data => {
+          this.publications = data;
+          this.name = 'Publikationen des Jahres ' + this.reporting_year;
+          this.table.update(this.publications);
+          this.loading = false;
+          if (this.id) {
+            this.edit({ id: this.id });
           }
-          return ob1$.pipe(concatMap(data => {
-            this.reporting_year = data
-            return this.publicationService.index(this.reporting_year).pipe(map(data => {
-              this.publications = data;
-              this.name = 'Publikationen des Jahres ' + this.reporting_year;
-              this.table.update(this.publications);
-              this.loading = false;
-              if (this.id) {
-                this.edit({id:this.id});
-              }
-            }));
-          }))
         }));
       } else {
         return this.publicationService.filter(this.viewConfig.filter.filter, this.viewConfig.filter.paths).pipe(map(data => {
@@ -133,7 +137,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           this.table.update(this.publications);
           this.loading = false;
           if (this.id) {
-            this.edit({id:this.id});
+            this.edit({ id: this.id });
           }
         }))
       }
@@ -413,6 +417,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
+    this.viewConfig = initialState.viewConfig
     this.filter = null;
     this.update();
   }
@@ -429,7 +434,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.filter = result;
-        this.viewConfig = {...this.viewConfig, filter: {filter: result.filter, paths: result.paths}}
+        this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
         if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.filter(result.filter, result.paths).subscribe({
           next: data => {
             if (data.length === 0) {
@@ -501,7 +506,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     for (let expr of this.filter.filter.expressions) {
       res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
     }
-    if (this.filter.filter.expressions.length > 0) res = res.slice(0, res.length - 1) +'&';
+    if (this.filter.filter.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
     for (let path of this.filter.paths) {
       res += 'path=' + path + '&';
     }
@@ -509,24 +514,28 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     return res;
   }
 
-  queryToFilter(paramMap:ParamMap):{filter:SearchFilter, paths:string[]} {
+  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[] } {
+    let flag = false;
     let res = {
       filter: {
         expressions: []
-    }, paths: []};
+      }, paths: []
+    };
     let filters = paramMap.getAll('filter');
     res.paths = paramMap.getAll('path');
     for (let e of filters) {
       let split = e.split(',')
-      let expr:SearchFilterExpression = {
+      let expr: SearchFilterExpression = {
         op: Number(split[0]) as JoinOperation,
         key: split[1],
         comp: Number(split[2]) as CompareOperation,
         value: split[3]
       }
       res.filter.expressions.push(expr);
+      flag = true;
     }
-    return res;
+    if (flag) return res;
+    else return null;
   }
 
   getName() {
