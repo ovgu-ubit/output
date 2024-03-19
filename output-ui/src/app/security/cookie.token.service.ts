@@ -30,8 +30,6 @@ export class CookieTokenService extends AuthorizationService {
   }
 
   public override hasRole(rolename: string) {
-    if (rolename === 'writer') return true;
-    else return false;
     if (!environment.security) return true;
     else return this.getUser() && this.getPermissions()?.some((v, i, a) => (v['appname'] === 'output' && v['rolename'] === rolename) || (v['appname'] === null && v['rolename'] === 'admin'));
   }
