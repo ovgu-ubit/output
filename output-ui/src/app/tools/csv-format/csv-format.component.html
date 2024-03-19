@@ -39,6 +39,11 @@
             <mat-label>ID-Typ der größeren Einheit</mat-label>
             <input matInput placeholder="Z.B. ISSN" formControlName="id_ge_type" />
         </mat-form-field>
+        <mat-checkbox formControlName="last_name_first">Autoren der Institution liegen als "Nachname, Vorname" vor (und nicht als "Vorname Nachname")</mat-checkbox>
+        <mat-form-field appearance="fill">
+            <mat-label>Trennzeichen(kette) bei mehreren Autoren</mat-label>
+            <input matInput placeholder="Z.B. ;" formControlName="split_authors" />
+        </mat-form-field>
         Feld-Abbildungen (Spaltenname oder konstanter Wert mit führendem Dollarzeichen, z.B. $Wert)
         <div [formGroup]="mapping()" style="display: flex; flex-direction: column;">
             <mat-form-field appearance="fill">
