@@ -18,6 +18,7 @@ import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.s
 import { InitService } from "./src/services/init.service";
 import { MissingInstAuthorFilterService } from "./src/services/filter/missing-inst-author-filter.service";
 import { MissingInstFilterService } from "./src/services/filter/missing-inst-filter.service";
+import { MissingInvoiceDataService } from "./src/services/filter/missing-invoice-data-filter.service";
 
 export default() : AppConfig => ({
     lock_timeout: 10, //in minutes
@@ -68,6 +69,7 @@ export default() : AppConfig => ({
     filter_services: [
         {path: 'no_aut_inst', class: MissingInstAuthorFilterService},
         {path: 'no_inst', class: MissingInstFilterService},
+        {path: 'no_invoice', class: MissingInvoiceDataService},
     ],
     authorization_service: TokenAuthorizationService
 });
