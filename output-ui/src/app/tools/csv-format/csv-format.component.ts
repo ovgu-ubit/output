@@ -27,6 +27,8 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
     date_format: '',
     quoteChar: '',
     id_ge_type: '',
+    last_name_first: false,
+    split_authors: '',
     mapping: {
       author_inst: '',
       authors: '',
@@ -81,6 +83,8 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       quoteChar: [''],
       date_format: [''],
       id_ge_type: [''],
+      last_name_first: [''],
+      split_authors: [''],
       mapping: this.formBuilder.group({
         author_inst: [''],
         authors: [''],

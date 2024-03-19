@@ -48,6 +48,8 @@ export class CSVMapping {
     quoteChar?: string;
     date_format?: string;
     id_ge_type?: string;
+    last_name_first: boolean;
+    split_authors?: string;
     mapping: {
         author_inst?: string;
         authors?: string;
