@@ -18,6 +18,8 @@ export class EnrichController {
     @Inject('Enrichs') private enrichServices: ApiEnrichDOIService[]) { }
 
   @Get()
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   getImports() {
     let result = [];
     for (let i=0;i<this.configService.get('enrich_services').length;i++) {
@@ -29,6 +31,8 @@ export class EnrichController {
   }
 
   @Get("reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   reports() {
     return this.reportService.getReports('Enrich');
   }
@@ -40,6 +44,8 @@ export class EnrichController {
     description: 'The report file to be returned.'
   })
   @Get("report")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   report(@Query('filename') filename: string, @Res() res: Response) {
     res.setHeader('Content-type', 'text/plain')
     res.send(this.reportService.getReport(filename))
@@ -56,14 +62,14 @@ export class EnrichController {
   })
   @Delete("report")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   delete_report(@Body('filename') filename: string) {
     return this.reportService.deleteReport(filename);
   }
 
   @Post(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
     description: "<p>JSON Request:</p><pre>{<br />  \"reporting_year\" : \"number\"<br />}</pre>",
     schema: {
@@ -87,12 +93,16 @@ export class EnrichController {
     }
   }
   @Get(":path")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   enrichUnpaywallStatus(@Param('path') path: string) {
     let so = this.configService.get('enrich_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].status();
   }
   @Get(":path/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   importUnpaywallConfig(@Param('path') path: string) {
     let so = this.configService.get('enrich_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
@@ -100,7 +110,7 @@ export class EnrichController {
   }
   @Post(":path/config")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   importUnpaywallConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
     let so = this.configService.get('enrich_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();

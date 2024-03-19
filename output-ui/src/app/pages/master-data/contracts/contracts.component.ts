@@ -25,9 +25,9 @@ import { CompareOperation, JoinOperation } from '../../../../../../output-interf
 })
 export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer'] },
+    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer','admin'] },
+    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin'] },
+    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer','admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<any>(true, []);

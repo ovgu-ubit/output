@@ -17,8 +17,8 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 })
 export class CostCenterComponent implements TableParent<CostCenter>, OnInit{
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
+    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer','admin'] },
+    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin'] },
   ];
   loading: boolean = true;
   selection: SelectionModel<CostCenter> = new SelectionModel<CostCenter>(true, []);

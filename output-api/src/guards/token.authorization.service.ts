@@ -39,8 +39,9 @@ export class TokenAuthorizationService extends AuthorizationService {
                             let payload = this.jwtService.verify(token, { publicKey: key, algorithms: ['RS256'] });
                             // enrich the request object with user info for further processing
                             req['user'] = payload;
-                            req['user']['read'] = payload.permission.find(e => (e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'reader')) || (e.appname === null && e.rolename === 'admin'))
-                            req['user']['write'] = payload.permission.find(e => ((e.appname === 'output' && e.rolename === 'writer') || (e.appname === null && e.rolename === 'admin')))
+                            req['user']['read'] = payload.permission.find(e => (e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'reader' || e.rolename === 'admin')) || (e.appname === null && e.rolename === 'admin'))
+                            req['user']['write'] = payload.permission.find(e => ((e.appname === 'output' && e.rolename === 'writer' || e.rolename === 'admin') || (e.appname === null && e.rolename === 'admin')))
+                            req['user']['admin'] = payload.permission.find(e => ((e.appname === 'output' && e.rolename === 'admin') || (e.appname === null && e.rolename === 'admin')))
                             // Case II: if permissions is an empty array, a valid token is required to proceed
                             if (permissions.length === 0) resolve(true);
                             // Case III: if permissions are given, the user is required to posess ANY of them or admin
