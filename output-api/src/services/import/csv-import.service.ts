@@ -31,10 +31,10 @@ export class CSVImportService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService, 
-        protected languageService:LanguageService,
-        private configService:ConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService);
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService,
+        protected languageService: LanguageService,
+        private configService: ConfigService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -54,11 +54,11 @@ export class CSVImportService extends AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.REPLACE_IF_EMPTY,
-        abstract :UpdateOptions.REPLACE_IF_EMPTY,
-        citation :UpdateOptions.REPLACE_IF_EMPTY,
-        page_count :UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed :UpdateOptions.REPLACE_IF_EMPTY,
+        editors: UpdateOptions.REPLACE_IF_EMPTY,
+        abstract: UpdateOptions.REPLACE_IF_EMPTY,
+        citation: UpdateOptions.REPLACE_IF_EMPTY,
+        page_count: UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     private newPublications: Publication[] = [];
@@ -74,14 +74,14 @@ export class CSVImportService extends AbstractImportService {
 
     public setUp(file: Express.Multer.File, importConfig: CSVMapping, updateMapping?: UpdateMapping) {
         this.file = file;
-        if (typeof importConfig == 'string') this.importConfig = JSON.parse(importConfig+'');
+        if (typeof importConfig == 'string') this.importConfig = JSON.parse(importConfig + '');
         else this.importConfig = importConfig;
         this.name = this.importConfig.name;
         if (updateMapping) this.updateMapping = updateMapping;
     }
-    
+
     public setReportingYear(year: string) {
-        
+
     }
 
     /**
@@ -91,7 +91,7 @@ export class CSVImportService extends AbstractImportService {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Import','CSV-Import', by_user);
+        this.report = this.reportService.createReport('Import', 'CSV-Import', by_user);
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -108,7 +108,7 @@ export class CSVImportService extends AbstractImportService {
             complete: async (result, file) => {
                 this.numberOfPublications = result.data.length;
                 this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })    
+                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
                 if (this.checkFormat(result.data, this.importConfig)) {
                     try {
                         let data = result.data;
@@ -138,7 +138,7 @@ export class CSVImportService extends AbstractImportService {
                             if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
                         }
                         //finalize
-                        this.progress = 0; 
+                        this.progress = 0;
                         this.reportService.finish(this.report, {
                             status: 'Successfull import on ' + new Date(),
                             count_import: this.newPublications.length,
@@ -160,7 +160,7 @@ export class CSVImportService extends AbstractImportService {
                     this.status_text = 'Error while importing on ' + new Date();
                     console.log(this.file.filename + ' does not match the expected format.');
                     this.reportService.finish(this.report, {
-                        status: 'Error while importing on ' + new Date()+': '+this.file.filename + ' does not match the expected format.',
+                        status: 'Error while importing on ' + new Date() + ': ' + this.file.filename + ' does not match the expected format.',
                         count_import: this.newPublications.length,
                         count_update: this.publicationsUpdate.length
                     })
@@ -196,17 +196,13 @@ export class CSVImportService extends AbstractImportService {
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; }[] {
         if (!this.importConfig.mapping.author_inst || !this.importConfig.split_authors) return null;
         let string = '';
-        if (this.importConfig.mapping.author_inst.startsWith('$')) {
-            string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
-            
-        } else {
-            string = element[this.importConfig.mapping.author_inst]
-        }
+        if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
+        else string = element[this.importConfig.mapping.author_inst]
         let authors = string.split(this.importConfig.split_authors)
         let res = [];
         for (let author of authors) {
-            if (this.importConfig.last_name_first) res.push({first_name: author.split(', ')[1], last_name: author.split(', ')[0]});
-            else res.push({first_name: author.split(' ',2)[0], last_name: author.split(' ',2)[1]});
+            if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
+            else res.push({ first_name: author.split(' ', 2)[0], last_name: author.split(' ', 2)[1] });
         }
         return res;
     }
@@ -227,8 +223,8 @@ export class CSVImportService extends AbstractImportService {
     }
     protected getPublisher(element: any): Publisher {
         if (!this.importConfig.mapping.publisher) return null;
-        if (this.importConfig.mapping.publisher.startsWith('$')) return {label: this.importConfig.mapping.publisher.slice(1, this.importConfig.mapping.publisher.length)};
-        return {label: element[this.importConfig.mapping.publisher]};
+        if (this.importConfig.mapping.publisher.startsWith('$')) return { label: this.importConfig.mapping.publisher.slice(1, this.importConfig.mapping.publisher.length) };
+        return { label: element[this.importConfig.mapping.publisher] };
     }
     protected getPubDate(element: any): Date {
         if (!this.importConfig.mapping.pub_date) return null;
@@ -273,18 +269,18 @@ export class CSVImportService extends AbstractImportService {
     }
     protected getInvoiceInformation(element: any) {
         if (!this.importConfig.mapping.invoice) return null;
-        if (this.importConfig.mapping.invoice.startsWith('$')) return [{ 
+        if (this.importConfig.mapping.invoice.startsWith('$')) return [{
             cost_items: [{
-                price: Number(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)), 
-                currency: 'EUR', 
-                cost_type: null 
+                price: Number(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
+                currency: 'EUR',
+                cost_type: null
             }]
         }];
         return [{
             cost_items: [{
-                price: element[this.importConfig.mapping.invoice], 
-                currency: 'EUR', 
-                cost_type: null 
+                price: element[this.importConfig.mapping.invoice],
+                currency: 'EUR',
+                cost_type: null
             }]
         }]
     }
@@ -320,20 +316,20 @@ export class CSVImportService extends AbstractImportService {
     }
 
     getConfigs() {
-        return fs.readFileSync(this.path+'csv-mappings.json').toString();
+        return fs.readFileSync(this.path + 'csv-mappings.json').toString();
     }
 
-    addConfig(csv_mapping:CSVMapping) {
+    addConfig(csv_mapping: CSVMapping) {
         let configs = JSON.parse(this.getConfigs()) as CSVMapping[];
         if (configs.find(e => e.name === csv_mapping.name)) configs = configs.filter(e => e.name !== csv_mapping.name);
         configs.push(csv_mapping);
-        return fs.writeFileSync(this.path+'csv-mappings.json', JSON.stringify(configs))
+        return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
     }
 
-    deleteConfig(name:string) {
+    deleteConfig(name: string) {
         let configs = JSON.parse(this.getConfigs()) as CSVMapping[];
         configs = configs.filter(e => e.name !== name);
-        return fs.writeFileSync(this.path+'csv-mappings.json', JSON.stringify(configs))
+        return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
     }
 
 }
