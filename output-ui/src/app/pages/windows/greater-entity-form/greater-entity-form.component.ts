@@ -30,7 +30,7 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
     private dialog:MatDialog) { }
 
   ngAfterViewInit(): void {
-    if (!this.tokenService.hasRole('writer')) {
+    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
     if (this.data.greater_entity.id) {

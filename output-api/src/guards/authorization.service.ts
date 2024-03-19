@@ -9,7 +9,7 @@ export abstract class AuthorizationService {
 
     /**
      * returns true if the user is allowed to access the resource and enrichs the request object with a user object
-     * containing at least {read:boolean, write:boolean}
+     * containing at least {read:boolean, write:boolean, admin:boolean}
      * @param context 
      * @returns 
      */

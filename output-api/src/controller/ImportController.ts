@@ -21,6 +21,8 @@ export class ImportController {
     private csvService:CSVImportService) { }
 
   @Get()
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   getImports() {
     let result = [];
     for (let i=0;i<this.configService.get('import_services').length;i++) {
@@ -33,6 +35,8 @@ export class ImportController {
   }
 
   @Get("reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   reports() {
     return this.reportService.getReports('Import');
   }
@@ -43,6 +47,8 @@ export class ImportController {
     required: true,
     description: 'The report file to be returned.'
   })
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   @Get("report")
   report(@Query('filename') filename:string, @Res() res:Response) {
     res.setHeader('Content-type','text/plain')
@@ -60,14 +66,14 @@ export class ImportController {
   })
   @Delete("report")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   delete_report(@Body('filename') filename:string) {
     return this.reportService.deleteReport(filename);
   }
 
   @Post("csv")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -90,28 +96,34 @@ export class ImportController {
     return this.csvService.import(update);
   }
   @Get("csv")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   importCSVStatus() {
     return this.csvService.status();
   }
   @Get("csv/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   importCSVConfig() {
     return this.csvService.getUpdateMapping();
   }
   @Post("csv/config")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   importCSVConfigSet(@Body('mapping') mapping:UpdateMapping) {
     return this.csvService.setUpdateMapping(mapping);
   }
 
   @Get("csv/mapping")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   importCSVMapping() {
     return this.csvService.getConfigs();
   }
 
   @Post("csv/mapping")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
     type: CSVMapping
   })
@@ -121,7 +133,7 @@ export class ImportController {
 
   @Delete("csv/mapping")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
     schema: {
       example: {
@@ -135,7 +147,7 @@ export class ImportController {
 
   @Post(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
     description: "<p>JSON Request:</p><pre>{<br />  \"reporting_year\" : \"number\"<br />}</pre>",
     schema: {
@@ -154,6 +166,8 @@ export class ImportController {
   }
 
   @Get(':path')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   importStatus(@Param('path') path:string) {
     let so = this.configService.get('import_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
@@ -161,6 +175,8 @@ export class ImportController {
   }
 
   @Get(":path/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
   importConfig(@Param('path') path:string) {
     let so = this.configService.get('import_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
@@ -168,7 +184,7 @@ export class ImportController {
   }
   @Post(":path/config")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'admin', app: 'output' }])
   importConfigSet(@Param('path') path:string, @Body('mapping') mapping:UpdateMapping) {
     let so = this.configService.get('import_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();

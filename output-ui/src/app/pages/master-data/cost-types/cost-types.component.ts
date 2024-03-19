@@ -17,8 +17,8 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 })
 export class CostTypesComponent  implements TableParent<CostType>, OnInit{
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer']  },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer']  },
+    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer','admin']  },
+    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin']  },
   ];
   loading: boolean = true;
   selection: SelectionModel<CostType> = new SelectionModel<CostType>(true, []);

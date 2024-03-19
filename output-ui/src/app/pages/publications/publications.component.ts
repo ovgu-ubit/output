@@ -45,14 +45,14 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
-        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) },
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this),  roles: ['writer','admin']},
         { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
       ]
     },
-    { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer'] },
-    { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer'] },
+    { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer','admin'] },
+    { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer','admin'] },
+    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin'] },
+    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer','admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
@@ -88,7 +88,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           }
         });
         this.buttons.push({
-          title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['writer']
+          title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
         })
       }
     })

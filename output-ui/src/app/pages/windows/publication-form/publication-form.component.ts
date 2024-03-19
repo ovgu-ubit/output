@@ -23,6 +23,7 @@ import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entit
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { environment } from 'src/environments/environment';
+import { InvoiceService } from 'src/app/services/entities/invoice.service';
 
 @Injectable({ providedIn: 'root' })
 export class PubDateValidator {
@@ -81,7 +82,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService) {
+    private funderService: FunderService, private languageService: LanguageService, private invoiceService:InvoiceService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: ['', [Validators.required]],
@@ -127,9 +128,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (!this.tokenService.hasRole('writer')) {
-      this.disable();
-    }
   }
 
   loadData(notLoadPub: boolean) {
@@ -147,7 +145,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
           if (this.pub?.locked) this.setLock(true);
           if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
-          if (this.pub.locked_at) {
+          if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
             this.disable();
             this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
               duration: 5000,
@@ -232,6 +230,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+      this.disable();
+    }
     this.loadData(false);
   }
 
@@ -739,10 +740,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (!data) return;
-        this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
-        this.pub.invoices.push(data)
-        this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
+        if (data && data.cost_items) {
+          this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
+          this.pub.invoices.push(data)
+          this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
+        } else if (data && data.id) {
+          this.invoiceService.update(data).subscribe();
+        }
       }
     });
   }

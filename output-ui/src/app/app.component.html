@@ -30,12 +30,12 @@
 
     <button mat-button [routerLink]="'/statistics'"> <mat-icon>bar_chart</mat-icon> Berichte </button>
 
-    <button mat-button [matMenuTriggerFor]="adminMenu" [disabled]="!this.tokenService.hasRole('writer')"><mat-icon>settings</mat-icon> Verwaltung </button>
+    <button mat-button [matMenuTriggerFor]="adminMenu" [disabled]="!this.tokenService.hasRole('reader') && !this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"><mat-icon>settings</mat-icon> Verwaltung </button>
     <mat-menu #adminMenu="matMenu">
-      <button mat-menu-item routerLink="/administration/import"> Imports verwalten </button>
-      <button mat-menu-item routerLink="/administration/enrich"> Anreicherungen verwalten </button>
+      <button mat-menu-item routerLink="/administration/import" [disabled]="!this.tokenService.hasRole('admin')"> Imports verwalten </button>
+      <button mat-menu-item routerLink="/administration/enrich" [disabled]="!this.tokenService.hasRole('admin')"> Anreicherungen verwalten </button>
       <button mat-menu-item routerLink="/administration/export"> Exportieren </button>
-      <button mat-menu-item routerLink="/administration/plausibility"> Plausibilitätschecks </button>
+      <button mat-menu-item routerLink="/administration/plausibility" [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"> Plausibilitätschecks </button>
     </mat-menu>
 
     <ng-container *ngIf="!this.user">

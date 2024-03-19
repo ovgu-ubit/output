@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CostCenter, CostItem, Invoice } from '../../../../../../output-interfaces/Publication';
@@ -7,13 +7,16 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { CostItemFormComponent } from '../cost-item-form/cost-item-form.component';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
 import * as moment from 'moment';
+import { AuthorizationService } from 'src/app/security/authorization.service';
+import { MatSelect } from '@angular/material/select';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-invoice-form',
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.css']
 })
-export class InvoiceFormComponent implements OnInit {
+export class InvoiceFormComponent implements OnInit, AfterViewInit {
 
   public form: FormGroup;
 
@@ -24,9 +27,17 @@ export class InvoiceFormComponent implements OnInit {
   today = new Date();
   displayedColumns: string[] = ['label', 'cost_type', 'euro_value', 'vat', 'orig_value', 'edit', 'delete'];
   @ViewChild(MatTable) table: MatTable<CostItem>;
+  @ViewChild(MatSelect) select;
 
-  constructor(public dialogRef: MatDialogRef<InvoiceFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService:CostCenterService, private dialog: MatDialog) { }
+  constructor(public dialogRef: MatDialogRef<InvoiceFormComponent>,private tokenService:AuthorizationService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService:CostCenterService, private dialog: MatDialog,
+    private invoiceService:InvoiceService) { }
+
+  ngAfterViewInit(): void {
+    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+      this.disable();
+    }
+  }
 
 
   ngOnInit(): void {
@@ -53,6 +64,13 @@ export class InvoiceFormComponent implements OnInit {
     this.form.controls.id.disable();
     this.form.patchValue(this.invoice)
   }
+  disabled = false;
+
+  disable() {
+    this.disabled = true;
+    this.form.disable();
+    this.select.disabled = true;
+  }
 
   action() {
     if (this.form.invalid) return;
@@ -68,6 +86,25 @@ export class InvoiceFormComponent implements OnInit {
   }
 
   abort() {
+    if (this.form.dirty) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      dialogRef.afterClosed().subscribe(dialogResult => {
+        if (dialogResult) { //save
+          this.action();
+        } else if (this.invoice.id) this.dialogRef.close({ id: this.invoice.id, locked_at: null })
+        else this.close()
+      });
+    } else if (this.invoice.id) this.dialogRef.close({ id: this.invoice.id, locked_at: null })
+    else this.close()
+  }
+
+  close() {
     this.dialogRef.close(null)
   }
 
@@ -83,10 +120,13 @@ export class InvoiceFormComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (!data) return;
-        this.invoice.cost_items = this.invoice.cost_items.filter(e => e.id !== data.id)
-        this.invoice.cost_items.push(data)
-        this.table.dataSource = new MatTableDataSource<Invoice>(this.invoice.cost_items);
+        if (data && (data.euro_value || data.orig_value)) {
+          this.invoice.cost_items = this.invoice.cost_items.filter(e => e.id !== data.id)
+          this.invoice.cost_items.push(data)
+          this.table.dataSource = new MatTableDataSource<Invoice>(this.invoice.cost_items);
+        } else if (data && data.id) {
+          this.invoiceService.update(data).subscribe();
+        }
       }
     });
   }

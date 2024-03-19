@@ -14,6 +14,8 @@ export class InvoiceController {
     constructor(private invoiceService:InvoiceService) { }
 
     @Get()
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'reader', app: 'output' }])
     @ApiResponse({
         type: Invoice,
         isArray: true
@@ -23,6 +25,8 @@ export class InvoiceController {
     }
 
     @Get('one')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'reader', app: 'output' }])
     @ApiResponse({
         type: Invoice
     })
