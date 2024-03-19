@@ -37,7 +37,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
   
   
     ngAfterViewInit(): void {
-    if (!this.tokenService.hasRole('writer')) {
+    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
     if (this.data.contract.id) {

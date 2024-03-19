@@ -1,17 +1,19 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, AfterViewInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CostItem } from '../../../../../../output-api/src/entity/CostItem';
 import { CostType } from '../../../../../../output-interfaces/Publication';
-import { InvoiceService } from 'src/app/services/entities/invoice.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
+import { AuthorizationService } from 'src/app/security/authorization.service';
+import { MatSelect } from '@angular/material/select';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-cost-item-form',
   templateUrl: './cost-item-form.component.html',
   styleUrls: ['./cost-item-form.component.css']
 })
-export class CostItemFormComponent implements OnInit {
+export class CostItemFormComponent implements OnInit, AfterViewInit {
 
   public form: FormGroup;
 
@@ -19,10 +21,17 @@ export class CostItemFormComponent implements OnInit {
 
   costTypes: CostType[];
   cost_type: number;
+  @ViewChild(MatSelect) select;
 
-  constructor(public dialogRef: MatDialogRef<CostItemFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ctService: CostTypeService) { }
+  constructor(public dialogRef: MatDialogRef<CostItemFormComponent>,private tokenService:AuthorizationService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ctService: CostTypeService,
+    private dialog:MatDialog) { }
 
+    ngAfterViewInit(): void {
+      if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+        this.disable();
+      }
+    }
 
   ngOnInit(): void {
     if (this.data.cost_item) {
@@ -53,6 +62,14 @@ export class CostItemFormComponent implements OnInit {
     this.form.patchValue(this.cost_item)
   }
 
+  disabled = false;
+
+  disable() {
+    this.disabled = true;
+    this.form.disable();
+    this.select.disabled = true;
+  }
+
   action() {
     this.cost_item = { ...this.cost_item, ...this.form.getRawValue() }
     if (!this.cost_item.id) this.cost_item.id = undefined;
@@ -68,6 +85,25 @@ export class CostItemFormComponent implements OnInit {
   }
 
   abort() {
+    if (this.form.dirty) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      dialogRef.afterClosed().subscribe(dialogResult => {
+        if (dialogResult) { //save
+          this.action();
+        } else if (this.cost_item.id) this.dialogRef.close({ id: this.cost_item.id, locked_at: null })
+        else this.close()
+      });
+    } else if (this.cost_item.id) this.dialogRef.close({ id: this.cost_item.id, locked_at: null })
+    else this.close()
+  }
+
+  close() {
     this.dialogRef.close(null)
   }
 }

@@ -45,7 +45,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
-        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this) },
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this),  roles: ['writer','admin']},
         { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
       ]
     },

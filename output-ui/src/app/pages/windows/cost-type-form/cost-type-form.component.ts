@@ -24,7 +24,7 @@ export class CostTypeFormComponent implements OnInit, AfterViewInit {
     private _snackBar:MatSnackBar, private dialog:MatDialog) { }
 
   ngAfterViewInit(): void {
-    if (!this.tokenService.hasRole('writer')) {
+    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
     if (this.data.cost_type?.id) {
