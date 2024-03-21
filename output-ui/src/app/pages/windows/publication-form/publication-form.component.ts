@@ -476,7 +476,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
             }
           })
         } else if (dialogResult && dialogResult.id) {
-          this.publisherService.update(dialogResult).subscribe();
+          this.contractService.update(dialogResult).subscribe();
         }
         this.form.get('contr').enable();
       });
@@ -587,7 +587,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
             }
           })
         } else if (dialogResult && dialogResult.id) {
-          this.publisherService.update(dialogResult).subscribe();
+          this.geService.update(dialogResult).subscribe();
         }
         this.form.get('ge').enable();
       });
