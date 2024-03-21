@@ -28,8 +28,8 @@ export class MasterExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = this.reportService.createReport('Export',this.name, by_user);
 
-        let pubs = await this.publicationService.getAll(filter.filter);
-        for (let path of filter.paths) {
+        let pubs = await this.publicationService.getAll(filter?.filter);
+        if (filter) for (let path of filter.paths) {
             let so = this.configService.get('filter_services').findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
