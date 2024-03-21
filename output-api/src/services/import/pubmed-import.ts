@@ -65,18 +65,18 @@ export class PubMedImportService extends AbstractImportService {
         authors: UpdateOptions.REPLACE_IF_EMPTY,
         title: UpdateOptions.REPLACE_IF_EMPTY,
         pub_type: UpdateOptions.REPLACE_IF_EMPTY,
-        oa_category: UpdateOptions.REPLACE_IF_EMPTY,
+        oa_category: UpdateOptions.IGNORE,
         greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
         publisher: UpdateOptions.IGNORE,
-        contract: UpdateOptions.REPLACE_IF_EMPTY,
+        contract: UpdateOptions.IGNORE,
         funder: UpdateOptions.IGNORE,
         doi: UpdateOptions.REPLACE_IF_EMPTY,
         pub_date: UpdateOptions.REPLACE_IF_EMPTY,
         link: UpdateOptions.IGNORE,
         language: UpdateOptions.REPLACE_IF_EMPTY,
-        license: UpdateOptions.REPLACE_IF_EMPTY,
-        invoice: UpdateOptions.REPLACE_IF_EMPTY,
-        status: UpdateOptions.IGNORE,
+        license: UpdateOptions.IGNORE,
+        invoice: UpdateOptions.IGNORE,
+        status: UpdateOptions.REPLACE_IF_EMPTY,
         editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.REPLACE_IF_EMPTY,
         citation :UpdateOptions.IGNORE,
@@ -374,7 +374,7 @@ export class PubMedImportService extends AbstractImportService {
         return undefined;
     }
     protected getStatus(element: any): number {
-        return 0;
+        return 1;
     }
     protected getEditors(element: any): string {
         return null;
