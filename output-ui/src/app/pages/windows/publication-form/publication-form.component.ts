@@ -115,7 +115,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       ge: [''],
       publ: [''],
       contr: [''],
-      funder: ['']
+      funder: [''],
+      pub_type: [''],
+      oa_cat: ['']
     }, {
       validators: [this.pubValidator.pubDateValidator()]
     });
@@ -711,7 +713,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   setLock(flag: boolean) {
     if (flag) {
       this.form.disable();
-      this.selectInstitute
     } else {
       this.form.enable();
     }
