@@ -270,6 +270,9 @@ export abstract class AbstractImportService {
 
         let pub_date = this.getPubDate(item);
 
+        let status = this.getStatus(item);
+        if (!status) status = 0;
+
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
             title: this.getTitle(item)?.trim(),
@@ -290,6 +293,7 @@ export abstract class AbstractImportService {
             citation: this.getCitation(item)?.trim(),
             page_count: this.getPageCount(item),
             peer_reviewed: this.getPeerReviewed(item),
+            status
         };
         if (pub_date instanceof Date) obj.pub_date = pub_date;
         else {
@@ -632,11 +636,13 @@ export abstract class AbstractImportService {
                 if (!orig.status) {
                     orig.status = this.getStatus(element);
                     if (orig.status) fields.push('status')
+                    else orig.status = 0;
                 }
                 break;
             case UpdateOptions.REPLACE:
                 orig.status = this.getStatus(element);
                 if (orig.status) fields.push('status')
+                else orig.status = 0;
                 break;
         }
         switch (this.updateMapping.editors) {
