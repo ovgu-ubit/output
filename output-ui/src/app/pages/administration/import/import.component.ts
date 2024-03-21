@@ -47,7 +47,7 @@ export class ImportComponent implements OnInit {
         for (let ri of this.runningImports) {
           this.forms[ri.label].disable();
           this.obs$[ri.label] = this.importService.getProgress(ri.path).pipe(takeUntil(this.subjects[ri.label]), map(data => {
-            if (data.progress === 0 || data.progress === 1) {//finish signal
+            if (data.progress === 0 || data.progress >= 1) {//finish signal
               this.runningImports = this.runningImports.filter(e => e.label !== ri.label)
               this.obs$[ri.label] = undefined;
               this.updateStatus().subscribe();
@@ -94,7 +94,7 @@ export class ImportComponent implements OnInit {
         next: data => {
           this.runningImports.push(importO)
           this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
-            if (data.progress === 0 || data.progress === 1) {//finish signal
+            if (data.progress === 0 || data.progress >= 1) {//finish signal
               this.runningImports = this.runningImports.filter(e => e.label !== importO.label)
               this.obs$[importO.label] = undefined;
               this.updateStatus().subscribe();
@@ -131,7 +131,7 @@ export class ImportComponent implements OnInit {
           next: data => {
             this.runningImports.push(importO)
             this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
-              if (data.progress === 0 || data.progress === 1) {//finish signal
+              if (data.progress === 0 || data.progress >= 1) {//finish signal
                 this.runningImports = this.runningImports.filter(e => e.label !== importO.label)
                 this.obs$[importO.label] = undefined;
                 this.updateStatus().subscribe();

@@ -86,7 +86,7 @@ export class EnrichComponent implements OnInit {
       next: data => {
         this.runningEnrichs.push(importO)
         this.obs$[importO.label] = this.enrichService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
-          if (data.progress === 0 || data.progress === 1) {//finish signal
+          if (data.progress === 0 || data.progress >= 1) {//finish signal
             this.runningEnrichs = this.runningEnrichs.filter(e => e.label !== importO.label)
             this.obs$[importO.label] = undefined;
             this.updateStatus().subscribe();
