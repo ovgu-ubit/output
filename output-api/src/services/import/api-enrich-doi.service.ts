@@ -108,7 +108,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
             return;
         }
         for (let pub of publications) obs$.push(this.request(pub.doi));
-        console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
+        //console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${this.whereClause.toString()}` })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
@@ -120,7 +120,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                         let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                         let pubUpd = await this.mapUpdate(item, orig).catch(e => {
                             this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
-                            console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
+                            //console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
                             return null;
                         });
                         if (pubUpd?.pub) {
@@ -134,7 +134,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                 // Update Progress Value
                 if (this.progress !== 0) this.progress = (this.processedPublications + this.errors) / publications.length;
                 if (this.progress === 1) {
-                    console.log(this.publicationsUpdate.length + ' pubs update to DB, ' + this.errors + ' errors');
+                    //console.log(this.publicationsUpdate.length + ' pubs update to DB, ' + this.errors + ' errors');
                     //finalize
                     this.progress = 0;
                     this.reportService.finish(this.report, {
