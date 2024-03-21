@@ -274,7 +274,7 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Beste OA Lizenz (lt. Unpaywall)</mat-label>
+                    <mat-label>Beste OA Lizenz</mat-label>
                     <mat-select formControlName="best_oa_license">
                         <mat-option [value]="null"></mat-option>
                         <mat-option *ngFor="let value of this.licenses" [value]="value">{{value}}</mat-option>

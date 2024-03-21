@@ -501,13 +501,13 @@ export abstract class AbstractImportService {
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
                     let publisher = await this.getPublisher(element);
-                    orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
+                    if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
                 let publisher = await this.getPublisher(element);
-                orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
+                if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
                 if (orig.publisher) fields.push('publisher')
                 break;
         }
@@ -607,6 +607,21 @@ export abstract class AbstractImportService {
                 let inv_info = this.getInvoiceInformation(element);
                 if (inv_info) orig.invoices = inv_info; else orig.invoices = [];
                 fields.push('invoice')
+                break;
+        }
+        switch (this.updateMapping.license) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.best_oa_license) {
+                    orig.best_oa_license = this.getLicense(element);
+                    if (orig.best_oa_license) fields.push('best_oa_license')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.best_oa_license = this.getLicense(element);
+                if (orig.best_oa_license) fields.push('best_oa_license')
                 break;
         }
         switch (this.updateMapping.status) {

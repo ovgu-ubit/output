@@ -148,6 +148,6 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         orig.oa_status = element['oa_status'];
         orig.is_journal_oa = element['journal_is_oa'];
         orig.best_oa_host = element['best_oa_location']? element['best_oa_location']['host_type'] : null;
-        return {fields: ['is_oa','oa_status','journal_is_oa','best_oa_location','best_oa_license'], pub: orig};
+        return {fields: ['is_oa','oa_status','journal_is_oa','best_oa_location'], pub: orig};
     }
 }
