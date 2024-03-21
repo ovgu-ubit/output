@@ -70,7 +70,10 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
         this.authors = data;
         this.loading = false;
         this.table.update(this.authors);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
 

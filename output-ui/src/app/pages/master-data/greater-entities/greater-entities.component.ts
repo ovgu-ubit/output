@@ -67,7 +67,10 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
         this.ges = data;
         this.loading = false;
         this.table?.update(this.ges);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

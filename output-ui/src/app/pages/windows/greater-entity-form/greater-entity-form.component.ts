@@ -80,7 +80,9 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
 
   action() {
     if (this.form.invalid) return;
-    this.ge = { ...this.ge, ...this.form.getRawValue() }
+    this.ge = { ...this.ge, ...this.form.getRawValue(),
+      doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined,
+      doaj_until: this.form.get('doaj_until').value ? this.form.get('doaj_until').value.format() : undefined, }
     this.dialogRef.close(this.ge)
   }
 

@@ -175,7 +175,7 @@ export class Output1ImportService extends ApiImportOffsetService {
         } else return [];
     }
     protected getStatus(element: any): number {
-        return null;
+        return 1;
     }
     protected getEditors(element: any): string {
         return null;

@@ -318,7 +318,7 @@ export class PublicationService {
 
         //let indexQuery = this.indexQuery();
         let first = false;
-        for (let expr of filter.expressions) {
+        if (filter) for (let expr of filter.expressions) {
             let compareString;
             switch (expr.comp) {
                 case CompareOperation.INCLUDES:

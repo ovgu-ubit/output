@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ImportService } from 'src/app/services/import.service';
 import { ReportService } from 'src/app/services/report.service';
-import { Observable, Subject, firstValueFrom, from, map, takeUntil } from 'rxjs';
+import { Observable, Subject, firstValueFrom, from, map, merge, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
@@ -37,10 +37,33 @@ export class ImportComponent implements OnInit {
     private _snackBar: MatSnackBar) { }
 
   async ngOnInit() {
-    this.reportService.getReports('Import').subscribe({
-      next: data => {
+    let ob$:Observable<any> = this.reportService.getReports('Import').pipe(map(
+      data => {
         this.reportFiles = data.sort((a, b) => b.localeCompare(a));
-      }
+      }));
+    ob$ = merge(ob$, from(this.importService.isRunning()).pipe(map(
+      data => {
+        this.runningImports = data;
+        for (let ri of this.runningImports) {
+          this.forms[ri.label].disable();
+          this.obs$[ri.label] = this.importService.getProgress(ri.path).pipe(takeUntil(this.subjects[ri.label]), map(data => {
+            if (data.progress === 0 || data.progress >= 1) {//finish signal
+              this.runningImports = this.runningImports.filter(e => e.label !== ri.label)
+              this.obs$[ri.label] = undefined;
+              this.updateStatus().subscribe();
+              this.forms[ri.label].enable();
+              this.subjects[ri.label].next('');
+            }
+            return data;
+          }));
+        }
+      })));
+    ob$ = merge(ob$, this.updateStatus());
+    ob$.subscribe({
+      error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
     this.imports = await firstValueFrom(this.importService.getImports());
     for (let im of this.imports) {
@@ -50,33 +73,13 @@ export class ImportComponent implements OnInit {
         update: [''],
       });
     }
-    from(this.importService.isRunning()).subscribe({
-      next: data => {
-        this.runningImports = data;
-        for (let ri of this.runningImports) {
-          this.forms[ri.label].disable();
-          this.obs$[ri.label] = this.importService.getProgress(ri.path).pipe(takeUntil(this.subjects[ri.label]), map(data => {
-            if (data.progress === 0 || data.progress === 1) {//finish signal
-              this.runningImports = this.runningImports.filter(e => e.label !== ri.label)
-              this.obs$[ri.label] = undefined;
-              this.updateStatus();
-              this.forms[ri.label].enable();
-              this.subjects[ri.label].next('');
-            }
-            return data;
-          }));
-        }
-      }
-    })
-    this.updateStatus();
   }
 
   updateStatus() {
-    from(this.importService.getStatus()).subscribe({
-      next: data => {
+    return from(this.importService.getStatus()).pipe(map(
+      data => {
         this.status = data;
-      }
-    })
+      }))
   }
 
   getReports(import_label: string) {
@@ -91,10 +94,10 @@ export class ImportComponent implements OnInit {
         next: data => {
           this.runningImports.push(importO)
           this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
-            if (data.progress === 0 || data.progress === 1) {//finish signal
+            if (data.progress === 0 || data.progress >= 1) {//finish signal
               this.runningImports = this.runningImports.filter(e => e.label !== importO.label)
               this.obs$[importO.label] = undefined;
-              this.updateStatus();
+              this.updateStatus().subscribe();
               this.forms[importO.label].enable();
 
               this.reportService.getReports('Import').subscribe({
@@ -106,9 +109,10 @@ export class ImportComponent implements OnInit {
             }
             return data;
           }));
-        }, error: err => {
-          console.log('running')
-        }
+        }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
       });
     } else { //CSV Import
       if (!this.file || !this.file.name.endsWith('csv') || !this.csv_format) {
@@ -127,10 +131,10 @@ export class ImportComponent implements OnInit {
           next: data => {
             this.runningImports.push(importO)
             this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
-              if (data.progress === 0 || data.progress === 1) {//finish signal
+              if (data.progress === 0 || data.progress >= 1) {//finish signal
                 this.runningImports = this.runningImports.filter(e => e.label !== importO.label)
                 this.obs$[importO.label] = undefined;
-                this.updateStatus();
+                this.updateStatus().subscribe();
                 this.forms[importO.label].enable();
 
                 this.reportService.getReports('Import').subscribe({
@@ -142,7 +146,10 @@ export class ImportComponent implements OnInit {
               }
               return data;
             }));
-          }
+          }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+            panelClass: [`danger-snackbar`],
+            verticalPosition: 'top'
+          })
         });
       }
     }

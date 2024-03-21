@@ -270,6 +270,9 @@ export abstract class AbstractImportService {
 
         let pub_date = this.getPubDate(item);
 
+        let status = this.getStatus(item);
+        if (!status) status = 0;
+
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
             title: this.getTitle(item)?.trim(),
@@ -290,6 +293,7 @@ export abstract class AbstractImportService {
             citation: this.getCitation(item)?.trim(),
             page_count: this.getPageCount(item),
             peer_reviewed: this.getPeerReviewed(item),
+            status
         };
         if (pub_date instanceof Date) obj.pub_date = pub_date;
         else {
@@ -501,13 +505,13 @@ export abstract class AbstractImportService {
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
                     let publisher = await this.getPublisher(element);
-                    orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
+                    if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
                 let publisher = await this.getPublisher(element);
-                orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
+                if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
                 if (orig.publisher) fields.push('publisher')
                 break;
         }
@@ -609,6 +613,21 @@ export abstract class AbstractImportService {
                 fields.push('invoice')
                 break;
         }
+        switch (this.updateMapping.license) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.best_oa_license) {
+                    orig.best_oa_license = this.getLicense(element);
+                    if (orig.best_oa_license) fields.push('best_oa_license')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.best_oa_license = this.getLicense(element);
+                if (orig.best_oa_license) fields.push('best_oa_license')
+                break;
+        }
         switch (this.updateMapping.status) {
             case UpdateOptions.IGNORE:
                 break;
@@ -617,11 +636,13 @@ export abstract class AbstractImportService {
                 if (!orig.status) {
                     orig.status = this.getStatus(element);
                     if (orig.status) fields.push('status')
+                    else orig.status = 0;
                 }
                 break;
             case UpdateOptions.REPLACE:
                 orig.status = this.getStatus(element);
                 if (orig.status) fields.push('status')
+                else orig.status = 0;
                 break;
         }
         switch (this.updateMapping.editors) {

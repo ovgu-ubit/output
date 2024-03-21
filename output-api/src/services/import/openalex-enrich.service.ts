@@ -206,7 +206,9 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     }
     protected getPageCount(element: any): number {
         try {
-            return Number(element['biblio']['last_page'])-Number(element['biblio']['first_page'])+1;
+            let count = Number(element['biblio']['last_page'])-Number(element['biblio']['first_page'])+1;
+            if (!Number.isNaN(count) && count < 999999) return count;
+            else return null;
         } catch (e) {return null;}
     }
     protected getPeerReviewed(element: any): boolean {

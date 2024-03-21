@@ -115,14 +115,6 @@ export class PublicationController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }])
     async update(@Body() body: Publication[]) {
-            /*let resp = [];
-            for (const pub of body) {
-                resp.push(await this.repository.update(pub.id, pub).catch(err => {
-                    console.log(err);
-                    throw new InternalServerErrorException('Failure while update');
-                }));
-            }
-            return resp;*/
             return this.publicationService.update(body);
     }
 

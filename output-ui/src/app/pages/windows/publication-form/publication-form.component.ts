@@ -489,7 +489,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (funder) this.pub.funders.push(funder);
     else {
       // new funder
-      let dialogData = new ConfirmDialogModel("Förderer anlegen", `Möchten Sie Förderer "${event.value}" hinzufügen?`);
+      let dialogData = new ConfirmDialogModel("Förderer anlegen", `Möchten sSie Förderer "${event.value}" hinzufügen?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
@@ -711,6 +711,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   setLock(flag: boolean) {
     if (flag) {
       this.form.disable();
+      this.selectInstitute
     } else {
       this.form.enable();
     }

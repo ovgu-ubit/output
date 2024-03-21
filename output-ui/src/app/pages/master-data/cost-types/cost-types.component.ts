@@ -42,7 +42,10 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
         this.cost_types = data;
         this.loading = false;
         this.table?.update(this.cost_types)
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

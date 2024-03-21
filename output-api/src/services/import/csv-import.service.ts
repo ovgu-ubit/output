@@ -158,7 +158,7 @@ export class CSVImportService extends AbstractImportService {
                 } else {
                     this.progress = 0;
                     this.status_text = 'Error while importing on ' + new Date();
-                    console.log(this.file.filename + ' does not match the expected format.');
+                    //console.log(this.file.filename + ' does not match the expected format.');
                     this.reportService.finish(this.report, {
                         status: 'Error while importing on ' + new Date() + ': ' + this.file.filename + ' does not match the expected format.',
                         count_import: this.newPublications.length,
@@ -173,7 +173,7 @@ export class CSVImportService extends AbstractImportService {
         if (data.length === 0) return true;
         for (let field in format.mapping) {
             if (format.mapping[field] && !format.mapping[field].toString().startsWith('$') && typeof format.mapping[field] !== 'boolean' && typeof data[0][format.mapping[field]] === 'undefined') {
-                console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
+                //console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
                 return false;
             }
         }

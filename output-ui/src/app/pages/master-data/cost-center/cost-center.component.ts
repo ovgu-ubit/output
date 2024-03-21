@@ -43,7 +43,10 @@ export class CostCenterComponent implements TableParent<CostCenter>, OnInit{
         this.cost_centers = data;
         this.loading = false;
         this.table?.update(this.cost_centers)
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

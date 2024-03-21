@@ -64,7 +64,10 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
         this.funders = data;
         this.loading = false;
         this.table?.update(this.funders);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

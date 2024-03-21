@@ -68,7 +68,10 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
         this.contracts = data;
         this.loading = false;
         this.table.update(this.contracts);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

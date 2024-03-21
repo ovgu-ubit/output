@@ -63,7 +63,10 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
         this.pub_types = data;
         this.loading = false;
         this.table?.update(this.pub_types);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

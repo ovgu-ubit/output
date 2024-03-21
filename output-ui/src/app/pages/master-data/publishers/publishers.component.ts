@@ -66,7 +66,10 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
         this.publishers = data;
         this.loading = false;
         this.table?.update(this.publishers);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   
