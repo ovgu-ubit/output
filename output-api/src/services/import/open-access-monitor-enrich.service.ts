@@ -39,7 +39,7 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         authors: UpdateOptions.IGNORE,
         title: UpdateOptions.IGNORE,
         pub_type: UpdateOptions.IGNORE,
-        oa_category: UpdateOptions.REPLACE,
+        oa_category: UpdateOptions.REPLACE_IF_EMPTY,
         greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
         publisher: UpdateOptions.IGNORE,
         contract: UpdateOptions.IGNORE,

@@ -57,7 +57,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         language: UpdateOptions.REPLACE_IF_EMPTY,
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
-        status: UpdateOptions.IGNORE,
+        status: UpdateOptions.REPLACE_IF_EMPTY,
         editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.IGNORE,
         citation :UpdateOptions.REPLACE_IF_EMPTY,

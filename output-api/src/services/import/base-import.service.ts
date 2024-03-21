@@ -39,21 +39,21 @@ export class BASEImportService extends ApiImportOffsetService {
     private searchText = '';
 
     protected updateMapping: UpdateMapping = {
-        author_inst: UpdateOptions.APPEND,
+        author_inst: UpdateOptions.IGNORE,
         authors: UpdateOptions.REPLACE_IF_EMPTY,
         title: UpdateOptions.IGNORE,
         pub_type: UpdateOptions.REPLACE_IF_EMPTY,
-        oa_category: UpdateOptions.REPLACE_IF_EMPTY,
+        oa_category: UpdateOptions.IGNORE,
         greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
         publisher: UpdateOptions.REPLACE_IF_EMPTY,
-        contract: UpdateOptions.REPLACE_IF_EMPTY,
-        funder: UpdateOptions.APPEND,
+        contract: UpdateOptions.IGNORE,
+        funder: UpdateOptions.IGNORE,
         doi: UpdateOptions.REPLACE_IF_EMPTY,
         pub_date: UpdateOptions.REPLACE_IF_EMPTY,
         link: UpdateOptions.REPLACE_IF_EMPTY,
         language: UpdateOptions.REPLACE_IF_EMPTY,
         license: UpdateOptions.REPLACE_IF_EMPTY,
-        invoice: UpdateOptions.REPLACE_IF_EMPTY,
+        invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.IGNORE,
         editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.IGNORE,
@@ -186,7 +186,7 @@ export class BASEImportService extends ApiImportOffsetService {
         return null;
     }
     protected getStatus(element: any): number {
-        return 1;
+        return 0;
     }
     protected getEditors(element: any): string {
         return null;

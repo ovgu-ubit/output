@@ -40,7 +40,7 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
         authors: UpdateOptions.IGNORE,
         title: UpdateOptions.IGNORE,
         pub_type: UpdateOptions.IGNORE,
-        oa_category: UpdateOptions.REPLACE,
+        oa_category: UpdateOptions.REPLACE_IF_EMPTY,
         greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
         publisher: UpdateOptions.IGNORE,
         contract: UpdateOptions.IGNORE,
@@ -155,7 +155,7 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
         return null;
     }
     protected getStatus(element: any): number {
-        return 1;
+        return 0;
     }
     protected getEditors(element: any): string {
         return null;
