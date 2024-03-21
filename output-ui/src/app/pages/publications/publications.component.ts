@@ -145,9 +145,10 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     ob$.pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
 
-      }, error: err => {
-        console.log(err);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
     window.onbeforeunload = () => this.ngOnDestroy();
   }

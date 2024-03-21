@@ -63,7 +63,10 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
         this.oa_cats = data;
         this.loading = false;
         this.table?.update(this.oa_cats);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

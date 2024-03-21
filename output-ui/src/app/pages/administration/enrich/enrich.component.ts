@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, Subject, firstValueFrom, from, map, takeUntil } from 'rxjs';
+import { Observable, Subject, catchError, firstValueFrom, from, map, merge, takeUntil } from 'rxjs';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { ReportService } from 'src/app/services/report.service';
 import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
@@ -28,28 +28,20 @@ export class EnrichComponent implements OnInit {
 
   public forms: FormGroup[] = [];
 
-  constructor(private reportService: ReportService, private enrichService: EnrichService, private formBuilder: FormBuilder, private dialog: MatDialog) { }
+  constructor(private reportService: ReportService, private enrichService: EnrichService, private formBuilder: FormBuilder, private dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
   async ngOnInit() {
-    this.reportService.getReports('Enrich').subscribe({
-      next: data => {
+    let ob$: Observable<any> = this.reportService.getReports('Enrich').pipe(map(
+      data => {
         this.reportFiles = data.sort((a, b) => b.localeCompare(a));
-      }
-    })
-    this.enrichs = await firstValueFrom(this.enrichService.getEnrichs());
-    for (let im of this.enrichs) {
-      this.subjects[im.label] = new Subject<any>();
-      this.forms[im.label] = this.formBuilder.group({
-        reporting_year: ['', Validators.required]
-      });
-    }
-    from(this.enrichService.isRunning()).subscribe({
-      next: data => {
+      }));
+    ob$ = merge(ob$, from(this.enrichService.isRunning()).pipe(map(
+      data => {
         this.runningEnrichs = data;
         for (let ri of this.runningEnrichs) {
           this.forms[ri.label].disable();
           this.obs$[ri.label] = this.enrichService.getProgress(ri.path).pipe(takeUntil(this.subjects[ri.label]), map(data => {
-            if (data.progress === 0 || data.progress === 1) {//finish signal
+            if (data.progress === 0 || data.progress >= 1) {//finish signal
               this.runningEnrichs = this.runningEnrichs.filter(e => e.label !== ri.label)
               this.obs$[ri.label] = undefined;
               this.updateStatus();
@@ -59,17 +51,28 @@ export class EnrichComponent implements OnInit {
             return data;
           }));
         }
-      }
+      })));
+    ob$ = merge(ob$, this.updateStatus());
+    ob$.subscribe({
+      error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
-    this.updateStatus();
+    this.enrichs = await firstValueFrom(this.enrichService.getEnrichs())
+    for (let im of this.enrichs) {
+      this.subjects[im.label] = new Subject<any>();
+      this.forms[im.label] = this.formBuilder.group({
+        reporting_year: ['', Validators.required]
+      });
+    }
   }
 
   updateStatus() {
-    from(this.enrichService.getStatus()).subscribe({
-      next: data => {
+    return from(this.enrichService.getStatus()).pipe(map(
+      data => {
         this.status = data;
-      }
-    })
+      }))
   }
 
   getReports(import_label: string) {
@@ -86,7 +89,7 @@ export class EnrichComponent implements OnInit {
           if (data.progress === 0 || data.progress === 1) {//finish signal
             this.runningEnrichs = this.runningEnrichs.filter(e => e.label !== importO.label)
             this.obs$[importO.label] = undefined;
-            this.updateStatus();
+            this.updateStatus().subscribe();
             this.forms[importO.label].enable();
 
             this.reportService.getReports('Enrich').subscribe({
@@ -98,14 +101,15 @@ export class EnrichComponent implements OnInit {
           }
           return data;
         }));
-      }, error: err => {
-        console.log('running')
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     });
   }
 
   openLog(rep) {
-    this.reportService.getReport('Enrich',rep).subscribe({
+    this.reportService.getReport('Enrich', rep).subscribe({
       next: data => {
         let dialogRef = this.dialog.open(LogDialogComponent, {
           width: '800px',
@@ -122,7 +126,7 @@ export class EnrichComponent implements OnInit {
   }
 
   delete(rep) {
-    this.reportService.deleteReport('Enrich',rep).subscribe({
+    this.reportService.deleteReport('Enrich', rep).subscribe({
       next: data => {
         this.reportService.getReports('Enrich').subscribe({
           next: data => {

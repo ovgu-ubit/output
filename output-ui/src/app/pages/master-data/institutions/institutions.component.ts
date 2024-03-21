@@ -69,7 +69,10 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
         this.institutes = data;
         this.loading = false;
         this.table?.update(this.institutes);
-      }
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
   

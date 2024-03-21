@@ -4,6 +4,8 @@ import * as Highcharts from 'highcharts';
 import exporting from 'highcharts/modules/exporting';
 import { StatisticsService } from 'src/app/services/statistics.service';
 import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
+import { Observable, map, merge } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-statistics-year',
@@ -87,7 +89,7 @@ export class StatisticsYearComponent implements OnInit {
   constracts:{id:number, label:string}[] = []
   pub_types:{id:number, label:string}[] = []
 
-  constructor(private route: ActivatedRoute, private statService: StatisticsService) { }
+  constructor(private route: ActivatedRoute, private statService: StatisticsService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     exporting(Highcharts);
@@ -97,8 +99,8 @@ export class StatisticsYearComponent implements OnInit {
 
   loadData(costs:boolean) {
     this.costs = costs;
-    this.statService.corresponding(this.year, this.filter).subscribe({
-      next: data => {
+    let ob$:Observable<any> = this.statService.corresponding(this.year, this.filter).pipe(map(
+      data => {
         let chartData = []
         for (let e of data) {
           chartData.push(['corresponding', parseFloat(e.corresponding)])
@@ -113,10 +115,9 @@ export class StatisticsYearComponent implements OnInit {
           }
         }]
         this.updateFlag = true;
-      }
-    })
-    this.statService.institute(this.year, costs, this.filter).subscribe({
-      next: data => {
+      }));
+    ob$ = merge(ob$, this.statService.institute(this.year, costs, this.filter).pipe(map(
+      data => {
         this.institutes = data.map(e => {return {id: e['id'], label: e['institute']}});
         let chartData = []
         for (let e of data) {
@@ -131,10 +132,9 @@ export class StatisticsYearComponent implements OnInit {
           }
         }]
         this.updateFlag1 = true;
-      }
-    });
-    this.statService.oaCat(this.year, costs, this.filter).subscribe({
-      next: data => {
+      })));
+      ob$ = merge(ob$, this.statService.oaCat(this.year, costs, this.filter).pipe(map(
+      data => {
         this.oa_cats = data.map(e => {return {id: e['id'], label: e['oa_cat']}});
         let chartData = []
         for (let e of data) {
@@ -149,10 +149,9 @@ export class StatisticsYearComponent implements OnInit {
           }
         }]
         this.updateFlag2 = true;
-      }
-    });
-    this.statService.publisher(this.year, costs, this.filter).subscribe({
-      next: data => {
+      })));
+      ob$ = merge(ob$, this.statService.publisher(this.year, costs, this.filter).pipe(map(
+      data => {
         this.publisher = data.map(e => {return {id: e['id'], label: e['publisher']}});
         let chartData = []
         for (let e of data) {
@@ -167,10 +166,9 @@ export class StatisticsYearComponent implements OnInit {
           }
         }]
         this.updateFlag3 = true;
-      }
-    });
-    this.statService.pub_type(this.year, costs, this.filter).subscribe({
-      next: data => {
+      })));
+      ob$ = merge(ob$, this.statService.pub_type(this.year, costs, this.filter).pipe(map(
+      data => {
         this.pub_types = data.map(e => {return {id: e['id'], label: e['pub_type']}});
         let chartData = []
         for (let e of data) {
@@ -185,10 +183,9 @@ export class StatisticsYearComponent implements OnInit {
           }
         }]
         this.updateFlag4 = true;
-      }
-    });
-    this.statService.contract(this.year, costs, this.filter).subscribe({
-      next: data => {
+      })));
+      ob$ = merge(ob$, this.statService.contract(this.year, costs, this.filter).pipe(map(
+      data => {
         this.constracts = data.map(e => {return {id: e['id'], label: e['contract']}});
         let chartData = []
         for (let e of data) {
@@ -203,8 +200,13 @@ export class StatisticsYearComponent implements OnInit {
           }
         }]
         this.updateFlag5 = true;
-      }
-    });
+      })));
+      ob$.subscribe({
+        error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
+      })
   }
 
   getLink() {

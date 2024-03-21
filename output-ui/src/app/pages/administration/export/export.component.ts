@@ -1,8 +1,9 @@
 import { Component, OnInit, ViewChildren } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
-import { concatMap, firstValueFrom, from, map } from 'rxjs';
+import { Observable, concatMap, firstValueFrom, from, map, merge } from 'rxjs';
 import { ExportService } from 'src/app/services/export.service';
 import { selectViewConfig } from 'src/app/services/redux';
 import { ReportService } from 'src/app/services/report.service';
@@ -16,7 +17,7 @@ import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.componen
 export class ExportComponent implements OnInit {
 
   constructor(private exportService: ExportService, private reportService: ReportService, private dialog: MatDialog,
-    private store: Store) { }
+    private store: Store, private _snackBar: MatSnackBar) { }
 
   reportFiles = [];
   enrichs = [];
@@ -25,23 +26,28 @@ export class ExportComponent implements OnInit {
   @ViewChildren(MatCheckbox) checkboxes;
 
   async ngOnInit() {
-    this.store.select(selectViewConfig).pipe(concatMap(data => {
+    let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(map(data => {
       this.filter = data.filter;
-      return this.reportService.getReports('export').pipe(map(data => {
-        this.reportFiles = data.sort((a, b) => b.localeCompare(a));
-      }))
-    })).subscribe();
+    }));
+    ob$ = merge(ob$,  this.reportService.getReports('export').pipe(map(data => {
+      this.reportFiles = data.sort((a, b) => b.localeCompare(a));
+    })));
+    ob$ = merge(ob$,  this.updateStatus());
+    ob$.subscribe({
+      error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
+    })
     this.enrichs = await firstValueFrom(this.exportService.getExports());
     this.enrichs = this.enrichs.map(e => { return { ...e, filter: false } })
-    this.updateStatus();
   }
 
   updateStatus() {
-    from(this.exportService.getStatus()).subscribe({
-      next: data => {
+    return from(this.exportService.getStatus()).pipe(map(
+      data => {
         this.status = data;
-      }
-    })
+      }));
   }
 
   getReports(import_label: string) {
@@ -67,8 +73,11 @@ export class ExportComponent implements OnInit {
             this.reportFiles = data.sort((a, b) => b.localeCompare(a));;
           }
         })
-        this.updateStatus();
-      }
+        this.updateStatus().subscribe();
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
     })
   }
 
