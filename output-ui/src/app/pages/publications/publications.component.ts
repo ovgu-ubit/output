@@ -105,7 +105,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     }));
     ob$ = ob$.pipe(concatMap(data => {
       return this.store.select(selectReportingYear).pipe(concatMap(data => {
-        console.log('next')
         let ob1$: Observable<any>
         if (data) {
           ob1$ = of(data);
