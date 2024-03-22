@@ -149,7 +149,7 @@
                     </mat-autocomplete>
                 </mat-form-field>
 
-                <mat-checkbox formControlName="peer_reviewed">Peer-reviewed?</mat-checkbox>
+                <mat-checkbox formControlName="peer_reviewed" *ngIf="this.optional_fields.peer_reviewed">Peer-reviewed?</mat-checkbox>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Verlag</mat-label>
@@ -177,7 +177,7 @@
                         color="accent"></mat-datepicker>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.pub_date_print">
                     <mat-label>Publikationsdatum (print)</mat-label>
                     <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
                     <mat-hint>T.M.JJJJ</mat-hint>
@@ -195,7 +195,7 @@
                         startView="year" color="accent"></mat-datepicker>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.pub_date_submitted">
                     <mat-label>Datum der Einreichung</mat-label>
                     <input matInput [matDatepicker]="picker4" formControlName="pub_date_submitted">
                     <mat-hint>T.M.JJJJ</mat-hint>
@@ -212,17 +212,17 @@
                     </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.citation">
                     <mat-label>Zitationsangabe</mat-label>
                     <input matInput [type]="'text'" placeholder="Zitationsangabe" formControlName="citation" />
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.page_count">
                     <mat-label>Seitenzahl</mat-label>
                     <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.abstract">
                     <mat-label>Abstract</mat-label>
                     <textarea matInput [type]="'text'" placeholder="Abstract" formControlName="abstract"></textarea>
                 </mat-form-field>

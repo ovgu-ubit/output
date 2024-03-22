@@ -21,6 +21,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 /**
@@ -31,7 +32,7 @@ export abstract class AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService, protected costTypeService: CostTypeService,
-        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService:LanguageService) { }
+        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService) { }
 
     protected progress = 0;
     protected status_text = 'initialized';
@@ -61,17 +62,17 @@ export abstract class AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
-        editors :UpdateOptions.REPLACE_IF_EMPTY,
-        abstract :UpdateOptions.REPLACE_IF_EMPTY,
-        citation :UpdateOptions.REPLACE_IF_EMPTY,
-        page_count :UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed :UpdateOptions.REPLACE_IF_EMPTY,
+        editors: UpdateOptions.REPLACE_IF_EMPTY,
+        abstract: UpdateOptions.REPLACE_IF_EMPTY,
+        citation: UpdateOptions.REPLACE_IF_EMPTY,
+        page_count: UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     public getUpdateMapping() {
         return this.updateMapping;
     }
-    public setUpdateMapping(map:UpdateMapping) {
+    public setUpdateMapping(map: UpdateMapping) {
         this.updateMapping = map;
     }
 
@@ -79,7 +80,7 @@ export abstract class AbstractImportService {
         return this.name;
     }
 
-    public abstract setReportingYear(year: string):void;
+    public abstract setReportingYear(year: string): void;
 
     /**
      * name of the import, is used for logging and as dataSource
@@ -129,7 +130,7 @@ export abstract class AbstractImportService {
      * retrieves the publication date of an element in UTC timezone
      * @param element 
      */
-    protected abstract getPubDate(element: any): Date | {pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date};
+    protected abstract getPubDate(element: any): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date };
     /**
      * retrieves the link of an element
      * @param element 
@@ -222,14 +223,14 @@ export abstract class AbstractImportService {
             for (let aut of authors_inst) {
                 let aut_ent = await this.authorService.findOrSave(aut.last_name.trim(), aut.first_name.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
-                  });
+                });
                 let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
-                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(),institute: inst });
+                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst });
             }
         }
         let ids = this.getGreaterEntityIdentifier(item);
         let ge = await this.geService.findOrSave(this.getGreaterEntityName(item), ids).catch(e => {
-            this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error'})
+            this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
         })
 
         let funders = this.getFunder(item);
@@ -237,20 +238,20 @@ export abstract class AbstractImportService {
         if (funders) {
             for (let funder of funders) {
                 let funder_ent = await this.funderService.findOrSave(funder.label, funder.doi).catch(e => {
-                    this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error'})
+                    this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
                 });
                 if (funder_ent) funder_ents.push(funder_ent);
             }
             funder_ents = funder_ents.filter((v, i, s) => { return s.indexOf(s.find(f => f.id === v.id)) === i; });
         }
         let pub_type = await this.publicationTypeService.findOrSave(this.getPubType(item));
-        
+
         let publisher_obj = this.getPublisher(item);
-        let publisher:Publisher;
+        let publisher: Publisher;
         let publisher_ent;
         if (publisher_obj) {
             publisher_ent = await this.publisherService.findOrSave(publisher_obj.label, publisher_obj.doi_prefixes, publisher_obj.location).catch(e => {
-                this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error'})
+                this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
         }
         if (!publisher_ent && this.getDOI(item)) publisher_ent = await this.publisherService.findByDOI(this.getDOI(item))
@@ -289,18 +290,18 @@ export abstract class AbstractImportService {
             best_oa_license: this.getLicense(item)?.trim(),
             invoices: inv_info,
             editors: this.getEditors(item)?.trim(),
-            abstract: this.getAbstract(item)?.trim(),
-            citation: this.getCitation(item)?.trim(),
-            page_count: this.getPageCount(item),
-            peer_reviewed: this.getPeerReviewed(item),
+            abstract: this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
+            citation: this.configService.get('optional_fields.citation') ? this.getCitation(item)?.trim() : undefined,
+            page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
+            peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
             status
         };
         if (pub_date instanceof Date) obj.pub_date = pub_date;
         else {
             obj.pub_date = pub_date.pub_date;
-            obj.pub_date_print = pub_date.pub_date_print;
+            if (this.configService.get('optional_fields.pub_date_print')) obj.pub_date_print = pub_date.pub_date_print;
             obj.pub_date_accepted = pub_date.pub_date_accepted;
-            obj.pub_date_submitted = pub_date.pub_date_submitted;
+            if (this.configService.get('optional_fields.pub_date_submitted')) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
 
         let pub_ent = (await this.publicationService.save([obj]))[0];
@@ -317,7 +318,7 @@ export abstract class AbstractImportService {
      * @param orig the original publication from DB
      * @returns the updated publication entity or null if no update has been performed
      */
-    async mapUpdate(element: any, orig: Publication): Promise<{pub:Publication, fields:string[]}> {
+    async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
         let fields = [];
 
         switch (this.updateMapping.authors) {
@@ -439,7 +440,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (!orig.pub_date_print) {
+                    if (this.configService.get('optional_fields.pub_date_print') && !orig.pub_date_print) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -447,7 +448,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (!orig.pub_date_submitted) {
+                    if (this.configService.get('optional_fields.pub_date_submitted') && !orig.pub_date_submitted) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
@@ -459,12 +460,12 @@ export abstract class AbstractImportService {
                 if (pd instanceof Date) {
                     orig.pub_date = pd;
                     flag = true;
-                }  else {
+                } else {
                     if (pd.pub_date) {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (pd.pub_date_print) {
+                    if (this.configService.get('optional_fields.pub_date_print') && pd.pub_date_print) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -472,12 +473,12 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (pd.pub_date_submitted) {
+                    if (this.configService.get('optional_fields.pub_date_submitted') && pd.pub_date_submitted) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
                 }
-                
+
                 if (flag) fields.push('pub_date')
                 break;
         }
@@ -535,7 +536,7 @@ export abstract class AbstractImportService {
         if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
             let ids = this.getGreaterEntityIdentifier(element);
             let ge = await this.geService.findOrSave(this.getGreaterEntityName(element), ids).catch(e => {
-                this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text:`: ${e['text']} for publication ${orig.id}, must be assigned manually` })
+                this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text: `: ${e['text']} for publication ${orig.id}, must be assigned manually` })
             })
             if (ge) {
                 orig.greater_entity = ge; //replace if not ignore or not empty (append is also replace if empty)
@@ -549,7 +550,7 @@ export abstract class AbstractImportService {
             if (funders) {
                 for (let funder of funders) {
                     let funder_ent = await this.funderService.findOrSave(funder.label, funder.doi).catch(e => {
-                        this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text:`${e['text']} for publication ${orig.id}, must be checked manually` })
+                        this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text: `${e['text']} for publication ${orig.id}, must be checked manually` })
                     });
                     if (funder_ent) funder_ents.push(funder_ent);
                 }
@@ -575,7 +576,7 @@ export abstract class AbstractImportService {
                             this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                         });
                         let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
-                        if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(),institute: inst });
+                        if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst });
                     }
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.REPLACE) {
@@ -660,74 +661,81 @@ export abstract class AbstractImportService {
                 if (orig.editors) fields.push('editors')
                 break;
         }
-        switch (this.updateMapping.abstract) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.APPEND:
-            case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.abstract) {
+        if (this.configService.get('optional_fields.abstract')) {
+            switch (this.updateMapping.abstract) {
+                case UpdateOptions.IGNORE:
+                    break;
+                case UpdateOptions.APPEND:
+                case UpdateOptions.REPLACE_IF_EMPTY:
+                    if (!orig.abstract) {
+                        orig.abstract = this.getAbstract(element);
+                        if (orig.abstract) fields.push('abstract')
+                    }
+                    break;
+                case UpdateOptions.REPLACE:
                     orig.abstract = this.getAbstract(element);
                     if (orig.abstract) fields.push('abstract')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.abstract = this.getAbstract(element);
-                if (orig.abstract) fields.push('abstract')
-                break;
+                    break;
+            }
         }
-        switch (this.updateMapping.citation) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.APPEND:
-            case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.citation) {
+        if (this.configService.get('optional_fields.citation')) {
+            switch (this.updateMapping.citation) {
+                case UpdateOptions.IGNORE:
+                    break;
+                case UpdateOptions.APPEND:
+                case UpdateOptions.REPLACE_IF_EMPTY:
+                    if (!orig.citation) {
+                        orig.citation = this.getCitation(element);
+                        if (orig.citation) fields.push('citation')
+                    }
+                    break;
+                case UpdateOptions.REPLACE:
                     orig.citation = this.getCitation(element);
                     if (orig.citation) fields.push('citation')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.citation = this.getCitation(element);
-                if (orig.citation) fields.push('citation')
-                break;
+                    break;
+            }
         }
-        switch (this.updateMapping.page_count) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.APPEND:
-            case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.page_count) {
+        if (this.configService.get('optional_fields.page_count')) {
+            switch (this.updateMapping.page_count) {
+                case UpdateOptions.IGNORE:
+                    break;
+                case UpdateOptions.APPEND:
+                case UpdateOptions.REPLACE_IF_EMPTY:
+                    if (!orig.page_count) {
+                        orig.page_count = this.getPageCount(element);
+                        if (orig.page_count) fields.push('page_count')
+                    }
+                    break;
+                case UpdateOptions.REPLACE:
                     orig.page_count = this.getPageCount(element);
                     if (orig.page_count) fields.push('page_count')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.page_count = this.getPageCount(element);
-                if (orig.page_count) fields.push('page_count')
-                break;
+                    break;
+            }
         }
-        switch (this.updateMapping.peer_reviewed) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.APPEND:
-            case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.peer_reviewed) {
+        if (this.configService.get('optional_fields.peer_reviewed')) {
+            switch (this.updateMapping.peer_reviewed) {
+                case UpdateOptions.IGNORE:
+                    break;
+                case UpdateOptions.APPEND:
+                case UpdateOptions.REPLACE_IF_EMPTY:
+                    if (!orig.peer_reviewed) {
+                        orig.peer_reviewed = this.getPeerReviewed(element);
+                        if (orig.peer_reviewed) fields.push('peer_reviewed')
+                    }
+                    break;
+                case UpdateOptions.REPLACE:
                     orig.peer_reviewed = this.getPeerReviewed(element);
                     if (orig.peer_reviewed) fields.push('peer_reviewed')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.peer_reviewed = this.getPeerReviewed(element);
-                if (orig.peer_reviewed) fields.push('peer_reviewed')
-                break;
+                    break;
+            }
         }
-
         let res = this.finalize(orig, element);
         orig = res.pub;
         fields.push(...res.fields)
 
         let pub_ent: Publication;
-        if (fields.length>0) pub_ent = (await this.publicationService.save([orig]))[0];
-        return {pub:pub_ent,fields};
+        if (fields.length > 0) pub_ent = (await this.publicationService.save([orig]))[0];
+        return { pub: pub_ent, fields };
     }
 
     /**
@@ -735,8 +743,8 @@ export abstract class AbstractImportService {
      * @param orig 
      * @param element 
      */
-    protected finalize(orig: Publication, element: any): {fields:string[], pub: Publication} {
-        return {fields:[],pub:orig};
+    protected finalize(orig: Publication, element: any): { fields: string[], pub: Publication } {
+        return { fields: [], pub: orig };
     }
 
     public status() {

@@ -32,9 +32,8 @@ export class CSVImportService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService,
-        protected languageService: LanguageService,
-        private configService: ConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService);
+        protected languageService: LanguageService, protected configService: ConfigService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService);
     }
 
     protected updateMapping: UpdateMapping = {

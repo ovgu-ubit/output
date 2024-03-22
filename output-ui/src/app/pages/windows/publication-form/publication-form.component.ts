@@ -77,6 +77,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   today = new Date();
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
+  optional_fields;
 
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubDateValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
@@ -130,6 +131,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.publicationService.getOptionalFields().subscribe({
+      next: data => {
+        this.optional_fields = data;
+      }
+    })
   }
 
   loadData(notLoadPub: boolean) {
