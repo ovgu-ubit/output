@@ -25,4 +25,12 @@ export interface AppConfig {
     export_services: {path: string, class: Type<AbstractExportService>}[];
     filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex|Publication>>}[];
     authorization_service: Type<AuthorizationService>;
+    optional_fields: {
+        abstract: boolean;
+        citation: boolean;
+        page_count: boolean;
+        pub_date_submitted: boolean;
+        pub_date_print: boolean;
+        peer_reviewed: boolean;
+    }
 }
