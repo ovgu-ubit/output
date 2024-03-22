@@ -5,7 +5,7 @@ import { Observable, Subject, firstValueFrom, from, map, merge, takeUntil } from
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
-import { ImportConfigComponent } from '../../windows/import-config/import-config.component';
+import { ImportConfigComponent } from '../../../tools/import-config/import-config.component';
 import { CSVMapping } from '../../../../../../output-interfaces/Config';
 import { CsvFormatComponent } from 'src/app/tools/csv-format/csv-format.component';
 import { MatSnackBar } from '@angular/material/snack-bar';

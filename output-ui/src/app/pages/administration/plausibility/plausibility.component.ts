@@ -101,8 +101,6 @@ export class PlausibilityComponent implements OnInit {
     this.reportService.getReport('Check',rep).subscribe({
       next: data => {
         let dialogRef = this.dialog.open(LogDialogComponent, {
-          width: '800px',
-          maxHeight: '800px',
           data: {
             data,
             label: rep

@@ -130,7 +130,6 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
         if (dialogResult) {
           let dialogRef1 = this.dialog.open(PublisherFormComponent, {
             width: "400px",
-            height: "800px",
             data: {
               publisher: {
                 label: event.value
@@ -158,7 +157,6 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
     } else {
       let dialogRef = this.dialog.open(PublisherFormComponent, {
         width: "400px",
-        height: "800px",
         data: {
           publisher: this.contract.publisher
         }

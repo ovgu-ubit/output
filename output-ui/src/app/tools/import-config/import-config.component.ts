@@ -1,6 +1,6 @@
 import { Component,OnInit,Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { UpdateMapping, UpdateOptions } from '../../../../../../output-interfaces/Config';
+import { UpdateMapping, UpdateOptions } from '../../../../../output-interfaces/Config';
 import { ImportService } from 'src/app/services/import.service';
 import { EnrichService } from 'src/app/services/enrich.service';
 
@@ -55,6 +55,14 @@ export class ImportConfigComponent implements OnInit {
         this.dialogRef.close(true)
       }
     })
+  }
+
+  getText(option) {
+    if (option == 'IGNORE') return 'Ignorieren';
+    else if (option == 'REPLACE') return 'Ersetzen';
+    else if (option == 'REPLACE_IF_EMPTY') return 'Ersetzen wenn leer';
+    else if (option == 'APPEND') return 'Hinzufügen';
+    return '';
   }
 
 }

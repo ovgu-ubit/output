@@ -138,7 +138,6 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
         if (dialogResult) {
           let dialogRef1 = this.dialog.open(InstituteFormComponent, {
             width: "400px",
-            height: "800px",
             data: {
               institute: {
                 label: value
