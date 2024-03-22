@@ -35,7 +35,14 @@ export class StatisticsYearComponent implements OnInit {
           enabled: true,
           format: '{point.name}: {point.percentage:.1f} %'
         },
-        showInLegend: true
+        showInLegend: true,
+        point: {
+          events: {
+            legendItemClick: (event) => {
+              this.applyAntiFilter(event.target.series.name, event.target.name)
+            }
+          }
+        }
       }
     },
 
@@ -240,6 +247,29 @@ export class StatisticsYearComponent implements OnInit {
     } 
     if (series_name === 'Verlag') {
       this.filter = {...this.filter,publisherId: this.publisher.find(e => e.label === cat_name)?.id}
+    }
+    this.loadData(this.costs);
+  }
+  applyAntiFilter(series_name: string, cat_name: string) {
+    if (cat_name === 'Unbekannt' || (series_name === 'Art' && cat_name === 'sonstige')) return;
+    this.filterText += series_name+': !'+cat_name +' ';
+    if (series_name === 'Art') {
+      if (cat_name === 'corresponding') this.filter = {...this.filter, corresponding: false}
+    } 
+    if (series_name === 'Institut') {
+      this.filter = {...this.filter,notInstituteId: this.institutes.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'OA-Kategorie') {
+      this.filter = {...this.filter,notOaCatId: this.oa_cats.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'Vertrag') {
+      this.filter = {...this.filter,notContractId: this.constracts.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'Publikationsart') {
+      this.filter = {...this.filter,notPubTypeId: this.pub_types.find(e => e.label === cat_name)?.id}
+    } 
+    if (series_name === 'Verlag') {
+      this.filter = {...this.filter,notPublisherId: this.publisher.find(e => e.label === cat_name)?.id}
     }
     this.loadData(this.costs);
   }
