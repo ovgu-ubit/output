@@ -29,16 +29,17 @@ async function bootstrap() {
         .setTitle('Output API')
         .setDescription('The Output API description')
         .setVersion('2.0')
-        .setBasePath(base_path)
+        .addServer(base_path)
         .build();
     const options: SwaggerDocumentOptions = {
         operationIdFactory: (
             controllerKey: string,
             methodKey: string
-        ) => methodKey,
+        ) => methodKey
     };
     const document = SwaggerModule.createDocument(app, config, options);
-    SwaggerModule.setup('api', app, document);
+    SwaggerModule.setup('swagger', app, document);
+
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     app.enableCors({
         origin: cors_origins,
