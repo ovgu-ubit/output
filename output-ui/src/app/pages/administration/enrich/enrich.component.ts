@@ -6,7 +6,7 @@ import { Observable, Subject, catchError, firstValueFrom, from, map, merge, take
 import { EnrichService } from 'src/app/services/enrich.service';
 import { ReportService } from 'src/app/services/report.service';
 import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
-import { ImportConfigComponent } from '../../windows/import-config/import-config.component';
+import { ImportConfigComponent } from '../../../tools/import-config/import-config.component';
 
 @Component({
   selector: 'app-enrich',
@@ -112,8 +112,6 @@ export class EnrichComponent implements OnInit {
     this.reportService.getReport('Enrich', rep).subscribe({
       next: data => {
         let dialogRef = this.dialog.open(LogDialogComponent, {
-          width: '800px',
-          maxHeight: '800px',
           data: {
             data,
             label: rep

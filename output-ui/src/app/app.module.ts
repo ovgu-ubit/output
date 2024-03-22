@@ -59,7 +59,7 @@ import { CostTypeFormComponent } from './pages/windows/cost-type-form/cost-type-
 import { FilterViewComponent } from './tools/filter-view/filter-view.component';
 import { FunderFormComponent } from './pages/windows/funder-form/funder-form.component';
 import { GreaterEntityFormComponent } from './pages/windows/greater-entity-form/greater-entity-form.component';
-import { ImportConfigComponent } from './pages/windows/import-config/import-config.component';
+import { ImportConfigComponent } from './tools/import-config/import-config.component';
 import { InstituteFormComponent } from './pages/windows/institute-form/institute-form.component';
 import { InvoiceFormComponent } from './pages/windows/invoice-form/invoice-form.component';
 import { OaCategoryFormComponent } from './pages/windows/oa-category-form/oa-category-form.component';

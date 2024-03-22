@@ -153,15 +153,26 @@ export class StatisticsService {
         if (filterOptions?.corresponding) {
             autPub = true;
             query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
+        } else if (filterOptions?.corresponding === false ) {
+            autPub = true;
+            query = query.andWhere('aut_pub.corresponding = :corr', { corr: false })
         }
         if (filterOptions?.instituteId) {
             autPub = true;
             query = query.andWhere('aut_pub.\"instituteId\" = :instituteId', { instituteId: filterOptions.instituteId })
         }
+        if (filterOptions?.notInstituteId) {
+            autPub = true;
+            query = query.andWhere('aut_pub.\"instituteId\" <> :notInstituteId', { notInstituteId: filterOptions.notInstituteId })
+        }
         if (filterOptions?.publisherId) query = query.andWhere('publication.\"publisherId\" = :publisherId', { publisherId: filterOptions.publisherId })
         if (filterOptions?.contractId) query = query.andWhere('publication.\"contractId\" = :contractId', { contractId: filterOptions.contractId })
         if (filterOptions?.pubTypeId) query = query.andWhere('publication.\"pubTypeId\" = :pubTypeId', { pubTypeId: filterOptions.pubTypeId })
         if (filterOptions?.oaCatId) query = query.andWhere('publication.\"oaCategoryId\" = :oaCatId', { oaCatId: filterOptions.oaCatId })
+        if (filterOptions?.notPublisherId) query = query.andWhere('publication.\"publisherId\" <> :notPublisherId', { notPublisherId: filterOptions.notPublisherId })
+        if (filterOptions?.notContractId) query = query.andWhere('publication.\"contractId\" <> :notContractId', { notContractId: filterOptions.notContractId })
+        if (filterOptions?.notPubTypeId) query = query.andWhere('publication.\"pubTypeId\" <> :notPubTypeId', { notPubTypeId: filterOptions.notPubTypeId })
+        if (filterOptions?.notOaCatId) query = query.andWhere('publication.\"oaCategoryId\" <> :notOaCatId', { notOaCatId: filterOptions.notOaCatId })
 
         let highlight = '';
         if (highlightOptions?.corresponding) {
