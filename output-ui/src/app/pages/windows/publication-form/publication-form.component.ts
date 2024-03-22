@@ -358,7 +358,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (dialogResult) {
           let dialogRef1 = this.dialog.open(PublisherFormComponent, {
             width: "400px",
-            height: "800px",
             data: {
               publisher: {
                 label: event.value
@@ -387,7 +386,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     } else {
       let dialogRef = this.dialog.open(PublisherFormComponent, {
         width: "400px",
-        height: "800px",
         data: {
           publisher: this.pub.publisher
         }
@@ -429,7 +427,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (dialogResult) {
           let dialogRef1 = this.dialog.open(ContractFormComponent, {
             width: "400px",
-            maxHeight: "800px",
             data: {
               contract: {
                 label: event.value
@@ -458,7 +455,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     } else {
       let dialogRef = this.dialog.open(ContractFormComponent, {
         width: "400px",
-        height: "800px",
         data: {
           contract: this.pub.contract
         }
@@ -540,7 +536,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (dialogResult) {
           let dialogRef1 = this.dialog.open(GreaterEntityFormComponent, {
             width: "400px",
-            height: "800px",
             data: {
               greater_entity: {
                 label: event.value
@@ -569,7 +564,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     } else {
       let dialogRef = this.dialog.open(GreaterEntityFormComponent, {
         width: "400px",
-        height: "800px",
         data: {
           greater_entity: this.pub.greater_entity
         }

@@ -159,8 +159,6 @@ export class ImportComponent implements OnInit {
     this.reportService.getReport('Import',rep).subscribe({
       next: data => {
         let dialogRef = this.dialog.open(LogDialogComponent, {
-          width: '800px',
-          maxHeight: '800px',
           data: {
             data,
             label: rep
