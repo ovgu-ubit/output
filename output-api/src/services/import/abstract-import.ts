@@ -299,9 +299,9 @@ export abstract class AbstractImportService {
         if (pub_date instanceof Date) obj.pub_date = pub_date;
         else {
             obj.pub_date = pub_date.pub_date;
-            obj.pub_date_print = pub_date.pub_date_print;
+            if (this.configService.get('optional_fields.pub_date_print')) obj.pub_date_print = pub_date.pub_date_print;
             obj.pub_date_accepted = pub_date.pub_date_accepted;
-            obj.pub_date_submitted = pub_date.pub_date_submitted;
+            if (this.configService.get('optional_fields.pub_date_submitted')) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
 
         let pub_ent = (await this.publicationService.save([obj]))[0];
@@ -440,7 +440,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (!orig.pub_date_print) {
+                    if (this.configService.get('optional_fields.pub_date_print') && !orig.pub_date_print) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -448,7 +448,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (!orig.pub_date_submitted) {
+                    if (this.configService.get('optional_fields.pub_date_submitted') && !orig.pub_date_submitted) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
@@ -465,7 +465,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (pd.pub_date_print) {
+                    if (this.configService.get('optional_fields.pub_date_print') && pd.pub_date_print) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -473,7 +473,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (pd.pub_date_submitted) {
+                    if (this.configService.get('optional_fields.pub_date_submitted') && pd.pub_date_submitted) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
