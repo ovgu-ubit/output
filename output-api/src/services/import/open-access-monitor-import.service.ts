@@ -23,6 +23,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class OpenAccessMonitorImportService extends ApiImportOffsetService {
@@ -101,11 +102,11 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     protected getAuthors(element: any): string {
         return '';
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        return element['journal']['issns'].map(e => {return {type:'issn', value:e}});
-    }
-    protected getGreaterEntityName(element: any): string {
-        return element['journal']['title'];
+    protected getGreaterEntity(element: any): GreaterEntity {
+        return { 
+            label: element['journal']['title'],
+            identifiers: element['journal']['issns'].map(e => {return {type:'issn', value:e}})
+        }
     }
     protected getPublisher(element: any): Publisher {
         return {label: element['publisher']['name']};

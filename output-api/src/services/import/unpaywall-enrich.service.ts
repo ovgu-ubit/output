@@ -22,6 +22,7 @@ import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
@@ -83,10 +84,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     protected getAuthors(element: any): string {
         return null;
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        return null;
-    }
-    protected getGreaterEntityName(element: any): string {
+    protected getGreaterEntity(element: any): GreaterEntity {
         return null;
     }
     protected getPublisher(element: any): Publisher {

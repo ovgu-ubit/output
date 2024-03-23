@@ -112,15 +112,10 @@ export abstract class AbstractImportService {
      */
     protected abstract getAuthors(element: any): string;
     /**
-     * retrieves the identifier for the greater entity of the element
+     * retrieves the greater entitiy information of the element
      * @param element
      */
-    protected abstract getGreaterEntityIdentifier(element: any): Identifier[];
-    /**
-     * retrieves the name of the greater entitiy of the element
-     * @param element
-     */
-    protected abstract getGreaterEntityName(element: any): string;
+    protected abstract getGreaterEntity(element: any): GreaterEntity;
     /**
      * retrieves the publisher of an element
      * @param element
@@ -228,8 +223,8 @@ export abstract class AbstractImportService {
                 if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst });
             }
         }
-        let ids = this.getGreaterEntityIdentifier(item);
-        let ge = await this.geService.findOrSave(this.getGreaterEntityName(item), ids).catch(e => {
+        let ge = this.getGreaterEntity(item);
+        let ge_ent = await this.geService.findOrSave(ge).catch(e => {
             this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
         })
 
@@ -281,7 +276,7 @@ export abstract class AbstractImportService {
             link: this.getLink(item)?.trim(),
             language,
             pub_type,
-            greater_entity: ge as GreaterEntity,
+            greater_entity: ge_ent as GreaterEntity,
             publisher,
             oa_category,
             contract,
@@ -534,12 +529,12 @@ export abstract class AbstractImportService {
         }
 
         if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
-            let ids = this.getGreaterEntityIdentifier(element);
-            let ge = await this.geService.findOrSave(this.getGreaterEntityName(element), ids).catch(e => {
+            let ge = this.getGreaterEntity(element);
+            let ge_ent = await this.geService.findOrSave(ge).catch(e => {
                 this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text: `: ${e['text']} for publication ${orig.id}, must be assigned manually` })
             })
-            if (ge) {
-                orig.greater_entity = ge; //replace if not ignore or not empty (append is also replace if empty)
+            if (ge_ent) {
+                orig.greater_entity = ge_ent; //replace if not ignore or not empty (append is also replace if empty)
                 fields.push('greater_entity')
             }
         }

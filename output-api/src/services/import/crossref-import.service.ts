@@ -21,6 +21,7 @@ import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class CrossrefImportService extends ApiImportOffsetService {
@@ -116,11 +117,12 @@ export class CrossrefImportService extends ApiImportOffsetService {
         }
         return result;
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        return element['ISSN']?.filter((v, i, s) => { return s.indexOf(v) === i; }).map(e => { return { type: 'issn', value: e }; });
-    }
-    protected getGreaterEntityName(element: any): string {
-        return element['container-title'] && element['container-title'].length > 0 ? element['container-title'][0] : null;
+    protected getGreaterEntity(element: any): GreaterEntity {
+        let label = element['container-title'] && element['container-title'].length > 0 ? element['container-title'][0] : null;
+        return {
+            label,
+            identifiers: element['ISSN']?.filter((v, i, s) => { return s.indexOf(v) === i; }).map(e => { return { type: 'issn', value: e }; })
+        }
     }
     protected getPublisher(element: any): Publisher {
         return {label: element['publisher']};

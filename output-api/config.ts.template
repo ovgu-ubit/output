@@ -45,19 +45,19 @@ export default() : AppConfig => ({
     api_key_oam: 'xxxx',
     init_service: InitService,
     import_services: [
-        {path: 'bib', class: BibliographyImportService},
+//        {path: 'bib', class: BibliographyImportService},
         {path: 'crossref', class: CrossrefImportService},
-        {path: 'output1', class: Output1ImportService},
+//        {path: 'output1', class: Output1ImportService},
         {path: 'oam', class: OpenAccessMonitorImportService},
         {path: 'base', class: BASEImportService},
         {path: 'pubmed', class: PubMedImportService},
         {path: 'openalex', class: OpenAlexImportService},
-        {path: 'openalex', class: OpenAlexEnrichService},
     ],
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},
         {path: 'crossref', class: CrossrefEnrichService},
         {path: 'oam', class: OpenAccessMonitorEnrichService},
+        {path: 'openalex', class: OpenAlexEnrichService},
     ],
     check_services: [
         {path: 'pub_dupl', class: DOIandTitleDuplicateCheck},

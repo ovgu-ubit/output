@@ -18,6 +18,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { ConfigService } from '@nestjs/config';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class BibliographyImportService extends ApiImportOffsetService {
@@ -89,13 +90,12 @@ export class BibliographyImportService extends ApiImportOffsetService {
         let authors = element['co_authors'].length > 0 ? element['author'] + '; ' + element['co_authors'].split('|').join('; ') : element['author'];
         return authors;
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
+    protected getGreaterEntity(element: any): GreaterEntity {
         let issn = element['greater_entity_issn'];
-        if (issn) return [{ type: 'issn', value: issn }]
-        else return [];
-    }
-    protected getGreaterEntityName(element: any): string {
-        return element['greater_entity'];
+        return {
+            label: element['greater_entity'],
+            identifiers: issn? [{ type: 'issn', value: issn }]:undefined
+        };
     }
     protected getPublisher(element: any): Publisher {
         return {label: element['publisher']};

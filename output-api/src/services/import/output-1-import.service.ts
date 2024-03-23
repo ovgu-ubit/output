@@ -18,6 +18,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { ConfigService } from '@nestjs/config';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class Output1ImportService extends ApiImportOffsetService {
@@ -104,16 +105,16 @@ export class Output1ImportService extends ApiImportOffsetService {
     protected getAuthors(element: any): string {
         return element['authors'];
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
+    protected getGreaterEntity(element: any): GreaterEntity {
         let issns = [];
         let issne = element['issne'].toUpperCase();
         if (issne && issne.match(/.{4}\-.{4}/)) issns.push({ type: 'issn', value: issne });
         let issnp = element['issnp'].toUpperCase();
         if (issnp && issnp !== issne && issnp.match(/.{4}\-.{4}/)) issns.push({ type: 'issn', value: issnp });
-        return issns;
-    }
-    protected getGreaterEntityName(element: any): string {
-        return element['journal'];
+        return {
+            label: element['journal'],
+            identifiers: issns
+        }
     }
     protected getPublisher(element: any): Publisher {
         return {label: element['publisher']};

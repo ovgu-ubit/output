@@ -22,6 +22,7 @@ import { Invoice } from '../../entity/Invoice';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 /**
@@ -289,21 +290,14 @@ export class PubMedImportService extends AbstractImportService {
         }
         return res.slice(0, res.length - 2);
     }
-
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        if (element['Article']['Journal'] && element['Article']['Journal']['ISSN']) {
-            if (!Array.isArray(element['Article']['Journal']['ISSN'])) {
-                return [{
-                    type: 'issn',
-                    value: element['Article']['Journal']['ISSN']['_text']
-                }]
-            } else return element['Article']['Journal']['ISSN'].map(e => { return { type: 'issn', value: e['_text'] } })
+    protected getGreaterEntity(element: any): GreaterEntity {
+        return  {
+            label: element['Article']['Journal'] && element['Article']['Journal']['Title']? element['Article']['Journal']['Title']['_text']: '',
+            identifiers: element['Article']['Journal'] && element['Article']['Journal']['ISSN']? !Array.isArray(element['Article']['Journal']['ISSN'])? [{
+                type: 'issn',
+                value: element['Article']['Journal']['ISSN']['_text']
+            }] : element['Article']['Journal']['ISSN'].map(e => { return { type: 'issn', value: e['_text'] } }) : undefined
         }
-    }
-    protected getGreaterEntityName(element: any): string {
-        if (element['Article']['Journal'] && element['Article']['Journal']['Title']) {
-            return element['Article']['Journal']['Title']['_text'];
-        } else return ''
     }
     protected getPublisher(element: any): Publisher {
         return null;
