@@ -51,7 +51,7 @@ export class GreaterEntityService {
     }
 
     public async findOrSave(ge:GreaterEntity): Promise<GreaterEntity> {
-        if (!ge.label) return null;
+        if (!ge.label && !ge.identifiers) return null;
         let result = null;
         let ids2save = [];
         //1. find an existing entity
@@ -60,7 +60,7 @@ export class GreaterEntityService {
             for (let { type, value } of ge.identifiers) {
                 let id = await this.idRepository.findOne({
                     where: { value: ILike(value) },
-                    relations: { entity: true }
+                    relations: { entity: {identifiers:true} }
                 });
                 //if you find it, you got the entity
                 if (result && id && id.entity.id !== result.id) throw { origin: 'GE-Service', text: 'amibiguous id ' + id.value + ': ge ' + result.label + ' or ' + id.entity.label } as AppError;
@@ -68,7 +68,7 @@ export class GreaterEntityService {
                 else ids2save.push({ type, value });
             }
         }
-        if (!result) {
+        if (!result && ge.label) {
             //find via title
             let results = await this.repository.find({ where: { label: ILike(ge.label) } });
             if (results.length > 1) throw { origin: 'GE-Service', text: 'amibiguous GE title ' + ge.label } as AppError;
@@ -76,6 +76,12 @@ export class GreaterEntityService {
         }
         //2. if found, possibly enrich
         if (result) {
+            //doaj info
+            let flag = false;
+            if (ge.doaj_since && !result.doaj_since) {result.doaj_since = ge.doaj_since;flag=true;}
+            if (ge.doaj_until && result.doaj_since && !result.doaj_until) {result.doaj_until = ge.doaj_until;flag=true;}
+            if (flag) await this.repository.save(result)
+
             //find associated ids
             let ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
             if (ge.identifiers && ge.identifiers.length > 0) {

@@ -12,6 +12,7 @@ import { OpenAccessMonitorImportService } from "./src/services/import/open-acces
 import { OpenAlexImportService } from "./src/services/import/openalex-import.service";
 import { OpenAlexEnrichService } from "./src/services/import/openalex-enrich.service";
 import { OpenAPCEnrichService } from "./src/services/import/openapc-enrich.service";
+import { DOAJEnrichService } from "./src/services/import/doaj-enrich.service";
 import { Output1ImportService } from "./src/services/import/output-1-import.service";
 import { PubMedImportService } from "./src/services/import/pubmed-import";
 import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.service";
@@ -58,6 +59,7 @@ export default() : AppConfig => ({
         {path: 'crossref', class: CrossrefEnrichService},
         {path: 'oam', class: OpenAccessMonitorEnrichService},
         {path: 'openalex', class: OpenAlexEnrichService},
+        {path: 'doaj', class: DOAJEnrichService}
     ],
     check_services: [
         {path: 'pub_dupl', class: DOIandTitleDuplicateCheck},
