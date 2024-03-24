@@ -232,7 +232,7 @@ export abstract class AbstractImportService {
         let funder_ents: Funder[] = []
         if (funders) {
             for (let funder of funders) {
-                let funder_ent = await this.funderService.findOrSave(funder.label, funder.doi).catch(e => {
+                let funder_ent = await this.funderService.findOrSave(funder).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
                 });
                 if (funder_ent) funder_ents.push(funder_ent);
@@ -245,7 +245,7 @@ export abstract class AbstractImportService {
         let publisher: Publisher;
         let publisher_ent;
         if (publisher_obj) {
-            publisher_ent = await this.publisherService.findOrSave(publisher_obj.label, publisher_obj.doi_prefixes, publisher_obj.location).catch(e => {
+            publisher_ent = await this.publisherService.findOrSave(publisher_obj).catch(e => {
                 this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
         }
@@ -501,13 +501,13 @@ export abstract class AbstractImportService {
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
                     let publisher = await this.getPublisher(element);
-                    if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
+                    if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
                 let publisher = await this.getPublisher(element);
-                if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher.label, publisher.doi_prefixes, publisher.location);
+                if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher);
                 if (orig.publisher) fields.push('publisher')
                 break;
         }
@@ -544,7 +544,7 @@ export abstract class AbstractImportService {
             let funder_ents: Funder[] = []
             if (funders) {
                 for (let funder of funders) {
-                    let funder_ent = await this.funderService.findOrSave(funder.label, funder.doi).catch(e => {
+                    let funder_ent = await this.funderService.findOrSave(funder).catch(e => {
                         this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text: `${e['text']} for publication ${orig.id}, must be checked manually` })
                     });
                     if (funder_ent) funder_ents.push(funder_ent);
