@@ -21,6 +21,7 @@ import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 /**
@@ -210,15 +211,21 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.authors.startsWith('$')) return this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         return element[this.importConfig.mapping.authors];
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
+    getGreaterEntityIdentifier(element: any): Identifier[] {
         if (!this.importConfig.mapping.id_ge) return null;
         if (this.importConfig.mapping.id_ge.startsWith('$')) return [{ type: this.importConfig.id_ge_type, value: this.importConfig.mapping.id_ge.slice(1, this.importConfig.mapping.id_ge.length) }];
         return [{ type: this.importConfig.id_ge_type, value: element[this.importConfig.mapping.id_ge] }];
     }
-    protected getGreaterEntityName(element: any): string {
+    getGreaterEntityName(element: any): string {
         if (!this.importConfig.mapping.greater_entity) return null;
         if (this.importConfig.mapping.greater_entity.startsWith('$')) return this.importConfig.mapping.greater_entity.slice(1, this.importConfig.mapping.greater_entity.length);
         return element[this.importConfig.mapping.greater_entity];
+    }
+    protected getGreaterEntity(element: any): GreaterEntity {
+        return {
+            label: this.getGreaterEntityName(element),
+            identifiers: this.getGreaterEntityIdentifier(element)
+        }
     }
     protected getPublisher(element: any): Publisher {
         if (!this.importConfig.mapping.publisher) return null;

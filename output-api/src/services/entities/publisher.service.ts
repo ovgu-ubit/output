@@ -41,16 +41,19 @@ export class PublisherService {
         return publisher;
     }
 
-    public async findOrSave(title: string, doi_prefixes?: PublisherDOI[], location?: string): Promise<Publisher> {
-        if (!title) return null;
-        let label = await this.identifyPublisher(title);
-        let publisher: Publisher;
-        if (title) publisher = await this.repository.findOne({ where: { label: ILike(label) } })
-        if (!publisher && doi_prefixes) {
-            publisher = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
+    public async findOrSave(publisher:Publisher): Promise<Publisher> {
+        if (!publisher.label) return null;
+        let label = await this.identifyPublisher(publisher.label);
+        let publisher_ent: Publisher;
+        publisher_ent = await this.repository.findOne({ where: { label: ILike(label) } })
+        if (!publisher_ent && publisher.doi_prefixes) {
+            publisher_ent = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(publisher.doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
         }
-        if (publisher) return publisher;
-        else return this.repository.save({ label, location, doi_prefixes });
+        if (publisher_ent) {
+            if (!publisher_ent.location && publisher.location) publisher_ent = await this.repository.save({ id:publisher_ent.id, location: publisher.location });
+            return publisher_ent;
+        }
+        else return this.repository.save({ label, location:publisher.location, doi_prefixes:publisher.doi_prefixes });
     }
 
     public async identifyPublisher(title: string) {

@@ -21,6 +21,7 @@ import { ReportItemService } from '../report-item.service';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class BASEImportService extends ApiImportOffsetService {
@@ -106,11 +107,10 @@ export class BASEImportService extends ApiImportOffsetService {
         let res = elem.reduce((v, c) => v + c + ';', '');
         return res.slice(0, res.length - 1)
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        return [];
-    }
-    protected getGreaterEntityName(element: any): string {
-        return element['dcsource']
+    protected getGreaterEntity(element: any): GreaterEntity {
+        return {
+            label: element['dcsource']
+        }
     }
     protected getPublisher(element: any): Publisher {
         return element['dcpublisher'] && element['dcpublisher'].length > 0 ? { label: element['dcpublisher'][0] } : null;

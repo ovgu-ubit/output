@@ -40,17 +40,17 @@ export class FunderService {
         return funder;
     }
 
-    public async findOrSave(title: string, doi?: string): Promise<Funder> {
-        if (!title) return null;
-        let label = await this.identifyFunder(title);
-        let funder: Funder;
-        if (doi) funder = await this.repository.findOne({ where: { doi: ILike(doi) } });
-        if (!funder) {
-            funder = await this.repository.findOne({ where: { label: ILike(label) } });
-            if (funder && !funder.doi && doi) funder = await this.repository.save({ id: funder.id, doi });
+    public async findOrSave(funder:Funder): Promise<Funder> {
+        if (!funder.label && !funder.doi) return null;
+        let label = await this.identifyFunder(funder.label);
+        let funder_ent: Funder;
+        if (funder.doi) funder_ent = await this.repository.findOne({ where: { doi: ILike(funder.doi) } });
+        if (!funder_ent) {
+            funder_ent = await this.repository.findOne({ where: { label: ILike(label) } });
+            if (funder_ent && !funder_ent.doi && funder.doi) funder_ent = await this.repository.save({ id: funder_ent.id, doi: funder.doi });
         }
-        if (funder) return funder;
-        else return await this.repository.save({ label, doi }).catch(e => { throw { origin: 'funder-service', text: `Funder ${label} with DOI ${doi} could not be inserted` }; });
+        if (funder_ent) return funder_ent;
+        else return await this.repository.save({ label, doi: funder.doi }).catch(e => { throw { origin: 'funder-service', text: `Funder ${label} with DOI ${funder.doi} could not be inserted` }; });
     }
 
     public async identifyFunder(title: string) {

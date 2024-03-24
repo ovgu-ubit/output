@@ -12,6 +12,7 @@ import { OpenAccessMonitorImportService } from "./src/services/import/open-acces
 import { OpenAlexImportService } from "./src/services/import/openalex-import.service";
 import { OpenAlexEnrichService } from "./src/services/import/openalex-enrich.service";
 import { OpenAPCEnrichService } from "./src/services/import/openapc-enrich.service";
+import { DOAJEnrichService } from "./src/services/import/doaj-enrich.service";
 import { Output1ImportService } from "./src/services/import/output-1-import.service";
 import { PubMedImportService } from "./src/services/import/pubmed-import";
 import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.service";
@@ -45,19 +46,20 @@ export default() : AppConfig => ({
     api_key_oam: 'xxxx',
     init_service: InitService,
     import_services: [
-        {path: 'bib', class: BibliographyImportService},
+//        {path: 'bib', class: BibliographyImportService},
         {path: 'crossref', class: CrossrefImportService},
-        {path: 'output1', class: Output1ImportService},
+//        {path: 'output1', class: Output1ImportService},
         {path: 'oam', class: OpenAccessMonitorImportService},
         {path: 'base', class: BASEImportService},
         {path: 'pubmed', class: PubMedImportService},
         {path: 'openalex', class: OpenAlexImportService},
-        {path: 'openalex', class: OpenAlexEnrichService},
     ],
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},
         {path: 'crossref', class: CrossrefEnrichService},
         {path: 'oam', class: OpenAccessMonitorEnrichService},
+        {path: 'openalex', class: OpenAlexEnrichService},
+        {path: 'doaj', class: DOAJEnrichService}
     ],
     check_services: [
         {path: 'pub_dupl', class: DOIandTitleDuplicateCheck},

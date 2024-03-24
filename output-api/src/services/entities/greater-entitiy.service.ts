@@ -50,17 +50,17 @@ export class GreaterEntityService {
         return ge;
     }
 
-    public async findOrSave(title: string, identifier?: Identifier[]): Promise<GreaterEntity> {
-        if (!title) return null;
+    public async findOrSave(ge:GreaterEntity): Promise<GreaterEntity> {
+        if (!ge.label && !ge.identifiers) return null;
         let result = null;
         let ids2save = [];
         //1. find an existing entity
         //find via identifier
-        if (identifier && identifier.length > 0) {
-            for (let { type, value } of identifier) {
+        if (ge.identifiers && ge.identifiers.length > 0) {
+            for (let { type, value } of ge.identifiers) {
                 let id = await this.idRepository.findOne({
                     where: { value: ILike(value) },
-                    relations: { entity: true }
+                    relations: { entity: {identifiers:true} }
                 });
                 //if you find it, you got the entity
                 if (result && id && id.entity.id !== result.id) throw { origin: 'GE-Service', text: 'amibiguous id ' + id.value + ': ge ' + result.label + ' or ' + id.entity.label } as AppError;
@@ -68,24 +68,30 @@ export class GreaterEntityService {
                 else ids2save.push({ type, value });
             }
         }
-        if (!result) {
+        if (!result && ge.label) {
             //find via title
-            let results = await this.repository.find({ where: { label: ILike(title) } });
-            if (results.length > 1) throw { origin: 'GE-Service', text: 'amibiguous GE title ' + title } as AppError;
+            let results = await this.repository.find({ where: { label: ILike(ge.label) } });
+            if (results.length > 1) throw { origin: 'GE-Service', text: 'amibiguous GE title ' + ge.label } as AppError;
             else if (results.length === 1) result = results[0];
         }
         //2. if found, possibly enrich
         if (result) {
+            //doaj info
+            let flag = false;
+            if (ge.doaj_since && !result.doaj_since) {result.doaj_since = ge.doaj_since;flag=true;}
+            if (ge.doaj_until && result.doaj_since && !result.doaj_until) {result.doaj_until = ge.doaj_until;flag=true;}
+            if (flag) await this.repository.save(result)
+
             //find associated ids
             let ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
-            if (identifier && identifier.length > 0) {
-                ids2save = identifier.filter(i => !ids.find(e => e.value === i.value));
+            if (ge.identifiers && ge.identifiers.length > 0) {
+                ids2save = ge.identifiers.filter(i => !ids.find(e => e.value === i.value));
             }
             if (ids2save.length > 0) await this.idRepository.save(ids2save.map(e => { return { ...e, entity: result } }));
             return result;
         } else { //3. if not found, save
-            result = await this.repository.save({ label: title });
-            if (result && identifier) await this.idRepository.save(identifier.map(e => { return { ...e, entity: result } }));
+            result = await this.repository.save({ label: ge.label });
+            if (result && ge.identifiers) await this.idRepository.save(ge.identifiers.map(e => { return { ...e, entity: result } }));
             return result;
         }
     }

@@ -20,6 +20,7 @@ import { LanguageService } from '../entities/language.service';
 import { Invoice } from '../../entity/Invoice';
 import { CostType } from '../../entity/CostType';
 import { Publisher } from '../../entity/Publisher';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
@@ -124,18 +125,16 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         }
         return res.slice(0, res.length - 2);
     }
-    protected getGreaterEntityIdentifier(element: any): Identifier[] {
-        if (element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal')) {
-            return element['primary_location']['source']['issn']?.map(e => {
+    protected getGreaterEntity(element: any): GreaterEntity {
+        return {
+            label: element['primary_location']['source']? element['primary_location']['source']['display_name']: undefined,
+            identifiers: element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal')? element['primary_location']['source']['issn']?.map(e => {
                 return {
                     type: 'issn',
                     value: e
                 }
-            })
+            }):undefined
         }
-    }
-    protected getGreaterEntityName(element: any): string {
-        return element['primary_location']['source']? element['primary_location']['source']['display_name']: undefined;
     }
     protected getPublisher(element: any): Publisher {
         return element['primary_location']['source']? {label: element['primary_location']['source']['host_organization_name']} : null;
