@@ -44,7 +44,7 @@ export class FilterViewComponent implements OnInit {
     { key: 'dataSource', label: 'Datenquelle' },
     { key: 'language', label: 'Sprache' },
     { key: 'secound_pub', label: 'Zweitveröffentlichung' },
-    { key: 'add_info', label: 'Zusatzinformationen' },
+    { key: 'add_info', label: 'Weitere Informationen' },
     { key: 'locked', label: 'Gesperrt' },
     { key: 'status', label: 'Status' },
     { key: 'pub_type', label: 'Publikationstyp' },
