@@ -17,6 +17,7 @@ export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
 
     funder = false;
+    author = false;
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -315,6 +316,7 @@ export class PublicationService {
 
     filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
         this.funder = false;
+        this.author = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -368,13 +370,20 @@ export class PublicationService {
             case 'pub_type':
             case 'publisher':
             case 'contract':
+            case 'funder':
+            case 'institute':
                 where = key + ".label = '" + value + "'";
+                if (key == 'funder') this.funder = true;
                 break;
             case 'author_id':
                 where = '\"authorPublications\".\"authorId\"=' + value;
                 break;
             case 'author_id_corr':
                 where = '\"authorPublications\".\"authorId\"=' + value + ' and \"authorPublications\".corresponding';
+                break;
+            case 'inst_authors':
+                this.author = true;
+                where = "concat(author.last_name, ', ' ,author.first_name)  =" + value;
                 break;
             case 'contract_id':
                 where = 'contract.id=' + value;
@@ -409,7 +418,14 @@ export class PublicationService {
             case 'pub_type':
             case 'publisher':
             case 'contract':
+            case 'funder':
+            case 'institute':
+                if (key == 'funder') this.funder = true;
                 where = key + ".label ILIKE '%" + value + "%'";
+                break;
+            case 'inst_authors':
+                this.author = true;
+                where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '%" + value + "%'";
                 break;
             default:
                 where = "publication." + key + " ILIKE '%" + value + "%'";
@@ -425,7 +441,14 @@ export class PublicationService {
             case 'pub_type':
             case 'publisher':
             case 'contract':
+            case 'funder':
+            case 'institute':
+                if (key == 'funder') this.funder = true;
                 where = key + ".label ILIKE '" + value + "%'";
+                break;
+            case 'inst_authors':
+                this.author = true;
+                where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '" + value + "%'";
                 break;
             default:
                 where = "publication." + key + " ILIKE '" + value + "%'";
@@ -441,6 +464,9 @@ export class PublicationService {
             case 'pub_type':
             case 'publisher':
             case 'contract':
+            case 'funder':
+            case 'institute':
+                if (key == 'funder') this.funder = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':

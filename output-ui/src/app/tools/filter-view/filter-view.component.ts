@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit,ViewChild } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Publication } from '../../../../../output-interfaces/Publication';
@@ -15,9 +15,9 @@ import { MatChipListbox } from '@angular/material/chips';
 export class FilterViewComponent implements OnInit {
 
   form: FormGroup;
-  filters: {path:string, label:string}[];
-  selected=[];
-  
+  filters: { path: string, label: string }[];
+  selected = [];
+
   @ViewChild(MatChipListbox) chips: MatChipListbox;
 
   joinOps: { op: JoinOperation, label: string, showFirst?: boolean }[] = [
@@ -25,31 +25,37 @@ export class FilterViewComponent implements OnInit {
     { op: JoinOperation.OR, label: 'Oder' },
     { op: JoinOperation.AND_NOT, label: '(Und) Nicht', showFirst: true }
   ]
-  compareOps: { op: CompareOperation, label: string, type?: string|string[] }[] = [
-    { op: CompareOperation.INCLUDES, label: 'enthält' },
-    { op: CompareOperation.EQUALS, label: 'ist genau', type: ['number','date']  },
-    { op: CompareOperation.STARTS_WITH, label: 'beginnt mit' },
-    { op: CompareOperation.GREATER_THAN, label: 'größer als', type: ['number','date'] },
-    { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: ['number','date'] },
+  compareOps: { op: CompareOperation, label: string, type: string[] }[] = [
+    { op: CompareOperation.INCLUDES, label: 'enthält', type: ['string'] },
+    { op: CompareOperation.EQUALS, label: 'ist genau', type: ['string', 'number', 'date', 'boolean'] },
+    { op: CompareOperation.STARTS_WITH, label: 'beginnt mit', type: ['string'] },
+    { op: CompareOperation.GREATER_THAN, label: 'größer als', type: ['number', 'date'] },
+    { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: ['number', 'date'] },
   ]
 
   keys: { key: string, label: string, type?: string }[] = [
     { key: 'id', label: 'ID', type: 'number' },
     { key: 'title', label: 'Titel' },
     { key: 'doi', label: 'DOI' },
-    { key: 'authors', label: 'Autoren' },
-    { key: 'pub_date', label: 'Publikationsdatum', type:'date' },
+    { key: 'authors', label: 'Autor*innen' },
+    { key: 'inst_authors', label: 'Autor*innen der Institution' },
+    { key: 'institute', label: 'Instituten' },
+    { key: 'pub_date', label: 'Publikationsdatum', type: 'date' },
+    { key: 'pub_date_accepted', label: 'Datum der Akzeptanz', type: 'date' },
     { key: 'greater_entity', label: 'Größere Einheit' },
     { key: 'oa_category', label: 'OA-Kategorie' },
     { key: 'dataSource', label: 'Datenquelle' },
     { key: 'language', label: 'Sprache' },
     { key: 'secound_pub', label: 'Zweitveröffentlichung' },
     { key: 'add_info', label: 'Weitere Informationen' },
-    { key: 'locked', label: 'Gesperrt' },
-    { key: 'status', label: 'Status' },
+    { key: 'locked', label: 'Gesperrt', type: 'boolean' },
+    { key: 'status', label: 'Status', type: 'number' },
     { key: 'pub_type', label: 'Publikationstyp' },
     { key: 'publisher', label: 'Verlag' },
     { key: 'contract', label: 'Vertrag' },
+    { key: 'funder', label: 'Förderer' },
+    { key: 'edit_date', label: 'Letzte Bearbeitung', type: 'date' },
+    { key: 'import_date', label: 'Importdatum', type: 'date' },
   ]
 
   constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService,
@@ -60,6 +66,18 @@ export class FilterViewComponent implements OnInit {
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
+    this.publicationService.getOptionalFields().subscribe({
+      next: data => {
+        if (data['editors']) this.keys.push({ key: 'editors', label: 'Herausgeber*innen' })
+        if (data['abstract']) this.keys.push({ key: 'abstract', label: 'Abstract' })
+        if (data['citation']) this.keys.push({ key: 'citation', label: 'Zitationsangabe' })
+        if (data['page_count']) this.keys.push({ key: 'page_count', label: 'Seitenzahl', type: 'number' })
+        if (data['peer_reviewed']) this.keys.push({ key: 'peer_reviewed', label: 'Peer-Reviewed', type: 'boolean' })
+        if (data['pub_date_print']) this.keys.push({ key: 'pub_date_print', label: 'Publikationsdatum (print)', type: 'date' })
+        if (data['pub_date_submitted']) this.keys.push({ key: 'pub_date_submitted', label: 'Datum der Einreichung', type: 'date' })
+      }
+    })
+
     this.publicationService.getFilters().subscribe({
       next: data => {
         this.filters = data;
@@ -84,7 +102,7 @@ export class FilterViewComponent implements OnInit {
         i++;
       }
     }
-    
+
   }
 
   getFilters() {
@@ -121,18 +139,18 @@ export class FilterViewComponent implements OnInit {
 
   action(): void {
     this.form.markAllAsTouched();
-    
+
     let chips = [];
     if (!Array.isArray(this.chips.selected)) chips = [this.chips.selected.value]
     else chips = this.chips.selected.map(e => e.value);
 
     if (this.form.invalid && chips.length === 0) return;
 
-    this.dialogRef.close({filter: this.getFilter(), paths: chips})
+    this.dialogRef.close({ filter: this.getFilter(), paths: chips })
   }
 
   reset(): void {
-    this.dialogRef.close({filter: {expressions: []}, paths: []})
+    this.dialogRef.close({ filter: { expressions: [] }, paths: [] })
   }
 
   resetForm(): void {
@@ -151,11 +169,11 @@ export class FilterViewComponent implements OnInit {
 
     for (let filter of this.getFiltersControls()) {
       if (!filter.get('field').value || !filter.get('value').value) continue;
-      let expression:SearchFilterExpression = {
-        op: filter.get('join_operator').value && filter.get('join_operator').value !== 'null'? filter.get('join_operator').value : JoinOperation.AND,
+      let expression: SearchFilterExpression = {
+        op: filter.get('join_operator').value && filter.get('join_operator').value !== 'null' ? filter.get('join_operator').value : JoinOperation.AND,
         key: filter.get('field').value,
         comp: filter.get('compare_operator').value,
-        value: filter.get('value').value
+        value: this.getValue(filter.get('field').value, filter.get('value').value)
       }
       res.expressions.push(expression)
     }
@@ -163,15 +181,24 @@ export class FilterViewComponent implements OnInit {
     return res;
   }
 
-  display(idx:number, op:{ op: CompareOperation, label: string, type?:string|string[] }): boolean {
-    if (!this.getFiltersControls()[idx].get('field').value) return true;
-    let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    if (!Array.isArray(op.type) && key.type !== op.type) return false;
-    else if (Array.isArray(op.type) && !op.type.find(e => e!==key.type)) return false;
-    return true;
+  getValue(key, value): any {
+    if (key === 'locked') {
+      value = value + '';
+      if (value.toLowerCase().includes('true') || value.toLowerCase().includes('wahr') || value.toLowerCase().includes('1') || value.toLowerCase().includes('ja')) return true;
+      else return false;
+    }
+    return value;
   }
 
-  date(idx:number) {
+  display(idx: number, op: { op: CompareOperation, label: string, type?: string[] }): boolean {
+    if (!this.getFiltersControls()[idx].get('field').value) return true;
+    let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
+    let type = key.type? key.type : 'string';
+    if (op.type.find(e => e === type)) return true;
+    else return false;
+  }
+
+  date(idx: number) {
     if (!this.getFiltersControls()[idx].get('field').value) return false;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
     return (key.type == 'date' || key.type?.includes('date'))
