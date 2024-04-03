@@ -379,11 +379,11 @@ export class PublicationService {
                 where = '\"authorPublications\".\"authorId\"=' + value;
                 break;
             case 'author_id_corr':
-                where = '\"authorPublications\".\"authorId\"=' + value + ' and \"authorPublications\".corresponding';
+                where = "\"authorPublications\".\"authorId\"= " + value + " and \"authorPublications\".corresponding";
                 break;
             case 'inst_authors':
                 this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  =" + value;
+                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value +"'";
                 break;
             case 'contract_id':
                 where = 'contract.id=' + value;
@@ -405,7 +405,7 @@ export class PublicationService {
                 where = 'publisher.id=' + value;
                 break;
             default:
-                where = "publication." + key + " = " + value;
+                where = "publication." + key + " = '" + value + "'";
         }
         return where;
     }

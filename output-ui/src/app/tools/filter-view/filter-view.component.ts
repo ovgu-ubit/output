@@ -39,7 +39,7 @@ export class FilterViewComponent implements OnInit {
     { key: 'doi', label: 'DOI' },
     { key: 'authors', label: 'Autor*innen' },
     { key: 'inst_authors', label: 'Autor*innen der Institution' },
-    { key: 'institute', label: 'Instituten' },
+    { key: 'institute', label: 'Institute' },
     { key: 'pub_date', label: 'Publikationsdatum', type: 'date' },
     { key: 'pub_date_accepted', label: 'Datum der Akzeptanz', type: 'date' },
     { key: 'greater_entity', label: 'Größere Einheit' },
