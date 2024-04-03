@@ -4,7 +4,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { EMPTY, Observable, concatWith, map, startWith } from 'rxjs';
+import { EMPTY, Observable, concatWith, map, merge, startWith } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
@@ -127,121 +127,112 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.controls.oa_status.disable();
     this.form.controls.is_journal_oa.disable();
     this.form.controls.best_oa_host.disable();
-    this.loading = true;
   }
 
   ngOnInit(): void {
-    this.publicationService.getOptionalFields().subscribe({
-      next: data => {
+    let ob$ = this.publicationService.getOptionalFields().pipe(map(data => {
         this.optional_fields = data;
       }
-    })
-  }
-
-  loadData(notLoadPub: boolean) {
+    ));
     if (this.data['id']) {
-      if (!notLoadPub) this.publicationService.getPublication(this.data['id']).subscribe({
-        next: data => {
-          this.edit = true;
-          this.pub = data;
-          this.form.patchValue(data);
-          this.pub_type = this.pub.pub_type ? this.pub.pub_type.id : -1;
-          this.oa_cat = this.pub.oa_category ? this.pub.oa_category.id : -1;
-          this.language = this.pub.language ? this.pub.language.id : -1;
-          if (this.pub.greater_entity) this.form.get('ge').setValue(this.pub.greater_entity.label)
-          if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
-          if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
-          if (this.pub?.locked) this.setLock(true);
-          if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
-          if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
-            this.disable();
-            this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
-              duration: 5000,
-              panelClass: [`warning-snackbar`],
-              verticalPosition: 'top'
-            })
-          }
-          this.loading = false;
-        }
-      })
-    } else { //adding new publication
+      this.edit = true;
+      this.loading = true;
+      ob$ = merge(ob$, this.loadPub(this.data['id']));
+    } else {
       this.edit = false;
       this.pub = {
         authorPublications: []
       };
-      this.loading = false;
     }
-    this.pubTypeService.getPubTypes().subscribe({
-      next: data => {
-        this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
-      }
-    })
-    this.oaService.getOACategories().subscribe({
-      next: data => {
-        this.oa_categories = data.sort((a, b) => a.label.localeCompare(b.label));
-      }
-    })
-    this.geService.getGreaterEntities().subscribe({
-      next: data => {
-        this.greater_entities = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.filtered_greater_entities = this.form.get('ge').valueChanges.pipe(
-          startWith(this.pub?.greater_entity?.label),
-          map(value => this._filterGE(value || '')),
-        );
-      }
-    })
-    this.publisherService.getPublishers().subscribe({
-      next: data => {
-        this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.filtered_publishers = this.form.get('publ').valueChanges.pipe(
-          startWith(this.pub?.publisher?.label),
-          map(value => this._filterPublisher(value || '')),
-        );
-      }
-    })
-    this.contractService.getContracts().subscribe({
-      next: data => {
-        this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.filtered_contracts = this.form.get('contr').valueChanges.pipe(
-          startWith(this.pub?.contract?.label),
-          map(value => this._filterContract(value || '')),
-        );
-      }
-    })
-    this.authorService.getAuthors().subscribe({
-      next: data => {
-        this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
-        this.filteredAuthors = this.form.get('authors_inst').valueChanges.pipe(
-          startWith(''),
-          //map(value => typeof value === 'string' ? value : value.name),
-          map((name) => {
-            return name ? this._filter(name) : this.authors.filter(author => !this.pub?.authorPublications.find(e => e.author.last_name === author.last_name));
-          }));
-      }
-    })
-    this.funderService.getFunders().subscribe({
-      next: data => {
-        this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.filteredFunders = this.form.get('funder').valueChanges.pipe(
-          startWith(''),
-          //map(value => typeof value === 'string' ? value : value.name),
-          map((name) => {
-            return this._filterFunders(name);
-          }));
-      }
-    })
-    this.languageService.getLanguages().subscribe({
-      next: data => {
-        this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
+    ob$ = merge(ob$, this.loadMasterData());
+    
+    ob$.subscribe({
+      complete: () => {
       }
     })
   }
 
+  loadPub(id:number) {
+    return this.publicationService.getPublication(id).pipe(map(data => {
+      this.pub = data;
+      this.form.patchValue(data);
+      this.form.get('oa_cat').setValue(this.pub.oa_category? this.pub.oa_category.id : -1)
+      this.form.get('pub_type').setValue(this.pub.pub_type? this.pub.pub_type.id : -1)
+      this.form.get('language').setValue(this.pub.language? this.pub.language.id : -1)
+      if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
+      
+      if (this.pub?.locked) this.setLock(true);
+      if (this.pub.greater_entity) this.form.get('ge').setValue(this.pub.greater_entity.label)
+      if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
+      if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
+      
+      if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
+        this.disable();
+        this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+          duration: 5000,
+          panelClass: [`warning-snackbar`],
+          verticalPosition: 'top'
+        })
+      } else if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+        this.disable();
+      }
+      this.loading = false;
+    }));
+  }
+
+  loadMasterData() {
+    let ob$ = this.pubTypeService.getPubTypes().pipe(map(data => {
+      this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
+    }))
+    ob$ = merge(ob$, this.oaService.getOACategories().pipe(map(data => {
+      this.oa_categories = data.sort((a, b) => a.label.localeCompare(b.label));
+    })))
+    ob$ = merge(ob$, this.languageService.getLanguages().pipe(map(data => {
+      this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
+    })))
+    ob$ = merge(ob$, this.geService.getGreaterEntities().pipe(map(data => {
+      this.greater_entities = data.sort((a, b) => a.label.localeCompare(b.label));
+      this.filtered_greater_entities = this.form.get('ge').valueChanges.pipe(
+        startWith(this.pub?.greater_entity?.label),
+        map(value => this._filterGE(value || '')),
+      );
+    })))
+    ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(data => {
+      this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
+      this.filtered_publishers = this.form.get('publ').valueChanges.pipe(
+        startWith(this.pub?.publisher?.label),
+        map(value => this._filterPublisher(value || '')),
+      );
+    })))
+    ob$ = merge(ob$, this.contractService.getContracts().pipe(map(data => {
+      this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
+      this.filtered_contracts = this.form.get('contr').valueChanges.pipe(
+        startWith(this.pub?.contract?.label),
+        map(value => this._filterContract(value || '')),
+      );
+    })))
+    ob$ = merge(ob$, this.authorService.getAuthors().pipe(map(data => {
+      this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
+      this.filteredAuthors = this.form.get('authors_inst').valueChanges.pipe(
+        startWith(''),
+        //map(value => typeof value === 'string' ? value : value.name),
+        map((name) => {
+          return name ? this._filter(name) : this.authors.filter(author => !this.pub?.authorPublications.find(e => e.author.last_name === author.last_name));
+        }));
+    })))
+    ob$ = merge(ob$, this.funderService.getFunders().pipe(map(data => {
+      this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
+      this.filteredFunders = this.form.get('funder').valueChanges.pipe(
+        startWith(''),
+        //map(value => typeof value === 'string' ? value : value.name),
+        map((name) => {
+          return this._filterFunders(name);
+        }));
+    })))
+    return ob$;
+  }
+
   ngAfterViewInit(): void {
-    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
-      this.disable();
-    }
-    this.loadData(false);
   }
 
   disable() {
@@ -338,7 +329,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 if (this.pub.id) this.pub.authorPublications.push({ author: data, authorId: data.id, publicationId: this.pub.id })
                 else this.pub.authorPublications.push({ author, authorId: author.id })
                 this.form.get('authors_inst').setValue('');
-                this.loadData(true);
+                this.loadMasterData().subscribe();
               }
             })
           }
@@ -382,7 +373,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   })
                   this.pub.publisher = data[0];
                   this.form.get('publ').setValue(this.pub.publisher.label)
-                  this.loadData(true);
+                  this.loadMasterData().subscribe();
                 }
               })
             }
@@ -407,7 +398,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               })
               this.pub.publisher = data[0];
               this.form.get('publ').setValue(this.pub.publisher.label)
-              this.loadData(true);
+              this.loadMasterData().subscribe();
             }
           })
         } else if (dialogResult && dialogResult.id) {
@@ -451,7 +442,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   })
                   this.pub.contract = data[0];
                   this.form.get('contr').setValue(this.pub.contract.label)
-                  this.loadData(true);
+                  this.loadMasterData().subscribe();
                 }
               })
             }
@@ -476,7 +467,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               })
               this.pub.contract = data[0];
               this.form.get('contr').setValue(this.pub.contract.label)
-              this.loadData(true);
+              this.loadMasterData().subscribe();
             }
           })
         } else if (dialogResult && dialogResult.id) {
@@ -511,7 +502,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 verticalPosition: 'top'
               })
               this.pub.funders.push(data[0])
-              this.loadData(true);
+              this.loadMasterData().subscribe();
             }
           })
         }
@@ -560,7 +551,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                   })
                   this.pub.greater_entity = data[0];
                   this.form.get('ge').setValue(this.pub.greater_entity.label)
-                  this.loadData(true);
+                  this.loadMasterData().subscribe();
                 }
               })
             }
@@ -585,7 +576,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               })
               this.pub.greater_entity = data[0];
               this.form.get('ge').setValue(this.pub.greater_entity.label)
-              this.loadData(true);
+              this.loadMasterData().subscribe();
             }
           })
         } else if (dialogResult && dialogResult.id) {

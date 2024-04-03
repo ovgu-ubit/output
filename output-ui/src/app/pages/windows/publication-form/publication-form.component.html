@@ -128,7 +128,8 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Publikationstyp</mat-label>
-                    <mat-select [(value)]="this.pub_type" formControlName="pub_type">
+                    <mat-select formControlName="pub_type">
+                        <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let pub_type of this.pub_types"
                             [value]="pub_type.id">{{pub_type.label}}</mat-option>
                     </mat-select>
@@ -155,7 +156,7 @@
                     </mat-autocomplete>
                 </mat-form-field>
 
-                <mat-checkbox formControlName="peer_reviewed" *ngIf="this.optional_fields.peer_reviewed">Peer-reviewed?</mat-checkbox>
+                <mat-checkbox formControlName="peer_reviewed" *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Verlag</mat-label>
@@ -183,7 +184,7 @@
                         color="accent"></mat-datepicker>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.pub_date_print">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_print">
                     <mat-label>Publikationsdatum (print)</mat-label>
                     <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
                     <mat-hint>T.M.JJJJ</mat-hint>
@@ -201,7 +202,7 @@
                         startView="year" color="accent"></mat-datepicker>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.pub_date_submitted">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_submitted">
                     <mat-label>Datum der Einreichung</mat-label>
                     <input matInput [matDatepicker]="picker4" formControlName="pub_date_submitted">
                     <mat-hint>T.M.JJJJ</mat-hint>
@@ -213,22 +214,23 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Sprache</mat-label>
-                    <mat-select [(value)]="this.language" formControlName="language">
+                    <mat-select formControlName="language">
+                        <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.citation">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                     <mat-label>Zitationsangabe</mat-label>
                     <input matInput [type]="'text'" placeholder="Zitationsangabe" formControlName="citation" />
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.page_count">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
                     <mat-label>Seitenzahl</mat-label>
                     <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields.abstract">
+                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
                     <mat-label>Abstract</mat-label>
                     <textarea matInput [type]="'text'" placeholder="Abstract" formControlName="abstract"></textarea>
                 </mat-form-field>
@@ -247,7 +249,8 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>OA-Kategorie</mat-label>
-                    <mat-select [(value)]="this.oa_cat" formControlName="oa_cat">
+                    <mat-select formControlName="oa_cat">
+                        <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let oa_cat of this.oa_categories"
                             [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
                     </mat-select>
@@ -281,7 +284,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Beste OA Lizenz</mat-label>
-                    <mat-select formControlName="best_oa_license" formControlName="best_oa_license">
+                    <mat-select formControlName="best_oa_license">
                         <mat-option [value]="null"></mat-option>
                         <mat-option *ngFor="let value of this.licenses" [value]="value">{{value}}</mat-option>
                     </mat-select>
