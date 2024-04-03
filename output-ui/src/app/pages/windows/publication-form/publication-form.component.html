@@ -49,6 +49,12 @@
             </a>
         </mat-form-field>
 
+        <mat-form-field appearance="fill" style="width: 100%;">
+            <mat-label>Weitere Informationen</mat-label>
+            <textarea matInput [type]="'text'" placeholder="Informationen"
+                formControlName="add_info"></textarea>
+        </mat-form-field>
+
         <mat-accordion multi="true">
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
@@ -380,12 +386,6 @@
 
                     </mat-panel-description>
                 </mat-expansion-panel-header>
-
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Weitere Informationen</mat-label>
-                    <textarea matInput [type]="'text'" placeholder="Informationen"
-                        formControlName="add_info"></textarea>
-                </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Datenquelle</mat-label>
