@@ -16,7 +16,7 @@ export abstract class AuthorizationService {
     async verify(context: ExecutionContext) {
         let request = context.switchToHttp().getRequest();
         if (['false', '0'].includes(this.configService.get('AUTH')?.toLowerCase())) {
-            request['user'] = { read: true, write: true }
+            request['user'] = { read: true, write: true, admin: true }
             return true;
         }
         let permissions = this.reflector.get<PermissionDecoration[]>('permissions', context.getHandler());
