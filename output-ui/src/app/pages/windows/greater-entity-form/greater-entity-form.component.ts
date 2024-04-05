@@ -114,7 +114,7 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
     this.ge.identifiers = this.ge.identifiers.filter(e => e.id !== elem.id)
   }
   addId() {
-    if (this.disabled) return;
+    if (this.disabled || this.idForm.invalid) return;
     this.ge.identifiers.push({
       type: this.idForm.get('type').value,
       value: this.idForm.get('value').value
