@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
 
@@ -37,7 +37,7 @@ export class ReportItemService {
     }
 
     getReports(type:'Import'|'Enrich'|'Check'|'Export') {
-        if (!fs.existsSync(this.path)) return null;
+        if (!fs.existsSync(this.path)) throw new InternalServerErrorException("configured LOG path does not exist, report to admin")
         let files = fs.readdirSync(this.path).filter(e => e.startsWith(type));
         return files;
     }

@@ -60,10 +60,13 @@ export class ImportComponent implements OnInit {
       })));
     ob$ = merge(ob$, this.updateStatus());
     ob$.subscribe({
-      error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+      error: err => {
+        this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
         panelClass: [`danger-snackbar`],
         verticalPosition: 'top'
       })
+      console.log(err)
+    }
     })
     this.imports = await firstValueFrom(this.importService.getImports());
     for (let im of this.imports) {
