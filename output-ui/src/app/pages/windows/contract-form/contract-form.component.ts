@@ -59,7 +59,8 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
     }
     else this.contract = {
       label: this.data.contract.label,
-      publisher: null
+      publisher: null,
+      identifiers: []
     }
     this.publisherService.getPublishers().subscribe({
       next: data => {
@@ -218,7 +219,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
     this.contract.identifiers = this.contract.identifiers.filter(e => e.id !== elem.id)
   }
   addId() {
-    if (this.disabled) return;
+    if (this.disabled || this.idForm.invalid) return;
     this.contract.identifiers.push({
       type: this.idForm.get('type').value,
       value: this.idForm.get('value').value
