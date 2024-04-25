@@ -48,7 +48,7 @@
                 <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
                     matTooltip="Alias hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
             </form>
-        </mat-expansion-panel>
+        </mat-expansion-panel><br>
 
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button mat-raised-button type="submit" color="primary" class="btn-primary">Publikationsart

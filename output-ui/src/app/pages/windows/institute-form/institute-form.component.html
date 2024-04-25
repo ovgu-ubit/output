@@ -30,22 +30,26 @@
             </mat-autocomplete>
         </mat-form-field>
 
-        Untergeordnete Institute
-        <table *ngIf="this.institute?.sub_institutes && this.institute.sub_institutes.length>0" mat-table
-            [dataSource]="this.institute.sub_institutes">
-            <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef> ID </th>
-                <td mat-cell *matCellDef="let element"> {{element.id}} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="label">
-                <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
-                <td mat-cell *matCellDef="let element"> {{element.label}} </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
+        <mat-card>
+            <mat-card-header><mat-card-subtitle>Untergeordnete Institute</mat-card-subtitle></mat-card-header>
+            <mat-card-content>
+                <table *ngIf="this.institute?.sub_institutes && this.institute.sub_institutes.length>0" mat-table
+                    [dataSource]="this.institute.sub_institutes">
+                    <ng-container matColumnDef="id">
+                        <th mat-header-cell *matHeaderCellDef> ID </th>
+                        <td mat-cell *matCellDef="let element"> {{element.id}} </td>
+                    </ng-container>
+        
+                    <ng-container matColumnDef="label">
+                        <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
+                        <td mat-cell *matCellDef="let element"> {{element.label}} </td>
+                    </ng-container>
+        
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                </table>
+            </mat-card-content>
+        </mat-card><br>   
 
         <mat-expansion-panel>
             <mat-expansion-panel-header>
@@ -80,7 +84,7 @@
                 <button matSuffix mat-icon-button type="button" (click)="this.addAlias()" matTooltip="Alias hinzufügen"
                     [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
             </form>
-        </mat-expansion-panel>
+        </mat-expansion-panel><br>
 
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button mat-raised-button type="submit" color="primary" class="btn-primary">Institut
