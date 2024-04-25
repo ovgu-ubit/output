@@ -93,6 +93,9 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
     this.author = { ...this.author, ...this.form.getRawValue() }
     if (!this.author.id) this.author.id = undefined;
+    if (!this.author.title) this.author.title = undefined;
+    if (!this.author.gnd_id) this.author.gnd_id = undefined;
+    if (!this.author.orcid) this.author.orcid = undefined;
     this.dialogRef.close(this.author)
   }
 

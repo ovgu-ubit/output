@@ -28,7 +28,7 @@ async function bootstrap() {
     const config = new DocumentBuilder()
         .setTitle('Output API')
         .setDescription('The Output API description')
-        .setVersion('0.2.2-beta')
+        .setVersion('0.2.3-beta')
         .addServer(base_path)
         .build();
     const options: SwaggerDocumentOptions = {
