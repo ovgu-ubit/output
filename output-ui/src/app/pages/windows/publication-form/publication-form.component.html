@@ -318,65 +318,66 @@
                     </mat-autocomplete>
                 </mat-form-field>
 
-                <ng-container
-                    *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">Rechnungen</ng-container>
-                <table *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))" mat-table
-                    [dataSource]="this.pub.invoices">
-                    <ng-container matColumnDef="date">
-                        <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
-                        <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.YYYY'}} </td>
-                    </ng-container>
+                <mat-card *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
+                    <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
+                    <mat-card-content>
+                        <table *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))" mat-table
+                            [dataSource]="this.pub.invoices">
+                            <ng-container matColumnDef="date">
+                                <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
+                                <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.YYYY'}} </td>
+                            </ng-container>
+        
+                            <ng-container matColumnDef="costs">
+                                <th mat-header-cell *matHeaderCellDef> Kosten </th>
+                                <td mat-cell *matCellDef="let element"> {{getCosts(element)}} EUR </td>
+                            </ng-container>
+        
+                            <ng-container matColumnDef="edit">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                        (click)="this.addInvoice(element)"
+                                        matTooltip="Rechnung bearbeiten"><mat-icon>edit</mat-icon></button> </td>
+                            </ng-container>
+        
+                            <ng-container matColumnDef="delete">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                        (click)="this.deleteInvoice(element)" [disabled]="this.disabled || this.pub?.locked"
+                                        matTooltip="Rechnung löschen"><mat-icon>delete</mat-icon></button> </td>
+                            </ng-container>
+        
+                            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                        </table>
+                    </mat-card-content>
+                    <mat-card-actions>
+                        <button matSuffix mat-raised-button type="button" (click)="this.addInvoice()"
+                        matTooltip="Rechnung hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon>Rechnung hinzufügen</button>
+                    </mat-card-actions>
+                </mat-card><br>
 
-                    <ng-container matColumnDef="costs">
-                        <th mat-header-cell *matHeaderCellDef> Kosten </th>
-                        <td mat-cell *matCellDef="let element"> {{getCosts(element)}} EUR </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="edit">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                (click)="this.addInvoice(element)"
-                                matTooltip="Rechnung bearbeiten"><mat-icon>edit</mat-icon></button> </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="delete">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                (click)="this.deleteInvoice(element)" [disabled]="this.disabled || this.pub?.locked"
-                                matTooltip="Rechnung löschen"><mat-icon>delete</mat-icon></button> </td>
-                    </ng-container>
-
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                </table>
-                <button matSuffix mat-icon-button type="button" (click)="this.addInvoice()"
-                    matTooltip="Rechnung hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
-
-                <div class="row justify-content-md-center">
-                    <div class="form-group col-md-12">
-                        <mat-form-field appearance="fill" style="width: 100%;">
-                            <mat-label>Förderer</mat-label>
-                            <mat-chip-grid #funder_list>
-                                <mat-chip-row [removable]="true" *ngFor="let funder of this.pub?.funders"
-                                    (removed)="removeFunder(funder)">
-                                    {{funder.label}}
-                                    <button matChipRemove *ngIf="!this.pub?.locked && !this.disabled">
-                                        <mat-icon>cancel</mat-icon>
-                                    </button>
-                                </mat-chip-row>
-                            </mat-chip-grid>
-                            <input matInput #funderInput formControlName="funder" placeholder="Föderer hinzufügen"
-                                [matAutocomplete]="autoFunder" [matChipInputFor]="funder_list"
-                                (matChipInputTokenEnd)="addFunder($event)" [matChipInputSeparatorKeyCodes]="[]"
-                                (keydown.enter)="addFunder($event.target)">
-                            <mat-autocomplete #autoFunder="matAutocomplete" (optionSelected)="selectedFunder($event)">
-                                <mat-option *ngFor="let funder of filteredFunders | async" [value]="funder.label">
-                                    {{funder.label}}
-                                </mat-option>
-                            </mat-autocomplete>
-                        </mat-form-field>
-                    </div>
-                </div>
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>Förderer</mat-label>
+                    <mat-chip-grid #funder_list>
+                        <mat-chip-row [removable]="true" *ngFor="let funder of this.pub?.funders"
+                            (removed)="removeFunder(funder)">
+                            {{funder.label}}
+                            <button matChipRemove *ngIf="!this.pub?.locked && !this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                    </mat-chip-grid>
+                    <input matInput #funderInput formControlName="funder" placeholder="Föderer hinzufügen"
+                        [matAutocomplete]="autoFunder" [matChipInputFor]="funder_list"
+                        (matChipInputTokenEnd)="addFunder($event)" [matChipInputSeparatorKeyCodes]="[]"
+                        (keydown.enter)="addFunder($event.target)">
+                    <mat-autocomplete #autoFunder="matAutocomplete" (optionSelected)="selectedFunder($event)">
+                        <mat-option *ngFor="let funder of filteredFunders | async" [value]="funder.label">
+                            {{funder.label}}
+                        </mat-option>
+                    </mat-autocomplete>
+                </mat-form-field>
 
             </mat-expansion-panel>
 

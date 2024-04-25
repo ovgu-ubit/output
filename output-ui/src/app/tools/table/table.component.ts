@@ -171,7 +171,7 @@ export class TableComponent<T> implements OnInit {
   }
 
   compare(type:string, a:any, b:any, dir:SortDirection) {
-    if (!type || type === 'string' || type == 'authors') return a.localeCompare(b, 'de-DE') * (dir === 'asc' ? 1 : -1);
+    if ((!type || type === 'string' || type == 'authors') && a) return a.localeCompare(b, 'de-DE') * (dir === 'asc' ? 1 : -1);
     else /*if (type === 'number' || type === 'pubs' || type === 'euro')*/ {
       if (!a && b) return (dir === 'asc' ? -1: 1)
       else if (a && !b) return (dir === 'asc' ? 1: -1)
