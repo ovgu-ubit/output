@@ -69,6 +69,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     { colName: 'corr_inst', colTitle: 'Corr. Institut' },
     { colName: 'greater_entity', colTitle: 'Größere Einheit' },
     { colName: 'oa_category', colTitle: 'OA-Kategorie' },
+    { colName: 'status', colTitle: 'Status', type: 'number' },
     { colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' },
     { colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' },
   ];
