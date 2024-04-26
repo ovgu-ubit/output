@@ -15,7 +15,7 @@ export class InvoiceController {
 
     @Get()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'reader', app: 'output' }])
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiResponse({
         type: Invoice,
         isArray: true
@@ -26,7 +26,7 @@ export class InvoiceController {
 
     @Get('one')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'reader', app: 'output' }])
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiResponse({
         type: Invoice
     })
@@ -36,7 +36,7 @@ export class InvoiceController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -52,7 +52,7 @@ export class InvoiceController {
     
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -67,7 +67,7 @@ export class InvoiceController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body() body: Invoice[]) {
         return this.invoiceService.delete(body);
     }
@@ -91,7 +91,7 @@ export class InvoiceController {
 
     @Post('cost_type')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -107,7 +107,7 @@ export class InvoiceController {
     
     @Put('cost_type')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -141,7 +141,7 @@ export class InvoiceController {
 
     @Post('cost_center')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -157,7 +157,7 @@ export class InvoiceController {
     
     @Put('cost_center')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -172,9 +172,7 @@ export class InvoiceController {
 
     @Delete('cost_center')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async removeCC(@Body() body: CostCenter[]) {
         return this.invoiceService.deleteCC(body);
     }

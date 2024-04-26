@@ -40,7 +40,7 @@ export class AuthorController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         schema: {
             example: {
@@ -72,7 +72,7 @@ export class AuthorController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body() body: Author[]) {
         return this.authorService.delete(body);
     }
@@ -89,7 +89,7 @@ export class AuthorController {
         }
     })
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
         let res = await this.authorService.combineAuthors(id1,ids);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author') 
