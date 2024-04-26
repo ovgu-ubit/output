@@ -30,7 +30,7 @@ export class LanguageController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -46,7 +46,7 @@ export class LanguageController {
     
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -61,7 +61,7 @@ export class LanguageController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body() body: Language[]) {
         return this.languageService.delete(body);
     }

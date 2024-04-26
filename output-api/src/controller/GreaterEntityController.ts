@@ -32,7 +32,7 @@ export class GreaterEntityController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -47,7 +47,7 @@ export class GreaterEntityController {
     
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -68,14 +68,14 @@ export class GreaterEntityController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body() body: GreaterEntity[]) {
         return this.geService.delete(body);
     }
 
     @Post('combine')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         schema: {
             example: {

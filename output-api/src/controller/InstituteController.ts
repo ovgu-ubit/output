@@ -37,7 +37,7 @@ export class InstituteController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -52,7 +52,7 @@ export class InstituteController {
 
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -67,14 +67,14 @@ export class InstituteController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body() body: Institute[]) {
         return this.instService.delete(body);
     }
 
     @Post('combine')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         schema: {
             example: {

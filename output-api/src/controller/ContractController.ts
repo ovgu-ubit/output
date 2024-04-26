@@ -37,7 +37,7 @@ export class ContractController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -53,7 +53,7 @@ export class ContractController {
     
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -68,14 +68,14 @@ export class ContractController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body() body: Contract[]) {
         return this.contractService.delete(body);
     }
 
     @Post('combine')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         schema: {
             example: {

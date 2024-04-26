@@ -22,7 +22,7 @@ export class ExportController {
 
   @Get()
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'reader', app: 'output' }])
+  @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   getExports() {
     let result = [];
     for (let i=0;i<this.configService.get('export_services').length;i++) {
@@ -35,7 +35,7 @@ export class ExportController {
 
   @Get("reports")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'reader', app: 'output' }])
+  @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   reports() {
     return this.reportService.getReports('Export');
   }
@@ -48,7 +48,7 @@ export class ExportController {
   })
   @Get("report")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'reader', app: 'output' }])
+  @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   report(@Query('filename') filename: string, @Res({ passthrough: true }) res: Response) {
     res.setHeader('Content-type', 'text/plain')
     res.send(this.reportService.getReport(filename))
@@ -65,14 +65,14 @@ export class ExportController {
   })
   @Delete("report")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   delete_report(@Body('filename') filename: string) {
     return this.reportService.deleteReport(filename);
   }
 
   @Post(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'reader', app: 'output' }])
+  @Permissions([{ role: 'reader', app: 'output' }, { role: 'wrtier', app: 'output' }, { role: 'admin', app: 'output' }])
   async exportMaster(@Param('path') path: string, @Req() request:Request, @Body('filter') filter?:{filter:SearchFilter, paths: string[]}) {
     //res.setHeader('Content-type', 'text/plain')
     let so = this.configService.get('export_services').findIndex(e => e.path === path)
@@ -83,7 +83,7 @@ export class ExportController {
 
   @Get(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'reader', app: 'output' }])
+  @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   exportMasterStatus(@Param('path') path: string) {
     let so = this.configService.get('export_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();

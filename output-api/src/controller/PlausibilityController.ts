@@ -17,7 +17,7 @@ export class PlausibilityController {
 
   @Get()
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   getImports() {
     let result = [];
     for (let i=0;i<this.configService.get('check_services').length;i++) {
@@ -30,7 +30,7 @@ export class PlausibilityController {
 
   @Get("reports")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   reports() {
     return this.reportService.getReports('Check');
   }
@@ -43,7 +43,7 @@ export class PlausibilityController {
   })
   @Get("report")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   report(@Query('filename') filename: string, @Res() res: Response) {
     res.setHeader('Content-type', 'text/plain')
     res.send(this.reportService.getReport(filename))
@@ -60,14 +60,14 @@ export class PlausibilityController {
   })
   @Delete("report")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   delete_report(@Body('filename') filename: string) {
     return this.reportService.deleteReport(filename);
   }
 
   @Post(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   start(@Param('path') path: string) {
     let so = this.configService.get('check_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
@@ -75,7 +75,7 @@ export class PlausibilityController {
   }
   @Get(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'writer', app: 'output' }])
+  @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   status(@Param('path') path: string) {
     let so = this.configService.get('check_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
