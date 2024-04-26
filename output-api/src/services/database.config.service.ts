@@ -21,13 +21,16 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             synchronize: true,
             logging: false,
             entities: [
-                "dist/output-api/src/entity/**/*.js"
+                "dist/output-api/src/entity/**/*.js",
+                "dist/output-api/src/entity/**/*.ts"
             ],
             migrations: [
-                "dist/output-api/src/migration/**/*.js"
+                "dist/output-api/src/migration/**/*.js",
+                "dist/output-api/src/migration/**/*.ts"
             ],
             subscribers: [
-                "dist/output-api/src/subscriber/**/*.js"
+                "dist/output-api/src/subscriber/**/*.js",
+                "dist/output-api/src/subscriber/**/*.ts"
             ],
         } as DataSourceOptions;
     }

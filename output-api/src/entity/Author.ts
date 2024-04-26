@@ -28,9 +28,6 @@ export class Author implements IAuthor {
     @Column({ nullable: true })
     orcid?: string;
 
-    @Column({ nullable: true })
-    valid_from?: Date;
-
     @OneToMany(() => AuthorPublication, authorPublication => authorPublication.author, { cascade : true })
     authorPublications?: AuthorPublication[];
 

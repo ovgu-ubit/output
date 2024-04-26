@@ -47,7 +47,7 @@ async function bootstrap() {
         allowedHeaders: 'Content-Type, Authorization',
         credentials: true
     });
-    app.use(bodyParser.json()); // parse requests of content-type "application/json"
+    app.use(bodyParser.json({limit: '1mb'})); // parse requests of content-type "application/json"
     app.use(bodyParser.urlencoded({ extended: true })); // parse requests of content-type "application/x-www-form-urlencoded"
     app.use(cookieParser());
     await app.init();
