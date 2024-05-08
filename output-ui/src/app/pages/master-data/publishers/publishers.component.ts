@@ -194,16 +194,23 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
             })
             this.update();
           }, error: err => {
-            this._snackBar.open(`Fehler beim Einfügen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
+            if (err.status === 400) {
+              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
+                duration: 5000,
+                panelClass: [`danger-snackbar`],
+                verticalPosition: 'top'
+              })
+            } else {
+              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
+                duration: 5000,
+                panelClass: [`danger-snackbar`],
+                verticalPosition: 'top'
+              })
+              console.log(err);
+            }
           }
         })
       }
-
     });
   }
   deleteSelected() {

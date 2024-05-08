@@ -25,9 +25,9 @@ import { CompareOperation, JoinOperation } from '../../../../../output-interface
 })
 export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.addAuthor.bind(this), roles: ['writer','admin'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer','admin'] },
+    { title: 'Hinzufügen', action_function: this.addAuthor.bind(this), roles: ['writer', 'admin'] },
+    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer', 'admin'] },
+    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<any>(true, []);
@@ -197,12 +197,20 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
             })
             this.update();
           }, error: err => {
-            this._snackBar.open(`Fehler beim Einfügen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
+            if (err.status === 400) {
+              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
+                duration: 5000,
+                panelClass: [`danger-snackbar`],
+                verticalPosition: 'top'
+              })
+            } else {
+              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
+                duration: 5000,
+                panelClass: [`danger-snackbar`],
+                verticalPosition: 'top'
+              })
+              console.log(err);
+            }
           }
         })
       }
@@ -255,16 +263,16 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
               key: 'author_id',
               comp: CompareOperation.EQUALS,
               value: id
-            },{
+            }, {
               op: JoinOperation.AND,
               key: 'pub_date',
               comp: CompareOperation.GREATER_THAN,
-              value: (this.reporting_year-1)+'-12-31 23:59:59'
-            },{
+              value: (this.reporting_year - 1) + '-12-31 23:59:59'
+            }, {
               op: JoinOperation.AND,
               key: 'pub_date',
               comp: CompareOperation.SMALLER_THAN,
-              value: (this.reporting_year+1)+'-01-01 00:00:00'
+              value: (this.reporting_year + 1) + '-01-01 00:00:00'
             }]
           }
         }
@@ -279,16 +287,16 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
               key: 'author_id_corr',
               comp: CompareOperation.EQUALS,
               value: id
-            },{
+            }, {
               op: JoinOperation.AND,
               key: 'pub_date',
               comp: CompareOperation.GREATER_THAN,
-              value: (this.reporting_year-1)+'-12-31 23:59:59'
-            },{
+              value: (this.reporting_year - 1) + '-12-31 23:59:59'
+            }, {
               op: JoinOperation.AND,
               key: 'pub_date',
               comp: CompareOperation.SMALLER_THAN,
-              value: (this.reporting_year+1)+'-01-01 00:00:00'
+              value: (this.reporting_year + 1) + '-01-01 00:00:00'
             }]
           }
         }
