@@ -430,7 +430,7 @@ export abstract class AbstractImportService {
                 if (pd instanceof Date) {
                     orig.pub_date = pd;
                     flag = true;
-                } else {
+                } else if (pd) {
                     if (!orig.pub_date) {
                         orig.pub_date = pd.pub_date;
                         flag = true;
@@ -455,7 +455,7 @@ export abstract class AbstractImportService {
                 if (pd instanceof Date) {
                     orig.pub_date = pd;
                     flag = true;
-                } else {
+                } else if (pd) {
                     if (pd.pub_date) {
                         orig.pub_date = pd.pub_date;
                         flag = true;

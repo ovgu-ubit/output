@@ -112,7 +112,13 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
         return {label: element['publisher']['name']};
     }
     protected getPubDate(element: any): Date {
-        return element['published_date'];
+        let string =  element['published_date'];
+        try {
+            let dates = string.split('-');
+            return new Date(Date.UTC(dates[0],dates[1]-1,dates[2]));
+        } catch (err) {
+            return new Date(Date.UTC(Number(this.year),0,1));
+        }
     }
     protected getLanguage(element: any): string {
         return null;
