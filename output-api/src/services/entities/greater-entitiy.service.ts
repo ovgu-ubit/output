@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
@@ -21,11 +21,17 @@ export class GreaterEntityService {
             if (!pub.id) pub.id = undefined;
             if (pub.identifiers) {
                 for (let id of pub.identifiers) {
-                    id.id = (await this.idRepository.save(id)).id;
+                    id.id = (await this.idRepository.save(id).catch(err => {
+                        if (err.constraint) throw new BadRequestException(err.detail)
+                        else throw new InternalServerErrorException(err);
+                    })).id;
                 }
             }
         }
-        return await this.repository.save(pubs);
+        return await this.repository.save(pubs).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get() {

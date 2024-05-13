@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of, firstValueFrom } from 'rxjs';
@@ -22,7 +22,10 @@ export class InstitutionService {
         @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) { }
 
     public save(inst: any[]) {
-        return this.repository.save(inst);
+        return this.repository.save(inst).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get() {

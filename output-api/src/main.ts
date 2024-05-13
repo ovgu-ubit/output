@@ -28,7 +28,7 @@ async function bootstrap() {
     const config = new DocumentBuilder()
         .setTitle('Output API')
         .setDescription('The Output API description')
-        .setVersion('0.2.3-beta')
+        .setVersion('0.2.4-beta')
         .addServer(base_path)
         .build();
     const options: SwaggerDocumentOptions = {
@@ -47,7 +47,7 @@ async function bootstrap() {
         allowedHeaders: 'Content-Type, Authorization',
         credentials: true
     });
-    app.use(bodyParser.json()); // parse requests of content-type "application/json"
+    app.use(bodyParser.json({limit: '1mb'})); // parse requests of content-type "application/json"
     app.use(bodyParser.urlencoded({ extended: true })); // parse requests of content-type "application/x-www-form-urlencoded"
     app.use(cookieParser());
     await app.init();

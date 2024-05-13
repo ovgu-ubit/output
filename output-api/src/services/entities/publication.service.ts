@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { Publication } from '../../entity/Publication';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
@@ -26,7 +26,10 @@ export class PublicationService {
         private configService: ConfigService) { }
 
     public save(pub: Publication[]) {
-        return this.pubRepository.save(pub);
+        return this.pubRepository.save(pub).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get(options?: FindManyOptions) {

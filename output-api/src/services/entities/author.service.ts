@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
@@ -19,7 +19,10 @@ export class AuthorService {
         private configService:ConfigService) { }
 
     public save(aut: any[]) {
-        return this.repository.save(aut);
+        return this.repository.save(aut).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get() {

@@ -25,11 +25,8 @@ export class Author implements IAuthor {
     @JoinTable()
     institutes?: Institute[]
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, unique: true })
     orcid?: string;
-
-    @Column({ nullable: true })
-    valid_from?: Date;
 
     @OneToMany(() => AuthorPublication, authorPublication => authorPublication.author, { cascade : true })
     authorPublications?: AuthorPublication[];
