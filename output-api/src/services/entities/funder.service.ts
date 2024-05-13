@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
@@ -15,7 +15,10 @@ export class FunderService {
     private configService: ConfigService, private publicationService:PublicationService) { }
 
     public save(pub: any[]) {
-        return this.repository.save(pub);
+        return this.repository.save(pub).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get() {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of} from 'rxjs';
@@ -13,7 +13,10 @@ export class OACategoryService {
     constructor(@InjectRepository(OA_Category) private repository: Repository<OA_Category>, private configService:ConfigService, private publicationService:PublicationService) { }
 
     public save(pub: any[]) {
-        return this.repository.save(pub);
+        return this.repository.save(pub).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get() {

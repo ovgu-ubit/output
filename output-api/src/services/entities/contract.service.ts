@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of} from 'rxjs';
@@ -35,7 +35,10 @@ export class ContractService {
     }
 
     public save(contracts:any[]) {
-        return this.repository.save(contracts);
+        return this.repository.save(contracts).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public findOrSave(title: string): Observable<Contract> {        

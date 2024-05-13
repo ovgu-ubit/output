@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Language } from '../../entity/Language';
@@ -9,7 +9,10 @@ export class LanguageService {
     constructor(@InjectRepository(Language) private repository: Repository<Language>) { }
 
     public save(pub: Language[]) {
-        return this.repository.save(pub);
+        return this.repository.save(pub).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public get() {

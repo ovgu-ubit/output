@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of} from 'rxjs';
@@ -25,7 +25,10 @@ export class InvoiceService {
     }
 
     public save(inv: Invoice[]) {
-        return this.repository.save(inv);
+        return this.repository.save(inv).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public delete(insts:Invoice[]) {
@@ -55,7 +58,10 @@ export class InvoiceService {
     }
 
     public saveCT(ct:any[]) {
-        return this.ctRepository.save(ct);
+        return this.ctRepository.save(ct).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public deleteCT(cts:CostType[]) {
@@ -85,7 +91,10 @@ export class InvoiceService {
     }
 
     public saveCC(cc:any[]) {
-        return this.ccRepository.save(cc);
+        return this.ccRepository.save(cc).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
     }
 
     public deleteCC(ccs:CostCenter[]) {

@@ -213,6 +213,7 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
       }
     });
   }
+  
   deleteSelected() {
     //TODO: soft delete option
     if (this.selection.selected.length === 0) return;
