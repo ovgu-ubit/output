@@ -95,6 +95,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.instService.getinstitutes().pipe(map(
       data => {
         this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.institutes.push({label: 'Unbekannt'})
         this.filtered_institutes = this.form.get('institute').valueChanges.pipe(
           startWith(''),
           map(value => this._filterInst(value || '')),
@@ -108,6 +109,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(
       data => {
         this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.publishers.push({label: 'Unbekannt'})
         this.filtered_publishers = this.form.get('publisher').valueChanges.pipe(
           startWith(''),
           map(value => this._filterPublisher(value || '')),
@@ -120,6 +122,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.contractService.getContracts().pipe(map(
       data => {
         this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.contracts.push({label: 'Unbekannt', publisher: null})
         this.filtered_contracts = this.form.get('contract').valueChanges.pipe(
           startWith(''),
           map(value => this._filterContract(value || '')),
@@ -132,10 +135,12 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.oaService.getOACategories().pipe(map(
       data => {
         this.oa_cats = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.oa_cats.push({label: 'Unbekannt', is_oa: null})
       })));
     ob$ = merge(ob$, this.pubTypeService.getPubTypes().pipe(map(
       data => {
         this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
+        this.pub_types.push({label: 'Unbekannt', review: null})
       })));
     ob$.subscribe({
       error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
@@ -216,36 +221,56 @@ export class StatisticsComponent implements OnInit {
   }
 
   selectedInst(event: MatAutocompleteSelectedEvent): void {
-    this.filter = { ...this.filter, instituteId: this.institutes.find(e => e.label === event.option.value).id }
+    let id = this.institutes.find(e => e.label === event.option.value).id
+    if (!id) id = null;
+    this.filter = { ...this.filter, instituteId: id}
   }
   selectedPublisher(event: MatAutocompleteSelectedEvent): void {
-    this.filter = { ...this.filter, publisherId: this.publishers.find(e => e.label === event.option.value).id }
+    let id = this.publishers.find(e => e.label === event.option.value).id
+    if (!id) id = null;
+    this.filter = { ...this.filter, publisherId: id }
   }
   selectedContract(event: MatAutocompleteSelectedEvent): void {
-    this.filter = { ...this.filter, contractId: this.contracts.find(e => e.label === event.option.value).id }
+    let id = this.contracts.find(e => e.label === event.option.value).id
+    if (!id) id = null;
+    this.filter = { ...this.filter, contractId: id }
   }
   changeOA(event) {
-    this.filter = { ...this.filter, oaCatId: this.oa_cats.find(e => e.label === event.value).id }
+    let id =  this.oa_cats.find(e => e.label === event.value).id 
+    if (!id) id = null;
+    this.filter = { ...this.filter, oaCatId: id}
   }
   changePubType(event) {
-    this.filter = { ...this.filter, pubTypeId: this.pub_types.find(e => e.label === event.value).id }
+    let id = this.pub_types.find(e => e.label === event.value).id
+    if (!id) id = null;
+    this.filter = { ...this.filter, pubTypeId: id }
   }
 
 
   selectedInst1(event: MatAutocompleteSelectedEvent): void {
-    this.highlight = { ...this.highlight, instituteId: this.institutes.find(e => e.label === event.option.value).id }
+    let id = this.institutes.find(e => e.label === event.option.value).id
+    if (!id) id = null;
+    this.highlight = { ...this.highlight, instituteId: id }
   }
   selectedPublisher1(event: MatAutocompleteSelectedEvent): void {
-    this.highlight = { ...this.highlight, publisherId: this.publishers.find(e => e.label === event.option.value).id }
+    let id = this.publishers.find(e => e.label === event.option.value).id 
+    if (!id) id = null;
+    this.highlight = { ...this.highlight, publisherId: id}
   }
   selectedContract1(event: MatAutocompleteSelectedEvent): void {
-    this.highlight = { ...this.highlight, contractId: this.contracts.find(e => e.label === event.option.value).id }
+    let id = this.contracts.find(e => e.label === event.option.value).id
+    if (!id) id = null;
+    this.highlight = { ...this.highlight, contractId: id }
   }
   changeOA1(event) {
-    this.highlight = { ...this.highlight, oaCatId: this.oa_cats.find(e => e.label === event.value).id }
+    let id = this.oa_cats.find(e => e.label === event.value).id
+    if (!id) id = null;
+    this.highlight = { ...this.highlight, oaCatId: id }
   }
   changePubType1(event) {
-    this.highlight = { ...this.highlight, pubTypeId: this.pub_types.find(e => e.label === event.value).id }
+    let id = this.pub_types.find(e => e.label === event.value).id
+    if (!id) id = null;
+    this.highlight = { ...this.highlight, pubTypeId: id }
   }
 
   private _filterInst(value: string): Institute[] {

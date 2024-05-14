@@ -80,7 +80,6 @@ export class SelectInstituteDialogComponent implements OnInit {
 
       let dialogRef = this.dialog.open(AliasFormComponent, {
         width: '400px',
-        maxHeight: '800px',
         data: {
           aliases
         },
