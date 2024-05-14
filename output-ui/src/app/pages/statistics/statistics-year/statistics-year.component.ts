@@ -228,48 +228,58 @@ export class StatisticsYearComponent implements OnInit {
   filterText:string=''
 
   applyFilter(series_name: string, cat_name: string) {
-    if (cat_name === 'Unbekannt' || (series_name === 'Art' && cat_name === 'sonstige')) return;
+    if (series_name === 'Art' && cat_name === 'sonstige') return;
     this.filterText += series_name+': '+cat_name +' ';
     if (series_name === 'Art') {
       if (cat_name === 'corresponding') this.filter = {...this.filter, corresponding: true}
     } 
     if (series_name === 'Institut') {
-      this.filter = {...this.filter,instituteId: this.institutes.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, instituteId: null}
+      else this.filter = {...this.filter,instituteId: this.institutes.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'OA-Kategorie') {
-      this.filter = {...this.filter,oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, oaCatId: null}
+      else this.filter = {...this.filter,oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'Vertrag') {
-      this.filter = {...this.filter,contractId: this.constracts.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, contractId: null}
+      else this.filter = {...this.filter,contractId: this.constracts.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'Publikationsart') {
-      this.filter = {...this.filter,pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, pubTypeId: null}
+      else this.filter = {...this.filter,pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'Verlag') {
-      this.filter = {...this.filter,publisherId: this.publisher.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, publisherId: null}
+      else this.filter = {...this.filter,publisherId: this.publisher.find(e => e.label === cat_name)?.id}
     }
     this.loadData(this.costs);
   }
   applyAntiFilter(series_name: string, cat_name: string) {
-    if (cat_name === 'Unbekannt' || (series_name === 'Art' && cat_name === 'sonstige')) return;
+    if (series_name === 'Art' && cat_name === 'sonstige') return;
     this.filterText += series_name+': !'+cat_name +' ';
     if (series_name === 'Art') {
       if (cat_name === 'corresponding') this.filter = {...this.filter, corresponding: false}
     } 
     if (series_name === 'Institut') {
-      this.filter = {...this.filter,notInstituteId: this.institutes.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, notInstituteId: null}
+      else this.filter = {...this.filter,notInstituteId: this.institutes.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'OA-Kategorie') {
-      this.filter = {...this.filter,notOaCatId: this.oa_cats.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, notOaCatId: null}
+      else this.filter = {...this.filter,notOaCatId: this.oa_cats.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'Vertrag') {
-      this.filter = {...this.filter,notContractId: this.constracts.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, notContractId: null}
+      else this.filter = {...this.filter,notContractId: this.constracts.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'Publikationsart') {
-      this.filter = {...this.filter,notPubTypeId: this.pub_types.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, notPubTypeId: null}
+      else this.filter = {...this.filter,notPubTypeId: this.pub_types.find(e => e.label === cat_name)?.id}
     } 
     if (series_name === 'Verlag') {
-      this.filter = {...this.filter,notPublisherId: this.publisher.find(e => e.label === cat_name)?.id}
+      if (cat_name === 'Unbekannt') this.filter = {...this.filter, notPublisherId: null}
+      else this.filter = {...this.filter,notPublisherId: this.publisher.find(e => e.label === cat_name)?.id}
     }
     this.loadData(this.costs);
   }
