@@ -58,9 +58,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   contracts: Contract[];
   filtered_contracts: Observable<Contract[]>;
 
-  pub_type;
-  oa_cat;
-  language;
+  pub_type_id;
+  oa_cat_id;
+  language_id;
 
   authors: Author[];
   filteredAuthors: Observable<Author[]>;
@@ -156,9 +156,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     return this.publicationService.getPublication(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
-      this.form.get('oa_cat').setValue(this.pub.oa_category? this.pub.oa_category.id : -1)
-      this.form.get('pub_type').setValue(this.pub.pub_type? this.pub.pub_type.id : -1)
-      this.form.get('language').setValue(this.pub.language? this.pub.language.id : -1)
+      this.pub_type_id = this.pub.pub_type? this.pub.pub_type.id : -1
+      this.oa_cat_id = this.pub.oa_category? this.pub.oa_category.id : -1
+      this.language_id = this.pub.language? this.pub.language.id : -1
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
       
       if (this.pub?.locked) this.setLock(true);
@@ -671,9 +671,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         pub_date_submitted: this.form.get('pub_date_submitted').value ? this.form.get('pub_date_submitted').value.format() : undefined,
       }
     }
-    this.pub.pub_type = this.pub_type !== -1 ? this.pub_types.find(e => e.id === this.pub_type) : null;
-    this.pub.oa_category = this.oa_cat !== -1 ? this.oa_categories.find(e => e.id === this.oa_cat) : null;
-    this.pub.language = this.language !== -1 ? this.langs.find(e => e.id === this.language) : null;
+    this.pub.pub_type = this.pub_type_id !== -1 ? this.pub_types.find(e => e.id === this.pub_type_id) : null;
+    this.pub.oa_category = this.oa_cat_id !== -1 ? this.oa_categories.find(e => e.id === this.oa_cat_id) : null;
+    this.pub.language = this.language_id !== -1 ? this.langs.find(e => e.id === this.language_id) : null;
     this.dialogRef.close(this.pub);
   }
 
