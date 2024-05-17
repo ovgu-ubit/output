@@ -305,10 +305,34 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.abstract.startsWith('$')) return this.importConfig.mapping.abstract.slice(1, this.importConfig.mapping.abstract.length);
         return element[this.importConfig.mapping.abstract];
     }
-    protected getCitation(element: any): string {
-        if (!this.importConfig.mapping.citation) return null;
-        if (this.importConfig.mapping.citation.startsWith('$')) return this.importConfig.mapping.citation.slice(1, this.importConfig.mapping.citation.length);
-        return element[this.importConfig.mapping.authors];
+    protected getCitation(element: any): { volume: number, issue: number, first_page: number, last_page: number } {
+        let volume = null;
+        if (this.importConfig.mapping.volume) {
+            if (this.importConfig.mapping.volume.startsWith('$')) volume = this.importConfig.mapping.volume.slice(1, this.importConfig.mapping.volume.length);
+            else volume = element[this.importConfig.mapping.volume];
+        }
+        let issue = null;
+        if (this.importConfig.mapping.issue) {
+            if (this.importConfig.mapping.issue.startsWith('$')) issue = this.importConfig.mapping.issue.slice(1, this.importConfig.mapping.issue.length);
+            else issue = element[this.importConfig.mapping.issue];
+        }
+        let first_page = null;
+        if (this.importConfig.mapping.first_page) {
+            if (this.importConfig.mapping.first_page.startsWith('$')) first_page = this.importConfig.mapping.first_page.slice(1, this.importConfig.mapping.first_page.length);
+            else first_page = element[this.importConfig.mapping.first_page];
+        }
+        let last_page = null;
+        if (this.importConfig.mapping.last_page) {
+            if (this.importConfig.mapping.last_page.startsWith('$')) last_page = this.importConfig.mapping.last_page.slice(1, this.importConfig.mapping.last_page.length);
+            else last_page = element[this.importConfig.mapping.last_page];
+        }
+        
+        return {
+            volume, 
+            issue,
+            first_page,
+            last_page
+        }
     }
     protected getPageCount(element: any): number {
         if (!this.importConfig.mapping.page_count) return null;

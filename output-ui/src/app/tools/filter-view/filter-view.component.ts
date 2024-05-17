@@ -70,7 +70,12 @@ export class FilterViewComponent implements OnInit {
       next: data => {
         if (data['editors']) this.keys.push({ key: 'editors', label: 'Herausgeber*innen' })
         if (data['abstract']) this.keys.push({ key: 'abstract', label: 'Abstract' })
-        if (data['citation']) this.keys.push({ key: 'citation', label: 'Zitationsangabe' })
+        if (data['citation']) {
+          this.keys.push({ key: 'volume', label: 'Volume', type: 'number' })
+          this.keys.push({ key: 'issue', label: 'Issue', type: 'number' })
+          this.keys.push({ key: 'first_page', label: 'Erste Seite', type: 'number' })
+          this.keys.push({ key: 'last_page', label: 'Letzte Seite', type: 'number' })
+        }
         if (data['page_count']) this.keys.push({ key: 'page_count', label: 'Seitenzahl', type: 'number' })
         if (data['peer_reviewed']) this.keys.push({ key: 'peer_reviewed', label: 'Peer-Reviewed', type: 'boolean' })
         if (data['pub_date_print']) this.keys.push({ key: 'pub_date_print', label: 'Publikationsdatum (print)', type: 'date' })

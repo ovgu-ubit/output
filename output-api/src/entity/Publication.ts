@@ -117,7 +117,16 @@ export class Publication implements IPublication {
     abstract?: string;
 
     @Column({nullable: true})
-    citation?: string;
+    volume?: number;
+
+    @Column({nullable: true})
+    issue?: number;
+
+    @Column({nullable: true})
+    first_page?: number;
+
+    @Column({nullable: true})
+    last_page?: number;
 
     @Column({nullable: true})
     page_count?: number;
