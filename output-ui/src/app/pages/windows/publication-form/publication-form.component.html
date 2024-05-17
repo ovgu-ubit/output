@@ -51,8 +51,7 @@
 
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Weitere Informationen</mat-label>
-            <textarea matInput [type]="'text'" placeholder="Informationen"
-                formControlName="add_info"></textarea>
+            <textarea matInput [type]="'text'" placeholder="Informationen" formControlName="add_info"></textarea>
         </mat-form-field>
 
         <mat-accordion multi="true">
@@ -156,7 +155,8 @@
                     </mat-autocomplete>
                 </mat-form-field>
 
-                <mat-checkbox formControlName="peer_reviewed" *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>
+                <mat-checkbox formControlName="peer_reviewed"
+                    *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Verlag</mat-label>
@@ -219,12 +219,27 @@
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
-                    <mat-label>Zitationsangabe</mat-label>
-                    <input matInput [type]="'text'" placeholder="Zitationsangabe" formControlName="citation" />
-                </mat-form-field>
-
+                <mat-card *ngIf="this.optional_fields?.citation">
+                    <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
+                    <mat-card-content>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Volume</mat-label>
+                            <input matInput [type]="'number'" placeholder="Volume" formControlName="volume" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Issue</mat-label>
+                            <input matInput [type]="'number'" placeholder="Issue" formControlName="issue" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Erste Seite</mat-label>
+                            <input matInput [type]="'number'" placeholder="Erste Seite" formControlName="first_page" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Letzte Seite</mat-label>
+                            <input matInput [type]="'number'" placeholder="Letzte Seite" formControlName="last_page" />
+                        </mat-form-field>
+                    </mat-card-content>
+                </mat-card>
                 <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
                     <mat-label>Seitenzahl</mat-label>
                     <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
@@ -318,42 +333,46 @@
                     </mat-autocomplete>
                 </mat-form-field>
 
-                <mat-card *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
+                <mat-card
+                    *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
                     <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <table *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))" mat-table
-                            [dataSource]="this.pub.invoices">
+                        <table
+                            *ngIf="this.pub?.invoices && this.pub.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))"
+                            mat-table [dataSource]="this.pub.invoices">
                             <ng-container matColumnDef="date">
                                 <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
                                 <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.YYYY'}} </td>
                             </ng-container>
-        
+
                             <ng-container matColumnDef="costs">
                                 <th mat-header-cell *matHeaderCellDef> Kosten </th>
                                 <td mat-cell *matCellDef="let element"> {{getCosts(element)}} EUR </td>
                             </ng-container>
-        
+
                             <ng-container matColumnDef="edit">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
                                         (click)="this.addInvoice(element)"
                                         matTooltip="Rechnung bearbeiten"><mat-icon>edit</mat-icon></button> </td>
                             </ng-container>
-        
+
                             <ng-container matColumnDef="delete">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.deleteInvoice(element)" [disabled]="this.disabled || this.pub?.locked"
+                                        (click)="this.deleteInvoice(element)"
+                                        [disabled]="this.disabled || this.pub?.locked"
                                         matTooltip="Rechnung löschen"><mat-icon>delete</mat-icon></button> </td>
                             </ng-container>
-        
+
                             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
                             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
                         </table>
                     </mat-card-content>
                     <mat-card-actions>
                         <button matSuffix mat-raised-button type="button" (click)="this.addInvoice()"
-                        matTooltip="Rechnung hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon>Rechnung hinzufügen</button>
+                            matTooltip="Rechnung hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon>Rechnung
+                            hinzufügen</button>
                     </mat-card-actions>
                 </mat-card><br>
 

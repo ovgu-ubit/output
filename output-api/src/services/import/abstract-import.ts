@@ -185,7 +185,7 @@ export abstract class AbstractImportService {
      * retrieves a citation string of an element
      * @param element 
      */
-    protected abstract getCitation(element: any): string;
+    protected abstract getCitation(element: any): {volume:number, issue: number, first_page: number, last_page: number};
     /**
      * retrieves the page count of an element
      * @param element 
@@ -269,6 +269,7 @@ export abstract class AbstractImportService {
         let status = this.getStatus(item);
         if (!status) status = 0;
 
+
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
             title: this.getTitle(item)?.trim(),
@@ -286,7 +287,6 @@ export abstract class AbstractImportService {
             invoices: inv_info,
             editors: this.getEditors(item)?.trim(),
             abstract: this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
-            citation: this.configService.get('optional_fields.citation') ? this.getCitation(item)?.trim() : undefined,
             page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
             status
@@ -297,6 +297,14 @@ export abstract class AbstractImportService {
             if (this.configService.get('optional_fields.pub_date_print')) obj.pub_date_print = pub_date.pub_date_print;
             obj.pub_date_accepted = pub_date.pub_date_accepted;
             if (this.configService.get('optional_fields.pub_date_submitted')) obj.pub_date_submitted = pub_date.pub_date_submitted;
+        }
+
+        let cit = this.getCitation(item);
+        if (cit) {
+            obj.volume = cit.volume;
+            obj.issue = cit.issue;
+            obj.first_page = cit.first_page;
+            obj.last_page = cit.last_page;
         }
 
         let pub_ent = (await this.publicationService.save([obj]))[0];
@@ -679,14 +687,22 @@ export abstract class AbstractImportService {
                     break;
                 case UpdateOptions.APPEND:
                 case UpdateOptions.REPLACE_IF_EMPTY:
-                    if (!orig.citation) {
-                        orig.citation = this.getCitation(element);
-                        if (orig.citation) fields.push('citation')
+                    if (!orig.volume || !orig.issue || !orig.first_page || !orig.last_page) {
+                        let cit = this.getCitation(element)
+                        if (cit.volume) orig.volume = cit.volume;
+                        if (cit.issue) orig.issue = cit.issue;
+                        if (cit.first_page) orig.first_page = cit.first_page;
+                        if (cit.last_page)  orig.last_page = cit.last_page;
+                        if (cit.volume || cit.issue || cit.first_page || cit.last_page) fields.push('citation')
                     }
                     break;
                 case UpdateOptions.REPLACE:
-                    orig.citation = this.getCitation(element);
-                    if (orig.citation) fields.push('citation')
+                    let cit = this.getCitation(element)
+                    orig.volume = cit.volume;
+                    orig.issue = cit.issue;
+                    orig.first_page = cit.first_page;
+                    orig.last_page = cit.last_page;
+                    if (cit) fields.push('citation')
                     break;
             }
         }

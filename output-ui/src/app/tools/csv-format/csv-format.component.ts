@@ -108,7 +108,10 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
         status: [''],
         editors:[''],
         abstract: [''],
-        citation: [''],
+        volume: [''],
+        issue: [''],
+        first_page: [''],
+        last_page: [''],
         page_count: [''],
         peer_reviewed: [''],
       })

@@ -70,7 +70,10 @@ export class CSVMapping {
         status?: string;
         editors?: string;
         abstract?: string;
-        citation?: string;
+        volume?: string;
+        issue?: string;
+        first_page?: string;
+        last_page?: string;
         page_count?: string;
         peer_reviewed?: string;
     }
