@@ -19,6 +19,7 @@ import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { ConfigService } from '@nestjs/config';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class BibliographyImportService extends ApiImportOffsetService {
@@ -26,8 +27,8 @@ export class BibliographyImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService:ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService, protected configService: ConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, configService, http);
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService, http);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -47,11 +48,11 @@ export class BibliographyImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
-        editors :UpdateOptions.IGNORE,
-        abstract :UpdateOptions.IGNORE,
-        citation :UpdateOptions.IGNORE,
-        page_count :UpdateOptions.IGNORE,
-        peer_reviewed :UpdateOptions.REPLACE_IF_EMPTY,
+        editors: UpdateOptions.IGNORE,
+        abstract: UpdateOptions.IGNORE,
+        citation: UpdateOptions.IGNORE,
+        page_count: UpdateOptions.IGNORE,
+        peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://heimdall.ub.ovgu.de/jetty/SRU_Engine/bibliography?';
     protected max_res: number = 100;
@@ -94,14 +95,14 @@ export class BibliographyImportService extends ApiImportOffsetService {
         let issn = element['greater_entity_issn'];
         return {
             label: element['greater_entity'],
-            identifiers: issn? [{ type: 'issn', value: issn }]:undefined
+            identifiers: issn ? [{ type: 'issn', value: issn }] : undefined
         };
     }
     protected getPublisher(element: any): Publisher {
-        return {label: element['publisher']};
+        return { label: element['publisher'] };
     }
     protected getPubDate(element: any): Date {
-        return new Date(Date.UTC(element['year_of_creation'],0));
+        return new Date(Date.UTC(element['year_of_creation'], 0));
     }
     protected getLink(element: any): string {
         return element['link'];

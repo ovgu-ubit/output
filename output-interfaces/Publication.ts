@@ -64,6 +64,11 @@ export interface AuthorPublication {
     affiliation?: string;
 }
 
+export interface Role {
+    id?: number;
+    label: string;
+}
+
 export interface Contract {
     id?: number;
     publisher: Publisher

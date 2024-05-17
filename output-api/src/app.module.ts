@@ -61,6 +61,8 @@ import appConfig from '../config';
 import { AuthorizationService } from "./guards/authorization.service";
 import { TokenAuthorizationService } from "./guards/token.authorization.service";
 import { PublisherDOI } from "./entity/PublisherDOI";
+import { Role } from "./entity/Role";
+import { RoleService } from "./services/entities/role.service";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -85,18 +87,18 @@ const filterz = appConfig().filter_services;
       inject: [DatabaseConfigService],
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
-      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language,
+      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
       AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
     PlausibilityController, ExportController],
   providers: [
-    PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService, 
-    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService,
-    AppConfigService,StatisticsService,
+    PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
+    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService,
+    AppConfigService, StatisticsService,
     CSVImportService,
-    {provide: AuthorizationService, useClass: appConfig().authorization_service},
+    { provide: AuthorizationService, useClass: appConfig().authorization_service },
     ...imports.map(e => e.class),
     {
       provide: 'Imports',
