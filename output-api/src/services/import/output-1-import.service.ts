@@ -48,7 +48,6 @@ export class Output1ImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.IGNORE,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
@@ -179,9 +178,6 @@ export class Output1ImportService extends ApiImportOffsetService {
     }
     protected getStatus(element: any): number {
         return 1;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         return null;

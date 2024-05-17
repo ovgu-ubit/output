@@ -46,7 +46,6 @@ export class DOAJEnrichService extends AbstractImportService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.IGNORE,
-        editors: UpdateOptions.IGNORE,
         abstract: UpdateOptions.IGNORE,
         citation: UpdateOptions.IGNORE,
         page_count: UpdateOptions.IGNORE,
@@ -118,9 +117,6 @@ export class DOAJEnrichService extends AbstractImportService {
         return null;
     }
     protected getStatus(element: any): number {
-        return null;
-    }
-    protected getEditors(element: any): string {
         return null;
     }
     protected getAbstract(element: any): string {

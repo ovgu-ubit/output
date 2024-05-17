@@ -60,7 +60,6 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors: UpdateOptions.IGNORE,
         abstract: UpdateOptions.IGNORE,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -206,9 +205,6 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getStatus(element: any): number {
         return 1;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         return null;

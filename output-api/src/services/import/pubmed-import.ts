@@ -79,7 +79,6 @@ export class PubMedImportService extends AbstractImportService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.REPLACE_IF_EMPTY,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
@@ -370,9 +369,6 @@ export class PubMedImportService extends AbstractImportService {
     }
     protected getStatus(element: any): number {
         return 1;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         try {

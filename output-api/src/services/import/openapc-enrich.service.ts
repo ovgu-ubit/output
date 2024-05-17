@@ -61,7 +61,6 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.IGNORE,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
@@ -138,9 +137,6 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
     }
     protected getStatus(element: any): number {
         return 1;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         return null;

@@ -54,7 +54,6 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.REPLACE_IF_EMPTY,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
@@ -203,9 +202,6 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         if (!authors || authors.length === 0) authors = publication.editor;
         let res = this.authorsInstitution(authors).length !== 0;
         return res;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         return element['abstract'];

@@ -65,7 +65,6 @@ export abstract class AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
-        editors: UpdateOptions.REPLACE_IF_EMPTY,
         abstract: UpdateOptions.REPLACE_IF_EMPTY,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -174,11 +173,6 @@ export abstract class AbstractImportService {
      * @param element 
      */
     protected abstract getStatus(element: any): number;
-    /**
-     * retrieves the editor string of an element
-     * @param element 
-     */
-    protected abstract getEditors(element: any): string;
     /**
      * retrieves the abstract of an element
      * @param element 
@@ -289,7 +283,6 @@ export abstract class AbstractImportService {
             funders: funder_ents,
             best_oa_license: this.getLicense(item)?.trim(),
             invoices: inv_info,
-            editors: this.getEditors(item)?.trim(),
             abstract: this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
             page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
@@ -651,21 +644,6 @@ export abstract class AbstractImportService {
                 orig.status = this.getStatus(element);
                 if (orig.status) fields.push('status')
                 else orig.status = 0;
-                break;
-        }
-        switch (this.updateMapping.editors) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.APPEND:
-            case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.editors) {
-                    orig.editors = this.getEditors(element);
-                    if (orig.editors) fields.push('editors')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.editors = this.getEditors(element);
-                if (orig.editors) fields.push('editors')
                 break;
         }
         if (this.configService.get('optional_fields.abstract')) {

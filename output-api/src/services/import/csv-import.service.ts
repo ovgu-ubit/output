@@ -55,7 +55,6 @@ export class CSVImportService extends AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors: UpdateOptions.REPLACE_IF_EMPTY,
         abstract: UpdateOptions.REPLACE_IF_EMPTY,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -295,11 +294,6 @@ export class CSVImportService extends AbstractImportService {
         if (!this.importConfig.mapping.status) return null;
         if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
         return element[this.importConfig.mapping.status];
-    }
-    protected getEditors(element: any): string {
-        if (!this.importConfig.mapping.editors) return null;
-        if (this.importConfig.mapping.editors.startsWith('$')) return this.importConfig.mapping.editors.slice(1, this.importConfig.mapping.editors.length);
-        return element[this.importConfig.mapping.editors];
     }
     protected getAbstract(element: any): string {
         if (!this.importConfig.mapping.abstract) return null;
