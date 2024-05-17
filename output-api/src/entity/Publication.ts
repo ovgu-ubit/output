@@ -111,9 +111,6 @@ export class Publication implements IPublication {
     locked_at?: Date;
 
     @Column({nullable: true})
-    editors?: string;
-
-    @Column({nullable: true})
     abstract?: string;
 
     @Column({nullable: true})

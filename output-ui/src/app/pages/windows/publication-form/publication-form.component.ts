@@ -100,7 +100,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       first_page: [''],
       last_page: [''],
       authors: ['', [Validators.required]],
-      editors: [''],
       page_count: [''],
       peer_reviewed: [''],
       authors_inst: [''],

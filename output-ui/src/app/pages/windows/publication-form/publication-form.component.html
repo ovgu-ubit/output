@@ -71,12 +71,6 @@
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Herausgeber*innen</mat-label>
-                    <textarea matInput [type]="'text'" placeholder="Herausgeber*innen"
-                        formControlName="editors"></textarea>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Autoren der Institution (corr. Autoren markiert):</mat-label>
                     <mat-chip-grid #author_list>
                         <mat-chip-row [removable]="true" *ngFor="let authorPub of this.pub?.authorPublications"
