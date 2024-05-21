@@ -77,4 +77,11 @@ export class PublicationService {
       peer_reviewed: boolean;
   }>(environment.api + 'publications/optional_fields', { withCredentials: true });
   }
+
+  public getRoles() {
+    return this.http.get<{
+      id: number,
+      label:string
+  }[]>(environment.api + 'publications/role', { withCredentials: true });
+  }
 }

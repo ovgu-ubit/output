@@ -70,6 +70,55 @@
                     <textarea matInput [type]="'text'" placeholder="Autor*innen" formControlName="authors"></textarea>
                 </mat-form-field>
 
+                <mat-card>
+                    <mat-card-header><mat-card-subtitle>Autorenschaften der Institution</mat-card-subtitle></mat-card-header>
+                    <mat-card-content>
+                        <table *ngIf="this.pub?.authorPublications && this.pub.authorPublications.length>0" mat-table
+                            [dataSource]="this.pub.authorPublications">
+                            <ng-container matColumnDef="edit">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                        (click)="this.addAuthorship(element)"
+                                        matTooltip="Autorenschaft untersuchen" [hidden]="this.disabled"><mat-icon>edit</mat-icon></button> </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef> Person </th>
+                                <td mat-cell *matCellDef="let element"> {{element.author.last_name}}, {{element.author.first_name}} </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="role">
+                                <th mat-header-cell *matHeaderCellDef> Rolle </th>
+                                <td mat-cell *matCellDef="let element"> {{element.role?.label}} </td>
+                            </ng-container>
+                
+                            <ng-container matColumnDef="institute">
+                                <th mat-header-cell *matHeaderCellDef> Institut </th>
+                                <td mat-cell *matCellDef="let element"> {{element.institute?.short_label? element.institute?.short_label : element.institute?.label}} </td>
+                            </ng-container>
+                
+                            <ng-container matColumnDef="corr">
+                                <th mat-header-cell *matHeaderCellDef> corr.? </th>
+                                <td mat-cell *matCellDef="let element"> <ng-container *ngIf="element.corresponding"><mat-icon>check</mat-icon></ng-container></td>
+                            </ng-container>
+                
+                            <ng-container matColumnDef="delete">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                        (click)="this.deleteAuthorship(element)"
+                                        matTooltip="Autorenschaft löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                            </ng-container>
+                
+                            <tr mat-header-row *matHeaderRowDef="displayedColumnsAuthors"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumnsAuthors;"></tr>
+                        </table>
+                    </mat-card-content>
+                    <mat-card-actions>
+                            <button matSuffix mat-icon-button type="button" (click)="this.addAuthorship()"
+                                matTooltip="Autorenschaft hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                    </mat-card-actions>
+                </mat-card><br> 
+
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Autoren der Institution (corr. Autoren markiert):</mat-label>
                     <mat-chip-grid #author_list>

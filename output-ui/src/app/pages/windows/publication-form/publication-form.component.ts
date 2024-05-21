@@ -24,6 +24,7 @@ import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { environment } from 'src/environments/environment';
 import { InvoiceService } from 'src/app/services/entities/invoice.service';
+import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubDateValidator {
@@ -69,6 +70,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   filteredFunders: Observable<Funder[]>;
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
+  displayedColumnsAuthors: string[] = ['edit', 'name','corr','institute','role', 'delete'];
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
   @ViewChild('authorInput') authorInput: ElementRef<HTMLInputElement>;
@@ -728,7 +730,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   addInvoice(invoice?: Invoice) {
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
-      maxWidth: "650px",
+      maxWidth: "850px",
       data: {
         invoice
       }
@@ -749,5 +751,22 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   restore() {
     this.pub.delete_date = null;
     this.form.get('delete_date').setValue(null)
+  }
+
+  deleteAuthorship(elem) {
+    if (this.disabled) return;
+    this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== elem.authorId || e.publicationId !== elem.publicationId)
+  }
+  addAuthorship(authorPub?) {
+    if (this.disabled) return;
+    let dialogRef = this.dialog.open(AuthorshipFormComponent, {
+      minWidth: "450px",
+      data: {authorPub}
+    });
+    dialogRef.afterClosed().subscribe({
+      next: data => {
+        console.log(data)
+      }
+    });
   }
 }
