@@ -23,6 +23,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
@@ -30,9 +31,9 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService, protected configService: ConfigService, protected http: HttpService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
         ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, roleService, configService, http);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -52,7 +53,6 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.IGNORE,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.IGNORE,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
@@ -124,9 +124,6 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     }
     protected getStatus(element: any): number {
         return 1;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         return null;

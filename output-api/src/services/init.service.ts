@@ -23,6 +23,7 @@ import { AliasPubType } from "../entity/alias/AliasPubType";
 import { AliasFunder } from "../entity/alias/AliasFunder";
 import { Language } from "../entity/Language";
 import { PublisherDOI } from "../entity/PublisherDOI";
+import { Role } from "../entity/Role";
 
 @Injectable()
 export class InitService {
@@ -46,7 +47,8 @@ export class InitService {
         @InjectRepository(AliasPublisher) protected aliasPublRep: Repository<AliasPublisher>,
         @InjectRepository(AliasPubType) protected aliasPubType: Repository<AliasPubType>,
         @InjectRepository(AliasFunder) protected aliasFunder: Repository<AliasFunder>,
-        @InjectRepository(Language) protected langRepository: Repository<Language>) { this.init(); }
+        @InjectRepository(Language) protected langRepository: Repository<Language>,
+        @InjectRepository(Role) protected roleRepository: Repository<Role>) { this.init(); }
 
     public async init() {
         // Drop database schema:
@@ -87,11 +89,18 @@ export class InitService {
             { label: 'Sonstige' },
         ]
 
+        let roles: Role[] = [
+            {label: 'Autor*in'},
+            {label: 'Herausgeber*in'},
+            {label: 'Gutachter*in'}
+        ]
+
         // Save entities to database
         await this.oaCategoryRepository.save(oas);
         await this.costTypeRepository.save(apc);
         await this.configRepository.save(config);
         await this.langRepository.save(langs);
+        await this.roleRepository.save(roles);
     }
 
     async addFunder() {

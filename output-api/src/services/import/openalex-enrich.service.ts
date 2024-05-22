@@ -22,6 +22,7 @@ import { CostType } from '../../entity/CostType';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class OpenAlexEnrichService extends ApiEnrichDOIService {
@@ -32,9 +33,9 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService, http);
         this.id = this.configService.get('openalex_id')
         this.costTypeService.findOrSave('Article processing charges').subscribe({
             next: data => {
@@ -60,7 +61,6 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.IGNORE,
         citation :UpdateOptions.REPLACE_IF_EMPTY,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
@@ -193,9 +193,6 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     }
     protected getStatus(element: any): number {
         return 1;
-    }
-    protected getEditors(element: any): string {
-        return null;
     }
     protected getAbstract(element: any): string {
         return null;

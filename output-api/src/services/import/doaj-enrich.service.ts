@@ -21,6 +21,7 @@ import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Invoice } from '../../entity/Invoice';
 import { Publisher } from '../../entity/Publisher';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -45,7 +46,6 @@ export class DOAJEnrichService extends AbstractImportService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.IGNORE,
-        editors: UpdateOptions.IGNORE,
         abstract: UpdateOptions.IGNORE,
         citation: UpdateOptions.IGNORE,
         page_count: UpdateOptions.IGNORE,
@@ -119,9 +119,6 @@ export class DOAJEnrichService extends AbstractImportService {
     protected getStatus(element: any): number {
         return null;
     }
-    protected getEditors(element: any): string {
-        return null;
-    }
     protected getAbstract(element: any): string {
         return null;
     }
@@ -138,8 +135,8 @@ export class DOAJEnrichService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService);
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
     }
 
     private publicationsUpdate = [];

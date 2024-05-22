@@ -22,6 +22,7 @@ import { ConfigService } from '@nestjs/config';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -33,8 +34,8 @@ export class CSVImportService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService,
-        protected languageService: LanguageService, protected configService: ConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService);
+        protected languageService: LanguageService, protected roleService: RoleService,  protected configService: ConfigService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -54,7 +55,6 @@ export class CSVImportService extends AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors: UpdateOptions.REPLACE_IF_EMPTY,
         abstract: UpdateOptions.REPLACE_IF_EMPTY,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -294,11 +294,6 @@ export class CSVImportService extends AbstractImportService {
         if (!this.importConfig.mapping.status) return null;
         if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
         return element[this.importConfig.mapping.status];
-    }
-    protected getEditors(element: any): string {
-        if (!this.importConfig.mapping.editors) return null;
-        if (this.importConfig.mapping.editors.startsWith('$')) return this.importConfig.mapping.editors.slice(1, this.importConfig.mapping.editors.length);
-        return element[this.importConfig.mapping.editors];
     }
     protected getAbstract(element: any): string {
         if (!this.importConfig.mapping.abstract) return null;

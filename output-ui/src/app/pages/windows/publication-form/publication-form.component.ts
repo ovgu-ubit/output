@@ -16,7 +16,6 @@ import { PublicationTypeService } from 'src/app/services/entities/publication-ty
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { SelectInstituteDialogComponent } from 'src/app/tools/select-institute-dialog/select-institute-dialog.component';
 import { Author, AuthorPublication, Contract, Funder, GreaterEntity, Institute, Invoice, Language, OA_Category, Publication, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
 import { ContractFormComponent } from '../contract-form/contract-form.component';
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
@@ -24,13 +23,14 @@ import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { environment } from 'src/environments/environment';
 import { InvoiceService } from 'src/app/services/entities/invoice.service';
+import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubDateValidator {
   public pubDateValidator(): ValidatorFn {
     return (formGroup: FormGroup) => {
       if (formGroup.get('pub_date').value || formGroup.get('pub_date_print').value || formGroup.get('pub_date_accepted').value || formGroup.get('pub_date_submitted').value) return null;
-      else return {no_pub_date: true }
+      else return { no_pub_date: true }
     };
   }
 }
@@ -62,17 +62,15 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   oa_cat_id;
   language_id;
 
-  authors: Author[];
-  filteredAuthors: Observable<Author[]>;
-
   funders: Funder[];
   filteredFunders: Observable<Funder[]>;
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
+  displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
-  @ViewChild('authorInput') authorInput: ElementRef<HTMLInputElement>;
   @ViewChild(MatTable) table: MatTable<Invoice>;
+  @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
 
   today = new Date();
   disabled = false;
@@ -83,7 +81,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService:InvoiceService) {
+    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: ['', [Validators.required]],
@@ -100,10 +98,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       first_page: [''],
       last_page: [''],
       authors: ['', [Validators.required]],
-      editors: [''],
       page_count: [''],
       peer_reviewed: [''],
-      authors_inst: [''],
       add_info: [''],
       import_date: [''],
       edit_date: [''],
@@ -134,8 +130,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     let ob$ = this.publicationService.getOptionalFields().pipe(map(data => {
-        this.optional_fields = data;
-      }
+      this.optional_fields = data;
+    }
     ));
     if (this.data['id']) {
       this.edit = true;
@@ -148,27 +144,27 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       };
     }
     ob$ = merge(ob$, this.loadMasterData());
-    
+
     ob$.subscribe({
       complete: () => {
       }
     })
   }
 
-  loadPub(id:number) {
+  loadPub(id: number) {
     return this.publicationService.getPublication(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
-      this.pub_type_id = this.pub.pub_type? this.pub.pub_type.id : -1
-      this.oa_cat_id = this.pub.oa_category? this.pub.oa_category.id : -1
-      this.language_id = this.pub.language? this.pub.language.id : -1
+      this.pub_type_id = this.pub.pub_type ? this.pub.pub_type.id : -1
+      this.oa_cat_id = this.pub.oa_category ? this.pub.oa_category.id : -1
+      this.language_id = this.pub.language ? this.pub.language.id : -1
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
-      
+
       if (this.pub?.locked) this.setLock(true);
       if (this.pub.greater_entity) this.form.get('ge').setValue(this.pub.greater_entity.label)
       if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
       if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
-      
+
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
         this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
@@ -214,15 +210,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map(value => this._filterContract(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.authorService.getAuthors().pipe(map(data => {
-      this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
-      this.filteredAuthors = this.form.get('authors_inst').valueChanges.pipe(
-        startWith(''),
-        //map(value => typeof value === 'string' ? value : value.name),
-        map((name) => {
-          return name ? this._filter(name) : this.authors.filter(author => !this.pub?.authorPublications.find(e => e.author.last_name === author.last_name));
-        }));
-    })))
     ob$ = merge(ob$, this.funderService.getFunders().pipe(map(data => {
       this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filteredFunders = this.form.get('funder').valueChanges.pipe(
@@ -241,17 +228,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disable() {
     this.disabled = true;
     this.form.disable();
-    this.authorInput.nativeElement.disabled = true;
-    this.funderInput.nativeElement.disabled = true;
-  }
-
-  private _filter(value) {
-    let filterValue = value.toLowerCase();
-    let split = filterValue.split(',').map(e => e.trim());
-    if (split.length === 1) {
-      return this.authors.filter(author => author.last_name.toLowerCase().includes(filterValue) && !this.pub.authorPublications.find(e => e.author.last_name === author.last_name) ||
-        (author.orcid && author.orcid.includes(filterValue) && !this.pub.authorPublications.find(e => e.author.orcid === author.orcid)));
-    } else return this.authors.filter(author => author.last_name.toLowerCase() === split[0] && author.first_name.toLowerCase().includes(split[1]) && !this.pub.authorPublications.find(e => e.author.last_name === author.last_name));
   }
 
   private _filterGE(value: string): GreaterEntity[] {
@@ -274,73 +250,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (!value) value = '';
     const filterValue = value.toLowerCase();
     return this.funders.filter(pub => pub?.label.toLowerCase().includes(filterValue));
-  }
-
-  selectInstitute(author: Author): Observable<Institute> {
-    let dialogRef = this.dialog.open(SelectInstituteDialogComponent, {
-      width: "400px",
-      data: {
-        author,
-        authorPub: this.pub.authorPublications.find(e => e.author.id === author.id)
-      }
-    });
-    return dialogRef.afterClosed();
-  }
-
-  editInst(authorPub: AuthorPublication) {
-    if (this.pub.locked || this.disabled) return;
-    this.selectInstitute(authorPub.author).subscribe({
-      next: data => {
-        if (data === null || data.id) authorPub.institute = data;
-      }
-    })
-  }
-
-  addAuthor(event) {
-    if (!event.value || this.disabled) return;
-    let split = event.value.toLocaleLowerCase().split(',').map(e => e.trim());
-    if (split.length > 1) {
-      let author = this.authors.find(e => e.last_name.toLocaleLowerCase() === split[0] && e.first_name.toLocaleLowerCase() === split[1]);
-      if (author && this.pub.id) { //pub edit and author existing
-        //open institute selection dialog
-        this.selectInstitute(author).subscribe(dialogResult => {
-          this.pub.authorPublications.push({ author, authorId: author.id, publicationId: this.pub.id, institute: dialogResult })
-        });
-      } else if (author && !this.pub.id) { //pub new and author existing
-        //open institute selection dialog
-        this.selectInstitute(author).subscribe(dialogResult => {
-          this.pub.authorPublications.push({ author, authorId: author.id, institute: dialogResult })
-        });
-      } else { // new author
-        let dialogData = new ConfirmDialogModel("Autor*in anlegen", `Möchten Sie Autor*in "${event.value}" hinzufügen?`);
-
-        let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-          maxWidth: "400px",
-          data: dialogData
-        });
-        let value = event.value;
-
-        dialogRef.afterClosed().subscribe(dialogResult => {
-          if (dialogResult) {
-            this.authorService.addAuthor({ last_name: value.split(',')[0].trim(), first_name: value.split(',')[1].trim() }).subscribe({
-              next: data => {
-                this._snackBar.open('Autor*in wurde hinzugefügt', 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
-                })
-                if (this.pub.id) this.pub.authorPublications.push({ author: data, authorId: data.id, publicationId: this.pub.id })
-                else this.pub.authorPublications.push({ author, authorId: author.id })
-                this.form.get('authors_inst').setValue('');
-                this.loadMasterData().subscribe();
-              }
-            })
-          }
-        })
-      }
-    }
-    this.authorInput.nativeElement.value = '';
-    this.form.get('authors_inst').setValue('');
   }
 
   addPublisher(event) {
@@ -590,28 +499,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-  removeAuthor(author) {
-    if (this.disabled) return;
-    this.pub.authorPublications = this.pub.authorPublications.filter(ap => ap.author.id !== author.id)
-    this.form.get('authors_inst').setValue('');
-  }
-
-  switchCorresponding(authorPub: AuthorPublication) {
-    if (this.pub.locked || this.disabled) return;
-    this.pub.authorPublications = this.pub.authorPublications.filter(e => !(e.authorId === authorPub.authorId && e.publicationId === authorPub.publicationId))
-    this.pub.authorPublications.push({
-      authorId: authorPub.authorId,
-      author: authorPub.author,
-      publicationId: authorPub.publicationId,
-      corresponding: !authorPub.corresponding,
-      institute: authorPub.institute,
-      affiliation: authorPub.affiliation
-    })
-  }
-
-  selected(event: MatAutocompleteSelectedEvent): void {
-    this.addAuthor({ value: event.option.value })
-  }
   selectedGE(event: MatAutocompleteSelectedEvent): void {
     this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
     this.form.get('ge').setValue(this.pub.greater_entity.label)
@@ -655,7 +542,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.submitted = true;
     if (this.form.invalid) return;
 
-
     if (!this.form.get('ge').value) this.pub.greater_entity = null;
     if (!this.form.get('publ').value) this.pub.publisher = null;
     if (!this.form.get('contr').value) this.pub.contract = null;
@@ -664,14 +550,15 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.pub = { ...this.pub, ...this.form.getRawValue(), locked_at: null };
     } else { //new publication
       this.pub = {
-        ...this.pub,
-        title: this.form.get('title').value,
-        authors: this.form.get('authors').value,
+        ...this.pub, ...this.form.getRawValue(),
         dataSource: this.form.get('dataSource').value || 'Manuell hinzugefügt',
         pub_date: this.form.get('pub_date').value ? this.form.get('pub_date').value.format() : undefined,
         pub_date_print: this.form.get('pub_date_print').value ? this.form.get('pub_date_print').value.format() : undefined,
         pub_date_accepted: this.form.get('pub_date_accepted').value ? this.form.get('pub_date_accepted').value.format() : undefined,
         pub_date_submitted: this.form.get('pub_date_submitted').value ? this.form.get('pub_date_submitted').value.format() : undefined,
+      }
+      for (let key of Object.keys(this.pub)) {
+        if (!this.pub[key]) this.pub[key] = undefined;
       }
     }
     this.pub.pub_type = this.pub_type_id !== -1 ? this.pub_types.find(e => e.id === this.pub_type_id) : null;
@@ -729,7 +616,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   addInvoice(invoice?: Invoice) {
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
-      maxWidth: "650px",
+      maxWidth: "850px",
       data: {
         invoice
       }
@@ -750,5 +637,30 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   restore() {
     this.pub.delete_date = null;
     this.form.get('delete_date').setValue(null)
+  }
+
+  deleteAuthorship(elem) {
+    if (this.disabled) return;
+    this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== elem.authorId)
+  }
+  addAuthorship(authorPub?) {
+    if (this.disabled) return;
+    let data = {};
+    if (authorPub) data = { authorPub, authors: this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId).map(e => e.authorId) }
+    else data = {authors: this.pub.authorPublications.map(e => e.authorId)}
+    let dialogRef = this.dialog.open(AuthorshipFormComponent, {
+      minWidth: "450px",
+      data
+    });
+    dialogRef.afterClosed().subscribe({
+      next: data => {
+        if (data.authorId) {
+          console.log(data)
+          if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
+          this.pub.authorPublications.push(data)
+          if (this.table) this.table.dataSource = new MatTableDataSource(this.pub.authorPublications);
+        }
+      }
+    });
   }
 }

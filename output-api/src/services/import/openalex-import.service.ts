@@ -21,6 +21,7 @@ import { Invoice } from '../../entity/Invoice';
 import { CostType } from '../../entity/CostType';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
@@ -31,9 +32,9 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService, http);
         this.id = this.configService.get('openalex_id')
         this.costTypeService.findOrSave('Article processing charges').subscribe({
             next: data => {
@@ -59,7 +60,6 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors: UpdateOptions.IGNORE,
         abstract: UpdateOptions.IGNORE,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -206,20 +206,22 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected getStatus(element: any): number {
         return 1;
     }
-    protected getEditors(element: any): string {
-        return null;
-    }
     protected getAbstract(element: any): string {
         return null;
     }
     protected getCitation(element: any): { volume: number, issue: number, first_page: number, last_page: number } {
         if (element['biblio']) {
-            return {
+            let e = {
                 volume: (() => {try { return Number(element['biblio']['volume']) } catch (err) {return null;}})(),
                 issue: (() => {try { return Number(element['biblio']['issue']) } catch (err) {return null;}})(),
                 first_page: (() => {try { return Number(element['biblio']['first_page']) } catch (err) {return null;}})(),
                 last_page: (() => {try { return Number(element['biblio']['last_page']) } catch (err) {return null;}})(),
             }
+            if (Number.isNaN(e.volume)) e.volume = null;
+            if (Number.isNaN(e.issue)) e.issue = null;
+            if (Number.isNaN(e.first_page)) e.first_page = null;
+            if (Number.isNaN(e.last_page)) e.last_page = null;
+            return e;
         } else return null;
     }
     protected getPageCount(element: any): number {

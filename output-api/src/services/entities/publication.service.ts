@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { Publisher } from '../../entity/Publisher';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
+import { Role } from '../../entity/Role';
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
@@ -137,7 +138,7 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
-            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation }; })
+            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
             if (autPub) {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
@@ -171,7 +172,8 @@ export class PublicationService {
                 invoices: invoice,
                 authorPublications: {
                     author: true,
-                    institute: true
+                    institute: true,
+                    role: true
                 },
                 greater_entity: true,
                 pub_type: true,
@@ -196,8 +198,8 @@ export class PublicationService {
         return pub;
     }
 
-    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute) {
-        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute });
+    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?:Role) {
+        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role });
     }
 
     public getAuthorsPublication(pub: Publication) {

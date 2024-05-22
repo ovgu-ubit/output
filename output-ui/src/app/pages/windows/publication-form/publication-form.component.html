@@ -70,50 +70,54 @@
                     <textarea matInput [type]="'text'" placeholder="Autor*innen" formControlName="authors"></textarea>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Herausgeber*innen</mat-label>
-                    <textarea matInput [type]="'text'" placeholder="Herausgeber*innen"
-                        formControlName="editors"></textarea>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Autoren der Institution (corr. Autoren markiert):</mat-label>
-                    <mat-chip-grid #author_list>
-                        <mat-chip-row [removable]="true" *ngFor="let authorPub of this.pub?.authorPublications"
-                            (removed)="removeAuthor(authorPub.author)" color="primary"
-                            (click)="switchCorresponding(authorPub)" [highlighted]="authorPub.corresponding">
-                            {{authorPub.author.last_name}}, {{authorPub.author.first_name}}
-                            <button matChipRemove *ngIf="!this.pub?.locked && !this.disabled">
-                                <mat-icon>cancel</mat-icon>
-                            </button>
-                        </mat-chip-row>
-                    </mat-chip-grid>
-                    <input matInput #authorInput formControlName="authors_inst" placeholder="Autor*in hinzufügen"
-                        [matAutocomplete]="auto" [matChipInputFor]="author_list"
-                        (matChipInputTokenEnd)="addAuthor($event)" [matChipInputSeparatorKeyCodes]="[]"
-                        (keydown.enter)="addAuthor($event.target)">
-                    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
-                        <mat-option *ngFor="let author of filteredAuthors | async"
-                            [value]="author.last_name+', '+author.first_name">
-                            {{author.last_name}}, {{author.first_name}} <ng-container *ngIf="author.orcid">
-                                ({{author.orcid}})
+                <mat-card>
+                    <mat-card-header><mat-card-subtitle>Autorenschaften der Institution</mat-card-subtitle></mat-card-header>
+                    <mat-card-content>
+                        <table #table *ngIf="this.pub?.authorPublications && this.pub.authorPublications.length>0" mat-table
+                            [dataSource]="this.pub.authorPublications">
+                            <ng-container matColumnDef="edit">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                        (click)="this.addAuthorship(element)"
+                                        matTooltip="Autorenschaft untersuchen" [hidden]="this.disabled"><mat-icon>edit</mat-icon></button> </td>
                             </ng-container>
-                        </mat-option>
-                    </mat-autocomplete>
-                </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Beteiligte Institute (corr. markiert):</mat-label>
-                    <mat-chip-grid #inst_list>
-                        <mat-chip-row [removable]="true" *ngFor="let authorPub of this.pub?.authorPublications"
-                            color="primary" [highlighted]="authorPub.corresponding" (click)="editInst(authorPub)">
-                            {{authorPub.institute?.short_label? authorPub.institute?.short_label :
-                            authorPub.institute?.label}}
-                        </mat-chip-row>
-                    </mat-chip-grid>
-                    <input matInput [matChipInputFor]="inst_list" disabled hidden>
-                </mat-form-field>
+                            <ng-container matColumnDef="name">
+                                <th mat-header-cell *matHeaderCellDef> Person </th>
+                                <td mat-cell *matCellDef="let element"> {{element.author.last_name}}, {{element.author.first_name}} </td>
+                            </ng-container>
 
+                            <ng-container matColumnDef="role">
+                                <th mat-header-cell *matHeaderCellDef> Rolle </th>
+                                <td mat-cell *matCellDef="let element"> {{element.role?.label}} </td>
+                            </ng-container>
+                
+                            <ng-container matColumnDef="institute">
+                                <th mat-header-cell *matHeaderCellDef> Institut </th>
+                                <td mat-cell *matCellDef="let element"> {{element.institute?.short_label? element.institute?.short_label : element.institute?.label}} </td>
+                            </ng-container>
+                
+                            <ng-container matColumnDef="corr">
+                                <th mat-header-cell *matHeaderCellDef> corr.? </th>
+                                <td mat-cell *matCellDef="let element"> <ng-container *ngIf="element.corresponding"><mat-icon>check</mat-icon></ng-container></td>
+                            </ng-container>
+                
+                            <ng-container matColumnDef="delete">
+                                <th mat-header-cell *matHeaderCellDef> </th>
+                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                        (click)="this.deleteAuthorship(element)"
+                                        matTooltip="Autorenschaft löschen" [hidden]="this.disabled || this.pub?.locked"><mat-icon>delete</mat-icon></button> </td>
+                            </ng-container>
+                
+                            <tr mat-header-row *matHeaderRowDef="displayedColumnsAuthors"></tr>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumnsAuthors;"></tr>
+                        </table>
+                    </mat-card-content>
+                    <mat-card-actions>
+                            <button matSuffix mat-icon-button type="button" (click)="this.addAuthorship()"
+                                matTooltip="Autorenschaft hinzufügen" [hidden]="this.disabled || this.pub?.locked"><mat-icon>add</mat-icon></button>
+                    </mat-card-actions>
+                </mat-card><br>
             </mat-expansion-panel>
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
@@ -378,7 +382,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Förderer</mat-label>
-                    <mat-chip-grid #funder_list>
+                    <mat-chip-grid #funder_list  [disabled]="this.disabled || this.pub?.locked">
                         <mat-chip-row [removable]="true" *ngFor="let funder of this.pub?.funders"
                             (removed)="removeFunder(funder)">
                             {{funder.label}}

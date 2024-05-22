@@ -22,6 +22,8 @@ import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Conf
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { ConfigService } from '@nestjs/config';
+import { Role } from '../../entity/Role';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -32,7 +34,8 @@ export abstract class AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService, protected costTypeService: CostTypeService,
-        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService) { }
+        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, 
+        protected configService: ConfigService) { }
 
     protected progress = 0;
     protected status_text = 'initialized';
@@ -62,7 +65,6 @@ export abstract class AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
-        editors: UpdateOptions.REPLACE_IF_EMPTY,
         abstract: UpdateOptions.REPLACE_IF_EMPTY,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -105,7 +107,7 @@ export abstract class AbstractImportService {
      * retrieves the institutional authors of an element
      * @param element 
      */
-    protected abstract getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string, corresponding?: boolean }[];
+    protected abstract getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string, corresponding?: boolean, role?: string }[];
     /**
      * retrieves the author string of an element
      * @param element 
@@ -172,11 +174,6 @@ export abstract class AbstractImportService {
      */
     protected abstract getStatus(element: any): number;
     /**
-     * retrieves the editor string of an element
-     * @param element 
-     */
-    protected abstract getEditors(element: any): string;
-    /**
      * retrieves the abstract of an element
      * @param element 
      */
@@ -212,7 +209,7 @@ export abstract class AbstractImportService {
             this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
             return null;
         }
-        let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute }[] = [];
+        let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute, role: Role }[] = [];
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
             for (let aut of authors_inst) {
@@ -220,7 +217,8 @@ export abstract class AbstractImportService {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                 });
                 let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
-                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst });
+                let role = aut.role ? await this.roleService.findOrSave(aut.role?.trim()) : await this.roleService.findOrSave('aut'); //default role author
+                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst, role });
             }
         }
         let ge = this.getGreaterEntity(item);
@@ -285,7 +283,6 @@ export abstract class AbstractImportService {
             funders: funder_ents,
             best_oa_license: this.getLicense(item)?.trim(),
             invoices: inv_info,
-            editors: this.getEditors(item)?.trim(),
             abstract: this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
             page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
@@ -309,7 +306,7 @@ export abstract class AbstractImportService {
 
         let pub_ent = (await this.publicationService.save([obj]))[0];
         for (let aut of authors_entities) {
-            await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute);
+            await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
         }
 
         return pub_ent;
@@ -647,21 +644,6 @@ export abstract class AbstractImportService {
                 orig.status = this.getStatus(element);
                 if (orig.status) fields.push('status')
                 else orig.status = 0;
-                break;
-        }
-        switch (this.updateMapping.editors) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.APPEND:
-            case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.editors) {
-                    orig.editors = this.getEditors(element);
-                    if (orig.editors) fields.push('editors')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.editors = this.getEditors(element);
-                if (orig.editors) fields.push('editors')
                 break;
         }
         if (this.configService.get('optional_fields.abstract')) {

@@ -316,6 +316,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         pubInit.authorPublications = [];
         this.publicationService.insert(pubInit).subscribe({
           next: data => {
+            if (Array.isArray(data)) data = data[0]
             result.id = data.id;
             for (let autPub of result.authorPublications) {
               autPub.publicationId = data.id;
