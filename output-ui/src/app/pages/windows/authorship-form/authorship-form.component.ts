@@ -69,7 +69,7 @@ export class AuthorshipFormComponent implements OnInit {
           this.role = this.data.authorPub.role? this.data.authorPub.role : this.roles[0]
           this.addAuthor(this.data.authorPub?.author)
         } else {//new authorship
-          
+          this.role = this.roles[0]
         }
         this.filteredAuthors = this.form.get('author').valueChanges.pipe(
           startWith(this.form.get('author').value),
@@ -189,6 +189,10 @@ export class AuthorshipFormComponent implements OnInit {
               })
               this.form.get('author').setValue(data.last_name + ", " + data.first_name)
               author = data;
+              this.authorService.getAuthors().subscribe({next: data => {
+                this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
+                if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id ))
+              }});
             }
           })
         }

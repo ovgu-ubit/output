@@ -63,9 +63,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   oa_cat_id;
   language_id;
 
-  authors: Author[];
-  filteredAuthors: Observable<Author[]>;
-
   funders: Funder[];
   filteredFunders: Observable<Funder[]>;
 
@@ -73,7 +70,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
-  @ViewChild('authorInput') authorInput: ElementRef<HTMLInputElement>;
   @ViewChild(MatTable) table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
 
@@ -105,7 +101,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       authors: ['', [Validators.required]],
       page_count: [''],
       peer_reviewed: [''],
-      authors_inst: [''],
       add_info: [''],
       import_date: [''],
       edit_date: [''],
@@ -216,15 +211,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map(value => this._filterContract(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.authorService.getAuthors().pipe(map(data => {
-      this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
-      this.filteredAuthors = this.form.get('authors_inst').valueChanges.pipe(
-        startWith(''),
-        //map(value => typeof value === 'string' ? value : value.name),
-        map((name) => {
-          return name ? this._filter(name) : this.authors.filter(author => !this.pub?.authorPublications.find(e => e.author.last_name === author.last_name));
-        }));
-    })))
     ob$ = merge(ob$, this.funderService.getFunders().pipe(map(data => {
       this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filteredFunders = this.form.get('funder').valueChanges.pipe(
@@ -243,17 +229,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disable() {
     this.disabled = true;
     this.form.disable();
-    this.authorInput.nativeElement.disabled = true;
-    this.funderInput.nativeElement.disabled = true;
-  }
-
-  private _filter(value) {
-    let filterValue = value.toLowerCase();
-    let split = filterValue.split(',').map(e => e.trim());
-    if (split.length === 1) {
-      return this.authors.filter(author => author.last_name.toLowerCase().includes(filterValue) && !this.pub.authorPublications.find(e => e.author.last_name === author.last_name) ||
-        (author.orcid && author.orcid.includes(filterValue) && !this.pub.authorPublications.find(e => e.author.orcid === author.orcid)));
-    } else return this.authors.filter(author => author.last_name.toLowerCase() === split[0] && author.first_name.toLowerCase().includes(split[1]) && !this.pub.authorPublications.find(e => e.author.last_name === author.last_name));
   }
 
   private _filterGE(value: string): GreaterEntity[] {
@@ -276,73 +251,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (!value) value = '';
     const filterValue = value.toLowerCase();
     return this.funders.filter(pub => pub?.label.toLowerCase().includes(filterValue));
-  }
-
-  selectInstitute(author: Author): Observable<Institute> {
-    let dialogRef = this.dialog.open(SelectInstituteDialogComponent, {
-      width: "400px",
-      data: {
-        author,
-        authorPub: this.pub.authorPublications.find(e => e.author.id === author.id)
-      }
-    });
-    return dialogRef.afterClosed();
-  }
-
-  editInst(authorPub: AuthorPublication) {
-    if (this.pub.locked || this.disabled) return;
-    this.selectInstitute(authorPub.author).subscribe({
-      next: data => {
-        if (data === null || data.id) authorPub.institute = data;
-      }
-    })
-  }
-
-  addAuthor(event) {
-    if (!event.value || this.disabled) return;
-    let split = event.value.toLocaleLowerCase().split(',').map(e => e.trim());
-    if (split.length > 1) {
-      let author = this.authors.find(e => e.last_name.toLocaleLowerCase() === split[0] && e.first_name.toLocaleLowerCase() === split[1]);
-      if (author && this.pub.id) { //pub edit and author existing
-        //open institute selection dialog
-        this.selectInstitute(author).subscribe(dialogResult => {
-          this.pub.authorPublications.push({ author, authorId: author.id, publicationId: this.pub.id, institute: dialogResult })
-        });
-      } else if (author && !this.pub.id) { //pub new and author existing
-        //open institute selection dialog
-        this.selectInstitute(author).subscribe(dialogResult => {
-          this.pub.authorPublications.push({ author, authorId: author.id, institute: dialogResult })
-        });
-      } else { // new author
-        let dialogData = new ConfirmDialogModel("Autor*in anlegen", `Möchten Sie Autor*in "${event.value}" hinzufügen?`);
-
-        let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-          maxWidth: "400px",
-          data: dialogData
-        });
-        let value = event.value;
-
-        dialogRef.afterClosed().subscribe(dialogResult => {
-          if (dialogResult) {
-            this.authorService.addAuthor({ last_name: value.split(',')[0].trim(), first_name: value.split(',')[1].trim() }).subscribe({
-              next: data => {
-                this._snackBar.open('Autor*in wurde hinzugefügt', 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
-                })
-                if (this.pub.id) this.pub.authorPublications.push({ author: data, authorId: data.id, publicationId: this.pub.id })
-                else this.pub.authorPublications.push({ author, authorId: author.id })
-                this.form.get('authors_inst').setValue('');
-                this.loadMasterData().subscribe();
-              }
-            })
-          }
-        })
-      }
-    }
-    this.authorInput.nativeElement.value = '';
-    this.form.get('authors_inst').setValue('');
   }
 
   addPublisher(event) {
@@ -592,28 +500,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-  removeAuthor(author) {
-    if (this.disabled) return;
-    this.pub.authorPublications = this.pub.authorPublications.filter(ap => ap.author.id !== author.id)
-    this.form.get('authors_inst').setValue('');
-  }
-
-  switchCorresponding(authorPub: AuthorPublication) {
-    if (this.pub.locked || this.disabled) return;
-    this.pub.authorPublications = this.pub.authorPublications.filter(e => !(e.authorId === authorPub.authorId && e.publicationId === authorPub.publicationId))
-    this.pub.authorPublications.push({
-      authorId: authorPub.authorId,
-      author: authorPub.author,
-      publicationId: authorPub.publicationId,
-      corresponding: !authorPub.corresponding,
-      institute: authorPub.institute,
-      affiliation: authorPub.affiliation
-    })
-  }
-
-  selected(event: MatAutocompleteSelectedEvent): void {
-    this.addAuthor({ value: event.option.value })
-  }
   selectedGE(event: MatAutocompleteSelectedEvent): void {
     this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
     this.form.get('ge').setValue(this.pub.greater_entity.label)
@@ -773,7 +659,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           console.log(data)
           if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
           this.pub.authorPublications.push(data)
-          this.table.dataSource = new MatTableDataSource(this.pub.authorPublications);
+          if (this.table) this.table.dataSource = new MatTableDataSource(this.pub.authorPublications);
         }
       }
     });

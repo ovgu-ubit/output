@@ -211,12 +211,17 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getCitation(element: any): { volume: number, issue: number, first_page: number, last_page: number } {
         if (element['biblio']) {
-            return {
+            let e = {
                 volume: (() => {try { return Number(element['biblio']['volume']) } catch (err) {return null;}})(),
                 issue: (() => {try { return Number(element['biblio']['issue']) } catch (err) {return null;}})(),
                 first_page: (() => {try { return Number(element['biblio']['first_page']) } catch (err) {return null;}})(),
                 last_page: (() => {try { return Number(element['biblio']['last_page']) } catch (err) {return null;}})(),
             }
+            if (Number.isNaN(e.volume)) e.volume = null;
+            if (Number.isNaN(e.issue)) e.issue = null;
+            if (Number.isNaN(e.first_page)) e.first_page = null;
+            if (Number.isNaN(e.last_page)) e.last_page = null;
+            return e;
         } else return null;
     }
     protected getPageCount(element: any): number {

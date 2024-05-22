@@ -9,6 +9,10 @@
             <mat-label>Person</mat-label>
             <input matInput #authorInput formControlName="author" placeholder="Person auswählen oder hinzufügen"
                 [matAutocomplete]="auto" (keydown.enter)="addAuthor($event.target)">
+            <button type="button" matSuffix mat-icon-button (click)="addAuthor(authorInput)"
+                matTooltip="Person hinzufügen" [matTooltipShowDelay]="800" *ngIf="(this.filteredAuthors | async)?.length === 0">
+                <mat-icon *ngIf="!this.disabled">save</mat-icon>
+            </button>
             <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
                 <mat-option *ngFor="let author of filteredAuthors | async"
                     [value]="author.last_name+', '+author.first_name">
