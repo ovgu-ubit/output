@@ -31,7 +31,7 @@ export class PubDateValidator {
   public pubDateValidator(): ValidatorFn {
     return (formGroup: FormGroup) => {
       if (formGroup.get('pub_date').value || formGroup.get('pub_date_print').value || formGroup.get('pub_date_accepted').value || formGroup.get('pub_date_submitted').value) return null;
-      else return {no_pub_date: true }
+      else return { no_pub_date: true }
     };
   }
 }
@@ -70,11 +70,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   filteredFunders: Observable<Funder[]>;
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
-  displayedColumnsAuthors: string[] = ['edit', 'name','corr','institute','role', 'delete'];
+  displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
   @ViewChild('authorInput') authorInput: ElementRef<HTMLInputElement>;
   @ViewChild(MatTable) table: MatTable<Invoice>;
+  @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
 
   today = new Date();
   disabled = false;
@@ -85,7 +86,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService:InvoiceService) {
+    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: ['', [Validators.required]],
@@ -135,8 +136,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     let ob$ = this.publicationService.getOptionalFields().pipe(map(data => {
-        this.optional_fields = data;
-      }
+      this.optional_fields = data;
+    }
     ));
     if (this.data['id']) {
       this.edit = true;
@@ -149,27 +150,27 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       };
     }
     ob$ = merge(ob$, this.loadMasterData());
-    
+
     ob$.subscribe({
       complete: () => {
       }
     })
   }
 
-  loadPub(id:number) {
+  loadPub(id: number) {
     return this.publicationService.getPublication(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
-      this.pub_type_id = this.pub.pub_type? this.pub.pub_type.id : -1
-      this.oa_cat_id = this.pub.oa_category? this.pub.oa_category.id : -1
-      this.language_id = this.pub.language? this.pub.language.id : -1
+      this.pub_type_id = this.pub.pub_type ? this.pub.pub_type.id : -1
+      this.oa_cat_id = this.pub.oa_category ? this.pub.oa_category.id : -1
+      this.language_id = this.pub.language ? this.pub.language.id : -1
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
-      
+
       if (this.pub?.locked) this.setLock(true);
       if (this.pub.greater_entity) this.form.get('ge').setValue(this.pub.greater_entity.label)
       if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
       if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
-      
+
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
         this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
@@ -755,17 +756,25 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   deleteAuthorship(elem) {
     if (this.disabled) return;
-    this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== elem.authorId || e.publicationId !== elem.publicationId)
+    this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== elem.authorId)
   }
   addAuthorship(authorPub?) {
     if (this.disabled) return;
+    let data = {};
+    if (authorPub) data = { authorPub, authors: this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId).map(e => e.authorId) }
+    else data = {authors: this.pub.authorPublications.map(e => e.authorId)}
     let dialogRef = this.dialog.open(AuthorshipFormComponent, {
       minWidth: "450px",
-      data: {authorPub}
+      data
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        console.log(data)
+        if (data.authorId) {
+          console.log(data)
+          if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
+          this.pub.authorPublications.push(data)
+          this.table.dataSource = new MatTableDataSource(this.pub.authorPublications);
+        }
       }
     });
   }

@@ -55,6 +55,7 @@ export class AuthorshipFormComponent implements OnInit {
     }))
     ob$ = merge(ob$, this.authorService.getAuthors().pipe(map(data => {
       this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
+      if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id ))
     })));
     ob$ = merge(ob$, this.publicationService.getRoles().pipe(map(data => {
       this.roles = data;
@@ -64,11 +65,11 @@ export class AuthorshipFormComponent implements OnInit {
         if (this.data.authorPub) {
           this.form.get('affiliation').setValue(this.data.authorPub?.affiliation)
           this.form.get('author').setValue(this.data.authorPub?.author.last_name + ", " + this.data.authorPub?.author.first_name)
+          this.form.get('corresponding').setValue(this.data.authorPub?.corresponding)
           this.role = this.data.authorPub.role? this.data.authorPub.role : this.roles[0]
           this.addAuthor(this.data.authorPub?.author)
-
         } else {//new authorship
-
+          
         }
         this.filteredAuthors = this.form.get('author').valueChanges.pipe(
           startWith(this.form.get('author').value),
@@ -111,10 +112,10 @@ export class AuthorshipFormComponent implements OnInit {
           inst.aliases.push({ elementId: this.institute.id, alias: result[0] });
           this.instService.update(inst).subscribe()
         }
-        this.dialogRef.close({author:this.author, institute:this.institute, corresponding: this.form.get('corresponding').value, role: this.role});
+        this.dialogRef.close({author:this.author, authorId: this.author.id, institute:this.institute, corresponding: this.form.get('corresponding').value, role: this.role, affiliation: this.form.get('affiliation').value});
       });
     }
-    else this.dialogRef.close({author:this.author, institute:this.institute, corresponding: this.form.get('corresponding').value, role: this.role});
+    else this.dialogRef.close({author:this.author, authorId: this.author.id, institute:this.institute, corresponding: this.form.get('corresponding').value, role: this.role, affiliation: this.form.get('affiliation').value});
   }
 
   abort() {

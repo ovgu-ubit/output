@@ -138,7 +138,7 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
-            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation }; })
+            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
             if (autPub) {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);

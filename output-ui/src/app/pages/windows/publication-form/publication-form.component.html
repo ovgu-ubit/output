@@ -73,7 +73,7 @@
                 <mat-card>
                     <mat-card-header><mat-card-subtitle>Autorenschaften der Institution</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <table *ngIf="this.pub?.authorPublications && this.pub.authorPublications.length>0" mat-table
+                        <table #table *ngIf="this.pub?.authorPublications && this.pub.authorPublications.length>0" mat-table
                             [dataSource]="this.pub.authorPublications">
                             <ng-container matColumnDef="edit">
                                 <th mat-header-cell *matHeaderCellDef> </th>
