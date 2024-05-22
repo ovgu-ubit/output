@@ -81,14 +81,14 @@ export class ScopusImportService extends ApiImportOffsetService {
             { key: 'apiKey', value: this.configService.get('api_key_scopus') }]
     }
     protected importTest(element: any): boolean {
-        return element && this.authorsInstitution(element.author).length > 0;
+        return element && element.affiliation?.find(aff => this.affiliationIncludesTags(aff.affilname));
     }
 
     protected getDOI(element: any): string {
-        return null;
+        return element['prism:doi'];
     }
     protected getTitle(element: any): string {
-        return null;
+        return element['dc:title'];
     }
     protected getNumber(response: any): number {
         return response.data['search-results']['opensearch:totalResults'];
@@ -97,58 +97,53 @@ export class ScopusImportService extends ApiImportOffsetService {
         return response.data['search-results']['entry'];
     }
     protected getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string }[] {
-        let authors_inst = this.authorsInstitution(element.author);
+        if (!element.author || element.author.length === 0) return null;
+        let aut_inst = [];
+        for (let i=0;i<element.author.length;i++) {
+            if (!element.affiliation[i]) continue;
+            if (this.affiliationIncludesTags(element.affiliation[i].affilname)) aut_inst.push(element.author[i])
+        }
         let res = [];
-        for (let item of authors_inst) res.push({ last_name: item['family'], first_name: item['given'], orcid: item['ORCID']?.slice(item['ORCID'].lastIndexOf('/') + 1), affiliation: item['affiliation'][0].name })
+        for (let item of aut_inst) res.push({ last_name: item['surname'], first_name: item['given-name'] })
         return res;
     }
     protected getAuthors(element: any): string {
         let authors = element.author;
-        if (!authors || authors.length === 0) authors = element.editor;
+        if (!authors || authors.length === 0) return null;
         let result = '';
-        if (authors) {
-            authors.forEach(author => {
-                if (result !== '') {
-                    result += '; ';
-                }
-                if (author.family) result += author.family + ', ' + author.given;
-                else result += author.name;
-            });
-        }
+        authors.forEach(author => {
+            if (result !== '') {
+                result += '; ';
+            }
+            if (author.surname) result += author.surname + ', ' + author['given-name'];
+            else result += author.authname;
+        });
         return result;
-    }
-    public authorsInstitution(authors) {
-        if (authors) {
-            let aut = authors.filter(author => {
-                author.affiliation = author.affiliation.filter(affiliation => this.affiliationIncludesTags(affiliation));
-                return author.affiliation.length !== 0;
-            });
-            return aut;
-        } else return [];
     }
 
     private affiliationIncludesTags(affiliation): boolean {
         for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
+            if (affiliation?.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
         }
         return false;
     }
 
-    public publicationContainsInstitutionAuthor(publication): boolean {
-        let authors = publication.author;
-        if (!authors || authors.length === 0) authors = publication.editor;
-        let res = this.authorsInstitution(authors).length !== 0;
-        return res;
-    }
-
     protected getGreaterEntity(element: any): GreaterEntity {
-        return null;
+        let identifiers = [];
+        if (element['prism:isbn']) identifiers = identifiers.concat(element['prism:isbn'].map(e => {return {type:'isbn',value:e['$']}}));
+        if (element['prism:eIssn']) identifiers.push({type:'issn',value:element['prism:eIssn'].slice(0,4)+'-'+element['prism:eIssn'].slice(4)});
+        if (element['prism:issn']) identifiers.push({type:'issn',value:element['prism:issn'].slice(0,4)+'-'+element['prism:issn'].slice(4)});
+        return {
+            label: element['prism:publicationName'],
+            identifiers
+        };
     }
     protected getPublisher(element: any): Publisher {
         return null;
     }
     protected getPubDate(element: any) {
-        return null;
+        let split = element['prism:coverDate'].split('-');
+        return new Date(Date.UTC(split[0],split[1]-1,split[2]));
     }
     protected getLanguage(element: any): string {
         return null;
@@ -160,7 +155,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         return null;
     }
     protected getPubType(element: any): string {
-        return null;
+        return element['subtypeDescription'];
     }
     protected getOACategory(element: any): string {
         return null;
@@ -182,13 +177,19 @@ export class ScopusImportService extends ApiImportOffsetService {
         return null;
     }
     protected getAbstract(element: any): string {
-        return null;
+        return element['dc:description'];
     }
     protected getCitation(element: any): string {
-        return null;
+        return 'Vol. '+element['prism:volume']+', Nr. '+element['prism:issueIdentifier']+', '+element['prism:pageRange'];
     }
     protected getPageCount(element: any): number {
-        return null;
+        try {
+            let range = element['prism:pageRange']
+            let split = range.split('-');
+            return Number(split[1])-Number(split[0])+1;
+        } catch (err) {
+            return null;
+        }
     }
     protected getPeerReviewed(element: any): boolean {
         return null;
