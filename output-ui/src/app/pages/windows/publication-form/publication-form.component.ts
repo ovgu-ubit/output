@@ -16,7 +16,6 @@ import { PublicationTypeService } from 'src/app/services/entities/publication-ty
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { SelectInstituteDialogComponent } from 'src/app/tools/select-institute-dialog/select-institute-dialog.component';
 import { Author, AuthorPublication, Contract, Funder, GreaterEntity, Institute, Invoice, Language, OA_Category, Publication, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
 import { ContractFormComponent } from '../contract-form/contract-form.component';
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
