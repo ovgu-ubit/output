@@ -107,10 +107,7 @@ export class PublicationController {
         }
     })
     async save(@Body() body: Publication) {
-        return this.repository.save(body).catch(err => {
-            console.log(err);
-            throw new InternalServerErrorException('Failure while inserting');
-        });
+        return this.publicationService.save([body]);
     }
 
     @Put()

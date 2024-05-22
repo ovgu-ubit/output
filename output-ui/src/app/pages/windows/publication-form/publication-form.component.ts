@@ -657,7 +657,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.submitted = true;
     if (this.form.invalid) return;
 
-
     if (!this.form.get('ge').value) this.pub.greater_entity = null;
     if (!this.form.get('publ').value) this.pub.publisher = null;
     if (!this.form.get('contr').value) this.pub.contract = null;
@@ -666,14 +665,15 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.pub = { ...this.pub, ...this.form.getRawValue(), locked_at: null };
     } else { //new publication
       this.pub = {
-        ...this.pub,
-        title: this.form.get('title').value,
-        authors: this.form.get('authors').value,
+        ...this.pub, ...this.form.getRawValue(),
         dataSource: this.form.get('dataSource').value || 'Manuell hinzugefügt',
         pub_date: this.form.get('pub_date').value ? this.form.get('pub_date').value.format() : undefined,
         pub_date_print: this.form.get('pub_date_print').value ? this.form.get('pub_date_print').value.format() : undefined,
         pub_date_accepted: this.form.get('pub_date_accepted').value ? this.form.get('pub_date_accepted').value.format() : undefined,
         pub_date_submitted: this.form.get('pub_date_submitted').value ? this.form.get('pub_date_submitted').value.format() : undefined,
+      }
+      for (let key of Object.keys(this.pub)) {
+        if (!this.pub[key]) this.pub[key] = undefined;
       }
     }
     this.pub.pub_type = this.pub_type_id !== -1 ? this.pub_types.find(e => e.id === this.pub_type_id) : null;
