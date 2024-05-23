@@ -21,6 +21,7 @@ import { MissingInstAuthorFilterService } from "./src/services/filter/missing-in
 import { MissingInstFilterService } from "./src/services/filter/missing-inst-filter.service";
 import { MissingInvoiceDataService } from "./src/services/filter/missing-invoice-data-filter.service";
 import { ScopusImportService } from "./src/services/import/scopus-import.service";
+import { ScopusEnrichService } from "./src/services/import/scopus-enrich.service";
 
 export default() : AppConfig => ({
     lock_timeout: 10, //in minutes
@@ -62,7 +63,8 @@ export default() : AppConfig => ({
         {path: 'crossref', class: CrossrefEnrichService},
         {path: 'oam', class: OpenAccessMonitorEnrichService},
         {path: 'openalex', class: OpenAlexEnrichService},
-        {path: 'doaj', class: DOAJEnrichService}
+        {path: 'doaj', class: DOAJEnrichService},
+        {path: 'scopus', class: ScopusEnrichService},
     ],
     check_services: [
         {path: 'pub_dupl', class: DOIandTitleDuplicateCheck},
