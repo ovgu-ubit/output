@@ -222,7 +222,8 @@ export abstract class AbstractImportService {
             }
         }
         let ge = this.getGreaterEntity(item);
-        let ge_ent = await this.geService.findOrSave(ge).catch(e => {
+        let ge_ent = null;
+        if (ge) ge_ent = await this.geService.findOrSave(ge).catch(e => {
             this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
         })
 
