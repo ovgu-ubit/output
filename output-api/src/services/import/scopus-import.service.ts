@@ -22,6 +22,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class ScopusImportService extends ApiImportOffsetService {
@@ -29,9 +30,10 @@ export class ScopusImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService, protected configService: ConfigService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService, 
+        protected roleService:RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, roleService, configService, http);
         this.configService.get('searchTags').forEach(tag => {
             this.searchText += tag + " or "
         })
@@ -56,7 +58,6 @@ export class ScopusImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.REPLACE_IF_EMPTY,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
@@ -172,15 +173,28 @@ export class ScopusImportService extends ApiImportOffsetService {
     protected getStatus(element: any): number {
         return 1;
     }
-
-    protected getEditors(element: any): string {
-        return null;
-    }
     protected getAbstract(element: any): string {
         return element['dc:description'];
     }
-    protected getCitation(element: any): string {
-        return 'Vol. '+element['prism:volume']+', Nr. '+element['prism:issueIdentifier']+', '+element['prism:pageRange'];
+    protected getCitation(element: any): {volume:number, issue: number, first_page: number, last_page: number} {
+        let volume, issue,first_page,last_page;
+        try {
+            volume = Number(element['prism:volume'])
+            if (Number.isNaN(volume)) volume = null;
+        } catch (err) {volume = null;}
+        try {
+            issue = Number(element['prism:issueIdentifier'])
+            if (Number.isNaN(issue)) issue = null;
+        } catch (err) {issue = null;}
+        try {
+            let range = element['prism:pageRange']
+            let split = range.split('-');
+            first_page = Number(split[0])
+            if (Number.isNaN(first_page)) first_page = null;
+            last_page = Number(split[1])
+            if (Number.isNaN(last_page)) last_page = null;
+        } catch (err) {first_page = null;last_page = null;}
+        return {volume, issue, first_page, last_page};
     }
     protected getPageCount(element: any): number {
         try {
