@@ -235,10 +235,10 @@ export class PublicationService {
      * @param doi
      * @param title
      */
-    public getPubwithDOIorTitle(doi: string, title: string): Promise<Publication> {
+    public async getPubwithDOIorTitle(doi: string, title: string): Promise<Publication> {
         if (!doi) doi = 'empty';
         if (!title) title = 'empty';
-        return this.pubRepository.findOne({
+        let pub = await this.pubRepository.findOne({
             where: [
                 { doi: ILike(doi.trim() + '%') },
                 { title: ILike(title.trim() + '%') }],
@@ -256,8 +256,9 @@ export class PublicationService {
                 }
             },
             withDeleted: true
-
         })
+
+        return pub;
     }
 
     getReportingYears() {
