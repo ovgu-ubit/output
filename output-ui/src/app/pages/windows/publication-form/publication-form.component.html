@@ -55,13 +55,18 @@
         </mat-form-field>
 
         <mat-accordion multi="true">
-            <mat-expansion-panel>
+            <mat-expansion-panel formGroupName="author_info">
                 <mat-expansion-panel-header>
                     <mat-panel-title>
                         Autoreninformationen
                     </mat-panel-title>
-                    <mat-panel-description>
+                    <mat-panel-description style="display: flex;flex-direction: row;justify-content: space-between;">
                         {{this.getAuthorInfo()}}
+                        <button type="button" (click)="this.lock('author')" mat-icon-button
+                            matTooltip="Autoreninformationen (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled">
+                            <mat-icon *ngIf="this.pub?.locked || this.pub?.locked_author">lock</mat-icon>
+                            <mat-icon *ngIf="!this.pub?.locked_author">lock_open</mat-icon>
+                        </button>
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
