@@ -26,6 +26,10 @@ export interface Publication {
     edit_date?: Date;
     delete_date?: Date;
     locked?: boolean
+    locked_author?: boolean
+    locked_biblio?: boolean
+    locked_finance?: boolean
+    locked_oa?: boolean
     status?: number
     is_oa?: boolean;
     oa_status?: string;
