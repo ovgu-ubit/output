@@ -140,7 +140,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Publikationstyp</mat-label>
-                    <mat-select [(value)]="this.pub_type_id" [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_biblio">
+                    <mat-select [(value)]="this.pub_type_id" formControlName="pub_type">
                         <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let pub_type of this.pub_types"
                             [value]="pub_type.id">{{pub_type.label}}</mat-option>
@@ -227,7 +227,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Sprache</mat-label>
-                    <mat-select [(value)]="this.language_id" [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_biblio">
+                    <mat-select [(value)]="this.language_id" formControlName="language">
                         <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
@@ -281,7 +281,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>OA-Kategorie</mat-label>
-                    <mat-select [(value)]="this.oa_cat_id" [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_oa">
+                    <mat-select [(value)]="this.oa_cat_id" formControlName="oa_cat">
                         <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let oa_cat of this.oa_categories"
                             [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
@@ -316,7 +316,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Beste OA Lizenz</mat-label>
-                    <mat-select formControlName="best_oa_license" [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_oa">
+                    <mat-select formControlName="best_oa_license">
                         <mat-option [value]="null"></mat-option>
                         <mat-option *ngFor="let value of this.licenses" [value]="value">{{value}}</mat-option>
                     </mat-select>
