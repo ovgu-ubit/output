@@ -10,8 +10,6 @@ import { Institute } from '../../entity/Institute';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { ConfigService } from '@nestjs/config';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
-import { Publisher } from '../../entity/Publisher';
-import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { Role } from '../../entity/Role';
 @Injectable()
 export class PublicationService {
