@@ -635,8 +635,16 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   setLock(flag: boolean) {
     if (flag) {
       this.form.disable();
+      if (!this.pub.locked_author) this.pub.locked_author = true;
+      if (!this.pub.locked_biblio) this.pub.locked_biblio = true;
+      if (!this.pub.locked_oa) this.pub.locked_oa = true;
+      if (!this.pub.locked_finance) this.pub.locked_finance = true;
     } else {
       this.form.enable();
+      if (this.pub.locked_author) this.form.get('author_info').disable();
+      if (this.pub.locked_biblio) this.form.get('biblio_info').disable();
+      if (this.pub.locked_oa) this.form.get('oa_info').disable();
+      if (this.pub.locked_finance) this.form.get('finance_info').disable();
     }
   }
 
