@@ -169,6 +169,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('oa_info').get('best_oa_license').setValue('Sonstige')
 
       if (this.pub?.locked) this.setLock(true);
+      else {
+        if (this.pub?.locked_author) this.form.get('author_info').disable();
+        if (this.pub?.locked_biblio) this.form.get('biblio_info').disable();
+        if (this.pub?.locked_oa) this.form.get('oa_info').disable();
+        if (this.pub?.locked_finance) this.form.get('finance_info').disable();
+      }
       if (this.pub.greater_entity) this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
       if (this.pub.publisher) this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
       if (this.pub.contract) this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
@@ -598,8 +604,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (area === 'author') {
       this.pub.locked_author = !this.pub.locked_author;
       if (this.pub.locked_author) {
-        //disable
-      }
+        this.form.get('author_info').disable();
+      } else this.form.get('author_info').enable();
     } else if (area === 'biblio') {
       this.pub.locked_biblio = !this.pub.locked_biblio;
     } else if (area === 'oa') {
