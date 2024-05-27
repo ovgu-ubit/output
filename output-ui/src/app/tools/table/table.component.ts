@@ -55,7 +55,7 @@ export class TableComponent<T> implements OnInit {
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
-  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
+  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar,
     public tokenService: AuthorizationService) {
   }
 
@@ -103,10 +103,30 @@ export class TableComponent<T> implements OnInit {
   public filterColumn() {
     if (this.columnFilter) {
       this.dataSource.filterPredicate = function (data, filter: string): boolean {
-        return data[this.columnFilter]?.toString().toLowerCase().includes(filter);
+        if (filter.includes("*") || filter.includes("?")) {
+          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+          return data[this.columnFilter]?.toString().toLowerCase().match(new RegExp(regex))
+        }
+        else return data[this.columnFilter]?.toString().toLowerCase().includes(filter);
       }.bind(this);
-    } else this.dataSource.filterPredicate = this.defaultFilterPredicate;
-    this.doFilter(this.filterValue);
+    } else {
+      this.dataSource.filterPredicate = function (data, filter: string): boolean {
+        if (filter.includes("*") || filter.includes("?")) {
+          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+          for (let key of Object.keys(data)) {
+            if (data[key]?.toString().toLowerCase().match(new RegExp(regex))) return true;
+          }
+          return false;
+        }
+        else {
+          for (let key of Object.keys(data)) {
+            if (data[key]?.toString().toLowerCase().includes(filter)) return true;
+          }
+          return false;
+        }
+      }.bind(this);
+      //this.doFilter(this.filterValue);
+    }
   }
 
   /*
@@ -152,7 +172,7 @@ export class TableComponent<T> implements OnInit {
     return Number(text).toLocaleString('de-DE');
   }
   public formatEUR(text: any) {
-    return Number(text).toLocaleString('de-DE')+' €';
+    return Number(text).toLocaleString('de-DE') + ' €';
   }
 
   public doiHTML(doi: string) {
@@ -162,20 +182,20 @@ export class TableComponent<T> implements OnInit {
 
   announceSortChange(sortState: Sort) {
     if (sortState?.direction) {
-      this.dataSource = new MatTableDataSource<T>(this.data.sort((a,b) => {
-        let type = this.headers.find(e => e.colName === sortState.active).type 
-        return this.compare(type, a[sortState.active],b[sortState.active],sortState.direction);
+      this.dataSource = new MatTableDataSource<T>(this.data.sort((a, b) => {
+        let type = this.headers.find(e => e.colName === sortState.active).type
+        return this.compare(type, a[sortState.active], b[sortState.active], sortState.direction);
       }))
       this.dataSource.paginator = this.paginator;
     }
   }
 
-  compare(type:string, a:any, b:any, dir:SortDirection) {
+  compare(type: string, a: any, b: any, dir: SortDirection) {
     if ((!type || type === 'string' || type == 'authors') && a) return a.localeCompare(b, 'de-DE') * (dir === 'asc' ? 1 : -1);
     else /*if (type === 'number' || type === 'pubs' || type === 'euro')*/ {
-      if (!a && b) return (dir === 'asc' ? -1: 1)
-      else if (a && !b) return (dir === 'asc' ? 1: -1)
-      else return (Number(a) < Number(b) ? -1 : 1) * (dir === 'asc' ? 1: -1)
+      if (!a && b) return (dir === 'asc' ? -1 : 1)
+      else if (a && !b) return (dir === 'asc' ? 1 : -1)
+      else return (Number(a) < Number(b) ? -1 : 1) * (dir === 'asc' ? 1 : -1)
     }
   }
 
@@ -236,15 +256,15 @@ export class TableComponent<T> implements OnInit {
   }
 
   setViewConfig(viewConfig: ViewConfig) {
-    this.paginator.pageIndex = viewConfig.page? viewConfig.page : this.paginator.pageIndex;
+    this.paginator.pageIndex = viewConfig.page ? viewConfig.page : this.paginator.pageIndex;
     this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize
     this.paginator.page.next({
       pageIndex: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
       length: this.dataSource.data.length
     });
-    
-    this.paginator2.pageIndex = viewConfig.page? viewConfig.page : this.paginator2.pageIndex;
+
+    this.paginator2.pageIndex = viewConfig.page ? viewConfig.page : this.paginator2.pageIndex;
     this.paginator2.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator2.pageSize
     this.paginator2.page.next({
       pageIndex: this.paginator2.pageIndex,
@@ -252,11 +272,11 @@ export class TableComponent<T> implements OnInit {
       length: this.dataSource2.data.length
     });
 
-    this.filterValue = viewConfig.filterValue? viewConfig.filterValue : '';
+    this.filterValue = viewConfig.filterValue ? viewConfig.filterValue : '';
     this.columnFilter = viewConfig.filterColumn;
     //this.filterColumn();
 
-    this.sort.active = viewConfig.sortColumn? viewConfig.sortColumn : this.headerNames[this.id_col];
+    this.sort.active = viewConfig.sortColumn ? viewConfig.sortColumn : this.headerNames[this.id_col];
     this.sort.direction = viewConfig.sortDir;
     this.dataSource.sort = this.sort;
     this.sort.sortChange.emit();
@@ -264,22 +284,22 @@ export class TableComponent<T> implements OnInit {
     this.update(this.data);
   }
 
-  isButtonDisabled(e:TableButton) {
+  isButtonDisabled(e: TableButton) {
     return e.roles && !e.roles.some(r => this.tokenService.hasRole(r));
   }
 
   public handlePageTop(e: any) {
-    let {pageSize} = e;
+    let { pageSize } = e;
     this.paginator2.pageSize = pageSize;
 
-    if(!this.paginator.hasNextPage()){
+    if (!this.paginator.hasNextPage()) {
       this.paginator2.lastPage();
-    }else if(!this.paginator.hasPreviousPage()){
+    } else if (!this.paginator.hasPreviousPage()) {
       this.paginator2.firstPage();
-    }else{
-      if(this.paginator.pageIndex < this.paginator2.pageIndex){
+    } else {
+      if (this.paginator.pageIndex < this.paginator2.pageIndex) {
         this.paginator2.previousPage();
-      } else  if(this.paginator.pageIndex >this.paginator2.pageIndex){
+      } else if (this.paginator.pageIndex > this.paginator2.pageIndex) {
         this.paginator2.nextPage();
       }
     }
@@ -287,14 +307,14 @@ export class TableComponent<T> implements OnInit {
 
 
   public handlePageBottom(e: any) {
-    if(!this.paginator2.hasNextPage()){
+    if (!this.paginator2.hasNextPage()) {
       this.paginator.lastPage();
-    }else if(!this.paginator2.hasPreviousPage()){
+    } else if (!this.paginator2.hasPreviousPage()) {
       this.paginator.firstPage();
-    }else{
-      if(this.paginator2.pageIndex < this.paginator.pageIndex){
+    } else {
+      if (this.paginator2.pageIndex < this.paginator.pageIndex) {
         this.paginator.previousPage();
-      } else  if(this.paginator2.pageIndex > this.paginator.pageIndex){
+      } else if (this.paginator2.pageIndex > this.paginator.pageIndex) {
         this.paginator.nextPage();
       }
     }
