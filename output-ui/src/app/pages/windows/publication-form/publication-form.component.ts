@@ -29,7 +29,7 @@ import { AuthorshipFormComponent } from '../authorship-form/authorship-form.comp
 export class PubDateValidator {
   public pubDateValidator(): ValidatorFn {
     return (formGroup: FormGroup) => {
-      if (formGroup.get('pub_date').value || formGroup.get('pub_date_print').value || formGroup.get('pub_date_accepted').value || formGroup.get('pub_date_submitted').value) return null;
+      if (formGroup.get('biblio_info').get('pub_date').value || formGroup.get('biblio_info').get('pub_date_print').value || formGroup.get('biblio_info').get('pub_date_accepted').value || formGroup.get('biblio_info').get('pub_date_submitted').value) return null;
       else return { no_pub_date: true }
     };
   }
@@ -87,45 +87,53 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       title: ['', [Validators.required]],
       doi: [''],
       link: [''],
-      pub_date: [''],
-      pub_date_print: [''],
-      pub_date_submitted: [''],
-      pub_date_accepted: [''],
-      language: [''],
-      abstract: [''],
-      volume: [''],
-      issue: [''],
-      first_page: [''],
-      last_page: [''],
-      authors: ['', [Validators.required]],
-      page_count: [''],
-      peer_reviewed: [''],
       add_info: [''],
       import_date: [''],
       edit_date: [''],
       delete_date: [''],
       dataSource: [''],
-      second_pub: [''],
       status: [''],
-      is_oa: [''],
-      oa_status: [''],
-      is_journal_oa: [''],
-      best_oa_host: [''],
-      best_oa_license: [''],
-      ge: [''],
-      publ: [''],
-      contr: [''],
-      funder: [''],
-      pub_type: [''],
-      oa_cat: ['']
+      author_info: this.formBuilder.group({
+        authors: ['', [Validators.required]],
+      }),
+      biblio_info: this.formBuilder.group({
+        pub_type: [''],
+        ge: [''],
+        peer_reviewed: [''],
+        publ: [''],
+        pub_date: [''],
+        pub_date_print: [''],
+        pub_date_submitted: [''],
+        pub_date_accepted: [''],
+        language: [''],
+        abstract: [''],
+        volume: [''],
+        issue: [''],
+        first_page: [''],
+        last_page: [''],
+        page_count: [''],
+      }),
+      oa_info: this.formBuilder.group({
+        oa_cat: [''],
+        second_pub: [''],
+        is_oa: [''],
+        oa_status: [''],
+        is_journal_oa: [''],
+        best_oa_host: [''],
+        best_oa_license: [''],
+      }),
+      finance_info: this.formBuilder.group({
+        contr: [''],
+        funder: [''],
+      }),
     }, {
       validators: [this.pubValidator.pubDateValidator()]
     });
-    this.form.controls.id.disable();
-    this.form.controls.is_oa.disable();
-    this.form.controls.oa_status.disable();
-    this.form.controls.is_journal_oa.disable();
-    this.form.controls.best_oa_host.disable();
+    this.form.get('id').disable();
+    this.form.get('oa_info').get('is_oa').disable();
+    this.form.get('oa_info').get('oa_status').disable();
+    this.form.get('oa_info').get('is_journal_oa').disable();
+    this.form.get('oa_info').get('best_oa_host').disable();
   }
 
   ngOnInit(): void {
@@ -155,15 +163,25 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     return this.publicationService.getPublication(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
+      this.form.get('author_info').patchValue(data);
+      this.form.get('biblio_info').patchValue(data);
+      this.form.get('oa_info').patchValue(data);
+      this.form.get('finance_info').patchValue(data);
       this.pub_type_id = this.pub.pub_type ? this.pub.pub_type.id : -1
       this.oa_cat_id = this.pub.oa_category ? this.pub.oa_category.id : -1
       this.language_id = this.pub.language ? this.pub.language.id : -1
-      if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
+      if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('oa_info').get('best_oa_license').setValue('Sonstige')
 
       if (this.pub?.locked) this.setLock(true);
-      if (this.pub.greater_entity) this.form.get('ge').setValue(this.pub.greater_entity.label)
-      if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
-      if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
+      else {
+        if (this.pub?.locked_author) this.form.get('author_info').disable();
+        if (this.pub?.locked_biblio) this.form.get('biblio_info').disable();
+        if (this.pub?.locked_oa) this.form.get('oa_info').disable();
+        if (this.pub?.locked_finance) this.form.get('finance_info').disable();
+      }
+      if (this.pub.greater_entity) this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
+      if (this.pub.publisher) this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
+      if (this.pub.contract) this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
 
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
@@ -191,28 +209,28 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     })))
     ob$ = merge(ob$, this.geService.getGreaterEntities().pipe(map(data => {
       this.greater_entities = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_greater_entities = this.form.get('ge').valueChanges.pipe(
+      this.filtered_greater_entities = this.form.get('biblio_info').get('ge').valueChanges.pipe(
         startWith(this.pub?.greater_entity?.label),
         map(value => this._filterGE(value || '')),
       );
     })))
     ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(data => {
       this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_publishers = this.form.get('publ').valueChanges.pipe(
+      this.filtered_publishers = this.form.get('biblio_info').get('publ').valueChanges.pipe(
         startWith(this.pub?.publisher?.label),
         map(value => this._filterPublisher(value || '')),
       );
     })))
     ob$ = merge(ob$, this.contractService.getContracts().pipe(map(data => {
       this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_contracts = this.form.get('contr').valueChanges.pipe(
+      this.filtered_contracts = this.form.get('finance_info').get('contr').valueChanges.pipe(
         startWith(this.pub?.contract?.label),
         map(value => this._filterContract(value || '')),
       );
     })))
     ob$ = merge(ob$, this.funderService.getFunders().pipe(map(data => {
       this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filteredFunders = this.form.get('funder').valueChanges.pipe(
+      this.filteredFunders = this.form.get('finance_info').get('funder').valueChanges.pipe(
         startWith(''),
         //map(value => typeof value === 'string' ? value : value.name),
         map((name) => {
@@ -254,7 +272,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   addPublisher(event) {
     if (!event.value) return;
-    this.form.get('publ').disable();
     if (!this.publishers.find(e => e.label === event.value)) {
       let dialogData = new ConfirmDialogModel("Neuer Verlag", `Möchten Sie den Verlag "${event.value}" anlegen?`);
 
@@ -274,7 +291,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
             }
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
-            this.form.get('publ').enable();
             if (dialogResult) {
               this.publisherService.insert(dialogResult).subscribe({
                 next: data => {
@@ -284,13 +300,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                     verticalPosition: 'top'
                   })
                   this.pub.publisher = data[0];
-                  this.form.get('publ').setValue(this.pub.publisher.label)
+                  this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
                   this.loadMasterData().subscribe();
                 }
               })
             }
           });
-        } else this.form.get('publ').enable();
+        }
       });
     } else {
       let dialogRef = this.dialog.open(PublisherFormComponent, {
@@ -309,21 +325,19 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 verticalPosition: 'top'
               })
               this.pub.publisher = data[0];
-              this.form.get('publ').setValue(this.pub.publisher.label)
+              this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
               this.loadMasterData().subscribe();
             }
           })
         } else if (dialogResult && dialogResult.id) {
           this.publisherService.update(dialogResult).subscribe();
         }
-        this.form.get('publ').enable();
       });
     }
   }
 
   addContract(event) {
     if (!event.value) return;
-    this.form.get('contr').disable();
     if (!this.contracts.find(e => e.label === event.value)) {
       let dialogData = new ConfirmDialogModel("Neuer Vertrag", `Möchten Sie den Vertrag "${event.value}" anlegen?`);
 
@@ -343,7 +357,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
             }
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
-            this.form.get('contr').enable();
             if (dialogResult && dialogResult.label) {
               this.contractService.insert(dialogResult).subscribe({
                 next: data => {
@@ -353,13 +366,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                     verticalPosition: 'top'
                   })
                   this.pub.contract = data[0];
-                  this.form.get('contr').setValue(this.pub.contract.label)
+                  this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
                   this.loadMasterData().subscribe();
                 }
               })
             }
           });
-        } else this.form.get('contr').enable();
+        }
       });
     } else {
       let dialogRef = this.dialog.open(ContractFormComponent, {
@@ -378,14 +391,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 verticalPosition: 'top'
               })
               this.pub.contract = data[0];
-              this.form.get('contr').setValue(this.pub.contract.label)
+              this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
               this.loadMasterData().subscribe();
             }
           })
         } else if (dialogResult && dialogResult.id) {
           this.contractService.update(dialogResult).subscribe();
         }
-        this.form.get('contr').enable();
       });
     }
   }
@@ -421,18 +433,17 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       })
     }
     this.funderInput.nativeElement.value = '';
-    this.form.get('funder').setValue('');
+    this.form.get('finance_info').get('funder').setValue('');
   }
 
   removeFunder(funder) {
     if (this.disabled) return;
     this.pub.funders = this.pub.funders.filter(ap => ap.id !== funder.id)
-    this.form.get('funder').setValue('');
+    this.form.get('finance_info').get('funder').setValue('');
   }
 
   addGreaterEntity(event) {
     if (!event.value) return;
-    this.form.get('ge').disable();
     if (!this.greater_entities.find(e => e.label === event.value)) {
       let dialogData = new ConfirmDialogModel("Neue Größere Einheit", `Möchten Sie die Größere Einheit "${event.value}" anlegen?`);
 
@@ -452,7 +463,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
             }
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
-            this.form.get('ge').enable();
             if (dialogResult) {
               this.geService.insert(dialogResult).subscribe({
                 next: data => {
@@ -462,13 +472,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                     verticalPosition: 'top'
                   })
                   this.pub.greater_entity = data[0];
-                  this.form.get('ge').setValue(this.pub.greater_entity.label)
+                  this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
                   this.loadMasterData().subscribe();
                 }
               })
             }
           });
-        } else this.form.get('ge').enable();
+        }
       });
     } else {
       let dialogRef = this.dialog.open(GreaterEntityFormComponent, {
@@ -487,29 +497,28 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
                 verticalPosition: 'top'
               })
               this.pub.greater_entity = data[0];
-              this.form.get('ge').setValue(this.pub.greater_entity.label)
+              this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
               this.loadMasterData().subscribe();
             }
           })
         } else if (dialogResult && dialogResult.id) {
           this.geService.update(dialogResult).subscribe();
         }
-        this.form.get('ge').enable();
       });
     }
   }
 
   selectedGE(event: MatAutocompleteSelectedEvent): void {
     this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('ge').setValue(this.pub.greater_entity.label)
+    this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
   }
   selectedPubl(event: MatAutocompleteSelectedEvent): void {
     this.pub.publisher = this.publishers.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('publ').setValue(this.pub.publisher.label)
+    this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
   }
   selectedContr(event: MatAutocompleteSelectedEvent): void {
     this.pub.contract = this.contracts.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('contr').setValue(this.pub.contract.label)
+    this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
   }
   selectedFunder(event: MatAutocompleteSelectedEvent): void {
     this.addFunder({ value: event.option.value })
@@ -542,20 +551,34 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.submitted = true;
     if (this.form.invalid) return;
 
-    if (!this.form.get('ge').value) this.pub.greater_entity = null;
-    if (!this.form.get('publ').value) this.pub.publisher = null;
-    if (!this.form.get('contr').value) this.pub.contract = null;
+    if (!this.form.get('biblio_info').get('ge').value) this.pub.greater_entity = null;
+    if (!this.form.get('biblio_info').get('publ').value) this.pub.publisher = null;
+    if (!this.form.get('finance_info').get('contr').value) this.pub.contract = null;
+
+    let formValue = {
+      ...this.form.get('author_info').getRawValue(),
+      ...this.form.get('biblio_info').getRawValue(),
+      ...this.form.get('oa_info').getRawValue(),
+      ...this.form.get('finance_info').getRawValue(),
+      id: this.form.get('id').getRawValue(),
+      title: this.form.get('title').getRawValue(),
+      doi: this.form.get('doi').getRawValue(),
+      link: this.form.get('link').getRawValue(),
+      add_info: this.form.get('add_info').getRawValue(),
+      dataSource: this.form.get('dataSource').getRawValue(),
+      status: this.form.get('status').getRawValue(),
+    }
 
     if (this.edit) {
-      this.pub = { ...this.pub, ...this.form.getRawValue(), locked_at: null };
+      this.pub = { ...this.pub, ...formValue, locked_at: null };
     } else { //new publication
       this.pub = {
-        ...this.pub, ...this.form.getRawValue(),
+        ...this.pub, ...formValue,
         dataSource: this.form.get('dataSource').value || 'Manuell hinzugefügt',
-        pub_date: this.form.get('pub_date').value ? this.form.get('pub_date').value.format() : undefined,
-        pub_date_print: this.form.get('pub_date_print').value ? this.form.get('pub_date_print').value.format() : undefined,
-        pub_date_accepted: this.form.get('pub_date_accepted').value ? this.form.get('pub_date_accepted').value.format() : undefined,
-        pub_date_submitted: this.form.get('pub_date_submitted').value ? this.form.get('pub_date_submitted').value.format() : undefined,
+        pub_date: this.form.get('biblio_info').get('pub_date').value ? this.form.get('biblio_info').get('pub_date').value.format() : undefined,
+        pub_date_print: this.form.get('biblio_info').get('pub_date_print').value ? this.form.get('biblio_info').get('pub_date_print').value.format() : undefined,
+        pub_date_accepted: this.form.get('biblio_info').get('pub_date_accepted').value ? this.form.get('biblio_info').get('pub_date_accepted').value.format() : undefined,
+        pub_date_submitted: this.form.get('biblio_info').get('pub_date_submitted').value ? this.form.get('biblio_info').get('pub_date_submitted').value.format() : undefined,
       }
       for (let key of Object.keys(this.pub)) {
         if (!this.pub[key]) this.pub[key] = undefined;
@@ -585,17 +608,43 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     return true;
   }
 
-  lock() {
+  lock(area?: string) {
     if (this.disabled) return;
-    this.pub.locked = !this.pub.locked;
-    this.setLock(this.pub.locked)
+    if (area === 'author') {
+      this.pub.locked_author = !this.pub.locked_author;
+      if (this.pub.locked_author) this.form.get('author_info').disable();
+      else this.form.get('author_info').enable();
+    } else if (area === 'biblio') {
+      this.pub.locked_biblio = !this.pub.locked_biblio;
+      if (this.pub.locked_biblio) this.form.get('biblio_info').disable();
+      else this.form.get('biblio_info').enable();
+    } else if (area === 'oa') {
+      this.pub.locked_oa = !this.pub.locked_oa;
+      if (this.pub.locked_oa) this.form.get('oa_info').disable();
+      else this.form.get('oa_info').enable();
+    } else if (area === 'finance') {
+      this.pub.locked_finance = !this.pub.locked_finance;
+      if (this.pub.locked_finance) this.form.get('finance_info').disable();
+      else this.form.get('finance_info').enable();
+    } else {
+      this.pub.locked = !this.pub.locked;
+      this.setLock(this.pub.locked)
+    }
   }
 
   setLock(flag: boolean) {
     if (flag) {
       this.form.disable();
+      if (!this.pub.locked_author) this.pub.locked_author = true;
+      if (!this.pub.locked_biblio) this.pub.locked_biblio = true;
+      if (!this.pub.locked_oa) this.pub.locked_oa = true;
+      if (!this.pub.locked_finance) this.pub.locked_finance = true;
     } else {
       this.form.enable();
+      if (this.pub.locked_author) this.form.get('author_info').disable();
+      if (this.pub.locked_biblio) this.form.get('biblio_info').disable();
+      if (this.pub.locked_oa) this.form.get('oa_info').disable();
+      if (this.pub.locked_finance) this.form.get('finance_info').disable();
     }
   }
 
@@ -647,7 +696,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (this.disabled) return;
     let data = {};
     if (authorPub) data = { authorPub, authors: this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId).map(e => e.authorId) }
-    else data = {authors: this.pub.authorPublications.map(e => e.authorId)}
+    else data = { authors: this.pub.authorPublications.map(e => e.authorId) }
     let dialogRef = this.dialog.open(AuthorshipFormComponent, {
       minWidth: "450px",
       data

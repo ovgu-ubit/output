@@ -322,7 +322,7 @@ export abstract class AbstractImportService {
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
         let fields = [];
 
-        switch (this.updateMapping.authors) {
+        if (!orig.locked_author) switch (this.updateMapping.authors) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
@@ -410,7 +410,7 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        switch (this.updateMapping.language) {
+        if (!orig.locked_biblio) switch (this.updateMapping.language) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
@@ -426,7 +426,7 @@ export abstract class AbstractImportService {
                 break;
         }
         let pd;
-        switch (this.updateMapping.pub_date) {
+        if (!orig.locked_biblio) switch (this.updateMapping.pub_date) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
@@ -484,7 +484,7 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        switch (this.updateMapping.pub_type) {
+        if (!orig.locked_biblio) switch (this.updateMapping.pub_type) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
@@ -500,7 +500,7 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        switch (this.updateMapping.publisher) {
+        if (!orig.locked_biblio) switch (this.updateMapping.publisher) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
@@ -518,7 +518,7 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        switch (this.updateMapping.oa_category) {
+        if (!orig.locked_oa) switch (this.updateMapping.oa_category) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
@@ -534,7 +534,7 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
+        if (!orig.locked_biblio) if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
             let ge = this.getGreaterEntity(element);
             let ge_ent = await this.geService.findOrSave(ge).catch(e => {
                 this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text: `: ${e['text']} for publication ${orig.id}, must be assigned manually` })
@@ -545,7 +545,7 @@ export abstract class AbstractImportService {
             }
         }
 
-        if (this.updateMapping.funder !== UpdateOptions.IGNORE && !(this.updateMapping.funder === UpdateOptions.REPLACE_IF_EMPTY && orig.funders !== null && orig.funders.length > 0)) {
+        if (!orig.locked_finance) if (this.updateMapping.funder !== UpdateOptions.IGNORE && !(this.updateMapping.funder === UpdateOptions.REPLACE_IF_EMPTY && orig.funders !== null && orig.funders.length > 0)) {
             let funders = this.getFunder(element);
             let funder_ents: Funder[] = []
             if (funders) {
@@ -566,7 +566,7 @@ export abstract class AbstractImportService {
             }
         }
 
-        if (this.updateMapping.author_inst !== UpdateOptions.IGNORE) {
+        if (!orig.locked_author) if (this.updateMapping.author_inst !== UpdateOptions.IGNORE) {
             let existing_aut = await this.publicationService.getAuthorsPublication(orig);
             if (!(this.updateMapping.author_inst === UpdateOptions.REPLACE_IF_EMPTY && existing_aut.length === 0)) {
                 let authors_entities: any[] = [];
@@ -593,7 +593,7 @@ export abstract class AbstractImportService {
             }
         }
 
-        switch (this.updateMapping.invoice) {
+        if (!orig.locked_finance) switch (this.updateMapping.invoice) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
@@ -615,7 +615,7 @@ export abstract class AbstractImportService {
                 fields.push('invoice')
                 break;
         }
-        switch (this.updateMapping.license) {
+        if (!orig.locked_oa) switch (this.updateMapping.license) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
@@ -647,7 +647,7 @@ export abstract class AbstractImportService {
                 else orig.status = 0;
                 break;
         }
-        if (this.configService.get('optional_fields.abstract')) {
+        if (this.configService.get('optional_fields.abstract') && !orig.locked_biblio) {
             switch (this.updateMapping.abstract) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -664,7 +664,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (this.configService.get('optional_fields.citation')) {
+        if (this.configService.get('optional_fields.citation') && !orig.locked_biblio) {
             switch (this.updateMapping.citation) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -689,7 +689,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (this.configService.get('optional_fields.page_count')) {
+        if (this.configService.get('optional_fields.page_count') && !orig.locked_biblio) {
             switch (this.updateMapping.page_count) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -706,7 +706,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (this.configService.get('optional_fields.peer_reviewed')) {
+        if (this.configService.get('optional_fields.peer_reviewed') && !orig.locked_biblio) {
             switch (this.updateMapping.peer_reviewed) {
                 case UpdateOptions.IGNORE:
                     break;

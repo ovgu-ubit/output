@@ -10,8 +10,6 @@ import { Institute } from '../../entity/Institute';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { ConfigService } from '@nestjs/config';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
-import { Publisher } from '../../entity/Publisher';
-import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { Role } from '../../entity/Role';
 @Injectable()
 export class PublicationService {
@@ -70,6 +68,7 @@ export class PublicationService {
             .select("publication.id", "id")
             .addSelect("publication.title", "title")
             .addSelect("publication.locked", "locked")
+            .addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
             .addSelect("publication.status", "status")
             .addSelect("publication.dataSource", "data_source")
             .addSelect("publication.edit_date", "edit_date")

@@ -50,13 +50,13 @@ export class Publication implements IPublication {
     @Column({ nullable: true })
     doi?: string;
 
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date?: Date;
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date_submitted?: Date;
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date_accepted?: Date;
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date_print?: Date;
 
     @Column({ nullable: true })
@@ -64,7 +64,7 @@ export class Publication implements IPublication {
 
     @Column()
     dataSource?: string;
-    
+
     @ManyToOne(() => Language, c => c.id)
     language?: Language
 
@@ -76,19 +76,25 @@ export class Publication implements IPublication {
     })
     add_info?: string;
 
-    @CreateDateColumn({type: 'timestamptz'})
+    @CreateDateColumn({ type: 'timestamptz' })
     import_date?: Date;
 
-    @UpdateDateColumn({type: 'timestamptz'})
+    @UpdateDateColumn({ type: 'timestamptz' })
     edit_date?: Date;
 
-    @DeleteDateColumn({type: 'timestamptz'})
+    @DeleteDateColumn({ type: 'timestamptz' })
     delete_date?: Date;
 
-    @Column({
-        default: false
-    })
+    @Column({ default: false })
     locked?: boolean
+    @Column({ default: false })
+    locked_author?: boolean
+    @Column({ default: false })
+    locked_biblio?: boolean
+    @Column({ default: false })
+    locked_finance?: boolean
+    @Column({ default: false })
+    locked_oa?: boolean
 
     @Column({
         default: 0
@@ -110,25 +116,25 @@ export class Publication implements IPublication {
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     abstract?: string;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     volume?: number;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     issue?: number;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     first_page?: number;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     last_page?: number;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     page_count?: number;
-    
-    @Column({nullable: true})
+
+    @Column({ nullable: true })
     peer_reviewed?: boolean;
-    
+
 }
