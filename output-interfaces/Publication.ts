@@ -43,6 +43,7 @@ export interface Publication {
     citation?: string;
     page_count?: number;
     peer_reviewed?: boolean;
+    identifiers?: PublicationIdentifier[];
 }
 
 export interface Author {
@@ -141,6 +142,13 @@ export interface Identifier {
     type: string;
     value: string;
     entity?: GreaterEntity
+}
+
+export interface PublicationIdentifier {
+    id?: number;
+    type: string;
+    value: string;
+    publication?: Publication;
 }
 
 export interface ContractIdentifier {

@@ -27,6 +27,7 @@ import { Language } from "./entity/Language";
 import config from "../config";
 import { PublisherDOI } from "./entity/PublisherDOI";
 import { Role } from "./entity/Role";
+import { PublicationIdentifier } from "./entity/PublicationIdentifier";
 
 //export const init_service = require(config().init_service)
 //export const init_service = import (config().init_service);
@@ -43,7 +44,7 @@ import { Role } from "./entity/Role";
         inject: [DatabaseConfigService],
       }),
       TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier, 
-        Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, 
+        Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier, 
         AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
     ],
     providers: [

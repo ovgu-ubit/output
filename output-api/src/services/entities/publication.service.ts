@@ -179,7 +179,8 @@ export class PublicationService {
                 publisher: true,
                 contract: true,
                 funders: true,
-                language: true
+                language: true,
+                identifiers: true
             }, withDeleted: true
         })
         if (writer && !pub.locked_at) {
