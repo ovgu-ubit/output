@@ -246,9 +246,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     let filterValue = value.toLowerCase();
     let split = filterValue.split(',').map(e => e.trim());
     if (split.length === 1) {
-      return this.authors.filter(author => author.last_name.toLowerCase().includes(filterValue) && !this.pub.authorPublications.find(e => e.author.last_name === author.last_name) ||
+      return this.authors.filter(author => (author.last_name.toLowerCase().includes(filterValue) && !(this.pub.authorPublications.find(e => e.author.last_name === author.last_name) && this.pub.authorPublications.find(e => e.author.first_name === author.first_name))) ||
         (author.orcid && author.orcid.includes(filterValue) && !this.pub.authorPublications.find(e => e.author.orcid === author.orcid)));
-    } else return this.authors.filter(author => author.last_name.toLowerCase() === split[0] && author.first_name.toLowerCase().includes(split[1]) && !this.pub.authorPublications.find(e => e.author.last_name === author.last_name));
+    } else return this.authors.filter(author => author.last_name.toLowerCase() === split[0] && author.first_name.toLowerCase().includes(split[1])&& !(this.pub.authorPublications.find(e => e.author.last_name === author.last_name) && this.pub.authorPublications.find(e => e.author.first_name === author.first_name)));
   }
 
   private _filterGE(value: string): GreaterEntity[] {
