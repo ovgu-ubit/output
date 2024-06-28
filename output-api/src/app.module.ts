@@ -63,6 +63,7 @@ import { TokenAuthorizationService } from "./guards/token.authorization.service"
 import { PublisherDOI } from "./entity/PublisherDOI";
 import { Role } from "./entity/Role";
 import { RoleService } from "./services/entities/role.service";
+import { PublicationIdentifier } from "./entity/PublicationIdentifier";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -87,7 +88,7 @@ const filterz = appConfig().filter_services;
       inject: [DatabaseConfigService],
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
-      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
+      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
       AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,

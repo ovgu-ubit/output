@@ -16,7 +16,7 @@ import { PublicationTypeService } from 'src/app/services/entities/publication-ty
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { Author, AuthorPublication, Contract, Funder, GreaterEntity, Institute, Invoice, Language, OA_Category, Publication, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
+import { Author, AuthorPublication, Contract, Funder, GreaterEntity, Institute, Invoice, Language, OA_Category, Publication, PublicationIdentifier, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
 import { ContractFormComponent } from '../contract-form/contract-form.component';
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
@@ -42,6 +42,7 @@ export class PubDateValidator {
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   public form: FormGroup;
+  public idForm: FormGroup;
   submitted = false;
 
   edit: boolean = false;
@@ -66,11 +67,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   filteredFunders: Observable<Funder[]>;
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
+  displayedColumnsId: string[] = ['type', 'value', 'delete'];
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
   @ViewChild(MatTable) table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
+  @ViewChild('tableID') tableId: MatTable<PublicationIdentifier>;
 
   today = new Date();
   disabled = false;
@@ -134,6 +137,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.get('oa_info').get('oa_status').disable();
     this.form.get('oa_info').get('is_journal_oa').disable();
     this.form.get('oa_info').get('best_oa_host').disable();
+    
+    this.idForm = this.formBuilder.group({
+      type: ['', Validators.required],
+      value: ['', Validators.required]
+    })
   }
 
   ngOnInit(): void {
@@ -246,6 +254,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disable() {
     this.disabled = true;
     this.form.disable();
+    this.idForm.disable();
   }
 
   private _filterGE(value: string): GreaterEntity[] {
@@ -711,5 +720,19 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         }
       }
     });
+  }
+
+  deleteId(elem) {
+    if (this.disabled) return;
+    this.pub.identifiers = this.pub.identifiers.filter(e => e.id !== elem.id)
+  }
+  addId() {
+    if (this.disabled || this.idForm.invalid) return;
+    this.pub.identifiers.push({
+      type: this.idForm.get('type').value,
+      value: this.idForm.get('value').value
+    })
+    this.idForm.reset();
+    if ( this.tableId) this.tableId.dataSource = new MatTableDataSource<PublicationIdentifier>(this.pub.identifiers);
   }
 }
