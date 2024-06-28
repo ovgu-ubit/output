@@ -503,7 +503,9 @@
 
         <br />
         <div *ngIf="this.form.invalid">
-            Es müssen noch weitere Pflichtfelder (Titel, Autoren und min. ein Publikationsdatum) ausgefüllt werden
+            Es müssen noch weitere Pflichtfelder ausgefüllt werden:
+            <div *ngIf="this.form.errors.no_pub_date">Mindestens ein Publikationsdatum muss angegeben werden</div>
+            <div *ngIf="this.form.errors.no_title_or_doi">DOI oder Titel müssen angegeben werden</div>
         </div>
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button *ngIf="!this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
