@@ -56,7 +56,7 @@ export class AuthorController {
 
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }])
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         schema: {
             example: {
