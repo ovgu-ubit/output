@@ -26,11 +26,16 @@ import { InvoiceService } from 'src/app/services/entities/invoice.service';
 import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 
 @Injectable({ providedIn: 'root' })
-export class PubDateValidator {
-  public pubDateValidator(): ValidatorFn {
+export class PubValidator {
+  public pubValidator(): ValidatorFn {
     return (formGroup: FormGroup) => {
-      if (formGroup.get('biblio_info').get('pub_date').value || formGroup.get('biblio_info').get('pub_date_print').value || formGroup.get('biblio_info').get('pub_date_accepted').value || formGroup.get('biblio_info').get('pub_date_submitted').value) return null;
-      else return { no_pub_date: true }
+      let t1, t2 = null;
+      if (!(formGroup.get('biblio_info').get('pub_date').value || formGroup.get('biblio_info').get('pub_date_print').value || formGroup.get('biblio_info').get('pub_date_accepted').value || formGroup.get('biblio_info').get('pub_date_submitted').value))
+        t1 = {no_pub_date: true }
+      if (!formGroup.get('title').value && !formGroup.get('doi').value)
+        t2 = {no_title_or_doi: true }
+      if (!t1 && !t2) return null;
+      else return {...t1, ...t2};
     };
   }
 }
@@ -80,14 +85,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
   optional_fields;
 
-  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubDateValidator,
+  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
     private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService) {
     this.form = this.formBuilder.group({
       id: [''],
-      title: ['', [Validators.required]],
+      title: [''],
       doi: [''],
       link: [''],
       add_info: [''],
@@ -97,7 +102,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       dataSource: [''],
       status: [''],
       author_info: this.formBuilder.group({
-        authors: ['', [Validators.required]],
+        authors: [''],
       }),
       biblio_info: this.formBuilder.group({
         pub_type: [''],
@@ -130,7 +135,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         funder: [''],
       }),
     }, {
-      validators: [this.pubValidator.pubDateValidator()]
+      validators: [this.pubValidator.pubValidator()]
     });
     this.form.get('id').disable();
     this.form.get('oa_info').get('is_oa').disable();

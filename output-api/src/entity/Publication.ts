@@ -42,10 +42,10 @@ export class Publication implements IPublication {
     @OneToMany(() => Invoice, (i) => i.publication, { cascade: true })
     invoices?: Invoice[]
 
-    @Column()
+    @Column({ nullable: true })
     authors?: string;
 
-    @Column()
+    @Column({ nullable: true })
     title?: string;
 
     @Column({ nullable: true })
