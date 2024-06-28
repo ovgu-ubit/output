@@ -149,7 +149,7 @@ export class PublicationService {
 
     public async delete(pubs: Publication[], soft?: boolean) {
         for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } } });
+            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } }, withDeleted: true });
             for (let autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }

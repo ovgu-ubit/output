@@ -39,6 +39,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   filter: { filter: SearchFilter, paths?: string[] };
   id;
 
+  soft_deletes = false;
+
   buttons: TableButton[] = [
     { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
     {
@@ -184,6 +186,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.publications = data;
         this.name = 'Soft-deleted Publikationen';
         this.table.update(this.publications);
+        this.soft_deletes = true;
       }, error: err => console.log(err)
     });
   }
@@ -276,7 +279,10 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
     let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
-      data: this.selection.selected
+      data: {
+        pubs:this.selection.selected,
+        soft: this.soft_deletes
+      }
     });
 
     dialogRef.afterClosed().subscribe(dialogResult => {
