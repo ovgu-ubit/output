@@ -227,7 +227,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.publicationService.save([result]).subscribe();
       }
     });
-
   }
 
   changeReportingYear() {
