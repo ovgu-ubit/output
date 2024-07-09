@@ -17,6 +17,7 @@ export class PublicationService {
 
     funder = false;
     author = false;
+    identifiers = false;
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -198,7 +199,7 @@ export class PublicationService {
         return pub;
     }
 
-    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?:Role) {
+    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?: Role) {
         return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role });
     }
 
@@ -325,6 +326,7 @@ export class PublicationService {
     filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
         this.funder = false;
         this.author = false;
+        this.identifiers = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -366,6 +368,7 @@ export class PublicationService {
             }
         }
         if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
+        if (this.identifiers) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
         //console.log(indexQuery.getSql())
         return indexQuery;
     }
@@ -391,7 +394,7 @@ export class PublicationService {
                 break;
             case 'inst_authors':
                 this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value +"'";
+                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value + "'";
                 break;
             case 'contract_id':
                 where = 'contract.id=' + value;
@@ -411,6 +414,10 @@ export class PublicationService {
                 break;
             case 'publisher_id':
                 where = 'publisher.id=' + value;
+                break;
+            case 'other_ids':
+                where = "identifier.value='" + value + "'";
+                this.identifiers = true;
                 break;
             default:
                 where = "publication." + key + " = '" + value + "'";
@@ -435,6 +442,10 @@ export class PublicationService {
                 this.author = true;
                 where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '%" + value + "%'";
                 break;
+            case 'other_ids':
+                where = "identifier.value ILIKE '%" + value + "%'";
+                this.identifiers = true;
+                break;
             default:
                 where = "publication." + key + " ILIKE '%" + value + "%'";
         }
@@ -457,6 +468,10 @@ export class PublicationService {
             case 'inst_authors':
                 this.author = true;
                 where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '" + value + "%'";
+                break;
+            case 'other_ids':
+                where = "identifier.value ILIKE '" + value + "%'";
+                this.identifiers = true;
                 break;
             default:
                 where = "publication." + key + " ILIKE '" + value + "%'";

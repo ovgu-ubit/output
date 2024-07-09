@@ -37,6 +37,7 @@ export class FilterViewComponent implements OnInit {
     { key: 'id', label: 'ID', type: 'number' },
     { key: 'title', label: 'Titel' },
     { key: 'doi', label: 'DOI' },
+    { key: 'other_ids', label: 'Weitere Identifikatoren' },
     { key: 'authors', label: 'Autor*innen' },
     { key: 'inst_authors', label: 'Autor*innen der Institution' },
     { key: 'institute', label: 'Institute' },
