@@ -39,6 +39,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   filter: { filter: SearchFilter, paths?: string[] };
   id;
 
+  soft_deletes = false;
+
   buttons: TableButton[] = [
     { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
     {
@@ -167,6 +169,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.loading = false;
         this.publications = data;
         this.name = 'Publikationen des Jahres ' + this.reporting_year;
+        this.soft_deletes = false;
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
@@ -175,6 +178,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.loading = false;
         this.publications = data;
         this.name = 'Gefilterte Publikationen'
+        this.soft_deletes = false;
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
@@ -184,6 +188,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.publications = data;
         this.name = 'Soft-deleted Publikationen';
         this.table.update(this.publications);
+        this.soft_deletes = true;
       }, error: err => console.log(err)
     });
   }
@@ -208,7 +213,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.update();
+            this.update(this.soft_deletes);
           }, error: err => {
             this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
               duration: 5000,
@@ -255,7 +260,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update();
+        this.update(this.soft_deletes);
       }, error: err => {
         this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
           duration: 5000,
@@ -269,14 +274,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   deleteSelected() {
     if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(
-      this.selection.selected.length + " Publikationen löschen",
-      `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`
-    );
 
     let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
-      data: this.selection.selected
+      data: {
+        pubs:this.selection.selected,
+        soft: this.soft_deletes
+      }
     });
 
     dialogRef.afterClosed().subscribe(dialogResult => {
@@ -288,7 +292,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.update();
+            this.update(this.soft_deletes);
           }, error: err => {
             this._snackBar.open(`Fehler beim Löschen der Publikation`, 'Oh oh!', {
               duration: 5000,
@@ -381,7 +385,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update();
+        this.update(this.soft_deletes);
       }
     })
   }
@@ -412,7 +416,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
-              this.update();
+              this.update(this.soft_deletes);
             }, error: err => {
               this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
                 duration: 5000,
