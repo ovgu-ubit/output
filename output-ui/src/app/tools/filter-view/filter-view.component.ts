@@ -6,6 +6,7 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatChipListbox } from '@angular/material/chips';
+import { ConfigService } from 'src/app/services/config.service';
 
 @Component({
   selector: 'app-filter-view',
@@ -58,7 +59,7 @@ export class FilterViewComponent implements OnInit {
     { key: 'import_date', label: 'Importdatum', type: 'date' },
   ]
 
-  constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService,
+  constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService, private configService:ConfigService,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
 
   ngOnInit(): void {
@@ -66,7 +67,7 @@ export class FilterViewComponent implements OnInit {
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
-    this.publicationService.getOptionalFields().subscribe({
+    this.configService.getOptionalFields().subscribe({
       next: data => {
         if (data['editors']) this.keys.push({ key: 'editors', label: 'Herausgeber*innen' })
         if (data['abstract']) this.keys.push({ key: 'abstract', label: 'Abstract' })

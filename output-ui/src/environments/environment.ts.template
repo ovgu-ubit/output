@@ -5,7 +5,6 @@
 import { CookieTokenService } from "src/app/security/cookie.token.service";
 
 export const environment = {
-  institution: '', //short name of the institution to appear in the menu bar
   authorization_service: CookieTokenService, // service extending AuthorizationService to determine if a user has write privileges
   production: false, // angular intern for debugging
   api : '', //server address of the backend api

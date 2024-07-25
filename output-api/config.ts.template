@@ -24,6 +24,8 @@ import { ScopusImportService } from "./src/services/import/scopus-import.service
 import { ScopusEnrichService } from "./src/services/import/scopus-enrich.service";
 
 export default() : AppConfig => ({
+    institution_label: "Otto-von-Guericke-Universität Magdeburg",
+    institution_short_label: "OVGU",
     lock_timeout: 10, //in minutes
     searchTags: [
         "magdeburg",

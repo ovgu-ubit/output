@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { ActivatedRoute, ParamMap, Router, UrlSerializer } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concat, concatMap, concatWith, firstValueFrom, map, of, takeUntil } from 'rxjs';
+import { Observable, Subject, concat, concatMap, concatWith, firstValueFrom, map, merge, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -22,6 +22,7 @@ import { PublicationFormComponent } from '../windows/publication-form/publicatio
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
+import { ConfigService } from 'src/app/services/config.service';
 
 @Component({
   selector: 'app-publications',
@@ -31,9 +32,10 @@ import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression }
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard) { }
+    private clipboard: Clipboard, private configService: ConfigService) { }
 
   name = 'Publikationen des Jahres ';
+  institution = '';
 
   reporting_year: number;
   filter: { filter: SearchFilter, paths?: string[] };
@@ -45,14 +47,14 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
-        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this),  roles: ['writer','admin']},
+        { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this), roles: ['writer', 'admin'] },
         { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
       ]
     },
-    { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer','admin'] },
-    { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer','admin'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer','admin'] },
+    { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
+    { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer', 'admin'] },
+    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer', 'admin'] },
+    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
@@ -65,7 +67,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     { colName: 'title', colTitle: 'Titel' },
     { colName: 'doi', colTitle: 'DOI', type: 'doi' },
     { colName: 'authors', colTitle: 'Autoren' },
-    { colName: 'authors_inst', colTitle: 'Autoren ' + environment.institution, type: 'authors' },
+    { colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' },
     { colName: 'corr_inst', colTitle: 'Corr. Institut' },
     { colName: 'greater_entity', colTitle: 'Größere Einheit' },
     { colName: 'oa_category', colTitle: 'OA-Kategorie' },
@@ -74,27 +76,39 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     { colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' },
   ];
 
+  headerObs():Observable<TableHeader[]> {
+    return this.configService.getInstition().pipe(map(data => {
+      this.institution = data.short_label;
+      this.headers.push({
+        colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors'
+      })
+      return this.headers;
+    }));
+  }
+
   publications: PublicationIndex[] = [];
   viewConfig: ViewConfig;
 
   ngOnInit(): void {
     this.loading = true;
-    this.enrichService.getEnrichs().subscribe({
-      next: data => {
-        let sub_buttons = data.map(e => {
-          return {
-            title: e.label, action_function: function () {
-              return this.startEnrich(e.path)
-            }.bind(this)
-          }
-        });
-        this.buttons.push({
-          title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
-        })
-      }
-    })
+    let ob$: Observable<any> = this.enrichService.getEnrichs().pipe(map(data => {
+      let sub_buttons = data.map(e => {
+        return {
+          title: e.label, action_function: function () {
+            return this.startEnrich(e.path)
+          }.bind(this)
+        }
+      });
+      this.buttons.push({
+        title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
+      })
+    }))
+    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
+      this.institution = data.short_label;
+      this.headers.find(e => e.colName === 'authors_inst').colTitle = 'Autoren ' + this.institution;
+    })))
 
-    let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
+    ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
         if (params.get('id')) {
@@ -103,7 +117,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.filter = this.queryToFilter(params);
         if (this.filter) this.viewConfig = { ...this.viewConfig, filter: this.filter }
       }));
-    }));
+    })));
     ob$ = ob$.pipe(concatMap(data => {
       return this.store.select(selectReportingYear).pipe(concatMap(data => {
         let ob1$: Observable<any>
@@ -145,10 +159,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     ob$.pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
 
-      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
+      }, error: err => {
+        this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
+        console.log(err);
+      }
     })
     window.onbeforeunload = () => this.ngOnDestroy();
   }

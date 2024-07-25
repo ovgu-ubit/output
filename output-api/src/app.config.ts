@@ -10,6 +10,8 @@ import { PublicationIndex } from '../../output-interfaces/PublicationIndex';
 import { Publication } from '../../output-interfaces/Publication';
 
 export interface AppConfig {
+    institution_label: string;
+    institution_short_label: string;
     lock_timeout: number; 
     searchTags: string[];
     affiliationTags: string[];
