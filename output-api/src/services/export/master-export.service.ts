@@ -62,6 +62,7 @@ export class MasterExportService extends AbstractExportService {
             res+=this.format(pub.add_info);
             res+=this.format(pub.import_date);
             res+=this.format(pub.edit_date);
+            res=res.slice(0,res.length-1);
             res+='\n';
         }
         //res = res.replace(/undefined/g, '');
