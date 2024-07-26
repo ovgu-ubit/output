@@ -22,6 +22,7 @@ import { MissingInstFilterService } from "./src/services/filter/missing-inst-fil
 import { MissingInvoiceDataService } from "./src/services/filter/missing-invoice-data-filter.service";
 import { ScopusImportService } from "./src/services/import/scopus-import.service";
 import { ScopusEnrichService } from "./src/services/import/scopus-enrich.service";
+import { OpenAPCExportService } from "./src/services/export/openapc-export.service";
 
 export default() : AppConfig => ({
     institution_label: "Otto-von-Guericke-Universität Magdeburg",
@@ -74,6 +75,7 @@ export default() : AppConfig => ({
     ],
     export_services: [
         {path: 'master', class: MasterExportService},
+        {path: 'openapc', class: OpenAPCExportService},
     ],
     filter_services: [
         {path: 'no_aut_inst', class: MissingInstAuthorFilterService},
