@@ -36,7 +36,7 @@ export class CostItemFormComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     if (this.data.cost_item) {
       this.cost_item = this.data.cost_item;
-      this.cost_type = this.data.cost_item.cost_type.id;
+      this.cost_type = this.data.cost_item.cost_type?.id;
     }
     else {
       this.cost_item = {
@@ -73,10 +73,12 @@ export class CostItemFormComponent implements OnInit, AfterViewInit {
   action() {
     this.cost_item = { ...this.cost_item, ...this.form.getRawValue() }
     if (!this.cost_item.id) this.cost_item.id = undefined;
+    if (!this.cost_item.label) this.cost_item.label = undefined;
     if (!this.cost_item.cost_type) this.cost_item.cost_type = undefined;
     if (!this.cost_item.euro_value) this.cost_item.euro_value = undefined;
     if (!this.cost_item.orig_value) this.cost_item.orig_value = undefined;
     if (this.form.get('orig_currency').value) this.cost_item.orig_currency = this.form.get('orig_currency').value;
+    else this.cost_item.orig_currency = undefined;
     if (!this.cost_item.normal_price) this.cost_item.normal_price = undefined;
     if (!this.cost_item.vat) this.cost_item.vat = undefined;
 
