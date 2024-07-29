@@ -39,7 +39,6 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
     }
   }
 
-
   ngOnInit(): void {
     if (this.data.invoice) {
       this.invoice = this.data.invoice;

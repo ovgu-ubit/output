@@ -98,10 +98,10 @@ export class CostItemFormComponent implements OnInit, AfterViewInit {
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else if (this.cost_item.id) this.dialogRef.close({ id: this.cost_item.id, locked_at: null })
+        } //else if (this.cost_item.id) this.dialogRef.close({ id: this.cost_item.id, locked_at: null })
         else this.close()
       });
-    } else if (this.cost_item.id) this.dialogRef.close({ id: this.cost_item.id, locked_at: null })
+    }//else if (this.cost_item.id) this.dialogRef.close({ id: this.cost_item.id, locked_at: null })
     else this.close()
   }
 
