@@ -191,7 +191,7 @@ export class BASEImportService extends ApiImportOffsetService {
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): { volume: number, issue: number, first_page: number, last_page: number } {
+    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
         return null;
     }
     protected getPageCount(element: any): number {

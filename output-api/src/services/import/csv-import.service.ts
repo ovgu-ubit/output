@@ -300,7 +300,7 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.abstract.startsWith('$')) return this.importConfig.mapping.abstract.slice(1, this.importConfig.mapping.abstract.length);
         return element[this.importConfig.mapping.abstract];
     }
-    protected getCitation(element: any): { volume: number, issue: number, first_page: number, last_page: number } {
+    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
         let volume = null;
         if (this.importConfig.mapping.volume) {
             if (this.importConfig.mapping.volume.startsWith('$')) volume = this.importConfig.mapping.volume.slice(1, this.importConfig.mapping.volume.length);

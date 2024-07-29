@@ -38,12 +38,14 @@ export interface Publication {
     best_oa_license?: string;
     opus_share_it?: string;
     locked_at?: Date;
-    editors?: string;
     abstract?: string;
-    citation?: string;
     page_count?: number;
     peer_reviewed?: boolean;
     identifiers?: PublicationIdentifier[];
+    volume?: string;
+    issue?: string;
+    first_page?: string;
+    last_page?: string;
 }
 
 export interface Author {

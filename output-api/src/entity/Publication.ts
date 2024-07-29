@@ -121,16 +121,16 @@ export class Publication implements IPublication {
     abstract?: string;
 
     @Column({ nullable: true })
-    volume?: number;
+    volume?: string;
 
     @Column({ nullable: true })
-    issue?: number;
+    issue?: string;
 
     @Column({ nullable: true })
-    first_page?: number;
+    first_page?: string;
 
     @Column({ nullable: true })
-    last_page?: number;
+    last_page?: string;
 
     @Column({ nullable: true })
     page_count?: number;

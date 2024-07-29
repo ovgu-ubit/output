@@ -197,14 +197,15 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): { volume: number, issue: number, first_page: number, last_page: number } {
+    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
         if (element['biblio']) {
-            return {
-                volume: Number(element['biblio']['volume']),
-                issue: Number(element['biblio']['issue']),
-                first_page: Number(element['biblio']['first_page']),
-                last_page: Number(element['biblio']['last_page'])
+            let e = {
+                volume: element['biblio']['volume'],
+                issue: element['biblio']['issue'],
+                first_page: element['biblio']['first_page'],
+                last_page: element['biblio']['last_page'],
             }
+            return e;
         } else return null;
     }
     protected getPageCount(element: any): number {
