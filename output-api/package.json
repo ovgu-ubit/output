@@ -1,10 +1,6 @@
 {
    "name": "output",
-<<<<<<< HEAD
    "version": "0.3.1-beta",
-=======
-   "version": "0.2.6-beta",
->>>>>>> main
    "description": "Publication management for universities.",
    "devDependencies": {
       "@types/cookie-parser": "^1.4.5",
