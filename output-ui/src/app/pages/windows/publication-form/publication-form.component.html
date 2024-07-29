@@ -52,19 +52,19 @@
                     <th mat-header-cell *matHeaderCellDef> Art </th>
                     <td mat-cell *matCellDef="let element"> {{element.type}} </td>
                 </ng-container>
-    
+
                 <ng-container matColumnDef="value">
                     <th mat-header-cell *matHeaderCellDef> Wert </th>
                     <td mat-cell *matCellDef="let element"> {{element.value}} </td>
                 </ng-container>
-    
+
                 <ng-container matColumnDef="delete">
                     <th mat-header-cell *matHeaderCellDef> </th>
                     <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                            (click)="this.deleteId(element)"
-                            matTooltip="Identifikator löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                            (click)="this.deleteId(element)" matTooltip="Identifikator löschen"
+                            [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
                 </ng-container>
-    
+
                 <tr mat-header-row *matHeaderRowDef="displayedColumnsId"></tr>
                 <tr mat-row *matRowDef="let row; columns: displayedColumnsId;"></tr>
             </table>
@@ -79,7 +79,7 @@
                 </mat-form-field>
                 <button matSuffix mat-icon-button type="button" (click)="this.addId()"
                     matTooltip="Identifikator hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
-            </form>      
+            </form>
         </mat-expansion-panel><br>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -105,7 +105,8 @@
                     <mat-panel-description style="display: flex;flex-direction: row;justify-content: space-between;">
                         {{this.getAuthorInfo()}}
                         <button type="button" (click)="this.lock('author')" mat-icon-button
-                            matTooltip="Autoreninformationen (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled || this.pub?.locked">
+                            matTooltip="Autoreninformationen (ent)sperren" [matTooltipShowDelay]="800"
+                            [disabled]="this.disabled || this.pub?.locked">
                             <mat-icon *ngIf="this.pub?.locked_author">lock</mat-icon>
                             <mat-icon *ngIf="!this.pub?.locked_author">lock_open</mat-icon>
                         </button>
@@ -118,51 +119,58 @@
                 </mat-form-field>
 
                 <mat-card>
-                    <mat-card-header><mat-card-subtitle>Autorenschaften der Institution</mat-card-subtitle></mat-card-header>
+                    <mat-card-header><mat-card-subtitle>Autorenschaften der
+                            Institution</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <table #table *ngIf="this.pub?.authorPublications && this.pub?.authorPublications.length>0" mat-table
-                            [dataSource]="this.pub?.authorPublications">
+                        <table #table *ngIf="this.pub?.authorPublications && this.pub?.authorPublications.length>0"
+                            mat-table [dataSource]="this.pub?.authorPublications">
                             <ng-container matColumnDef="edit">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.addAuthorship(element)"
-                                        matTooltip="Autorenschaft untersuchen" [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>edit</mat-icon></button> </td>
+                                        (click)="this.addAuthorship(element)" matTooltip="Autorenschaft untersuchen"
+                                        [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>edit</mat-icon></button>
+                                </td>
                             </ng-container>
 
                             <ng-container matColumnDef="name">
                                 <th mat-header-cell *matHeaderCellDef> Person </th>
-                                <td mat-cell *matCellDef="let element"> {{element.author.last_name}}, {{element.author.first_name}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.author.last_name}},
+                                    {{element.author.first_name}} </td>
                             </ng-container>
 
                             <ng-container matColumnDef="role">
                                 <th mat-header-cell *matHeaderCellDef> Rolle </th>
                                 <td mat-cell *matCellDef="let element"> {{element.role?.label}} </td>
                             </ng-container>
-                
+
                             <ng-container matColumnDef="institute">
                                 <th mat-header-cell *matHeaderCellDef> Institut </th>
-                                <td mat-cell *matCellDef="let element"> {{element.institute?.short_label? element.institute?.short_label : element.institute?.label}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.institute?.short_label?
+                                    element.institute?.short_label : element.institute?.label}} </td>
                             </ng-container>
-                
+
                             <ng-container matColumnDef="corr">
                                 <th mat-header-cell *matHeaderCellDef> corr.? </th>
-                                <td mat-cell *matCellDef="let element"> <ng-container *ngIf="element.corresponding"><mat-icon>check</mat-icon></ng-container></td>
+                                <td mat-cell *matCellDef="let element"> <ng-container
+                                        *ngIf="element.corresponding"><mat-icon>check</mat-icon></ng-container></td>
                             </ng-container>
-                
+
                             <ng-container matColumnDef="delete">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.deleteAuthorship(element)"
-                                        matTooltip="Autorenschaft löschen" [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>delete</mat-icon></button> </td>
+                                        (click)="this.deleteAuthorship(element)" matTooltip="Autorenschaft löschen"
+                                        [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>delete</mat-icon></button>
+                                </td>
                             </ng-container>
-                
+
                             <tr mat-header-row *matHeaderRowDef="displayedColumnsAuthors"></tr>
                             <tr mat-row *matRowDef="let row; columns: displayedColumnsAuthors;"></tr>
                         </table>
                     </mat-card-content>
                     <mat-card-actions>
-                            <button matSuffix mat-icon-button type="button" (click)="this.addAuthorship()"
-                                matTooltip="Autorenschaft hinzufügen" [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>add</mat-icon></button>
+                        <button matSuffix mat-icon-button type="button" (click)="this.addAuthorship()"
+                            matTooltip="Autorenschaft hinzufügen"
+                            [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>add</mat-icon></button>
                     </mat-card-actions>
                 </mat-card><br>
             </mat-expansion-panel>
@@ -173,9 +181,10 @@
                     </mat-panel-title>
                     <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
                         <button type="button" (click)="this.lock('biblio')" mat-icon-button
-                        matTooltip="Bibl. Informationen (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled || this.pub?.locked">
-                        <mat-icon *ngIf="this.pub?.locked_biblio">lock</mat-icon>
-                        <mat-icon *ngIf="!this.pub?.locked_biblio">lock_open</mat-icon>
+                            matTooltip="Bibl. Informationen (ent)sperren" [matTooltipShowDelay]="800"
+                            [disabled]="this.disabled || this.pub?.locked">
+                            <mat-icon *ngIf="this.pub?.locked_biblio">lock</mat-icon>
+                            <mat-icon *ngIf="!this.pub?.locked_biblio">lock_open</mat-icon>
                         </button>
                     </mat-panel-description>
                 </mat-expansion-panel-header>
@@ -195,7 +204,8 @@
                         formControlName="ge" (keydown.enter)="addGreaterEntity($event.target)" #input_ge>
                     <button type="button" matSuffix mat-icon-button (click)="addGreaterEntity(input_ge)"
                         matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else2">edit</mat-icon>
+                        <mat-icon
+                            *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else2">edit</mat-icon>
                         <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
                     </button>
                     <mat-autocomplete #autoGe="matAutocomplete" (optionSelected)="selectedGE($event)">
@@ -219,7 +229,8 @@
                         formControlName="publ" (keydown.enter)="addPublisher($event.target)" #input_publ>
                     <button type="button" matSuffix mat-icon-button (click)="addPublisher(input_publ)"
                         matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else3">edit</mat-icon>
+                        <mat-icon
+                            *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else3">edit</mat-icon>
                         <ng-template #else3><mat-icon>remove_red_eye</mat-icon></ng-template>
                     </button>
                     <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPubl($event)">
@@ -253,8 +264,9 @@
                     <input matInput [matDatepicker]="picker3" formControlName="pub_date_accepted">
                     <mat-hint>T.M.JJJJ</mat-hint>
                     <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                    <mat-datepicker #picker3 [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today"
-                        startView="year" color="accent"></mat-datepicker>
+                    <mat-datepicker #picker3
+                        [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today" startView="year"
+                        color="accent"></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_submitted">
@@ -279,31 +291,31 @@
                     <mat-card-content>
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Volume</mat-label>
-                            <input matInput [type]="'number'" placeholder="Volume" formControlName="volume" />
+                            <input matInput placeholder="Volume" formControlName="volume" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Issue</mat-label>
-                            <input matInput [type]="'number'" placeholder="Issue" formControlName="issue" />
+                            <input matInput placeholder="Issue" formControlName="issue" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Erste Seite</mat-label>
-                            <input matInput [type]="'number'" placeholder="Erste Seite" formControlName="first_page" />
+                            <input matInput placeholder="Erste Seite" formControlName="first_page" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Letzte Seite</mat-label>
-                            <input matInput [type]="'number'" placeholder="Letzte Seite" formControlName="last_page" />
+                            <input matInput placeholder="Letzte Seite" formControlName="last_page" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
+                            <mat-label>Seitenzahl</mat-label>
+                            <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
+                            <mat-label>Abstract</mat-label>
+                            <textarea matInput [type]="'text'" placeholder="Abstract"
+                                formControlName="abstract"></textarea>
                         </mat-form-field>
                     </mat-card-content>
                 </mat-card>
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
-                    <mat-label>Seitenzahl</mat-label>
-                    <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
-                </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
-                    <mat-label>Abstract</mat-label>
-                    <textarea matInput [type]="'text'" placeholder="Abstract" formControlName="abstract"></textarea>
-                </mat-form-field>
 
             </mat-expansion-panel>
 
@@ -314,9 +326,10 @@
                     </mat-panel-title>
                     <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
                         <button type="button" (click)="this.lock('oa')" mat-icon-button
-                        matTooltip="OA-Informationen (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled || this.pub?.locked">
-                        <mat-icon *ngIf="this.pub?.locked_oa">lock</mat-icon>
-                        <mat-icon *ngIf="!this.pub?.locked_oa">lock_open</mat-icon>
+                            matTooltip="OA-Informationen (ent)sperren" [matTooltipShowDelay]="800"
+                            [disabled]="this.disabled || this.pub?.locked">
+                            <mat-icon *ngIf="this.pub?.locked_oa">lock</mat-icon>
+                            <mat-icon *ngIf="!this.pub?.locked_oa">lock_open</mat-icon>
                         </button>
                     </mat-panel-description>
                 </mat-expansion-panel-header>
@@ -373,9 +386,10 @@
                     </mat-panel-title>
                     <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
                         <button type="button" (click)="this.lock('finance')" mat-icon-button
-                        matTooltip="Finanzinformationen (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled || this.pub?.locked">
-                        <mat-icon *ngIf="this.pub?.locked_finance">lock</mat-icon>
-                        <mat-icon *ngIf="!this.pub?.locked_finance">lock_open</mat-icon>
+                            matTooltip="Finanzinformationen (ent)sperren" [matTooltipShowDelay]="800"
+                            [disabled]="this.disabled || this.pub?.locked">
+                            <mat-icon *ngIf="this.pub?.locked_finance">lock</mat-icon>
+                            <mat-icon *ngIf="!this.pub?.locked_finance">lock_open</mat-icon>
                         </button>
                     </mat-panel-description>
                 </mat-expansion-panel-header>
@@ -386,7 +400,8 @@
                         formControlName="contr" (keydown.enter)="addContract($event.target)" #input_contr>
                     <button type="button" matSuffix mat-icon-button (click)="addContract(input_contr)"
                         matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon *ngIf="!this.disabled && !this.pub?.locked_finance && !this.pub?.locked; else else4">edit</mat-icon>
+                        <mat-icon
+                            *ngIf="!this.disabled && !this.pub?.locked_finance && !this.pub?.locked; else else4">edit</mat-icon>
                         <ng-template #else4><mat-icon>remove_red_eye</mat-icon></ng-template>
                     </button>
                     <mat-autocomplete #autoContract="matAutocomplete" (optionSelected)="selectedContr($event)">
@@ -416,7 +431,8 @@
                             <ng-container matColumnDef="edit">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.addInvoice(element)" [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"
+                                        (click)="this.addInvoice(element)"
+                                        [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"
                                         matTooltip="Rechnung bearbeiten"><mat-icon>edit</mat-icon></button> </td>
                             </ng-container>
 
@@ -434,18 +450,20 @@
                     </mat-card-content>
                     <mat-card-actions>
                         <button matSuffix mat-raised-button type="button" (click)="this.addInvoice()"
-                            matTooltip="Rechnung hinzufügen" [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"><mat-icon>add</mat-icon>Rechnung
+                            matTooltip="Rechnung hinzufügen"
+                            [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"><mat-icon>add</mat-icon>Rechnung
                             hinzufügen</button>
                     </mat-card-actions>
                 </mat-card><br>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Förderer</mat-label>
-                    <mat-chip-grid #funder_list  [disabled]="this.disabled || this.pub?.locked">
+                    <mat-chip-grid #funder_list [disabled]="this.disabled || this.pub?.locked">
                         <mat-chip-row [removable]="true" *ngFor="let funder of this.pub?.funders"
                             (removed)="removeFunder(funder)">
                             {{funder.label}}
-                            <button matChipRemove *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
+                            <button matChipRemove
+                                *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
                                 <mat-icon>cancel</mat-icon>
                             </button>
                         </mat-chip-row>
