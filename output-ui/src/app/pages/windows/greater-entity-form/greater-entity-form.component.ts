@@ -120,6 +120,6 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
       value: this.idForm.get('value').value
     })
     this.idForm.reset();
-    this.table.dataSource = new MatTableDataSource<Identifier>(this.ge.identifiers);
+    if (this.table) this.table.dataSource = new MatTableDataSource<Identifier>(this.ge.identifiers);
   }
 }
