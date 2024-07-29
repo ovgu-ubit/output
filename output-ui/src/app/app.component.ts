@@ -11,7 +11,7 @@ import { AuthorizationService } from './security/authorization.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public title: string = 'Output2';
-  public version = '0.2.5-beta';
+  public version = '0.2.6-beta';
   public user: string | null;
   public institution: string = '';
   public isLoading: boolean = true;
