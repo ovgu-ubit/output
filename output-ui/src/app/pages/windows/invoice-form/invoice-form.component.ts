@@ -29,9 +29,9 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
   @ViewChild(MatTable) table: MatTable<CostItem>;
   @ViewChild(MatSelect) select;
 
-  constructor(public dialogRef: MatDialogRef<InvoiceFormComponent>,private tokenService:AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService:CostCenterService, private dialog: MatDialog,
-    private invoiceService:InvoiceService) { }
+  constructor(public dialogRef: MatDialogRef<InvoiceFormComponent>, private tokenService: AuthorizationService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService: CostCenterService, private dialog: MatDialog,
+    private invoiceService: InvoiceService) { }
 
   ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
@@ -111,7 +111,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
   deleteCI(elem) {
     this.invoice.cost_items = this.invoice.cost_items.filter(e => e.id !== elem.id)
   }
-  addCI(cost_item?:CostItem) {
+  addCI(cost_item?: CostItem) {
     let idx = -1;
     if (cost_item) idx = this.invoice.cost_items.indexOf(cost_item);
     let dialogRef = this.dialog.open(CostItemFormComponent, {
@@ -126,7 +126,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
           if (idx > -1) this.invoice.cost_items[idx] = data;
           else this.invoice.cost_items.push(data)
           if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.invoice.cost_items);
-        } 
+        }
       }
     });
   }
