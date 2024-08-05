@@ -286,7 +286,7 @@
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
-                <mat-card *ngIf="this.optional_fields?.citation">
+                <mat-card *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
