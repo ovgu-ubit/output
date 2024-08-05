@@ -5,6 +5,7 @@ import { ImportService } from 'src/app/services/import.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
 import { Subject, takeUntil } from 'rxjs';
+import { PublicationService } from 'src/app/services/entities/publication.service';
 
 @Component({
   selector: 'app-csv-format',
@@ -18,7 +19,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
   format: CSVMapping;
   available_formats: CSVMapping[];
 
-  newFormat = {
+  newFormat:CSVMapping = {
     name: 'Neues Format anlegen',
     encoding: '',
     delimiter: '',
@@ -50,9 +51,14 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       license: '',
       invoice: '',
       status: '',
-      editors: '',
       abstract: '',
-      citation: '',
+      volume: '',
+      issue: '',
+      first_page: '',
+      last_page: '',
+      publisher_location: '',
+      edition: '',
+      article_number: '',
       page_count: '',
       peer_reviewed: '',
     }
@@ -61,11 +67,16 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatSelect) select: MatSelect;
 
+  optional_fields;
+
   constructor(public dialogRef: MatDialogRef<CsvFormatComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService, private publicationService:PublicationService,
     private formBuilder: FormBuilder) { }
 
   ngOnInit(): void {
+    this.publicationService.getOptionalFields().subscribe(data => {
+      this.optional_fields = data;
+    });
     this.format = this.data.csvFormat;
     if (!this.format) this.format = this.newFormat;
     this.importService.getCSVMappings().subscribe({
@@ -106,7 +117,6 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
         license: [''],
         invoice: [''],
         status: [''],
-        editors:[''],
         abstract: [''],
         volume: [''],
         issue: [''],
@@ -114,6 +124,9 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
         last_page: [''],
         page_count: [''],
         peer_reviewed: [''],
+        publisher_location: [''],
+        edition: [''],
+        article_number: [''],
       })
     })
     this.form.patchValue(this.format)

@@ -62,6 +62,9 @@ export class CSVMapping {
         funder?: string;
         doi?: string;
         pub_date?: string;
+        pub_date_print?: string;
+        pub_date_accepted?: string;
+        pub_date_submitted?: string;
         link?: string;
         language?: string;
         license?: string;
@@ -74,6 +77,9 @@ export class CSVMapping {
         last_page?: string;
         page_count?: string;
         peer_reviewed?: string;
+        publisher_location?: string;
+        edition?: string;
+        article_number?: string;
     }
 }
 

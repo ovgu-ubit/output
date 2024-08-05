@@ -309,6 +309,18 @@
                             <mat-label>Seitenzahl</mat-label>
                             <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
                         </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Verlagsort</mat-label>
+                            <input matInput placeholder="Verlagsort" formControlName="publisher_location" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Ausgabe</mat-label>
+                            <input matInput placeholder="Ausgabe" formControlName="edition" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Artikelnummer</mat-label>
+                            <input matInput placeholder="Artikelnummer" formControlName="article_number" />
+                        </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
                             <mat-label>Abstract</mat-label>
                             <textarea matInput [type]="'text'" placeholder="Abstract"

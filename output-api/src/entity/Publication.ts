@@ -120,17 +120,21 @@ export class Publication implements IPublication {
     @Column({ nullable: true })
     abstract?: string;
 
+    //citation fields
     @Column({ nullable: true })
     volume?: string;
-
     @Column({ nullable: true })
     issue?: string;
-
     @Column({ nullable: true })
     first_page?: string;
-
     @Column({ nullable: true })
     last_page?: string;
+    @Column({ nullable: true })
+    publisher_location?: string;
+    @Column({ nullable: true })
+    edition?: string;
+    @Column({ nullable: true })
+    article_number?: string;
 
     @Column({ nullable: true })
     page_count?: number;

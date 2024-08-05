@@ -197,7 +197,7 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
         if (element['biblio']) {
             let e = {
                 volume: element['biblio']['volume'],

@@ -52,11 +52,8 @@ export class PublisherService {
         if (!publisher_ent && publisher.doi_prefixes) {
             publisher_ent = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(publisher.doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
         }
-        if (publisher_ent) {
-            if (!publisher_ent.location && publisher.location) publisher_ent = await this.repository.save({ id:publisher_ent.id, location: publisher.location });
-            return publisher_ent;
-        }
-        else return this.repository.save({ label, location:publisher.location, doi_prefixes:publisher.doi_prefixes });
+        if (publisher_ent) return publisher_ent;
+        else return this.repository.save({ label, doi_prefixes:publisher.doi_prefixes });
     }
 
     public async identifyPublisher(title: string) {
@@ -127,7 +124,6 @@ export class PublisherService {
             }
             await this.publicationService.save(pubs)
             if (!res.label && aut.label) res.label = aut.label;
-            if (!res.location && aut.location) res.location = aut.location;
             if (!res.aliases) res.aliases = [];
             res.aliases = res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } }))
         }
