@@ -8,6 +8,7 @@ import { Publication } from '../../entity/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';
+import { ContractService } from '../entities/contract.service';
 
 @Injectable()
 /**
@@ -18,7 +19,7 @@ export class OpenAPCExportService extends AbstractExportService {
     quote = '"';
     sep = ',';
 
-    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService) {
+    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService, private contractService:ContractService) {
         super(); 
     }
 
@@ -35,16 +36,23 @@ export class OpenAPCExportService extends AbstractExportService {
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
-        //only invoice publications
-        pubs = pubs.filter(e => e.invoices && e.invoices.length > 0)
-
         let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url"\n';
         for (let pub of pubs) {
+            let hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
+            if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
+
             res+=this.format(this.configService.get("institution_label"));
-            res+=this.format(pub.invoices[0].date?.getFullYear());
-            res+=this.format(pub.invoices[0].booking_amount);
+            if (!hybrid) {
+                res+=this.format(pub.invoices[0].date?.getFullYear());
+                res+=this.format(pub.invoices.reduce<number>((p:number,c) => {return p + c.booking_amount}, 0));
+            }
+            else {
+                if (pub.contract.start_date) res+=this.format(pub.contract.start_date?.getFullYear());
+                let contract = await this.contractService.one(pub.contract.id, false);
+                res+=this.format(pub.contract.invoice_amount / contract.publications.length)
+            }
             res+=this.format(pub.doi);
-            res+=this.format(pub.oa_category.label.toLocaleLowerCase().includes('hybrid'));
+            res+=this.format(hybrid);
             res+=this.format(pub.publisher.label);
             res+=this.format(pub.greater_entity.label);
             res+=this.format(pub.link);

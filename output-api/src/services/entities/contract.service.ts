@@ -16,8 +16,8 @@ export class ContractService {
         return this.repository.find();
     }
     
-    public async one(id:number, writer:boolean) {
-        let contract = await this.repository.findOne({where:{id}, relations: {publisher:true, identifiers: true}});
+    public async one(id:number, writer:boolean):Promise<Contract> {
+        let contract = await this.repository.findOne({where:{id}, relations: {publisher:true, identifiers: true,publications: true}});
         
         if (writer && !contract.locked_at) {
             await this.save([{
