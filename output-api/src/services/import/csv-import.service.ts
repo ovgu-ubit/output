@@ -300,7 +300,7 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.abstract.startsWith('$')) return this.importConfig.mapping.abstract.slice(1, this.importConfig.mapping.abstract.length);
         return element[this.importConfig.mapping.abstract];
     }
-    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
         let volume = null;
         if (this.importConfig.mapping.volume) {
             if (this.importConfig.mapping.volume.startsWith('$')) volume = this.importConfig.mapping.volume.slice(1, this.importConfig.mapping.volume.length);
@@ -321,12 +321,30 @@ export class CSVImportService extends AbstractImportService {
             if (this.importConfig.mapping.last_page.startsWith('$')) last_page = this.importConfig.mapping.last_page.slice(1, this.importConfig.mapping.last_page.length);
             else last_page = element[this.importConfig.mapping.last_page];
         }
+        let publisher_location = null;
+        if (this.importConfig.mapping.publisher_location) {
+            if (this.importConfig.mapping.publisher_location.startsWith('$')) publisher_location = this.importConfig.mapping.publisher_location.slice(1, this.importConfig.mapping.publisher_location.length);
+            else publisher_location = element[this.importConfig.mapping.publisher_location];
+        }
+        let edition = null;
+        if (this.importConfig.mapping.edition) {
+            if (this.importConfig.mapping.edition.startsWith('$')) edition = this.importConfig.mapping.edition.slice(1, this.importConfig.mapping.edition.length);
+            else edition = element[this.importConfig.mapping.edition];
+        }
+        let article_number = null;
+        if (this.importConfig.mapping.article_number) {
+            if (this.importConfig.mapping.article_number.startsWith('$')) article_number = this.importConfig.mapping.article_number.slice(1, this.importConfig.mapping.article_number.length);
+            else article_number = element[this.importConfig.mapping.article_number];
+        }
         
         return {
             volume, 
             issue,
             first_page,
-            last_page
+            last_page,
+            publisher_location,
+            edition,
+            article_number
         }
     }
     protected getPageCount(element: any): number {

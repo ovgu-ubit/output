@@ -119,6 +119,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         issue: [''],
         first_page: [''],
         last_page: [''],
+        publisher_location: [''],
+        edition: [''],
+        article_number: [''],
         page_count: [''],
       }),
       oa_info: this.formBuilder.group({

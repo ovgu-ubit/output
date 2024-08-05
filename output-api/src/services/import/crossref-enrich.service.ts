@@ -206,7 +206,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return element['abstract'];
     }
-    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
         return null;
     }
     protected getPageCount(element: any): number {

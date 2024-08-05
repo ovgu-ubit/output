@@ -286,28 +286,40 @@
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
-                <mat-card *ngIf="this.optional_fields?.citation">
+                <mat-card *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <mat-form-field appearance="fill" style="width: 100%;">
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Volume</mat-label>
                             <input matInput placeholder="Volume" formControlName="volume" />
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;">
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Issue</mat-label>
                             <input matInput placeholder="Issue" formControlName="issue" />
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;">
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Erste Seite</mat-label>
                             <input matInput placeholder="Erste Seite" formControlName="first_page" />
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;">
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Letzte Seite</mat-label>
                             <input matInput placeholder="Letzte Seite" formControlName="last_page" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
                             <mat-label>Seitenzahl</mat-label>
                             <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
+                            <mat-label>Verlagsort</mat-label>
+                            <input matInput placeholder="Verlagsort" formControlName="publisher_location" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
+                            <mat-label>Ausgabe</mat-label>
+                            <input matInput placeholder="Ausgabe" formControlName="edition" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
+                            <mat-label>Artikelnummer</mat-label>
+                            <input matInput placeholder="Artikelnummer" formControlName="article_number" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
                             <mat-label>Abstract</mat-label>

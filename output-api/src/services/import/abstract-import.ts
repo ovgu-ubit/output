@@ -182,7 +182,7 @@ export abstract class AbstractImportService {
      * retrieves a citation string of an element
      * @param element 
      */
-    protected abstract getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string};
+    protected abstract getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string};
     /**
      * retrieves the page count of an element
      * @param element 

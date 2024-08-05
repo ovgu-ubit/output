@@ -175,8 +175,7 @@ export class InitService {
 
     async addPubl() {
         let publ: Publisher = {
-            label: 'Springer Nature',
-            location: 'London/Heidelberg'
+            label: 'Springer Nature'
         }
         publ = await this.publisherRepository.save(publ);
         let alias = ["springer", "nature", "biomed central", "embo", "science china press", "verl. für sozialwissenschaften", "vieweg", "vs verlag für sozialwissenschaften"];

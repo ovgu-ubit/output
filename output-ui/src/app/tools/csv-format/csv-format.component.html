@@ -122,37 +122,45 @@
                 <mat-label>Status</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="status" />
             </mat-form-field>
-            <mat-form-field appearance="fill">
-                <mat-label>Herausgeber</mat-label>
-                <input matInput placeholder="Spalte oder $Konstante" formControlName="editors" />
-            </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.abstract">
                 <mat-label>Abstract</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="abstract" />
             </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
                 <mat-label>Volume</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="volume" />
             </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
                 <mat-label>Issue</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="issue" />
             </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
                 <mat-label>Erste Seite</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="first_page" />
             </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
                 <mat-label>Letzte Seite</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="last_page" />
             </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.page_count">
                 <mat-label>Seitenzahl</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="page_count"/>
             </mat-form-field>
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.peer_reviewed">
                 <mat-label>Peer-reviewed?</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="peer_reviewed" />
+            </mat-form-field>
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
+                <mat-label>Verlagsort</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="publisher_location" />
+            </mat-form-field>
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
+                <mat-label>Ausgabe</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="edition" />
+            </mat-form-field>
+            <mat-form-field appearance="fill" *ngIf="this.optional_fields?.citation">
+                <mat-label>Artikelnummer</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="article_number" />
             </mat-form-field>
         </div>
 

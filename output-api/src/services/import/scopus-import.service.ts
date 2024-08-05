@@ -176,17 +176,18 @@ export class ScopusImportService extends ApiImportOffsetService {
     protected getAbstract(element: any): string {
         return element['dc:description'];
     }
-    protected getCitation(element: any): {volume:string, issue: string, first_page: string, last_page: string} {
-        let volume, issue,first_page,last_page;
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+        let volume, issue,first_page,last_page,article_number;
         volume = element['prism:volume']
         issue = element['prism:issueIdentifier']
+        article_number = element['article_number']
         try {
             let range = element['prism:pageRange']
             let split = range.split('-');
             first_page = split[0]
             last_page = split[1]
         } catch (err) {first_page = element['prism:pageRange'];last_page = null;}
-        return {volume, issue, first_page, last_page};
+        return {volume, issue, first_page, last_page, article_number};
     }
     protected getPageCount(element: any): number {
         try {
