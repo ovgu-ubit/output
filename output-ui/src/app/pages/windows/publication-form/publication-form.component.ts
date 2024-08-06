@@ -24,13 +24,14 @@ import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { environment } from 'src/environments/environment';
 import { InvoiceService } from 'src/app/services/entities/invoice.service';
+import { ConfigService } from 'src/app/services/config.service';
 
 @Injectable({ providedIn: 'root' })
 export class PubDateValidator {
   public pubDateValidator(): ValidatorFn {
     return (formGroup: FormGroup) => {
       if (formGroup.get('pub_date').value || formGroup.get('pub_date_print').value || formGroup.get('pub_date_accepted').value || formGroup.get('pub_date_submitted').value) return null;
-      else return {no_pub_date: true }
+      else return { no_pub_date: true }
     };
   }
 }
@@ -41,6 +42,7 @@ export class PubDateValidator {
   styleUrls: ['./publication-form.component.css']
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {
+  institution: string;
   public form: FormGroup;
   submitted = false;
 
@@ -83,7 +85,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService:InvoiceService) {
+    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: ['', [Validators.required]],
@@ -130,10 +132,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    let ob$ = this.publicationService.getOptionalFields().pipe(map(data => {
-        this.optional_fields = data;
-      }
+    let ob$ = this.configService.getOptionalFields().pipe(map(data => {
+      this.optional_fields = data;
+    }
     ));
+    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
+      this.institution = data.short_label;
+    }
+    )));
     if (this.data['id']) {
       this.edit = true;
       this.loading = true;
@@ -145,27 +151,27 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       };
     }
     ob$ = merge(ob$, this.loadMasterData());
-    
+
     ob$.subscribe({
       complete: () => {
       }
     })
   }
 
-  loadPub(id:number) {
+  loadPub(id: number) {
     return this.publicationService.getPublication(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
-      this.pub_type_id = this.pub.pub_type? this.pub.pub_type.id : -1
-      this.oa_cat_id = this.pub.oa_category? this.pub.oa_category.id : -1
-      this.language_id = this.pub.language? this.pub.language.id : -1
+      this.pub_type_id = this.pub.pub_type ? this.pub.pub_type.id : -1
+      this.oa_cat_id = this.pub.oa_category ? this.pub.oa_category.id : -1
+      this.language_id = this.pub.language ? this.pub.language.id : -1
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('best_oa_license').setValue('Sonstige')
-      
+
       if (this.pub?.locked) this.setLock(true);
       if (this.pub.greater_entity) this.form.get('ge').setValue(this.pub.greater_entity.label)
       if (this.pub.publisher) this.form.get('publ').setValue(this.pub.publisher.label)
       if (this.pub.contract) this.form.get('contr').setValue(this.pub.contract.label)
-      
+
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
         this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
@@ -248,7 +254,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (split.length === 1) {
       return this.authors.filter(author => (author.last_name.toLowerCase().includes(filterValue) && !(this.pub.authorPublications.find(e => e.author.last_name === author.last_name) && this.pub.authorPublications.find(e => e.author.first_name === author.first_name))) ||
         (author.orcid && author.orcid.includes(filterValue) && !this.pub.authorPublications.find(e => e.author.orcid === author.orcid)));
-    } else return this.authors.filter(author => author.last_name.toLowerCase() === split[0] && author.first_name.toLowerCase().includes(split[1])&& !(this.pub.authorPublications.find(e => e.author.last_name === author.last_name) && this.pub.authorPublications.find(e => e.author.first_name === author.first_name)));
+    } else return this.authors.filter(author => author.last_name.toLowerCase() === split[0] && author.first_name.toLowerCase().includes(split[1]) && !(this.pub.authorPublications.find(e => e.author.last_name === author.last_name) && this.pub.authorPublications.find(e => e.author.first_name === author.first_name)));
   }
 
   private _filterGE(value: string): GreaterEntity[] {
@@ -678,8 +684,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   getAuthorInfo() {
-    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + environment.institution + " Autor(en)";
-    else return "kein(e) " + environment.institution + " Autor(en)";
+    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + this.institution + " Autor(en)";
+    else return "kein(e) " + this.institution + " Autor(en)";
   }
 
   enter(event) {

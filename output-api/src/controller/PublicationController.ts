@@ -207,9 +207,4 @@ export class PublicationController {
         }
         return result;
     }
-
-    @Get('optional_fields')
-    getOptionalFields() {
-        return this.configService.get('optional_fields');
-    }
 }

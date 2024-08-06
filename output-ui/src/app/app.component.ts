@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { AuthorizationService } from './security/authorization.service';
+import { ConfigService } from './services/config.service';
 
 @Component({
   selector: 'app-root',
@@ -18,15 +19,19 @@ export class AppComponent implements OnInit, OnDestroy {
   public security: boolean;
 
   constructor(public tokenService: AuthorizationService,
-    private router: Router) { }
+    private router: Router, private configService:ConfigService) { }
 
   private destroy$ = new Subject();
 
   ngOnInit(): void {
     this.user = this.tokenService.getUser();
     this.security = environment.security;
+    this.configService.getInstition().subscribe({
+      next: data => {
+        this.title = 'Output2.' + data.short_label;
+      }
+    })
 
-    this.title += '.' + environment.institution;
   }
 
   ngOnDestroy(): void {

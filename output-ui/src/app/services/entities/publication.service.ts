@@ -66,8 +66,4 @@ export class PublicationService {
   public getFilters() {
     return this.http.get<{ path: string, label: string }[]>(environment.api + 'publications/filter', { withCredentials: true });
   }
-
-  public getOptionalFields() {
-    return this.http.get<{ path: string, label: string }[]>(environment.api + 'publications/optional_fields', { withCredentials: true });
-  }
 }
