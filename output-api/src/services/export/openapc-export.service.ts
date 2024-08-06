@@ -19,15 +19,15 @@ export class OpenAPCExportService extends AbstractExportService {
     quote = '"';
     sep = ',';
 
-    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService, private contractService:ContractService) {
-        super(); 
+    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, private contractService: ContractService) {
+        super();
     }
 
     protected name = 'OpenAPC-Export';
 
-    public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
+    public async export(filter?: { filter: SearchFilter, paths: string[] }, filterServices?: AbstractFilterService<PublicationIndex | Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Export',this.name, by_user);
+        this.report = this.reportService.createReport('Export', this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
         if (filter) for (let path of filter.paths) {
@@ -41,24 +41,26 @@ export class OpenAPCExportService extends AbstractExportService {
             let hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
             if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
 
-            res+=this.format(this.configService.get("institution_label"));
+            res += this.format(this.configService.get("institution_label"));
             if (!hybrid) {
-                res+=this.format(pub.invoices[0].date?.getFullYear());
-                res+=this.format(pub.invoices.reduce<number>((p:number,c) => {return p + c.booking_amount}, 0));
+                res += this.format(pub.invoices[0].date?.getFullYear());
+                res += this.format(pub.invoices.reduce<number>((p: number, c) => { return p + c.booking_amount }, 0));
             }
             else {
-                if (pub.contract.start_date) res+=this.format(pub.contract.start_date?.getFullYear());
+                if (pub.pub_date_accepted) res += this.format(pub.pub_date_accepted);
+                else if (pub.pub_date) res += this.format(pub.pub_date);
+                else if (pub.contract.start_date) res += this.format(pub.contract.start_date?.getFullYear());
                 let contract = await this.contractService.one(pub.contract.id, false);
-                res+=this.format(pub.contract.invoice_amount / contract.publications.length)
+                res += this.format(pub.contract.invoice_amount / contract.publications.length)
             }
-            res+=this.format(pub.doi);
-            res+=this.format(hybrid);
-            res+=this.format(pub.publisher.label);
-            res+=this.format(pub.greater_entity.label);
-            res+=this.format(pub.link);
-            res=res.slice(0,res.length-1);
+            res += this.format(pub.doi);
+            res += this.format(hybrid);
+            res += this.format(pub.publisher.label);
+            res += this.format(pub.greater_entity.label);
+            res += this.format(pub.link);
+            res = res.slice(0, res.length - 1);
 
-            res+='\n';
+            res += '\n';
         }
         //res = res.replace(/undefined/g, '');
         //finalize
@@ -71,10 +73,10 @@ export class OpenAPCExportService extends AbstractExportService {
         return res;
     }
 
-    format(field):string {
+    format(field): string {
         let res = this.quote;
-        let value = field? (field.label? field.label : field) : '';
-        if (value instanceof Date || Number.isNaN(value)) res += value.toLocaleString().slice(0,10000);
+        let value = field ? (field.label ? field.label : field) : '';
+        if (value instanceof Date || Number.isNaN(value)) res += value.toLocaleString().slice(0, 10000);
         else res += value;
         res += this.quote;
         res += this.sep;
