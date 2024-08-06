@@ -1,4 +1,6 @@
-<mat-toolbar color="primary"><h1 mat-dialog-title style="color:white">Rechnung</h1></mat-toolbar>
+<mat-toolbar color="primary">
+    <h1 mat-dialog-title style="color:white">Rechnung</h1>
+</mat-toolbar>
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
@@ -9,14 +11,13 @@
 
         <mat-form-field appearance="fill">
             <mat-label>Rechnungsnummer</mat-label>
-            <input matInput placeholder="Rechnungsnummer" formControlName="number"/>
+            <input matInput placeholder="Rechnungsnummer" formControlName="number" />
         </mat-form-field>
 
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Kostenstelle</mat-label>
             <mat-select [(value)]="this.cost_center">
-                <mat-option *ngFor="let cc of this.costCenters"
-                    [value]="cc.id">{{cc.label}}</mat-option>
+                <mat-option *ngFor="let cc of this.costCenters" [value]="cc.id">{{cc.label}}</mat-option>
             </mat-select>
         </mat-form-field>
 
@@ -25,8 +26,8 @@
             <input matInput [matDatepicker]="picker" formControlName="date">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker [startAt]="this.invoice?.date? this.invoice.date : today"
-                startView="month" color="accent"></mat-datepicker>
+            <mat-datepicker #picker [startAt]="this.invoice?.date? this.invoice.date : today" startView="month"
+                color="accent"></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -40,66 +41,73 @@
 
         <mat-form-field appearance="fill">
             <mat-label>Buchungsbetrag in EUR</mat-label>
-            <input matInput type="number" placeholder="Buchungsbetrag" formControlName="booking_amount"/>
+            <input matInput type="number" placeholder="Buchungsbetrag" formControlName="booking_amount" />
         </mat-form-field>
 
-        Rechnungsposten
-        <table [hidden]="!this.invoice?.cost_items || this.invoice.cost_items.length===0" mat-table
-            [dataSource]="this.invoice.cost_items">
-            <ng-container matColumnDef="label">
-                <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
-                <td mat-cell *matCellDef="let element"> {{element.label}} </td>
-            </ng-container>
+        <mat-card>
+            <mat-card-header><mat-card-subtitle>Rechnungsposten</mat-card-subtitle></mat-card-header>
+            <mat-card-content>
 
-            <ng-container matColumnDef="cost_type">
-                <th mat-header-cell *matHeaderCellDef> Kostenart </th>
-                <td mat-cell *matCellDef="let element"> {{element.cost_type.label}} </td>
-            </ng-container>
+                <table *ngIf="this.invoice?.cost_items && this.invoice.cost_items.length>0" mat-table
+                    [dataSource]="this.invoice.cost_items">
+                    <ng-container matColumnDef="label">
+                        <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
+                        <td mat-cell *matCellDef="let element"> {{element.label}} </td>
+                    </ng-container>
 
-            <ng-container matColumnDef="euro_value">
-                <th mat-header-cell *matHeaderCellDef> Nettobetrag in EUR </th>
-                <td mat-cell *matCellDef="let element"> {{element.euro_value}} </td>
-            </ng-container>
+                    <ng-container matColumnDef="cost_type">
+                        <th mat-header-cell *matHeaderCellDef> Kostenart </th>
+                        <td mat-cell *matCellDef="let element"> {{element.cost_type?.label}} </td>
+                    </ng-container>
 
-            <ng-container matColumnDef="vat">
-                <th mat-header-cell *matHeaderCellDef> MwSt. </th>
-                <td mat-cell *matCellDef="let element"> {{element.vat}} </td>
-            </ng-container>
-            
-            <ng-container matColumnDef="orig_value">
-                <th mat-header-cell *matHeaderCellDef> Nettobetrag in Originalwährung </th>
-                <td mat-cell *matCellDef="let element"> {{element.orig_value}} {{element.orig_currency}}</td>
-            </ng-container>
+                    <ng-container matColumnDef="euro_value">
+                        <th mat-header-cell *matHeaderCellDef> Nettobetrag in EUR </th>
+                        <td mat-cell *matCellDef="let element"> {{element.euro_value}} </td>
+                    </ng-container>
 
-            <ng-container matColumnDef="edit">
-                <th mat-header-cell *matHeaderCellDef> </th>
-                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                        (click)="this.addCI(element)"
-                        matTooltip="Rechnungsposten bearbeiten"><mat-icon>edit</mat-icon></button> </td>
-            </ng-container>
+                    <ng-container matColumnDef="vat">
+                        <th mat-header-cell *matHeaderCellDef> MwSt. </th>
+                        <td mat-cell *matCellDef="let element"> {{element.vat}} </td>
+                    </ng-container>
 
-            <ng-container matColumnDef="delete">
-                <th mat-header-cell *matHeaderCellDef> </th>
-                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                        (click)="this.deleteCI(element)" [disabled]="this.disabled"
-                        matTooltip="Rechnungsposten löschen"><mat-icon>delete</mat-icon></button> </td>
-            </ng-container>
+                    <ng-container matColumnDef="orig_value">
+                        <th mat-header-cell *matHeaderCellDef> Nettobetrag in Originalwährung </th>
+                        <td mat-cell *matCellDef="let element"> {{element.orig_value}} {{element.orig_currency}}</td>
+                    </ng-container>
 
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-        <button matSuffix mat-icon-button type="button" (click)="this.addCI()"
-        matTooltip="Rechnungsposten hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                    <ng-container matColumnDef="edit">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                (click)="this.addCI(element)"
+                                matTooltip="Rechnungsposten bearbeiten"><mat-icon>edit</mat-icon></button> </td>
+                    </ng-container>
 
+                    <ng-container matColumnDef="delete">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                (click)="this.deleteCI(element)" [disabled]="this.disabled"
+                                matTooltip="Rechnungsposten löschen"><mat-icon>delete</mat-icon></button> </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                </table>
+            </mat-card-content>
+
+            <mat-card-actions>
+                <button matSuffix mat-icon-button type="button" (click)="this.addCI()"
+                    matTooltip="Rechnungsposten hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+            </mat-card-actions>
+        </mat-card>
         <div *ngIf="!this.disabled; else else1" align="center">
             <button mat-raised-button type="submit" color="primary" class="btn-primary">Rechnung
                 speichern</button>&nbsp;
-            <button mat-raised-button type="reset" color="accent" class="btn-primary"
+            <button mat-raised-button type="button" color="accent" class="btn-primary"
                 (click)="this.abort()">Abbrechen</button>
         </div>
         <ng-template #else1>
             <div class="form-group" align="center">
-                <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                <button mat-raised-button type="button" color="primary" class="btn-primary"
                     (click)="this.close()">Schließen</button>
             </div>
         </ng-template>

@@ -60,12 +60,12 @@
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button mat-raised-button type="submit" color="primary" class="btn-primary">Förderer
                 speichern</button>&nbsp;
-            <button mat-raised-button type="reset" color="accent" class="btn-primary"
+            <button mat-raised-button type="button" color="accent" class="btn-primary"
                 (click)="this.abort()">Abbrechen</button>
         </div>
         <ng-template #else1>
             <div class="form-group" align="center">
-                <button mat-raised-button type="reset" color="primary" class="btn-primary"
+                <button mat-raised-button type="button" color="primary" class="btn-primary"
                     (click)="this.close()">Schließen</button>
             </div>
         </ng-template>

@@ -25,20 +25,19 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
   cost_center: CostCenter;
   costCenters: CostCenter[];
   today = new Date();
-  displayedColumns: string[] = ['label', 'cost_type', 'euro_value', 'vat', 'orig_value', 'edit', 'delete'];
+  displayedColumns: string[] = ['label', 'cost_type', 'euro_value', 'vat', 'edit', 'delete'];
   @ViewChild(MatTable) table: MatTable<CostItem>;
   @ViewChild(MatSelect) select;
 
-  constructor(public dialogRef: MatDialogRef<InvoiceFormComponent>,private tokenService:AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService:CostCenterService, private dialog: MatDialog,
-    private invoiceService:InvoiceService) { }
+  constructor(public dialogRef: MatDialogRef<InvoiceFormComponent>, private tokenService: AuthorizationService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService: CostCenterService, private dialog: MatDialog,
+    private invoiceService: InvoiceService) { }
 
   ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
   }
-
 
   ngOnInit(): void {
     if (this.data.invoice) {
@@ -111,7 +110,9 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
   deleteCI(elem) {
     this.invoice.cost_items = this.invoice.cost_items.filter(e => e.id !== elem.id)
   }
-  addCI(cost_item?:CostItem) {
+  addCI(cost_item?: CostItem) {
+    let idx = -1;
+    if (cost_item) idx = this.invoice.cost_items.indexOf(cost_item);
     let dialogRef = this.dialog.open(CostItemFormComponent, {
       maxWidth: "600px",
       data: {
@@ -120,12 +121,10 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data && (data.euro_value || data.orig_value)) {
-          this.invoice.cost_items = this.invoice.cost_items.filter(e => e.id !== data.id)
-          this.invoice.cost_items.push(data)
-          this.table.dataSource = new MatTableDataSource<Invoice>(this.invoice.cost_items);
-        } else if (data && data.id) {
-          this.invoiceService.update(data).subscribe();
+        if (data) {
+          if (idx > -1) this.invoice.cost_items[idx] = data;
+          else this.invoice.cost_items.push(data)
+          if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.invoice.cost_items);
         }
       }
     });

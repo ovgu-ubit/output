@@ -742,7 +742,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (data && data.cost_items) {
           this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
           this.pub.invoices.push(data)
-          this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
+          if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
         } else if (data && data.id) {
           this.invoiceService.update(data).subscribe();
         }
