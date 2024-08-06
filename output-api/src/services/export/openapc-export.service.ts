@@ -53,12 +53,12 @@ export class OpenAPCExportService extends AbstractExportService {
                 let contract = await this.contractService.one(pub.contract.id, false);
                 res += this.format(pub.contract.invoice_amount / contract.publications.length)
             }
-            res += this.format(pub.doi);
-            res += this.format(hybrid);
-            res += this.format(pub.publisher.label);
-            res += this.format(pub.greater_entity.label);
-            res += this.format(pub.link);
-            res = res.slice(0, res.length - 1);
+            res+=this.format(pub.doi);
+            res+=this.format(hybrid);
+            res+=this.format(pub.publisher?.label);
+            res+=this.format(pub.greater_entity?.label);
+            res+=this.format(pub.link);
+            res=res.slice(0,res.length-1);
 
             res += '\n';
         }
