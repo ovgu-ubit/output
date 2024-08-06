@@ -47,9 +47,9 @@ export class OpenAPCExportService extends AbstractExportService {
                 res += this.format(pub.invoices.reduce<number>((p: number, c) => { return p + c.booking_amount }, 0));
             }
             else {
-                if (pub.pub_date_accepted) res += this.format(pub.pub_date_accepted);
-                else if (pub.pub_date) res += this.format(pub.pub_date);
-                else if (pub.contract.start_date) res += this.format(pub.contract.start_date?.getFullYear());
+                if (pub.pub_date_accepted) res += this.format(pub.pub_date_accepted.getFullYear());
+                else if (pub.pub_date) res += this.format(pub.pub_date.getFullYear());
+                else if (pub.contract.start_date) res += this.format(pub.contract.start_date.getFullYear());
                 let contract = await this.contractService.one(pub.contract.id, false);
                 res += this.format(pub.contract.invoice_amount / contract.publications.length)
             }
