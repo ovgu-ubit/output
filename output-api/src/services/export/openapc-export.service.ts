@@ -8,21 +8,22 @@ import { Publication } from '../../entity/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';
+import { ContractService } from '../entities/contract.service';
 
 @Injectable()
 /**
  * abstract class for all exports
  */
-export class MasterExportService extends AbstractExportService {
+export class OpenAPCExportService extends AbstractExportService {
 
     quote = '"';
-    sep = ';';
+    sep = ',';
 
-    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService) {
+    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService, private contractService:ContractService) {
         super(); 
     }
 
-    protected name = 'Master-Export';
+    protected name = 'OpenAPC-Export';
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
@@ -35,34 +36,28 @@ export class MasterExportService extends AbstractExportService {
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
-        let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;greater_entity;pub_date;publisher;language;oa_category;pub_type;funders;contract;costs;"
-        +"data_source;second_pub;add_info;import_date;edit_date\n";
+        let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url"\n';
         for (let pub of pubs) {
-            res+=this.format(pub.id);
-            res+=this.format(pub.locked);
-            res+=this.format(pub.status);
-            res+=this.format(pub.title);
+            let hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
+            if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
+
+            res+=this.format(this.configService.get("institution_label"));
+            if (!hybrid) {
+                res+=this.format(pub.invoices[0].date?.getFullYear());
+                res+=this.format(pub.invoices.reduce<number>((p:number,c) => {return p + c.booking_amount}, 0));
+            }
+            else {
+                if (pub.contract.start_date) res+=this.format(pub.contract.start_date?.getFullYear());
+                let contract = await this.contractService.one(pub.contract.id, false);
+                res+=this.format(pub.contract.invoice_amount / contract.publications.length)
+            }
             res+=this.format(pub.doi);
+            res+=this.format(hybrid);
+            res+=this.format(pub.publisher.label);
+            res+=this.format(pub.greater_entity.label);
             res+=this.format(pub.link);
-            res+=this.format(pub.authors);
-            res+=this.format(pub.authorPublications?.map(e => {return e.author.last_name+', '+e.author.first_name}).join(' | '));
-            res+=this.format(pub.authorPublications?.map(e => {return e.institute?.label}).join(' | '));
-            res+=this.format(pub.authorPublications?.filter(e => e.corresponding).map(e => {return e.author.last_name+', '+e.author.first_name}).join(' | '));
-            res+=this.format(pub.greater_entity);
-            res+=this.format(pub.pub_date);
-            res+=this.format(pub.publisher);
-            res+=this.format(pub.language);
-            res+=this.format(pub.oa_category);
-            res+=this.format(pub.pub_type);
-            res+=this.format(pub.funders?.map(e => e.label).join(' | '));
-            res+=this.format(pub.contract);
-            res+=this.format(pub.invoices?.map(e => e.cost_items.map(e => e.euro_value).reduce((v,e) => v+e,0)).reduce((v,e) => v+e,0));
-            res+=this.format(pub.dataSource);
-            res+=this.format(pub.second_pub);
-            res+=this.format(pub.add_info);
-            res+=this.format(pub.import_date);
-            res+=this.format(pub.edit_date);
             res=res.slice(0,res.length-1);
+
             res+='\n';
         }
         //res = res.replace(/undefined/g, '');

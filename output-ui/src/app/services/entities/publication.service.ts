@@ -67,17 +67,6 @@ export class PublicationService {
     return this.http.get<{ path: string, label: string }[]>(environment.api + 'publications/filter', { withCredentials: true });
   }
 
-  public getOptionalFields() {
-    return this.http.get<{
-      abstract: boolean;
-      citation: boolean;
-      page_count: boolean;
-      pub_date_submitted: boolean;
-      pub_date_print: boolean;
-      peer_reviewed: boolean;
-  }>(environment.api + 'publications/optional_fields', { withCredentials: true });
-  }
-
   public getRoles() {
     return this.http.get<{
       id: number,

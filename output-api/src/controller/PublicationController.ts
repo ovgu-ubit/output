@@ -207,11 +207,6 @@ export class PublicationController {
         return result;
     }
 
-    @Get('optional_fields')
-    getOptionalFields() {
-        return this.configService.get('optional_fields');
-    }
-
     @Get('role')
     getRoles() {
         return this.roleService.get();

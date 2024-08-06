@@ -6,6 +6,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
 import { Subject, takeUntil } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { ConfigService } from 'src/app/services/config.service';
 
 @Component({
   selector: 'app-csv-format',
@@ -70,11 +71,11 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
   optional_fields;
 
   constructor(public dialogRef: MatDialogRef<CsvFormatComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService, private publicationService:PublicationService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService,private configService:ConfigService,
     private formBuilder: FormBuilder) { }
 
   ngOnInit(): void {
-    this.publicationService.getOptionalFields().subscribe(data => {
+    this.configService.getOptionalFields().subscribe(data => {
       this.optional_fields = data;
     });
     this.format = this.data.csvFormat;

@@ -23,6 +23,7 @@ import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { environment } from 'src/environments/environment';
 import { InvoiceService } from 'src/app/services/entities/invoice.service';
+import { ConfigService } from 'src/app/services/config.service';
 import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 
 @Injectable({ providedIn: 'root' })
@@ -46,6 +47,7 @@ export class PubValidator {
   styleUrls: ['./publication-form.component.css']
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {
+  institution: string;
   public form: FormGroup;
   public idForm: FormGroup;
   submitted = false;
@@ -89,7 +91,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService) {
+    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: [''],
@@ -153,10 +155,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    let ob$ = this.publicationService.getOptionalFields().pipe(map(data => {
+    let ob$ = this.configService.getOptionalFields().pipe(map(data => {
       this.optional_fields = data;
     }
     ));
+    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
+      this.institution = data.short_label;
+    }
+    )));
     if (this.data['id']) {
       this.edit = true;
       this.loading = true;
@@ -168,6 +174,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       };
     }
     ob$ = merge(ob$, this.loadMasterData());
+
 
     ob$.subscribe({
       complete: () => {
@@ -608,8 +615,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   getAuthorInfo() {
-    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + environment.institution + " Autor(en)";
-    else return "kein(e) " + environment.institution + " Autor(en)";
+    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + this.institution + " Autor(en)";
+    else return "kein(e) " + this.institution + " Autor(en)";
   }
 
   enter(event) {

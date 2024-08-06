@@ -61,6 +61,7 @@ import appConfig from '../config';
 import { AuthorizationService } from "./guards/authorization.service";
 import { TokenAuthorizationService } from "./guards/token.authorization.service";
 import { PublisherDOI } from "./entity/PublisherDOI";
+import { ConfigController } from "./controller/ConfigController";
 import { Role } from "./entity/Role";
 import { RoleService } from "./services/entities/role.service";
 import { PublicationIdentifier } from "./entity/PublicationIdentifier";
@@ -93,7 +94,7 @@ const filterz = appConfig().filter_services;
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
-    PlausibilityController, ExportController],
+    PlausibilityController, ExportController, ConfigController],
   providers: [
     PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
     OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService,
