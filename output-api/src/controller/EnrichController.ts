@@ -18,8 +18,6 @@ export class EnrichController {
     @Inject('Enrichs') private enrichServices: ApiEnrichDOIService[]) { }
 
   @Get()
-  @UseGuards(AccessGuard)
-  @Permissions([{ role: 'admin', app: 'output' }])
   getImports() {
     let result = [];
     for (let i=0;i<this.configService.get('enrich_services').length;i++) {
