@@ -1,6 +1,24 @@
-<mat-toolbar color="primary">
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
     <h1 mat-dialog-title style="color:white">Publikation</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <button mat-icon-button (click)="this.lock()" matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800"
+            [disabled]="this.disabled">
+            <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
+            <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
+        </button>
+        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
+            <button mat-icon-button (click)="this.action()" matTooltip="Publikation speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div>
 </mat-toolbar>
+
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
     </div>
@@ -18,11 +36,6 @@
                 <mat-label>Status</mat-label>
                 <input matInput [type]="'number'" placeholder="Status" formControlName="status" />
             </mat-form-field>
-            <button type="button" (click)="this.lock()" mat-icon-button class="form-group col-md-1"
-                matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled">
-                <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
-                <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
-            </button>
         </div>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -286,7 +299,8 @@
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
-                <mat-card *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
+                <mat-card
+                    *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
