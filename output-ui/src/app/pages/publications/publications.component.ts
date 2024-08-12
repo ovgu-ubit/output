@@ -66,27 +66,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   @ViewChild(TableComponent) table: TableComponent<PublicationIndex>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
-    { colName: 'title', colTitle: 'Titel' },
-    { colName: 'doi', colTitle: 'DOI', type: 'doi' },
-    { colName: 'authors', colTitle: 'Autoren' },
-    { colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' },
-    { colName: 'corr_inst', colTitle: 'Corr. Institut' },
-    { colName: 'greater_entity', colTitle: 'Größere Einheit' },
-    { colName: 'oa_category', colTitle: 'OA-Kategorie' },
-    { colName: 'locked_status', colTitle: 'Lock-Status' },
-    { colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' },
-    { colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' },
   ];
-
-  headerObs():Observable<TableHeader[]> {
-    return this.configService.getInstition().pipe(map(data => {
-      this.institution = data.short_label;
-      this.headers.push({
-        colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors'
-      })
-      return this.headers;
-    }));
-  }
 
   publications: PublicationIndex[] = [];
   viewConfig: ViewConfig;
@@ -105,9 +85,25 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
       })
     }))
-    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
+    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(map(data => {
+      let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
+      if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
+      if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
+      if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Autoren' })
+      if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' })
+      if (data.includes("inst_corr")) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
+      if (data.includes("greater_entity_label")) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
+      if (data.includes("oa_category")) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
+      if (data.includes("lock_state")) headers.push({ colName: 'locked_status', colTitle: 'Lock-Status' })
+      if (data.includes("status")) headers.push({ colName: 'status', colTitle: 'Status' })
+      if (data.includes("last_modified")) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
+      if (data.includes("added")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
+      this.headers = headers;
+    })))
+    ob$ = concat(ob$, this.configService.getInstition().pipe(map(data => {
       this.institution = data.short_label;
-      this.headers.find(e => e.colName === 'authors_inst').colTitle = 'Autoren ' + this.institution;
+      let header = this.headers.find(e => e.colName === 'authors_inst')
+      if (header) header.colTitle = 'Autoren ' + this.institution;
     })))
 
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
@@ -294,7 +290,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
       data: {
-        pubs:this.selection.selected,
+        pubs: this.selection.selected,
         soft: this.soft_deletes
       }
     });

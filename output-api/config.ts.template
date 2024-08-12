@@ -90,5 +90,18 @@ export default() : AppConfig => ({
         pub_date_submitted: true,
         pub_date_print: true,
         peer_reviewed: true
-    }
+    },
+    pub_index_columns: [
+        "title",
+        "doi",
+        "authors",
+        "authors_inst",
+        "inst_corr",
+        "greater_entity_label",
+        "oa_category",
+        //"lock_state",
+        "status",
+        "last_modified",
+        "added"
+    ]
 });
