@@ -93,7 +93,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Autoren' })
       if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' })
       if (data.includes("corr_inst")) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
-        if (data.includes("pub_type")) headers.push({ colName: 'pub_type', colTitle: 'Publikationstyp' })
+      if (data.includes("pub_type")) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
       if (data.includes("greater_entity")) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
       if (data.includes("publisher")) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
       if (data.includes("contract")) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
