@@ -94,14 +94,20 @@ export default() : AppConfig => ({
     pub_index_columns: [
         "title",
         "doi",
+        //"link",
         "authors",
         "authors_inst",
-        "inst_corr",
-        "greater_entity_label",
+        "corr_inst",
+        "greater_entity",
         "oa_category",
-        //"lock_state",
+        //"pub_type",
+        //"contract",
+        //"publisher",
+        //"locked_status",
         "status",
-        "last_modified",
-        "added"
+        //"pub_date",
+        "edit_date",
+        "import_date",
+        //"data_source",
     ]
 });
