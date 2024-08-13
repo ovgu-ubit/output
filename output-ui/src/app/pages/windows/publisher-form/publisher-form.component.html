@@ -1,7 +1,7 @@
-<mat-toolbar color="primary">
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
     <h1>Verlag</h1>
     <div style="display: flex;justify-content: flex-end;">
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
+        <div *ngIf="!this.disabled; else else1">
             <button mat-icon-button (click)="this.action()" matTooltip="Verlag speichern"
                 [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
             <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
@@ -94,19 +94,6 @@
                 <button matSuffix mat-icon-button type="button" (click)="this.addPrefix()" matTooltip="Präfix hinzufügen"
                     [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
             </form>
-        </mat-expansion-panel><br>
-
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
-            <button mat-raised-button type="submit" color="primary" class="btn-primary">Verlag
-                speichern</button>&nbsp;
-            <button mat-raised-button type="button" color="accent" class="btn-primary"
-                (click)="this.abort()">Abbrechen</button>
-        </div>
-        <ng-template #else1>
-            <div class="form-group" align="center">
-                <button mat-raised-button type="button" color="primary" class="btn-primary"
-                    (click)="this.close()">Schließen</button>
-            </div>
-        </ng-template>
+        </mat-expansion-panel>
     </form>
 </div>

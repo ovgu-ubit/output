@@ -6,7 +6,7 @@
             <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
             <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
         </button>
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
+        <div *ngIf="!this.disabled; else else1">
             <button mat-icon-button (click)="this.action()" matTooltip="Publikation speichern"
                 [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
             <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
@@ -441,7 +441,7 @@
                     *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
                     <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <table
+                        <table #tableInvoice
                             *ngIf="this.pub?.invoices && this.pub?.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))"
                             mat-table [dataSource]="this.pub?.invoices">
                             <ng-container matColumnDef="date">

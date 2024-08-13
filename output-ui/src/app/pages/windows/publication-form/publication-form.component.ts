@@ -74,7 +74,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
-  @ViewChild(MatTable) table: MatTable<Invoice>;
+  @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
   @ViewChild('tableID') tableId: MatTable<PublicationIdentifier>;
 

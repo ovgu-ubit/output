@@ -1,4 +1,18 @@
-<mat-toolbar color="primary"><h1 mat-dialog-title style="color:white">Rechnungsposten</h1></mat-toolbar>
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>Rechnungsposten</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div *ngIf="!this.disabled; else else1">
+            <button mat-icon-button (click)="this.action()" matTooltip="Rechnungsposten speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div> 
+</mat-toolbar>
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
@@ -48,18 +62,5 @@
                 <mat-option value="CHF">CHF</mat-option>
             </mat-select>
         </mat-form-field>
-
-        <div *ngIf="!this.disabled; else else1" align="center">
-            <button mat-raised-button type="submit" color="primary" class="btn-primary">Rechnungsposten
-                speichern</button>&nbsp;
-            <button mat-raised-button type="button" color="accent" class="btn-primary"
-                (click)="this.abort()">Abbrechen</button>
-        </div>
-        <ng-template #else1>
-            <div class="form-group" align="center">
-                <button mat-raised-button type="button" color="primary" class="btn-primary"
-                    (click)="this.close()">Schließen</button>
-            </div>
-        </ng-template>
     </form>
 </mat-dialog-content>
