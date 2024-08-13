@@ -67,8 +67,7 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
     this.form = this.formBuilder.group({
       id: [''],
       label: ['', Validators.required],
-      doi_prefix: [''],
-      location: ['']
+      doi_prefix: ['']
     });
     this.form.controls.id.disable();
     
