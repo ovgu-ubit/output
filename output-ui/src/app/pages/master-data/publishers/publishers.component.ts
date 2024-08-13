@@ -42,7 +42,6 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'doi_prefix', colTitle: 'DOI Prefix' },
-    { colName: 'location', colTitle: 'Ort' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type:'pubs' },
   ];
 
