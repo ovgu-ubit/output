@@ -550,9 +550,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   abort(): void {
     if (this.form.dirty) {
-      for (let x of Object.keys(this.form.controls)) {
-        console.log(x+':'+this.form.controls[x].dirty)
-      }
       let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {

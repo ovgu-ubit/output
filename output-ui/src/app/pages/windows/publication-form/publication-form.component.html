@@ -540,31 +540,7 @@
                         <mat-icon>recycling</mat-icon>
                     </button>
                 </mat-form-field>
-
             </mat-expansion-panel>
         </mat-accordion>
-
-
-        <br />
-        <div *ngIf="this.form.invalid">
-            Es müssen noch weitere Pflichtfelder ausgefüllt werden:
-            <div *ngIf="this.form.errors.no_pub_date">Mindestens ein Publikationsdatum muss angegeben werden</div>
-            <div *ngIf="this.form.errors.no_title_or_doi">DOI oder Titel müssen angegeben werden</div>
-        </div>
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
-            <button *ngIf="!this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
-                anlegen</button>
-            <button *ngIf="this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
-                speichern</button>&nbsp;
-            <button mat-raised-button type="button" color="accent" class="btn-primary"
-                (click)="this.abort()">Abbrechen</button>
-        </div>
-        <ng-template #else1>
-            <div class="form-group" align="center">
-                <button mat-raised-button type="button" color="primary" class="btn-primary"
-                    (click)="this.close()">Schließen</button>
-            </div>
-        </ng-template>
-
     </form>
 </mat-dialog-content>

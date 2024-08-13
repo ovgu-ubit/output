@@ -1,5 +1,17 @@
 <mat-toolbar color="primary">
     <h1>Verlag</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
+            <button mat-icon-button (click)="this.action()" matTooltip="Verlag speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div>
 </mat-toolbar>
 <div style="padding: 5px">
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
