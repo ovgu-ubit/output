@@ -77,7 +77,56 @@
                     </mat-autocomplete>
                 </mat-form-field>
             </mat-card-actions>
-        </mat-card><br>        
+        </mat-card><br>      
+
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                Aliase
+              </mat-panel-title>
+              <mat-panel-description>
+                Werden beim Import auf diese*n Autor*in abgebildet
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+            <table #tableAlias *ngIf="this.alias_data && this.alias_data.length>0" mat-table
+                [dataSource]="this.alias_data">
+                <ng-container matColumnDef="alias">
+                    <th mat-header-cell *matHeaderCellDef> Alias </th>
+                    <td mat-cell *matCellDef="let element"> {{element.alias}} </td>
+                </ng-container>
+                <ng-container matColumnDef="first_name">
+                    <th mat-header-cell *matHeaderCellDef> Für Vorname </th>
+                    <td mat-cell *matCellDef="let element"> 
+                        <mat-icon *ngIf="element.first_name">check_box</mat-icon>
+                        <mat-icon *ngIf="!element.first_name">check_box_outline_blank</mat-icon>
+                    </td>
+                </ng-container>
+                <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                            (click)="this.deleteAlias(element)"
+                            matTooltip="Alias löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                </ng-container>
+    
+                <tr mat-header-row *matHeaderRowDef="['alias','first_name','delete']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['alias','first_name','delete'];"></tr>
+            </table>
+            <form [formGroup]="aliasForm" style="display: flex;gap:5px">
+                <mat-form-field appearance="fill">
+                    <mat-label>Alias</mat-label>
+                    <input matInput placeholder="Alias" formControlName="alias" />
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Vor- oder Nachname</mat-label>
+                    <mat-select formControlName="first_name">
+                        <mat-option [value]="true">Vorname</mat-option>
+                        <mat-option [value]="false">Nachname</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
+                    matTooltip="Alias hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+            </form>
+        </mat-expansion-panel><br>  
             
         <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
             <button mat-raised-button type="submit" color="primary" class="btn-primary">Autor*in

@@ -15,27 +15,27 @@ export class AuthorService {
     return this.http.get<Author[]>(environment.api + 'authors', { withCredentials: true });
   }
 
-  public index(reporting_year:number) {
-    return this.http.get<AuthorIndex[]>(environment.api + 'authors/index?reporting_year='+reporting_year, { withCredentials: true });
+  public index(reporting_year: number) {
+    return this.http.get<AuthorIndex[]>(environment.api + 'authors/index?reporting_year=' + reporting_year, { withCredentials: true });
   }
 
-  public getAuthor(id:number) {
-    return this.http.get<Author>(environment.api + 'authors/'+id, { withCredentials: true });
+  public getAuthor(id: number) {
+    return this.http.get<Author>(environment.api + 'authors/' + id, { withCredentials: true });
   }
 
-  public addAuthor(author:Author) {
+  public addAuthor(author: Author) {
     return this.http.post<Author>(environment.api + 'authors', author, { withCredentials: true });
   }
 
-  public update(author:Author) {
+  public update(author: Author) {
     return this.http.put<Author>(environment.api + 'authors', author, { withCredentials: true });
   }
-  
-  public delete(authors:Author[]) {
+
+  public delete(authors: Author[]) {
     return this.http.delete<Author[]>(environment.api + 'authors', { withCredentials: true, body: authors });
   }
-  
-  public combine(id1:number, ids:number[]) {
-    return this.http.post(environment.api + 'authors/combine', {id1,ids}, { withCredentials: true });
+
+  public combine(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
+    return this.http.post(environment.api + 'authors/combine', { id1, ids, aliases_first_name, aliases_last_name }, { withCredentials: true });
   }
 }

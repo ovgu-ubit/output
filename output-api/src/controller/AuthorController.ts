@@ -27,15 +27,15 @@ export class AuthorController {
 
     @Get('index')
     @ApiResponse({ status: 200, description: 'Author index is returned.' })
-    async index(@Query('reporting_year') reporting_year:number) {
+    async index(@Query('reporting_year') reporting_year: number) {
         return await this.authorService.index(reporting_year);
     }
 
     @Get('/:id')
     @UseGuards(AccessGuard)
     @ApiParam({ name: 'id', description: 'id for which author object should be obtained' })
-    async one(@Param('id') id:number, @Req() request: Request) {
-        return this.authorService.one(id, request['user']? request['user']['write'] : false);
+    async one(@Param('id') id: number, @Req() request: Request) {
+        return this.authorService.one(id, request['user'] ? request['user']['write'] : false);
     }
 
     @Post()
@@ -90,10 +90,10 @@ export class AuthorController {
     })
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        let res = await this.authorService.combineAuthors(id1,ids);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author') 
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting other authors') 
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
+        let res = await this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
+        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author')
+        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting other authors')
         else return res;
     }
 }

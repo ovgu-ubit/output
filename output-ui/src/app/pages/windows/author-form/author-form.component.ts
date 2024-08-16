@@ -11,6 +11,7 @@ import { InstituteService } from 'src/app/services/entities/institute.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { Author, Institute } from '../../../../../../output-interfaces/Publication';
 import { InstituteFormComponent } from '../institute-form/institute-form.component';
+import { AliasAuthorFirstName, AliasAuthorLastName } from '../../../../../../output-interfaces/Alias';
 
 @Component({
   selector: 'app-author-form',
@@ -20,6 +21,10 @@ import { InstituteFormComponent } from '../institute-form/institute-form.compone
 export class AuthorFormComponent implements OnInit, AfterViewInit {
 
   public form: FormGroup;
+  aliasForm: FormGroup = this.formBuilder.group({
+    alias: [''],
+    first_name: ['']
+  });
 
   author: Author;
   institutes: Institute[];
@@ -28,6 +33,8 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
   disabled = false;
 
   @ViewChild(MatTable) table: MatTable<Institute>;
+  @ViewChild('tableAlias') tableAlias: MatTable<{ alias: string, first_name: boolean }>;
+  alias_data: { alias: string, first_name: boolean }[];
 
   constructor(public dialogRef: MatDialogRef<AuthorFormComponent>, public tokenService: AuthorizationService,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService: AuthorService, private instService: InstituteService,
@@ -40,6 +47,7 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
         next: data => {
           this.author = data;
           this.form.patchValue(this.author)
+          this.updateAlias();
           if (this.author.locked_at) {
             this.disable();
             this._snackBar.open('Autor*in wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
@@ -194,6 +202,37 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
       return false;
     }
     return true;
+  }
+
+
+  deleteAlias(elem: { alias: string, first_name: boolean }) {
+    if (this.disabled) return;
+    if (elem.first_name) this.author.aliases_first_name = this.author.aliases_first_name.filter(e => e.alias !== elem.alias)
+    else this.author.aliases_last_name = this.author.aliases_last_name.filter(e => e.alias !== elem.alias)
+    this.updateAlias();
+  }
+
+  addAlias() {
+    if (this.disabled) return;
+    if (this.aliasForm.invalid) return;
+    if (this.aliasForm.get('first_name').value === undefined || this.aliasForm.get('first_name').value === null) return;
+    if (this.aliasForm.get('first_name').value) {
+      this.author.aliases_first_name.push({
+        alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
+        elementId: this.author.id
+      })
+    } else this.author.aliases_last_name.push({
+      alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
+      elementId: this.author.id
+    })
+    this.aliasForm.reset();
+    this.updateAlias();
+  }
+
+  updateAlias() {
+    this.alias_data = this.author.aliases_first_name.map(e => { return { alias: e.alias, first_name: true } })
+    this.alias_data = this.alias_data.concat(this.author.aliases_last_name.map(e => { return { alias: e.alias, first_name: false } }));
+    if (this.tableAlias) this.tableAlias.dataSource = new MatTableDataSource<{ alias: string, first_name: boolean }>(this.alias_data);
   }
 }
 

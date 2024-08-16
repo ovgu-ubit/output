@@ -65,6 +65,8 @@ import { ConfigController } from "./controller/ConfigController";
 import { Role } from "./entity/Role";
 import { RoleService } from "./services/entities/role.service";
 import { PublicationIdentifier } from "./entity/PublicationIdentifier";
+import { AliasAuthorFirstName } from "./entity/alias/AliasAuthorFirstName";
+import { AliasAuthorLastName } from "./entity/alias/AliasAuthorLastName";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -90,7 +92,7 @@ const filterz = appConfig().filter_services;
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
       Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
-      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
+      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName])
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
