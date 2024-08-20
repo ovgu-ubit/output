@@ -72,7 +72,7 @@ export class ExportController {
 
   @Post(":path")
   @UseGuards(AccessGuard)
-  @Permissions([{ role: 'reader', app: 'output' }, { role: 'wrtier', app: 'output' }, { role: 'admin', app: 'output' }])
+  @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async exportMaster(@Param('path') path: string, @Req() request:Request, @Body('filter') filter?:{filter:SearchFilter, paths: string[]}) {
     //res.setHeader('Content-type', 'text/plain')
     let so = this.configService.get('export_services').findIndex(e => e.path === path)
