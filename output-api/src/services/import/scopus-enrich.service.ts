@@ -26,10 +26,10 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService, 
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, 
         protected roleService:RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, roleService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService, http);
         this.configService.get('searchTags').forEach(tag => {
             this.searchText += tag + " or "
         })
@@ -72,9 +72,8 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
         return `${this.url}?count=1&view=complete&apiKey=${this.configService.get('api_key_scopus')}&query=DOI(${doi})`;
     }
     protected importTest(element: any): boolean {
-        return element && element.affiliation?.find(aff => this.affiliationIncludesTags(aff.affilname));
+        return element && element.affiliation && this.affiliationIncludesTags(element.affiliation)
     }
-
     protected getDOI(element: any): string {
         return element['prism:doi'];
     }
@@ -90,13 +89,26 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     protected getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string }[] {
         if (!element.author || element.author.length === 0) return null;
         let aut_inst = [];
-        for (let i=0;i<element.author.length;i++) {
-            if (!element.affiliation[i]) continue;
-            if (this.affiliationIncludesTags(element.affiliation[i].affilname)) aut_inst.push(element.author[i])
+        for (let i = 0; i < element.author.length; i++) {
+            let aff = element.affiliation.filter(e => element.author[i].afid?.find(f => f['$'] === e.afid))
+            if (!aff || !Array.isArray(aff)) continue;
+            if (this.affiliationIncludesTags(aff)) aut_inst.push(element.author[i])
         }
         let res = [];
         for (let item of aut_inst) res.push({ last_name: item['surname'], first_name: item['given-name'] })
         return res;
+    }
+    private affiliationIncludesTags(affiliation: any[]): boolean {
+        for (let aff of affiliation) {
+            if (this.affiliationTagMatch(aff.affilname)) return true;
+        }
+        return false;
+    }
+    private affiliationTagMatch(affiliation: string): boolean {
+        for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
+            if (affiliation.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
+        }
+        return false;
     }
     protected getAuthors(element: any): string {
         let authors = element.author;
@@ -111,19 +123,11 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
         });
         return result;
     }
-
-    private affiliationIncludesTags(affiliation): boolean {
-        for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
-            if (affiliation?.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
-        }
-        return false;
-    }
-
     protected getGreaterEntity(element: any): GreaterEntity {
         let identifiers = [];
-        if (element['prism:isbn']) identifiers = identifiers.concat(element['prism:isbn'].map(e => {return {type:'isbn',value:e['$']}}));
-        if (element['prism:eIssn']) identifiers.push({type:'issn',value:element['prism:eIssn'].slice(0,4)+'-'+element['prism:eIssn'].slice(4)});
-        if (element['prism:issn']) identifiers.push({type:'issn',value:element['prism:issn'].slice(0,4)+'-'+element['prism:issn'].slice(4)});
+        if (element['prism:isbn']) identifiers = identifiers.concat(element['prism:isbn'].map(e => { return { type: 'isbn', value: e['$'] } }));
+        if (element['prism:eIssn']) identifiers.push({ type: 'issn', value: element['prism:eIssn'].slice(0, 4) + '-' + element['prism:eIssn'].slice(4) });
+        if (element['prism:issn']) identifiers.push({ type: 'issn', value: element['prism:issn'].slice(0, 4) + '-' + element['prism:issn'].slice(4) });
         return {
             label: element['prism:publicationName'],
             identifiers
@@ -134,7 +138,7 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     }
     protected getPubDate(element: any) {
         let split = element['prism:coverDate'].split('-');
-        return new Date(Date.UTC(split[0],split[1]-1,split[2]));
+        return new Date(Date.UTC(split[0], split[1] - 1, split[2]));
     }
     protected getLanguage(element: any): string {
         return null;
@@ -187,7 +191,8 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
         try {
             let range = element['prism:pageRange']
             let split = range.split('-');
-            return Number(split[1])-Number(split[0])+1;
+            let res = Number(split[1]) - Number(split[0]) + 1;
+            if (!Number.isNaN(res) && res <= 2147483647) return res; else return null;//max int
         } catch (err) {
             return null;
         }
