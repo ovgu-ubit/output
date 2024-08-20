@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { catchError, EMPTY, mergeAll, Observable, of, queueScheduler, scheduled } from 'rxjs';
+import { catchError, delay, EMPTY, mergeAll, Observable, of, queueScheduler, scheduled } from 'rxjs';
 import { FindManyOptions } from 'typeorm';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
@@ -77,8 +77,6 @@ export class DOAJEnrichService extends AbstractImportService {
                 identifiers: [{type:'issn', value: element['query'].split(':')[1]}]
             }
         } else {
-            console.log(element['results'][0]['bibjson']['oa_start'])
-            console.log(new Date(element['results'][0]['bibjson']['oa_start'],0))
             return {
                 label: element['results'][0]['bibjson']['title'],
                 identifiers: [{type:'issn', value: element['results'][0]['bibjson']['eissn']}],
@@ -170,7 +168,7 @@ export class DOAJEnrichService extends AbstractImportService {
 
     private request(issn: string): Observable<any> {
         let url = this.createUrl(issn);
-        return this.http.get(url).pipe(catchError((error, caught) => {
+        return this.http.get(url).pipe(delay(100),catchError((error, caught) => {
             if (error.response?.status === 404) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + issn })
             } else if (error.response?.status === 422) {
@@ -218,21 +216,21 @@ export class DOAJEnrichService extends AbstractImportService {
         }
 
         for (let pub of this.uniqueGE) obs$.push(this.request(pub.greater_entity.identifiers.find(e => e.type === 'issn').value));
-        //console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${this.whereClause.toString()}` })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {
                 if (data) {
                     let item = this.getData(data);
-                    console.log(item['query'].split(':')[1])
+                    //console.log(item['query'].split(':')[1])
                     if (item) {
                         let orig = this.uniqueGE.find(e => {
-                            if (!e.greater_entity.identifiers) {
-                                console.log(e.id)
-                            }
-                            return e.greater_entity.identifiers.find(e => e.type === 'issn').value === item['query'].split(':')[1]
+                            if (e.greater_entity.identifiers) return e.greater_entity.identifiers.find(e => e.type === 'issn').value === item['query'].split(':')[1]
                         })
+                        if (!orig) {
+                            this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: 'no publication to update could be found' })
+                            return null;
+                        }
                         let pubUpd = await this.mapUpdate(item, orig).catch(e => {
                             this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                             //console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
@@ -247,7 +245,7 @@ export class DOAJEnrichService extends AbstractImportService {
                 } //else this.errors++;
 
                 // Update Progress Value
-                if (this.progress !== 0) this.progress = (this.processedPublications + this.errors) / publications.length;
+                if (this.progress !== 0) this.progress = (this.processedPublications + this.errors) / this.uniqueGE.length;
                 if (this.progress === 1) {
                     //console.log(this.publicationsUpdate.length + ' pubs update to DB, ' + this.errors + ' errors');
                     //finalize
