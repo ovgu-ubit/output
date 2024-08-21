@@ -1,6 +1,24 @@
-<mat-toolbar color="primary">
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
     <h1 mat-dialog-title style="color:white">Publikation</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <button mat-icon-button (click)="this.lock()" matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800"
+            [disabled]="this.disabled">
+            <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
+            <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
+        </button>
+        <div *ngIf="!this.disabled; else else1">
+            <button mat-icon-button (click)="this.action()" matTooltip="Publikation speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div>
 </mat-toolbar>
+
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
     </div>
@@ -18,11 +36,6 @@
                 <mat-label>Status</mat-label>
                 <input matInput [type]="'number'" placeholder="Status" formControlName="status" />
             </mat-form-field>
-            <button type="button" (click)="this.lock()" mat-icon-button class="form-group col-md-1"
-                matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800" [disabled]="this.disabled">
-                <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
-                <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
-            </button>
         </div>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -191,7 +204,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Publikationstyp</mat-label>
-                    <mat-select [(value)]="this.pub_type_id" formControlName="pub_type">
+                    <mat-select formControlName="pub_type">
                         <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let pub_type of this.pub_types"
                             [value]="pub_type.id">{{pub_type.label}}</mat-option>
@@ -281,12 +294,13 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Sprache</mat-label>
-                    <mat-select [(value)]="this.language_id" formControlName="language">
+                    <mat-select formControlName="language">
                         <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
-                <mat-card *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
+                <mat-card
+                    *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
@@ -348,7 +362,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>OA-Kategorie</mat-label>
-                    <mat-select [(value)]="this.oa_cat_id" formControlName="oa_cat">
+                    <mat-select formControlName="oa_cat">
                         <mat-option [value]="-1"></mat-option>
                         <mat-option *ngFor="let oa_cat of this.oa_categories"
                             [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
@@ -427,7 +441,7 @@
                     *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
                     <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <table
+                        <table #tableInvoice
                             *ngIf="this.pub?.invoices && this.pub?.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))"
                             mat-table [dataSource]="this.pub?.invoices">
                             <ng-container matColumnDef="date">
@@ -526,31 +540,7 @@
                         <mat-icon>recycling</mat-icon>
                     </button>
                 </mat-form-field>
-
             </mat-expansion-panel>
         </mat-accordion>
-
-
-        <br />
-        <div *ngIf="this.form.invalid">
-            Es müssen noch weitere Pflichtfelder ausgefüllt werden:
-            <div *ngIf="this.form.errors.no_pub_date">Mindestens ein Publikationsdatum muss angegeben werden</div>
-            <div *ngIf="this.form.errors.no_title_or_doi">DOI oder Titel müssen angegeben werden</div>
-        </div>
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
-            <button *ngIf="!this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
-                anlegen</button>
-            <button *ngIf="this.edit" mat-raised-button type="submit" color="primary" class="btn-primary">Publikation
-                speichern</button>&nbsp;
-            <button mat-raised-button type="button" color="accent" class="btn-primary"
-                (click)="this.abort()">Abbrechen</button>
-        </div>
-        <ng-template #else1>
-            <div class="form-group" align="center">
-                <button mat-raised-button type="button" color="primary" class="btn-primary"
-                    (click)="this.close()">Schließen</button>
-            </div>
-        </ng-template>
-
     </form>
 </mat-dialog-content>

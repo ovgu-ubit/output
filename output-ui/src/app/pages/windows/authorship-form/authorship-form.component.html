@@ -1,10 +1,16 @@
-<mat-toolbar color="primary">
-    <h1>Institut auswählen</h1>
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>Autorenschaft bearbeiten</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div>
+            <button mat-icon-button (click)="this.action()" matTooltip="Autorenschaft speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+    </div> 
 </mat-toolbar>
 <div style="padding: 5px">
-    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
-        (ngSubmit)="this.action()">
-
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Person</mat-label>
             <input matInput #authorInput formControlName="author" placeholder="Person auswählen oder hinzufügen"
@@ -60,10 +66,5 @@
                 </mat-form-field>
             </mat-card-content>
         </mat-card>
-
-        <button mat-raised-button type="submit" color="primary" class="btn-primary">Autorenschaft
-            ändern</button>&nbsp;
-        <button mat-raised-button type="button" color="primary" class="btn-primary"
-            (click)="this.abort()">Abbrechen</button>
     </form>
 </div>
