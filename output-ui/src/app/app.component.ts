@@ -12,7 +12,7 @@ import { ConfigService } from './services/config.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public title: string = 'Output2';
-  public version = '0.3.1-beta';
+  public version = '1.0.0-beta';
   public user: string | null;
   public institution: string = '';
   public isLoading: boolean = true;
