@@ -55,7 +55,7 @@ export class TableComponent<T> implements OnInit {
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
-  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar,
+  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
     public tokenService: AuthorizationService) {
   }
 
@@ -190,13 +190,13 @@ export class TableComponent<T> implements OnInit {
     }
   }
 
-  compare(type: string, a: any, b: any, dir: SortDirection) {
+  compare(type:  string, a:  any, b:  any, dir:  SortDirection) {
+    if (!a && !b) return 0;
+    else if (!a && b) return (dir === 'asc' ? -1 : 1)
+    else if (a && !b) return (dir === 'asc' ? 1 : -1)
     if ((!type || type === 'string' || type == 'authors') && a) return a.localeCompare(b, 'de-DE') * (dir === 'asc' ? 1 : -1);
-    else /*if (type === 'number' || type === 'pubs' || type === 'euro')*/ {
-      if (!a && b) return (dir === 'asc' ? -1 : 1)
-      else if (a && !b) return (dir === 'asc' ? 1 : -1)
-      else return (Number(a) < Number(b) ? -1 : 1) * (dir === 'asc' ? 1 : -1)
-    }
+    else if (type === 'date' || type === 'datetime') return (Date.parse(a) < Date.parse(b) ? -1 : 1) * (dir === 'asc' ? 1 : -1)
+    else return (Number(a) < Number(b) ? -1 : 1) * (dir === 'asc' ? 1 : -1)
   }
 
   goToPage() {
