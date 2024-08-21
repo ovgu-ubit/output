@@ -1,4 +1,4 @@
-import {AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
+import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
 
 export interface Publication {
     id?: number;
@@ -59,6 +59,8 @@ export interface Author {
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
     locked_at?: Date;
+    aliases_first_name?: AliasAuthorFirstName[];
+    aliases_last_name?: AliasAuthorLastName[];
 }
 
 export interface AuthorPublication {

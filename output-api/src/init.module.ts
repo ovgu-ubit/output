@@ -28,6 +28,8 @@ import config from "../config";
 import { PublisherDOI } from "./entity/PublisherDOI";
 import { Role } from "./entity/Role";
 import { PublicationIdentifier } from "./entity/PublicationIdentifier";
+import { AliasAuthorLastName } from "./entity/alias/AliasAuthorLastName";
+import { AliasAuthorFirstName } from "./entity/alias/AliasAuthorFirstName";
 
 //export const init_service = require(config().init_service)
 //export const init_service = import (config().init_service);
@@ -45,7 +47,7 @@ import { PublicationIdentifier } from "./entity/PublicationIdentifier";
       }),
       TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier, 
         Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier, 
-        AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
+        AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName])
     ],
     providers: [
       DatabaseConfigService, 

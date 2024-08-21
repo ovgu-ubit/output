@@ -1,5 +1,5 @@
 import { PublicationType } from "../output-api/src/entity/PublicationType";
-import { Funder, Institute, Publisher } from "./Publication";
+import { Author, Funder, Institute, Publisher } from "./Publication";
 
 export interface Alias<T> {
     element?: T,
@@ -14,4 +14,8 @@ export interface AliasPublisher extends Alias<Publisher>{
 export interface AliasPubType extends Alias<PublicationType>{
 }
 export interface AliasFunder extends Alias<Funder>{
+}
+export interface AliasAuthorFirstName extends Alias<Author>{
+}
+export interface AliasAuthorLastName extends Alias<Author>{
 }

@@ -147,13 +147,15 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
         width: '800px',
         maxHeight: '800px',
         data: {
-          ents: this.selection.selected
+          ents: this.selection.selected,
+          aliases: true,
+          author: true
         },
         disableClose: true
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.authorService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
+          this.authorService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), result.aliases_first_name, result.aliases_last_name).subscribe({
             next: data => {
               this._snackBar.open(`Autoren wurden zusammengeführt`, 'Super!', {
                 duration: 5000,

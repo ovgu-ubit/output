@@ -2,6 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOn
 import { AuthorPublication } from "./AuthorPublication";
 import { Institute } from "./Institute";
 import { Author as IAuthor} from "../../../output-interfaces/Publication"
+import { AliasAuthorFirstName } from "./alias/AliasAuthorFirstName";
+import { AliasAuthorLastName } from "./alias/AliasAuthorLastName";
 
 @Entity()
 export class Author implements IAuthor {
@@ -33,4 +35,11 @@ export class Author implements IAuthor {
 
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
+
+    @OneToMany(() => AliasAuthorFirstName, ai => ai.element, { cascade : true })
+    aliases_first_name?: AliasAuthorFirstName[];
+    
+
+    @OneToMany(() => AliasAuthorLastName, ai => ai.element, { cascade : true })
+    aliases_last_name?: AliasAuthorLastName[];
 }
