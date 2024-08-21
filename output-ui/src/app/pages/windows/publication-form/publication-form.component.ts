@@ -170,7 +170,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     } else {
       this.edit = false;
       this.pub = {
-        authorPublications: []
+        authorPublications: [],
+        identifiers: []
       };
     }
     ob$ = merge(ob$, this.loadMasterData());
