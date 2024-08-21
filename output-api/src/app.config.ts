@@ -34,5 +34,6 @@ export interface AppConfig {
         pub_date_submitted: boolean;
         pub_date_print: boolean;
         peer_reviewed: boolean;
-    }
+    },
+    pub_index_columns: string[];
 }

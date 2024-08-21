@@ -58,46 +58,65 @@ export class PublicationService {
 
     public indexQuery(): SelectQueryBuilder<Publication> {
         let query = this.pubRepository.createQueryBuilder("publication")
-            .leftJoin("publication.publisher", "publisher")
             .leftJoin("publication.authorPublications", "authorPublications")
             .leftJoin("authorPublications.author", "author")
             .leftJoin("authorPublications.institute", "institute")
-            .leftJoin("publication.oa_category", "oa_category")
-            .leftJoin("publication.pub_type", "publication_type")
-            .leftJoin("publication.contract", "contract")
-            .leftJoin("publication.greater_entity", "greater_entity")
             .select("publication.id", "id")
-            .addSelect("publication.title", "title")
             .addSelect("publication.locked", "locked")
-            .addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
-            .addSelect("publication.status", "status")
-            .addSelect("publication.dataSource", "data_source")
-            .addSelect("publication.edit_date", "edit_date")
-            .addSelect("publication.import_date", "import_date")
-            .addSelect("publication.link", "link")
-            .addSelect("publication.doi", "doi")
-            .addSelect("publication.authors", "authors")
-            .addSelect("publication.pub_date", "pub_date")
-            .addSelect("publisher.label", "publisher")
-            .addSelect("publication_type.label", "publication_type")
-            .addSelect("oa_category.label", "oa_category")
-            .addSelect("contract.label", "contract")
-            .addSelect("greater_entity.label", "greater_entity")
-            .addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
-            .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
-            .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
-            .addSelect("publication.status", "status")
             .groupBy("publication.id")
-            .addGroupBy("publication.title")
-            .addGroupBy("publication.doi")
-            .addGroupBy("publication.authors")
-            .addGroupBy("publication.pub_date")
-            .addGroupBy("publication.status")
-            .addGroupBy("publisher.label")
-            .addGroupBy("oa_category.label")
-            .addGroupBy("publication_type.label")
-            .addGroupBy("contract.label")
-            .addGroupBy("greater_entity.label")
+
+        if (this.configService.get("pub_index_columns").includes("title")) {
+            query = query.addSelect("publication.title", "title").addGroupBy("publication.title")
+        }
+        if (this.configService.get("pub_index_columns").includes("doi")) {
+            query = query.addSelect("publication.doi", "doi").addGroupBy("publication.doi")
+        }
+        if (this.configService.get("pub_index_columns").includes("authors")) {
+            query = query.addSelect("publication.authors", "authors").addGroupBy("publication.authors")
+        }
+        if (this.configService.get("pub_index_columns").includes("authors_inst")) {
+            query = query.addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
+                .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
+        }
+        if (this.configService.get("pub_index_columns").includes("corr_inst")) {
+            query = query.addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
+        }
+        if (this.configService.get("pub_index_columns").includes("greater_entity")) {
+            query = query.leftJoin("publication.greater_entity", "greater_entity").addSelect("greater_entity.label", "greater_entity").addGroupBy("greater_entity.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("oa_category")) {
+            query = query.leftJoin("publication.oa_category", "oa_category").addSelect("oa_category.label", "oa_category").addGroupBy("oa_category.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("locked_status")) {
+            query = query.addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
+        }
+        if (this.configService.get("pub_index_columns").includes("status")) {
+            query = query.addSelect("publication.status", "status").addGroupBy("publication.status")
+        }
+        if (this.configService.get("pub_index_columns").includes("edit_date")) {
+            query = query.addSelect("publication.edit_date", "edit_date")
+        }
+        if (this.configService.get("pub_index_columns").includes("import_date")) {
+            query = query.addSelect("publication.import_date", "import_date")
+        }
+        if (this.configService.get("pub_index_columns").includes("pub_type")) {
+            query = query.leftJoin("publication.pub_type", "publication_type").addSelect("publication_type.label", "pub_type").addGroupBy("publication_type.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("contract")) {
+            query = query.leftJoin("publication.contract", "contract").addSelect("contract.label", "contract").addGroupBy("contract.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("publisher")) {
+            query = query.leftJoin("publication.publisher", "publisher").addSelect("publisher.label", "publisher").addGroupBy("publisher.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("pub_date")) {
+            query = query.addSelect("publication.pub_date", "pub_date").addGroupBy("publication.pub_date")
+        }
+        if (this.configService.get("pub_index_columns").includes("link")) {
+            query = query.addSelect("publication.link", "link")
+        }
+        if (this.configService.get("pub_index_columns").includes("data_source")) {
+            query = query.addSelect("publication.dataSource", "data_source")
+        }
 
         //console.log(query.getSql());
         return query;

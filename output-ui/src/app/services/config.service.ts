@@ -18,4 +18,7 @@ export class ConfigService {
   public getInstition() {
     return this.http.get<{ label: string, short_label: string }>(environment.api + 'config/institution', { withCredentials: true });
   }
+  public getIndexColumns() {
+    return this.http.get<string[]>(environment.api + 'config/pub_index_columns', { withCredentials: true });
+  }
 }
