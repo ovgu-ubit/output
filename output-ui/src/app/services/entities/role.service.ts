@@ -7,7 +7,6 @@ import { Role } from '../../../../../output-interfaces/Publication';
   providedIn: 'root'
 })
 export class RoleService {
-
   
   constructor(private http: HttpClient) { }
 
