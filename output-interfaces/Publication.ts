@@ -76,6 +76,7 @@ export interface AuthorPublication {
 export interface Role {
     id?: number;
     label: string;
+    locked_at?: Date;
 }
 
 export interface Contract {

@@ -612,8 +612,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   getAuthorInfo() {
-    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + this.institution + " Autor(en)";
-    else return "kein(e) " + this.institution + " Autor(en)";
+    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + this.institution + " Person(en)";
+    else return "kein(e) " + this.institution + " Person(en)";
   }
 
   enter(event) {

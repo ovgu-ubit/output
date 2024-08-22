@@ -67,10 +67,4 @@ export class PublicationService {
     return this.http.get<{ path: string, label: string }[]>(environment.api + 'publications/filter', { withCredentials: true });
   }
 
-  public getRoles() {
-    return this.http.get<{
-      id: number,
-      label:string
-  }[]>(environment.api + 'publications/role', { withCredentials: true });
-  }
 }

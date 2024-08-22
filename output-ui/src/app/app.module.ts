@@ -79,6 +79,8 @@ import { TableComponent } from './tools/table/table.component';
 import { DeletePublicationDialogComponent } from './tools/delete-publication-dialog/delete-publication-dialog.component';
 import { AliasFormComponent } from './tools/alias-form/alias-form.component';
 import { AuthorshipFormComponent } from './pages/windows/authorship-form/authorship-form.component';
+import { RolesComponent } from './pages/master-data/roles/roles.component';
+import { RoleFormComponent } from './pages/windows/role-form/role-form.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -127,7 +129,9 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
     CostTypeFormComponent,
     DeletePublicationDialogComponent,
     AliasFormComponent,
-    AuthorshipFormComponent
+    AuthorshipFormComponent,
+    RolesComponent,
+    RoleFormComponent
   ],
   imports: [
     BrowserModule,
