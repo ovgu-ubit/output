@@ -39,7 +39,7 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
-    { colName: 'rating', colTitle: 'Bewertung' },
+    { colName: 'rating', colTitle: 'Bemerkung' },
     { colName: 'identifiers', colTitle: 'Identifikatoren' },
     { colName: 'doaj_since', colTitle: 'Im DOAJ seit', type: 'date' },
     { colName: 'doaj_until', colTitle: 'Im DOAJ bis', type: 'date' },
