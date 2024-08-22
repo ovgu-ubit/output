@@ -18,7 +18,7 @@ import { PublisherService } from '../entities/publisher.service';
 import { ReportItemService } from '../report-item.service';
 import { Institute } from '../../entity/Institute';
 import { InstitutionService } from '../entities/institution.service';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { ConfigService } from '@nestjs/config';
@@ -209,16 +209,19 @@ export abstract class AbstractImportService {
             this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
             return null;
         }
+        let remark = '';
         let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute, role: Role }[] = [];
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
             for (let aut of authors_inst) {
-                let aut_ent = await this.authorService.findOrSave(aut.last_name.trim(), aut.first_name.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
+                let res:{author:Author, error:AppError} = await this.authorService.findOrSave(aut.last_name.trim(), aut.first_name.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
+                    return {author:null, error: e}
                 });
                 let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
                 let role = aut.role ? await this.roleService.findOrSave(aut.role?.trim()) : await this.roleService.findOrSave('aut'); //default role author
-                if (aut_ent) authors_entities.push({ author: aut_ent, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst, role });
+                if (res.author) authors_entities.push({ author: res.author, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst, role });
+                if (res.error?.text && res.error?.text.includes('mehrdeutig')) remark +=res.error.text+'\n';
             }
         }
         let ge = this.getGreaterEntity(item);
@@ -287,7 +290,8 @@ export abstract class AbstractImportService {
             abstract: this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
             page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
-            status
+            status,
+            add_info: remark
         };
         if (pub_date instanceof Date) obj.pub_date = pub_date;
         else {

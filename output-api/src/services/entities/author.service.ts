@@ -81,8 +81,9 @@ export class AuthorService {
         return null;
     }
 
-    public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<Author> {
-        if (!last_name || !first_name) return null;
+    public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<{author:Author,error:AppError}> {
+        if (!orcid && (!last_name || !first_name)) throw { origin: 'authorService', text: `weder ORCID, noch Vor- und Nachname sind gegeben` } as AppError;
+        let error:AppError = null;
         //1. find an existing entity
         let author: Author;
         //replace points from initials
@@ -94,7 +95,9 @@ export class AuthorService {
             //find via name
             let authors = await this.repository.find({ where: { last_name: ILike(last_name), first_name: ILike(first_name + '%') }, relations: { institutes: true } });
             if (authors.length > 1) {
-                throw { origin: 'authorService', text: `ambigious author ${last_name}, ${first_name} had ${authors.length} matches in DB` } as AppError;
+                //assign first author and give warning
+                author = authors[0];
+                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v,c,i,a) => {return v+', '+c.id},'')}` } as AppError;
             } else if (authors.length > 0) author = authors[0];
             else {
                 //find via alias
@@ -116,9 +119,9 @@ export class AuthorService {
                 flag = true;
             }
 
-            if (flag) return await this.repository.save(author);
-            else return author;
-        } else return await this.repository.save({ last_name, first_name, orcid, institutes: [inst] });
+            if (flag) return {author: await this.repository.save(author), error};
+            else return {author, error};
+        } else return {author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }), error};
         //3. if not found, save
     }
     
