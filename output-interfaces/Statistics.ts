@@ -1,5 +1,6 @@
 export interface FilterOptions {
     corresponding?: boolean,
+    locked?: boolean,
     instituteId?: number,
     notInstituteId?: number,
     publisherId?: number,
@@ -14,6 +15,7 @@ export interface FilterOptions {
 
 export interface HighlightOptions {
     corresponding?: boolean,
+    locked?: boolean,
     instituteId?: number,
     publisherId?: number,
     contractId?: number,

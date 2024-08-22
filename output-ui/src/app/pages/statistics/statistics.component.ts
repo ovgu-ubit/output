@@ -57,13 +57,15 @@ export class StatisticsComponent implements OnInit {
     institute: [''],
     publisher: [''],
     contract: [''],
-    corresponding: ['']
+    corresponding: [''],
+    locked: ['']
   });
   formHighlight: FormGroup = this.formBuilder.group({
     corresponding: [''],
     institute: [''],
     publisher: [''],
-    contract: ['']
+    contract: [''],
+    locked: ['']
   });
   institutes: Institute[];
   publishers: Publisher[];
@@ -191,6 +193,7 @@ export class StatisticsComponent implements OnInit {
 
   action() {
     if (this.form.get('corresponding').value) this.filter = { ...this.filter, corresponding: true }
+    if (this.form.get('locked').value) this.filter = { ...this.filter, locked: true }
     if (!this.form.get('institute').value) this.filter = { ...this.filter, instituteId: undefined }
     if (!this.form.get('publisher').value) this.filter = { ...this.filter, publisherId: undefined }
     if (!this.form.get('contract').value) this.filter = { ...this.filter, contractId: undefined }
@@ -200,6 +203,8 @@ export class StatisticsComponent implements OnInit {
   actionHighlight() {
     if (this.formHighlight.get('corresponding').value) this.highlight = { ...this.highlight, corresponding: true }
     else this.highlight = { ...this.highlight, corresponding: undefined }
+    if (this.formHighlight.get('locked').value) this.highlight = { ...this.highlight, locked: true }
+    else this.highlight = { ...this.highlight, locked: undefined }
     if (!this.formHighlight.get('institute').value) this.highlight = { ...this.highlight, instituteId: undefined }
     if (!this.formHighlight.get('publisher').value) this.highlight = { ...this.highlight, publisherId: undefined }
     if (!this.formHighlight.get('contract').value) this.highlight = { ...this.highlight, contractId: undefined }

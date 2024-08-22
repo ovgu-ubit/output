@@ -33,6 +33,20 @@ export class StatisticsService {
         return query.getRawMany();
     }
 
+    async locked(reporting_year, filterOptions?: FilterOptions) {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+        let query = this.pubRepository.createQueryBuilder('publication')
+            .select('count(distinct publication.id)', 'value')
+            .addSelect('COUNT(distinct (CASE WHEN publication.locked THEN publication.id ELSE NULL END))', 'locked')
+            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+
+        query = this.addFilter(query, false, filterOptions)
+
+        return query.getRawMany();
+    }
+
     async corresponding(reporting_year, filterOptions?: FilterOptions) {
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
         let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
@@ -157,6 +171,13 @@ export class StatisticsService {
             autPub = true;
             query = query.andWhere('aut_pub.corresponding = :corr', { corr: false })
         }
+        if (filterOptions?.locked) {
+            autPub = true;
+            query = query.andWhere('publication.locked = :lock', { lock: true })
+        } else if (filterOptions?.locked === false) {
+            autPub = true;
+            query = query.andWhere('publication.locked = :lock', { lock: false })
+        }
         if (filterOptions?.instituteId !== undefined) {
             autPub = true;
             if (filterOptions.instituteId) query = query.andWhere('aut_pub.\"instituteId\" = :instituteId', { instituteId: filterOptions.instituteId })
@@ -204,6 +225,10 @@ export class StatisticsService {
         if (highlightOptions?.corresponding) {
             autPub = true;
             highlight += 'aut_pub.corresponding AND '
+        }
+        if (highlightOptions?.locked) {
+            autPub = true;
+            highlight += 'publication.locked AND '
         }
         if (highlightOptions?.instituteId !== undefined) {
             autPub = true;

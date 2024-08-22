@@ -32,6 +32,11 @@ export class StatisticController {
         return this.statService.corresponding(year, filterOptions);
     }
 
+    @Post('locked')
+    locked(@Query('year') year:number,@Body('filterOptions') filterOptions:FilterOptions) {
+        return this.statService.locked(year, filterOptions);
+    }
+
     @Post('institute')
     institute(@Query('year') year:number, @Query('costs') costs:boolean,@Body('filterOptions') filterOptions:FilterOptions) {
         return this.statService.institute(year, costs, filterOptions);
