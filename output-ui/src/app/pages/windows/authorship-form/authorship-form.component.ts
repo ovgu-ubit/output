@@ -9,7 +9,7 @@ import { Author, Institute, Role } from '../../../../../../output-interfaces/Pub
 import { AliasFormComponent } from 'src/app/tools/alias-form/alias-form.component';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { PublicationService } from 'src/app/services/entities/publication.service';
+import { RoleService } from 'src/app/services/entities/role.service';
 
 @Component({
   selector: 'app-authorship-form',
@@ -32,7 +32,7 @@ export class AuthorshipFormComponent implements OnInit {
 
   constructor(public dialogRef: MatDialogRef<AuthorshipFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService: AuthorService, private instService: InstituteService,
-    private publicationService:PublicationService,
+    private roleService:RoleService,
     private _snackBar: MatSnackBar, private dialog: MatDialog) { }
 
   form = this.formBuilder.group({
@@ -57,7 +57,7 @@ export class AuthorshipFormComponent implements OnInit {
       this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
       if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id ))
     })));
-    ob$ = merge(ob$, this.publicationService.getRoles().pipe(map(data => {
+    ob$ = merge(ob$, this.roleService.getRoles().pipe(map(data => {
       this.roles = data;
     })));
     ob$.subscribe({

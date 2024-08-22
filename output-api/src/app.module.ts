@@ -67,6 +67,7 @@ import { RoleService } from "./services/entities/role.service";
 import { PublicationIdentifier } from "./entity/PublicationIdentifier";
 import { AliasAuthorFirstName } from "./entity/alias/AliasAuthorFirstName";
 import { AliasAuthorLastName } from "./entity/alias/AliasAuthorLastName";
+import { RoleController } from "./controller/RoleController";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -96,7 +97,7 @@ const filterz = appConfig().filter_services;
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
-    PlausibilityController, ExportController, ConfigController],
+    PlausibilityController, ExportController, ConfigController, RoleController],
   providers: [
     PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
     OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService,

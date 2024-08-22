@@ -21,8 +21,7 @@ export class PublicationController {
     private publicationService:PublicationService, 
     private appConfigService:AppConfigService,
     private configService:ConfigService,
-    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[],
-    private roleService:RoleService) { }
+    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -205,10 +204,5 @@ export class PublicationController {
             label:this.filterServices[i].getName()})
         }
         return result;
-    }
-
-    @Get('role')
-    getRoles() {
-        return this.roleService.get();
     }
 }

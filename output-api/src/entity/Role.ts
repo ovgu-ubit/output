@@ -9,4 +9,7 @@ export class Role implements IRole {
 
     @Column()
     label: string;
+    
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }
