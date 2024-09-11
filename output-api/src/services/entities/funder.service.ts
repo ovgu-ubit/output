@@ -130,7 +130,7 @@ export class FunderService {
     
     public async delete(insts:Funder[]) {
         for (let inst of insts) {
-            let conE: Funder = await this.repository.findOne({where:{id:inst.id},relations:{publications:{funders:true}}});
+            let conE: Funder = await this.repository.findOne({where:{id:inst.id},relations:{publications:{funders:true}},withDeleted: true});
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({id:pub.id, funders: pub.funders.filter(e => e.id !==conE.id)});

@@ -97,7 +97,7 @@ export class OACategoryService {
     
     public async delete(insts:OA_Category[]) {
         for (let inst of insts) {
-            let conE: OA_Category = await this.repository.findOne({where:{id:inst.id},relations:{publications:{oa_category:true}}});
+            let conE: OA_Category = await this.repository.findOne({where:{id:inst.id},relations:{publications:{oa_category:true}},withDeleted: true});
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({id:pub.id, oa_category: null});

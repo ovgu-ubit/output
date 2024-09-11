@@ -113,7 +113,7 @@ export class ContractService {
     
     public async delete(insts:Contract[]) {
         for (let inst of insts) {
-            let conE: Contract = await this.repository.findOne({where:{id:inst.id},relations:{publisher:true, publications:true}});
+            let conE: Contract = await this.repository.findOne({where:{id:inst.id},relations:{publisher:true, publications:true},withDeleted: true});
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({id:pub.id, contract: null})

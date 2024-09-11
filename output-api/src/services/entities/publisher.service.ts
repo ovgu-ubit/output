@@ -140,7 +140,7 @@ export class PublisherService {
 
     public async delete(insts: Publisher[]) {
         for (let inst of insts) {
-            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true } });
+            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true }, withDeleted: true});
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({ id: pub.id, publisher: null })

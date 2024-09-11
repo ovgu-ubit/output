@@ -126,7 +126,7 @@ export class PublicationTypeService {
     
     public async delete(insts:PublicationType[]) {
         for (let inst of insts) {
-            let conE: PublicationType = await this.repository.findOne({where:{id:inst.id},relations:{publications:{pub_type:true}}});
+            let conE: PublicationType = await this.repository.findOne({where:{id:inst.id},relations:{publications:{pub_type:true}},withDeleted: true});
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({id:pub.id, pub_type: null});
