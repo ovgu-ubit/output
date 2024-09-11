@@ -184,7 +184,7 @@ export class GreaterEntityService {
     
     public async delete(insts:GreaterEntity[]) {
         for (let inst of insts) {
-            let conE: GreaterEntity = await this.repository.findOne({where:{id:inst.id},relations:{identifiers:true, publications:true}});
+            let conE: GreaterEntity = await this.repository.findOne({where:{id:inst.id},relations:{identifiers:true, publications:true},withDeleted: true});
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({id:pub.id, greater_entity: null})
