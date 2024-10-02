@@ -134,6 +134,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       finance_info: this.formBuilder.group({
         contr: [''],
         funder: [''],
+        cost_approach: ['']
       }),
     }, {
       validators: [this.pubValidator.pubValidator()]

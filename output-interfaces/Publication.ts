@@ -46,6 +46,7 @@ export interface Publication {
     issue?: string;
     first_page?: string;
     last_page?: string;
+    cost_approach?: number;
 }
 
 export interface Author {
