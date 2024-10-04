@@ -27,6 +27,7 @@ export interface AuthorIndex {
 	orcid?: string;
 	pub_count: number;
 	pub_corr_count: number;
+    pub_count_total: number;
 	institutes?: string;
 }
 export interface InstituteIndex {
