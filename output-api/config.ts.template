@@ -76,6 +76,7 @@ export default() : AppConfig => ({
     export_services: [
         {path: 'master', class: MasterExportService},
         {path: 'openapc', class: OpenAPCExportService},
+        {path: 'author', class: AuthorExportService},
     ],
     filter_services: [
         {path: 'no_aut_inst', class: MissingInstAuthorFilterService},
