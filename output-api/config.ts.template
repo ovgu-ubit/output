@@ -79,6 +79,7 @@ export default() : AppConfig => ({
         {path: 'author', class: AuthorExportService},
         {path: 'publisher', class: PublisherExportService},
         {path: 'institute', class: InstituteExportService},
+        {path: 'greater-entity', class: GreaterEntityExportService},
     ],
     filter_services: [
         {path: 'no_aut_inst', class: MissingInstAuthorFilterService},
