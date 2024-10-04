@@ -284,7 +284,7 @@ export class StatisticsComponent implements OnInit {
   }
   private _filterPublisher(value: string): Publisher[] {
     const filterValue = value.toLowerCase();
-    return this.publishers.filter(pub => pub?.label.toLowerCase().includes(filterValue) || pub?.location?.toLowerCase().includes(filterValue));
+    return this.publishers.filter(pub => pub?.label.toLowerCase().includes(filterValue));
   }
   private _filterContract(value: string): Contract[] {
     const filterValue = value.toLowerCase();

@@ -205,7 +205,6 @@ export interface PublicationType {
 export interface Publisher {
     id?: number;
     label: string;
-    location?: string;
     doi_prefixes?: PublisherDOI[];
     aliases?: AliasPublisher[];
     locked_at?: Date;

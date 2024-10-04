@@ -1,28 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { AbstractExportService } from './abstract-export.service';
-import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { Publication } from '../../entity/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { Publication } from '../../entity/Publication';
+import { PublisherService } from '../entities/publisher.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { AuthorService } from '../entities/author.service';
+import { ReportItemService } from '../report-item.service';
+import { AbstractExportService } from './abstract-export.service';
 
 @Injectable()
 /**
  * abstract class for all exports
  */
-export class AuthorExportService extends AbstractExportService {
+export class PublisherExportService extends AbstractExportService {
 
     quote = '"';
     sep = ';';
     df:Intl.DateTimeFormat;
 
-    constructor(private service:AuthorService, private reportService:ReportItemService) {
+    constructor(private service:PublisherService, private reportService:ReportItemService) {
         super(); 
         this.df = new Intl.DateTimeFormat('de-DE');
     }
 
-    protected name = 'Autor-Export';
+    protected name = 'Verlag-Export';
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
@@ -30,15 +30,11 @@ export class AuthorExportService extends AbstractExportService {
 
         let pubs = await this.service.get();
 
-        let res = "id;title;first_name;last_name;orcid;gnd_id;institutes\n";
+        let res = "id;label;doi_prefixes\n";
         for (let pub of pubs) {
             res+=this.format(pub.id);
-            res+=this.format(pub.title);
-            res+=this.format(pub.first_name);
-            res+=this.format(pub.last_name);
-            res+=this.format(pub.orcid);
-            res+=this.format(pub.gnd_id);
-            res+=this.format(pub.institutes?.map(x => x.label).join(' | '));
+            res+=this.format(pub.label);
+            res+=this.format(pub.doi_prefixes?.map(x => x.doi_prefix).join(' | '));
             res=res.slice(0,res.length-1);
             res+='\n';
         }
