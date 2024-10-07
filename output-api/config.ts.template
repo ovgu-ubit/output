@@ -23,6 +23,13 @@ import { MissingInvoiceDataService } from "./src/services/filter/missing-invoice
 import { ScopusImportService } from "./src/services/import/scopus-import.service";
 import { ScopusEnrichService } from "./src/services/import/scopus-enrich.service";
 import { OpenAPCExportService } from "./src/services/export/openapc-export.service";
+import { AuthorExportService } from "./src/services/export/author-export.service";
+import { PublisherExportService } from "./src/services/export/publisher-export.service";
+import { InstituteExportService } from "./src/services/export/institute-export.service";
+import { GreaterEntityExportService } from "./src/services/export/greater-entity-export.service";
+import { ContractExportService } from "./src/services/export/contract-export.service";
+import { FunderExportService } from "./src/services/export/funder-export.service";
+import { PubTypeExportService } from "./src/services/export/pub-type-export.service";
 
 export default() : AppConfig => ({
     institution_label: "Otto-von-Guericke-Universität Magdeburg",
@@ -80,6 +87,12 @@ export default() : AppConfig => ({
         {path: 'publisher', class: PublisherExportService},
         {path: 'institute', class: InstituteExportService},
         {path: 'greater-entity', class: GreaterEntityExportService},
+        {path: 'contract', class: ContractExportService},
+        {path: 'funder', class: FunderExportService},
+        {path: 'pub-type', class: PubTypeExportService},
+        {path: 'oa-cat', class: OACatExportService},
+        {path: 'cost-center', class: CostCenterExportService},
+        {path: 'cost-type', class: CostTypeExportService},
     ],
     filter_services: [
         {path: 'no_aut_inst', class: MissingInstAuthorFilterService},

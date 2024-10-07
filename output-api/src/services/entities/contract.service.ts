@@ -13,7 +13,7 @@ export class ContractService {
     constructor(@InjectRepository(Contract) private repository: Repository<Contract>, private configService:ConfigService, private publicationService:PublicationService) { }
 
     public get() {
-        return this.repository.find();
+        return this.repository.find({relations:{publisher:true}});
     }
     
     public async one(id:number, writer:boolean):Promise<Contract> {
