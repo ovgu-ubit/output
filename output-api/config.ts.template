@@ -30,6 +30,9 @@ import { GreaterEntityExportService } from "./src/services/export/greater-entity
 import { ContractExportService } from "./src/services/export/contract-export.service";
 import { FunderExportService } from "./src/services/export/funder-export.service";
 import { PubTypeExportService } from "./src/services/export/pub-type-export.service";
+import { OACatExportService } from "./src/services/export/oa-cat-export.service";
+import { CostCenterExportService } from "./src/services/export/cost-center-export.service";
+import { CostTypeExportService } from "./src/services/export/cost-type-export.service";
 
 export default() : AppConfig => ({
     institution_label: "Otto-von-Guericke-Universität Magdeburg",
