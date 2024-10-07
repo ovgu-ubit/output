@@ -18,6 +18,7 @@ export class PublicationService {
     funder = false;
     author = false;
     identifiers = false;
+    pub_type = false;
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -346,6 +347,7 @@ export class PublicationService {
         this.funder = false;
         this.author = false;
         this.identifiers = false;
+        this.pub_type = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -388,6 +390,7 @@ export class PublicationService {
         }
         if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
         if (this.identifiers) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
+        if (this.pub_type) indexQuery = indexQuery.leftJoin('publication.pub_type', 'pub_type')
         //console.log(indexQuery.getSql())
         return indexQuery;
     }
@@ -430,6 +433,7 @@ export class PublicationService {
                 break;
             case 'pub_type_id':
                 where = 'publication_type.id=' + value;
+                this.pub_type = true;
                 break;
             case 'publisher_id':
                 where = 'publisher.id=' + value;
@@ -455,6 +459,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
                 if (key == 'funder') this.funder = true;
+                if (key == 'pub_type') this.pub_type = true;
                 where = key + ".label ILIKE '%" + value + "%'";
                 break;
             case 'inst_authors':
@@ -482,6 +487,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
                 if (key == 'funder') this.funder = true;
+                if (key == 'pub_type') this.pub_type = true;
                 where = key + ".label ILIKE '" + value + "%'";
                 break;
             case 'inst_authors':
@@ -509,6 +515,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
                 if (key == 'funder') this.funder = true;
+                if (key == 'pub_type') this.pub_type = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':
