@@ -34,7 +34,7 @@
             formControlName="publisher" #input_publ>
           <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPublisher($event)">
             <mat-option *ngFor="let publ of this.filtered_publishers | async" [value]="publ.label">
-              {{publ.label}} ({{publ.location}})
+              {{publ.label}}
             </mat-option>
           </mat-autocomplete>
         </mat-form-field>
@@ -108,7 +108,7 @@
             formControlName="publisher" #input_publ>
           <mat-autocomplete #autoPublisher1="matAutocomplete" (optionSelected)="selectedPublisher1($event)">
             <mat-option *ngFor="let publ of this.filtered_publishers1 | async" [value]="publ.label">
-              {{publ.label}} ({{publ.location}})
+              {{publ.label}}
             </mat-option>
           </mat-autocomplete>
         </mat-form-field>

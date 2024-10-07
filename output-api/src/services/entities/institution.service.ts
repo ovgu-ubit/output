@@ -29,7 +29,7 @@ export class InstitutionService {
     }
 
     public get() {
-        return this.repository.find({relations:{aliases:true}});
+        return this.repository.find({relations:{aliases:true,super_institute: true, sub_institutes: true}});
     }
     public async one(id: number, writer: boolean) {
         let inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
