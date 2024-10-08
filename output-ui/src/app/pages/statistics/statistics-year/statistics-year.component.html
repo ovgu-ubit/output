@@ -1,15 +1,31 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<div style="display:flex;flex-flow: row nowrap;justify-content: space-between;">
+<div style="display:flex;flex-flow: column nowrap;gap: 10px">
+<div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
   <div>
     <button mat-raised-button color="primary" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten
       wechseln</button>
     <button mat-raised-button color="primary" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
       wechseln</button>
   </div>
-  <div [hidden]="!this.filterText">
-    <span>Filter aktiv | {{this.filterText}}</span>&nbsp;
-    <button mat-raised-button color="accent" (click)="this.resetFilter()">Filter zurücksetzen</button>
-  </div>
+  <mat-card [hidden]="this.hidden()">
+    <mat-card-header>
+      Filter aktiv
+    </mat-card-header>
+    <mat-card-content>
+      <div style="display: flex; flex-flow: row wrap;justify-content: flex-end;gap: 5px">
+        <mat-chip-listbox *ngFor="let elem of this.filterChips">
+          <mat-chip-option (removed)="removeFilter(elem)">
+            {{elem['text']}}
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-option>
+      </mat-chip-listbox>
+        <button mat-raised-button color="accent" (click)="this.resetFilter()">Alle Filter zurücksetzen</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  
 </div>
 <div style="display: flex;flex-flow: row wrap;">
   <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsLocked"
@@ -35,4 +51,5 @@
     [callbackFunction]="chartCallback" [(update)]="updateFlag5" [oneToOne]="oneToOneFlag"
     [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
 
+</div>
 </div>

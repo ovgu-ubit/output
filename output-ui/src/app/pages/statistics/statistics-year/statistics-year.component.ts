@@ -255,74 +255,122 @@ export class StatisticsYearComponent implements OnInit {
     return '/Berichte/' + this.year;
   }
 
-  filter: FilterOptions;
-  filterText: string = ''
+  filter: FilterOptions = {};
+  filterChips: { text: string, key: string, id?: number }[] = [];
+
 
   applyFilter(series_name: string, cat_name: string) {
     if (series_name === 'Art' && cat_name === 'sonstige') return;
-    this.filterText += series_name + ': ' + cat_name + ' ';
+    let key = undefined;
     if (series_name === 'Art') {
       if (cat_name === 'corresponding') this.filter = { ...this.filter, corresponding: true }
+      key = 'corresponding'
     }
     if (series_name === 'Gesperrt') {
       if (cat_name === 'gesperrt') this.filter = { ...this.filter, locked: true }
       else this.filter = { ...this.filter, locked: false }
+      key = 'locked'
     }
     if (series_name === 'Institut') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, instituteId: null }
       else this.filter = { ...this.filter, instituteId: this.institutes.find(e => e.label === cat_name)?.id }
+      key = 'instituteId'
     }
     if (series_name === 'OA-Kategorie') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, oaCatId: null }
       else this.filter = { ...this.filter, oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id }
+      key = 'oaCatId'
     }
     if (series_name === 'Vertrag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, contractId: null }
       else this.filter = { ...this.filter, contractId: this.constracts.find(e => e.label === cat_name)?.id }
+      key = 'contractId'
     }
     if (series_name === 'Publikationsart') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, pubTypeId: null }
       else this.filter = { ...this.filter, pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id }
+      key = 'pubTypeId'
     }
     if (series_name === 'Verlag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, publisherId: null }
       else this.filter = { ...this.filter, publisherId: this.publisher.find(e => e.label === cat_name)?.id }
+      key = 'publisherId'
     }
+    this.filterChips.push({ text: series_name + ': ' + cat_name, key })
     this.loadData(this.costs);
   }
   applyAntiFilter(series_name: string, cat_name: string) {
     if (series_name === 'Art' && cat_name === 'sonstige') return;
     if (series_name === 'Gesperrt') return;
-    this.filterText += series_name + ': !' + cat_name + ' ';
+    let key = undefined;
+    let id = undefined;
     if (series_name === 'Art') {
       if (cat_name === 'corresponding') this.filter = { ...this.filter, corresponding: false }
+      key = 'corresponding'
     }
     if (series_name === 'Institut') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notInstituteId: null }
-      else this.filter = { ...this.filter, notInstituteId: this.institutes.find(e => e.label === cat_name)?.id }
+      let notInstituteId = this.filter?.notInstituteId ? this.filter.notInstituteId : [];
+      if (cat_name === 'Unbekannt') id = null;
+      else id = this.institutes.find(e => e.label === cat_name)?.id
+      notInstituteId.push(id)
+      this.filter.notInstituteId = notInstituteId;
+      key = 'notInstituteId'
     }
     if (series_name === 'OA-Kategorie') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notOaCatId: null }
-      else this.filter = { ...this.filter, notOaCatId: this.oa_cats.find(e => e.label === cat_name)?.id }
+      let notOaCatId = this.filter?.notOaCatId ? this.filter.notOaCatId : [];
+      if (cat_name === 'Unbekannt') id = null
+      else id = this.oa_cats.find(e => e.label === cat_name)?.id
+      notOaCatId.push(id)
+      this.filter.notOaCatId = notOaCatId;
+      key = 'notOaCatId'
     }
     if (series_name === 'Vertrag') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notContractId: null }
-      else this.filter = { ...this.filter, notContractId: this.constracts.find(e => e.label === cat_name)?.id }
+      let notContractId = this.filter?.notContractId ? this.filter.notContractId : [];
+      if (cat_name === 'Unbekannt') id=null
+      else id = this.constracts.find(e => e.label === cat_name)?.id;
+      notContractId.push(id)
+      this.filter.notContractId = notContractId;
+      key = 'notContractId'
     }
     if (series_name === 'Publikationsart') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notPubTypeId: null }
-      else this.filter = { ...this.filter, notPubTypeId: this.pub_types.find(e => e.label === cat_name)?.id }
+      let notPubTypeId = this.filter?.notPubTypeId ? this.filter.notPubTypeId : [];
+      if (cat_name === 'Unbekannt') id = null
+      else id=this.pub_types.find(e => e.label === cat_name)?.id
+      notPubTypeId.push(id)
+      this.filter.notPubTypeId = notPubTypeId;
+      key = 'notPubTypeId'
     }
     if (series_name === 'Verlag') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notPublisherId: null }
-      else this.filter = { ...this.filter, notPublisherId: this.publisher.find(e => e.label === cat_name)?.id }
+      let notPublisherId = this.filter?.notPublisherId ? this.filter.notPublisherId : [];
+      if (cat_name === 'Unbekannt') id=null
+      else id=this.publisher.find(e => e.label === cat_name)?.id
+      notPublisherId.push(id)
+      this.filter.notPublisherId = notPublisherId;
+      key = 'notPublisherId'
     }
+    this.filterChips.push({ text: series_name + ': !' + cat_name, key, id })
     this.loadData(this.costs);
   }
 
+  hidden() {
+    return !this.filter || Object.keys(this.filter).length === 0;
+  }
+
   resetFilter() {
-    this.filterText = '';
+    this.filterChips = [];
     this.filter = {};
+    this.loadData(this.costs);
+  }
+
+  removeFilter(elem: { text: string, key: string, id?: number }) {
+    if (elem.key.includes("not")) {
+      this.filter[elem.key] = this.filter[elem.key].filter(e => e !== elem.id)
+      this.filterChips = this.filterChips.filter(e => !(e.key === elem.key && e.id === elem.id))
+    }
+    else {
+      delete this.filter[elem.key]
+      this.filterChips = this.filterChips.filter(e => e.key !== elem.key)
+    }
     this.loadData(this.costs);
   }
 }
