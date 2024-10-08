@@ -59,28 +59,28 @@ a.small {
 
 /* table */
 .mat-mdc-row:nth-child(odd)>td.mat-mdc-cell {
-  background-color: mat.get-color-from-palette(style.$my-accent-palette, 50);
+  background-color: mat.m2-get-color-from-palette(style.$my-accent-palette, 50);
 }
 
 .mat-mdc-row:nth-child(even)>td.mat-mdc-cell {
-  background-color: mat.get-color-from-palette(style.$my-accent-palette, 200);
+  background-color: mat.m2-get-color-from-palette(style.$my-accent-palette, 200);
 }
 
 .mat-mdc-row>td.mat-mdc-cell:hover {
-  background-color: mat.get-color-from-palette(style.$my-primary-palette, 50);
+  background-color: mat.m2-get-color-from-palette(style.$my-primary-palette, 50);
 }
 
 tr:hover td {
-  background-color: mat.get-color-from-palette(style.$my-primary-palette, 50) !important;
+  background-color: mat.m2-get-color-from-palette(style.$my-primary-palette, 50) !important;
 }
 
 th.mat-mdc-header-cell {
-  background-color: mat.get-color-from-palette(style.$my-primary-palette, 900) !important;
-  color: mat.get-color-from-palette(style.$my-primary-palette, 900-contrast);
+  background-color: mat.m2-get-color-from-palette(style.$my-primary-palette, 900) !important;
+  color: mat.m2-get-color-from-palette(style.$my-primary-palette, 900-contrast);
 }
 
 .table_header {
-  background-color: mat.get-color-from-palette(style.$my-accent-palette, 500) !important;
+  background-color: mat.m2-get-color-from-palette(style.$my-accent-palette, 500) !important;
 }
 
 mat-toolbar {
