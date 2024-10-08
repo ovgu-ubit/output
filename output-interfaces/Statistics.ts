@@ -2,15 +2,15 @@ export interface FilterOptions {
     corresponding?: boolean,
     locked?: boolean,
     instituteId?: number,
-    notInstituteId?: number,
+    notInstituteId?: number[],
     publisherId?: number,
-    notPublisherId?: number,
+    notPublisherId?: number[],
     contractId?: number,
-    notContractId?: number,
+    notContractId?: number[],
     pubTypeId?: number,
-    notPubTypeId?: number,
-    oaCatId?: number
-    notOaCatId?: number
+    notPubTypeId?: number[],
+    oaCatId?: number,
+    notOaCatId?: number[]
 }
 
 export interface HighlightOptions {
