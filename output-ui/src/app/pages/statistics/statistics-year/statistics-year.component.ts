@@ -256,73 +256,99 @@ export class StatisticsYearComponent implements OnInit {
   }
 
   filter: FilterOptions;
-  filterText: string = ''
+  filterChips: {text: string, key: string}[] = [];
+
 
   applyFilter(series_name: string, cat_name: string) {
     if (series_name === 'Art' && cat_name === 'sonstige') return;
-    this.filterText += series_name + ': ' + cat_name + ' ';
+    let key = undefined;
     if (series_name === 'Art') {
       if (cat_name === 'corresponding') this.filter = { ...this.filter, corresponding: true }
+      key = 'corresponding'
     }
     if (series_name === 'Gesperrt') {
       if (cat_name === 'gesperrt') this.filter = { ...this.filter, locked: true }
       else this.filter = { ...this.filter, locked: false }
+      key = 'locked'
     }
     if (series_name === 'Institut') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, instituteId: null }
       else this.filter = { ...this.filter, instituteId: this.institutes.find(e => e.label === cat_name)?.id }
+      key = 'instituteId'
     }
     if (series_name === 'OA-Kategorie') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, oaCatId: null }
       else this.filter = { ...this.filter, oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id }
+      key = 'oaCatId'
     }
     if (series_name === 'Vertrag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, contractId: null }
       else this.filter = { ...this.filter, contractId: this.constracts.find(e => e.label === cat_name)?.id }
+      key = 'contractId'
     }
     if (series_name === 'Publikationsart') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, pubTypeId: null }
       else this.filter = { ...this.filter, pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id }
+      key = 'pubTypeId'
     }
     if (series_name === 'Verlag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, publisherId: null }
       else this.filter = { ...this.filter, publisherId: this.publisher.find(e => e.label === cat_name)?.id }
+      key = 'publisherId'
     }
+    this.filterChips.push({text: series_name + ': ' + cat_name, key})
     this.loadData(this.costs);
   }
   applyAntiFilter(series_name: string, cat_name: string) {
     if (series_name === 'Art' && cat_name === 'sonstige') return;
     if (series_name === 'Gesperrt') return;
-    this.filterText += series_name + ': !' + cat_name + ' ';
+    let key = undefined;
     if (series_name === 'Art') {
       if (cat_name === 'corresponding') this.filter = { ...this.filter, corresponding: false }
+      key = 'corresponding'
     }
     if (series_name === 'Institut') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notInstituteId: null }
       else this.filter = { ...this.filter, notInstituteId: this.institutes.find(e => e.label === cat_name)?.id }
+      key = 'notInstituteId'
     }
     if (series_name === 'OA-Kategorie') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notOaCatId: null }
       else this.filter = { ...this.filter, notOaCatId: this.oa_cats.find(e => e.label === cat_name)?.id }
+      key = 'notOaCatId'
     }
     if (series_name === 'Vertrag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notContractId: null }
       else this.filter = { ...this.filter, notContractId: this.constracts.find(e => e.label === cat_name)?.id }
+      key = 'notContractId'
     }
     if (series_name === 'Publikationsart') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notPubTypeId: null }
       else this.filter = { ...this.filter, notPubTypeId: this.pub_types.find(e => e.label === cat_name)?.id }
+      key = 'notPubTypeId'
     }
     if (series_name === 'Verlag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, notPublisherId: null }
       else this.filter = { ...this.filter, notPublisherId: this.publisher.find(e => e.label === cat_name)?.id }
+      key = 'notPublisherId'
     }
+    this.filterChips.push({text: series_name + ': !' + cat_name, key})
     this.loadData(this.costs);
   }
 
+  hidden() {
+    return !this.filter || Object.keys(this.filter).length === 0;
+  }
+
   resetFilter() {
-    this.filterText = '';
+    this.filterChips = [];
     this.filter = {};
+    this.loadData(this.costs);
+  }
+
+  removeFilter(elem:{text:string, key:string}) {
+    delete this.filter[elem.key]
+    this.filterChips = this.filterChips.filter(e => e.key !== elem.key)
     this.loadData(this.costs);
   }
 }
