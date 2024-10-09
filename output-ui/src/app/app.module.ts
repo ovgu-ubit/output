@@ -162,7 +162,7 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         HighchartsChartModule,
         NgbModule,
         StoreModule.forRoot({ viewConfigReducer }, { metaReducers }),
-        !environment.production ? StoreDevtoolsModule.instrument() : []], providers: [
+        !environment.production ? StoreDevtoolsModule.instrument({connectInZone: true}) : []], providers: [
         { provide: MatPaginatorIntl, useClass: MatPaginatorDE },
         { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
