@@ -2,19 +2,3 @@ mat-form-field {
     font-size:14px;
     width: 100%;
 }
-.status-0 {
-    border-style: solid;
-    border-color: lightgrey;
-}
-.status-1 {
-    border-style: solid;
-    border-color: brown;
-}
-.status-2 {
-    border-style: solid;
-    border-color: silver;
-}
-.status-3 {
-    border-style: solid;
-    border-color: gold;
-}
