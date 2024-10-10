@@ -210,6 +210,7 @@ export abstract class AbstractImportService {
             return null;
         }
         let remark = '';
+        // process author objects
         let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute, role: Role }[] = [];
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
@@ -218,18 +219,21 @@ export abstract class AbstractImportService {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                     return {author:null, error: e}
                 });
+                //identify an institution from the affiliation string
                 let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
+                //identify a role from the author object, or assign "aut"
                 let role = aut.role ? await this.roleService.findOrSave(aut.role?.trim()) : await this.roleService.findOrSave('aut'); //default role author
                 if (res.author) authors_entities.push({ author: res.author, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst, role });
                 if (res.error?.text && res.error?.text.includes('mehrdeutig')) remark +=res.error.text+'\n';
             }
         }
+        //identify greater entity
         let ge = this.getGreaterEntity(item);
         let ge_ent = null;
         if (ge) ge_ent = await this.geService.findOrSave(ge).catch(e => {
             this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
         })
-
+        //identify funders
         let funders = this.getFunder(item);
         let funder_ents: Funder[] = []
         if (funders) {
@@ -241,8 +245,9 @@ export abstract class AbstractImportService {
             }
             funder_ents = funder_ents.filter((v, i, s) => { return s.indexOf(s.find(f => f.id === v.id)) === i; });
         }
+        //identify publication type
         let pub_type = await this.publicationTypeService.findOrSave(this.getPubType(item));
-
+        //identify publisher
         let publisher_obj = this.getPublisher(item);
         let publisher: Publisher;
         let publisher_ent;
@@ -253,25 +258,27 @@ export abstract class AbstractImportService {
         }
         if (!publisher_ent && this.getDOI(item)) publisher_ent = await this.publisherService.findByDOI(this.getDOI(item))
         if (publisher_ent) publisher = publisher_ent
-
+        //identify oa category
         let oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(item)));
+        //identify conctract
         let contract = await firstValueFrom(this.contractService.findOrSave(this.getContract(item)));
-
+        //get invoice information
         let inv_info = this.getInvoiceInformation(item);
+        //import of cost items is currently deactivated
         /*let cost_items = [];
         if (inv_info) for (let inv_info_elem of inv_info) {
             if (inv_info_elem.currency === 'EUR') cost_items.push({ euro_value: inv_info_elem.price, orig_value: inv_info_elem.price, orig_currency: inv_info_elem.currency, cost_type: await firstValueFrom(this.costTypeService.findOrSave(inv_info_elem.cost_type)) })
             else cost_items.push({ orig_value: inv_info_elem.price, orig_currency: inv_info_elem.currency, cost_type: await firstValueFrom(this.costTypeService.findOrSave(inv_info_elem.cost_type)) })
         }*/
-
+        //identify language
         let language = await this.languageService.findOrSave(this.getLanguage(item));
-
+        //identify publication date(s)
         let pub_date = this.getPubDate(item);
-
+        //identify status
         let status = this.getStatus(item);
         if (!status) status = 0;
 
-
+        //construct publication object to save
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
             title: this.getTitle(item)?.trim(),
@@ -293,6 +300,7 @@ export abstract class AbstractImportService {
             status,
             add_info: remark
         };
+        //process publication date in case it is a complex object, dates are assigned to the publication
         if (pub_date instanceof Date) obj.pub_date = pub_date;
         else {
             obj.pub_date = pub_date.pub_date;
@@ -300,7 +308,7 @@ export abstract class AbstractImportService {
             obj.pub_date_accepted = pub_date.pub_date_accepted;
             if (this.configService.get('optional_fields.pub_date_submitted')) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
-
+        //process citation information
         let cit = this.getCitation(item);
         if (cit) {
             obj.volume = cit.volume;
@@ -308,7 +316,7 @@ export abstract class AbstractImportService {
             obj.first_page = cit.first_page;
             obj.last_page = cit.last_page;
         }
-
+        //save publication object and assign authorships
         let pub_ent = (await this.publicationService.save([obj]))[0];
         for (let aut of authors_entities) {
             await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
@@ -325,7 +333,7 @@ export abstract class AbstractImportService {
      */
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
         let fields = [];
-
+        // all fields are processed according to the update mapping
         if (!orig.locked_author) switch (this.updateMapping.authors) {
             case UpdateOptions.IGNORE:
                 break;
