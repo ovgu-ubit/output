@@ -133,10 +133,10 @@
               <td mat-cell *matCellDef="let d" [innerText]="formatEUR(d[col.colName])"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'datetime'">
-              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | date :'dd.MM.YYYY HH:mm'"></td>
+              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | date :'dd.MM.yyyy HH:mm'"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'date'">
-              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | date :'dd.MM.YYYY'"></td>
+              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | date :'dd.MM.yyyy'"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'boolean'">
               <td mat-cell *matCellDef="let d">
