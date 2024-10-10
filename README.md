@@ -5,6 +5,7 @@ Web application for managing and analyzing publications of universities
 ## Installation
 ### Requirements
 - Node.JS 20
+- Installed DBMS such as Postgres with an existing given database with owner rights for the given user
 
 ### File actions
 Copy the following files from their templates and put your info in it:
@@ -25,6 +26,10 @@ For some services, extension points are defined where you can inject your custom
 > $ npm run i
 > 
 > $ npm run start:dev
+> 
+### Run backend productively
+We recommend running the backend api on a Linux server using pm2, adapt output-api/output-server-prod.config.js for this case and register it with pm2, running this command to update your application:
+> $ nest build
 
 ### run frontend locally
 > $ npm i
