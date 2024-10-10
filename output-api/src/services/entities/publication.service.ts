@@ -1,16 +1,17 @@
-import { Injectable, Inject, BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { Publication } from '../../entity/Publication';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, FindManyOptions, ILike, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Author } from '../../entity/Author';
 import { AuthorPublication } from '../../entity/AuthorPublication';
-import { Invoice } from '../../entity/Invoice';
 import { CostItem } from '../../entity/CostItem';
 import { Institute } from '../../entity/Institute';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { ConfigService } from '@nestjs/config';
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { Invoice } from '../../entity/Invoice';
+import { Publication } from '../../entity/Publication';
 import { Role } from '../../entity/Role';
+
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
@@ -57,6 +58,7 @@ export class PublicationService {
         return res;
     }
 
+    // base object to select a publication index
     public indexQuery(): SelectQueryBuilder<Publication> {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.authorPublications", "authorPublications")
@@ -124,6 +126,7 @@ export class PublicationService {
         //return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
+    //retrieves publication index for a reporting year
     public index(yop: number): Promise<PublicationIndex[]> {
         let indexQuery = this.indexQuery();
 
@@ -144,6 +147,7 @@ export class PublicationService {
             .getRawMany() as Promise<PublicationIndex[]>;
     }
 
+    //retrieves publication index for soft deleted publications
     public softIndex(): Promise<PublicationIndex[]> {
         let query = this.indexQuery()
             .withDeleted()
@@ -339,10 +343,12 @@ export class PublicationService {
         } else return { error: 'update' };
     }
 
+    // retrieves a publication index based on a filter object
     filterIndex(filter: SearchFilter) {
         return this.filter(filter, this.indexQuery()).getRawMany();
     }
 
+    //processes a filter object and adds where conditions to the index query
     filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
         this.funder = false;
         this.author = false;
