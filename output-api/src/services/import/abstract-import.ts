@@ -34,7 +34,7 @@ export abstract class AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService, protected costTypeService: CostTypeService,
-        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, 
+        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService,
         protected configService: ConfigService) { }
 
     protected progress = 0;
@@ -182,7 +182,7 @@ export abstract class AbstractImportService {
      * retrieves a citation string of an element
      * @param element 
      */
-    protected abstract getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string};
+    protected abstract getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string };
     /**
      * retrieves the page count of an element
      * @param element 
@@ -215,16 +215,16 @@ export abstract class AbstractImportService {
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
             for (let aut of authors_inst) {
-                let res:{author:Author, error:AppError} = await this.authorService.findOrSave(aut.last_name.trim(), aut.first_name.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
+                let res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name.trim(), aut.first_name.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
-                    return {author:null, error: e}
+                    return { author: null, error: e }
                 });
                 //identify an institution from the affiliation string
                 let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim())) : null;
                 //identify a role from the author object, or assign "aut"
                 let role = aut.role ? await this.roleService.findOrSave(aut.role?.trim()) : await this.roleService.findOrSave('aut'); //default role author
                 if (res.author) authors_entities.push({ author: res.author, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst, role });
-                if (res.error?.text && res.error?.text.includes('mehrdeutig')) remark +=res.error.text+'\n';
+                if (res.error?.text && res.error?.text.includes('mehrdeutig')) remark += res.error.text + '\n';
             }
         }
         //identify greater entity
@@ -687,7 +687,7 @@ export abstract class AbstractImportService {
                         if (cit.volume) orig.volume = cit.volume;
                         if (cit.issue) orig.issue = cit.issue;
                         if (cit.first_page) orig.first_page = cit.first_page;
-                        if (cit.last_page)  orig.last_page = cit.last_page;
+                        if (cit.last_page) orig.last_page = cit.last_page;
                         if (cit.volume || cit.issue || cit.first_page || cit.last_page) fields.push('citation')
                     }
                     break;
