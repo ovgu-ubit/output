@@ -225,6 +225,6 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
       value: this.idForm.get('value').value
     })
     this.idForm.reset();
-    this.table.dataSource = new MatTableDataSource<ContractIdentifier>(this.contract.identifiers);
+    if (this.table) this.table.dataSource = new MatTableDataSource<ContractIdentifier>(this.contract.identifiers);
   }
 }
