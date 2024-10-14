@@ -189,7 +189,7 @@ export class PublicationService {
 
     public async getPublication(id: number, reader: boolean, writer: boolean) {
         let invoice: any = false;
-        if (reader) invoice = { cost_items: { cost_type: true } };
+        if (reader) invoice = { cost_items: { cost_type: true }, cost_center: true };
         let pub = await this.pubRepository.findOne({
             where: { id }, relations: {
                 oa_category: true,
