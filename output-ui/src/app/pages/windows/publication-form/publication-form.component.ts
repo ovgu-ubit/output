@@ -4,27 +4,27 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { EMPTY, Observable, concatWith, map, merge, startWith } from 'rxjs';
+import { Observable, map, merge, startWith } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
+import { ConfigService } from 'src/app/services/config.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
+import { InvoiceService } from 'src/app/services/entities/invoice.service';
 import { LanguageService } from 'src/app/services/entities/language.service';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { Author, AuthorPublication, Contract, Funder, GreaterEntity, Institute, Invoice, Language, OA_Category, Publication, PublicationIdentifier, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
+import { AuthorPublication, Contract, Funder, GreaterEntity, Invoice, Language, OA_Category, Publication, PublicationIdentifier, PublicationType, Publisher, Status } from '../../../../../../output-interfaces/Publication';
+import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 import { ContractFormComponent } from '../contract-form/contract-form.component';
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
-import { environment } from 'src/environments/environment';
-import { InvoiceService } from 'src/app/services/entities/invoice.service';
-import { ConfigService } from 'src/app/services/config.service';
-import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -32,11 +32,11 @@ export class PubValidator {
     return (formGroup: FormGroup) => {
       let t1, t2 = null;
       if (!(formGroup.get('biblio_info').get('pub_date').value || formGroup.get('biblio_info').get('pub_date_print').value || formGroup.get('biblio_info').get('pub_date_accepted').value || formGroup.get('biblio_info').get('pub_date_submitted').value))
-        t1 = {no_pub_date: true }
+        t1 = { no_pub_date: true }
       if (!formGroup.get('title').value && !formGroup.get('doi').value)
-        t2 = {no_title_or_doi: true }
+        t2 = { no_title_or_doi: true }
       if (!t1 && !t2) return null;
-      else return {...t1, ...t2};
+      else return { ...t1, ...t2 };
     };
   }
 }
@@ -65,9 +65,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   filtered_publishers: Observable<Publisher[]>;
   contracts: Contract[];
   filtered_contracts: Observable<Contract[]>;
-
   funders: Funder[];
   filteredFunders: Observable<Funder[]>;
+  statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
   displayedColumnsId: string[] = ['type', 'value', 'delete'];
@@ -87,7 +87,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService) {
+    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
+    private statusService: StatusService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: [''],
@@ -144,7 +145,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.get('oa_info').get('oa_status').disable();
     this.form.get('oa_info').get('is_journal_oa').disable();
     this.form.get('oa_info').get('best_oa_host').disable();
-    
+
     this.idForm = this.formBuilder.group({
       type: ['', Validators.required],
       value: ['', Validators.required]
@@ -257,6 +258,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map((name) => {
           return this._filterFunders(name);
         }));
+    })))
+    ob$ = merge(ob$, this.statusService.getStatuses().pipe(map(data => {
+      this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
     return ob$;
   }
@@ -746,6 +750,16 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       value: this.idForm.get('value').value
     })
     this.idForm.reset();
-    if ( this.tableId) this.tableId.dataSource = new MatTableDataSource<PublicationIdentifier>(this.pub.identifiers);
+    if (this.tableId) this.tableId.dataSource = new MatTableDataSource<PublicationIdentifier>(this.pub.identifiers);
+  }
+
+  showStatusLabel(long:boolean) {
+    let value = this.statuses?.find(e => e.id == this.form.get('status').value)?.label
+    if (!value) return "";
+    if (long) return value
+    else {
+     if (value.length>27) return value.slice(0,27)+"...";
+     else return value;
+    }
   }
 }

@@ -53,6 +53,7 @@ export class StatusFormComponent implements OnInit, AfterViewInit {
               verticalPosition: 'top'
             })
           }
+          this.form.get('id').disable();
         }
       })
     }
@@ -65,6 +66,7 @@ export class StatusFormComponent implements OnInit, AfterViewInit {
     this.statusService.getStatuses().subscribe({
       next: data => {
         this.statuses = data;
+        if (this.data.status?.id !== undefined && this.data.status?.id !== null)  this.statuses = this.statuses.filter(e => e.id !== this.data.status.id)
         this.form.get('id').addValidators(createUniqueValidator(this.statuses))
       }
     })
@@ -86,7 +88,6 @@ export class StatusFormComponent implements OnInit, AfterViewInit {
   action() {
     if (this.form.invalid) return;
     this.status = { ...this.status, ...this.form.getRawValue() }
-    if (!this.status.id) this.status.id = undefined;
     this.dialogRef.close(this.status)
   }
 
