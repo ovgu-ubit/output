@@ -28,7 +28,8 @@
 
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Kostenstelle</mat-label>
-            <mat-select [(value)]="this.cost_center">
+            <mat-select formControlName="cost_center">
+                <mat-option [value]="-1"></mat-option>
                 <mat-option *ngFor="let cc of this.costCenters" [value]="cc.id">{{cc.label}}</mat-option>
             </mat-select>
         </mat-form-field>
