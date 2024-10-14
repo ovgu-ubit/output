@@ -15,6 +15,7 @@ export class AliasFormComponent implements OnInit {
 
   ngOnInit(): void {
     let controls:FormGroup[] = [];
+    if (!this.data.aliases || this.data.aliases.length === 0) this.dialogRef.close([])
     for (let dat of this.data.aliases) {
       let control:FormGroup = this.formBuilder.group({
         alias: [dat]

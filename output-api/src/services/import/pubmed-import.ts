@@ -23,6 +23,7 @@ import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -33,9 +34,9 @@ export class PubMedImportService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
         let tags = this.configService.get('searchTags');
         this.searchText = '('
         for (let tag of tags) {
@@ -78,7 +79,6 @@ export class PubMedImportService extends AbstractImportService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
         abstract :UpdateOptions.REPLACE_IF_EMPTY,
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
@@ -370,9 +370,6 @@ export class PubMedImportService extends AbstractImportService {
     protected getStatus(element: any): number {
         return 1;
     }
-    protected getEditors(element: any): string {
-        return null;
-    }
     protected getAbstract(element: any): string {
         try {
             let pt = element['Article']['Abstract']['AbstractText']['_text'];
@@ -383,7 +380,7 @@ export class PubMedImportService extends AbstractImportService {
             } else return pt;
         } catch (e) {return null};
     }
-    protected getCitation(element: any): string {
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
         return null;
     }
     protected getPageCount(element: any): number {

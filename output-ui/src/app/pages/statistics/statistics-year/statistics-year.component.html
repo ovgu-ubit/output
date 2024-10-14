@@ -1,92 +1,55 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<div style="display:flex;flex-flow: row nowrap;justify-content: space-between;">
+<div style="display:flex;flex-flow: column nowrap;gap: 10px">
+<div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
   <div>
-    <button mat-raised-button color="primary" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten wechseln</button>
-    <button mat-raised-button color="primary" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl wechseln</button>
+    <button mat-raised-button color="primary" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten
+      wechseln</button>
+    <button mat-raised-button color="primary" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
+      wechseln</button>
   </div>
-  <div [hidden]="!this.filterText">
-    <span>Filter aktiv | {{this.filterText}}</span>&nbsp;
-    <button mat-raised-button color="accent" (click)="this.resetFilter()">Filter zurücksetzen</button>
-  </div>
+  <mat-card [hidden]="this.hidden()">
+    <mat-card-header>
+      Filter aktiv
+    </mat-card-header>
+    <mat-card-content>
+      <div style="display: flex; flex-flow: row wrap;justify-content: flex-end;gap: 5px">
+        <mat-chip-listbox *ngFor="let elem of this.filterChips">
+          <mat-chip-option (removed)="removeFilter(elem)" selectable="false">
+            {{elem['text']}}
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-option>
+      </mat-chip-listbox>
+        <button mat-raised-button color="accent" (click)="this.resetFilter()">Alle Filter zurücksetzen</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  
 </div>
 <div style="display: flex;flex-flow: row wrap;">
-<highcharts-chart 
-  [Highcharts]="Highcharts"
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsLocked"
+    [callbackFunction]="chartCallback" [(update)]="updateFlagLocked" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptions"
+    [callbackFunction]="chartCallback" [(update)]="updateFlag" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
 
-  [constructorType]="chartConstructor"
-  [options]="chartOptions"
-  [callbackFunction]="chartCallback"
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsInstitute"
+    [callbackFunction]="chartCallback" [(update)]="updateFlag1" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsOACat"
+    [callbackFunction]="chartCallback" [(update)]="updateFlag2" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsPublisher"
+    [callbackFunction]="chartCallback" [(update)]="updateFlag3" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsPubType"
+    [callbackFunction]="chartCallback" [(update)]="updateFlag4" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsContract"
+    [callbackFunction]="chartCallback" [(update)]="updateFlag5" [oneToOne]="oneToOneFlag"
+    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
 
-  [(update)]="updateFlag"
-  [oneToOne]="oneToOneFlag"
-  [runOutsideAngular]="runOutsideAngular"
-  class="chart"
-></highcharts-chart>
-
-<highcharts-chart 
-  [Highcharts]="Highcharts"
-
-  [constructorType]="chartConstructor"
-  [options]="chartOptionsInstitute"
-  [callbackFunction]="chartCallback"
-
-  [(update)]="updateFlag1"
-  [oneToOne]="oneToOneFlag"
-  [runOutsideAngular]="runOutsideAngular"
-
-  class="chart"
-></highcharts-chart>
-<highcharts-chart 
-  [Highcharts]="Highcharts"
-
-  [constructorType]="chartConstructor"
-  [options]="chartOptionsOACat"
-  [callbackFunction]="chartCallback"
-
-  [(update)]="updateFlag2"
-  [oneToOne]="oneToOneFlag"
-  [runOutsideAngular]="runOutsideAngular"
-
-  class="chart"
-></highcharts-chart>
-<highcharts-chart 
-  [Highcharts]="Highcharts"
-
-  [constructorType]="chartConstructor"
-  [options]="chartOptionsPublisher"
-  [callbackFunction]="chartCallback"
-
-  [(update)]="updateFlag3"
-  [oneToOne]="oneToOneFlag"
-  [runOutsideAngular]="runOutsideAngular"
-
-  class="chart"
-></highcharts-chart>
-<highcharts-chart 
-  [Highcharts]="Highcharts"
-
-  [constructorType]="chartConstructor"
-  [options]="chartOptionsPubType"
-  [callbackFunction]="chartCallback"
-
-  [(update)]="updateFlag4"
-  [oneToOne]="oneToOneFlag"
-  [runOutsideAngular]="runOutsideAngular"
-
-  class="chart"
-></highcharts-chart>
-<highcharts-chart 
-  [Highcharts]="Highcharts"
-
-  [constructorType]="chartConstructor"
-  [options]="chartOptionsContract"
-  [callbackFunction]="chartCallback"
-
-  [(update)]="updateFlag5"
-  [oneToOne]="oneToOneFlag"
-  [runOutsideAngular]="runOutsideAngular"
-
-  class="chart"
-></highcharts-chart>
-
+</div>
 </div>

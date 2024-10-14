@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { PiechartComponent } from './piechart.component';
@@ -9,13 +9,12 @@ describe('PiechartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [
-      ],
-      declarations: [ PiechartComponent ],
-      imports:[
-        HttpClientModule
-      ]
-    })
+    declarations: [PiechartComponent],
+    imports: [],
+    providers: [
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+})
     .compileComponents();
   });
 

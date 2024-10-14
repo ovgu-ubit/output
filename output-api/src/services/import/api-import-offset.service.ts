@@ -16,6 +16,7 @@ import { AbstractImportService } from './abstract-import';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { ConfigService } from '@nestjs/config';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -26,9 +27,9 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService:LanguageService, protected configService:ConfigService, 
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
     }
 
     private newPublications: Publication[] = [];
@@ -105,7 +106,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Import',this.name, by_user);
+        this.report = this.reportService.createReport('Import', this.name, by_user);
 
         if (!this.url.endsWith('?') && this.params.length !== 0) this.completeURL = this.url + '?';
         else this.completeURL = this.url;
@@ -122,9 +123,9 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
         let obs$ = [];
         this.retrieveCountRequest().pipe(map(resp => {
             this.numberOfPublications = this.getNumber(resp);
-            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with parameters ${this.params.map(e => e.key +': '+ e.value).join('; ')}` })
+            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with parameters ${this.params.map(e => e.key + ': ' + e.value).join('; ')}` })
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
-            if (this.numberOfPublications<=0) {
+            if (this.numberOfPublications <= 0) {
                 //finalize
                 this.progress = 0;
                 this.reportService.finish(this.report, {
@@ -147,11 +148,11 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                 try {
                     for (let [idx, pub] of this.getData(data).entries()) {
                         if (!this.getDOI(pub) && !this.getTitle(pub)) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported '+this.getAuthors(pub) })
+                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
                             continue;
                         }
                         if (this.newPublications.find(e => e.doi && e.doi === this.getDOI(pub)) || this.publicationsUpdate.find(e => e.doi && e.doi === this.getDOI(pub))) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi '+this.getDOI(pub)+' has already been imported.' })
+                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.' })
                             continue;
                         }
                         let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))

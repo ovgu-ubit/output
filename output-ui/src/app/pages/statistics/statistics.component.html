@@ -15,6 +15,8 @@
         
         <mat-checkbox formControlName="corresponding">corresponding?</mat-checkbox>
 
+        <mat-checkbox formControlName="locked">nur gesperrte Publikationen anzeigen?</mat-checkbox>
+
         <mat-form-field appearance="fill">
           <mat-label>Nach Institut filtern</mat-label>
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoInstitute"
@@ -32,7 +34,7 @@
             formControlName="publisher" #input_publ>
           <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPublisher($event)">
             <mat-option *ngFor="let publ of this.filtered_publishers | async" [value]="publ.label">
-              {{publ.label}} ({{publ.location}})
+              {{publ.label}}
             </mat-option>
           </mat-autocomplete>
         </mat-form-field>
@@ -87,6 +89,8 @@
         (ngSubmit)="this.actionHighlight()">
         <mat-checkbox formControlName="corresponding">corresponding?</mat-checkbox>
 
+        <mat-checkbox formControlName="locked">locked?</mat-checkbox>
+
         <mat-form-field appearance="fill">
           <mat-label>Nach Institut filtern</mat-label>
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoInstitute1"
@@ -104,7 +108,7 @@
             formControlName="publisher" #input_publ>
           <mat-autocomplete #autoPublisher1="matAutocomplete" (optionSelected)="selectedPublisher1($event)">
             <mat-option *ngFor="let publ of this.filtered_publishers1 | async" [value]="publ.label">
-              {{publ.label}} ({{publ.location}})
+              {{publ.label}}
             </mat-option>
           </mat-autocomplete>
         </mat-form-field>

@@ -22,6 +22,7 @@ import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class ScopusImportService extends ApiImportOffsetService {
@@ -29,9 +30,10 @@ export class ScopusImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, 
+        protected roleService:RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService, http);
         this.configService.get('searchTags').forEach(tag => {
             this.searchText += tag + " or "
         })
@@ -56,11 +58,10 @@ export class ScopusImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors: UpdateOptions.IGNORE,
-        abstract: UpdateOptions.REPLACE_IF_EMPTY,
-        citation: UpdateOptions.IGNORE,
-        page_count: UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed: UpdateOptions.IGNORE,
+        abstract :UpdateOptions.REPLACE_IF_EMPTY,
+        citation :UpdateOptions.IGNORE,
+        page_count :UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed :UpdateOptions.IGNORE,
     };
     protected url = 'https://api.elsevier.com/content/search/scopus?';
     protected max_res: number = 20;
@@ -178,15 +179,21 @@ export class ScopusImportService extends ApiImportOffsetService {
     protected getStatus(element: any): number {
         return 1;
     }
-
-    protected getEditors(element: any): string {
-        return null;
-    }
     protected getAbstract(element: any): string {
         return element['dc:description'];
     }
-    protected getCitation(element: any): string {
-        return 'Vol. ' + element['prism:volume'] + ', Nr. ' + element['prism:issueIdentifier'] + ', ' + element['prism:pageRange'];
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+        let volume, issue,first_page,last_page,article_number;
+        volume = element['prism:volume']
+        issue = element['prism:issueIdentifier']
+        article_number = element['article_number']
+        try {
+            let range = element['prism:pageRange']
+            let split = range.split('-');
+            first_page = split[0]
+            last_page = split[1]
+        } catch (err) {first_page = element['prism:pageRange'];last_page = null;}
+        return {volume, issue, first_page, last_page, article_number};
     }
     protected getPageCount(element: any): number {
         try {

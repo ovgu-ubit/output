@@ -16,6 +16,7 @@ import { AbstractImportService } from './abstract-import';
 import { InstitutionService } from '../entities/institution.service';
 import { LanguageService } from '../entities/language.service';
 import { ConfigService } from '@nestjs/config';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -26,8 +27,9 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService:ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,protected configService:ConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, configService);
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService,
+        protected configService: ConfigService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
     }
 
     private publicationsUpdate = [];
@@ -52,9 +54,9 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
     protected whereClause: FindManyOptions = null;
 
     public setReportingYear(year: string) {
-        
+
     }
-    
+
     public setWhereClause(whereClause: FindManyOptions) {
         this.whereClause = whereClause;
     }
@@ -78,9 +80,9 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         let url = this.createUrl(doi);
         return this.http.get(url).pipe(catchError((error, caught) => {
             if (error.response?.status === 404) {
-                this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + doi})
+                this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + doi })
             } else if (error.response?.status === 422) {
-                this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Unprocessable Entity: ' + doi})
+                this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Unprocessable Entity: ' + doi })
             }
             else this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${error}` })
             this.errors++;
@@ -91,11 +93,11 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
-    public async import(update: boolean, by_user?:string) {
+    public async import(update: boolean, by_user?: string) {
         if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Enrich',this.name, by_user);
+        this.report = this.reportService.createReport('Enrich', this.name, by_user);
 
         this.processedPublications = 0;
         this.publicationsUpdate = [];

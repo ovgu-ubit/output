@@ -1,5 +1,17 @@
-<mat-toolbar color="primary">
-    <h1 mat-dialog-title style="color:white">Größere Einheit</h1>
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>Größere Einheit</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div *ngIf="!this.disabled; else else1">
+            <button mat-icon-button (click)="this.action()" matTooltip="Größere Einheit speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div>
 </mat-toolbar>
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
@@ -15,8 +27,8 @@
         </mat-form-field>
 
         <mat-form-field appearance="fill">
-            <mat-label>Rating</mat-label>
-            <input matInput placeholder="Rating" formControlName="rating" />
+            <mat-label>Bemerkung</mat-label>
+            <textarea matInput placeholder="Bemerkung" formControlName="rating"></textarea>
         </mat-form-field>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -24,16 +36,17 @@
             <input matInput [matDatepicker]="picker" formControlName="doaj_since">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker [startAt]="this.ge?.doaj_since? this.ge.doaj_since : today"
-                startView="year" color="accent"></mat-datepicker>
+            <mat-datepicker #picker [startAt]="this.ge?.doaj_since? this.ge.doaj_since : today" startView="year"
+                color="accent"></mat-datepicker>
         </mat-form-field>
-        
+
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Im DOAJ bis</mat-label>
             <input matInput [matDatepicker]="picker2" formControlName="doaj_until">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-            <mat-datepicker #picker2 [startAt]="this.ge?.doaj_until? this.ge.doaj_until : this.ge?.doaj_since? this.ge.doaj_since : today"
+            <mat-datepicker #picker2
+                [startAt]="this.ge?.doaj_until? this.ge.doaj_until : this.ge?.doaj_since? this.ge.doaj_since : today"
                 startView="year" color="accent"></mat-datepicker>
         </mat-form-field>
 
@@ -46,19 +59,19 @@
                         <th mat-header-cell *matHeaderCellDef> Art </th>
                         <td mat-cell *matCellDef="let element"> {{element.type}} </td>
                     </ng-container>
-        
+
                     <ng-container matColumnDef="value">
                         <th mat-header-cell *matHeaderCellDef> Wert </th>
                         <td mat-cell *matCellDef="let element"> {{element.value}} </td>
                     </ng-container>
-        
+
                     <ng-container matColumnDef="delete">
                         <th mat-header-cell *matHeaderCellDef> </th>
                         <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                (click)="this.deleteId(element)"
-                                matTooltip="Identifikator löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                                (click)="this.deleteId(element)" matTooltip="Identifikator löschen"
+                                [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
                     </ng-container>
-        
+
                     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
                     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
                 </table>
@@ -75,21 +88,8 @@
                     </mat-form-field>
                     <button matSuffix mat-icon-button type="button" (click)="this.addId()"
                         matTooltip="Identifikator hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
-                </form>        
+                </form>
             </mat-card-actions>
-        </mat-card><br>           
-        
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
-            <button mat-raised-button type="submit" color="primary" class="btn-primary">Größere Einheit
-                speichern</button>&nbsp;
-            <button mat-raised-button type="button" color="accent" class="btn-primary"
-                (click)="this.abort()">Abbrechen</button>
-        </div>
-        <ng-template #else1>
-            <div class="form-group" align="center">
-                <button mat-raised-button type="button" color="primary" class="btn-primary"
-                    (click)="this.close()">Schließen</button>
-            </div>
-        </ng-template>
+        </mat-card>
     </form>
 </mat-dialog-content>

@@ -11,6 +11,7 @@ import { Permissions } from "../guards/permission.decorator";
 import { SearchFilter } from "../../../output-interfaces/Config";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
 import { ConfigService } from "@nestjs/config";
+import { RoleService } from "../services/entities/role.service";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -105,10 +106,7 @@ export class PublicationController {
         }
     })
     async save(@Body() body: Publication) {
-        return this.repository.save(body).catch(err => {
-            console.log(err);
-            throw new InternalServerErrorException('Failure while inserting');
-        });
+        return this.publicationService.save([body]);
     }
 
     @Put()

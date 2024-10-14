@@ -1,23 +1,25 @@
-import { Injectable, Inject, BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { Publication } from '../../entity/Publication';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, FindManyOptions, FindOptionsWhere, FindOptionsWhereProperty, ILike, In, LessThan, Like, MoreThan, Not, QueryBuilder, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, FindManyOptions, ILike, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Author } from '../../entity/Author';
 import { AuthorPublication } from '../../entity/AuthorPublication';
-import { Invoice } from '../../entity/Invoice';
 import { CostItem } from '../../entity/CostItem';
 import { Institute } from '../../entity/Institute';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { ConfigService } from '@nestjs/config';
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
-import { Publisher } from '../../entity/Publisher';
-import { AbstractFilterService } from '../filter/abstract-filter.service';
+import { Invoice } from '../../entity/Invoice';
+import { Publication } from '../../entity/Publication';
+import { Role } from '../../entity/Role';
+
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
 
     funder = false;
     author = false;
+    identifiers = false;
+    pub_type = false;
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -56,53 +58,75 @@ export class PublicationService {
         return res;
     }
 
+    // base object to select a publication index
     public indexQuery(): SelectQueryBuilder<Publication> {
         let query = this.pubRepository.createQueryBuilder("publication")
-            .leftJoin("publication.publisher", "publisher")
             .leftJoin("publication.authorPublications", "authorPublications")
             .leftJoin("authorPublications.author", "author")
             .leftJoin("authorPublications.institute", "institute")
-            .leftJoin("publication.oa_category", "oa_category")
-            .leftJoin("publication.pub_type", "publication_type")
-            .leftJoin("publication.contract", "contract")
-            .leftJoin("publication.greater_entity", "greater_entity")
             .select("publication.id", "id")
-            .addSelect("publication.title", "title")
             .addSelect("publication.locked", "locked")
-            .addSelect("publication.status", "status")
-            .addSelect("publication.dataSource", "data_source")
-            .addSelect("publication.edit_date", "edit_date")
-            .addSelect("publication.import_date", "import_date")
-            .addSelect("publication.link", "link")
-            .addSelect("publication.doi", "doi")
-            .addSelect("publication.authors", "authors")
-            .addSelect("publication.pub_date", "pub_date")
-            .addSelect("publisher.label", "publisher")
-            .addSelect("publication_type.label", "publication_type")
-            .addSelect("oa_category.label", "oa_category")
-            .addSelect("contract.label", "contract")
-            .addSelect("greater_entity.label", "greater_entity")
-            .addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
-            .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
-            .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
-            .addSelect("publication.status", "status")
             .groupBy("publication.id")
-            .addGroupBy("publication.title")
-            .addGroupBy("publication.doi")
-            .addGroupBy("publication.authors")
-            .addGroupBy("publication.pub_date")
-            .addGroupBy("publication.status")
-            .addGroupBy("publisher.label")
-            .addGroupBy("oa_category.label")
-            .addGroupBy("publication_type.label")
-            .addGroupBy("contract.label")
-            .addGroupBy("greater_entity.label")
+
+        if (this.configService.get("pub_index_columns").includes("title")) {
+            query = query.addSelect("publication.title", "title").addGroupBy("publication.title")
+        }
+        if (this.configService.get("pub_index_columns").includes("doi")) {
+            query = query.addSelect("publication.doi", "doi").addGroupBy("publication.doi")
+        }
+        if (this.configService.get("pub_index_columns").includes("authors")) {
+            query = query.addSelect("publication.authors", "authors").addGroupBy("publication.authors")
+        }
+        if (this.configService.get("pub_index_columns").includes("authors_inst")) {
+            query = query.addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
+                .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
+        }
+        if (this.configService.get("pub_index_columns").includes("corr_inst")) {
+            query = query.addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
+        }
+        if (this.configService.get("pub_index_columns").includes("greater_entity")) {
+            query = query.leftJoin("publication.greater_entity", "greater_entity").addSelect("greater_entity.label", "greater_entity").addGroupBy("greater_entity.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("oa_category")) {
+            query = query.leftJoin("publication.oa_category", "oa_category").addSelect("oa_category.label", "oa_category").addGroupBy("oa_category.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("locked_status")) {
+            query = query.addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
+        }
+        if (this.configService.get("pub_index_columns").includes("status")) {
+            query = query.addSelect("publication.status", "status").addGroupBy("publication.status")
+        }
+        if (this.configService.get("pub_index_columns").includes("edit_date")) {
+            query = query.addSelect("publication.edit_date", "edit_date")
+        }
+        if (this.configService.get("pub_index_columns").includes("import_date")) {
+            query = query.addSelect("publication.import_date", "import_date")
+        }
+        if (this.configService.get("pub_index_columns").includes("pub_type")) {
+            query = query.leftJoin("publication.pub_type", "publication_type").addSelect("publication_type.label", "pub_type").addGroupBy("publication_type.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("contract")) {
+            query = query.leftJoin("publication.contract", "contract").addSelect("contract.label", "contract").addGroupBy("contract.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("publisher")) {
+            query = query.leftJoin("publication.publisher", "publisher").addSelect("publisher.label", "publisher").addGroupBy("publisher.label")
+        }
+        if (this.configService.get("pub_index_columns").includes("pub_date")) {
+            query = query.addSelect("publication.pub_date", "pub_date").addGroupBy("publication.pub_date")
+        }
+        if (this.configService.get("pub_index_columns").includes("link")) {
+            query = query.addSelect("publication.link", "link")
+        }
+        if (this.configService.get("pub_index_columns").includes("data_source")) {
+            query = query.addSelect("publication.dataSource", "data_source")
+        }
 
         //console.log(query.getSql());
         return query;
         //return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
+    //retrieves publication index for a reporting year
     public index(yop: number): Promise<PublicationIndex[]> {
         let indexQuery = this.indexQuery();
 
@@ -123,6 +147,7 @@ export class PublicationService {
             .getRawMany() as Promise<PublicationIndex[]>;
     }
 
+    //retrieves publication index for soft deleted publications
     public softIndex(): Promise<PublicationIndex[]> {
         let query = this.indexQuery()
             .withDeleted()
@@ -137,7 +162,7 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
-            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation }; })
+            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
             if (autPub) {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
@@ -149,7 +174,7 @@ export class PublicationService {
 
     public async delete(pubs: Publication[], soft?: boolean) {
         for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } } });
+            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } }, withDeleted: true });
             for (let autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
@@ -164,21 +189,23 @@ export class PublicationService {
 
     public async getPublication(id: number, reader: boolean, writer: boolean) {
         let invoice: any = false;
-        if (reader) invoice = { cost_items: { cost_type: true } };
+        if (reader) invoice = { cost_items: { cost_type: true }, cost_center: true };
         let pub = await this.pubRepository.findOne({
             where: { id }, relations: {
                 oa_category: true,
                 invoices: invoice,
                 authorPublications: {
                     author: true,
-                    institute: true
+                    institute: true,
+                    role: true
                 },
                 greater_entity: true,
                 pub_type: true,
                 publisher: true,
                 contract: true,
                 funders: true,
-                language: true
+                language: true,
+                identifiers: true
             }, withDeleted: true
         })
         if (writer && !pub.locked_at) {
@@ -196,8 +223,8 @@ export class PublicationService {
         return pub;
     }
 
-    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute) {
-        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute });
+    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?: Role) {
+        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role });
     }
 
     public getAuthorsPublication(pub: Publication) {
@@ -316,13 +343,17 @@ export class PublicationService {
         } else return { error: 'update' };
     }
 
+    // retrieves a publication index based on a filter object
     filterIndex(filter: SearchFilter) {
         return this.filter(filter, this.indexQuery()).getRawMany();
     }
 
+    //processes a filter object and adds where conditions to the index query
     filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
         this.funder = false;
         this.author = false;
+        this.identifiers = false;
+        this.pub_type = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -364,6 +395,8 @@ export class PublicationService {
             }
         }
         if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
+        if (this.identifiers) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
+        if (this.pub_type) indexQuery = indexQuery.leftJoin('publication.pub_type', 'pub_type')
         //console.log(indexQuery.getSql())
         return indexQuery;
     }
@@ -389,7 +422,7 @@ export class PublicationService {
                 break;
             case 'inst_authors':
                 this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value +"'";
+                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value + "'";
                 break;
             case 'contract_id':
                 where = 'contract.id=' + value;
@@ -406,9 +439,14 @@ export class PublicationService {
                 break;
             case 'pub_type_id':
                 where = 'publication_type.id=' + value;
+                this.pub_type = true;
                 break;
             case 'publisher_id':
                 where = 'publisher.id=' + value;
+                break;
+            case 'other_ids':
+                where = "identifier.value='" + value + "'";
+                this.identifiers = true;
                 break;
             default:
                 where = "publication." + key + " = '" + value + "'";
@@ -427,11 +465,16 @@ export class PublicationService {
             case 'funder':
             case 'institute':
                 if (key == 'funder') this.funder = true;
+                if (key == 'pub_type') this.pub_type = true;
                 where = key + ".label ILIKE '%" + value + "%'";
                 break;
             case 'inst_authors':
                 this.author = true;
                 where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '%" + value + "%'";
+                break;
+            case 'other_ids':
+                where = "identifier.value ILIKE '%" + value + "%'";
+                this.identifiers = true;
                 break;
             default:
                 where = "publication." + key + " ILIKE '%" + value + "%'";
@@ -450,11 +493,16 @@ export class PublicationService {
             case 'funder':
             case 'institute':
                 if (key == 'funder') this.funder = true;
+                if (key == 'pub_type') this.pub_type = true;
                 where = key + ".label ILIKE '" + value + "%'";
                 break;
             case 'inst_authors':
                 this.author = true;
                 where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '" + value + "%'";
+                break;
+            case 'other_ids':
+                where = "identifier.value ILIKE '" + value + "%'";
+                this.identifiers = true;
                 break;
             default:
                 where = "publication." + key + " ILIKE '" + value + "%'";
@@ -473,6 +521,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
                 if (key == 'funder') this.funder = true;
+                if (key == 'pub_type') this.pub_type = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':

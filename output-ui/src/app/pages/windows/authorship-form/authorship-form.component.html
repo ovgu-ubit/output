@@ -1,0 +1,70 @@
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>Autorenschaft bearbeiten</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div>
+            <button mat-icon-button (click)="this.action()" matTooltip="Autorenschaft speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+    </div> 
+</mat-toolbar>
+<div style="padding: 5px">
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
+        <mat-form-field appearance="fill" style="width: 100%;">
+            <mat-label>Person</mat-label>
+            <input matInput #authorInput formControlName="author" placeholder="Person auswählen oder hinzufügen"
+                [matAutocomplete]="auto" (keydown.enter)="addAuthor($event.target)">
+            <button type="button" matSuffix mat-icon-button (click)="addAuthor(authorInput)"
+                matTooltip="Person hinzufügen" [matTooltipShowDelay]="800" *ngIf="(this.filteredAuthors | async)?.length === 0">
+                <mat-icon *ngIf="!this.disabled">save</mat-icon>
+            </button>
+            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
+                <mat-option *ngFor="let author of filteredAuthors | async"
+                    [value]="author.last_name+', '+author.first_name">
+                    {{author.last_name}}, {{author.first_name}} <ng-container *ngIf="author.orcid">
+                        ({{author.orcid}})
+                    </ng-container>
+                </mat-option>
+            </mat-autocomplete>
+        </mat-form-field>
+
+        <mat-checkbox formControlName="corresponding">Corresponding?</mat-checkbox>
+
+        <mat-form-field appearance="fill" style="width: 100%;">
+            <mat-label>Rolle</mat-label>
+            <mat-select [(value)]="this.role" [compareWith]="compare" [disabled]="this.disabled">
+                <mat-option *ngFor="let inst of this.roles" [value]="inst">{{inst.label}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-card>
+            <mat-card-title><mat-card-subtitle>Institutszuordnung</mat-card-subtitle></mat-card-title>
+            <mat-card-content style="display: flex; flex-direction: column;justify-content: space-evenly;">
+                <mat-form-field appearance="fill">
+                    <mat-label>Affiliationsangabe (optional)</mat-label>
+                    <textarea matInput formControlName="affiliation"></textarea>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>Institut d. Person auswählen</mat-label>
+                    <mat-select [(value)]="this.institute" [compareWith]="compare" [disabled]="this.disabled">
+                        <mat-option [value]="null">- keine Angabe -</mat-option>
+                        <mat-option *ngFor="let inst of this.author?.institutes"
+                            [value]="inst">{{inst.label}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Sonstiges Institut auswählen</mat-label>
+                    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoPublisher"
+                        formControlName="inst" (keydown.enter)="addInst($event.target)" #input_publ>
+                    <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedInst($event)">
+                        <mat-option *ngFor="let inst of this.filtered_institutes | async" [value]="inst.label">
+                            {{inst.label}} ({{inst.short_label}})
+                        </mat-option>
+                    </mat-autocomplete>
+                </mat-form-field>
+            </mat-card-content>
+        </mat-card>
+    </form>
+</div>

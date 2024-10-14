@@ -21,6 +21,10 @@ export class StatisticsService {
     return this.http.post<{value, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year,{filterOptions})
   }
 
+  locked(year:number,filterOptions?:FilterOptions) {
+    return this.http.post<{value, locked}[]>(environment.api + 'statistics/locked?year='+year,{filterOptions})
+  }
+
   institute(year:number, costs:boolean,filterOptions?:FilterOptions) {
     return this.http.post<{id, institute, value}[]>(environment.api + 'statistics/institute?year='+year+'&costs='+costs,{filterOptions})
   }

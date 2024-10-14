@@ -72,23 +72,23 @@ $ovgu-accent-map2: (
 );
 
 /* color */
-$my-palette: mat.$indigo-palette;
-$my-primary-palette: mat.define-palette($ovgu-primary-map, 900);
-$my-accent-palette: mat.define-palette($ovgu-accent-map);
-$my-warn-palette: mat.define-palette($ovgu-accent-map2,100);
+$my-palette: mat.$m2-indigo-palette;
+$my-primary-palette: mat.m2-define-palette($ovgu-primary-map, 900);
+$my-accent-palette: mat.m2-define-palette($ovgu-accent-map);
+$my-warn-palette: mat.m2-define-palette($ovgu-accent-map2,100);
 
 /* typography */
-$my-body-level: mat.define-typography-level($font-weight: 400,
+$my-body-level: mat.m2-define-typography-level($font-weight: 400,
     $font-size: 14px,
     $line-height: 1,
     $letter-spacing: normal,
   );
 
-$my-custom-typography-config: mat.define-typography-config($font-family: 'Roboto, "Helvetica Neue", sans-serif',
+$my-custom-typography-config: mat.m2-define-typography-config($font-family: 'Roboto, "Helvetica Neue", sans-serif',
     $body-1: $my-body-level);
 
 /* theme */
-$my-theme: mat.define-light-theme((color: (
+$my-theme: mat.m2-define-light-theme((color: (
         primary: $my-primary-palette,
         accent: $my-accent-palette,
         warn: $my-warn-palette
@@ -104,7 +104,7 @@ $my-theme: mat.define-light-theme((color: (
   flex: 1 1 auto;
 }
 button[disabled] {
-  color: mat.get-color-from-palette($my-accent-palette, 600)!important;
+  color: mat.m2-get-color-from-palette($my-accent-palette, 600)!important;
 }
 
 .my-container-margin {

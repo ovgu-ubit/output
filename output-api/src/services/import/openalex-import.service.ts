@@ -21,6 +21,7 @@ import { Invoice } from '../../entity/Invoice';
 import { CostType } from '../../entity/CostType';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
@@ -31,9 +32,9 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected configService: ConfigService,
+        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService, http);
         this.id = this.configService.get('openalex_id')
         this.costTypeService.findOrSave('Article processing charges').subscribe({
             next: data => {
@@ -59,11 +60,10 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors :UpdateOptions.IGNORE,
-        abstract :UpdateOptions.IGNORE,
-        citation :UpdateOptions.REPLACE_IF_EMPTY,
-        page_count :UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.IGNORE,
+        citation: UpdateOptions.REPLACE_IF_EMPTY,
+        page_count: UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed: UpdateOptions.IGNORE,
     };
     protected url = 'https://api.openalex.org/works?';
     protected max_res: number = 1;
@@ -93,7 +93,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected getDOI(element: any): string {
         let res = element['doi']
         if (res?.includes('doi.org/')) {
-            res = res.slice(res.indexOf('doi.org/')+8)
+            res = res.slice(res.indexOf('doi.org/') + 8)
         }
         return res;
     }
@@ -109,8 +109,8 @@ export class OpenAlexImportService extends ApiImportOffsetService {
                 res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
                     last_name: name.slice(name.lastIndexOf(' ') + 1),
-                    orcid: aut['author']['orcid']? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1): undefined,
-                    affiliation: aut['raw_affiliation_strings'].reduce((a,v,i) => a+'; '+v),
+                    orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
+                    affiliation: aut['raw_affiliation_strings'].reduce((a, v, i) => a + '; ' + v),
                     corresponding: aut['is_corresponding']
                 })
             }
@@ -127,17 +127,17 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getGreaterEntity(element: any): GreaterEntity {
         return {
-            label: element['primary_location']['source']? element['primary_location']['source']['display_name']: undefined,
-            identifiers: element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal')? element['primary_location']['source']['issn']?.map(e => {
+            label: element['primary_location']['source'] ? element['primary_location']['source']['display_name'] : undefined,
+            identifiers: element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal') ? element['primary_location']['source']['issn']?.map(e => {
                 return {
                     type: 'issn',
                     value: e
                 }
-            }):undefined
+            }) : undefined
         }
     }
     protected getPublisher(element: any): Publisher {
-        return element['primary_location']['source']? {label: element['primary_location']['source']['host_organization_name']} : null;
+        return element['primary_location']['source'] ? { label: element['primary_location']['source']['host_organization_name'] } : null;
     }
     protected getPubDate(element: any): Date {
         let data = null;
@@ -158,9 +158,11 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getFunder(element: any): Funder[] {
         if (element['grants']) {
-            return element['grants'].map(e => {return {
-                label: e['funder_display_name']
-            }})
+            return element['grants'].map(e => {
+                return {
+                    label: e['funder_display_name']
+                }
+            })
         }
     }
     protected getPubType(element: any): string {
@@ -204,21 +206,26 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected getStatus(element: any): number {
         return 1;
     }
-    protected getEditors(element: any): string {
-        return null;
-    }
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): string {
-        if (element['biblio']) return 'Vol. '+element['biblio']['volume']+', No. '+element['biblio']['issue']+', pp. '+element['biblio']['first_page']+'-'+element['biblio']['last_page'];
+    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+        if (element['biblio']) {
+            let e = {
+                volume: element['biblio']['volume'],
+                issue: element['biblio']['issue'],
+                first_page: element['biblio']['first_page'],
+                last_page: element['biblio']['last_page'],
+            }
+            return e;
+        } else return null;
     }
     protected getPageCount(element: any): number {
         try {
-            let count = Number(element['biblio']['last_page'])-Number(element['biblio']['first_page'])+1;
+            let count = Number(element['biblio']['last_page']) - Number(element['biblio']['first_page']) + 1;
             if (!Number.isNaN(count) && count < 999999) return count;
             else return null;
-        } catch (e) {return null;}
+        } catch (e) { return null; }
     }
     protected getPeerReviewed(element: any): boolean {
         return null;

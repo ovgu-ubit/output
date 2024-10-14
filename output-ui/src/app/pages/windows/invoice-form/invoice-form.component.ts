@@ -62,6 +62,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
     });
     this.form.controls.id.disable();
     this.form.patchValue(this.invoice)
+    this.form.get('cost_center').setValue(this.invoice.cost_center ? this.invoice.cost_center.id : -1)
   }
   disabled = false;
 
@@ -77,6 +78,8 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
     if (!this.invoice.id) this.invoice.id = undefined;
     if (!this.invoice.booking_amount) this.invoice.booking_amount = undefined;
     this.invoice.cost_center = this.cost_center;
+    this.invoice.cost_center = this.form.get('cost_center').value !== -1 ? this.costCenters.find(e => e.id === this.form.get('cost_center').value) : null;
+    
     if (!this.form.get('date').value) this.invoice.date = undefined;
     else if (moment.isMoment(this.form.get('date').value)) this.invoice.date = this.form.get('date').value?.format()
     if (!this.form.get('booking_date').value) this.invoice.booking_date = undefined;

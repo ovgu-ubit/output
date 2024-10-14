@@ -47,6 +47,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
     { colName: 'institutes', colTitle: 'Institute' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
     { colName: 'pub_corr_count', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 
   constructor(private authorService: AuthorService, private dialog: MatDialog, private _snackBar: MatSnackBar, private store: Store, private publicationService: PublicationService,
@@ -147,13 +148,15 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
         width: '800px',
         maxHeight: '800px',
         data: {
-          ents: this.selection.selected
+          ents: this.selection.selected,
+          aliases: true,
+          author: true
         },
         disableClose: true
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.authorService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
+          this.authorService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), result.aliases_first_name, result.aliases_last_name).subscribe({
             next: data => {
               this._snackBar.open(`Autoren wurden zusammengeführt`, 'Super!', {
                 duration: 5000,
@@ -277,7 +280,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
           }
         }
       }
-    } else {
+    } else if (field === 'pub_count_corr'){
       viewConfig = {
         sortDir: 'asc' as SortDirection,
         filter: {
@@ -297,6 +300,20 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
               key: 'pub_date',
               comp: CompareOperation.SMALLER_THAN,
               value: (this.reporting_year + 1) + '-01-01 00:00:00'
+            }]
+          }
+        }
+      }
+    } else if (field === 'pub_count_total') {
+      viewConfig = {
+        sortDir: 'asc' as SortDirection,
+        filter: {
+          filter: {
+            expressions: [{
+              op: JoinOperation.AND,
+              key: 'author_id',
+              comp: CompareOperation.EQUALS,
+              value: id
             }]
           }
         }

@@ -17,9 +17,11 @@ export class MasterExportService extends AbstractExportService {
 
     quote = '"';
     sep = ';';
+    df:Intl.DateTimeFormat;
 
     constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService) {
         super(); 
+        this.df = new Intl.DateTimeFormat('de-DE');
     }
 
     protected name = 'Master-Export';
@@ -35,7 +37,8 @@ export class MasterExportService extends AbstractExportService {
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
-        let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;greater_entity;pub_date;publisher;language;oa_category;pub_type;funders;contract;costs;"
+        let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;corr_institutes;greater_entity;"
+        +"pub_date;publisher;language;oa_category;pub_type;funders;contract;cost_approach;invoice_number;net costs;paid amount;cost_center;"
         +"data_source;second_pub;add_info;import_date;edit_date\n";
         for (let pub of pubs) {
             res+=this.format(pub.id);
@@ -48,6 +51,7 @@ export class MasterExportService extends AbstractExportService {
             res+=this.format(pub.authorPublications?.map(e => {return e.author.last_name+', '+e.author.first_name}).join(' | '));
             res+=this.format(pub.authorPublications?.map(e => {return e.institute?.label}).join(' | '));
             res+=this.format(pub.authorPublications?.filter(e => e.corresponding).map(e => {return e.author.last_name+', '+e.author.first_name}).join(' | '));
+            res+=this.format(pub.authorPublications?.filter(e => e.corresponding).map(e => {return e.institute?.label}).join(' | '));
             res+=this.format(pub.greater_entity);
             res+=this.format(pub.pub_date);
             res+=this.format(pub.publisher);
@@ -56,7 +60,11 @@ export class MasterExportService extends AbstractExportService {
             res+=this.format(pub.pub_type);
             res+=this.format(pub.funders?.map(e => e.label).join(' | '));
             res+=this.format(pub.contract);
+            res+=this.format(pub.cost_approach);
+            res+=this.format(pub.invoices?.map(e => e.number).join(' | '));
             res+=this.format(pub.invoices?.map(e => e.cost_items.map(e => e.euro_value).reduce((v,e) => v+e,0)).reduce((v,e) => v+e,0));
+            res+=this.format(pub.invoices?.map(e => e.booking_amount).reduce((v,e) => v+e,0));
+            res+=this.format(pub.invoices?.map(e => e.cost_center?.label).join(' | '));
             res+=this.format(pub.dataSource);
             res+=this.format(pub.second_pub);
             res+=this.format(pub.add_info);
@@ -79,7 +87,9 @@ export class MasterExportService extends AbstractExportService {
     format(field):string {
         let res = this.quote;
         let value = field? (field.label? field.label : field) : '';
-        if (value instanceof Date || Number.isNaN(value)) res += value.toLocaleString().slice(0,10000);
+        if (typeof value === 'string') res += value.replace(new RegExp(this.quote,"g"),"<quote>");
+        else if (value instanceof Date) res += this.df.format(value)
+        else if (Number.isNaN(value)) res += value.toLocaleString().slice(0,10000);
         else res += value;
         res += this.quote;
         res += this.sep;

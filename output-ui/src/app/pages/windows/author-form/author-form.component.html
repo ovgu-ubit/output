@@ -1,4 +1,18 @@
-<mat-toolbar color="primary"><h1 mat-dialog-title style="color:white">Autor</h1></mat-toolbar>
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>Autor</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div *ngIf="!this.disabled; else else1">
+            <button mat-icon-button (click)="this.action()" matTooltip="Autor speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div> 
+</mat-toolbar>
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)"
@@ -77,19 +91,55 @@
                     </mat-autocomplete>
                 </mat-form-field>
             </mat-card-actions>
-        </mat-card><br>        
-            
-        <div *ngIf="!this.disabled; else else1" class="form-group" align="center">
-            <button mat-raised-button type="submit" color="primary" class="btn-primary">Autor*in
-                speichern</button>&nbsp;
-            <button mat-raised-button type="button" color="accent" class="btn-primary"
-                (click)="this.abort()">Abbrechen</button>
-        </div>
-        <ng-template #else1>
-            <div class="form-group" align="center">
-                <button mat-raised-button type="button" color="primary" class="btn-primary"
-                (click)="this.close()">Schließen</button>
-            </div>
-        </ng-template>
-    </form>
+        </mat-card><br>      
+
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                Aliase
+              </mat-panel-title>
+              <mat-panel-description>
+                Werden beim Import auf diese*n Autor*in abgebildet
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+            <table #tableAlias *ngIf="this.alias_data && this.alias_data.length>0" mat-table
+                [dataSource]="this.alias_data">
+                <ng-container matColumnDef="alias">
+                    <th mat-header-cell *matHeaderCellDef> Alias </th>
+                    <td mat-cell *matCellDef="let element"> {{element.alias}} </td>
+                </ng-container>
+                <ng-container matColumnDef="first_name">
+                    <th mat-header-cell *matHeaderCellDef> Für Vorname </th>
+                    <td mat-cell *matCellDef="let element"> 
+                        <mat-icon *ngIf="element.first_name">check_box</mat-icon>
+                        <mat-icon *ngIf="!element.first_name">check_box_outline_blank</mat-icon>
+                    </td>
+                </ng-container>
+                <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                            (click)="this.deleteAlias(element)"
+                            matTooltip="Alias löschen" [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                </ng-container>
+    
+                <tr mat-header-row *matHeaderRowDef="['alias','first_name','delete']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['alias','first_name','delete'];"></tr>
+            </table>
+            <form [formGroup]="aliasForm" style="display: flex;gap:5px">
+                <mat-form-field appearance="fill">
+                    <mat-label>Alias</mat-label>
+                    <input matInput placeholder="Alias" formControlName="alias" />
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Vor- oder Nachname</mat-label>
+                    <mat-select formControlName="first_name">
+                        <mat-option [value]="true">Vorname</mat-option>
+                        <mat-option [value]="false">Nachname</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
+                    matTooltip="Alias hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+            </form>
+        </mat-expansion-panel><br>  
+        </form>
 </mat-dialog-content>

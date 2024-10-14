@@ -1,4 +1,4 @@
-import {AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
+import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
 
 export interface Publication {
     id?: number;
@@ -26,6 +26,10 @@ export interface Publication {
     edit_date?: Date;
     delete_date?: Date;
     locked?: boolean
+    locked_author?: boolean
+    locked_biblio?: boolean
+    locked_finance?: boolean
+    locked_oa?: boolean
     status?: number
     is_oa?: boolean;
     oa_status?: string;
@@ -34,11 +38,15 @@ export interface Publication {
     best_oa_license?: string;
     opus_share_it?: string;
     locked_at?: Date;
-    editors?: string;
     abstract?: string;
-    citation?: string;
     page_count?: number;
     peer_reviewed?: boolean;
+    identifiers?: PublicationIdentifier[];
+    volume?: string;
+    issue?: string;
+    first_page?: string;
+    last_page?: string;
+    cost_approach?: number;
 }
 
 export interface Author {
@@ -52,6 +60,8 @@ export interface Author {
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
     locked_at?: Date;
+    aliases_first_name?: AliasAuthorFirstName[];
+    aliases_last_name?: AliasAuthorLastName[];
 }
 
 export interface AuthorPublication {
@@ -62,6 +72,12 @@ export interface AuthorPublication {
     institute?: Institute
     corresponding?: boolean;
     affiliation?: string;
+}
+
+export interface Role {
+    id?: number;
+    label: string;
+    locked_at?: Date;
 }
 
 export interface Contract {
@@ -134,6 +150,13 @@ export interface Identifier {
     entity?: GreaterEntity
 }
 
+export interface PublicationIdentifier {
+    id?: number;
+    type: string;
+    value: string;
+    publication?: Publication;
+}
+
 export interface ContractIdentifier {
     id?: number;
     type: string;
@@ -182,7 +205,6 @@ export interface PublicationType {
 export interface Publisher {
     id?: number;
     label: string;
-    location?: string;
     doi_prefixes?: PublisherDOI[];
     aliases?: AliasPublisher[];
     locked_at?: Date;

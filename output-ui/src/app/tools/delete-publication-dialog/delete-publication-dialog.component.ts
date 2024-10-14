@@ -10,8 +10,10 @@ import { Publication } from '../../../../../output-api/src/entity/Publication';
 export class DeletePublicationDialogComponent implements OnInit {
   soft: boolean;
 
+  softdeleted_only = true;
+
   constructor(public dialogRef: MatDialogRef<DeletePublicationDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: Publication[]) {
+    @Inject(MAT_DIALOG_DATA) public data: {pubs:Publication[],soft:boolean}) {
   }
 
   ngOnInit() {

@@ -66,4 +66,5 @@ export class PublicationService {
   public getFilters() {
     return this.http.get<{ path: string, label: string }[]>(environment.api + 'publications/filter', { withCredentials: true });
   }
+
 }

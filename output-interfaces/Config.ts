@@ -25,7 +25,6 @@ export class UpdateMapping {
     license: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     invoice: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     status: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
-    editors: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     abstract: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     citation: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     page_count: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
@@ -63,16 +62,24 @@ export class CSVMapping {
         funder?: string;
         doi?: string;
         pub_date?: string;
+        pub_date_print?: string;
+        pub_date_accepted?: string;
+        pub_date_submitted?: string;
         link?: string;
         language?: string;
         license?: string;
         invoice?: string;
         status?: string;
-        editors?: string;
         abstract?: string;
-        citation?: string;
+        volume?: string;
+        issue?: string;
+        first_page?: string;
+        last_page?: string;
         page_count?: string;
         peer_reviewed?: string;
+        publisher_location?: string;
+        edition?: string;
+        article_number?: string;
     }
 }
 

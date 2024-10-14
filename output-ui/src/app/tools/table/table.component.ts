@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -55,7 +55,7 @@ export class TableComponent<T> implements OnInit {
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
-  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar,
+  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, 
     public tokenService: AuthorizationService) {
   }
 
@@ -81,6 +81,11 @@ export class TableComponent<T> implements OnInit {
     this.data = data;
     this.dataSource = new MatTableDataSource<T>(data);
     this.dataSource2 = new MatTableDataSource<T>(data);
+    //populate the headerNames field for template access
+    this.headerNames = this.headers.map(x => x.colName);
+    //adding the meta columns at the beginning
+    this.headerNames.unshift('edit');
+    this.headerNames.unshift('select');
     this.parent.selection.clear();
     this.dataSource.paginator = this.paginator;
     this.dataSource2.paginator = this.paginator2;
@@ -103,10 +108,30 @@ export class TableComponent<T> implements OnInit {
   public filterColumn() {
     if (this.columnFilter) {
       this.dataSource.filterPredicate = function (data, filter: string): boolean {
-        return data[this.columnFilter]?.toString().toLowerCase().includes(filter);
+        if (filter.includes("*") || filter.includes("?")) {
+          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+          return data[this.columnFilter]?.toString().toLowerCase().match(new RegExp(regex))
+        }
+        else return data[this.columnFilter]?.toString().toLowerCase().includes(filter);
       }.bind(this);
-    } else this.dataSource.filterPredicate = this.defaultFilterPredicate;
-    this.doFilter(this.filterValue);
+    } else {
+      this.dataSource.filterPredicate = function (data, filter: string): boolean {
+        if (filter.includes("*") || filter.includes("?")) {
+          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+          for (let key of Object.keys(data)) {
+            if (data[key]?.toString().toLowerCase().match(new RegExp(regex))) return true;
+          }
+          return false;
+        }
+        else {
+          for (let key of Object.keys(data)) {
+            if (data[key]?.toString().toLowerCase().includes(filter)) return true;
+          }
+          return false;
+        }
+      }.bind(this);
+      //this.doFilter(this.filterValue);
+    }
   }
 
   /*
@@ -170,7 +195,7 @@ export class TableComponent<T> implements OnInit {
     }
   }
 
-  compare(type: string, a: any, b: any, dir: SortDirection) {
+  compare(type:  string, a:  any, b:  any, dir:  SortDirection) {
     if (!a && !b) return 0;
     else if (!a && b) return (dir === 'asc' ? -1 : 1)
     else if (a && !b) return (dir === 'asc' ? 1 : -1)

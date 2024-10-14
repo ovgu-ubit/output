@@ -9,6 +9,7 @@ import { PublicationType } from "./PublicationType";
 import { Publisher } from "./Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"
 import { Language } from "./Language";
+import { PublicationIdentifier } from "./PublicationIdentifier";
 
 @Entity()
 export class Publication implements IPublication {
@@ -41,22 +42,22 @@ export class Publication implements IPublication {
     @OneToMany(() => Invoice, (i) => i.publication, { cascade: true })
     invoices?: Invoice[]
 
-    @Column()
+    @Column({ nullable: true })
     authors?: string;
 
-    @Column()
+    @Column({ nullable: true })
     title?: string;
 
     @Column({ nullable: true })
     doi?: string;
 
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date?: Date;
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date_submitted?: Date;
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date_accepted?: Date;
-    @Column({ nullable: true,  type: 'timestamptz' })
+    @Column({ nullable: true, type: 'timestamptz' })
     pub_date_print?: Date;
 
     @Column({ nullable: true })
@@ -64,7 +65,7 @@ export class Publication implements IPublication {
 
     @Column()
     dataSource?: string;
-    
+
     @ManyToOne(() => Language, c => c.id)
     language?: Language
 
@@ -76,19 +77,25 @@ export class Publication implements IPublication {
     })
     add_info?: string;
 
-    @CreateDateColumn({type: 'timestamptz'})
+    @CreateDateColumn({ type: 'timestamptz' })
     import_date?: Date;
 
-    @UpdateDateColumn({type: 'timestamptz'})
+    @UpdateDateColumn({ type: 'timestamptz' })
     edit_date?: Date;
 
-    @DeleteDateColumn({type: 'timestamptz'})
+    @DeleteDateColumn({ type: 'timestamptz' })
     delete_date?: Date;
 
-    @Column({
-        default: false
-    })
+    @Column({ default: false })
     locked?: boolean
+    @Column({ default: false })
+    locked_author?: boolean
+    @Column({ default: false })
+    locked_biblio?: boolean
+    @Column({ default: false })
+    locked_finance?: boolean
+    @Column({ default: false })
+    locked_oa?: boolean
 
     @Column({
         default: 0
@@ -110,19 +117,34 @@ export class Publication implements IPublication {
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
 
-    @Column({nullable: true})
-    editors?: string;
-
-    @Column({nullable: true})
+    @Column({ nullable: true })
     abstract?: string;
 
-    @Column({nullable: true})
-    citation?: string;
+    //citation fields
+    @Column({ nullable: true })
+    volume?: string;
+    @Column({ nullable: true })
+    issue?: string;
+    @Column({ nullable: true })
+    first_page?: string;
+    @Column({ nullable: true })
+    last_page?: string;
+    @Column({ nullable: true })
+    publisher_location?: string;
+    @Column({ nullable: true })
+    edition?: string;
+    @Column({ nullable: true })
+    article_number?: string;
 
-    @Column({nullable: true})
+    @Column({ nullable: true })
     page_count?: number;
-    
-    @Column({nullable: true})
+
+    @Column({ nullable: true })
     peer_reviewed?: boolean;
-    
+
+    @OneToMany(() => PublicationIdentifier, (ide) => ide.publication, {cascade: true})
+    identifiers?: PublicationIdentifier[];
+
+    @Column({ nullable: true })
+    cost_approach?: number;
 }

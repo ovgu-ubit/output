@@ -62,6 +62,12 @@ import { AuthorizationService } from "./guards/authorization.service";
 import { TokenAuthorizationService } from "./guards/token.authorization.service";
 import { PublisherDOI } from "./entity/PublisherDOI";
 import { ConfigController } from "./controller/ConfigController";
+import { Role } from "./entity/Role";
+import { RoleService } from "./services/entities/role.service";
+import { PublicationIdentifier } from "./entity/PublicationIdentifier";
+import { AliasAuthorFirstName } from "./entity/alias/AliasAuthorFirstName";
+import { AliasAuthorLastName } from "./entity/alias/AliasAuthorLastName";
+import { RoleController } from "./controller/RoleController";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -86,18 +92,18 @@ const filterz = appConfig().filter_services;
       inject: [DatabaseConfigService],
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
-      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language,
-      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder])
+      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
+      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName])
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
-    PlausibilityController, ExportController, ConfigController],
+    PlausibilityController, ExportController, ConfigController, RoleController],
   providers: [
-    PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService, 
-    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService,
-    AppConfigService,StatisticsService,
+    PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
+    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService,
+    AppConfigService, StatisticsService,
     CSVImportService,
-    {provide: AuthorizationService, useClass: appConfig().authorization_service},
+    { provide: AuthorizationService, useClass: appConfig().authorization_service },
     ...imports.map(e => e.class),
     {
       provide: 'Imports',

@@ -41,6 +41,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   filter: { filter: SearchFilter, paths?: string[] };
   id;
 
+  soft_deletes = false;
+
   buttons: TableButton[] = [
     { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
     {
@@ -64,27 +66,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   @ViewChild(TableComponent) table: TableComponent<PublicationIndex>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
-    { colName: 'title', colTitle: 'Titel' },
-    { colName: 'doi', colTitle: 'DOI', type: 'doi' },
-    { colName: 'authors', colTitle: 'Autoren' },
-    { colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' },
-    { colName: 'corr_inst', colTitle: 'Corr. Institut' },
-    { colName: 'greater_entity', colTitle: 'Größere Einheit' },
-    { colName: 'oa_category', colTitle: 'OA-Kategorie' },
-    { colName: 'status', colTitle: 'Status', type: 'number' },
-    { colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' },
-    { colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' },
   ];
-
-  headerObs():Observable<TableHeader[]> {
-    return this.configService.getInstition().pipe(map(data => {
-      this.institution = data.short_label;
-      this.headers.push({
-        colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors'
-      })
-      return this.headers;
-    }));
-  }
 
   publications: PublicationIndex[] = [];
   viewConfig: ViewConfig;
@@ -103,9 +85,31 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
       })
     }))
-    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
+    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(map(data => {
+      let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
+      if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
+      if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
+      if (data.includes("link")) headers.push({ colName: 'link', colTitle: 'Link', type: 'link' })
+      if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Autoren' })
+      if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' })
+      if (data.includes("corr_inst")) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
+      if (data.includes("pub_type")) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
+      if (data.includes("greater_entity")) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
+      if (data.includes("publisher")) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
+      if (data.includes("contract")) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
+      if (data.includes("oa_category")) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
+      if (data.includes("locked_status")) headers.push({ colName: 'locked_status', colTitle: 'Lock-Status' })
+      if (data.includes("status")) headers.push({ colName: 'status', colTitle: 'Status' })
+      if (data.includes("pub_date")) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
+      if (data.includes("edit_date")) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
+      if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
+      if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
+      this.headers = headers;
+    })))
+    ob$ = concat(ob$, this.configService.getInstition().pipe(map(data => {
       this.institution = data.short_label;
-      this.headers.find(e => e.colName === 'authors_inst').colTitle = 'Autoren ' + this.institution;
+      let header = this.headers.find(e => e.colName === 'authors_inst')
+      if (header) header.colTitle = 'Autoren ' + this.institution;
     })))
 
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
@@ -184,6 +188,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.loading = false;
         this.publications = data;
         this.name = 'Publikationen des Jahres ' + this.reporting_year;
+        this.soft_deletes = false;
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
@@ -192,6 +197,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.loading = false;
         this.publications = data;
         this.name = 'Gefilterte Publikationen'
+        this.soft_deletes = false;
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
@@ -201,6 +207,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.publications = data;
         this.name = 'Soft-deleted Publikationen';
         this.table.update(this.publications);
+        this.soft_deletes = true;
       }, error: err => console.log(err)
     });
   }
@@ -225,7 +232,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.update();
+            this.update(this.soft_deletes);
           }, error: err => {
             this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
               duration: 5000,
@@ -239,7 +246,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.publicationService.save([result]).subscribe();
       }
     });
-
   }
 
   changeReportingYear() {
@@ -272,7 +278,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update();
+        this.update(this.soft_deletes);
       }, error: err => {
         this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
           duration: 5000,
@@ -286,14 +292,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   deleteSelected() {
     if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(
-      this.selection.selected.length + " Publikationen löschen",
-      `Möchten Sie ${this.selection.selected.length} Publikationen löschen, dies kann nicht rückgängig gemacht werden?`
-    );
 
     let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
       maxWidth: "400px",
-      data: this.selection.selected
+      data: {
+        pubs: this.selection.selected,
+        soft: this.soft_deletes
+      }
     });
 
     dialogRef.afterClosed().subscribe(dialogResult => {
@@ -305,7 +310,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.update();
+            this.update(this.soft_deletes);
           }, error: err => {
             this._snackBar.open(`Fehler beim Löschen der Publikation`, 'Oh oh!', {
               duration: 5000,
@@ -333,6 +338,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         pubInit.authorPublications = [];
         this.publicationService.insert(pubInit).subscribe({
           next: data => {
+            if (Array.isArray(data)) data = data[0]
             result.id = data.id;
             for (let autPub of result.authorPublications) {
               autPub.publicationId = data.id;
@@ -397,7 +403,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update();
+        this.update(this.soft_deletes);
       }
     })
   }
@@ -428,7 +434,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
-              this.update();
+              this.update(this.soft_deletes);
             }, error: err => {
               this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
                 duration: 5000,

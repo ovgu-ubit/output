@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Post,Body } from "@nestjs/common";
+import { Controller, Get, Query, Post, Body } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { StatisticsService } from "../services/statistics.service";
 import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
@@ -8,18 +8,23 @@ import { ConfigService } from "@nestjs/config";
 @ApiTags("config")
 export class ConfigController {
 
-    constructor(private configService:ConfigService ) {}
+    constructor(private configService: ConfigService) { }
 
     @Get('optional_fields')
     getOptionalFields() {
         return this.configService.get('optional_fields');
     }
-    
+
+    @Get('pub_index_columns')
+    getPubIndexColumns() {
+        return this.configService.get('pub_index_columns');
+    }
+
     @Get('institution')
     getInstitution() {
         return {
             label: this.configService.get('institution_label'),
-            short_label:  this.configService.get('institution_short_label')
+            short_label: this.configService.get('institution_short_label')
         }
     }
 }

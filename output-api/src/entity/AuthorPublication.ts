@@ -3,6 +3,7 @@ import { Author } from "./Author";
 import { Publication } from "./Publication";
 import { AuthorPublication as IAuthorPublication} from "../../../output-interfaces/Publication"
 import { Institute } from "./Institute";
+import { Role } from "./Role";
 
 @Entity()
 export class AuthorPublication implements IAuthorPublication {
@@ -26,6 +27,10 @@ export class AuthorPublication implements IAuthorPublication {
         referencedColumnName: 'id'
     })
     publication?: Publication
+
+    @ManyToOne(() => Role)
+    @JoinTable()
+    role?: Role
 
     @Column({ nullable: true })
     affiliation?: string;

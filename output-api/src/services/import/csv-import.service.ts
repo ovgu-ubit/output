@@ -22,6 +22,7 @@ import { ConfigService } from '@nestjs/config';
 import { LanguageService } from '../entities/language.service';
 import { Publisher } from '../../entity/Publisher';
 import { GreaterEntity } from '../../entity/GreaterEntity';
+import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -33,8 +34,8 @@ export class CSVImportService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService,
-        protected languageService: LanguageService, protected configService: ConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, configService);
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -54,7 +55,6 @@ export class CSVImportService extends AbstractImportService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        editors: UpdateOptions.REPLACE_IF_EMPTY,
         abstract: UpdateOptions.REPLACE_IF_EMPTY,
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
@@ -76,7 +76,7 @@ export class CSVImportService extends AbstractImportService {
         this.file = file;
         if (typeof importConfig == 'string') this.importConfig = JSON.parse(importConfig + '');
         else this.importConfig = importConfig;
-        this.name = this.importConfig.name;
+        //this.name = this.importConfig.name;
         if (updateMapping) this.updateMapping = updateMapping;
     }
 
@@ -233,10 +233,14 @@ export class CSVImportService extends AbstractImportService {
         return { label: element[this.importConfig.mapping.publisher] };
     }
     protected getPubDate(element: any): Date {
-        if (!this.importConfig.mapping.pub_date) return null;
-        let datestring = this.importConfig.mapping.pub_date.startsWith('$') ? this.importConfig.mapping.pub_date.slice(1, this.importConfig.mapping.pub_date.length) : element[this.importConfig.mapping.pub_date];
-        let mom = moment.utc(datestring, this.importConfig.date_format);
-        return mom.toDate();
+        try {
+            if (!this.importConfig.mapping.pub_date) return null;
+            let datestring = this.importConfig.mapping.pub_date.startsWith('$') ? this.importConfig.mapping.pub_date.slice(1, this.importConfig.mapping.pub_date.length) : element[this.importConfig.mapping.pub_date];
+            let mom = moment.utc(datestring, this.importConfig.date_format);
+            return mom.toDate();
+        } catch (err) {
+            return null;
+        }
     }
     protected getLink(element: any): string {
         if (!this.importConfig.mapping.link) return null;
@@ -284,41 +288,90 @@ export class CSVImportService extends AbstractImportService {
         }];
         return [{
             cost_items: [{
-                price: element[this.importConfig.mapping.invoice],
+                price: Number(element[this.importConfig.mapping.invoice]),
                 currency: 'EUR',
                 cost_type: null
             }]
         }]
     }
     protected getStatus(element: any): number {
-        if (!this.importConfig.mapping.status) return null;
-        if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
-        return element[this.importConfig.mapping.status];
-    }
-    protected getEditors(element: any): string {
-        if (!this.importConfig.mapping.editors) return null;
-        if (this.importConfig.mapping.editors.startsWith('$')) return this.importConfig.mapping.editors.slice(1, this.importConfig.mapping.editors.length);
-        return element[this.importConfig.mapping.editors];
+        try {
+            if (!this.importConfig.mapping.status) return null;
+            if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
+            return Number(element[this.importConfig.mapping.status]);
+        } catch (err) {
+            return null;
+        }
     }
     protected getAbstract(element: any): string {
         if (!this.importConfig.mapping.abstract) return null;
         if (this.importConfig.mapping.abstract.startsWith('$')) return this.importConfig.mapping.abstract.slice(1, this.importConfig.mapping.abstract.length);
         return element[this.importConfig.mapping.abstract];
     }
-    protected getCitation(element: any): string {
-        if (!this.importConfig.mapping.citation) return null;
-        if (this.importConfig.mapping.citation.startsWith('$')) return this.importConfig.mapping.citation.slice(1, this.importConfig.mapping.citation.length);
-        return element[this.importConfig.mapping.authors];
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
+        let volume = null;
+        if (this.importConfig.mapping.volume) {
+            if (this.importConfig.mapping.volume.startsWith('$')) volume = this.importConfig.mapping.volume.slice(1, this.importConfig.mapping.volume.length);
+            else volume = element[this.importConfig.mapping.volume];
+        }
+        let issue = null;
+        if (this.importConfig.mapping.issue) {
+            if (this.importConfig.mapping.issue.startsWith('$')) issue = this.importConfig.mapping.issue.slice(1, this.importConfig.mapping.issue.length);
+            else issue = element[this.importConfig.mapping.issue];
+        }
+        let first_page = null;
+        if (this.importConfig.mapping.first_page) {
+            if (this.importConfig.mapping.first_page.startsWith('$')) first_page = this.importConfig.mapping.first_page.slice(1, this.importConfig.mapping.first_page.length);
+            else first_page = element[this.importConfig.mapping.first_page];
+        }
+        let last_page = null;
+        if (this.importConfig.mapping.last_page) {
+            if (this.importConfig.mapping.last_page.startsWith('$')) last_page = this.importConfig.mapping.last_page.slice(1, this.importConfig.mapping.last_page.length);
+            else last_page = element[this.importConfig.mapping.last_page];
+        }
+        let publisher_location = null;
+        if (this.importConfig.mapping.publisher_location) {
+            if (this.importConfig.mapping.publisher_location.startsWith('$')) publisher_location = this.importConfig.mapping.publisher_location.slice(1, this.importConfig.mapping.publisher_location.length);
+            else publisher_location = element[this.importConfig.mapping.publisher_location];
+        }
+        let edition = null;
+        if (this.importConfig.mapping.edition) {
+            if (this.importConfig.mapping.edition.startsWith('$')) edition = this.importConfig.mapping.edition.slice(1, this.importConfig.mapping.edition.length);
+            else edition = element[this.importConfig.mapping.edition];
+        }
+        let article_number = null;
+        if (this.importConfig.mapping.article_number) {
+            if (this.importConfig.mapping.article_number.startsWith('$')) article_number = this.importConfig.mapping.article_number.slice(1, this.importConfig.mapping.article_number.length);
+            else article_number = element[this.importConfig.mapping.article_number];
+        }
+
+        return {
+            volume,
+            issue,
+            first_page,
+            last_page,
+            publisher_location,
+            edition,
+            article_number
+        }
     }
     protected getPageCount(element: any): number {
-        if (!this.importConfig.mapping.page_count) return null;
-        if (this.importConfig.mapping.page_count.startsWith('$')) return Number(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
-        return element[this.importConfig.mapping.page_count];
+        try {
+            if (!this.importConfig.mapping.page_count) return null;
+            if (this.importConfig.mapping.page_count.startsWith('$')) return Number(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
+            return Number(element[this.importConfig.mapping.page_count]);
+        } catch (err) {
+            return null;
+        }
     }
     protected getPeerReviewed(element: any): boolean {
-        if (!this.importConfig.mapping.peer_reviewed) return null;
-        if (this.importConfig.mapping.peer_reviewed.startsWith('$')) return Boolean(this.importConfig.mapping.peer_reviewed.slice(1, this.importConfig.mapping.peer_reviewed.length));
-        return element[this.importConfig.mapping.peer_reviewed];
+        try {
+            if (!this.importConfig.mapping.peer_reviewed) return null;
+            if (this.importConfig.mapping.peer_reviewed.startsWith('$')) return Boolean(this.importConfig.mapping.peer_reviewed.slice(1, this.importConfig.mapping.peer_reviewed.length));
+            return Boolean(element[this.importConfig.mapping.peer_reviewed]);
+        } catch (err) {
+            return null;
+        }
     }
 
     getConfigs() {
