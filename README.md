@@ -29,7 +29,7 @@ For some services, extension points are defined where you can inject your custom
 > 
 ### Run backend productively
 We recommend running the backend api on a Linux server using pm2, adapt output-api/output-server-prod.config.js for this case and register it with pm2, running this command to update your application:
-> $ nest build
+> $ npm run build
 
 ### run frontend locally
 > $ npm i
