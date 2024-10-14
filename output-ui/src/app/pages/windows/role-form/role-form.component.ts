@@ -34,7 +34,7 @@ export class RoleFormComponent implements OnInit, AfterViewInit {
           this.form.patchValue(this.role)
           if (this.role.locked_at) {
             this.disable();
-            this._snackBar.open('Kostenart wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
+            this._snackBar.open('Rolle wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
               duration: 5000,
               panelClass: [`warning-snackbar`],
               verticalPosition: 'top'

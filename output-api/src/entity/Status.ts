@@ -1,16 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
-import { Status as IStatus} from "../../../output-interfaces/Publication"
+import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Status as IStatus } from "../../../output-interfaces/Publication";
 
 @Entity()
 export class Status implements IStatus {
 
-    @PrimaryGeneratedColumn()
+    @PrimaryColumn()
     id?: number;
 
     @Column()
     label: string;
 
-    @Column()
+    @Column({ nullable: true})
     description: string;
     
     @Column({ nullable: true, type: 'timestamptz' })

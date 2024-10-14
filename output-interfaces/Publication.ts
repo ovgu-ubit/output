@@ -224,5 +224,6 @@ export interface Language {
 export interface Status {
     id?: number;
     label: string;
-    description: string;
+    description?: string;
+    locked_at?: Date;
 }
