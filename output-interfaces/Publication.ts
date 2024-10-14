@@ -220,3 +220,9 @@ export interface Language {
     id?: number;
     label: string;
 }
+
+export interface Status {
+    id?: number;
+    label: string;
+    description: string;
+}

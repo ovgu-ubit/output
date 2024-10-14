@@ -68,6 +68,9 @@ import { PublicationIdentifier } from "./entity/PublicationIdentifier";
 import { AliasAuthorFirstName } from "./entity/alias/AliasAuthorFirstName";
 import { AliasAuthorLastName } from "./entity/alias/AliasAuthorLastName";
 import { RoleController } from "./controller/RoleController";
+import { Status } from "./entity/Status";
+import { StatusController } from "./controller/StatusController";
+import { StatusService } from "./services/entities/status.service";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -93,14 +96,14 @@ const filterz = appConfig().filter_services;
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
       Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
-      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName])
+      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status])
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
-    PlausibilityController, ExportController, ConfigController, RoleController],
+    PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
     PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
-    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService,
+    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService,
     { provide: AuthorizationService, useClass: appConfig().authorization_service },
