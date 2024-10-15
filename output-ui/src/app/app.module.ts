@@ -81,6 +81,8 @@ import { AliasFormComponent } from './tools/alias-form/alias-form.component';
 import { AuthorshipFormComponent } from './pages/windows/authorship-form/authorship-form.component';
 import { RolesComponent } from './pages/master-data/roles/roles.component';
 import { RoleFormComponent } from './pages/windows/role-form/role-form.component';
+import { StatusesComponent } from './pages/master-data/statuses/statuses.component';
+import { StatusFormComponent } from './pages/windows/status-form/status-form.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -130,7 +132,9 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         AliasFormComponent,
         AuthorshipFormComponent,
         RolesComponent,
-        RoleFormComponent
+        RoleFormComponent,
+        StatusesComponent,
+        StatusFormComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,

@@ -1,0 +1,44 @@
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>Status</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div *ngIf="!this.disabled; else else1">
+            <button mat-icon-button (click)="this.action()" matTooltip="Status speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div>
+</mat-toolbar>
+<mat-dialog-content>
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()">
+        <mat-form-field appearance="fill">
+            <mat-label>Status</mat-label>
+            <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
+            @if (this.form.get('id').errors?.['pattern']) {
+            <mat-error>Der Status muss eine nicht-negative Zahl sein</mat-error>
+            }
+            @if (this.form.get('id').errors?.['required']) {
+            <mat-error>Der Status muss angeben werden</mat-error>
+            }
+            @if (this.form.get('id').errors?.['notUnique']) {
+            <mat-error>Der Status muss eindeutig sein, diese Zahl wird bereits verwendet</mat-error>
+            }
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <input matInput placeholder="Bezeichnung" formControlName="label" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Beschreibung</mat-label>
+            <textarea matInput placeholder="Beschreibung" formControlName="description">
+            </textarea>
+        </mat-form-field>
+    </form>
+</mat-dialog-content>
