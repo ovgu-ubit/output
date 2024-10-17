@@ -409,20 +409,20 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           next: data => {
             if (!Array.isArray(data)) return;
             let id = [data[0].id]
+            this.filter = {
+              filter: {
+                expressions: [
+                  {
+                    op: JoinOperation.AND,
+                    key: 'id',
+                    comp: CompareOperation.EQUALS,
+                    value: id[0]
+                  }
+                ]
+              }
+            }
             this.enrichService.startID('openalex', id).subscribe({
               next: data => {
-                this.filter = {
-                  filter: {
-                    expressions: [
-                      {
-                        op: JoinOperation.AND,
-                        key: 'id',
-                        comp: CompareOperation.EQUALS,
-                        value: id[0]
-                      }
-                    ]
-                  }
-                }
                 this.update(); 
                 this._snackBar.open(`Publikation hinzugefügt, bitte Seite aktualisieren`, 'Super!', {
                   duration: 5000,
@@ -430,9 +430,23 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
                   verticalPosition: 'top'
                 })
                 window.location.reload()
+              }, error: err => {
+                this._snackBar.open(`Publikation konnte nicht angereichert werden`, 'Hmm ok.', {
+                  duration: 5000,
+                  panelClass: [`danger-snackbar`],
+                  verticalPosition: 'top'
+                })
+                console.log(err);
               }
             })
 
+          }, error: err => {
+            this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
+              duration: 5000,
+              panelClass: [`danger-snackbar`],
+              verticalPosition: 'top'
+            })
+            console.log(err);
           }
         });
       }
