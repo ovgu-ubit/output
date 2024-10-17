@@ -401,7 +401,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         });
       }
       else {
-        let pub:Publication = {
+        let pub: Publication = {
           doi: result.doi,
           dataSource: 'Manuell per DOI hinzugefügt'
         }
@@ -411,12 +411,30 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
             let id = [data[0].id]
             this.enrichService.startID('openalex', id).subscribe({
               next: data => {
-                this.update();
-                console.log(id)
+                this.filter = {
+                  filter: {
+                    expressions: [
+                      {
+                        op: JoinOperation.AND,
+                        key: 'id',
+                        comp: CompareOperation.EQUALS,
+                        value: id[0]
+                      }
+                    ]
+                  }
+                }
+                this.update(); 
+                this._snackBar.open(`Publikation hinzugefügt, bitte Seite aktualisieren`, 'Super!', {
+                  duration: 5000,
+                  panelClass: [`success-snackbar`],
+                  verticalPosition: 'top'
+                })
+                window.location.reload()
               }
             })
-            
-          }});
+
+          }
+        });
       }
     });
 
