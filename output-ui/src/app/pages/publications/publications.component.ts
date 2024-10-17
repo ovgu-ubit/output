@@ -400,6 +400,24 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
         });
       }
+      else {
+        let pub:Publication = {
+          doi: result.doi,
+          dataSource: 'Manuell per DOI hinzugefügt'
+        }
+        this.publicationService.insert(pub).subscribe({
+          next: data => {
+            if (!Array.isArray(data)) return;
+            let id = [data[0].id]
+            this.enrichService.startID('openalex', id).subscribe({
+              next: data => {
+                this.update();
+                console.log(id)
+              }
+            })
+            
+          }});
+      }
     });
 
 
