@@ -23,6 +23,7 @@ import { ReportingYearFormComponent } from '../windows/reporting-year-form/repor
 import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 import { ConfigService } from 'src/app/services/config.service';
+import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
 
 @Component({
   selector: 'app-publications',
@@ -325,7 +326,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   addPublication() {
-    let dialogRef = this.dialog.open(PublicationFormComponent, {
+    let dialogRef = this.dialog.open(DoiFormComponent, {
       width: '800px',
       maxHeight: '800px',
       data: {
@@ -333,24 +334,51 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        let pubInit = JSON.parse(JSON.stringify(result));
-        pubInit.authorPublications = [];
-        this.publicationService.insert(pubInit).subscribe({
-          next: data => {
-            if (Array.isArray(data)) data = data[0]
-            result.id = data.id;
-            for (let autPub of result.authorPublications) {
-              autPub.publicationId = data.id;
-            }
-            this.publicationService.save([result]).subscribe({
+      if (!result) return;
+      if (!result.doi) {
+        let dialogRef1 = this.dialog.open(PublicationFormComponent, {
+          width: '800px',
+          maxHeight: '800px',
+          data: {
+          },
+          disableClose: true
+        });
+        dialogRef1.afterClosed().subscribe(result => {
+          if (result) {
+            let pubInit = JSON.parse(JSON.stringify(result));
+            pubInit.authorPublications = [];
+            this.publicationService.insert(pubInit).subscribe({
               next: data => {
-                this._snackBar.open(`Publikation hinzugefügt`, 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
+                if (Array.isArray(data)) data = data[0]
+                result.id = data.id;
+                for (let autPub of result.authorPublications) {
+                  autPub.publicationId = data.id;
+                }
+                this.publicationService.save([result]).subscribe({
+                  next: data => {
+                    this._snackBar.open(`Publikation hinzugefügt`, 'Super!', {
+                      duration: 5000,
+                      panelClass: [`success-snackbar`],
+                      verticalPosition: 'top'
+                    })
+                    this.update()
+                  }, error: err => {
+                    if (err.status === 400) {
+                      this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
+                        duration: 5000,
+                        panelClass: [`danger-snackbar`],
+                        verticalPosition: 'top'
+                      })
+                    } else {
+                      this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
+                        duration: 5000,
+                        panelClass: [`danger-snackbar`],
+                        verticalPosition: 'top'
+                      })
+                      console.log(err);
+                    }
+                  }
                 })
-                this.update()
               }, error: err => {
                 if (err.status === 400) {
                   this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
@@ -368,26 +396,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
                 }
               }
             })
-          }, error: err => {
-            if (err.status === 400) {
-              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
           }
-        })
-      }
 
+        });
+      }
     });
+
+
   }
 
   startEnrich(name: string) {

@@ -15,13 +15,12 @@ export class DoiFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.form = this.formBuilder.group({
-      doi: [''],
-      title: ['']
+      doi: ['']
     })
   }
 
   action() {
-    if (!this.form.get('doi') && !this.form.get('title')) return;
+    if (!this.form.get('doi')) return;
     this.dialogRef.close(this.form.getRawValue())
   }
 
@@ -30,7 +29,7 @@ export class DoiFormComponent implements OnInit {
   }
 
   manual() {
-    this.dialogRef.close({doi:'',title:''})
+    this.dialogRef.close({doi:''})
   }
 }
 

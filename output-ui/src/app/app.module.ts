@@ -87,7 +87,8 @@ import { DoiFormComponent } from './pages/windows/doi-form/doi-form.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
-@NgModule({ declarations: [
+@NgModule({
+    declarations: [
         AppComponent,
         StartComponent,
         PublicationsComponent,
@@ -134,10 +135,9 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         AuthorshipFormComponent,
         RolesComponent,
         RoleFormComponent,
-    DoiFormComponent,
+        DoiFormComponent,
         StatusesComponent,
-        StatusFormComponent,
-    DoiFormComponent
+        StatusFormComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,
@@ -169,11 +169,12 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         HighchartsChartModule,
         NgbModule,
         StoreModule.forRoot({ viewConfigReducer }, { metaReducers }),
-        !environment.production ? StoreDevtoolsModule.instrument({connectInZone: true}) : []], providers: [
-        { provide: MatPaginatorIntl, useClass: MatPaginatorDE },
-        { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
-        { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
-        { provide: AuthorizationService, useClass: environment.authorization_service },
-        provideHttpClient(withInterceptorsFromDi())
-    ] })
+        !environment.production ? StoreDevtoolsModule.instrument({ connectInZone: true }) : []], providers: [
+            { provide: MatPaginatorIntl, useClass: MatPaginatorDE },
+            { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
+            { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
+            { provide: AuthorizationService, useClass: environment.authorization_service },
+            provideHttpClient(withInterceptorsFromDi())
+        ]
+})
 export class AppModule { }
