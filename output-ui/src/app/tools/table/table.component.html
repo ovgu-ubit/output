@@ -5,7 +5,7 @@
 <div class="jumbotron" [hidden]="parent.loading">
   <div class="container-fluid">
 
-    <mat-toolbar color="accent">
+    <mat-toolbar class="secondary-toolbar" style="display: flex;justify-content: space-between;">
       <span>
         <h4 *ngIf="!this.icon">
           <mat-icon>book</mat-icon> {{name}} ({{ data.length }})
@@ -14,7 +14,6 @@
           <mat-icon>{{this.icon}}</mat-icon> {{name}} ({{ data.length }})
         </h4>
       </span>
-      <span class="fill-remaining-space"></span>
 
       <span>
         <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null" style="display:flex; flex-flow: row wrap">
