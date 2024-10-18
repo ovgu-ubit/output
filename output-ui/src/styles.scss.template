@@ -112,22 +112,6 @@ $ovgu-primary-map: _patch-error-palette((
   ),
 ));
 
-
-$my-theme: mat.define-theme((
-  color: (
-    theme-type: light,
-    primary: $ovgu-primary-map,
-    tertiary:  mat.$violet-palette
-  ),
-  typography: (
-    brand-family: 'Roboto',
-    bold-weight: 900
-  ),
-  density: (
-    scale: -1
-  )
-));
-
 $theme: mat.define-theme((
   color: (
     theme-type: light,
