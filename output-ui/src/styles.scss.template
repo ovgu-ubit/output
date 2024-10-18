@@ -132,11 +132,13 @@ $theme: mat.define-theme((
   color: (
     theme-type: light,
     primary: $ovgu-primary-map,
-    tertiary:  mat.$violet-palette
+    tertiary:  mat.$violet-palette,
+    use-system-variables: true,
   ),
   typography: (
     brand-family: 'Roboto',
-    bold-weight: 900
+    bold-weight: 900,
+    use-system-variables: true,
   ),
   density: (
     scale: -1
@@ -152,10 +154,49 @@ html {
 }
 
 .display-large {
-  font-size: var(--sys-display-large);
+  font: var(--sys-display-large)!important;
+}
+.display-medium {
+  font: var(--sys-display-medium)!important;
+}
+.display-small {
+  font: var(--sys-display-small)!important;
+}
+.headline-large {
+  font: var(--sys-headline-large)!important;
+}
+.headline-medium {
+  font: var(--sys-headline-medium)!important;
+}
+.headline-small {
+  font: var(--sys-headline-small)!important;
+}
+.title-large {
+  font: var(--sys-title-large)!important;
+}
+.title-medium {
+  font: var(--sys-title-medium)!important;
+}
+.title-small {
+  font: var(--sys-title-small)!important;
+}
+.body-large {
+  font: var(--sys-body-large)!important;
+}
+.body-medium {
+  font: var(--sys-body-medium)!important;
+}
+.body-small {
+  font: var(--sys-body-small)!important;
+}
+.label-large {
+  font: var(--sys-label-large)!important;
+}
+.label-medium {
+  font: var(--sys-label-medium)!important;
 }
 .label-small{
-  font-size: var(--sys-label-small);
+  font: var(--sys-label-small)!important;
 }
 
 .mat-mdc-snack-bar-container.success-snackbar {
