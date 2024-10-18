@@ -328,7 +328,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   addPublication() {
     let dialogRef = this.dialog.open(DoiFormComponent, {
       width: '800px',
-      maxHeight: '800px',
+      maxHeight: "90%",
       data: {
       },
       disableClose: true

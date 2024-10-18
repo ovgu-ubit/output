@@ -238,3 +238,15 @@ html {
     color: mat.get-theme-color($theme, neutral, 0) !important;
   }
 }
+
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+  max-width: 100% !important;
+}
+
+mat-expansion-panel > * {
+  font-size: var(--sys-body-medium-size)!important;
+}
+
+mat-panel-description {
+  font-weight: lighter; 
+}
