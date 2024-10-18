@@ -250,3 +250,12 @@ mat-expansion-panel > * {
 mat-panel-description {
   font-weight: lighter; 
 }
+
+.primary-button {
+  background-color: mat.get-theme-color($theme, primary, 20) !important;
+  color: mat.get-theme-color($theme, neutral, 90) !important;
+}
+.secondary-button {
+  background-color: mat.get-theme-color($theme, secondary, 60) !important;
+  color: mat.get-theme-color($theme, neutral, 0) !important;
+}

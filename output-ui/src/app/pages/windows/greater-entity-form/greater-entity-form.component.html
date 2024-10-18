@@ -36,8 +36,7 @@
             <input matInput [matDatepicker]="picker" formControlName="doaj_since">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker [startAt]="this.ge?.doaj_since? this.ge.doaj_since : today" startView="year"
-                color="accent"></mat-datepicker>
+            <mat-datepicker #picker [startAt]="this.ge?.doaj_since? this.ge.doaj_since : today" startView="year"></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -47,7 +46,7 @@
             <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
             <mat-datepicker #picker2
                 [startAt]="this.ge?.doaj_until? this.ge.doaj_until : this.ge?.doaj_since? this.ge.doaj_since : today"
-                startView="year" color="accent"></mat-datepicker>
+                startView="year"></mat-datepicker>
         </mat-form-field>
 
         <mat-card>
