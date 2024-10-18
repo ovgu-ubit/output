@@ -86,13 +86,12 @@
 
         <ng-container matColumnDef="select" sticky>
           <th mat-header-cell *matHeaderCellDef style="width: 10px;">
-            <mat-checkbox (change)="$event ? masterToggle() : null" [checked]="isAllSelected()" color="accent">
+            <mat-checkbox (change)="$event ? masterToggle() : null" [checked]="isAllSelected()">
             </mat-checkbox>
           </th>
           <td mat-cell *matCellDef="let row">
             <mat-checkbox style="padding-top: 8px" (click)="$event.stopPropagation()"
-              (change)="this.parent.selection.toggle(row)" [checked]="this.parent.selection.isSelected(row)"
-              color="primary">
+              (change)="this.parent.selection.toggle(row)" [checked]="this.parent.selection.isSelected(row)">
             </mat-checkbox>
           </td>
         </ng-container>

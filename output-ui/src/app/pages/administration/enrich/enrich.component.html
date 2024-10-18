@@ -16,8 +16,8 @@
                 <mat-label>Publikationsjahr</mat-label>
                 <input matInput placeholder="Publikationsjahr" formControlName="reporting_year"/>
             </mat-form-field>
-            <button mat-raised-button type="button" color="accent" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Anreicherung konfigurieren</button>
-            <button mat-raised-button type="submit" color="primary" [disabled]="this.obs$[im.label]">Anreicherung starten</button>
+            <button mat-raised-button type="button" class="secondary-button" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Anreicherung konfigurieren</button>
+            <button mat-raised-button type="submit" class="primary-button" [disabled]="this.obs$[im.label]">Anreicherung starten</button>
         </form>
             
             <div *ngIf="this.obs$[im.label]">{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %</div>
