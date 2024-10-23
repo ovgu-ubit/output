@@ -243,3 +243,6 @@ mat-panel-description {
   background-color: mat.get-theme-color($theme, secondary, 60) !important;
   color: mat.get-theme-color($theme, neutral, 0) !important;
 }
+.mat-mdc-text-field-wrapper {
+  background-color: mat.get-theme-color($theme, secondary, 90)!important;
+}
