@@ -184,23 +184,23 @@ html {
 }
 
 .mat-mdc-snack-bar-container.success-snackbar {
-  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
   --mdc-snackbar-container-color: #d4edda;
   --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
 }
 
 .mat-mdc-snack-bar-container.danger-snackbar {
-  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
   --mdc-snackbar-container-color: #f8d7da;
   --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
 }
 .mat-mdc-snack-bar-container.warning-snackbar {
-  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
   --mdc-snackbar-container-color: #fff3cd;
   --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
 }
 .mat-mdc-snack-bar-container.info-snackbar {
-  --mat-mdc-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
   --mdc-snackbar-container-color: #cce5ff;
   --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
 }
