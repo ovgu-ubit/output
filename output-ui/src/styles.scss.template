@@ -115,12 +115,13 @@ $ovgu-primary-map: _patch-error-palette((
 $theme: mat.define-theme((
   color: (
     theme-type: light,
-    primary: $ovgu-primary-map,
+    primary: mat.$azure-palette,
     tertiary:  mat.$violet-palette,
     use-system-variables: true,
   ),
   typography: (
-    brand-family: 'Roboto',
+    brand-family: 'Barlow',
+    plain-family: 'Barlow',
     bold-weight: 900,
     use-system-variables: true,
   ),
