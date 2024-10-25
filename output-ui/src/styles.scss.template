@@ -138,6 +138,10 @@ html {
   @include mat.system-level-typography($theme);
 }
 
+:export {
+  background-color: var(--sys-background);
+}
+
 .display-large {
   font: var(--sys-display-large)!important;
 }
@@ -236,7 +240,7 @@ mat-expansion-panel > * {
 }
 
 mat-panel-description {
-  font-weight: lighter; 
+  font-weight: 300; 
 }
 
 .primary-button {
