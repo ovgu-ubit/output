@@ -30,6 +30,7 @@ export class StatisticsComponent implements OnInit {
       type: 'column',
       plotBorderWidth: null,
       plotShadow: false,
+      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
     },
     title: {
       text: 'Anzahl Publikationen nach Jahr'
