@@ -212,6 +212,9 @@ html {
   .mat-mdc-button {
     color: mat.get-theme-color($theme, neutral, 90) !important;
   }
+  .mat-mdc-button-disabled {
+    color: mat.get-theme-color($theme, neutral, 50) !important;
+  }
   .mat-mdc-icon-button {
     color: mat.get-theme-color($theme, neutral, 90) !important;
   }
