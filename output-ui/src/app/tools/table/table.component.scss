@@ -35,6 +35,10 @@ th.mat-mdc-header-cell:first-of-type {
   border-bottom: 1px solid mat.get-theme-color(style.$theme, secondary, 90);
   border-top: 1px solid mat.get-theme-color(style.$theme, secondary, 90);
 }
+.mat-mdc-row .mat-mdc-cell {
+    border-bottom: 1px solid mat.get-theme-color(style.$theme, secondary, 90);
+    border-top: 1px solid mat.get-theme-color(style.$theme, secondary, 90);
+  }
 
 .mat-mdc-row:nth-child(odd)>td.mat-mdc-cell {
   background-color: mat.get-theme-color(style.$theme, secondary, 100);
