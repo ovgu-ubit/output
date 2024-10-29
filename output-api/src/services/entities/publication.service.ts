@@ -51,6 +51,7 @@ export class PublicationService {
             .leftJoinAndSelect("authorPublications.institute", "institute")
             .leftJoinAndSelect("publication.invoices", "invoices")
             .leftJoinAndSelect("invoices.cost_items", "cost_items")
+            .leftJoinAndSelect("cost_items.cost_type", "cost_type")
 
         query = this.filter(filter, query);
 
