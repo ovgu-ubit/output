@@ -62,6 +62,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.elsevier.com/content/search/scopus?';
     protected max_res: number = 20;
@@ -206,6 +207,9 @@ export class ScopusImportService extends ApiImportOffsetService {
         }
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 

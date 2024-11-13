@@ -52,6 +52,7 @@ export class Output1ImportService extends ApiImportOffsetService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://service.ub.ovgu.de/output/api/publications_export?';
     //protected url = 'http://localhost:3000/publications_export?';
@@ -189,6 +190,9 @@ export class Output1ImportService extends ApiImportOffsetService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

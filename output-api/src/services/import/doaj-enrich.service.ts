@@ -50,6 +50,7 @@ export class DOAJEnrichService extends AbstractImportService {
         citation: UpdateOptions.IGNORE,
         page_count: UpdateOptions.IGNORE,
         peer_reviewed: UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     public setReportingYear(year: string): void {
@@ -127,6 +128,9 @@ export class DOAJEnrichService extends AbstractImportService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 

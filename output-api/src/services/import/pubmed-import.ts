@@ -83,6 +83,7 @@ export class PubMedImportService extends AbstractImportService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     request(id: number): Observable<any> {
@@ -387,6 +388,9 @@ export class PubMedImportService extends AbstractImportService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

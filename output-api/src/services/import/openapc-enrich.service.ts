@@ -65,6 +65,7 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://olap.openapc.net/cube/openapc/facts';
     protected name = 'OpenAPC';
@@ -148,6 +149,9 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

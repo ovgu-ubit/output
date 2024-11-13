@@ -57,6 +57,7 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://open-access-monitor.de/api/Data/public';
     protected param_string = 'token='+this.configService.get('api_key_oam');
@@ -160,6 +161,9 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

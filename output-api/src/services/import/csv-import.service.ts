@@ -59,6 +59,7 @@ export class CSVImportService extends AbstractImportService {
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     private newPublications: Publication[] = [];
@@ -369,6 +370,15 @@ export class CSVImportService extends AbstractImportService {
             if (!this.importConfig.mapping.peer_reviewed) return null;
             if (this.importConfig.mapping.peer_reviewed.startsWith('$')) return Boolean(this.importConfig.mapping.peer_reviewed.slice(1, this.importConfig.mapping.peer_reviewed.length));
             return Boolean(element[this.importConfig.mapping.peer_reviewed]);
+        } catch (err) {
+            return null;
+        }
+    }
+    protected getCostApproach(element: any): number {
+        try {
+            if (!this.importConfig.mapping.cost_approach) return null;
+            if (this.importConfig.mapping.cost_approach.startsWith('$')) return Number(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
+            return Number(element[this.importConfig.mapping.cost_approach]);
         } catch (err) {
             return null;
         }

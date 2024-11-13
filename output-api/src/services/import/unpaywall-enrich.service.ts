@@ -57,6 +57,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.unpaywall.org/v2/';
     protected param_string = 'email='+this.configService.get('api_key_unpaywall');
@@ -135,6 +136,9 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 

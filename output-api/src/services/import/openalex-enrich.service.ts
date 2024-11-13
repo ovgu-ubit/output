@@ -65,6 +65,7 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
         citation :UpdateOptions.REPLACE_IF_EMPTY,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.openalex.org/works/doi:';
     protected name = 'OpenAlex';
@@ -216,6 +217,9 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
         } catch (e) {return null;}
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

@@ -69,6 +69,7 @@ export abstract class AbstractImportService {
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     public getUpdateMapping() {
@@ -193,6 +194,11 @@ export abstract class AbstractImportService {
      * @param element 
      */
     protected abstract getPeerReviewed(element: any): boolean;
+    /**
+     * retrieves the cost approach number of an element
+     * @param element 
+     */
+    protected abstract getCostApproach(element: any): number;
 
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
@@ -298,7 +304,8 @@ export abstract class AbstractImportService {
             page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
             status,
-            add_info: remark
+            add_info: remark,
+            cost_approach: this.getCostApproach(item),
         };
         //process publication date in case it is a complex object, dates are assigned to the publication
         if (pub_date instanceof Date) obj.pub_date = pub_date;
@@ -734,6 +741,28 @@ export abstract class AbstractImportService {
                     if (orig.peer_reviewed) fields.push('peer_reviewed')
                     break;
             }
+        }
+
+        switch (this.updateMapping.cost_approach) {
+            case UpdateOptions.IGNORE:
+                break;
+            case UpdateOptions.APPEND:
+                let text = this.getCostApproach(element);
+                if (text) {
+                    orig.cost_approach += text;
+                    fields.push('cost_approach')
+                }
+                break;
+            case UpdateOptions.REPLACE_IF_EMPTY:
+                if (!orig.cost_approach) {
+                    orig.cost_approach = this.getCostApproach(element);
+                    if (orig.cost_approach) fields.push('cost_approach')
+                }
+                break;
+            case UpdateOptions.REPLACE:
+                orig.cost_approach = this.getCostApproach(element);
+                if (orig.cost_approach) fields.push('titcost_approachle')
+                break;
         }
         let res = this.finalize(orig, element);
         orig = res.pub;

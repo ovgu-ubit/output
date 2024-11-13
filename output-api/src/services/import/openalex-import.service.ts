@@ -64,6 +64,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         citation: UpdateOptions.REPLACE_IF_EMPTY,
         page_count: UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed: UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.openalex.org/works?';
     protected max_res: number = 1;
@@ -228,6 +229,9 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         } catch (e) { return null; }
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

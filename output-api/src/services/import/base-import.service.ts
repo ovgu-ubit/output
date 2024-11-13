@@ -61,6 +61,7 @@ export class BASEImportService extends ApiImportOffsetService {
         citation: UpdateOptions.IGNORE,
         page_count: UpdateOptions.IGNORE,
         peer_reviewed: UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     //e.g.https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi?func=PerformSearch&format=json&query=(guericke)
     protected url = 'https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi?';
@@ -198,6 +199,9 @@ export class BASEImportService extends ApiImportOffsetService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

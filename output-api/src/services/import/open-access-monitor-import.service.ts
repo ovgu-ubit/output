@@ -58,6 +58,7 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://open-access-monitor.de/api/Data/public?';
     protected max_res: number = 100;
@@ -174,6 +175,9 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 }

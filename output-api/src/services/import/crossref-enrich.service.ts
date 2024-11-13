@@ -58,6 +58,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.crossref.org/works/';
     protected param_string = '';
@@ -213,6 +214,9 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         if (element['page'] && element['page'].split('-').length === 2) return Number(element['page'].split('-')[1])-Number(element['page'].split('-')[0])+1
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 
