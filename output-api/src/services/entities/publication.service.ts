@@ -10,6 +10,7 @@ import { CostItem } from '../../entity/CostItem';
 import { Institute } from '../../entity/Institute';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../entity/Publication';
+import { PublicationIdentifier } from '../../entity/PublicationIdentifier';
 import { Role } from '../../entity/Role';
 
 @Injectable()
@@ -25,6 +26,7 @@ export class PublicationService {
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
+        @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         private configService: ConfigService) { }
 
     public save(pub: Publication[]) {
@@ -175,13 +177,16 @@ export class PublicationService {
 
     public async delete(pubs: Publication[], soft?: boolean) {
         for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } }, withDeleted: true });
+            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } , identifiers: true}, withDeleted: true });
             for (let autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
             if (pubE.invoices) for (let inv of pubE.invoices) {
                 if (inv.cost_items) for (let ci of inv.cost_items) await this.costItemRepository.delete(ci.id);
                 await this.invoiceRepository.delete(inv.id);
+            }
+            if (pubE.identifiers) for (let id of pubE.identifiers) {
+                await this.idRepository.delete(id.id);
             }
         }
         if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));

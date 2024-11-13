@@ -99,12 +99,14 @@ export class CSVImportService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
+        let delimiter = this.importConfig.delimiter.includes("\\t") ? "\t" : this.importConfig.delimiter;
+
         await Papa.parse(this.file.buffer.toString(), {
             encoding: this.importConfig.encoding,
             header: this.importConfig.header,
             quotes: this.importConfig.quotes,
             quoteChar: this.importConfig.quoteChar,
-            delimiter: this.importConfig.delimiter,
+            delimiter,
             skipEmptyLines: true,
             complete: async (result, file) => {
                 this.numberOfPublications = result.data.length;
@@ -174,7 +176,7 @@ export class CSVImportService extends AbstractImportService {
         if (data.length === 0) return true;
         for (let field in format.mapping) {
             if (format.mapping[field] && !format.mapping[field].toString().startsWith('$') && typeof format.mapping[field] !== 'boolean' && typeof data[0][format.mapping[field]] === 'undefined') {
-                //console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
+                console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
                 return false;
             }
         }
@@ -202,8 +204,16 @@ export class CSVImportService extends AbstractImportService {
         let authors = string.split(this.importConfig.split_authors)
         let res = [];
         for (let author of authors) {
+            console.log(author.split(' ', 2))
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
-            else res.push({ first_name: author.split(' ', 2)[0], last_name: author.split(' ', 2)[1] });
+            else {
+                let split = author.split(' ');
+                if (split.length === 2) res.push({ first_name: split[0], last_name: split[1] });
+                else if (split.length > 2) {
+                    //TODO what to do
+                }
+                else res.push({ first_name: '', last_name: split[0] });
+            }
         }
         return res;
     }
@@ -233,12 +243,39 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.publisher.startsWith('$')) return { label: this.importConfig.mapping.publisher.slice(1, this.importConfig.mapping.publisher.length) };
         return { label: element[this.importConfig.mapping.publisher] };
     }
-    protected getPubDate(element: any): Date {
+    protected getPubDate(element: any): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date } {
         try {
-            if (!this.importConfig.mapping.pub_date) return null;
-            let datestring = this.importConfig.mapping.pub_date.startsWith('$') ? this.importConfig.mapping.pub_date.slice(1, this.importConfig.mapping.pub_date.length) : element[this.importConfig.mapping.pub_date];
-            let mom = moment.utc(datestring, this.importConfig.date_format);
-            return mom.toDate();
+            let datestring, mom, pub_date, pub_date_print, pub_date_accepted, pub_date_submitted;
+            if (this.importConfig.mapping.pub_date_submitted) {
+                datestring = this.importConfig.mapping.pub_date_submitted.startsWith('$') ? this.importConfig.mapping.pub_date_submitted.slice(1, this.importConfig.mapping.pub_date_submitted.length) : element[this.importConfig.mapping.pub_date_submitted];
+                mom = moment.utc(datestring, this.importConfig.date_format);
+                pub_date_submitted = mom;
+            }
+
+            if (this.importConfig.mapping.pub_date_accepted) {
+                datestring = this.importConfig.mapping.pub_date_accepted.startsWith('$') ? this.importConfig.mapping.pub_date_accepted.slice(1, this.importConfig.mapping.pub_date_accepted.length) : element[this.importConfig.mapping.pub_date_accepted];
+                mom = moment.utc(datestring, this.importConfig.date_format);
+                pub_date_accepted = mom;
+            }
+
+            if (this.importConfig.mapping.pub_date_print) {
+                datestring = this.importConfig.mapping.pub_date_print.startsWith('$') ? this.importConfig.mapping.pub_date_print.slice(1, this.importConfig.mapping.pub_date_print.length) : element[this.importConfig.mapping.pub_date_print];
+                mom = moment.utc(datestring, this.importConfig.date_format);
+                pub_date_print = mom;
+            }
+
+            if (this.importConfig.mapping.pub_date) {
+                datestring = this.importConfig.mapping.pub_date.startsWith('$') ? this.importConfig.mapping.pub_date.slice(1, this.importConfig.mapping.pub_date.length) : element[this.importConfig.mapping.pub_date];
+                mom = moment.utc(datestring, this.importConfig.date_format);
+                pub_date = mom.toDate();
+            }
+
+            return {
+                pub_date,
+                pub_date_print,
+                pub_date_accepted,
+                pub_date_submitted
+            }
         } catch (err) {
             return null;
         }
@@ -282,14 +319,14 @@ export class CSVImportService extends AbstractImportService {
         if (!this.importConfig.mapping.invoice) return null;
         if (this.importConfig.mapping.invoice.startsWith('$')) return [{
             cost_items: [{
-                price: Number(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
+                price: this.parseNumber(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
                 currency: 'EUR',
                 cost_type: null
             }]
         }];
         return [{
             cost_items: [{
-                price: Number(element[this.importConfig.mapping.invoice]),
+                price: this.parseNumber(element[this.importConfig.mapping.invoice]),
                 currency: 'EUR',
                 cost_type: null
             }]
@@ -298,8 +335,8 @@ export class CSVImportService extends AbstractImportService {
     protected getStatus(element: any): number {
         try {
             if (!this.importConfig.mapping.status) return null;
-            if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
-            return Number(element[this.importConfig.mapping.status]);
+            if (this.importConfig.mapping.status.startsWith('$')) return this.parseNumber(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
+            return this.parseNumber(element[this.importConfig.mapping.status]);
         } catch (err) {
             return null;
         }
@@ -359,8 +396,8 @@ export class CSVImportService extends AbstractImportService {
     protected getPageCount(element: any): number {
         try {
             if (!this.importConfig.mapping.page_count) return null;
-            if (this.importConfig.mapping.page_count.startsWith('$')) return Number(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
-            return Number(element[this.importConfig.mapping.page_count]);
+            if (this.importConfig.mapping.page_count.startsWith('$')) return this.parseNumber(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
+            return this.parseNumber(element[this.importConfig.mapping.page_count]);
         } catch (err) {
             return null;
         }
@@ -377,8 +414,9 @@ export class CSVImportService extends AbstractImportService {
     protected getCostApproach(element: any): number {
         try {
             if (!this.importConfig.mapping.cost_approach) return null;
-            if (this.importConfig.mapping.cost_approach.startsWith('$')) return Number(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
-            return Number(element[this.importConfig.mapping.cost_approach]);
+            if (this.importConfig.mapping.cost_approach.startsWith('$')) return this.parseNumber(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
+            let e = element[this.importConfig.mapping.cost_approach];
+            return this.parseNumber(e);
         } catch (err) {
             return null;
         }
@@ -399,6 +437,10 @@ export class CSVImportService extends AbstractImportService {
         let configs = JSON.parse(this.getConfigs()) as CSVMapping[];
         configs = configs.filter(e => e.name !== name);
         return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
+    }
+
+    parseNumber(toParse: string) : number {
+        return Number(toParse);
     }
 
 }

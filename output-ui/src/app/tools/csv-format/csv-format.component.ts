@@ -62,6 +62,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       article_number: '',
       page_count: '',
       peer_reviewed: '',
+      cost_approach: '',
     }
   }
   kill = new Subject();
@@ -128,6 +129,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
         publisher_location: [''],
         edition: [''],
         article_number: [''],
+        cost_approach: [''],
       })
     })
     this.form.patchValue(this.format)

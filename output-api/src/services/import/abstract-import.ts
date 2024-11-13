@@ -284,6 +284,9 @@ export abstract class AbstractImportService {
         let status = this.getStatus(item);
         if (!status) status = 0;
 
+        let ca = this.getCostApproach(item);
+        let cost_approach = Number.isNaN(ca)? undefined : ca;
+
         //construct publication object to save
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
@@ -305,7 +308,7 @@ export abstract class AbstractImportService {
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
             status,
             add_info: remark,
-            cost_approach: this.getCostApproach(item),
+            cost_approach,
         };
         //process publication date in case it is a complex object, dates are assigned to the publication
         if (pub_date instanceof Date) obj.pub_date = pub_date;
@@ -748,20 +751,22 @@ export abstract class AbstractImportService {
                 break;
             case UpdateOptions.APPEND:
                 let text = this.getCostApproach(element);
-                if (text) {
+                if (text && !Number.isNaN(text)) {
                     orig.cost_approach += text;
                     fields.push('cost_approach')
                 }
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY:
                 if (!orig.cost_approach) {
-                    orig.cost_approach = this.getCostApproach(element);
+                    let ca = this.getCostApproach(element);
+                    orig.cost_approach = Number.isNaN(ca)? undefined : ca;
                     if (orig.cost_approach) fields.push('cost_approach')
                 }
                 break;
             case UpdateOptions.REPLACE:
-                orig.cost_approach = this.getCostApproach(element);
-                if (orig.cost_approach) fields.push('titcost_approachle')
+                let ca = this.getCostApproach(element);
+                orig.cost_approach = Number.isNaN(ca)? undefined : ca;
+                if (orig.cost_approach) fields.push('cost_approach')
                 break;
         }
         let res = this.finalize(orig, element);
