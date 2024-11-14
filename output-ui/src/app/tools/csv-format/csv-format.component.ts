@@ -31,6 +31,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
     id_ge_type: '',
     last_name_first: false,
     split_authors: '',
+    deal_flat_fee: false,
     mapping: {
       author_inst: '',
       authors: '',
@@ -62,7 +63,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       article_number: '',
       page_count: '',
       peer_reviewed: '',
-      cost_approach: '',
+      cost_approach: ''
     }
   }
   kill = new Subject();
@@ -98,6 +99,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       id_ge_type: [''],
       last_name_first: [''],
       split_authors: [''],
+      deal_flat_fee: [''],
       mapping: this.formBuilder.group({
         author_inst: [''],
         authors: [''],

@@ -28,7 +28,6 @@ import { Publisher } from "./entity/Publisher";
 import { AuthorService } from "./services/entities/author.service";
 import { AppConfigService } from "./services/app-config.service";
 import { ContractService } from "./services/entities/contract.service";
-import { CostTypeService } from "./services/entities/cost-type.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { FunderService } from "./services/entities/funder.service";
 import { GreaterEntityService } from "./services/entities/greater-entitiy.service";
@@ -103,7 +102,7 @@ const filterz = appConfig().filter_services;
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
     PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
-    OACategoryService, ContractService, CostTypeService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
+    OACategoryService, ContractService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService,
     { provide: AuthorizationService, useClass: appConfig().authorization_service },

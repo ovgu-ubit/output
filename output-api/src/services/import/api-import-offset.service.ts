@@ -1,22 +1,22 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { concatWith, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
+import { Observable, concatWith, map, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import { Publication } from '../../entity/Publication';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
-import { CostTypeService } from '../entities/cost-type.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { InvoiceService } from '../entities/invoice.service';
+import { LanguageService } from '../entities/language.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
+import { RoleService } from '../entities/role.service';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
-import { InstitutionService } from '../entities/institution.service';
-import { LanguageService } from '../entities/language.service';
-import { ConfigService } from '@nestjs/config';
-import { RoleService } from '../entities/role.service';
 
 @Injectable()
 /**
@@ -27,9 +27,9 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
     }
 
     private newPublications: Publication[] = [];

@@ -1,29 +1,28 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Author } from '../../entity/Author';
 import { Funder } from '../../entity/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
-import { Identifier } from '../../entity/Identifier';
+import { Institute } from '../../entity/Institute';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../entity/Publication';
+import { Publisher } from '../../entity/Publisher';
+import { Role } from '../../entity/Role';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
-import { CostTypeService } from '../entities/cost-type.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { InvoiceService } from '../entities/invoice.service';
+import { LanguageService } from '../entities/language.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
-import { ReportItemService } from '../report-item.service';
-import { Institute } from '../../entity/Institute';
-import { InstitutionService } from '../entities/institution.service';
-import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { LanguageService } from '../entities/language.service';
-import { Publisher } from '../../entity/Publisher';
-import { ConfigService } from '@nestjs/config';
-import { Role } from '../../entity/Role';
 import { RoleService } from '../entities/role.service';
+import { ReportItemService } from '../report-item.service';
 
 @Injectable()
 /**
@@ -33,9 +32,9 @@ export abstract class AbstractImportService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
-        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService, protected costTypeService: CostTypeService,
+        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService,
-        protected configService: ConfigService) { }
+        protected invoiceService: InvoiceService, protected configService: ConfigService) { }
 
     protected progress = 0;
     protected status_text = 'initialized';
@@ -168,7 +167,10 @@ export abstract class AbstractImportService {
      * retrieves the invoice information of an element
      * @param element 
      */
-    protected abstract getInvoiceInformation(element: any): Invoice[];
+    protected abstract getInvoiceInformation(element: any): {
+        number?: string, date?: Date, booking_date?: Date, booking_amount?: number, cost_center?: string,
+        cost_items: { euro_value?: number, vat?: number, orig_value?: number, orig_currency?: string, cost_type?: string }[]
+    }[];
     /**
      * retrieves the status number of an element
      * @param element 
@@ -270,12 +272,23 @@ export abstract class AbstractImportService {
         let contract = await firstValueFrom(this.contractService.findOrSave(this.getContract(item)));
         //get invoice information
         let inv_info = this.getInvoiceInformation(item);
-        //import of cost items is currently deactivated
-        /*let cost_items = [];
-        if (inv_info) for (let inv_info_elem of inv_info) {
-            if (inv_info_elem.currency === 'EUR') cost_items.push({ euro_value: inv_info_elem.price, orig_value: inv_info_elem.price, orig_currency: inv_info_elem.currency, cost_type: await firstValueFrom(this.costTypeService.findOrSave(inv_info_elem.cost_type)) })
-            else cost_items.push({ orig_value: inv_info_elem.price, orig_currency: inv_info_elem.currency, cost_type: await firstValueFrom(this.costTypeService.findOrSave(inv_info_elem.cost_type)) })
-        }*/
+        //import of invoices
+        let invoices: Invoice[] = [];
+        for (let inv of inv_info) {
+            let cost_items = [];
+            for (let ci of inv.cost_items) {
+                cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, orig_currency: ci.orig_currency, vat: ci.vat, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type)) })
+            }
+            let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center))
+            invoices.push({
+                number: inv.number,
+                booking_amount: inv.booking_amount,
+                booking_date: inv.booking_date,
+                cost_center,
+                cost_items,
+                date: inv.date,
+            })
+        }
         //identify language
         let language = await this.languageService.findOrSave(this.getLanguage(item));
         //identify publication date(s)
@@ -285,7 +298,7 @@ export abstract class AbstractImportService {
         if (!status) status = 0;
 
         let ca = this.getCostApproach(item);
-        let cost_approach = Number.isNaN(ca)? undefined : ca;
+        let cost_approach = Number.isNaN(ca) ? undefined : ca;
 
         //construct publication object to save
         let obj: Publication = {
@@ -302,7 +315,7 @@ export abstract class AbstractImportService {
             dataSource: this.name.trim(),
             funders: funder_ents,
             best_oa_license: this.getLicense(item)?.trim(),
-            invoices: inv_info,
+            invoices,
             abstract: this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
             page_count: this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
             peer_reviewed: this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
@@ -621,19 +634,71 @@ export abstract class AbstractImportService {
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
                 if (!orig.invoices || orig.invoices.length === 0) {
                     let inv_info = this.getInvoiceInformation(element);
-                    orig.invoices = inv_info;
+                    //import of invoices
+                    let invoices: Invoice[] = [];
+                    for (let inv of inv_info) {
+                        let cost_items = [];
+                        for (let ci of inv.cost_items) {
+                            cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type)) })
+                        }
+                        let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center))
+                        invoices.push({
+                            number: inv.number,
+                            booking_amount: inv.booking_amount,
+                            booking_date: inv.booking_date,
+                            cost_center,
+                            cost_items,
+                            date: inv.date,
+                        })
+                    }
+                    orig.invoices = invoices;
                     if (inv_info && inv_info.length > 0) fields.push('invoice')
                 }
                 break;
             case UpdateOptions.APPEND:
                 if (!orig.invoices) orig.invoices = [];
                 let inv_info1 = this.getInvoiceInformation(element);
-                orig.invoices = orig.invoices.concat(inv_info1);
-                if (inv_info1 && inv_info1.length > 0) fields.push('invoice')
+                //import of invoices
+                let invoices1 = [];
+                for (let inv of inv_info1) {
+                    let cost_items = [];
+                    for (let ci of inv.cost_items) {
+                        if (ci.cost_type.includes('DEAL Servicepauschale') && orig.invoices?.find(e => e.cost_items?.find(f => f.cost_type?.label.includes('DEAL Servicepauschale')))) continue;
+                        cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type)) })
+                    }
+                    let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center))
+                    if (cost_items.length > 0) invoices1.push({
+                        number: inv.number,
+                        booking_amount: inv.booking_amount,
+                        booking_date: inv.booking_date,
+                        cost_center,
+                        cost_items,
+                        date: inv.date,
+                    })
+                }
+                orig.invoices = orig.invoices.concat(invoices1);
+                if (invoices1 && invoices1.length > 0) fields.push('invoice')
                 break;
             case UpdateOptions.REPLACE:
-                let inv_info = this.getInvoiceInformation(element);
-                if (inv_info) orig.invoices = inv_info; else orig.invoices = [];
+                let inv_info2 = this.getInvoiceInformation(element);
+                //import of invoices
+                let invoices2 = [];
+                for (let inv of inv_info2) {
+                    let cost_items = [];
+                    for (let ci of inv.cost_items) {
+                        cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type)) })
+                    }
+                    let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center))
+                    invoices2.push({
+                        number: inv.number,
+                        booking_amount: inv.booking_amount,
+                        booking_date: inv.booking_date,
+                        cost_center,
+                        cost_items,
+                        date: inv.date,
+                    })
+                }
+                if (inv_info2) orig.invoices = invoices2; else orig.invoices = [];
                 fields.push('invoice')
                 break;
         }
@@ -759,13 +824,13 @@ export abstract class AbstractImportService {
             case UpdateOptions.REPLACE_IF_EMPTY:
                 if (!orig.cost_approach) {
                     let ca = this.getCostApproach(element);
-                    orig.cost_approach = Number.isNaN(ca)? undefined : ca;
+                    orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
                     if (orig.cost_approach) fields.push('cost_approach')
                 }
                 break;
             case UpdateOptions.REPLACE:
                 let ca = this.getCostApproach(element);
-                orig.cost_approach = Number.isNaN(ca)? undefined : ca;
+                orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
                 if (orig.cost_approach) fields.push('cost_approach')
                 break;
         }

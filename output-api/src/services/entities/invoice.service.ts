@@ -68,6 +68,20 @@ export class InvoiceService {
         return this.ctRepository.delete(cts.map(p => p.id));
     }
 
+    public findOrSaveCT(title: string): Observable<CostType> {        
+        if (!title) return of(null);
+        return from(this.ctRepository.findOne({ where: { label: ILike(title) } })).pipe(concatMap(ge => {
+            return iif(() => !!ge, of(ge), defer(() => from(this.ctRepository.save({label: title}))));
+        }));
+    }
+
+    public findOrSaveCC(title: string): Observable<CostCenter> {        
+        if (!title) return of(null);
+        return from(this.ccRepository.findOne({ where: [{ label: ILike(title) }, { number: ILike(title)}] })).pipe(concatMap(ge => {
+            return iif(() => !!ge, of(ge), defer(() => from(this.ccRepository.save({label: title}))));
+        }));
+    }
+
     public getCostCenters() {
         return this.ccRepository.find();
     }

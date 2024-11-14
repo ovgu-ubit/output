@@ -1,28 +1,28 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import * as moment from 'moment';
+import * as Papa from 'papaparse';
+import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Identifier } from '../../entity/Identifier';
 import { Publication } from '../../entity/Publication';
+import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { InvoiceService } from '../entities/invoice.service';
+import { LanguageService } from '../entities/language.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
-import { AbstractImportService } from './abstract-import';
-import * as Papa from 'papaparse';
-import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import * as moment from 'moment';
-import { CostTypeService } from '../entities/cost-type.service';
-import { ReportItemService } from '../report-item.service';
-import { InstitutionService } from '../entities/institution.service';
-import * as fs from 'fs';
-import { ConfigService } from '@nestjs/config';
-import { LanguageService } from '../entities/language.service';
-import { Publisher } from '../../entity/Publisher';
-import { GreaterEntity } from '../../entity/GreaterEntity';
 import { RoleService } from '../entities/role.service';
+import { ReportItemService } from '../report-item.service';
+import { AbstractImportService } from './abstract-import';
 
 @Injectable()
 /**
@@ -33,9 +33,9 @@ export class CSVImportService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -315,21 +315,37 @@ export class CSVImportService extends AbstractImportService {
         return element[this.importConfig.mapping.license];
     }
     protected getInvoiceInformation(element: any) {
-        if (!this.importConfig.mapping.invoice) return null;
-        if (this.importConfig.mapping.invoice.startsWith('$')) return [{
+        let res:any[] = [];
+        if (this.importConfig.mapping.invoice && this.importConfig.mapping.invoice.startsWith('$')) res = [{
             cost_items: [{
-                price: this.parseNumber(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
-                currency: 'EUR',
+                euro_value: this.parseNumber(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
                 cost_type: null
             }]
         }];
-        return [{
-            cost_items: [{
-                price: this.parseNumber(element[this.importConfig.mapping.invoice]),
-                currency: 'EUR',
-                cost_type: null
+        else if (this.importConfig.mapping.invoice) {
+            res = [{
+                cost_items: [{
+                    euro_value: this.parseNumber(element[this.importConfig.mapping.invoice]),
+                    cost_type: null
+                }]
             }]
-        }]
+        } if (this.importConfig.deal_flat_fee) {
+            if (!res) res = [{
+                cost_items: [{
+                    euro_value: 100,
+                    vat: 7,
+                    cost_type: 'DEAL Servicepauschale'
+                }]
+            }]
+            else res.push({
+                cost_items: [{
+                    euro_value: 100,
+                    vat: 7,
+                    cost_type: 'DEAL Servicepauschale'
+                }]
+            })
+        }
+        return res;
     }
     protected getStatus(element: any): number {
         try {
@@ -438,11 +454,11 @@ export class CSVImportService extends AbstractImportService {
         return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
     }
 
-    parseNumber(toParse: string) : number {
-        let german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+)(,[0-9]{1,2})?$","g");
+    parseNumber(toParse: string): number {
+        let german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+)(,[0-9]{1,2})?$", "g");
         let parse = german.exec(toParse);
         if (parse && parse.length > 0) {
-            toParse = parse[0].replace(/\./g,"").replace(/,/g,".");
+            toParse = parse[0].replace(/\./g, "").replace(/,/g, ".");
         }
         return Number(toParse);
     }
