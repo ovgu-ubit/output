@@ -439,7 +439,7 @@ export class CSVImportService extends AbstractImportService {
     }
 
     parseNumber(toParse: string) : number {
-        let german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+),?[0-9]{0,2}$","g");
+        let german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+)(,[0-9]{1,2})?$","g");
         let parse = german.exec(toParse);
         if (parse && parse.length > 0) {
             toParse = parse[0].replace(/\./g,"").replace(/,/g,".");
