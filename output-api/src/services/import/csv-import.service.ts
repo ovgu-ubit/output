@@ -204,13 +204,12 @@ export class CSVImportService extends AbstractImportService {
         let authors = string.split(this.importConfig.split_authors)
         let res = [];
         for (let author of authors) {
-            console.log(author.split(' ', 2))
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
             else {
                 let split = author.split(' ');
                 if (split.length === 2) res.push({ first_name: split[0], last_name: split[1] });
                 else if (split.length > 2) {
-                    //TODO what to do
+                    continue;
                 }
                 else res.push({ first_name: '', last_name: split[0] });
             }

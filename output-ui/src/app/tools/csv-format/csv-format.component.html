@@ -1,4 +1,16 @@
-<div style="margin:8px;">
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1 mat-dialog-title style="color:white">CSV-Format</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <button mat-icon-button (click)="this.delete()" matTooltip="Ausgewähltes Format löschen" [matTooltipShowDelay]="800">
+            <mat-icon>delete</mat-icon>
+        </button>
+            <button mat-icon-button (click)="this.action()" matTooltip="Format auswählen und speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+    </div>
+</mat-toolbar>
+<mat-dialog-content>
     <div style="display: flex;justify-content: space-evenly;">
         <mat-form-field appearance="fill">
             <mat-label>Format auswählen</mat-label>
@@ -167,13 +179,5 @@
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="article_number" />
             </mat-form-field>
         </div>
-
-
-        <button mat-raised-button type="submit" color="primary" class="btn-primary">Format auswählen &
-            speichern</button>&nbsp;
-        <button mat-raised-button type="button" color="warn" class="btn-primary" (click)="this.delete()">Ausgewähltes
-            Format löschen</button>&nbsp;
-        <button mat-raised-button type="button" color="accent" class="btn-primary"
-            (click)="this.abort()">Abbrechen</button>
     </form>
-</div>
+</mat-dialog-content>
