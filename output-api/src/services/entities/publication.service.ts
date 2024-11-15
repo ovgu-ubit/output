@@ -15,7 +15,7 @@ import { Role } from '../../entity/Role';
 
 @Injectable()
 export class PublicationService {
-    doi_regex = new RegExp('^10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+$', 'i');
+    doi_regex = new RegExp('10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+', 'i');
 
     funder = false;
     author = false;

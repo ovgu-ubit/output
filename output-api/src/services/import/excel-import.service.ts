@@ -106,72 +106,51 @@ export class ExcelImportService extends AbstractImportService {
         this.numberOfPublications = data.length;
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
-        if (this.checkFormat(data, this.importConfig)) {
-            try {
-                if (!data) return;
-                for (let pub of data) {
-                    let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
-                    if (!flag) {
-                        let pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
-                        if (pubNew) {
-                            this.newPublications.push(pubNew);
-                            this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
-                        }
-                    } else if (update) {
-                        let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
-                        if (orig.locked) continue;
-                        let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                            this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
-                            return null;
-                        })
-                        if (pubUpd?.pub) {
-                            this.publicationsUpdate.push(pubUpd.pub);
-                            this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
-                        }
+
+        try {
+            if (!data) return;
+            for (let pub of data) {
+                let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                if (!flag) {
+                    let pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                    if (pubNew) {
+                        this.newPublications.push(pubNew);
+                        this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                     }
-                    // Update Progress Value
-                    this.processedPublications++;
-                    if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+                } else if (update) {
+                    let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                    if (orig.locked) continue;
+                    let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                        this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                        return null;
+                    })
+                    if (pubUpd?.pub) {
+                        this.publicationsUpdate.push(pubUpd.pub);
+                        this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                    }
                 }
-                //finalize
-                this.progress = 0;
-                this.reportService.finish(this.report, {
-                    status: 'Successfull import on ' + new Date(),
-                    count_import: this.newPublications.length,
-                    count_update: this.publicationsUpdate.length
-                })
-                this.status_text = 'Successfull import on ' + new Date();
-            } catch (err) {
-                this.progress = 0;
-                this.status_text = 'Error while importing on ' + new Date();
-                console.log(err.stack);
-                this.reportService.finish(this.report, {
-                    status: 'Error while importing on ' + new Date(),
-                    count_import: this.newPublications.length,
-                    count_update: this.publicationsUpdate.length
-                })
+                // Update Progress Value
+                this.processedPublications++;
+                if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
             }
-        } else {
+            //finalize
+            this.progress = 0;
+            this.reportService.finish(this.report, {
+                status: 'Successfull import on ' + new Date(),
+                count_import: this.newPublications.length,
+                count_update: this.publicationsUpdate.length
+            })
+            this.status_text = 'Successfull import on ' + new Date();
+        } catch (err) {
             this.progress = 0;
             this.status_text = 'Error while importing on ' + new Date();
-            //console.log(this.file.filename + ' does not match the expected format.');
+            console.log(err.stack);
             this.reportService.finish(this.report, {
-                status: 'Error while importing on ' + new Date() + ': ' + this.file.filename + ' does not match the expected format.',
+                status: 'Error while importing on ' + new Date(),
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length
             })
         }
-    }
-
-    checkFormat(data: any[], format: CSVMapping): boolean {
-        if (data.length === 0) return true;
-        for (let field in format.mapping) {
-            if (format.mapping[field] && !format.mapping[field].toString().startsWith('$') && typeof format.mapping[field] !== 'boolean' && typeof data[0][format.mapping[field]] === 'undefined') {
-                console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
-                return false;
-            }
-        }
-        return true;
     }
 
     protected getDOI(element: any): string {
@@ -188,11 +167,12 @@ export class ExcelImportService extends AbstractImportService {
         return true;
     }
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; }[] {
-        if (!this.importConfig.mapping.author_inst || !this.importConfig.split_authors) return null;
+        if (!this.importConfig.mapping.author_inst) return null;
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
-        let authors = string.split(this.importConfig.split_authors)
+        let split = this.importConfig.split_authors? this.importConfig.split_authors : undefined;
+        let authors = string.split(split)
         let res = [];
         for (let author of authors) {
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
@@ -238,26 +218,34 @@ export class ExcelImportService extends AbstractImportService {
             let datestring, mom, pub_date, pub_date_print, pub_date_accepted, pub_date_submitted;
             if (this.importConfig.mapping.pub_date_submitted) {
                 datestring = this.importConfig.mapping.pub_date_submitted.startsWith('$') ? this.importConfig.mapping.pub_date_submitted.slice(1, this.importConfig.mapping.pub_date_submitted.length) : element[this.importConfig.mapping.pub_date_submitted];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_submitted = mom;
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date_submitted = mom;
+                }
             }
 
             if (this.importConfig.mapping.pub_date_accepted) {
                 datestring = this.importConfig.mapping.pub_date_accepted.startsWith('$') ? this.importConfig.mapping.pub_date_accepted.slice(1, this.importConfig.mapping.pub_date_accepted.length) : element[this.importConfig.mapping.pub_date_accepted];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_accepted = mom;
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date_accepted = mom;
+                }
             }
 
             if (this.importConfig.mapping.pub_date_print) {
                 datestring = this.importConfig.mapping.pub_date_print.startsWith('$') ? this.importConfig.mapping.pub_date_print.slice(1, this.importConfig.mapping.pub_date_print.length) : element[this.importConfig.mapping.pub_date_print];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_print = mom;
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date_print = mom;
+                }
             }
 
             if (this.importConfig.mapping.pub_date) {
                 datestring = this.importConfig.mapping.pub_date.startsWith('$') ? this.importConfig.mapping.pub_date.slice(1, this.importConfig.mapping.pub_date.length) : element[this.importConfig.mapping.pub_date];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date = mom.toDate();
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date = mom.toDate();
+                }
             }
 
             return {

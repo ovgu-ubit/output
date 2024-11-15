@@ -300,11 +300,15 @@ export abstract class AbstractImportService {
         let ca = this.getCostApproach(item);
         let cost_approach = Number.isNaN(ca) ? undefined : ca;
 
+        let doi;
+        let doi_a = this.publicationService.doi_regex.exec(this.getDOI(item)?.trim());
+        if (doi_a) doi = doi_a[0];
+
         //construct publication object to save
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
             title: this.getTitle(item)?.trim(),
-            doi: this.getDOI(item)?.trim(),
+            doi ,
             link: this.getLink(item)?.trim(),
             language,
             pub_type,

@@ -93,10 +93,10 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
     })
     this.form = this.formBuilder.group({
       name: ['', Validators.required],
-      encoding: ['', Validators.required],
+      encoding: [''],
       header: [''],
       quotes: [''],
-      delimiter: ['', Validators.required],
+      delimiter: [''],
       quoteChar: [''],
       date_format: [''],
       id_ge_type: [''],

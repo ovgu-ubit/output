@@ -197,7 +197,7 @@ export class CSVImportService extends AbstractImportService {
         return true;
     }
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; }[] {
-        if (!this.importConfig.mapping.author_inst || !this.importConfig.split_authors) return null;
+        if (!this.importConfig.mapping.author_inst) return null;
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
