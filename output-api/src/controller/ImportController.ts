@@ -9,6 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { AbstractImportService } from "../services/import/abstract-import";
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
+import { ExcelImportService } from "../services/import/excel-import.service";
 
 @Controller("import")
 @ApiTags("import")
@@ -18,7 +19,7 @@ export class ImportController {
     private reportService: ReportItemService,
     private configService: ConfigService,
     @Inject('Imports') private importServices: AbstractImportService[],
-    private csvService:CSVImportService) { }
+    private csvService:CSVImportService, private excelService:ExcelImportService) { }
 
   @Get()
   @UseGuards(AccessGuard)
@@ -31,6 +32,7 @@ export class ImportController {
         label:this.importServices[i].getName()})
     }
     result.push({path: 'csv', label: this.csvService.getName()})
+    result.push({path: 'xls', label: this.excelService.getName()})
     return result;
   }
 
@@ -144,6 +146,86 @@ export class ImportController {
   importCSVConfigDelete(@Body('name') name:string) {
     return this.csvService.deleteConfig(name);
   }
+
+
+
+  @Post("xls")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        update: {
+          type: 'boolean'
+        },
+        format: {
+          type: "CSVMapping"
+        }
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  importExcel(@Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping) {
+    if (!file || !file.originalname.endsWith('.xlsx')) throw new BadRequestException('valid excel file required');
+    this.excelService.setUp(file, format);
+    return this.excelService.import(update);
+  }
+  @Get("xls")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  importExcelStatus() {
+    return this.excelService.status();
+  }
+  @Get("xls/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  importExcelConfig() {
+    return this.excelService.getUpdateMapping();
+  }
+  @Post("xls/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  importExcelConfigSet(@Body('mapping') mapping:UpdateMapping) {
+    return this.excelService.setUpdateMapping(mapping);
+  }
+
+  @Get("xls/mapping")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  importExcelMapping() {
+    return this.excelService.getConfigs();
+  }
+
+  @Post("xls/mapping")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiBody({
+    type: CSVMapping
+  })
+  importExcelMappingSet(@Body() mapping:CSVMapping) {
+    return this.excelService.addConfig(mapping);
+  }
+
+  @Delete("xls/mapping")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiBody({
+    schema: {
+      example: {
+        name: 'Test'
+      }
+    },
+  })
+  importExcelConfigDelete(@Body('name') name:string) {
+    return this.excelService.deleteConfig(name);
+  }
+
 
   @Post(":path")
   @UseGuards(AccessGuard)

@@ -17,6 +17,8 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
 
   public form: FormGroup;
 
+  csv = false;
+
   format: CSVMapping;
   available_formats: CSVMapping[];
 
@@ -81,6 +83,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       this.optional_fields = data;
     });
     this.format = this.data.csvFormat;
+    this.csv = this.data.path.includes("csv")
     if (!this.format) this.format = this.newFormat;
     this.importService.getCSVMappings().subscribe({
       next: data => {

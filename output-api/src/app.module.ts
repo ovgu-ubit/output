@@ -70,6 +70,7 @@ import { RoleController } from "./controller/RoleController";
 import { Status } from "./entity/Status";
 import { StatusController } from "./controller/StatusController";
 import { StatusService } from "./services/entities/status.service";
+import { ExcelImportService } from "./services/import/excel-import.service";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -104,7 +105,7 @@ const filterz = appConfig().filter_services;
     PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
     OACategoryService, ContractService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
     AppConfigService, StatisticsService,
-    CSVImportService,
+    CSVImportService, ExcelImportService, 
     { provide: AuthorizationService, useClass: appConfig().authorization_service },
     ...imports.map(e => e.class),
     {

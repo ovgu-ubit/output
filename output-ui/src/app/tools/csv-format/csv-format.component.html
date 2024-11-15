@@ -26,20 +26,20 @@
             <mat-label>Name</mat-label>
             <input matInput placeholder="Name" formControlName="name" />
         </mat-form-field>
-        <mat-form-field appearance="fill">
+        <mat-form-field *ngIf="this.csv" appearance="fill">
             <mat-label>Kodierung</mat-label>
             <mat-select formControlName="encoding">
                 <mat-option value="UTF-8">UTF-8</mat-option>
                 <mat-option value="ISO-8859-1">ISO-8859-1</mat-option>
             </mat-select>
         </mat-form-field>
-        <mat-checkbox formControlName="header">Tabellenüberschrift?</mat-checkbox>
-        <mat-checkbox formControlName="quotes">Textqualifizierer?</mat-checkbox>
+        <mat-checkbox *ngIf="this.csv" formControlName="header">Tabellenüberschrift?</mat-checkbox>
+        <mat-checkbox *ngIf="this.csv" formControlName="quotes">Textqualifizierer?</mat-checkbox>
         <mat-form-field *ngIf="this.form.get('quotes').value" appearance="fill">
             <mat-label>Qualifizierungszeichen</mat-label>
             <input matInput placeholder="z.B. ' oder ''" formControlName="quoteChar" />
         </mat-form-field>
-        <mat-form-field appearance="fill">
+        <mat-form-field *ngIf="this.csv" appearance="fill">
             <mat-label>Trennzeichen</mat-label>
             <input matInput placeholder="z.B. , oder ;" formControlName="delimiter" />
         </mat-form-field>

@@ -12,13 +12,13 @@
         </mat-panel-description>
       </mat-expansion-panel-header>
         <form [formGroup]="forms[im.label]" (ngSubmit)="this.startImport(im)" style="display: flex;justify-content: space-evenly;">
-            <mat-form-field *ngIf="im.path !== 'csv'" appearance="fill">
+            <mat-form-field *ngIf="im.path !== 'csv' && im.path !== 'xls'" appearance="fill">
                 <mat-label>Publikationsjahr</mat-label>
                 <input matInput placeholder="Publikationsjahr" formControlName="reporting_year"/>
             </mat-form-field>
-            <input *ngIf="im.path === 'csv'" style="display: flex; align-items: center;" type="file" #fileUpload (change)="setFile($event)">
-            <div *ngIf="im.path === 'csv'" style="display: flex; align-items: center;">{{this.csv_format?.name}}</div>
-            <button *ngIf="im.path === 'csv'" mat-raised-button color="accent" type="button" (click)="this.csvFormat()">CSV-Format</button>
+            <input *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;" type="file" #fileUpload (change)="setFile($event)">
+            <div *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;">{{this.csv_format?.name}}</div>
+            <button *ngIf="im.path === 'csv' || im.path === 'xls'" mat-raised-button color="accent" type="button" (click)="this.csvFormat(im.path)">Import konfigurieren</button>
             <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
             <button mat-raised-button [hidden]="!this.forms[im.label].get('update').value" type="button" color="accent" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Import konfigurieren</button>
             <button mat-raised-button type="submit" color="primary" [disabled]="this.obs$[im.label]">Import starten</button>
