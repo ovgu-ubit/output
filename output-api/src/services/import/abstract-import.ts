@@ -223,7 +223,7 @@ export abstract class AbstractImportService {
         let authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
             for (let aut of authors_inst) {
-                let res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name.trim(), aut.first_name.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
+                let res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name?.trim(), aut.first_name?.trim(), aut.orcid?.trim(), aut.affiliation?.trim()).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                     return { author: null, error: e }
                 });
@@ -328,12 +328,12 @@ export abstract class AbstractImportService {
             cost_approach,
         };
         //process publication date in case it is a complex object, dates are assigned to the publication
-        if (pub_date instanceof Date) obj.pub_date = pub_date;
+        if (pub_date instanceof Date) obj.pub_date = pub_date? pub_date : undefined;
         else {
-            obj.pub_date = pub_date.pub_date;
-            if (this.configService.get('optional_fields.pub_date_print')) obj.pub_date_print = pub_date.pub_date_print;
-            obj.pub_date_accepted = pub_date.pub_date_accepted;
-            if (this.configService.get('optional_fields.pub_date_submitted')) obj.pub_date_submitted = pub_date.pub_date_submitted;
+            if (pub_date.pub_date && !isNaN(pub_date.pub_date as any)) obj.pub_date = pub_date.pub_date;
+            if (this.configService.get('optional_fields.pub_date_print') && pub_date.pub_date_print && !isNaN(pub_date.pub_date_print as any)) obj.pub_date_print = pub_date.pub_date_print;
+            if (pub_date.pub_date_accepted && !isNaN(pub_date.pub_date_accepted as any)) obj.pub_date_accepted = pub_date.pub_date_accepted;
+            if (this.configService.get('optional_fields.pub_date_submitted') && pub_date.pub_date_submitted && !isNaN(pub_date.pub_date_submitted as any)) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
         //process citation information
         let cit = this.getCitation(item);

@@ -201,7 +201,7 @@ export class CSVImportService extends AbstractImportService {
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
-        let authors = string.split(this.importConfig.split_authors)
+        let authors = this.importConfig.split_authors ? string.split(this.importConfig.split_authors) : [string];
         let res = [];
         for (let author of authors) {
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
@@ -248,19 +248,19 @@ export class CSVImportService extends AbstractImportService {
             if (this.importConfig.mapping.pub_date_submitted) {
                 datestring = this.importConfig.mapping.pub_date_submitted.startsWith('$') ? this.importConfig.mapping.pub_date_submitted.slice(1, this.importConfig.mapping.pub_date_submitted.length) : element[this.importConfig.mapping.pub_date_submitted];
                 mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_submitted = mom;
+                pub_date_submitted = mom.toDate();
             }
 
             if (this.importConfig.mapping.pub_date_accepted) {
                 datestring = this.importConfig.mapping.pub_date_accepted.startsWith('$') ? this.importConfig.mapping.pub_date_accepted.slice(1, this.importConfig.mapping.pub_date_accepted.length) : element[this.importConfig.mapping.pub_date_accepted];
                 mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_accepted = mom;
+                pub_date_accepted = mom.toDate();
             }
 
             if (this.importConfig.mapping.pub_date_print) {
                 datestring = this.importConfig.mapping.pub_date_print.startsWith('$') ? this.importConfig.mapping.pub_date_print.slice(1, this.importConfig.mapping.pub_date_print.length) : element[this.importConfig.mapping.pub_date_print];
                 mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_print = mom;
+                pub_date_print = mom.toDate();
             }
 
             if (this.importConfig.mapping.pub_date) {
