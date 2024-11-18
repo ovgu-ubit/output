@@ -7,21 +7,23 @@
             <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
                 [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
         </div>
-    </div> 
+    </div>
 </mat-toolbar>
 <div style="padding: 5px">
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Person</mat-label>
             <input matInput #authorInput formControlName="author" placeholder="Person auswählen oder hinzufügen"
-                [matAutocomplete]="auto" (keydown.enter)="addAuthor($event.target)">
-            <button type="button" matSuffix mat-icon-button (click)="addAuthor(authorInput)"
-                matTooltip="Person hinzufügen" [matTooltipShowDelay]="800" *ngIf="(this.filteredAuthors | async)?.length === 0">
-                <mat-icon *ngIf="!this.disabled">save</mat-icon>
+                [matAutocomplete]="auto" (keydown.enter)="addAuthor()">
+            <button type="button" matSuffix mat-icon-button (click)="addAuthor()"
+                matTooltip="Person hinzufügen" [matTooltipShowDelay]="800">
+                <mat-icon
+                    *ngIf="!this.disabled; else else2">edit</mat-icon>
+                <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
             </button>
             <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
                 <mat-option *ngFor="let author of filteredAuthors | async"
-                    [value]="author.last_name+', '+author.first_name">
+                    [value]="author.id">
                     {{author.last_name}}, {{author.first_name}} <ng-container *ngIf="author.orcid">
                         ({{author.orcid}})
                     </ng-container>
