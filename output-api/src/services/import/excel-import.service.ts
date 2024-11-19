@@ -2,7 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as moment from 'moment';
-import * as Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
@@ -28,7 +28,7 @@ import { AbstractImportService } from './abstract-import';
 /**
  * abstract class for all API imports that are based on pagesize and offsets
  */
-export class CSVImportService extends AbstractImportService {
+export class ExcelImportService extends AbstractImportService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
@@ -69,7 +69,7 @@ export class CSVImportService extends AbstractImportService {
     private file: Express.Multer.File;
     private importConfig: CSVMapping;
 
-    protected name = 'CSV-Import'
+    protected name = 'Excel-Import'
 
     private path = this.configService.get('CONFIG_PATH');
 
@@ -92,95 +92,65 @@ export class CSVImportService extends AbstractImportService {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Import', 'CSV-Import', by_user);
+        this.report = this.reportService.createReport('Import', 'Excel-Import', by_user);
 
         this.processedPublications = 0;
         this.newPublications = [];
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        let delimiter = this.importConfig.delimiter.includes("\\t") ? "\t" : this.importConfig.delimiter;
+        let workbook = XLSX.read(this.file.buffer, { type: 'buffer' })
+        let worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        let data = XLSX.utils.sheet_to_json(worksheet);
 
-        await Papa.parse(this.file.buffer.toString(), {
-            encoding: this.importConfig.encoding,
-            header: this.importConfig.header,
-            quotes: this.importConfig.quotes,
-            quoteChar: this.importConfig.quoteChar,
-            delimiter,
-            skipEmptyLines: true,
-            complete: async (result, file) => {
-                this.numberOfPublications = result.data.length;
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
-                if (this.checkFormat(result.data, this.importConfig)) {
-                    try {
-                        let data = result.data;
-                        if (!data) return;
-                        for (let pub of data) {
-                            let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
-                            if (!flag) {
-                                let pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
-                                if (pubNew) {
-                                    this.newPublications.push(pubNew);
-                                    this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
-                                }
-                            } else if (update) {
-                                let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
-                                if (orig.locked) continue;
-                                let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                                    this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
-                                    return null;
-                                })
-                                if (pubUpd?.pub) {
-                                    this.publicationsUpdate.push(pubUpd.pub);
-                                    this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
-                                }
-                            }
-                            // Update Progress Value
-                            this.processedPublications++;
-                            if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
-                        }
-                        //finalize
-                        this.progress = 0;
-                        this.reportService.finish(this.report, {
-                            status: 'Successfull import on ' + new Date(),
-                            count_import: this.newPublications.length,
-                            count_update: this.publicationsUpdate.length
-                        })
-                        this.status_text = 'Successfull import on ' + new Date();
-                    } catch (err) {
-                        this.progress = 0;
-                        this.status_text = 'Error while importing on ' + new Date();
-                        console.log(err.message);
-                        this.reportService.finish(this.report, {
-                            status: 'Error while importing on ' + new Date(),
-                            count_import: this.newPublications.length,
-                            count_update: this.publicationsUpdate.length
-                        })
+        this.numberOfPublications = data.length;
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+
+        try {
+            if (!data) return;
+            for (let pub of data) {
+                let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                if (!flag) {
+                    let pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                    if (pubNew) {
+                        this.newPublications.push(pubNew);
+                        this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                     }
-                } else {
-                    this.progress = 0;
-                    this.status_text = 'Error while importing on ' + new Date();
-                    //console.log(this.file.filename + ' does not match the expected format.');
-                    this.reportService.finish(this.report, {
-                        status: 'Error while importing on ' + new Date() + ': ' + this.file.filename + ' does not match the expected format.',
-                        count_import: this.newPublications.length,
-                        count_update: this.publicationsUpdate.length
+                } else if (update) {
+                    let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                    if (orig.locked) continue;
+                    let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                        this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                        return null;
                     })
+                    if (pubUpd?.pub) {
+                        this.publicationsUpdate.push(pubUpd.pub);
+                        this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                    }
                 }
+                // Update Progress Value
+                this.processedPublications++;
+                if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
             }
-        });
-    }
-
-    checkFormat(data: any[], format: CSVMapping): boolean {
-        if (data.length === 0) return true;
-        for (let field in format.mapping) {
-            if (format.mapping[field] && !format.mapping[field].toString().startsWith('$') && typeof format.mapping[field] !== 'boolean' && typeof data[0][format.mapping[field]] === 'undefined') {
-                console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
-                return false;
-            }
+            //finalize
+            this.progress = 0;
+            this.reportService.finish(this.report, {
+                status: 'Successfull import on ' + new Date(),
+                count_import: this.newPublications.length,
+                count_update: this.publicationsUpdate.length
+            })
+            this.status_text = 'Successfull import on ' + new Date();
+        } catch (err) {
+            this.progress = 0;
+            this.status_text = 'Error while importing on ' + new Date();
+            console.log(err.stack);
+            this.reportService.finish(this.report, {
+                status: 'Error while importing on ' + new Date(),
+                count_import: this.newPublications.length,
+                count_update: this.publicationsUpdate.length
+            })
         }
-        return true;
     }
 
     protected getDOI(element: any): string {
@@ -201,7 +171,8 @@ export class CSVImportService extends AbstractImportService {
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
-        let authors = this.importConfig.split_authors ? string.split(this.importConfig.split_authors) : [string];
+        let split = this.importConfig.split_authors? this.importConfig.split_authors : undefined;
+        let authors = string.split(split)
         let res = [];
         for (let author of authors) {
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
@@ -247,26 +218,34 @@ export class CSVImportService extends AbstractImportService {
             let datestring, mom, pub_date, pub_date_print, pub_date_accepted, pub_date_submitted;
             if (this.importConfig.mapping.pub_date_submitted) {
                 datestring = this.importConfig.mapping.pub_date_submitted.startsWith('$') ? this.importConfig.mapping.pub_date_submitted.slice(1, this.importConfig.mapping.pub_date_submitted.length) : element[this.importConfig.mapping.pub_date_submitted];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_submitted = mom.toDate();
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date_submitted = mom;
+                }
             }
 
             if (this.importConfig.mapping.pub_date_accepted) {
                 datestring = this.importConfig.mapping.pub_date_accepted.startsWith('$') ? this.importConfig.mapping.pub_date_accepted.slice(1, this.importConfig.mapping.pub_date_accepted.length) : element[this.importConfig.mapping.pub_date_accepted];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_accepted = mom.toDate();
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date_accepted = mom;
+                }
             }
 
             if (this.importConfig.mapping.pub_date_print) {
                 datestring = this.importConfig.mapping.pub_date_print.startsWith('$') ? this.importConfig.mapping.pub_date_print.slice(1, this.importConfig.mapping.pub_date_print.length) : element[this.importConfig.mapping.pub_date_print];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date_print = mom.toDate();
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date_print = mom;
+                }
             }
 
             if (this.importConfig.mapping.pub_date) {
                 datestring = this.importConfig.mapping.pub_date.startsWith('$') ? this.importConfig.mapping.pub_date.slice(1, this.importConfig.mapping.pub_date.length) : element[this.importConfig.mapping.pub_date];
-                mom = moment.utc(datestring, this.importConfig.date_format);
-                pub_date = mom.toDate();
+                if (datestring) {
+                    mom = moment.utc(datestring, this.importConfig.date_format);
+                    pub_date = mom.toDate();
+                }
             }
 
             return {
@@ -315,17 +294,17 @@ export class CSVImportService extends AbstractImportService {
         return element[this.importConfig.mapping.license];
     }
     protected getInvoiceInformation(element: any) {
-        let res:any[] = [];
+        let res: any[] = [];
         if (this.importConfig.mapping.invoice && this.importConfig.mapping.invoice.startsWith('$')) res = [{
             cost_items: [{
-                euro_value: this.parseNumber(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
+                euro_value: Number(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),
                 cost_type: null
             }]
         }];
         else if (this.importConfig.mapping.invoice) {
             res = [{
                 cost_items: [{
-                    euro_value: this.parseNumber(element[this.importConfig.mapping.invoice]),
+                    euro_value: Number(element[this.importConfig.mapping.invoice]),
                     cost_type: null
                 }]
             }]
@@ -350,8 +329,8 @@ export class CSVImportService extends AbstractImportService {
     protected getStatus(element: any): number {
         try {
             if (!this.importConfig.mapping.status) return null;
-            if (this.importConfig.mapping.status.startsWith('$')) return this.parseNumber(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
-            return this.parseNumber(element[this.importConfig.mapping.status]);
+            if (this.importConfig.mapping.status.startsWith('$')) return Number(this.importConfig.mapping.status.slice(1, this.importConfig.mapping.status.length));
+            return Number(element[this.importConfig.mapping.status]);
         } catch (err) {
             return null;
         }
@@ -411,8 +390,8 @@ export class CSVImportService extends AbstractImportService {
     protected getPageCount(element: any): number {
         try {
             if (!this.importConfig.mapping.page_count) return null;
-            if (this.importConfig.mapping.page_count.startsWith('$')) return this.parseNumber(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
-            return this.parseNumber(element[this.importConfig.mapping.page_count]);
+            if (this.importConfig.mapping.page_count.startsWith('$')) return Number(this.importConfig.mapping.page_count.slice(1, this.importConfig.mapping.page_count.length));
+            return Number(element[this.importConfig.mapping.page_count]);
         } catch (err) {
             return null;
         }
@@ -429,9 +408,9 @@ export class CSVImportService extends AbstractImportService {
     protected getCostApproach(element: any): number {
         try {
             if (!this.importConfig.mapping.cost_approach) return null;
-            if (this.importConfig.mapping.cost_approach.startsWith('$')) return this.parseNumber(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
+            if (this.importConfig.mapping.cost_approach.startsWith('$')) return Number(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
             let e = element[this.importConfig.mapping.cost_approach];
-            return this.parseNumber(e);
+            return Number(e);
         } catch (err) {
             return null;
         }
@@ -453,14 +432,4 @@ export class CSVImportService extends AbstractImportService {
         configs = configs.filter(e => e.name !== name);
         return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
     }
-
-    parseNumber(toParse: string): number {
-        let german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+)(,[0-9]{1,2})?$", "g");
-        let parse = german.exec(toParse);
-        if (parse && parse.length > 0) {
-            toParse = parse[0].replace(/\./g, "").replace(/,/g, ".");
-        }
-        return Number(toParse);
-    }
-
 }

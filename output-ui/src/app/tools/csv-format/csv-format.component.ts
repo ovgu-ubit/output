@@ -17,6 +17,8 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
 
   public form: FormGroup;
 
+  csv = false;
+
   format: CSVMapping;
   available_formats: CSVMapping[];
 
@@ -31,6 +33,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
     id_ge_type: '',
     last_name_first: false,
     split_authors: '',
+    deal_flat_fee: false,
     mapping: {
       author_inst: '',
       authors: '',
@@ -62,6 +65,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       article_number: '',
       page_count: '',
       peer_reviewed: '',
+      cost_approach: ''
     }
   }
   kill = new Subject();
@@ -79,6 +83,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
       this.optional_fields = data;
     });
     this.format = this.data.csvFormat;
+    this.csv = this.data.path.includes("csv")
     if (!this.format) this.format = this.newFormat;
     this.importService.getCSVMappings().subscribe({
       next: data => {
@@ -88,15 +93,16 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
     })
     this.form = this.formBuilder.group({
       name: ['', Validators.required],
-      encoding: ['', Validators.required],
+      encoding: [''],
       header: [''],
       quotes: [''],
-      delimiter: ['', Validators.required],
+      delimiter: [''],
       quoteChar: [''],
       date_format: [''],
       id_ge_type: [''],
       last_name_first: [''],
       split_authors: [''],
+      deal_flat_fee: [''],
       mapping: this.formBuilder.group({
         author_inst: [''],
         authors: [''],
@@ -128,6 +134,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
         publisher_location: [''],
         edition: [''],
         article_number: [''],
+        cost_approach: [''],
       })
     })
     this.form.patchValue(this.format)

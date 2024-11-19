@@ -1,28 +1,24 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
-import { Author } from '../../entity/Author';
+import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
-import { Publication } from '../../entity/Publication';
+import { GreaterEntity } from '../../entity/GreaterEntity';
+import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../entities/author.service';
+import { ContractService } from '../entities/contract.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { InvoiceService } from '../entities/invoice.service';
+import { LanguageService } from '../entities/language.service';
+import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
-import { ApiImportOffsetService } from './api-import-offset.service';
-import { Identifier } from '../../entity/Identifier';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { OACategoryService } from '../entities/oa-category.service';
-import { ContractService } from '../entities/contract.service';
-import { CostTypeService } from '../entities/cost-type.service';
-import { ReportItemService } from '../report-item.service';
-import { InstitutionService } from '../entities/institution.service';
-import { LanguageService } from '../entities/language.service';
-import { Publisher } from '../../entity/Publisher';
-import { GreaterEntity } from '../../entity/GreaterEntity';
 import { RoleService } from '../entities/role.service';
+import { ReportItemService } from '../report-item.service';
+import { ApiImportOffsetService } from './api-import-offset.service';
 
 @Injectable()
 export class CrossrefImportService extends ApiImportOffsetService {
@@ -30,9 +26,9 @@ export class CrossrefImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, roleService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
         this.configService.get('searchTags').forEach(tag => {
             this.searchText += tag + "+"
         })
@@ -61,6 +57,7 @@ export class CrossrefImportService extends ApiImportOffsetService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.REPLACE_IF_EMPTY,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.crossref.org/works?';
     protected max_res: number = 20;
@@ -229,6 +226,9 @@ export class CrossrefImportService extends ApiImportOffsetService {
         if (element['page'] && element['page'].split('-').length === 2) return Number(element['page'].split('-')[1])-Number(element['page'].split('-')[0])+1
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 

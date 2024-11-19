@@ -29,6 +29,7 @@ export class UpdateMapping {
     citation: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     page_count: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
     peer_reviewed: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
+    cost_approach: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;
 }
 
 export enum UpdateOptions {
@@ -49,6 +50,7 @@ export class CSVMapping {
     id_ge_type?: string;
     last_name_first: boolean;
     split_authors?: string;
+    deal_flat_fee?: boolean;
     mapping: {
         author_inst?: string;
         authors?: string;
@@ -80,6 +82,7 @@ export class CSVMapping {
         publisher_location?: string;
         edition?: string;
         article_number?: string;
+        cost_approach?: string;
     }
 }
 

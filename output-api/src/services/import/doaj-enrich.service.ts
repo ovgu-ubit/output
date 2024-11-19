@@ -1,27 +1,27 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { catchError, delay, EMPTY, mergeAll, Observable, of, queueScheduler, scheduled } from 'rxjs';
-import { FindManyOptions } from 'typeorm';
-import { AuthorService } from '../entities/author.service';
-import { ContractService } from '../entities/contract.service';
-import { CostTypeService } from '../entities/cost-type.service';
-import { FunderService } from '../entities/funder.service';
-import { GreaterEntityService } from '../entities/greater-entitiy.service';
-import { OACategoryService } from '../entities/oa-category.service';
-import { PublicationTypeService } from '../entities/publication-type.service';
-import { PublicationService } from '../entities/publication.service';
-import { PublisherService } from '../entities/publisher.service';
-import { ReportItemService } from '../report-item.service';
-import { AbstractImportService } from './abstract-import';
-import { InstitutionService } from '../entities/institution.service';
-import { LanguageService } from '../entities/language.service';
 import { ConfigService } from '@nestjs/config';
+import { Observable, catchError, delay, mergeAll, of, queueScheduler, scheduled } from 'rxjs';
+import { FindManyOptions } from 'typeorm';
+import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Invoice } from '../../entity/Invoice';
 import { Publisher } from '../../entity/Publisher';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import { AuthorService } from '../entities/author.service';
+import { ContractService } from '../entities/contract.service';
+import { FunderService } from '../entities/funder.service';
+import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { InvoiceService } from '../entities/invoice.service';
+import { LanguageService } from '../entities/language.service';
+import { OACategoryService } from '../entities/oa-category.service';
+import { PublicationTypeService } from '../entities/publication-type.service';
+import { PublicationService } from '../entities/publication.service';
+import { PublisherService } from '../entities/publisher.service';
 import { RoleService } from '../entities/role.service';
+import { ReportItemService } from '../report-item.service';
+import { AbstractImportService } from './abstract-import';
 
 @Injectable()
 /**
@@ -50,6 +50,7 @@ export class DOAJEnrichService extends AbstractImportService {
         citation: UpdateOptions.IGNORE,
         page_count: UpdateOptions.IGNORE,
         peer_reviewed: UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
     public setReportingYear(year: string): void {
@@ -111,7 +112,7 @@ export class DOAJEnrichService extends AbstractImportService {
     protected getLicense(element: any): string {
         return null;
     }
-    protected getInvoiceInformation(element: any): Invoice[] {
+    protected getInvoiceInformation(element: any) {
         return null;
     }
     protected getStatus(element: any): number {
@@ -129,12 +130,15 @@ export class DOAJEnrichService extends AbstractImportService {
     protected getPeerReviewed(element: any): boolean {
         return null;
     }
+    protected getCostApproach(element: any): number {
+        return null;
+    }
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService, instService, languageService, roleService, configService);
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
     }
 
     private publicationsUpdate = [];
