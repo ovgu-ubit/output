@@ -195,38 +195,6 @@ export class ImportController {
     return this.excelService.setUpdateMapping(mapping);
   }
 
-  @Get("xls/mapping")
-  @UseGuards(AccessGuard)
-  @Permissions([{ role: 'admin', app: 'output' }])
-  importExcelMapping() {
-    return this.excelService.getConfigs();
-  }
-
-  @Post("xls/mapping")
-  @UseGuards(AccessGuard)
-  @Permissions([{ role: 'admin', app: 'output' }])
-  @ApiBody({
-    type: CSVMapping
-  })
-  importExcelMappingSet(@Body() mapping:CSVMapping) {
-    return this.excelService.addConfig(mapping);
-  }
-
-  @Delete("xls/mapping")
-  @UseGuards(AccessGuard)
-  @Permissions([{ role: 'admin', app: 'output' }])
-  @ApiBody({
-    schema: {
-      example: {
-        name: 'Test'
-      }
-    },
-  })
-  importExcelConfigDelete(@Body('name') name:string) {
-    return this.excelService.deleteConfig(name);
-  }
-
-
   @Post(":path")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
