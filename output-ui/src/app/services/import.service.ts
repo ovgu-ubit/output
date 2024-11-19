@@ -49,6 +49,9 @@ export class ImportService {
   startCSV(formData:FormData) {
     return this.http.post(environment.api + 'import/csv', formData)
   }
+  startExcel(formData:FormData) {
+    return this.http.post(environment.api + 'import/xls', formData)
+  }
 
   getConfig(import_path:string) {
     return this.http.get<UpdateMapping>(environment.api + 'import/'+import_path+'/config')

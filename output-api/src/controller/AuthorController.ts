@@ -15,14 +15,8 @@ export class AuthorController {
 
     @Get()
     @ApiResponse({ status: 200, description: 'Author objects are returned.' })
-    async all(@Req() request: Request) {
-        let prom;
-        if (request.query.orcid) prom = this.userRepository.find({ where: { orcid: request.query.orcid } });
-        else if (request.query.given && request.query.family) prom = this.userRepository.find({ where: { given: request.query.given, family: request.query.family } });
-        else prom = this.userRepository.find();
-        return await prom.catch(err => {
-            throw new InternalServerErrorException('Failure while selecting')
-        })
+    async all() {
+        return this.authorService.get();
     }
 
     @Get('index')

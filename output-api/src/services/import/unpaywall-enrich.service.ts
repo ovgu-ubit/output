@@ -1,29 +1,25 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
-import { Author } from '../../entity/Author';
+import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
+import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Publication } from '../../entity/Publication';
+import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../entities/author.service';
+import { ContractService } from '../entities/contract.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { InstitutionService } from '../entities/institution.service';
+import { InvoiceService } from '../entities/invoice.service';
+import { LanguageService } from '../entities/language.service';
+import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
-import { Identifier } from '../../entity/Identifier';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { OACategoryService } from '../entities/oa-category.service';
-import { ContractService } from '../entities/contract.service';
-import { ApiEnrichDOIService } from './api-enrich-doi.service';
-import { FindManyOptions } from 'typeorm';
-import { CostTypeService } from '../entities/cost-type.service';
-import { ReportItemService } from '../report-item.service';
-import { InstitutionService } from '../entities/institution.service';
-import { LanguageService } from '../entities/language.service';
-import { Publisher } from '../../entity/Publisher';
-import { GreaterEntity } from '../../entity/GreaterEntity';
 import { RoleService } from '../entities/role.service';
+import { ReportItemService } from '../report-item.service';
+import { ApiEnrichDOIService } from './api-enrich-doi.service';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
@@ -31,9 +27,9 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected costTypeService: CostTypeService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
         ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, costTypeService, reportService,instService, languageService, roleService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -57,6 +53,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         citation :UpdateOptions.IGNORE,
         page_count :UpdateOptions.IGNORE,
         peer_reviewed :UpdateOptions.IGNORE,
+        cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.unpaywall.org/v2/';
     protected param_string = 'email='+this.configService.get('api_key_unpaywall');
@@ -135,6 +132,9 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getPeerReviewed(element: any): boolean {
+        return null;
+    }
+    protected getCostApproach(element: any): number {
         return null;
     }
 

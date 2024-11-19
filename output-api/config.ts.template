@@ -13,7 +13,6 @@ import { OpenAlexImportService } from "./src/services/import/openalex-import.ser
 import { OpenAlexEnrichService } from "./src/services/import/openalex-enrich.service";
 import { OpenAPCEnrichService } from "./src/services/import/openapc-enrich.service";
 import { DOAJEnrichService } from "./src/services/import/doaj-enrich.service";
-import { Output1ImportService } from "./src/services/import/output-1-import.service";
 import { PubMedImportService } from "./src/services/import/pubmed-import";
 import { UnpaywallEnrichService } from "./src/services/import/unpaywall-enrich.service";
 import { InitService } from "./src/services/init.service";
@@ -64,7 +63,6 @@ export default() : AppConfig => ({
     import_services: [
 //        {path: 'bib', class: BibliographyImportService},
         {path: 'crossref', class: CrossrefImportService},
-//        {path: 'output1', class: Output1ImportService},
         {path: 'oam', class: OpenAccessMonitorImportService},
         {path: 'base', class: BASEImportService},
         {path: 'pubmed', class: PubMedImportService},

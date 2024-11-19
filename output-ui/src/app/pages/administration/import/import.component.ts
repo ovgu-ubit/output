@@ -90,7 +90,7 @@ export class ImportComponent implements OnInit {
   }
 
   startImport(importO) {
-    if (importO.path !== 'csv') {
+    if (importO.path !== 'csv' && importO.path !== 'xls') {
       if (this.forms[importO.label].invalid) return;
       this.forms[importO.label].disable();
       this.importService.start(importO.path, this.forms[importO.label].get('update').value, this.forms[importO.label].get('reporting_year').value).subscribe({
@@ -117,7 +117,7 @@ export class ImportComponent implements OnInit {
           verticalPosition: 'top'
         })
       });
-    } else { //CSV Import
+    } else if (importO.path === 'csv') { //CSV Import
       if (!this.file || !this.file.name.endsWith('csv') || !this.csv_format) {
         this._snackBar.open(`CSV-Format oder Datei nicht ausgewählt.`, 'Ok...', {
           duration: 5000,
@@ -131,6 +131,44 @@ export class ImportComponent implements OnInit {
         formData.append("update",this.forms[importO.label].get('update').value)
         formData.append("format",JSON.stringify(this.csv_format))
         this.importService.startCSV(formData).subscribe({
+          next: data => {
+            this.runningImports.push(importO)
+            this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
+              if (data.progress === 0 || data.progress >= 1) {//finish signal
+                this.runningImports = this.runningImports.filter(e => e.label !== importO.label)
+                this.obs$[importO.label] = undefined;
+                this.updateStatus().subscribe();
+                this.forms[importO.label].enable();
+
+                this.reportService.getReports('Import').subscribe({
+                  next: data => {
+                    this.reportFiles = data;
+                  }
+                })
+                this.subjects[importO.label].next('');
+              }
+              return data;
+            }));
+          }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+            panelClass: [`danger-snackbar`],
+            verticalPosition: 'top'
+          })
+        });
+      }
+    } else { //Excel Import
+      if (!this.file || !this.file.name.endsWith('xlsx') || !this.csv_format) {
+        this._snackBar.open(`CSV-Format oder Datei nicht ausgewählt.`, 'Ok...', {
+          duration: 5000,
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        });
+      } else {
+        this.forms[importO.label].disable();
+        let formData = new FormData();
+        formData.append("file",this.file)
+        formData.append("update",this.forms[importO.label].get('update').value)
+        formData.append("format",JSON.stringify(this.csv_format))
+        this.importService.startExcel(formData).subscribe({
           next: data => {
             this.runningImports.push(importO)
             this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
@@ -198,12 +236,13 @@ export class ImportComponent implements OnInit {
     });
   }
 
-  csvFormat() {
+  csvFormat(path:string) {
     let dialogRef = this.dialog.open(CsvFormatComponent, {
       width: '800px',
       maxHeight: '800px',
       data: {
-        csvFormat: this.csv_format
+        csvFormat: this.csv_format,
+        path
       }
     });
     dialogRef.afterClosed().subscribe(result => {

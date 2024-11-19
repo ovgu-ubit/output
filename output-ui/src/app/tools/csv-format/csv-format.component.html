@@ -1,4 +1,16 @@
-<div style="margin:8px;">
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1 mat-dialog-title style="color:white">CSV-Format</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <button mat-icon-button (click)="this.delete()" matTooltip="Ausgewähltes Format löschen" [matTooltipShowDelay]="800">
+            <mat-icon>delete</mat-icon>
+        </button>
+            <button mat-icon-button (click)="this.action()" matTooltip="Format auswählen und speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+    </div>
+</mat-toolbar>
+<mat-dialog-content>
     <div style="display: flex;justify-content: space-evenly;">
         <mat-form-field appearance="fill">
             <mat-label>Format auswählen</mat-label>
@@ -14,20 +26,20 @@
             <mat-label>Name</mat-label>
             <input matInput placeholder="Name" formControlName="name" />
         </mat-form-field>
-        <mat-form-field appearance="fill">
+        <mat-form-field *ngIf="this.csv" appearance="fill">
             <mat-label>Kodierung</mat-label>
             <mat-select formControlName="encoding">
                 <mat-option value="UTF-8">UTF-8</mat-option>
                 <mat-option value="ISO-8859-1">ISO-8859-1</mat-option>
             </mat-select>
         </mat-form-field>
-        <mat-checkbox formControlName="header">Tabellenüberschrift?</mat-checkbox>
-        <mat-checkbox formControlName="quotes">Textqualifizierer?</mat-checkbox>
+        <mat-checkbox *ngIf="this.csv" formControlName="header">Tabellenüberschrift?</mat-checkbox>
+        <mat-checkbox *ngIf="this.csv" formControlName="quotes">Textqualifizierer?</mat-checkbox>
         <mat-form-field *ngIf="this.form.get('quotes').value" appearance="fill">
             <mat-label>Qualifizierungszeichen</mat-label>
             <input matInput placeholder="z.B. ' oder ''" formControlName="quoteChar" />
         </mat-form-field>
-        <mat-form-field appearance="fill">
+        <mat-form-field *ngIf="this.csv" appearance="fill">
             <mat-label>Trennzeichen</mat-label>
             <input matInput placeholder="z.B. , oder ;" formControlName="delimiter" />
         </mat-form-field>
@@ -44,6 +56,7 @@
             <mat-label>Trennzeichen(kette) bei mehreren Autoren</mat-label>
             <input matInput placeholder="Z.B. ;" formControlName="split_authors" />
         </mat-form-field>
+        <mat-checkbox formControlName="deal_flat_fee">DEAL-Servicepauschale einberechnen?</mat-checkbox>
         Feld-Abbildungen (Spaltenname oder konstanter Wert mit führendem Dollarzeichen, z.B. $Wert)
         <div [formGroup]="mapping()" style="display: flex; flex-direction: column;">
             <mat-form-field appearance="fill">
@@ -115,6 +128,10 @@
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="language" />
             </mat-form-field>
             <mat-form-field appearance="fill">
+                <mat-label>Kostenansatz in EUR</mat-label>
+                <input matInput placeholder="Spalte oder $Konstante" formControlName="cost_approach" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
                 <mat-label>Rechnungsbetrag in EUR</mat-label>
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="invoice" />
             </mat-form-field>
@@ -163,13 +180,5 @@
                 <input matInput placeholder="Spalte oder $Konstante" formControlName="article_number" />
             </mat-form-field>
         </div>
-
-
-        <button mat-raised-button type="submit" color="primary" class="btn-primary">Format auswählen &
-            speichern</button>&nbsp;
-        <button mat-raised-button type="button" color="warn" class="btn-primary" (click)="this.delete()">Ausgewähltes
-            Format löschen</button>&nbsp;
-        <button mat-raised-button type="button" color="accent" class="btn-primary"
-            (click)="this.abort()">Abbrechen</button>
     </form>
-</div>
+</mat-dialog-content>

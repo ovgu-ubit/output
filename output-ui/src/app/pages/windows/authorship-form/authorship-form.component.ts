@@ -10,6 +10,7 @@ import { AliasFormComponent } from 'src/app/tools/alias-form/alias-form.componen
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { RoleService } from 'src/app/services/entities/role.service';
+import { AuthorFormComponent } from '../author-form/author-form.component';
 
 @Component({
   selector: 'app-authorship-form',
@@ -32,7 +33,7 @@ export class AuthorshipFormComponent implements OnInit {
 
   constructor(public dialogRef: MatDialogRef<AuthorshipFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService: AuthorService, private instService: InstituteService,
-    private roleService:RoleService,
+    private roleService: RoleService,
     private _snackBar: MatSnackBar, private dialog: MatDialog) { }
 
   form = this.formBuilder.group({
@@ -55,7 +56,7 @@ export class AuthorshipFormComponent implements OnInit {
     }))
     ob$ = merge(ob$, this.authorService.getAuthors().pipe(map(data => {
       this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
-      if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id ))
+      if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id))
     })));
     ob$ = merge(ob$, this.roleService.getRoles().pipe(map(data => {
       this.roles = data;
@@ -66,8 +67,8 @@ export class AuthorshipFormComponent implements OnInit {
           this.form.get('affiliation').setValue(this.data.authorPub?.affiliation)
           this.form.get('author').setValue(this.data.authorPub?.author.last_name + ", " + this.data.authorPub?.author.first_name)
           this.form.get('corresponding').setValue(this.data.authorPub?.corresponding)
-          this.role = this.data.authorPub.role? this.data.authorPub.role : this.roles[0]
-          this.addAuthor(this.data.authorPub?.author)
+          this.role = this.data.authorPub.role ? this.data.authorPub.role : this.roles[0]
+          this.author = this.authors.find(e => e.id === this.data.authorPub.authorId)
         } else {//new authorship
           this.role = this.roles[0]
         }
@@ -87,13 +88,12 @@ export class AuthorshipFormComponent implements OnInit {
   }
 
   action() {
+    if (!this.author) return;
     if (this.institute && !this.author.institutes.find(e => this.institute.id === e.id)) {
       //save institute to author
       this.author.institutes.push(this.institute);
+      this.authorService.update(this.author).subscribe()
     }
-    this.author.locked_at = null;
-    this.authorService.update(this.author).subscribe()
-    if (!this.institute) this.dialogRef.close(null)
     if (this.form.get('affiliation').value && this.institute && !this.institute.aliases?.find(e => this.form.get('affiliation').value.includes(e.alias))) {
       //open alias dialog
       let aliases = [this.form.get('affiliation').value];
@@ -112,17 +112,13 @@ export class AuthorshipFormComponent implements OnInit {
           inst.aliases.push({ elementId: this.institute.id, alias: result[0] });
           this.instService.update(inst).subscribe()
         }
-        this.dialogRef.close({author:this.author, authorId: this.author.id, institute:this.institute, corresponding: this.form.get('corresponding').value, role: this.role, affiliation: this.form.get('affiliation').value});
+        this.dialogRef.close({ author: this.author, authorId: this.author.id, institute: this.institute, corresponding: this.form.get('corresponding').value, role: this.role, affiliation: this.form.get('affiliation').value });
       });
     }
-    else this.dialogRef.close({author:this.author, authorId: this.author.id, institute:this.institute, corresponding: this.form.get('corresponding').value, role: this.role, affiliation: this.form.get('affiliation').value});
+    else this.dialogRef.close({ author: this.author, authorId: this.author.id, institute: this.institute, corresponding: this.form.get('corresponding').value, role: this.role, affiliation: this.form.get('affiliation').value });
   }
 
   abort() {
-    if (this.author) {
-      this.author.locked_at = null;
-      this.authorService.update(this.author).subscribe();
-    }
     this.dialogRef.close({});
   }
 
@@ -152,31 +148,53 @@ export class AuthorshipFormComponent implements OnInit {
   }
 
   selected(event: MatAutocompleteSelectedEvent): void {
-    this.addAuthor({ value: event.option.value })
+    this.author = this.authors.find(e => e.id === event.option.value);
+    this.form.get('author').setValue(event.option.viewValue)
   }
 
-  addAuthor(event) {
-    if ((!event.value && !event.id) || this.disabled) return;
+  addAuthor() {
+    if (this.disabled) return;
     let author;
-    if (event.id) {
-      author = this.authors.find(e => e.id === event.id)
-    } else {
-      let split = event.value.toLocaleLowerCase().split(',').map(e => e.trim());
+    if (!this.author || this.form.get("author").value !== this.author.last_name + ", " + this.author.first_name) {
+      let split = this.form.get("author").value.toLocaleLowerCase().split(',').map(e => e.trim());
       if (split.length > 1) {
         author = this.authors.find(e => e.last_name.toLocaleLowerCase() === split[0] && e.first_name.toLocaleLowerCase() === split[1]);
       }
-    }
+    } else author = this.author;
 
     if (author) { //author existing
-      //open institute selection dialog
+      let dialogRef = this.dialog.open(AuthorFormComponent, {
+        width: "400px",
+        data: {
+          author
+        }
+      });
+      dialogRef.afterClosed().subscribe(dialogResult => {
+        if (dialogResult && dialogResult.last_name) {
+          this.authorService.update(dialogResult).subscribe({
+            next: data => {
+              this._snackBar.open('Person wurde geändert', 'Super!', {
+                duration: 5000,
+                panelClass: [`success-snackbar`],
+                verticalPosition: 'top'
+              })
+              this.author = data[0];
+            }
+          })
+        } else if (dialogResult && dialogResult.id) {
+          this.authorService.update(dialogResult).subscribe();
+        }
+      });
+
     } else { // new author
-      let dialogData = new ConfirmDialogModel("Autor*in anlegen", `Möchten Sie Autor*in "${event.value}" hinzufügen?`);
+      let value = this.form.get('author').value;
+      let dialogData = new ConfirmDialogModel("Autor*in anlegen", `Möchten Sie Autor*in "${value}" hinzufügen?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
         data: dialogData
       });
-      let value = event.value;
+
 
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) {
@@ -188,31 +206,17 @@ export class AuthorshipFormComponent implements OnInit {
                 verticalPosition: 'top'
               })
               this.form.get('author').setValue(data.last_name + ", " + data.first_name)
-              author = data;
-              this.authorService.getAuthors().subscribe({next: data => {
-                this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
-                if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id ))
-              }});
+              this.author = data;
+              this.authorService.getAuthors().subscribe({
+                next: data => {
+                  this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
+                  if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id))
+                }
+              });
             }
           })
         }
       })
     }
-
-    this.authorService.getAuthor(author.id).subscribe({
-      next: data => {
-        this.author = data;
-        if (this.author.locked_at) {
-          this.form.disable()
-          this.disabled = true;
-          this._snackBar.open('Autor*in wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
-            duration: 5000,
-            panelClass: [`warning-snackbar`],
-            verticalPosition: 'top'
-          })
-        }
-      }
-    })
   }
-
 }

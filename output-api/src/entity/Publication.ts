@@ -145,6 +145,6 @@ export class Publication implements IPublication {
     @OneToMany(() => PublicationIdentifier, (ide) => ide.publication, {cascade: true})
     identifiers?: PublicationIdentifier[];
 
-    @Column({ nullable: true })
+    @Column({ nullable: true,  type: "float" })
     cost_approach?: number;
 }

@@ -29,8 +29,8 @@ export class AuthorService {
         });
     }
 
-    public get() {
-        return this.repository.find();
+    public get(id?:number) {
+        return this.repository.find({ relations: {institutes: true}});
     }
 
     public async one(id: number, writer: boolean) {
