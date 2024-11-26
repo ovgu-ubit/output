@@ -274,7 +274,7 @@ export abstract class AbstractImportService {
         let inv_info = this.getInvoiceInformation(item);
         //import of invoices
         let invoices: Invoice[] = [];
-        for (let inv of inv_info) {
+        if (inv_info) for (let inv of inv_info) {
             let cost_items = [];
             for (let ci of inv.cost_items) {
                 cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, orig_currency: ci.orig_currency, vat: ci.vat, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type)) })
