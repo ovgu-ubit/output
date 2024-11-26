@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
 import { Publication } from '../entity/Publication';
 import { InstitutionService } from './entities/institution.service';
@@ -19,7 +19,12 @@ export class StatisticsService {
         }
 
         let query = this.pubRepository.createQueryBuilder('publication')
-            .select("extract('Year' from publication.pub_date at time zone 'UTC')", 'pub_year')
+            .select("CASE WHEN publication.pub_date IS NOT NULL THEN extract('Year' from publication.pub_date at time zone 'UTC') "+
+                "WHEN publication.pub_date_print IS NOT NULL THEN extract('Year' from publication.pub_date_print at time zone 'UTC') "+
+                "WHEN publication.pub_date_accepted IS NOT NULL THEN extract('Year' from publication.pub_date_accepted at time zone 'UTC') "+
+                "WHEN publication.pub_date_submitted IS NOT NULL THEN extract('Year' from publication.pub_date_submitted at time zone 'UTC') "+
+                "ELSE NULL END"
+                , 'pub_year')
             .addSelect("count(distinct publication.id)")
             .groupBy('pub_year')
             .orderBy('pub_year')
@@ -38,7 +43,16 @@ export class StatisticsService {
         let query = this.pubRepository.createQueryBuilder('publication')
             .select('count(distinct publication.id)', 'value')
             .addSelect('COUNT(distinct (CASE WHEN publication.locked THEN publication.id ELSE NULL END))', 'locked')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
 
         query = this.addFilter(query, false, filterOptions)
 
@@ -53,7 +67,16 @@ export class StatisticsService {
             .leftJoin('publication.authorPublications', 'aut_pub')
             .select('count(distinct publication.id)', 'value')
             .addSelect('COUNT(distinct (CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END))', 'corresponding')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
 
         query = this.addFilter(query, true, filterOptions)
 
@@ -69,7 +92,16 @@ export class StatisticsService {
             .leftJoin('aut_pub.institute', 'institute')
             .select("case when institute.label is not null then institute.label else 'Unbekannt' end", 'institute')
             .addSelect('institute.id', 'id')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
             .groupBy('institute')
             .addGroupBy('institute.id')
 
@@ -87,7 +119,16 @@ export class StatisticsService {
             .leftJoin("publication.oa_category", 'oa_cat')
             .select("case when oa_cat.label is not null then oa_cat.label else 'Unbekannt' end", 'oa_cat')
             .addSelect('oa_cat.id', 'id')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
             .groupBy('oa_cat')
             .addGroupBy('oa_cat.id')
 
@@ -105,7 +146,16 @@ export class StatisticsService {
             .leftJoin('publication.publisher', 'publisher')
             .select("case when publisher.label is not null then publisher.label else 'Unbekannt' end", 'publisher')
             .addSelect('publisher.id', 'id')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
             .groupBy('publisher')
             .addGroupBy('publisher.id')
 
@@ -123,7 +173,16 @@ export class StatisticsService {
             .leftJoin('publication.pub_type', 'pub_type')
             .select("case when pub_type.label is not null then pub_type.label else 'Unbekannt' end", 'pub_type')
             .addSelect('pub_type.id', 'id')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
             .groupBy('pub_type')
             .addGroupBy('pub_type.id')
 
@@ -141,7 +200,16 @@ export class StatisticsService {
             .leftJoin('publication.contract', 'contract')
             .select("case when contract.label is not null then contract.label else 'Unbekannt' end", 'contract')
             .addSelect('contract.id', 'id')
-            .where('pub_date between :beginDate and :endDate', { beginDate, endDate })
+            .where('publication.pub_date >= :beginDate', { beginDate })
+            .andWhere('publication.pub_date <= :endDate', { endDate })
+            .orWhere(new Brackets(qb => {
+                qb.where('publication.pub_date is null')
+                    .andWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
+            }))
             .groupBy('contract')
             .addGroupBy('contract.id')
 
