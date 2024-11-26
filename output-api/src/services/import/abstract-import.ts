@@ -274,7 +274,7 @@ export abstract class AbstractImportService {
         let inv_info = this.getInvoiceInformation(item);
         //import of invoices
         let invoices: Invoice[] = [];
-        for (let inv of inv_info) {
+        if (inv_info) for (let inv of inv_info) {
             let cost_items = [];
             for (let ci of inv.cost_items) {
                 cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, orig_currency: ci.orig_currency, vat: ci.vat, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type)) })
@@ -328,6 +328,10 @@ export abstract class AbstractImportService {
             cost_approach,
         };
         //process publication date in case it is a complex object, dates are assigned to the publication
+        if (!pub_date) {
+            this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'pub_date', text: 'Publication not imported since no pub_date was available' })
+            return null;
+        }
         if (pub_date instanceof Date) obj.pub_date = pub_date? pub_date : undefined;
         else {
             if (pub_date.pub_date && !isNaN(pub_date.pub_date as any)) obj.pub_date = pub_date.pub_date;

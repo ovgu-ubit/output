@@ -81,3 +81,9 @@ export interface OACategoryIndex {
     is_oa: boolean;
 	pub_count: number;
 }
+export interface CostCenterIndex {
+    id?: number;
+    number?: string;
+    label: string;
+	pub_count: number;
+}

@@ -163,6 +163,9 @@ export class StatisticsYearComponent implements OnInit {
           events: {
             click:
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
+          },
+          tooltip: {
+            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag1 = true;
@@ -181,6 +184,9 @@ export class StatisticsYearComponent implements OnInit {
           events: {
             click:
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
+          },
+          tooltip: {
+            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag2 = true;
@@ -199,6 +205,9 @@ export class StatisticsYearComponent implements OnInit {
           events: {
             click:
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
+          },
+          tooltip: {
+            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag3 = true;
@@ -217,6 +226,9 @@ export class StatisticsYearComponent implements OnInit {
           events: {
             click:
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
+          },
+          tooltip: {
+            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag4 = true;
@@ -235,6 +247,9 @@ export class StatisticsYearComponent implements OnInit {
           events: {
             click:
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
+          },
+          tooltip: {
+            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag5 = true;

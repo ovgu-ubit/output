@@ -8,6 +8,7 @@ import { CostType } from '../../entity/CostType';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../entity/Publication';
 import { CostCenter } from '../../entity/CostCenter';
+import { CostCenterIndex } from '../../../../output-interfaces/PublicationIndex';
 
 @Injectable()
 export class InvoiceService {
@@ -84,6 +85,26 @@ export class InvoiceService {
 
     public getCostCenters() {
         return this.ccRepository.find();
+    }
+
+    public async getCostCenterIndex(reporting_year: number) : Promise<CostCenterIndex[]> {
+        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+        let query = this.repository.createQueryBuilder("invoice")
+            .innerJoin("invoice.cost_center", "cost_center")
+            .leftJoin("invoice.publication","publication", "publication.pub_date between :beginDate and :endDate",{beginDate, endDate})
+            .select("cost_center.id","id")
+            .addSelect("cost_center.label","label")
+            .addSelect("cost_center.number","number")
+            .addSelect("COUNT(DISTINCT publication.id)","pub_count")
+            .groupBy("cost_center.id")
+            .addGroupBy("cost_center.label")
+            .addGroupBy("cost_center.number")
+
+        //console.log(query.getSql());
+
+        return query.getRawMany() as Promise<CostCenterIndex[]>;
     }
     
     public async getCostCenter(id:number, writer: boolean) {

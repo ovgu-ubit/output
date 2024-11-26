@@ -21,6 +21,7 @@ export class PublicationService {
     author = false;
     identifiers = false;
     pub_type = false;
+    cost_center = false;
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -53,6 +54,7 @@ export class PublicationService {
             .leftJoinAndSelect("authorPublications.institute", "institute")
             .leftJoinAndSelect("publication.invoices", "invoices")
             .leftJoinAndSelect("invoices.cost_items", "cost_items")
+            .leftJoinAndSelect("invoices.cost_center", "cost_center")
             .leftJoinAndSelect("cost_items.cost_type", "cost_type")
 
         query = this.filter(filter, query);
@@ -177,7 +179,7 @@ export class PublicationService {
 
     public async delete(pubs: Publication[], soft?: boolean) {
         for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } , identifiers: true}, withDeleted: true });
+            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
             for (let autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
@@ -296,11 +298,14 @@ export class PublicationService {
 
     getReportingYears() {
         let query = this.pubRepository.createQueryBuilder("publication")
-            .select("extract('Year' from pub_date)", 'year')
+            .select("CASE WHEN publication.pub_date IS NOT NULL THEN extract('Year' from publication.pub_date at time zone 'UTC') " +
+                "WHEN publication.pub_date_print IS NOT NULL THEN extract('Year' from publication.pub_date_print at time zone 'UTC') " +
+                "WHEN publication.pub_date_accepted IS NOT NULL THEN extract('Year' from publication.pub_date_accepted at time zone 'UTC') " +
+                "WHEN publication.pub_date_submitted IS NOT NULL THEN extract('Year' from publication.pub_date_submitted at time zone 'UTC') " +
+                "ELSE NULL END"
+                , 'year')
             .distinct(true)
-            .where('pub_date IS NOT NULL')
             .orderBy('year', 'DESC');
-        //console.log(query.getSql())
         return query.getRawMany() as Promise<number[]>;
     }
 
@@ -360,6 +365,7 @@ export class PublicationService {
         this.author = false;
         this.identifiers = false;
         this.pub_type = false;
+        this.cost_center = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -403,6 +409,10 @@ export class PublicationService {
         if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
         if (this.identifiers) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
         if (this.pub_type) indexQuery = indexQuery.leftJoin('publication.pub_type', 'pub_type')
+        if (this.cost_center) {
+            indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
+            indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
+        }
         //console.log(indexQuery.getSql())
         return indexQuery;
     }
@@ -417,8 +427,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 where = key + ".label = '" + value + "'";
                 if (key == 'funder') this.funder = true;
+                if (key == 'cost_center') this.cost_center = true;
                 break;
             case 'author_id':
                 where = '\"authorPublications\".\"authorId\"=' + value;
@@ -454,6 +466,10 @@ export class PublicationService {
                 where = "identifier.value='" + value + "'";
                 this.identifiers = true;
                 break;
+            case 'cost_center_id':
+                where = "cost_center.id=" + value;
+                this.cost_center = true;
+                break;
             default:
                 where = "publication." + key + " = '" + value + "'";
         }
@@ -470,8 +486,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
+                if (key == 'cost_center') this.cost_center = true;
                 where = key + ".label ILIKE '%" + value + "%'";
                 break;
             case 'inst_authors':
@@ -498,8 +516,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
+                if (key == 'cost_center') this.cost_center = true;
                 where = key + ".label ILIKE '" + value + "%'";
                 break;
             case 'inst_authors':
@@ -526,8 +546,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
+                if (key == 'cost_center') this.cost_center = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':

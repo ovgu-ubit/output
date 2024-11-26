@@ -261,12 +261,12 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
             op: JoinOperation.AND,
             key: 'pub_date',
             comp: CompareOperation.GREATER_THAN,
-            value: (this.reporting_year-1)+'-12-31 23:59:59'
+            value: (Number(this.reporting_year)-1)+'-12-31 23:59:59'
           },{
             op: JoinOperation.AND,
             key: 'pub_date',
             comp: CompareOperation.SMALLER_THAN,
-            value: (this.reporting_year+1)+'-01-01 00:00:00'
+            value: (Number(this.reporting_year)+1)+'-01-01 00:00:00'
           }]
         }
       }
