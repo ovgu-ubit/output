@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { CostCenter, CostType } from '../../../../../output-interfaces/Publication';
 import { environment } from 'src/environments/environment';
+import { CostCenterIndex } from '../../../../../output-interfaces/PublicationIndex';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,10 @@ export class CostCenterService {
 
   public getCostCenters() {
     return this.http.get<CostCenter[]>(environment.api + 'invoice/cost_center', { withCredentials: true });
+  }
+
+  public getCostCenterIndex(reporting_year:number) {
+    return this.http.get<CostCenterIndex[]>(environment.api + 'invoice/cost_center/index?reporting_year='+reporting_year, { withCredentials: true });
   }
   
   public getCostCenter(id:number) {

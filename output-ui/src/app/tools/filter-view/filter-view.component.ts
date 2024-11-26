@@ -64,6 +64,8 @@ export class FilterViewComponent implements OnInit {
     { key: 'contract_id', label: 'ID eines Vertrags' },
     { key: 'funder', label: 'Förderer' },
     { key: 'funder_id', label: 'ID eines Förderer' },
+    { key: 'cost_center', label: 'Kostenstelle'  },
+    { key: 'cost_center_id', label: 'ID einer Kostenstelle', type: 'number'  },
     { key: 'edit_date', label: 'Letzte Bearbeitung', type: 'date' },
     { key: 'import_date', label: 'Importdatum', type: 'date' },
   ]
