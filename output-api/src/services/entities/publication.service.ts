@@ -178,7 +178,7 @@ export class PublicationService {
 
     public async delete(pubs: Publication[], soft?: boolean) {
         for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true } , identifiers: true}, withDeleted: true });
+            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
             for (let autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
@@ -297,11 +297,14 @@ export class PublicationService {
 
     getReportingYears() {
         let query = this.pubRepository.createQueryBuilder("publication")
-            .select("extract('Year' from pub_date)", 'year')
+            .select("CASE WHEN publication.pub_date IS NOT NULL THEN extract('Year' from publication.pub_date at time zone 'UTC') " +
+                "WHEN publication.pub_date_print IS NOT NULL THEN extract('Year' from publication.pub_date_print at time zone 'UTC') " +
+                "WHEN publication.pub_date_accepted IS NOT NULL THEN extract('Year' from publication.pub_date_accepted at time zone 'UTC') " +
+                "WHEN publication.pub_date_submitted IS NOT NULL THEN extract('Year' from publication.pub_date_submitted at time zone 'UTC') " +
+                "ELSE NULL END"
+                , 'year')
             .distinct(true)
-            .where('pub_date IS NOT NULL')
             .orderBy('year', 'DESC');
-        //console.log(query.getSql())
         return query.getRawMany() as Promise<number[]>;
     }
 
