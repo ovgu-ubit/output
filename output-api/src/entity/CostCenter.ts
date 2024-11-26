@@ -1,5 +1,6 @@
-import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
+import {Entity, PrimaryGeneratedColumn, Column, ManyToOne} from "typeorm";
 import { CostCenter as ICostCenter} from "../../../output-interfaces/Publication"
+import { Invoice } from "./Invoice";
 
 @Entity()
 export class CostCenter implements ICostCenter {
@@ -12,6 +13,9 @@ export class CostCenter implements ICostCenter {
     
     @Column()
     label: string;
+
+    @ManyToOne(() => Invoice, (inv) => inv.cost_center)
+    invoices?: Invoice
     
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
