@@ -91,8 +91,8 @@ export class InvoiceService {
         if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
         let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        let query = this.repository.createQueryBuilder("invoice")
-            .innerJoin("invoice.cost_center", "cost_center")
+        let query = this.ccRepository.createQueryBuilder("cost_center")
+            .leftJoin("invoice", "invoice", "invoice.\"costCenterId\"=cost_center.id")
             .leftJoin("invoice.publication","publication", "publication.pub_date between :beginDate and :endDate",{beginDate, endDate})
             .select("cost_center.id","id")
             .addSelect("cost_center.label","label")
