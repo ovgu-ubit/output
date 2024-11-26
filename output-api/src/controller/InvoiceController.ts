@@ -131,7 +131,14 @@ export class InvoiceController {
     @Get('cost_center')
     async cost_center() : Promise<CostCenter[]> {
         return await this.invoiceService.getCostCenters();
+    } 
+
+    @Get('cost_center/index')
+    @ApiResponse({ status: 200, description: 'Author index is returned.' })
+    async ccIndex(@Query('reporting_year') reporting_year: number) {
+        return await this.invoiceService.getCostCenterIndex(reporting_year);
     }
+
     
     @Get('cost_center/:id')
     @UseGuards(AccessGuard)

@@ -7,8 +7,8 @@ export class CostCenter implements ICostCenter {
     @PrimaryGeneratedColumn()
     id?: number;
 
-    @Column()
-    number: string;
+    @Column({nullable: true})
+    number?: string;
     
     @Column()
     label: string;

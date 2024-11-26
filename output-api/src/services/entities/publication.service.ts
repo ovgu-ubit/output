@@ -21,6 +21,7 @@ export class PublicationService {
     author = false;
     identifiers = false;
     pub_type = false;
+    cost_center = false;
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -364,6 +365,7 @@ export class PublicationService {
         this.author = false;
         this.identifiers = false;
         this.pub_type = false;
+        this.cost_center = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -407,6 +409,10 @@ export class PublicationService {
         if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
         if (this.identifiers) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
         if (this.pub_type) indexQuery = indexQuery.leftJoin('publication.pub_type', 'pub_type')
+        if (this.cost_center) {
+            indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
+            indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
+        }
         //console.log(indexQuery.getSql())
         return indexQuery;
     }
@@ -421,8 +427,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 where = key + ".label = '" + value + "'";
                 if (key == 'funder') this.funder = true;
+                if (key == 'cost_center') this.cost_center = true;
                 break;
             case 'author_id':
                 where = '\"authorPublications\".\"authorId\"=' + value;
@@ -458,6 +466,10 @@ export class PublicationService {
                 where = "identifier.value='" + value + "'";
                 this.identifiers = true;
                 break;
+            case 'cost_center_id':
+                where = "cost_center.id=" + value;
+                this.cost_center = true;
+                break;
             default:
                 where = "publication." + key + " = '" + value + "'";
         }
@@ -474,8 +486,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
+                if (key == 'cost_center') this.cost_center = true;
                 where = key + ".label ILIKE '%" + value + "%'";
                 break;
             case 'inst_authors':
@@ -502,8 +516,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
+                if (key == 'cost_center') this.cost_center = true;
                 where = key + ".label ILIKE '" + value + "%'";
                 break;
             case 'inst_authors':
@@ -530,8 +546,10 @@ export class PublicationService {
             case 'contract':
             case 'funder':
             case 'institute':
+            case 'cost_center':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
+                if (key == 'cost_center') this.cost_center = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':

@@ -99,8 +99,8 @@ export interface Contract {
 
 export interface CostCenter {
     id?: number;
-    number: string;
-    label: string;
+    number?: string;
+    label?: string;
     locked_at?: Date;
 }
 
