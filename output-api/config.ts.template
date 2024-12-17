@@ -69,6 +69,7 @@ export default() : AppConfig => ({
         {path: 'openalex', class: OpenAlexImportService},
         {path: 'scopus', class: ScopusImportService},
     ],
+    doi_import_service: 'openalex',
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},
         {path: 'crossref', class: CrossrefEnrichService},
