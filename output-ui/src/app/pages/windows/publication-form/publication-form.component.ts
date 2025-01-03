@@ -75,7 +75,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
-  @ViewChild('table') tableAuthors: MatTable<any>;
+  @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
   @ViewChild('tableID') tableId: MatTable<PublicationIdentifier>;
 
   today = new Date();
