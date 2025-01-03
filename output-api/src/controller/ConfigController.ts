@@ -27,4 +27,9 @@ export class ConfigController {
             short_label: this.configService.get('institution_short_label')
         }
     }
+
+    @Get('doi_import')
+    getDOIImport() {
+        return JSON.stringify(this.configService.get('doi_import_service'))
+    }
 }
