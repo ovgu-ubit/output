@@ -22,6 +22,12 @@ export class PublicationService {
     identifiers = false;
     pub_type = false;
     cost_center = false;
+    ge = false;
+    oa_cat = false;
+    contract = false;
+    publisher = false;
+
+    filter_joins: Set<string> = new Set();
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
@@ -90,9 +96,11 @@ export class PublicationService {
             query = query.addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
         }
         if (this.configService.get("pub_index_columns").includes("greater_entity")) {
+            this.filter_joins.add("greater_entity")
             query = query.leftJoin("publication.greater_entity", "greater_entity").addSelect("greater_entity.label", "greater_entity").addGroupBy("greater_entity.label")
         }
         if (this.configService.get("pub_index_columns").includes("oa_category")) {
+            this.filter_joins.add("oa_category")
             query = query.leftJoin("publication.oa_category", "oa_category").addSelect("oa_category.label", "oa_category").addGroupBy("oa_category.label")
         }
         if (this.configService.get("pub_index_columns").includes("locked_status")) {
@@ -108,12 +116,15 @@ export class PublicationService {
             query = query.addSelect("publication.import_date", "import_date")
         }
         if (this.configService.get("pub_index_columns").includes("pub_type")) {
+            this.filter_joins.add("publication_type")
             query = query.leftJoin("publication.pub_type", "publication_type").addSelect("publication_type.label", "pub_type").addGroupBy("publication_type.label")
         }
         if (this.configService.get("pub_index_columns").includes("contract")) {
+            this.filter_joins.add("contract")
             query = query.leftJoin("publication.contract", "contract").addSelect("contract.label", "contract").addGroupBy("contract.label")
         }
         if (this.configService.get("pub_index_columns").includes("publisher")) {
+            this.filter_joins.add("publisher")
             query = query.leftJoin("publication.publisher", "publisher").addSelect("publisher.label", "publisher").addGroupBy("publisher.label")
         }
         if (this.configService.get("pub_index_columns").includes("pub_date")) {
@@ -366,6 +377,10 @@ export class PublicationService {
         this.identifiers = false;
         this.pub_type = false;
         this.cost_center = false;
+        this.ge = false;
+        this.oa_cat = false;
+        this.contract = false;
+        this.publisher = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -406,10 +421,14 @@ export class PublicationService {
                     break;
             }
         }
-        if (this.funder) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
-        if (this.identifiers) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
-        if (this.pub_type) indexQuery = indexQuery.leftJoin('publication.pub_type', 'pub_type')
-        if (this.cost_center) {
+        if (this.funder && !this.filter_joins.has("funder")) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
+        if (this.identifiers && !this.filter_joins.has("identifier")) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
+        if (this.pub_type && !this.filter_joins.has("publication_type")) indexQuery = indexQuery.leftJoin('publication.pub_type', 'publication_type')
+        if (this.ge && !this.filter_joins.has("greater_entity")) indexQuery = indexQuery.leftJoin('publication.greater_entity', 'greater_entity')
+        if (this.oa_cat && !this.filter_joins.has("oa_category")) indexQuery = indexQuery.leftJoin('publication.oa_category', 'oa_category')
+        if (this.contract && !this.filter_joins.has("contract")) indexQuery = indexQuery.leftJoin('publication.contract', 'contract')
+        if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
+        if (this.cost_center && !this.filter_joins.has("cost_center")) {
             indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
             indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
         }
@@ -431,6 +450,10 @@ export class PublicationService {
                 where = key + ".label = '" + value + "'";
                 if (key == 'funder') this.funder = true;
                 if (key == 'cost_center') this.cost_center = true;
+                if (key == 'greater_entity') this.ge = true;
+                if (key == 'oa_category') this.oa_cat = true;
+                if (key == 'contract') this.contract = true;
+                if (key == 'publisher') this.publisher = true;
                 break;
             case 'author_id':
                 where = '\"authorPublications\".\"authorId\"=' + value;
@@ -444,6 +467,7 @@ export class PublicationService {
                 break;
             case 'contract_id':
                 where = 'contract.id=' + value;
+                this.contract = true;
                 break;
             case 'funder_id':
                 where = 'funder.id=' + value;
@@ -451,9 +475,11 @@ export class PublicationService {
                 break;
             case 'greater_entity_id':
                 where = 'greater_entity.id=' + value;
+                this.ge = true;
                 break;
             case 'oa_category_id':
                 where = 'oa_category.id=' + value;
+                this.oa_cat = true;
                 break;
             case 'pub_type_id':
                 where = 'publication_type.id=' + value;
@@ -461,6 +487,7 @@ export class PublicationService {
                 break;
             case 'publisher_id':
                 where = 'publisher.id=' + value;
+                this.publisher = true;
                 break;
             case 'other_ids':
                 where = "identifier.value='" + value + "'";
@@ -490,6 +517,10 @@ export class PublicationService {
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
                 if (key == 'cost_center') this.cost_center = true;
+                if (key == 'greater_entity') this.ge = true;
+                if (key == 'oa_category') this.oa_cat = true;
+                if (key == 'contract') this.contract = true;
+                if (key == 'publisher') this.publisher = true;
                 where = key + ".label ILIKE '%" + value + "%'";
                 break;
             case 'inst_authors':
@@ -520,6 +551,10 @@ export class PublicationService {
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
                 if (key == 'cost_center') this.cost_center = true;
+                if (key == 'greater_entity') this.ge = true;
+                if (key == 'oa_category') this.oa_cat = true;
+                if (key == 'contract') this.contract = true;
+                if (key == 'publisher') this.publisher = true;
                 where = key + ".label ILIKE '" + value + "%'";
                 break;
             case 'inst_authors':
@@ -550,6 +585,10 @@ export class PublicationService {
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
                 if (key == 'cost_center') this.cost_center = true;
+                if (key == 'greater_entity') this.ge = true;
+                if (key == 'oa_category') this.oa_cat = true;
+                if (key == 'contract') this.contract = true;
+                if (key == 'publisher') this.publisher = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':
