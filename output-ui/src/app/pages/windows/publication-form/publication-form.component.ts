@@ -731,8 +731,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       next: data => {
         if (data.authorId) {
           if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
-          this.pub.authorPublications.push(data)
-          if (this.table) this.table.dataSource = new MatTableDataSource(this.pub.authorPublications);
+          //this.pub.authorPublications.push(data)
+          //if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
+          this.pub.authorPublications = this.pub.authorPublications.concat([data])
         }
       }
     });

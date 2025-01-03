@@ -22,7 +22,7 @@ export class GreaterEntityService {
             if (pub.identifiers) {
                 for (let id of pub.identifiers) {
                     id.value = id.value.toUpperCase();
-                    id.type = id.value.toLowerCase();
+                    id.type = id.type.toLowerCase();
                     id.id = (await this.idRepository.save(id).catch(err => {
                         if (err.constraint) throw new BadRequestException(err.detail)
                         else throw new InternalServerErrorException(err);
