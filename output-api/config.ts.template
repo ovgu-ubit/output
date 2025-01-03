@@ -69,7 +69,7 @@ export default() : AppConfig => ({
         {path: 'openalex', class: OpenAlexImportService},
         {path: 'scopus', class: ScopusImportService},
     ],
-    doi_import_service: 'openalex',
+    doi_import_service: 'openalex', // the name of the enrich service to be used when a publication is imported via DOI
     enrich_services: [
         {path: 'unpaywall', class: UnpaywallEnrichService},
         {path: 'crossref', class: CrossrefEnrichService},
