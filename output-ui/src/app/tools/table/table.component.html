@@ -83,8 +83,7 @@
     </div>
     <div class="mat-elevation-z8">
       <table mat-table class="table" [class.table-wide]="this.wide" [dataSource]="this.dataSource" matSort
-        (matSortChange)="announceSortChange($event)" [matSortActive]="headerNames[this.id_col]" matSortDirection="asc"
-        matSortDisableClear>
+        (matSortChange)="announceSortChange($event)">
 
         <ng-container matColumnDef="select" sticky>
           <th mat-header-cell *matHeaderCellDef style="width: 10px;">
@@ -113,7 +112,14 @@
 
         <ng-container *ngFor="let col of headers;let idx = index">
           <ng-container [matColumnDef]="col.colName">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header> {{col.colTitle}} </th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header> 
+              {{col.colTitle}}
+              <div class="numbered-sort-header">
+                <div>{{renderHeader(col).text}}</div>
+                <mat-icon *ngIf="renderHeader(col).asc">arrow_upward</mat-icon>
+                <mat-icon *ngIf="renderHeader(col).asc === false">arrow_downward</mat-icon>
+                 </div>
+            </th>
             <ng-container *ngIf="!col.type || col.type === 'string'">
               <td mat-cell *matCellDef="let d" [innerText]="truncString(d[col.colName], this.trunc, col)"
                 [matTooltip]="d[col.colName] && d[col.colName].length > this.trunc? d[col.colName] : null"

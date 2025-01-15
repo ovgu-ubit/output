@@ -160,8 +160,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.selection.clear();
     this.dataSource.paginator = this.paginator;
     this.dataSource2.paginator = this.paginator2;
-    this.dataSource.sort = this.sort;
-    this.announceSortChange(this.sort);
+    /*this.dataSource.sort = this.sort;
+    this.announceSortChange(this.sort);*/
     this.filterColumn();
     if (this.id) {
       this.edit({ id: this.id });
@@ -462,14 +462,40 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     return `<a class="link-secondary" href="https://dx.doi.org/${doi}" target="_blank">${doi}</a>`;
   }
 
+  sort_state: {key:string, dir:SortDirection}[] = [];
+
   announceSortChange(sortState: Sort) {
+    this.sort_state = this.sort_state.filter(e => e.key !== sortState.active)
     if (sortState?.direction) {
+      this.sort_state.push({key:sortState.active, dir:sortState.direction});
+
       this.dataSource = new MatTableDataSource<T>(this.data.sort((a, b) => {
-        let type = this.headers.find(e => e.colName === sortState.active).type
-        return this.compare(type, a[sortState.active], b[sortState.active], sortState.direction);
+        for (let i=0;i<this.sort_state.length;i++) {
+          let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
+          let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
+          if (compare !== 0) return compare;
+        }
+        return 0;
       }))
+
       this.dataSource.paginator = this.paginator;
     }
+  }
+
+  renderHeader(col):{text:string, asc:boolean} {
+    let sort = {
+      text: '',
+      asc: null
+    };
+    for (let i=0;i<this.sort_state.length;i++) {
+      if (this.sort_state[i].key === col.colName) {
+        sort.text = (i+1)+"";
+        if (this.sort_state[i].dir === 'asc') sort.asc = true;
+        else sort.asc = false;
+        break;
+      }
+    }
+    return sort;
   }
 
   compare(type: string, a: any, b: any, dir: SortDirection) {
@@ -558,10 +584,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.columnFilter = viewConfig.filterColumn;
     //this.filterColumn();
 
-    this.sort.active = viewConfig.sortColumn ? viewConfig.sortColumn : this.headerNames[this.id_col];
+    /*this.sort.active = viewConfig.sortColumn ? viewConfig.sortColumn : this.headerNames[this.id_col];
     this.sort.direction = viewConfig.sortDir;
     this.dataSource.sort = this.sort;
-    this.sort.sortChange.emit();
+    this.sort.sortChange.emit();*/
 
     this.update(this.data);
   }
