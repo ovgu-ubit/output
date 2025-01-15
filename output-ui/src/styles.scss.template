@@ -179,4 +179,8 @@ button[disabled] {
   --mdc-snackbar-supporting-text-color: rgba(0, 0, 0, 0.87);
 }
 
+.mat-sort-header-arrow {
+  display: none!important;
+}
+
 @include mat.all-component-themes($my-theme);
