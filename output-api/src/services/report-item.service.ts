@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class ReportItemService {
@@ -48,6 +49,24 @@ export class ReportItemService {
 
     deleteReport(filename:string) {
         return fs.rmSync(this.path+filename)
+    }
+
+    @Cron('15 55 22 * * *') // 22:55:15 at every day
+    public deleteOldFiles() {
+        if (!fs.existsSync(this.path)) throw new InternalServerErrorException("configured LOG path does not exist, report to admin")
+        if (!this.path.endsWith("/")) this.path += "/";
+        let now = new Date();
+        console.log("Delete run at "+now)
+        let files = fs.readdirSync(this.path, { withFileTypes: true });
+        for (let file of files) {
+            if (file.isDirectory()) continue;
+            let stat = fs.statSync(this.path + file.name);
+            let days = 93;
+            if (file.isFile() && (now.getTime() - new Date(stat["ctime"]).getTime()) > days * 24 * 60 * 60 * 1000) {
+                console.log("Deleting "+this.path + file.name)
+                fs.rmSync(this.path + file.name)
+            }
+        }
     }
 
     format(timestamp:Date, filename?:boolean):string {
