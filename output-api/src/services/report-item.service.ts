@@ -12,14 +12,6 @@ export class ReportItemService {
 
     createReport(type:'Import'|'Enrich'|'Check'|'Export', label:string,by_user:string): string {
         if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)
-        /*let obj: ImportReport = {
-            label,
-            by_user,
-            timestamp: new Date(),
-            status: 'started',
-            report_items: []
-        }
-        return this.repositoryReport.save(obj);*/
         let filename = `${type}_${label}_${this.format(new Date(),true)}_by_${by_user}.log`;
         fs.writeFileSync(this.path+filename,'')
         return this.path+filename;

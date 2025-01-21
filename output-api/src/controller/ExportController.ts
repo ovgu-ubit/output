@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, Query, Res, Inject,NotFoundException,Param, UseGuards,Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Post, Query, Res, Inject, NotFoundException, Param, UseGuards, Req, StreamableFile } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { ReportItemService } from "../services/report-item.service";
 import { Response } from "express";
@@ -10,25 +10,27 @@ import { SearchFilter } from "../../../output-interfaces/Config";
 import { Publication } from "../entity/Publication";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
+import { createReadStream } from "fs";
 
 @Controller("export")
 @ApiTags("export")
 export class ExportController {
 
-  constructor(private configService:ConfigService,
+  constructor(private configService: ConfigService,
     private reportService: ReportItemService,
     @Inject('Exports') private exportServices: AbstractExportService[],
-    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
+    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
 
   @Get()
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   getExports() {
     let result = [];
-    for (let i=0;i<this.configService.get('export_services').length;i++) {
+    for (let i = 0; i < this.configService.get('export_services').length; i++) {
       result.push({
-        path: this.configService.get('export_services')[i].path, 
-        label:this.exportServices[i].getName()})
+        path: this.configService.get('export_services')[i].path,
+        label: this.exportServices[i].getName()
+      })
     }
     return result;
   }
@@ -73,12 +75,17 @@ export class ExportController {
   @Post(":path")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  async exportMaster(@Param('path') path: string, @Req() request:Request, @Body('filter') filter?:{filter:SearchFilter, paths: string[]}) {
+  async exportMaster(@Param('path') path: string, @Res({ passthrough: true }) res: Response, @Req() request: Request, @Body('filter') filter?: { filter: SearchFilter, paths: string[] }) {
     //res.setHeader('Content-type', 'text/plain')
     let so = this.configService.get('export_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
 
-    return this.exportServices[so].export(filter, this.filterServices, request['user']['id']);
+    if (this.exportServices[so].isExcelResponse()) {
+      return new StreamableFile(await this.exportServices[so].export(filter, this.filterServices, request['user']['id']), {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        disposition: 'attachment; filename="Excel.xlsx"'
+      });
+    } else return this.exportServices[so].export(filter, this.filterServices, request['user']['id']);
   }
 
   @Get(":path")

@@ -23,6 +23,15 @@ export abstract class AbstractExportService {
     protected name = 'export';
 
     /**
+     * this boolean variable indicates whether there is an excel response type or a text response type
+     */
+    protected excel_response = false;
+
+    public isExcelResponse() {
+        return this.excel_response;
+    }
+
+    /**
      * main method for exports, should return 
      */
     public abstract export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string);
