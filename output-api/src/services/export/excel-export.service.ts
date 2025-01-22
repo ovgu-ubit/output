@@ -21,7 +21,7 @@ export class ExcelExportService extends AbstractExportService {
     df: Intl.DateTimeFormat;
 
     constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, private invoiceService: InvoiceService,
-        private authorService:AuthorService
+        private authorService: AuthorService
     ) {
         super();
         this.df = new Intl.DateTimeFormat('de-DE');
@@ -29,7 +29,7 @@ export class ExcelExportService extends AbstractExportService {
 
     protected name = 'Excel-Export';
 
-    public async export(filter?: { filter: SearchFilter, paths: string[] }, filterServices?: AbstractFilterService<PublicationIndex | Publication>[], by_user?: string) {
+    public async export(filter?: { filter: SearchFilter, paths: string[] }, filterServices?: AbstractFilterService<PublicationIndex | Publication>[], by_user?: string, withMasterData?: boolean) {
         this.status_text = 'Started on ' + new Date();
         this.report = this.reportService.createReport('Export', this.name, by_user);
 
@@ -82,46 +82,46 @@ export class ExcelExportService extends AbstractExportService {
         }
 
         let workbook = XLSX.utils.book_new();
-        let worksheet = XLSX.utils.json_to_sheet(rows,{cellStyles:true})
+        let worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true })
         //formatting
         if (!worksheet["!cols"]) worksheet["!cols"] = [];
-        worksheet["!cols"][XLSX.utils.decode_col("D")] = {width: 30}
-        worksheet["!cols"][XLSX.utils.decode_col("E")] = {width: 20}
-        worksheet["!cols"][XLSX.utils.decode_col("AB")] = {width: 20}
-        worksheet["!cols"][XLSX.utils.decode_col("AC")] = {width: 20}
-        for (let i=2;i<=rows.length;i++) {
-            worksheet["T"+i].z = '#,##0.00 "€"'; //cost approach
-            worksheet["V"+i].z = '#,##0.00 "€"'; //net costs
-            worksheet["W"+i].z = '#,##0.00 "€"'; //paid amount
-            worksheet["AB"+i].z = "DD.MM.YYYY HH:MM:SS"; //import date
-            worksheet["AC"+i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
-            let columns = ["AD","AE","AF","AG","AH","AI","AJ","AK","AL","AM","AN","AO","AP","AQ","AR","AS","AT"]
-            if (cost_types.length > columns.length) throw new InternalServerErrorException('too many cost types, please report to developer') 
-            for (let j=0;j<cost_types.length;j++) {
-                if (worksheet[columns[j]+""+i]) worksheet[columns[j]+""+i].z = '#,##0.00 "€"';
+        worksheet["!cols"][XLSX.utils.decode_col("D")] = { width: 30 }
+        worksheet["!cols"][XLSX.utils.decode_col("E")] = { width: 20 }
+        worksheet["!cols"][XLSX.utils.decode_col("AB")] = { width: 20 }
+        worksheet["!cols"][XLSX.utils.decode_col("AC")] = { width: 20 }
+        for (let i = 2; i <= rows.length; i++) {
+            worksheet["T" + i].z = '#,##0.00 "€"'; //cost approach
+            worksheet["V" + i].z = '#,##0.00 "€"'; //net costs
+            worksheet["W" + i].z = '#,##0.00 "€"'; //paid amount
+            worksheet["AB" + i].z = "DD.MM.YYYY HH:MM:SS"; //import date
+            worksheet["AC" + i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
+            let columns = ["AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT"]
+            if (cost_types.length > columns.length) throw new InternalServerErrorException('too many cost types, please report to developer')
+            for (let j = 0; j < cost_types.length; j++) {
+                if (worksheet[columns[j] + "" + i]) worksheet[columns[j] + "" + i].z = '#,##0.00 "€"';
             }
         }
-        
+
         XLSX.utils.book_append_sheet(workbook, worksheet, "Publikationen");
-
-        //authors
-        rows = [];
-        let authors = await this.authorService.get();
-        for (let author of authors) {
-            let row = {
-                id: author.id,
-                title: author.title,
-                first_name: author.first_name,
-                last_name: author.last_name,
-                orcid: author.orcid,
-                gnd_id: author.gnd_id,
-                institutes: author.institutes?.map(x => x.label).join(' | ')
+        if (withMasterData) {
+            //authors
+            rows = [];
+            let authors = await this.authorService.get();
+            for (let author of authors) {
+                let row = {
+                    id: author.id,
+                    title: author.title,
+                    first_name: author.first_name,
+                    last_name: author.last_name,
+                    orcid: author.orcid,
+                    gnd_id: author.gnd_id,
+                    institutes: author.institutes?.map(x => x.label).join(' | ')
+                }
+                rows.push(row);
             }
-            rows.push(row);
+            let worksheet_authors = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_authors, "Personen");
         }
-        let worksheet_authors = XLSX.utils.json_to_sheet(rows)
-        XLSX.utils.book_append_sheet(workbook, worksheet_authors, "Personen");
-
         //finalize
         this.progress = 0;
         this.reportService.finish(this.report, {
