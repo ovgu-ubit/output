@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AbstractExportService } from './abstract-export.service';
 import { PublicationService } from '../entities/publication.service';
 import { ReportItemService } from '../report-item.service';
@@ -79,7 +79,26 @@ export class ExcelExportService extends AbstractExportService {
         }
 
         let workbook = XLSX.utils.book_new();
-        let worksheet = XLSX.utils.json_to_sheet(rows)
+        let worksheet = XLSX.utils.json_to_sheet(rows,{cellStyles:true})
+        //formatting
+        if (!worksheet["!cols"]) worksheet["!cols"] = [];
+        worksheet["!cols"][XLSX.utils.decode_col("D")] = {width: 30}
+        worksheet["!cols"][XLSX.utils.decode_col("E")] = {width: 20}
+        worksheet["!cols"][XLSX.utils.decode_col("AB")] = {width: 20}
+        worksheet["!cols"][XLSX.utils.decode_col("AC")] = {width: 20}
+        for (let i=2;i<=rows.length;i++) {
+            worksheet["T"+i].z = '#,##0.00 "€"'; //cost approach
+            worksheet["V"+i].z = '#,##0.00 "€"'; //net costs
+            worksheet["W"+i].z = '#,##0.00 "€"'; //paid amount
+            worksheet["AB"+i].z = "DD.MM.YYYY HH:MM:SS"; //import date
+            worksheet["AC"+i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
+            let columns = ["AD","AE","AF","AG","AH","AI","AJ","AK","AL","AM","AN","AO","AP","AQ","AR","AS","AT"]
+            if (cost_types.length > columns.length) throw new InternalServerErrorException('too many cost types, please report to developer') 
+            for (let j=0;j<cost_types.length;j++) {
+                if (worksheet[columns[j]+""+i]) worksheet[columns[j]+""+i].z = '#,##0.00 "€"';
+            }
+        }
+        
         XLSX.utils.book_append_sheet(workbook, worksheet, "Publikationen");
 
         //finalize

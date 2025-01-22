@@ -32,7 +32,7 @@ export class PublicationService {
   }
 
   public save(pubs: Publication[]) {
-    return this.http.put<Publication[]>(environment.api + 'publications', pubs, { withCredentials: true });
+    return this.http.put<Publication[]>(environment.api + 'publications', pubs.map(pub => ({...pub, edit_date:undefined})), { withCredentials: true });
   }
 
   public insert(pub: Publication) {
