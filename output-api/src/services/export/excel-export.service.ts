@@ -9,6 +9,7 @@ import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';
 import { InvoiceService } from '../entities/invoice.service';
 import * as XLSX from 'xlsx';
+import { AuthorService } from '../entities/author.service';
 
 @Injectable()
 /**
@@ -19,7 +20,9 @@ export class ExcelExportService extends AbstractExportService {
     excel_response = true;
     df: Intl.DateTimeFormat;
 
-    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, private invoiceService: InvoiceService) {
+    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, private invoiceService: InvoiceService,
+        private authorService:AuthorService
+    ) {
         super();
         this.df = new Intl.DateTimeFormat('de-DE');
     }
@@ -100,6 +103,24 @@ export class ExcelExportService extends AbstractExportService {
         }
         
         XLSX.utils.book_append_sheet(workbook, worksheet, "Publikationen");
+
+        //authors
+        rows = [];
+        let authors = await this.authorService.get();
+        for (let author of authors) {
+            let row = {
+                id: author.id,
+                title: author.title,
+                first_name: author.first_name,
+                last_name: author.last_name,
+                orcid: author.orcid,
+                gnd_id: author.gnd_id,
+                institutes: author.institutes?.map(x => x.label).join(' | ')
+            }
+            rows.push(row);
+        }
+        let worksheet_authors = XLSX.utils.json_to_sheet(rows)
+        XLSX.utils.book_append_sheet(workbook, worksheet_authors, "Personen");
 
         //finalize
         this.progress = 0;
