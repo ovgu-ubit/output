@@ -41,6 +41,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   reporting_year: number;
   filter: { filter: SearchFilter, paths?: string[] };
   id;
+  doi_import_service:string;
 
   soft_deletes = false;
 
@@ -106,6 +107,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
+    })))
+    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
+      this.doi_import_service = data;
     })))
     ob$ = concat(ob$, this.configService.getInstition().pipe(map(data => {
       this.institution = data.short_label;
@@ -421,7 +425,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
                 ]
               }
             }
-            this.enrichService.startID('openalex', id).subscribe({
+            this.enrichService.startID(this.doi_import_service, id).subscribe({
               next: data => {
                 this.update(); 
                 this._snackBar.open(`Publikation hinzugefügt, bitte Seite aktualisieren`, 'Super!', {

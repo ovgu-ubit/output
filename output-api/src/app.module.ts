@@ -71,6 +71,7 @@ import { Status } from "./entity/Status";
 import { StatusController } from "./controller/StatusController";
 import { StatusService } from "./services/entities/status.service";
 import { ExcelImportService } from "./services/import/excel-import.service";
+import { ScheduleModule } from "@nestjs/schedule";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -96,7 +97,8 @@ const filterz = appConfig().filter_services;
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
       Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
-      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status])
+      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status]),
+    ScheduleModule.forRoot()
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
@@ -105,7 +107,7 @@ const filterz = appConfig().filter_services;
     PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
     OACategoryService, ContractService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
     AppConfigService, StatisticsService,
-    CSVImportService, ExcelImportService, 
+    CSVImportService, ExcelImportService,
     { provide: AuthorizationService, useClass: appConfig().authorization_service },
     ...imports.map(e => e.class),
     {

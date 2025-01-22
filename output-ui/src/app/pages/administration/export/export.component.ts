@@ -60,17 +60,25 @@ export class ExportComponent implements OnInit {
     if (this.checkboxes.get(idx).checked) filter = this.filter;
     this.exportService.startExport(importO.path, filter).subscribe({
       next: data => {
-        let csvData = new Blob(['\ufeff', data], { type: 'text/csv;charset=utf-8;' });
+        let type = data["type"] as string;
+        let file_data;
+        let filename = 'Export_' + importO.label + '_' + (new Date().toISOString());
+        if (type.includes('spreadsheet')) {
+          filename+=".xlsx";
+          file_data = new Blob([data as any], { type: data["type"] });
+        } else {
+          filename+=".csv";
+          file_data = new Blob(['\ufeff', data as any], { type: 'text/csv;charset=utf-8;' });
+        }
         let csvURL = null;
-        csvURL = window.URL.createObjectURL(csvData);
-        let filename = 'Export_' + importO.label + '_' + (new Date().toISOString()) + '.csv';
+        csvURL = window.URL.createObjectURL(file_data);
         let tempLink = document.createElement('a');
         tempLink.href = csvURL;
         tempLink.setAttribute('download', `${filename}`);
         tempLink.click();
         this.reportService.getReports('Export').subscribe({
           next: data => {
-            this.reportFiles = data.sort((a, b) => b.localeCompare(a));;
+            this.reportFiles = data.sort((a, b) => b.localeCompare(a));
           }
         })
         this.updateStatus().subscribe();
