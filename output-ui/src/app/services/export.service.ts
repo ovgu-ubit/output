@@ -43,7 +43,7 @@ export class ExportService {
     }))
   }
 
-  startExport(path:string, filter?:{filter:SearchFilter, paths?:string[]}) {
-    return this.http.post(environment.api + 'export/'+path, {filter}, {responseType: 'blob' as 'json'})
+  startExport(path:string, filter?:{filter:SearchFilter, paths?:string[]}, withMasterData?:boolean) {
+    return this.http.post(environment.api + 'export/'+path, {filter, withMasterData}, {responseType: 'blob' as 'json'})
   }
 }

@@ -10,6 +10,13 @@ import { ConfigService } from '@nestjs/config';
 import { InvoiceService } from '../entities/invoice.service';
 import * as XLSX from 'xlsx';
 import { AuthorService } from '../entities/author.service';
+import { InstitutionService } from '../entities/institution.service';
+import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { PublisherService } from '../entities/publisher.service';
+import { ContractService } from '../entities/contract.service';
+import { FunderService } from '../entities/funder.service';
+import { OACategoryService } from '../entities/oa-category.service';
+import { PublicationTypeService } from '../entities/publication-type.service';
 
 @Injectable()
 /**
@@ -20,8 +27,10 @@ export class ExcelExportService extends AbstractExportService {
     excel_response = true;
     df: Intl.DateTimeFormat;
 
-    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, private invoiceService: InvoiceService,
-        private authorService: AuthorService
+    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, 
+        private invoiceService: InvoiceService, private authorService: AuthorService, private instService:InstitutionService,
+        private geService: GreaterEntityService, private publService: PublisherService, private contractService:ContractService,
+        private funderService: FunderService, private oaService: OACategoryService, private ptService:PublicationTypeService
     ) {
         super();
         this.df = new Intl.DateTimeFormat('de-DE');
@@ -121,6 +130,142 @@ export class ExcelExportService extends AbstractExportService {
             }
             let worksheet_authors = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_authors, "Personen");
+            
+            //institutes
+            let insts = await this.instService.get();
+            rows = [];
+            for (let inst of insts) {
+                let row = {
+                    id: inst.id,
+                    label: inst.label,
+                    short_label: inst.short_label,
+                    super_institute: inst.super_institute?.short_label
+                }
+                rows.push(row);
+            }
+            let worksheet_inst = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_inst, "Institute");
+
+            //greater entities
+            let ges = await this.geService.get();
+            rows = [];
+            for (let ge of ges) {
+                let row = {
+                    id: ge.id,
+                    label: ge.label,
+                    doaj_since: ge.doaj_since,
+                    doaj_until: ge.doaj_until,
+                    identifiers: ge.identifiers?.map(x => x.value).join(' | ')
+                }
+                rows.push(row);
+            }
+            let worksheet_ge = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_ge, "Größere Einheiten");
+
+            //publishers
+            let publs = await this.publService.get();
+            rows = [];
+            for (let publ of publs) {
+                let row = {
+                    id: publ.id,
+                    label: publ.label,
+                    doi_prefixes: publ.doi_prefixes?.map(x => x.doi_prefix).join(' | ')
+                }
+                rows.push(row);
+            }
+            let worksheet_publ = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_publ, "Verlage");
+
+            //contracts
+            let cons = await this.contractService.get();
+            rows = [];
+            for (let con of cons) {
+                let row = {
+                    id: con.id,
+                    label: con.label,
+                    publisher: con.publisher?.label,
+                    start_date: con.start_date,
+                    end_date: con.end_date,
+                    internal_number: con.internal_number,
+                    invoice_amount: con.invoice_amount,
+                    invoice_information: con.invoice_information,
+                    gold_option: con.gold_option,
+                    verification_method: con.verification_method
+                }
+                rows.push(row);
+            }
+            let worksheet_con = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_con, "Verträge");
+
+            //funder
+            let funs = await this.funderService.get();
+            rows = [];
+            for (let fun of funs) {
+                let row = {
+                    id: fun.id,
+                    label: fun.label,
+                    doi: fun.doi,
+                    ror_id: fun.ror_id
+                }
+                rows.push(row);
+            }
+            let worksheet_fun = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_fun, "Förderer");
+
+            //oa cats
+            let oas = await this.oaService.get();
+            rows = [];
+            for (let oa of oas) {
+                let row = {
+                    id: oa.id,
+                    label: oa.label,
+                    is_oa: oa.is_oa
+                }
+                rows.push(row);
+            }
+            let worksheet_oa = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_oa, "OA-Kategorien");
+
+            //pub types
+            let pts = await this.ptService.get();
+            rows = [];
+            for (let pt of pts) {
+                let row = {
+                    id: pt.id,
+                    label: pt.label,
+                    review: pt.review
+                }
+                rows.push(row);
+            }
+            let worksheet_pt = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_pt, "Publikationsarten");
+
+            //cost center
+            let ccs = await this.invoiceService.getCostCenters();
+            rows = [];
+            for (let cc of ccs) {
+                let row = {
+                    id: cc.id,
+                    label: cc.label,
+                    number: cc.number
+                }
+                rows.push(row);
+            }
+            let worksheet_cc = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_cc, "Kostenstellen");
+
+            //cost types
+            let cts = await this.invoiceService.getCostTypes();
+            rows = [];
+            for (let ct of cts) {
+                let row = {
+                    id: ct.id,
+                    label: ct.label
+                }
+                rows.push(row);
+            }
+            let worksheet_ct = XLSX.utils.json_to_sheet(rows)
+            XLSX.utils.book_append_sheet(workbook, worksheet_ct, "Kostenarten");
         }
         //finalize
         this.progress = 0;

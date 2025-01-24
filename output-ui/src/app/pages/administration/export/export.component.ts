@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChildren } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -23,7 +23,8 @@ export class ExportComponent implements OnInit {
   enrichs = [];
   status = [];
   filter = null;
-  @ViewChildren(MatCheckbox) checkboxes;
+  @ViewChildren('filter') checkboxes;
+  @ViewChild('master_data') master_data;
 
   async ngOnInit() {
     let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(map(data => {
@@ -58,7 +59,9 @@ export class ExportComponent implements OnInit {
     let idx = this.enrichs.findIndex(e => e === importO)
     let filter = null;
     if (this.checkboxes.get(idx).checked) filter = this.filter;
-    this.exportService.startExport(importO.path, filter).subscribe({
+    let withMasterData = this.master_data.checked;
+    
+    this.exportService.startExport(importO.path, filter, withMasterData).subscribe({
       next: data => {
         let type = data["type"] as string;
         let file_data;
