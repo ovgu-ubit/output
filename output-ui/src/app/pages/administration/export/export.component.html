@@ -11,7 +11,8 @@
             Status: {{status[idx]}}
         </mat-panel-description>
       </mat-expansion-panel-header>
-            <mat-checkbox>Aktuellen Filter verwenden</mat-checkbox> &nbsp;
+            <mat-checkbox #filter>Aktuellen Filter verwenden</mat-checkbox> &nbsp;
+            <mat-checkbox #master_data *ngIf="im.path === 'excel'">Stammdaten mit exportieren</mat-checkbox> &nbsp;
             <button mat-raised-button (click)="this.startImport(im)" color="primary">Export starten</button>
             <table style="width: 100%;">
                 <tr>

@@ -75,17 +75,19 @@ export class ExportController {
   @Post(":path")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  async exportMaster(@Param('path') path: string, @Res({ passthrough: true }) res: Response, @Req() request: Request, @Body('filter') filter?: { filter: SearchFilter, paths: string[] }) {
+  async exportMaster(@Param('path') path: string, @Res({ passthrough: true }) res: Response, @Req() request: Request, 
+  @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
+  @Body('withMasterData') withMasterData?: boolean) {
     //res.setHeader('Content-type', 'text/plain')
     let so = this.configService.get('export_services').findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
 
     if (this.exportServices[so].isExcelResponse()) {
-      return new StreamableFile(await this.exportServices[so].export(filter, this.filterServices, request['user']['id']), {
+      return new StreamableFile(await this.exportServices[so].export(filter, this.filterServices, request['user']['id'], withMasterData), {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         disposition: 'attachment; filename="Excel.xlsx"'
       });
-    } else return this.exportServices[so].export(filter, this.filterServices, request['user']['id']);
+    } else return this.exportServices[so].export(filter, this.filterServices, request['user']['id'], withMasterData);
   }
 
   @Get(":path")

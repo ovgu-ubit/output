@@ -34,7 +34,7 @@ export abstract class AbstractExportService {
     /**
      * main method for exports, should return 
      */
-    public abstract export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string);
+    public abstract export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string, withMasterData?:boolean);
 
     public getName() {
         return this.name;
