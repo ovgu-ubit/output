@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChildren } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -23,7 +23,8 @@ export class ExportComponent implements OnInit {
   enrichs = [];
   status = [];
   filter = null;
-  @ViewChildren(MatCheckbox) checkboxes;
+  @ViewChildren('filter') checkboxes;
+  @ViewChild('master_data') master_data;
 
   async ngOnInit() {
     let ob$: Observable<any> = this.store.select(selectViewConfig).pipe(map(data => {
@@ -58,19 +59,29 @@ export class ExportComponent implements OnInit {
     let idx = this.enrichs.findIndex(e => e === importO)
     let filter = null;
     if (this.checkboxes.get(idx).checked) filter = this.filter;
-    this.exportService.startExport(importO.path, filter).subscribe({
+    let withMasterData = this.master_data.checked;
+    
+    this.exportService.startExport(importO.path, filter, withMasterData).subscribe({
       next: data => {
-        let csvData = new Blob(['\ufeff', data], { type: 'text/csv;charset=utf-8;' });
+        let type = data["type"] as string;
+        let file_data;
+        let filename = 'Export_' + importO.label + '_' + (new Date().toISOString());
+        if (type.includes('spreadsheet')) {
+          filename+=".xlsx";
+          file_data = new Blob([data as any], { type: data["type"] });
+        } else {
+          filename+=".csv";
+          file_data = new Blob(['\ufeff', data as any], { type: 'text/csv;charset=utf-8;' });
+        }
         let csvURL = null;
-        csvURL = window.URL.createObjectURL(csvData);
-        let filename = 'Export_' + importO.label + '_' + (new Date().toISOString()) + '.csv';
+        csvURL = window.URL.createObjectURL(file_data);
         let tempLink = document.createElement('a');
         tempLink.href = csvURL;
         tempLink.setAttribute('download', `${filename}`);
         tempLink.click();
         this.reportService.getReports('Export').subscribe({
           next: data => {
-            this.reportFiles = data.sort((a, b) => b.localeCompare(a));;
+            this.reportFiles = data.sort((a, b) => b.localeCompare(a));
           }
         })
         this.updateStatus().subscribe();

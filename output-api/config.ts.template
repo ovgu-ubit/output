@@ -32,6 +32,7 @@ import { PubTypeExportService } from "./src/services/export/pub-type-export.serv
 import { OACatExportService } from "./src/services/export/oa-cat-export.service";
 import { CostCenterExportService } from "./src/services/export/cost-center-export.service";
 import { CostTypeExportService } from "./src/services/export/cost-type-export.service";
+import { ExcelExportService } from "./src/services/export/excel-export.service";
 
 export default() : AppConfig => ({
     institution_label: "Otto-von-Guericke-Universität Magdeburg",
@@ -95,6 +96,7 @@ export default() : AppConfig => ({
         {path: 'oa-cat', class: OACatExportService},
         {path: 'cost-center', class: CostCenterExportService},
         {path: 'cost-type', class: CostTypeExportService},
+        {path: 'excel', class: ExcelExportService},
     ],
     filter_services: [
         {path: 'no_aut_inst', class: MissingInstAuthorFilterService},
