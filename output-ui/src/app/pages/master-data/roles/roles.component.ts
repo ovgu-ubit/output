@@ -26,7 +26,7 @@ export class RolesComponent  implements TableParent<Role>, OnInit{
 
   roles:Role[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<Role>;
+  @ViewChild(TableComponent) table: TableComponent<Role, Role>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' }

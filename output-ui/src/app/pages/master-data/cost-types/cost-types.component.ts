@@ -26,7 +26,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
 
   cost_types:CostType[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<CostType>;
+  @ViewChild(TableComponent) table: TableComponent<CostType, CostType>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' }

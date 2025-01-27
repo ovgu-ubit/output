@@ -47,14 +47,14 @@ export class AuthorshipFormComponent implements OnInit {
   disabled = false;
 
   ngOnInit(): void {
-    let ob$ = this.instService.getinstitutes().pipe(map(data => {
+    let ob$ = this.instService.getAll().pipe(map(data => {
       this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filtered_institutes = this.form.get('inst').valueChanges.pipe(
         startWith(''),
         map(value => this._filterInst(value || '')),
       );
     }))
-    ob$ = merge(ob$, this.authorService.getAuthors().pipe(map(data => {
+    ob$ = merge(ob$, this.authorService.getAll().pipe(map(data => {
       this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
       if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id))
     })));
@@ -198,7 +198,7 @@ export class AuthorshipFormComponent implements OnInit {
 
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) {
-          this.authorService.addAuthor({ last_name: value.split(',')[0].trim(), first_name: value.split(',')[1].trim() }).subscribe({
+          this.authorService.add({ last_name: value.split(',')[0].trim(), first_name: value.split(',')[1].trim() }).subscribe({
             next: data => {
               this._snackBar.open('Autor*in wurde hinzugefügt', 'Super!', {
                 duration: 5000,
@@ -207,7 +207,7 @@ export class AuthorshipFormComponent implements OnInit {
               })
               this.form.get('author').setValue(data.last_name + ", " + data.first_name)
               this.author = data;
-              this.authorService.getAuthors().subscribe({
+              this.authorService.getAll().subscribe({
                 next: data => {
                   this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
                   if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id))

@@ -26,7 +26,7 @@ export class StatusesComponent implements TableParent<Status>, OnInit{
 
   statuses:Status[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<Status>;
+  @ViewChild(TableComponent) table: TableComponent<Status, Status>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'Status', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },

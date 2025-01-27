@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { ViewConfig, resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
 import { SortDirection } from '@angular/material/sort';
 import { CompareOperation, JoinOperation } from '../../../../../../output-interfaces/Config';
+import { PublicationType } from '../../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-pub-types',
@@ -34,7 +35,7 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
 
   pub_types:PublicationTypeIndex[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<PublicationTypeIndex>;
+  @ViewChild(TableComponent) table: TableComponent<PublicationTypeIndex, PublicationType>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },

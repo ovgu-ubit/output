@@ -65,7 +65,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   destroy$ = new Subject();
 
-  @ViewChild(TableComponent) table: TableComponent<PublicationIndex>;
+  @ViewChild(TableComponent) table: TableComponent<PublicationIndex, Publication>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
   ];

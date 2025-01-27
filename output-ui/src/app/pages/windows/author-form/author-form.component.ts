@@ -12,13 +12,14 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 import { Author, Institute } from '../../../../../../output-interfaces/Publication';
 import { InstituteFormComponent } from '../institute-form/institute-form.component';
 import { AliasAuthorFirstName, AliasAuthorLastName } from '../../../../../../output-interfaces/Alias';
+import { EntityFormComponent } from 'src/app/interfaces/service';
 
 @Component({
   selector: 'app-author-form',
   templateUrl: './author-form.component.html',
   styleUrls: ['./author-form.component.css']
 })
-export class AuthorFormComponent implements OnInit, AfterViewInit {
+export class AuthorFormComponent implements OnInit, AfterViewInit, EntityFormComponent<Author> {
 
   public form: FormGroup;
   aliasForm: FormGroup = this.formBuilder.group({
@@ -40,10 +41,9 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService: AuthorService, private instService: InstituteService,
     private dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
-
   ngOnInit(): void {
-    if (this.data.author?.id) {
-      this.authorService.getAuthor(this.data.author.id).subscribe({
+    if (this.data.entity?.id) {
+      this.authorService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.author = data;
           this.form.patchValue(this.author)
@@ -63,7 +63,7 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
       first_name: this.data.author?.first_name,
       last_name: this.data.author?.last_name
     }
-    this.instService.getinstitutes().subscribe({
+    this.instService.getAll().subscribe({
       next: data => {
         this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));;
         this.filtered_institutes = this.form.get('inst').valueChanges.pipe(
@@ -104,7 +104,7 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
     if (!this.author.title) this.author.title = undefined;
     if (!this.author.gnd_id) this.author.gnd_id = undefined;
     if (!this.author.orcid) this.author.orcid = undefined;
-    this.dialogRef.close(this.author)
+    this.dialogRef.close({ ...this.author, updated: true })
   }
 
   close() {
@@ -157,7 +157,7 @@ export class AuthorFormComponent implements OnInit, AfterViewInit {
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
             if (dialogResult) {
-              this.instService.addInstitute(dialogResult).subscribe({
+              this.instService.add(dialogResult).subscribe({
                 next: data => {
                   this._snackBar.open('Institut wurde hinzugefügt', 'Super!', {
                     duration: 5000,

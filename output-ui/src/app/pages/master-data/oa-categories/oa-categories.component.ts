@@ -16,6 +16,7 @@ import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
 import { SortDirection } from '@angular/material/sort';
 import { CompareOperation, JoinOperation } from '../../../../../../output-interfaces/Config';
+import { OA_Category } from '../../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-oa-categories',
@@ -34,7 +35,7 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
 
   oa_cats:OACategoryIndex[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<OACategoryIndex>;
+  @ViewChild(TableComponent) table: TableComponent<OACategoryIndex, OA_Category>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },

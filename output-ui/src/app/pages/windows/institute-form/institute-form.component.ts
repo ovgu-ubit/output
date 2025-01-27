@@ -37,8 +37,8 @@ export class InstituteFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.institute?.id) {
-      this.instService.getInstitute(this.data.institute.id).subscribe({
+    if (this.data.entity?.id) {
+      this.instService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.institute = data;
           this.form.patchValue(this.institute)
@@ -57,7 +57,7 @@ export class InstituteFormComponent implements OnInit, AfterViewInit {
     else this.institute = {
       label: this.data.institute.label
     }
-    this.instService.getinstitutes().subscribe({
+    this.instService.getAll().subscribe({
       next: data => {
         this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));
         this.filtered_super_institutes = this.form.get('super_inst').valueChanges.pipe(
@@ -66,7 +66,6 @@ export class InstituteFormComponent implements OnInit, AfterViewInit {
         );
       }
     })
-
 
     this.form.patchValue(this.institute)
   }

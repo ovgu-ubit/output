@@ -1,3 +1,14 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="authors" [headers]="headers" [parent]="this" [icon]="'person'">
+<appTable 
+    [name]="this.getName()" 
+    [wide]=false 
+    [id_col]=2 
+    [data]="authors" 
+    [headers]="headers" 
+    [parent]="this" 
+    [icon]="'person'"
+    nameSingle = "Person"
+    [serviceClass] = "this.authorService"
+    [formComponent] = "this.formComponent"
+    >
 </appTable>

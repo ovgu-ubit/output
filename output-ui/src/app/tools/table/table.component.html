@@ -17,6 +17,9 @@
       <span class="fill-remaining-space"></span>
 
       <span>
+        <button mat-raised-button (click)="this.add()" [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen (Tabelle)</button>&nbsp;
+        <button mat-raised-button (click)="this.delete()" [disabled]="!this.hasRole(['writer','admin'])">Löschen (Tabelle)</button>&nbsp;
+        <button mat-raised-button (click)="this.combine()" [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen (Tabelle)</button>&nbsp;
         <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null" style="display:flex; flex-flow: row wrap">
           <ng-container *ngFor="let button of this.parent.buttons">
             <ng-container *ngIf="button.sub_buttons && button.sub_buttons.length > 0">
@@ -92,7 +95,7 @@
           </th>
           <td mat-cell *matCellDef="let row">
             <mat-checkbox style="padding-top: 8px" (click)="$event.stopPropagation()"
-              (change)="this.parent.selection.toggle(row)" [checked]="this.parent.selection.isSelected(row)"
+              (change)="this.selection.toggle(row)" [checked]="this.selection.isSelected(row)"
               color="primary">
             </mat-checkbox>
           </td>
@@ -102,7 +105,7 @@
           <th mat-header-cell *matHeaderCellDef style="width: 15px;">
           </th>
           <td mat-cell *matCellDef="let row">
-            <button mat-icon-button (click)="this.parent.edit(row)" matTooltip="Element untersuchen"
+            <button mat-icon-button (click)="this.edit(row)" matTooltip="Element untersuchen"
               [matTooltipShowDelay]="800">
               <mat-icon *ngIf="((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked); else else1">edit</mat-icon>
               <ng-template #else1><mat-icon>remove_red_eye</mat-icon></ng-template>

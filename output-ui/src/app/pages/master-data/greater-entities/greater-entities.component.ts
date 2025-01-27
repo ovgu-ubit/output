@@ -35,7 +35,7 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
 
   ges:GreaterEntityIndex[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<GreaterEntityIndex>;
+  @ViewChild(TableComponent) table: TableComponent<GreaterEntityIndex, GreaterEntity>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },

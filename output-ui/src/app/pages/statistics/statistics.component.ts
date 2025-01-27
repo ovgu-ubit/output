@@ -94,7 +94,7 @@ export class StatisticsComponent implements OnInit {
   ngOnInit(): void {
     exporting(Highcharts);
     let ob$: Observable<any> = this.updateChart();
-    ob$ = merge(ob$, this.instService.getinstitutes().pipe(map(
+    ob$ = merge(ob$, this.instService.getAll().pipe(map(
       data => {
         this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));
         this.institutes.push({label: 'Unbekannt'})

@@ -17,6 +17,8 @@ import { SortDirection } from '@angular/material/sort';
 import { Router } from '@angular/router';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
+import { EntityFormComponent } from 'src/app/interfaces/service';
+import { ComponentType } from '@angular/cdk/portal';
 
 @Component({
   selector: 'app-authors',
@@ -25,18 +27,17 @@ import { CompareOperation, JoinOperation } from '../../../../../output-interface
 })
 export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.addAuthor.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
 
+  formComponent = AuthorFormComponent;
+
   authors: AuthorIndex[] = [];
   reporting_year: number;
 
-  @ViewChild(TableComponent) table: TableComponent<AuthorIndex>;
+  @ViewChild(TableComponent) table: TableComponent<AuthorIndex, Author>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'title', colTitle: 'Titel' },
@@ -50,7 +51,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 
-  constructor(private authorService: AuthorService, private dialog: MatDialog, private _snackBar: MatSnackBar, private store: Store, private publicationService: PublicationService,
+  constructor(public authorService: AuthorService, private dialog: MatDialog, private _snackBar: MatSnackBar, private store: Store, private publicationService: PublicationService,
     private router: Router) { }
 
   ngOnInit(): void {
@@ -79,7 +80,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   }
 
   getName() {
-    return 'Autoren';
+    return 'Personen';
   }
 
   getLink() {
@@ -87,7 +88,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   }
 
   getLabel() {
-    return '/Autoren'
+    return '/Personen'
   }
 
   update(): void {
@@ -99,158 +100,6 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
         this.table.update(this.authors);
       }
     })
-  }
-  edit(row: any): void {
-    let dialogRef = this.dialog.open(AuthorFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-        author: { id: row.id }
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result && result.last_name) {
-        this.authorService.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Autor*in geändert`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Ändern der*s Autor*in`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      } else if (result && result.id) {
-        this.authorService.update(result).subscribe();
-      }
-
-    });
-  }
-
-  combine() {
-    if (this.selection.selected.length < 2) {
-      this._snackBar.open(`Bitte selektieren Sie min. zwei Autoren`, 'Alles klar!', {
-        duration: 5000,
-        panelClass: [`warning-snackbar`],
-        verticalPosition: 'top'
-      })
-    } else {
-      //selection dialog
-      let dialogRef = this.dialog.open(CombineDialogComponent<Author>, {
-        width: '800px',
-        maxHeight: '800px',
-        data: {
-          ents: this.selection.selected,
-          aliases: true,
-          author: true
-        },
-        disableClose: true
-      });
-      dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          this.authorService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), result.aliases_first_name, result.aliases_last_name).subscribe({
-            next: data => {
-              this._snackBar.open(`Autoren wurden zusammengeführt`, 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.update();
-            }, error: err => {
-              this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          })
-        }
-      });
-    }
-  }
-
-  addAuthor() {
-    let dialogRef = this.dialog.open(AuthorFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-        autor: {
-
-        }
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.authorService.addAuthor(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Autor*in wurde angelegt`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            if (err.status === 400) {
-              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          }
-        })
-      }
-
-    });
-  }
-  deleteSelected() {
-    //TODO: soft delete option
-    if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(this.selection.selected.length + " Autor*innen löschen", `Möchten Sie ${this.selection.selected.length} Autor*innen löschen, dies kann nicht rückgängig gemacht werden?`);
-
-    let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      maxWidth: "400px",
-      data: dialogData
-    });
-
-    dialogRef.afterClosed().subscribe(dialogResult => {
-      if (dialogResult) {
-        this.authorService.delete(this.selection.selected).subscribe({
-          next: data => {
-            this._snackBar.open(`${data['affected']} Autor*innen gelöscht`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Löschen der Autor*innen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }
-    });
   }
 
   async showPubs?(id: number, field?: string) {

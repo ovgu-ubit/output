@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { ViewConfig, resetViewConfig, selectReportingYear, setViewConfig } from 'src/app/services/redux';
 import { SortDirection } from '@angular/material/sort';
 import { CompareOperation, JoinOperation } from '../../../../../../output-interfaces/Config';
+import { Funder } from '../../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-funders',
@@ -34,7 +35,7 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
 
   funders:FunderIndex[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<FunderIndex>;
+  @ViewChild(TableComponent) table: TableComponent<FunderIndex, Funder>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },

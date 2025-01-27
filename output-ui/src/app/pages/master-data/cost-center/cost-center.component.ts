@@ -33,7 +33,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
 
   cost_centers:CostCenterIndex[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<CostCenter>;
+  @ViewChild(TableComponent) table: TableComponent<CostCenter, CostCenter>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'number', colTitle: 'Nummer' },

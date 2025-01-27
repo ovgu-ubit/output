@@ -35,7 +35,7 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
 
   contracts:ContractIndex[] = [];
 
-  @ViewChild(TableComponent) table: TableComponent<ContractIndex>;
+  @ViewChild(TableComponent) table: TableComponent<ContractIndex, Contract>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },

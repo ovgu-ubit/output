@@ -1,7 +1,10 @@
 import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
 
-export interface Publication {
+export interface Entity {
     id?: number;
+}
+
+export interface Publication extends Entity {
     authorPublications?: AuthorPublication[];
     pub_type?: PublicationType
     oa_category?: OA_Category
@@ -49,8 +52,7 @@ export interface Publication {
     cost_approach?: number;
 }
 
-export interface Author {
-    id?: number;
+export interface Author extends Entity {
     first_name: string;
     last_name: string;
     title?: string;
@@ -74,14 +76,12 @@ export interface AuthorPublication {
     affiliation?: string;
 }
 
-export interface Role {
-    id?: number;
+export interface Role extends Entity {
     label: string;
     locked_at?: Date;
 }
 
-export interface Contract {
-    id?: number;
+export interface Contract extends Entity {
     publisher: Publisher
     label: string;
     start_date?: Date;
@@ -97,15 +97,13 @@ export interface Contract {
     locked_at?: Date;
 }
 
-export interface CostCenter {
-    id?: number;
+export interface CostCenter extends Entity {
     number?: string;
     label?: string;
     locked_at?: Date;
 }
 
-export interface CostItem {
-    id?: number;
+export interface CostItem extends Entity {
     label?: string;
     invoice?: Invoice
     cost_type?: CostType
@@ -116,14 +114,12 @@ export interface CostItem {
     vat?: number;
 }
 
-export interface CostType{
-    id?: number;
+export interface CostType extends Entity {
     label: string;
     locked_at?: Date;
 }
 
-export interface Funder {
-    id?: number;
+export interface Funder extends Entity {
     label: string;
     doi?: string;
     ror_id?: string;
@@ -132,8 +128,7 @@ export interface Funder {
     locked_at?: Date;
 }
 
-export interface GreaterEntity {
-    id?: number;
+export interface GreaterEntity extends Entity {
     label: string;
     rating?: string;
     doaj_since?: Date;
@@ -143,29 +138,25 @@ export interface GreaterEntity {
     locked_at?: Date;
 }
 
-export interface Identifier {
-    id?: number;
+export interface Identifier extends Entity {
     type: string;
     value: string;
     entity?: GreaterEntity
 }
 
-export interface PublicationIdentifier {
-    id?: number;
+export interface PublicationIdentifier extends Entity {
     type: string;
     value: string;
     publication?: Publication;
 }
 
-export interface ContractIdentifier {
-    id?: number;
+export interface ContractIdentifier extends Entity {
     type: string;
     value: string;
     contract?: Contract
 }
 
-export interface Institute {
-    id?: number;
+export interface Institute extends Entity {
     super_institute?: Institute
 	sub_institutes?: Institute[]
     label: string;
@@ -176,8 +167,7 @@ export interface Institute {
     locked_at?: Date;
 }
 
-export interface Invoice {
-    id?: number;
+export interface Invoice extends Entity {
     cost_center?: CostCenter
     cost_items?: CostItem[]
     publication?: Publication
@@ -187,23 +177,20 @@ export interface Invoice {
     booking_amount?: number;
 }
 
-export interface OA_Category {
-    id?: number;
+export interface OA_Category extends Entity {
     label: string;
     is_oa: boolean;
     locked_at?: Date;
 }
 
-export interface PublicationType {
-    id?: number;
+export interface PublicationType extends Entity {
     label: string;
     review: boolean;
     aliases?: AliasPubType[];
     locked_at?: Date;
 }
 
-export interface Publisher {
-    id?: number;
+export interface Publisher extends Entity {
     label: string;
     doi_prefixes?: PublisherDOI[];
     aliases?: AliasPublisher[];
@@ -216,13 +203,11 @@ export interface PublisherDOI {
     doi_prefix: string;
 }
 
-export interface Language {
-    id?: number;
+export interface Language extends Entity {
     label: string;
 }
 
-export interface Status {
-    id?: number;
+export interface Status extends Entity {
     label: string;
     description?: string;
     locked_at?: Date;

@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AliasFormComponent } from '../alias-form/alias-form.component';
-import { Funder } from '../../../../../output-api/src/entity/Funder';
+import { Author } from '../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-combine-dialog',
@@ -26,7 +26,7 @@ export class CombineDialogComponent<T> implements OnInit {
   action(pos: number) {
     let res = this.ents[pos];
     if (this.data.aliases) {
-      if (!this.data.author) {
+      if (!(this.ents[0]['last_name'])) {
         //open alias dialog
         let aliases = [];
         for (let i = 0; i < this.ents.length; i++) {
