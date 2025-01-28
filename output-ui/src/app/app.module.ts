@@ -76,7 +76,6 @@ import { ConfirmDialogComponent } from './tools/confirm-dialog/confirm-dialog.co
 import { CsvFormatComponent } from './tools/csv-format/csv-format.component';
 import { LogDialogComponent } from './tools/log-dialog/log-dialog.component';
 import { TableComponent } from './tools/table/table.component';
-import { DeletePublicationDialogComponent } from './tools/delete-publication-dialog/delete-publication-dialog.component';
 import { AliasFormComponent } from './tools/alias-form/alias-form.component';
 import { AuthorshipFormComponent } from './pages/windows/authorship-form/authorship-form.component';
 import { RolesComponent } from './pages/master-data/roles/roles.component';
@@ -130,7 +129,6 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         CostTypesComponent,
         CostCenterFormComponent,
         CostTypeFormComponent,
-        DeletePublicationDialogComponent,
         AliasFormComponent,
         AuthorshipFormComponent,
         RolesComponent,

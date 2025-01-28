@@ -36,6 +36,7 @@ export class ExcelImportService extends AbstractImportService {
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        this.path = this.configService.get('CONFIG_PATH');
     }
 
     protected updateMapping: UpdateMapping = {
@@ -71,7 +72,7 @@ export class ExcelImportService extends AbstractImportService {
 
     protected name = 'Excel-Import'
 
-    private path = this.configService.get('CONFIG_PATH');
+    private path:string;
 
     public setUp(file: Express.Multer.File, importConfig: CSVMapping, updateMapping?: UpdateMapping) {
         this.file = file;

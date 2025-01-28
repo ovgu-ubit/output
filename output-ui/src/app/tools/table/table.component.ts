@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { Location } from '@angular/common';
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort, SortDirection } from '@angular/material/sort';
@@ -17,6 +18,8 @@ import { AuthorFormComponent } from 'src/app/pages/windows/author-form/author-fo
 import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 import { SelectionModel } from '@angular/cdk/collections';
 import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {
@@ -69,11 +72,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   dataSource2: MatTableDataSource<T>;
   alerts: Alert[] = [];
 
+  id;
+
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
-    public tokenService: AuthorizationService) {
+    public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute) {
   }
 
   public ngOnInit(): void {
@@ -88,6 +93,12 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     });
 
     this.defaultFilterPredicate = this.dataSource.filterPredicate;
+
+    this.route.queryParamMap.pipe(map(params => {
+      if (params.get('id')) {
+        this.id = params.get('id');
+      }
+    })).subscribe();
   }
 
   /**
@@ -109,9 +120,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.dataSource.sort = this.sort;
     this.announceSortChange(this.sort);
     this.filterColumn();
+    if (this.id) {
+      this.edit({ id: this.id });
+    }
   }
 
-  edit(row: T) {
+  edit(row: any) {
+    this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
     // define Entity Form dialog by id to enforce edit mode
     let dialogRef = this.dialog.open(this.formComponent, {
       width: '800px',
@@ -122,6 +137,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       disableClose: true
     });
     dialogRef.afterClosed().subscribe(result => {
+      this.location.replaceState(this.router.url.split('?')[0])
       // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
       if (result && result.updated) {
         this.serviceClass.update(result).subscribe({

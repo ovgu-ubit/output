@@ -4,7 +4,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { Observable, map, merge, startWith } from 'rxjs';
+import { Observable, concat, concatMap, delay, map, merge, of, startWith } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfigService } from 'src/app/services/config.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
@@ -25,6 +25,8 @@ import { ContractFormComponent } from '../contract-form/contract-form.component'
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
+import { DoiFormComponent } from '../doi-form/doi-form.component';
+import { EnrichService } from 'src/app/services/enrich.service';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -55,6 +57,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   edit: boolean = false;
   loading: boolean;
   pub: Publication;
+
+  doi_import_service: string;
 
   pub_types: PublicationType[];
   oa_categories: OA_Category[];
@@ -88,7 +92,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
     private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
-    private statusService: StatusService) {
+    private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: [''],
@@ -161,6 +165,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.institution = data.short_label;
     }
     )));
+    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
+      this.doi_import_service = data;
+    })))
     if (this.data.entity?.id) {
       this.edit = true;
       this.loading = true;
@@ -171,6 +178,41 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         authorPublications: [],
         identifiers: []
       };
+      let dialogRef = this.dialog.open(DoiFormComponent, {
+        width: '800px',
+        maxHeight: '800px',
+        data: {
+        },
+        disableClose: true
+      });
+      ob$ = concat(ob$, dialogRef.afterClosed().pipe(map(result => {
+        if (!result) return;
+        if (result.doi) {
+          this.pub.doi = result.doi;
+          this.pub.dataSource = 'Manuell per DOI hinzugefügt'
+          this.publicationService.add(this.pub).pipe(concatMap(data => {
+            if (!Array.isArray(data)) return of(null);
+            this.pub.id = data[0].id
+            /*this.filter = {
+              filter: {
+                expressions: [
+                  {
+                    op: JoinOperation.AND,
+                    key: 'id',
+                    comp: CompareOperation.EQUALS,
+                    value: id[0]
+                  }
+                ]
+              }
+            }*/
+            this.loading = true;
+            return this.enrichService.startID(this.doi_import_service, [this.pub.id]).pipe(delay(2000))//wait for 2 seconds to complete enrich
+          })).pipe(concatMap(data => {
+            this.edit = true;
+            return this.loadPub(this.pub.id);
+          })).subscribe()
+        }
+      })));
     }
     ob$ = merge(ob$, this.loadMasterData());
 
@@ -753,13 +795,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (this.tableId) this.tableId.dataSource = new MatTableDataSource<PublicationIdentifier>(this.pub.identifiers);
   }
 
-  showStatusLabel(long:boolean) {
+  showStatusLabel(long: boolean) {
     let value = this.statuses?.find(e => e.id == this.form.get('status').value)?.label
     if (!value) return "";
     if (long) return value
     else {
-     if (value.length>27) return value.slice(0,27)+"...";
-     else return value;
+      if (value.length > 27) return value.slice(0, 27) + "...";
+      else return value;
     }
   }
 }

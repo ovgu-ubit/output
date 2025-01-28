@@ -1,29 +1,25 @@
+import { Clipboard } from '@angular/cdk/clipboard';
 import { SelectionModel } from '@angular/cdk/collections';
-import { Location } from '@angular/common';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Clipboard } from '@angular/cdk/clipboard';
-import { ActivatedRoute, ParamMap, Router, UrlSerializer } from '@angular/router';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concat, concatMap, concatWith, firstValueFrom, map, merge, of, takeUntil } from 'rxjs';
+import { Observable, Subject, concat, concatMap, map, merge, of, takeUntil } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
+import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectReportingYear, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
-import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
 import { FilterViewComponent } from '../../tools/filter-view/filter-view.component';
+import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
-import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
-import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
-import { ConfigService } from 'src/app/services/config.service';
-import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
 
 @Component({
   selector: 'app-publications',
@@ -32,7 +28,7 @@ import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
 })
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
-    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
+    private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService: ConfigService) { }
 
   name = 'Publikationen des Jahres ';
@@ -40,7 +36,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   reporting_year: number;
   filter: { filter: SearchFilter, paths?: string[] };
-  id;
   doi_import_service:string;
 
   soft_deletes = false;
@@ -56,7 +51,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       ]
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
@@ -120,9 +114,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
-        if (params.get('id')) {
-          this.id = params.get('id');
-        }
         this.filter = this.queryToFilter(params);
         if (this.filter) this.viewConfig = { ...this.viewConfig, filter: this.filter }
       }));
@@ -148,9 +139,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           this.name = 'Publikationen des Jahres ' + this.reporting_year;
           this.table.update(this.publications);
           this.loading = false;
-          if (this.id) {
-            this.edit({ id: this.id });
-          }
         }));
       } else {
         return this.publicationService.index(null, {filter: this.viewConfig.filter.filter, paths: this.viewConfig.filter.paths}).pipe(map(data => {
@@ -159,9 +147,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           this.name = 'Gefilterte Publikationen';
           this.table.update(this.publications);
           this.loading = false;
-          if (this.id) {
-            this.edit({ id: this.id });
-          }
         }))
       }
     }))
@@ -217,42 +202,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
   }
 
-  edit(row: any) {
-    this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
-    let dialogRef = this.dialog.open(PublicationFormComponent, {
-      width: '800px',
-      maxHeight: "90%",
-      data: {
-        id: row.id
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      this.location.replaceState(this.router.url.split('?')[0])
-      if (result && result.title) {
-        this.publicationService.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Publikation geändert`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update(this.soft_deletes);
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      } else if (result && result.id) {
-        this.publicationService.update(result).subscribe();
-      }
-    });
-  }
-
   changeReportingYear() {
     let dialogRef = this.dialog.open(ReportingYearFormComponent, {
       width: '400px',
@@ -293,136 +242,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         console.log(err);
       }
     })
-  }
-
-  addPublication() {
-    let dialogRef = this.dialog.open(DoiFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (!result) return;
-      if (!result.doi) {
-        let dialogRef1 = this.dialog.open(PublicationFormComponent, {
-          width: '800px',
-          maxHeight: '800px',
-          data: {
-          },
-          disableClose: true
-        });
-        dialogRef1.afterClosed().subscribe(result => {
-          if (result) {
-            let pubInit = JSON.parse(JSON.stringify(result));
-            pubInit.authorPublications = [];
-            this.publicationService.add(pubInit).subscribe({
-              next: data => {
-                if (Array.isArray(data)) data = data[0]
-                result.id = data.id;
-                for (let autPub of result.authorPublications) {
-                  autPub.publicationId = data.id;
-                }
-                this.publicationService.update(result).subscribe({
-                  next: data => {
-                    this._snackBar.open(`Publikation hinzugefügt`, 'Super!', {
-                      duration: 5000,
-                      panelClass: [`success-snackbar`],
-                      verticalPosition: 'top'
-                    })
-                    this.update()
-                  }, error: err => {
-                    if (err.status === 400) {
-                      this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                        duration: 5000,
-                        panelClass: [`danger-snackbar`],
-                        verticalPosition: 'top'
-                      })
-                    } else {
-                      this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                        duration: 5000,
-                        panelClass: [`danger-snackbar`],
-                        verticalPosition: 'top'
-                      })
-                      console.log(err);
-                    }
-                  }
-                })
-              }, error: err => {
-                if (err.status === 400) {
-                  this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                    duration: 5000,
-                    panelClass: [`danger-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                } else {
-                  this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                    duration: 5000,
-                    panelClass: [`danger-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  console.log(err);
-                }
-              }
-            })
-          }
-
-        });
-      }
-      else {
-        let pub: Publication = {
-          doi: result.doi,
-          dataSource: 'Manuell per DOI hinzugefügt'
-        }
-        this.publicationService.add(pub).subscribe({
-          next: data => {
-            if (!Array.isArray(data)) return;
-            let id = [data[0].id]
-            this.filter = {
-              filter: {
-                expressions: [
-                  {
-                    op: JoinOperation.AND,
-                    key: 'id',
-                    comp: CompareOperation.EQUALS,
-                    value: id[0]
-                  }
-                ]
-              }
-            }
-            this.enrichService.startID(this.doi_import_service, id).subscribe({
-              next: data => {
-                this.update(); 
-                this._snackBar.open(`Publikation hinzugefügt, bitte Seite aktualisieren`, 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
-                })
-                window.location.reload()
-              }, error: err => {
-                this._snackBar.open(`Publikation konnte nicht angereichert werden`, 'Hmm ok.', {
-                  duration: 5000,
-                  panelClass: [`danger-snackbar`],
-                  verticalPosition: 'top'
-                })
-                console.log(err);
-              }
-            })
-
-          }, error: err => {
-            this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        });
-      }
-    });
-
-
   }
 
   startEnrich(name: string) {

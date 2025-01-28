@@ -30,6 +30,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
         ) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
+            this.param_string = 'email='+this.configService.get('api_key_unpaywall');
     }
 
     protected updateMapping: UpdateMapping = {
@@ -56,7 +57,6 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.unpaywall.org/v2/';
-    protected param_string = 'email='+this.configService.get('api_key_unpaywall');
     protected name = 'Unpaywall';
     protected parallelCalls = 10;
 
