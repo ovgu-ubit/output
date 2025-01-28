@@ -29,7 +29,4 @@ export class RoleService implements EntityService<Role, Role> {
   public delete(ids:number[]) {
     return this.http.delete<Role[]>(environment.api + 'role', { withCredentials: true, body: ids.map(e => ({ id: e })) });
   }
-  public combine(id1: number, ids: number[]) {
-    throw "not yet implemented";
-  }
 }

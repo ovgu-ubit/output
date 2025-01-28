@@ -29,7 +29,4 @@ export class StatusService implements EntityService<Status, Status> {
   public delete(ids:number[]) {
     return this.http.delete<Status[]>(environment.api + 'status', { withCredentials: true, body: ids.map(e => ({ id: e })) });
   }
-  public combine(id1: number, ids: number[]) {
-    throw "not yet implemented";
-  }
 }

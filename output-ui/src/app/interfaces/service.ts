@@ -21,7 +21,7 @@ export interface EntityService<T, E> {
 
     delete(ids:number[]):Observable<T[]>;
     
-    combine(id1: number, ids: number[], options?: any):any;
+    combine?(id1: number, ids: number[], options?: any):any;
 }
 
 export interface EntityFormComponent<T> {

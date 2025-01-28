@@ -29,7 +29,4 @@ export class CostTypeService implements EntityService<CostType, CostType> {
   public delete(ids:number[]) {
     return this.http.delete<CostType[]>(environment.api + 'invoice/cost_type', {body: ids.map(e => ({ id: e })), withCredentials: true });
   }
-  public combine(id1: number, ids: number[]) {
-    throw "not yet implemented";
-  }
 }

@@ -30,7 +30,4 @@ export class CostCenterService implements EntityService<CostCenter, CostCenterIn
   public delete(ids:number[]) {
     return this.http.delete<CostCenter[]>(environment.api + 'invoice/cost_center', {body: ids.map(e => ({ id: e })), withCredentials: true });
   }
-  public combine(id1: number, ids: number[]) {
-    throw "not yet implemented";
-  }
 }
