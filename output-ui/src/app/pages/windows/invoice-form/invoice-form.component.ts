@@ -47,7 +47,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit {
     else this.invoice = {
       cost_items: []
     }
-    this.ccService.getCostCenters().subscribe({
+    this.ccService.getAll().subscribe({
       next: data => {
         this.costCenters = data;
       }

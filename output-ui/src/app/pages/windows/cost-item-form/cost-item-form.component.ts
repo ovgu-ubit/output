@@ -42,7 +42,7 @@ export class CostItemFormComponent implements OnInit, AfterViewInit {
       this.cost_item = {
       };
     }
-    this.ctService.getCostTypes().subscribe({
+    this.ctService.getAll().subscribe({
       next: data => {
         this.costTypes = data;
         //this.cost_item.cost_type = this.costTypes.find(e => e.id == this.data.cost_item?.cost_type)

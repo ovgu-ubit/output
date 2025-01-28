@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="roles" [headers]="headers" [parent]="this" [icon]="'group'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="roles" [headers]="headers" [parent]="this" [icon]="'group'" #table
+nameSingle="Rolle" [serviceClass]="this.roleService"
+[formComponent]="this.formComponent" [combineAlias]="false" [combineButton]="false">
 </appTable>

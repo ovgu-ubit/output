@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="oa_cats" [headers]="headers" [parent]="this" [icon]="'lock_open'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="oa_cats" [headers]="headers" [parent]="this" [icon]="'lock_open'" #table
+nameSingle="Open-Access-Kategorie" [serviceClass]="this.oaService"
+[formComponent]="this.formComponent" [combineAlias]="false">
 </appTable>

@@ -27,8 +27,8 @@ export class RoleFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.role?.id) {
-      this.roleService.getRole(this.data.role.id).subscribe({
+    if (this.data.entity?.id) {
+      this.roleService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.role = data;
           this.form.patchValue(this.role)
@@ -68,7 +68,7 @@ export class RoleFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
     this.role = { ...this.role, ...this.form.getRawValue() }
     if (!this.role.id) this.role.id = undefined;
-    this.dialogRef.close(this.role)
+    this.dialogRef.close({...this.role, updated: true})
   }
 
   close() {

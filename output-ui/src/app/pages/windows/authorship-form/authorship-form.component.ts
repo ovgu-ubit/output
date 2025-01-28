@@ -58,7 +58,7 @@ export class AuthorshipFormComponent implements OnInit {
       this.authors = data.sort((a, b) => (a.last_name + ', ' + a.first_name).localeCompare(b.last_name + ', ' + b.first_name));
       if (this.data.authors) this.authors = this.authors.filter(e => !this.data.authors.find(f => f === e.id))
     })));
-    ob$ = merge(ob$, this.roleService.getRoles().pipe(map(data => {
+    ob$ = merge(ob$, this.roleService.getAll().pipe(map(data => {
       this.roles = data;
     })));
     ob$.subscribe({

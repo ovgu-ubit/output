@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
-import { AuthorIndex, PublicationIndex } from '../../../../../output-interfaces/PublicationIndex'
-import { Author, Publication, PublicationType } from '../../../../../output-interfaces/Publication'
 import { EntityService } from 'src/app/interfaces/service';
+import { environment } from 'src/environments/environment';
+import { Author } from '../../../../../output-interfaces/Publication';
+import { AuthorIndex } from '../../../../../output-interfaces/PublicationIndex';
 
 @Injectable({
   providedIn: 'root'

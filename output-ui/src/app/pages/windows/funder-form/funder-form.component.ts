@@ -34,8 +34,8 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.funder?.id) {
-      this.funderService.getFunder(this.data.funder.id).subscribe({
+    if (this.data.entity?.id) {
+      this.funderService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.funder = data;
           this.form.patchValue(this.funder)
@@ -51,7 +51,7 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
       })
     }
     else this.funder = {
-      label : this.data.funder.label,
+      label : this.data.funder?.label,
       aliases: []
     }
     this.form.patchValue(this.funder)
@@ -78,7 +78,7 @@ export class FunderFormComponent implements OnInit, AfterViewInit {
     this.funder = {...this.funder, ...this.form.getRawValue()}
     if (!this.funder.id) this.funder.id = undefined;
     if (!this.funder.doi) this.funder.doi = undefined;
-    this.dialogRef.close(this.funder)
+    this.dialogRef.close({...this.funder, updated: true})
   }
 
   close() {

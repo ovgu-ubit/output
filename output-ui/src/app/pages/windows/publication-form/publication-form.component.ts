@@ -220,10 +220,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   loadMasterData() {
-    let ob$ = this.pubTypeService.getPubTypes().pipe(map(data => {
+    let ob$ = this.pubTypeService.getAll().pipe(map(data => {
       this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
     }))
-    ob$ = merge(ob$, this.oaService.getOACategories().pipe(map(data => {
+    ob$ = merge(ob$, this.oaService.getAll().pipe(map(data => {
       this.oa_categories = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
     ob$ = merge(ob$, this.languageService.getLanguages().pipe(map(data => {
@@ -250,7 +250,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map(value => this._filterContract(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.funderService.getFunders().pipe(map(data => {
+    ob$ = merge(ob$, this.funderService.getAll().pipe(map(data => {
       this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filteredFunders = this.form.get('finance_info').get('funder').valueChanges.pipe(
         startWith(''),
@@ -259,7 +259,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           return this._filterFunders(name);
         }));
     })))
-    ob$ = merge(ob$, this.statusService.getStatuses().pipe(map(data => {
+    ob$ = merge(ob$, this.statusService.getAll().pipe(map(data => {
       this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
     return ob$;
@@ -444,7 +444,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) {
-          this.funderService.insert({ label: value }).subscribe({
+          this.funderService.add({ label: value }).subscribe({
             next: data => {
               this._snackBar.open('Förderer wurde hinzugefügt', 'Super!', {
                 duration: 5000,

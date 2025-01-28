@@ -20,15 +20,15 @@ export class CostCenterFormComponent implements OnInit, AfterViewInit {
   disabled:boolean;
 
   constructor(public dialogRef: MatDialogRef<CostCenterFormComponent>, public tokenService: AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private ccService: CostCenterService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, public ccService: CostCenterService,
     private _snackBar:MatSnackBar, private dialog:MatDialog) { }
 
   ngAfterViewInit(): void {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.cost_center?.id) {
-      this.ccService.getCostCenter(this.data.cost_center.id).subscribe({
+    if (this.data.entity?.id) {
+      this.ccService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.cost_center = data;
           this.form.patchValue(this.cost_center)
@@ -70,7 +70,7 @@ export class CostCenterFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
     this.cost_center = { ...this.cost_center, ...this.form.getRawValue() }
     if (!this.cost_center.id) this.cost_center.id = undefined;
-    this.dialogRef.close(this.cost_center)
+    this.dialogRef.close({...this.cost_center, updated: true})
   }
 
   close() {

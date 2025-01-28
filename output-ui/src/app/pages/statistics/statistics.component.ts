@@ -134,12 +134,12 @@ export class StatisticsComponent implements OnInit {
           map(value => this._filterContract(value || '')),
         );
       })));
-    ob$ = merge(ob$, this.oaService.getOACategories().pipe(map(
+    ob$ = merge(ob$, this.oaService.getAll().pipe(map(
       data => {
         this.oa_cats = data.sort((a, b) => a.label.localeCompare(b.label));
         this.oa_cats.push({label: 'Unbekannt', is_oa: null})
       })));
-    ob$ = merge(ob$, this.pubTypeService.getPubTypes().pipe(map(
+    ob$ = merge(ob$, this.pubTypeService.getAll().pipe(map(
       data => {
         this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
         this.pub_types.push({label: 'Unbekannt', review: null})

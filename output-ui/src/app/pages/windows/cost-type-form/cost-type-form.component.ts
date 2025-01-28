@@ -27,8 +27,8 @@ export class CostTypeFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.cost_type?.id) {
-      this.ctService.getCostType(this.data.cost_type.id).subscribe({
+    if (this.data.entity?.id) {
+      this.ctService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.cost_type = data;
           this.form.patchValue(this.cost_type)
@@ -68,7 +68,7 @@ export class CostTypeFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
     this.cost_type = { ...this.cost_type, ...this.form.getRawValue() }
     if (!this.cost_type.id) this.cost_type.id = undefined;
-    this.dialogRef.close(this.cost_type)
+    this.dialogRef.close({...this.cost_type, updated: true})
   }
 
   close() {

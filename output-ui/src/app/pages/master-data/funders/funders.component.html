@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="funders" [headers]="headers" [parent]="this" [icon]="'attach_money'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="funders" [headers]="headers" [parent]="this" [icon]="'attach_money'" #table
+nameSingle="Förderer" [serviceClass]="this.funderService"
+[formComponent]="this.formComponent">
 </appTable>

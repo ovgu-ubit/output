@@ -17,12 +17,12 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 })
 export class CostTypesComponent  implements TableParent<CostType>, OnInit{
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer','admin']  },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin']  },
   ];
   loading: boolean = true;
   selection: SelectionModel<CostType> = new SelectionModel<CostType>(true, []);
   destroy$ = new Subject();
+    
+  formComponent = CostTypeFormComponent;
 
   cost_types:CostType[] = [];
 
@@ -33,11 +33,11 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
   ];
   reporting_year;
 
-  constructor(private ctService:CostTypeService, private dialog:MatDialog, private _snackBar: MatSnackBar) {}
+  constructor(public ctService:CostTypeService, private dialog:MatDialog, private _snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
     this.loading = true;
-    this.ctService.getCostTypes().subscribe({
+    this.ctService.getAll().subscribe({
       next: data => {
         this.cost_types = data;
         this.loading = false;
@@ -63,7 +63,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
   
   update(): void {
     this.loading = true;
-    this.ctService.getCostTypes().subscribe({
+    this.ctService.getAll().subscribe({
       next: data => {
         this.cost_types = data;
         this.loading = false;
@@ -83,7 +83,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result && result.label) {
-        this.ctService.updateCostType(result).subscribe({
+        this.ctService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Kostenart geändert`, 'Super!', {
               duration: 5000,
@@ -101,7 +101,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
           }
         })
       }else if (result && result.id) {
-        this.ctService.updateCostType(result).subscribe();
+        this.ctService.update(result).subscribe();
       }
     });
   }
@@ -117,7 +117,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.ctService.updateCostType(result).subscribe({
+        this.ctService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Kostenart hinzugefügt`, 'Super!', {
               duration: 5000,
@@ -158,7 +158,7 @@ export class CostTypesComponent  implements TableParent<CostType>, OnInit{
 
     dialogRef.afterClosed().subscribe(dialogResult => {
       if (dialogResult) {
-        this.ctService.deleteCostType(this.selection.selected).subscribe({
+        this.ctService.delete(this.selection.selected.map(e => e.id)).subscribe({
           next: data => {
             this._snackBar.open(`${data['affected']} Kostenarten gelöscht`, 'Super!', {
               duration: 5000,

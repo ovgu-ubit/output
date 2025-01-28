@@ -46,7 +46,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() name: string;
   @Input() nameSingle: string;
   @Input() icon?: string;
+
   @Input() combineAlias? = true;
+  @Input() combineButton? = true;
 
   @Input() parent: TableParent<T>;
   @Input() serviceClass: EntityService<E, T>;

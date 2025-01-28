@@ -24,12 +24,12 @@ import { Router } from '@angular/router';
 })
 export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit{
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer','admin'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin'] },
   ];
   loading: boolean = true;
   selection: SelectionModel<CostCenterIndex> = new SelectionModel<CostCenterIndex>(true, []);
   destroy$ = new Subject();
+      
+  formComponent = CostCenterFormComponent;
 
   cost_centers:CostCenterIndex[] = [];
 
@@ -42,7 +42,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
   ];
   reporting_year:number;
 
-  constructor(private ccService:CostCenterService, private dialog:MatDialog, private _snackBar: MatSnackBar, private store:Store,
+  constructor(public ccService:CostCenterService, private dialog:MatDialog, private _snackBar: MatSnackBar, private store:Store,
     private publicationService:PublicationService, private router:Router
   ) {}
 
@@ -57,7 +57,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
     }), concatMap(data => {
       this.reporting_year = data;
       this.headers.find(e => e.colName === 'pub_count').colTitle += ' '+data
-      return this.ccService.getCostCenterIndex(data);
+      return this.ccService.index(data);
     })).subscribe({
       next: data => {
         this.cost_centers = data;
@@ -84,7 +84,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
   
   update(): void {
     this.loading = true;
-    this.ccService.getCostCenterIndex(this.reporting_year).subscribe({
+    this.ccService.index(this.reporting_year).subscribe({
       next: data => {
         this.cost_centers = data;
         this.loading = false;
@@ -104,7 +104,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result && result.label) {
-        this.ccService.updateCostCenter(result).subscribe({
+        this.ccService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Kostenstelle geändert`, 'Super!', {
               duration: 5000,
@@ -122,7 +122,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
           }
         })
       }else if (result && result.id) {
-        this.ccService.updateCostCenter(result).subscribe();
+        this.ccService.update(result).subscribe();
       }
     });
   }
@@ -138,7 +138,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.ccService.updateCostCenter(result).subscribe({
+        this.ccService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Kostenstelle hinzugefügt`, 'Super!', {
               duration: 5000,
@@ -179,7 +179,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
 
     dialogRef.afterClosed().subscribe(dialogResult => {
       if (dialogResult) {
-        this.ccService.deleteCostCenter(this.selection.selected.map(e => {return {id:e.id}})).subscribe({
+        this.ccService.delete(this.selection.selected.map(e => e.id)).subscribe({
           next: data => {
             this._snackBar.open(`${data['affected']} Kostenstellen gelöscht`, 'Super!', {
               duration: 5000,

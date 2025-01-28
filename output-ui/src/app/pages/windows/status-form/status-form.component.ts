@@ -40,8 +40,8 @@ export class StatusFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.status?.id !== undefined && this.data.status?.id !== null) {
-      this.statusService.getStatus(this.data.status.id).subscribe({
+    if (this.data.entity?.id !== undefined && this.data.entity?.id !== null) {
+      this.statusService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.status = data;
           this.form.patchValue(this.status)
@@ -63,7 +63,7 @@ export class StatusFormComponent implements OnInit, AfterViewInit {
       };
       this.form.patchValue(this.status)
     }
-    this.statusService.getStatuses().subscribe({
+    this.statusService.getAll().subscribe({
       next: data => {
         this.statuses = data;
         if (this.data.status?.id !== undefined && this.data.status?.id !== null)  this.statuses = this.statuses.filter(e => e.id !== this.data.status.id)
@@ -88,7 +88,7 @@ export class StatusFormComponent implements OnInit, AfterViewInit {
   action() {
     if (this.form.invalid) return;
     this.status = { ...this.status, ...this.form.getRawValue() }
-    this.dialogRef.close(this.status)
+    this.dialogRef.close({...this.status, updated: true})
   }
 
   close() {

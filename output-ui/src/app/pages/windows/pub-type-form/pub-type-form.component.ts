@@ -33,8 +33,8 @@ export class PubTypeFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.pub_type.id) {
-      this.pubTypeService.getPubType(this.data.pub_type.id).subscribe({
+    if (this.data.entity?.id) {
+      this.pubTypeService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.pub_type = data;
           this.form.patchValue(this.pub_type)
@@ -50,7 +50,7 @@ export class PubTypeFormComponent implements OnInit, AfterViewInit {
       })
     }
     else this.pub_type = {
-      label: this.data.pub_type.label,
+      label: this.data.pub_type?.label,
       review: false,
       aliases: []
     }
@@ -75,7 +75,7 @@ export class PubTypeFormComponent implements OnInit, AfterViewInit {
   action() {
     if (this.form.invalid) return;
     this.pub_type = { ...this.pub_type, ...this.form.getRawValue() }
-    this.dialogRef.close(this.pub_type)
+    this.dialogRef.close({...this.pub_type, updated: true})
   }
 
   close() {

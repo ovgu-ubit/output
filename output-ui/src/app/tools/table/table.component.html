@@ -19,7 +19,7 @@
       <span>
         <button mat-raised-button (click)="this.add()" [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen (Tabelle)</button>&nbsp;
         <button mat-raised-button (click)="this.delete()" [disabled]="!this.hasRole(['writer','admin'])">Löschen (Tabelle)</button>&nbsp;
-        <button mat-raised-button (click)="this.combine()" [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen (Tabelle)</button>&nbsp;
+        <button mat-raised-button *ngIf="this.combineButton" (click)="this.combine()" [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen (Tabelle)</button>&nbsp;
         <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null" style="display:flex; flex-flow: row wrap">
           <ng-container *ngFor="let button of this.parent.buttons">
             <ng-container *ngIf="button.sub_buttons && button.sub_buttons.length > 0">

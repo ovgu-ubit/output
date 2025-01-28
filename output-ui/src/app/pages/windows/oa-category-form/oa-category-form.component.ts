@@ -27,8 +27,8 @@ export class OaCategoryFormComponent implements OnInit, AfterViewInit{
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.oa_category.id) {
-      this.oaService.getOACategory(this.data.oa_category.id).subscribe({
+    if (this.data.entity?.id) {
+      this.oaService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.oa_category = data;
           this.form.patchValue(this.oa_category)
@@ -44,7 +44,7 @@ export class OaCategoryFormComponent implements OnInit, AfterViewInit{
       })
     }
     else this.oa_category = {
-      label: this.data.oa_category.label,
+      label: this.data.oa_category?.label,
       is_oa: false
     }
     this.form.patchValue(this.oa_category)
@@ -67,7 +67,7 @@ export class OaCategoryFormComponent implements OnInit, AfterViewInit{
   action() {
     if (this.form.invalid) return;
     this.oa_category = {...this.oa_category, ...this.form.getRawValue()}
-    this.dialogRef.close(this.oa_category)
+    this.dialogRef.close({...this.oa_category, updated: true})
   }
 
   close() {

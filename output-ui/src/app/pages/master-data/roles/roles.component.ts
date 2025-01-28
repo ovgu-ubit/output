@@ -17,12 +17,12 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 })
 export class RolesComponent  implements TableParent<Role>, OnInit{
   buttons: TableButton[] = [
-    { title: 'Hinzufügen', action_function: this.add.bind(this), roles: ['writer','admin']  },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer','admin']  },
   ];
   loading: boolean = true;
   selection: SelectionModel<Role> = new SelectionModel<Role>(true, []);
   destroy$ = new Subject();
+      
+  formComponent = RoleFormComponent;
 
   roles:Role[] = [];
 
@@ -33,7 +33,7 @@ export class RolesComponent  implements TableParent<Role>, OnInit{
   ];
   reporting_year;
 
-  constructor(private roleService:RoleService, private dialog:MatDialog, private _snackBar: MatSnackBar) {}
+  constructor(public roleService:RoleService, private dialog:MatDialog, private _snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
     this.loading = true;
@@ -54,7 +54,7 @@ export class RolesComponent  implements TableParent<Role>, OnInit{
   
   update(): void {
     this.loading = true;
-    this.roleService.getRoles().subscribe({
+    this.roleService.getAll().subscribe({
       next: data => {
         this.roles = data;
         this.loading = false;
@@ -64,112 +64,5 @@ export class RolesComponent  implements TableParent<Role>, OnInit{
         verticalPosition: 'top'
       })
     })
-  }
-
-  edit(row: any): void {
-    let dialogRef = this.dialog.open(RoleFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-        role: row
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result && result.label) {
-        this.roleService.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Rolle geändert`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Ändern der Rolle`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }else if (result && result.id) {
-        this.roleService.update(result).subscribe();
-      }
-    });
-  }
-
-  add() {
-    let dialogRef = this.dialog.open(RoleFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-        
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.roleService.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Rolle hinzugefügt`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            if (err.status === 400) {
-              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          }
-        })
-      }
-
-    });
-  }
-  deleteSelected() {
-    //TODO: soft delete option
-    if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(this.selection.selected.length + " Rollen löschen", `Möchten Sie ${this.selection.selected.length} Rollen löschen, dies kann nicht rückgängig gemacht werden?`);
-
-    let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      maxWidth: "400px",
-      data: dialogData
-    });
-
-    dialogRef.afterClosed().subscribe(dialogResult => {
-      if (dialogResult) {
-        this.roleService.delete(this.selection.selected).subscribe({
-          next: data => {
-            this._snackBar.open(`${data['affected']} Rollen gelöscht`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Löschen der Rollen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }
-    });
   }
 }

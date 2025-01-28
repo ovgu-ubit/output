@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="cost_types" [headers]="headers" [parent]="this" [icon]="'credit_card'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="cost_types" [headers]="headers" [parent]="this" [icon]="'credit_card'" #table
+nameSingle="Kostenart" [serviceClass]="this.ctService"
+[formComponent]="this.formComponent" [combineAlias]="false" [combineButton]="false">
 </appTable>

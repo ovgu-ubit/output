@@ -2,30 +2,34 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { Status } from '../../../../../output-interfaces/Publication';
+import { EntityService } from 'src/app/interfaces/service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class StatusService {
+export class StatusService implements EntityService<Status, Status> {
   
   constructor(private http: HttpClient) { }
 
-  public getStatuses() {
+  public getAll() {
     return this.http.get<Status[]>(environment.api + 'status', { withCredentials: true });
   }
-
-  public getStatus(id:number) {
+  public index(reporting_year:number) {
+    return this.getAll();
+  }
+  public getOne(id:number) {
     return this.http.get<Status>(environment.api + 'status/one?id='+id, { withCredentials: true });
   }
-
-  public insert(ge:Status) {
+  public add(ge:Status) {
     return this.http.post<Status>(environment.api + 'status', ge, { withCredentials: true });
   }
-  
   public update(ge:Status) {
     return this.http.put<Status>(environment.api + 'status', ge, { withCredentials: true });
   }
-  public delete(insts:Status[]) {
-    return this.http.delete<Status[]>(environment.api + 'status', { withCredentials: true, body: insts });
+  public delete(ids:number[]) {
+    return this.http.delete<Status[]>(environment.api + 'status', { withCredentials: true, body: ids.map(e => ({ id: e })) });
+  }
+  public combine(id1: number, ids: number[]) {
+    throw "not yet implemented";
   }
 }
