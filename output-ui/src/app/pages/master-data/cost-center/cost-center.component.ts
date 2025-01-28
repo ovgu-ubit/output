@@ -26,7 +26,6 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<CostCenterIndex> = new SelectionModel<CostCenterIndex>(true, []);
   destroy$ = new Subject();
       
   formComponent = CostCenterFormComponent;
@@ -80,124 +79,6 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
 
   getLabel() {
     return '/Stammdaten/Kostenstellen'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.ccService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.cost_centers = data;
-        this.loading = false;
-        this.table?.update(this.cost_centers)
-      }
-    })
-  }
-
-  edit(row: any): void {
-    let dialogRef = this.dialog.open(CostCenterFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-        cost_center: row
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result && result.label) {
-        this.ccService.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Kostenstelle geändert`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Ändern der Kostenstelle`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }else if (result && result.id) {
-        this.ccService.update(result).subscribe();
-      }
-    });
-  }
-
-  add() {
-    let dialogRef = this.dialog.open(CostCenterFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-        
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.ccService.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`Kostenstelle hinzugefügt`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            if (err.status === 400) {
-              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          }
-        })
-      }
-
-    });
-  }
-  deleteSelected() {
-    //TODO: soft delete option
-    if (this.selection.selected.length === 0) return;
-    let dialogData = new ConfirmDialogModel(this.selection.selected.length + " Kostenstellen löschen", `Möchten Sie ${this.selection.selected.length} Kostenstellen löschen, dies kann nicht rückgängig gemacht werden?`);
-
-    let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      maxWidth: "400px",
-      data: dialogData
-    });
-
-    dialogRef.afterClosed().subscribe(dialogResult => {
-      if (dialogResult) {
-        this.ccService.delete(this.selection.selected.map(e => e.id)).subscribe({
-          next: data => {
-            this._snackBar.open(`${data['affected']} Kostenstellen gelöscht`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Löschen der Kostenstellen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }
-    });
   }
 
   async showPubs?(id:number,field?:string) {

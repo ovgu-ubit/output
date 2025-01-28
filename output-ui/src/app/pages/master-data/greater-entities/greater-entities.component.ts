@@ -27,7 +27,6 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
 
   formComponent = GreaterEntityFormComponent;
@@ -83,17 +82,6 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
 
   getLabel() {
     return '/Stammdaten/Größere Einheiten'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.geService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.ges = data;
-        this.loading = false;
-        this.table?.update(this.ges);
-      }
-    })
   }
 
   async showPubs?(id:number,field?:string) {

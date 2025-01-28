@@ -18,8 +18,7 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 export class RolesComponent  implements TableParent<Role>, OnInit{
   buttons: TableButton[] = [
   ];
-  loading: boolean = true;
-  selection: SelectionModel<Role> = new SelectionModel<Role>(true, []);
+  loading: boolean = false;
   destroy$ = new Subject();
       
   formComponent = RoleFormComponent;
@@ -37,7 +36,11 @@ export class RolesComponent  implements TableParent<Role>, OnInit{
 
   ngOnInit(): void {
     this.loading = true;
-    this.update();
+    this.roleService.getAll().subscribe(data => {
+      this.loading = false;
+      this.roles = data;
+      this.table.update(data)
+    })
   }
   
   getName() {
@@ -50,19 +53,5 @@ export class RolesComponent  implements TableParent<Role>, OnInit{
 
   getLabel() {
     return '/Stammdaten/Rollen'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.roleService.getAll().subscribe({
-      next: data => {
-        this.roles = data;
-        this.loading = false;
-        this.table?.update(this.roles)
-      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-    })
   }
 }

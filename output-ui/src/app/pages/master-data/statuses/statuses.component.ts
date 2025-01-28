@@ -19,7 +19,6 @@ export class StatusesComponent implements TableParent<Status>, OnInit{
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<Status> = new SelectionModel<Status>(true, []);
   destroy$ = new Subject();
         
   formComponent = StatusFormComponent;
@@ -38,7 +37,16 @@ export class StatusesComponent implements TableParent<Status>, OnInit{
 
   ngOnInit(): void {
     this.loading = true;
-    this.update();
+    this.statusService.getAll().subscribe({
+      next: data => {
+        this.statuses = data;
+        this.loading = false;
+        this.table?.update(this.statuses)
+      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
+    })
   }
   
   getName() {
@@ -51,20 +59,6 @@ export class StatusesComponent implements TableParent<Status>, OnInit{
 
   getLabel() {
     return '/Stammdaten/Status'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.statusService.getAll().subscribe({
-      next: data => {
-        this.statuses = data;
-        this.loading = false;
-        this.table?.update(this.statuses)
-      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-    })
   }
 }
 

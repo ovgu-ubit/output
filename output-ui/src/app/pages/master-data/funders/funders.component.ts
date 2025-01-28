@@ -27,7 +27,6 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
   
   formComponent = FunderFormComponent;
@@ -81,17 +80,6 @@ export class FundersComponent implements TableParent<FunderIndex>, OnInit{
 
   getLabel() {
     return '/Stammdaten/Förderer'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.funderService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.funders = data;
-        this.loading = false;
-        this.table?.update(this.funders);
-      }
-    })
   }
   
   async showPubs?(id:number,field?:string) {

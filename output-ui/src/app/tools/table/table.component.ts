@@ -8,7 +8,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { Alert } from 'src/app/interfaces/alert';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { ViewConfig } from 'src/app/services/redux';
+import { selectReportingYear, ViewConfig } from 'src/app/services/redux';
 import { SearchFilter } from '../../../../../output-interfaces/Config';
 import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { MatDialog } from '@angular/material/dialog';
@@ -19,7 +19,9 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/co
 import { SelectionModel } from '@angular/cdk/collections';
 import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map } from 'rxjs';
+import { concatMap, map, merge, Observable, of } from 'rxjs';
+import { PublicationService } from 'src/app/services/entities/publication.service';
+import { Store } from '@ngrx/store';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {
@@ -61,6 +63,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @ViewChild('paginatorBottom') paginator2: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
 
+  loading: boolean;
+  reporting_year: number;
+
   selection: SelectionModel<T> = new SelectionModel<T>(true, []);
 
   filterValue: string;
@@ -73,15 +78,33 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   alerts: Alert[] = [];
 
   id;
+  public indexOptions:any;
 
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
-    public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute) {
+    public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
+    private publicationService: PublicationService, private store: Store) {
   }
 
   public ngOnInit(): void {
+    this.loading = true;
+    let ob$:Observable<any> = this.store.select(selectReportingYear).pipe(concatMap(data => {
+      if (data) {
+        return of(data)
+      } else {
+        return this.publicationService.getDefaultReportingYear();
+      }
+    }), map(data => {
+      this.reporting_year = data;
+    }))
+    ob$ = merge(ob$, this.route.queryParamMap.pipe(map(params => {
+      if (params.get('id')) {
+        this.id = params.get('id');
+      }
+    })));
+
     this.dataSource = new MatTableDataSource<T>(this.data);
     //populate the headerNames field for template access
     this.headerNames = this.headers.map(x => x.colName);
@@ -94,11 +117,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
     this.defaultFilterPredicate = this.dataSource.filterPredicate;
 
-    this.route.queryParamMap.pipe(map(params => {
-      if (params.get('id')) {
-        this.id = params.get('id');
-      }
-    })).subscribe();
+    ob$.subscribe();
   }
 
   /**
@@ -125,6 +144,16 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     }
   }
 
+  public updateData() {
+    this.loading = true;
+    this.serviceClass.index(this.reporting_year, this.indexOptions).subscribe({
+      next: data => {
+        this.loading = false;
+        this.update(data);
+      }
+    })
+  }
+
   edit(row: any) {
     this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
     // define Entity Form dialog by id to enforce edit mode
@@ -147,7 +176,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.parent.update();
+            this.updateData();
           }, error: err => {
             this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
               duration: 5000,
@@ -183,7 +212,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.parent.update();
+            this.updateData();
           }, error: err => {
             if (err.status === 400) {
               this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
@@ -229,7 +258,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
               panelClass: [`success-snackbar`],
               verticalPosition: 'top'
             })
-            this.parent.update();
+            this.updateData();
           }, error: err => {
             this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
               duration: 5000,
@@ -270,7 +299,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
-              this.parent.update();
+              this.updateData();
             }, error: err => {
               this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
                 duration: 5000,

@@ -29,7 +29,6 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   buttons: TableButton[] = [
   ];
   loading: boolean;
-  selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
 
   formComponent = AuthorFormComponent;
@@ -89,17 +88,6 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
 
   getLabel() {
     return '/Personen'
-  }
-
-  update(): void {
-    this.loading = true;
-    this.authorService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.authors = data;
-        this.loading = false;
-        this.table.update(this.authors);
-      }
-    })
   }
 
   async showPubs?(id: number, field?: string) {

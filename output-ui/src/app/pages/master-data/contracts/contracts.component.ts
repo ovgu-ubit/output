@@ -85,17 +85,6 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit{
     return '/Stammdaten/Verträge'
   }
   
-  update(): void {
-    this.loading = true;
-    this.contractService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.contracts = data;
-        this.loading = false;
-        this.table?.update(this.contracts);
-      }
-    })
-  }
-  
   async showPubs?(id:number,field?:string) {
     this.store.dispatch(resetViewConfig());
     let viewConfig:ViewConfig = {

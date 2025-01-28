@@ -1,7 +1,6 @@
 import { SelectionModel } from "@angular/cdk/collections";
 
 export interface TableParent<T> {
-  update(): void;
 
   buttons: TableButton[]
 

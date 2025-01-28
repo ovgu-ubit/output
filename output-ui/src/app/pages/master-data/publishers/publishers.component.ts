@@ -27,7 +27,6 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
 
   formComponent = PublisherFormComponent;
@@ -81,17 +80,6 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit{
 
   getLabel() {
     return '/Stammdaten/Verlage'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.publisherService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.publishers = data;
-        this.loading = false;
-        this.table?.update(this.publishers);
-      }
-    })
   }
 
   async showPubs?(id:number,field?:string) {

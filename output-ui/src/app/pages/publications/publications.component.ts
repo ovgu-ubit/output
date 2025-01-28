@@ -36,7 +36,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   reporting_year: number;
   filter: { filter: SearchFilter, paths?: string[] };
-  doi_import_service:string;
+  doi_import_service: string;
 
   soft_deletes = false;
 
@@ -53,10 +53,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
-  selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
 
   destroy$ = new Subject();
-          
+
   formComponent = PublicationFormComponent;
 
   @ViewChild(TableComponent) table: TableComponent<PublicationIndex, Publication>;
@@ -141,7 +140,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           this.loading = false;
         }));
       } else {
-        return this.publicationService.index(null, {filter: this.viewConfig.filter.filter, paths: this.viewConfig.filter.paths}).pipe(map(data => {
+        return this.publicationService.index(null, { filter: this.viewConfig.filter.filter, paths: this.viewConfig.filter.paths }).pipe(map(data => {
           this.publications = data;
           this.filter = this.viewConfig.filter;
           this.name = 'Gefilterte Publikationen';
@@ -171,37 +170,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.destroy$.next('');
   }
 
-  update(soft?: boolean): void {
-    this.loading = true;
-    if (!soft && (!this.filter || (this.filter.filter.expressions.length === 0 && this.filter.paths.length === 0))) this.publicationService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.loading = false;
-        this.publications = data;
-        this.name = 'Publikationen des Jahres ' + this.reporting_year;
-        this.soft_deletes = false;
-        this.table.update(this.publications);
-      }, error: err => console.log(err)
-    });
-    else if (!soft && this.filter && (this.filter.filter.expressions.length > 0 || this.filter.paths.length > 0)) this.publicationService.index(null, {filter: this.filter.filter, paths: this.filter.paths}).subscribe({
-      next: data => {
-        this.loading = false;
-        this.publications = data;
-        this.name = 'Gefilterte Publikationen'
-        this.soft_deletes = false;
-        this.table.update(this.publications);
-      }, error: err => console.log(err)
-    });
-    else if (soft) this.publicationService.index(null, {soft:true}).subscribe({
-      next: data => {
-        this.loading = false;
-        this.publications = data;
-        this.name = 'Soft-deleted Publikationen';
-        this.table.update(this.publications);
-        this.soft_deletes = true;
-      }, error: err => console.log(err)
-    });
-  }
-
   changeReportingYear() {
     let dialogRef = this.dialog.open(ReportingYearFormComponent, {
       width: '400px',
@@ -214,15 +182,15 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (result) {
         this.reporting_year = result;
         this.store.dispatch(setReportingYear({ reporting_year: this.reporting_year }))
-        this.update();
+        this.table.updateData();
       }
     });
   }
 
   lockSelected() {
-    if (this.selection.selected.length === 0) return;
+    if (this.table.selection.selected.length === 0) return;
     let save = []
-    for (let pub of this.selection.selected) {
+    for (let pub of this.table.selection.selected) {
       save.push({ id: pub.id, locked: !pub.locked });
     }
     this.publicationService.updateAll(save).subscribe({
@@ -232,7 +200,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update(this.soft_deletes);
+        this.table.updateData();
       }, error: err => {
         this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
           duration: 5000,
@@ -245,9 +213,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   startEnrich(name: string) {
-    if (this.selection.selected.length === 0) return;
+    if (this.table.selection.selected.length === 0) return;
     let save = []
-    for (let pub of this.selection.selected) {
+    for (let pub of this.table.selection.selected) {
       if (!pub.locked) save.push(pub.id);
     }
     this.enrichService.startID(name, save).subscribe({
@@ -257,12 +225,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update(this.soft_deletes);
+        this.table.updateData();
       }
     })
   }
 
   resetView() {
+    this.name = 'Publikationen des Jahres ' + this.reporting_year;
     this._snackBar.open(`Ansicht wurde zurückgesetzt`, 'Super!', {
       duration: 5000,
       panelClass: [`success-snackbar`],
@@ -272,7 +241,12 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(resetReportingYear())
     this.viewConfig = initialState.viewConfig
     this.filter = null;
-    this.update();
+    this.table.indexOptions = {
+      soft: false,
+      filter: this.filter?.filter,
+      paths: this.filter?.paths
+    }
+    this.table.updateData();
   }
 
   extendedFilters() {
@@ -288,46 +262,21 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (result) {
         this.filter = result;
         this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
-        if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.index(null, {filter: result.filter, paths: result.paths}).subscribe({
-          next: data => {
-            if (data.length === 0) {
-              this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
-                duration: 5000,
-                panelClass: [`warning-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`${data.length} Publikationen gefiltert`, 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              });
-            }
-            this.publications = data;
-            this.name = 'Gefilterte Publikationen';
-            this.table.update(this.publications);
-          },
-          error: err => {
-            this._snackBar.open(`Filter kann nicht angewandt werden, bitte anpassen`, 'Puh...', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
+        if (result.filter.expressions.length > 0 || result.paths.length > 0) {
+          this.name = 'Gefilterte Publikationen';
+          this.table.indexOptions = {
+            soft: false,
+            filter: this.filter?.filter,
+            paths: this.filter?.paths
           }
-        });
-        else {
-          this._snackBar.open(`Alle Filter zurückgesetzt`, 'Super!', {
-            duration: 5000,
-            panelClass: [`success-snackbar`],
-            verticalPosition: 'top'
-          });
-          this.update()
-        }
+          this.table.updateData();
+        } else this.resetView()
       }
-    });
+    })
   }
 
   softdeletes() {
+    this.name = 'Soft-deleted Publikationen';
     this._snackBar.open(`Ansicht wurde geändert`, 'Super!', {
       duration: 5000,
       panelClass: [`success-snackbar`],
@@ -336,7 +285,12 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
     this.filter = null;
-    this.update(true);
+    this.table.indexOptions = {
+      soft: true,
+      filter: this.filter?.filter,
+      paths: this.filter?.paths
+    }
+    this.table.updateData()
   }
 
   createLink() {

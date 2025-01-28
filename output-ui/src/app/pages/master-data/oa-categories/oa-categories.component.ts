@@ -27,7 +27,6 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
     
   formComponent = OaCategoryFormComponent;
@@ -80,17 +79,6 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
 
   getLabel() {
     return '/Stammdaten/Open-Access-Kategorien'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.oaService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.oa_cats = data;
-        this.loading = false;
-        this.table?.update(this.oa_cats);
-      }
-    })
   }
   
   async showPubs?(id:number,field?:string) {

@@ -85,17 +85,6 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit{
   getLabel() {
     return '/Stammdaten/Institute'
   }
-  
-  update(): void {
-    this.loading = true;
-    this.instService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.institutes = data;
-        this.loading = false;
-        this.table?.update(this.institutes);
-      }
-    })
-  }
 
   async showPubs?(id:number,field?:string) {
     //identify sub_institutes

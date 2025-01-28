@@ -27,7 +27,6 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
-  selection: SelectionModel<any> = new SelectionModel<any>(true, []);
   destroy$ = new Subject();
     
   formComponent = PubTypeFormComponent;
@@ -80,17 +79,6 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
 
   getLabel() {
     return '/Stammdaten/Publikationsarten'
-  }
-  
-  update(): void {
-    this.loading = true;
-    this.pubTypeService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.pub_types = data;
-        this.loading = false;
-        this.table?.update(this.pub_types);
-      }
-    })
   }
   
   async showPubs?(id:number,field?:string) {
