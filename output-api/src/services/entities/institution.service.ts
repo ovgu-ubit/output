@@ -13,13 +13,15 @@ import { Publication } from '../../entity/Publication';
 @Injectable()
 export class InstitutionService {
 
-    repository: TreeRepository<Institute> = this.manager.getTreeRepository(Institute);
+    repository: TreeRepository<Institute>;
 
     constructor(@InjectEntityManager() private manager: EntityManager, private configService: ConfigService,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Author) private autRepository: Repository<Author>,
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
-        @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) { }
+        @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) {
+            this.repository = this.manager.getTreeRepository(Institute);
+         }
 
     public save(inst: any[]) {
         return this.repository.save(inst).catch(err => {

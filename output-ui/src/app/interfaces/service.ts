@@ -19,7 +19,7 @@ export interface EntityService<T, E> {
 
     update(obj:T):Observable<T>;
 
-    delete(ids:number[]):Observable<T[]>;
+    delete(ids:number[],soft?:boolean):Observable<T[]>;
     
     combine?(id1: number, ids: number[], options?: any):any;
 }

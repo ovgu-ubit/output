@@ -57,7 +57,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
     { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
@@ -294,40 +293,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         console.log(err);
       }
     })
-  }
-
-  deleteSelected() {
-    if (this.selection.selected.length === 0) return;
-
-    let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
-      maxWidth: "400px",
-      data: {
-        pubs: this.selection.selected,
-        soft: this.soft_deletes
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(dialogResult => {
-      if (dialogResult) {
-        this.publicationService.delete(this.selection.selected.map(e => e.id), dialogResult.soft).subscribe({
-          next: data => {
-            this._snackBar.open(`${data['affected']} Publikationen gelöscht`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update(this.soft_deletes);
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Löschen der Publikation`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }
-    });
   }
 
   addPublication() {

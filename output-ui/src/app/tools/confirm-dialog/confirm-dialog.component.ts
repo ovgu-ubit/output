@@ -9,13 +9,17 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 })
 export class ConfirmDialogComponent implements OnInit {
   title: string;
-  message: string;
+  message: string; 
+  
+  soft: boolean;
+  soft_delete: boolean = false;
 
   constructor(public dialogRef: MatDialogRef<ConfirmDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogModel) {
     // Update view with given values
     this.title = data.title;
     this.message = data.message;
+    this.soft = data.soft;
   }
 
   ngOnInit() {
@@ -23,12 +27,12 @@ export class ConfirmDialogComponent implements OnInit {
 
   onConfirm(): void {
     // Close the dialog, return true
-    this.dialogRef.close(true);
+    this.dialogRef.close({ soft: this.soft_delete});
   }
 
   onDismiss(): void {
     // Close the dialog, return false
-    this.dialogRef.close(false);
+    this.dialogRef.close(null);
   }
 }
 
@@ -39,6 +43,6 @@ export class ConfirmDialogComponent implements OnInit {
  */
 export class ConfirmDialogModel {
 
-  constructor(public title: string, public message: string) {
+  constructor(public title: string, public message: string, public soft?:boolean) {
   }
 }

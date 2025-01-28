@@ -72,8 +72,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
-  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog:MatDialog,
-    public tokenService: AuthorizationService ) {
+  constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
+    public tokenService: AuthorizationService) {
   }
 
   public ngOnInit(): void {
@@ -111,40 +111,40 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.filterColumn();
   }
 
-  edit(row:T) {
+  edit(row: T) {
     // define Entity Form dialog by id to enforce edit mode
-     let dialogRef = this.dialog.open(this.formComponent, {
-          width: '800px',
-          maxHeight: '800px',
-          data: {
-            entity: { id: row.id }
-          },
-          disableClose: true
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
-          if (result && result.updated) {
-            this.serviceClass.update(result).subscribe({
-              next: data => {
-                this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
-                })
-                this.parent.update();
-              }, error: err => {
-                this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
-                  duration: 5000,
-                  panelClass: [`danger-snackbar`],
-                  verticalPosition: 'top'
-                })
-                console.log(err);
-              }
+    let dialogRef = this.dialog.open(this.formComponent, {
+      width: '800px',
+      maxHeight: '800px',
+      data: {
+        entity: { id: row.id }
+      },
+      disableClose: true
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
+      if (result && result.updated) {
+        this.serviceClass.update(result).subscribe({
+          next: data => {
+            this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
+              duration: 5000,
+              panelClass: [`success-snackbar`],
+              verticalPosition: 'top'
             })
-          } else if (result && result.id) {
-            this.serviceClass.update(result).subscribe();
+            this.parent.update();
+          }, error: err => {
+            this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
+              duration: 5000,
+              panelClass: [`danger-snackbar`],
+              verticalPosition: 'top'
+            })
+            console.log(err);
           }
         })
+      } else if (result && result.id) {
+        this.serviceClass.update(result).subscribe();
+      }
+    })
   }
 
   add() {
@@ -191,27 +191,72 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   delete() {
-      if (this.selection.selected.length === 0) return;
-      // TODO extend confirm Dialog to allow for soft delete
-      let dialogData = new ConfirmDialogModel(this.selection.selected.length + " " + this.name +" löschen", `Möchten Sie ${this.selection.selected.length} ${this.name} löschen, dies kann nicht rückgängig gemacht werden?`);
-  
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
+    if (this.selection.selected.length === 0) return;
+
+    let data: ConfirmDialogModel = {
+      title: `${this.name} löschen`,
+      message: `Möchten Sie ${this.selection.selected.length} ${this.name} löschen, dies kann nicht rückgängig gemacht werden?`,
+      soft: this.softDelete
+    }
+
+    let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      maxWidth: "400px",
+      data
+    });
+
+    dialogRef.afterClosed().subscribe(dialogResult => {
+      if (dialogResult) {
+        this.serviceClass.delete(this.selection.selected.map(e => e.id), dialogResult.soft).subscribe({
+          next: data => {
+            this._snackBar.open(`${data['affected']} ${this.name} gelöscht`, 'Super!', {
+              duration: 5000,
+              panelClass: [`success-snackbar`],
+              verticalPosition: 'top'
+            })
+            this.parent.update();
+          }, error: err => {
+            this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
+              duration: 5000,
+              panelClass: [`danger-snackbar`],
+              verticalPosition: 'top'
+            })
+            console.log(err);
+          }
+        })
+      }
+    });
+  }
+
+  combine() {
+    if (this.selection.selected.length < 2) {
+      this._snackBar.open(`Bitte selektieren Sie min. zwei ${this.name}`, 'Alles klar!', {
+        duration: 5000,
+        panelClass: [`warning-snackbar`],
+        verticalPosition: 'top'
+      })
+    } else {
+      //selection dialog
+      let dialogRef = this.dialog.open(CombineDialogComponent<E>, {
+        width: '800px',
+        maxHeight: '800px',
+        data: {
+          ents: this.selection.selected,
+          aliases: this.combineAlias
+        },
+        disableClose: true
       });
-  
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          this.serviceClass.delete(this.selection.selected.map(e => e.id)).subscribe({
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.serviceClass.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), { aliases: result.aliases, aliases_first_name: result.aliases_first_name, aliases_last_name: result.aliases_last_name }).subscribe({
             next: data => {
-              this._snackBar.open(`${data['affected']} ${this.name} gelöscht`, 'Super!', {
+              this._snackBar.open(`${this.name} wurden zusammengeführt`, 'Super!', {
                 duration: 5000,
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
               this.parent.update();
             }, error: err => {
-              this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
+              this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
                 duration: 5000,
                 panelClass: [`danger-snackbar`],
                 verticalPosition: 'top'
@@ -222,48 +267,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }
       });
     }
-
-  combine() {
-    if (this.selection.selected.length < 2) {
-        this._snackBar.open(`Bitte selektieren Sie min. zwei ${this.name}`, 'Alles klar!', {
-          duration: 5000,
-          panelClass: [`warning-snackbar`],
-          verticalPosition: 'top'
-        })
-      } else {
-        //selection dialog
-        let dialogRef = this.dialog.open(CombineDialogComponent<E>, {
-          width: '800px',
-          maxHeight: '800px',
-          data: {
-            ents: this.selection.selected,
-            aliases: this.combineAlias
-          },
-          disableClose: true
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) {
-            this.serviceClass.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), {aliases: result.aliases, aliases_first_name: result.aliases_first_name, aliases_last_name: result.aliases_last_name}).subscribe({
-              next: data => {
-                this._snackBar.open(`${this.name} wurden zusammengeführt`, 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
-                })
-                this.parent.update();
-              }, error: err => {
-                this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-                  duration: 5000,
-                  panelClass: [`danger-snackbar`],
-                  verticalPosition: 'top'
-                })
-                console.log(err);
-              }
-            })
-          }
-        });
-      }
-    }
+  }
 
   /**
    * applies a search filter
@@ -366,7 +370,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     }
   }
 
-  compare(type:  string, a:  any, b:  any, dir:  SortDirection) {
+  compare(type: string, a: any, b: any, dir: SortDirection) {
     if (!a && !b) return 0;
     else if (!a && b) return (dir === 'asc' ? -1 : 1)
     else if (a && !b) return (dir === 'asc' ? 1 : -1)
@@ -463,7 +467,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   isButtonDisabled(e: TableButton) {
     return e.roles && !this.hasRole(e.roles);
   }
-  hasRole(roles:string[]) {
+  hasRole(roles: string[]) {
     return roles.some(r => this.tokenService.hasRole(r))
   }
 
