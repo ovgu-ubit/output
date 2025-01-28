@@ -226,7 +226,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     ob$ = merge(ob$, this.oaService.getAll().pipe(map(data => {
       this.oa_categories = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
-    ob$ = merge(ob$, this.languageService.getLanguages().pipe(map(data => {
+    ob$ = merge(ob$, this.languageService.getAll().pipe(map(data => {
       this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
     ob$ = merge(ob$, this.geService.getAll().pipe(map(data => {
