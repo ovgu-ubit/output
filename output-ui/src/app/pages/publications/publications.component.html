@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="publications" [headers]="this.headers" [parent]="this" [icon]="'book'">
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="publications" [headers]="this.headers" [parent]="this" [icon]="'book'"
+nameSingle="Publikation" [serviceClass]="this.publicationService"
+[formComponent]="this.formComponent" [combineAlias]="false" [softDelete]="true">
 </appTable>

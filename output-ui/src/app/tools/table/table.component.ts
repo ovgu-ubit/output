@@ -48,6 +48,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() icon?: string;
 
   @Input() combineAlias? = true;
+  @Input() softDelete? = false;
 
   @Input() parent: TableParent<T>;
   @Input() serviceClass: EntityService<E, T>;
@@ -191,6 +192,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   delete() {
       if (this.selection.selected.length === 0) return;
+      // TODO extend confirm Dialog to allow for soft delete
       let dialogData = new ConfirmDialogModel(this.selection.selected.length + " " + this.name +" löschen", `Möchten Sie ${this.selection.selected.length} ${this.name} löschen, dies kann nicht rückgängig gemacht werden?`);
   
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {

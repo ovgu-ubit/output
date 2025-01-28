@@ -161,10 +161,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.institution = data.short_label;
     }
     )));
-    if (this.data['id']) {
+    if (this.data.entity?.id) {
       this.edit = true;
       this.loading = true;
-      ob$ = merge(ob$, this.loadPub(this.data['id']));
+      ob$ = merge(ob$, this.loadPub(this.data.entity?.id));
     } else {
       this.edit = false;
       this.pub = {
@@ -182,7 +182,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   loadPub(id: number) {
-    return this.publicationService.getPublication(id).pipe(map(data => {
+    return this.publicationService.getOne(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
       this.form.get('author_info').patchValue(data);

@@ -31,7 +31,7 @@ import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
   styleUrls: ['./publications.component.css']
 })
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
-  constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
+  constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService: ConfigService) { }
 
@@ -58,12 +58,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
     { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer', 'admin'] },
     { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer', 'admin'] },
   ];
   loading: boolean;
   selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
 
   destroy$ = new Subject();
+          
+  formComponent = PublicationFormComponent;
 
   @ViewChild(TableComponent) table: TableComponent<PublicationIndex, Publication>;
   headers: TableHeader[] = [
@@ -153,7 +154,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           }
         }));
       } else {
-        return this.publicationService.filter(this.viewConfig.filter.filter, this.viewConfig.filter.paths).pipe(map(data => {
+        return this.publicationService.index(null, {filter: this.viewConfig.filter.filter, paths: this.viewConfig.filter.paths}).pipe(map(data => {
           this.publications = data;
           this.filter = this.viewConfig.filter;
           this.name = 'Gefilterte Publikationen';
@@ -197,7 +198,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
-    else if (!soft && this.filter && (this.filter.filter.expressions.length > 0 || this.filter.paths.length > 0)) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
+    else if (!soft && this.filter && (this.filter.filter.expressions.length > 0 || this.filter.paths.length > 0)) this.publicationService.index(null, {filter: this.filter.filter, paths: this.filter.paths}).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -206,7 +207,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         this.table.update(this.publications);
       }, error: err => console.log(err)
     });
-    else if (soft) this.publicationService.softIndex().subscribe({
+    else if (soft) this.publicationService.index(null, {soft:true}).subscribe({
       next: data => {
         this.loading = false;
         this.publications = data;
@@ -230,7 +231,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     dialogRef.afterClosed().subscribe(result => {
       this.location.replaceState(this.router.url.split('?')[0])
       if (result && result.title) {
-        this.publicationService.save([result]).subscribe({
+        this.publicationService.update(result).subscribe({
           next: data => {
             this._snackBar.open(`Publikation geändert`, 'Super!', {
               duration: 5000,
@@ -248,7 +249,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           }
         })
       } else if (result && result.id) {
-        this.publicationService.save([result]).subscribe();
+        this.publicationService.update(result).subscribe();
       }
     });
   }
@@ -276,7 +277,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     for (let pub of this.selection.selected) {
       save.push({ id: pub.id, locked: !pub.locked });
     }
-    this.publicationService.save(save).subscribe({
+    this.publicationService.updateAll(save).subscribe({
       next: data => {
         this._snackBar.open(`Sperr-Status von ${data} Publikationen geändert`, 'Super!', {
           duration: 5000,
@@ -308,7 +309,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
     dialogRef.afterClosed().subscribe(dialogResult => {
       if (dialogResult) {
-        this.publicationService.delete(this.selection.selected.map(e => { return { id: e.id } }), dialogResult.soft).subscribe({
+        this.publicationService.delete(this.selection.selected.map(e => e.id), dialogResult.soft).subscribe({
           next: data => {
             this._snackBar.open(`${data['affected']} Publikationen gelöscht`, 'Super!', {
               duration: 5000,
@@ -351,14 +352,14 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           if (result) {
             let pubInit = JSON.parse(JSON.stringify(result));
             pubInit.authorPublications = [];
-            this.publicationService.insert(pubInit).subscribe({
+            this.publicationService.add(pubInit).subscribe({
               next: data => {
                 if (Array.isArray(data)) data = data[0]
                 result.id = data.id;
                 for (let autPub of result.authorPublications) {
                   autPub.publicationId = data.id;
                 }
-                this.publicationService.save([result]).subscribe({
+                this.publicationService.update(result).subscribe({
                   next: data => {
                     this._snackBar.open(`Publikation hinzugefügt`, 'Super!', {
                       duration: 5000,
@@ -409,7 +410,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           doi: result.doi,
           dataSource: 'Manuell per DOI hinzugefügt'
         }
-        this.publicationService.insert(pub).subscribe({
+        this.publicationService.add(pub).subscribe({
           next: data => {
             if (!Array.isArray(data)) return;
             let id = [data[0].id]
@@ -477,47 +478,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     })
   }
 
-  combine() {
-    if (this.selection.selected.length < 2) {
-      this._snackBar.open(`Bitte selektieren Sie min. zwei Publikationen`, 'Alles klar!', {
-        duration: 5000,
-        panelClass: [`warning-snackbar`],
-        verticalPosition: 'top'
-      })
-    } else {
-      //selection dialog
-      let dialogRef = this.dialog.open(CombineDialogComponent<Publication>, {
-        width: '800px',
-        maxHeight: '800px',
-        data: {
-          ents: this.selection.selected
-        },
-        disableClose: true
-      });
-      dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          this.publicationService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
-            next: data => {
-              this._snackBar.open(`Publikationen wurden zusammengeführt`, 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.update(this.soft_deletes);
-            }, error: err => {
-              this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          })
-        }
-      });
-    }
-  }
-
   resetView() {
     this._snackBar.open(`Ansicht wurde zurückgesetzt`, 'Super!', {
       duration: 5000,
@@ -544,7 +504,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (result) {
         this.filter = result;
         this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
-        if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.filter(result.filter, result.paths).subscribe({
+        if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.index(null, {filter: result.filter, paths: result.paths}).subscribe({
           next: data => {
             if (data.length === 0) {
               this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
