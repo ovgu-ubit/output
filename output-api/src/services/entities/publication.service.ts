@@ -12,6 +12,7 @@ import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../entity/Publication';
 import { PublicationIdentifier } from '../../entity/PublicationIdentifier';
 import { Role } from '../../entity/Role';
+import { InstitutionService } from './institution.service';
 
 @Injectable()
 export class PublicationService {
@@ -34,7 +35,7 @@ export class PublicationService {
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
-        private configService: ConfigService) { }
+        private configService: ConfigService, private instService:InstitutionService) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub).catch(err => {
@@ -63,7 +64,7 @@ export class PublicationService {
             .leftJoinAndSelect("invoices.cost_center", "cost_center")
             .leftJoinAndSelect("cost_items.cost_type", "cost_type")
 
-        query = this.filter(filter, query);
+        query = await this.filter(filter, query);
 
         let res = await query.getMany();
         return res;
@@ -366,12 +367,12 @@ export class PublicationService {
     }
 
     // retrieves a publication index based on a filter object
-    filterIndex(filter: SearchFilter) {
-        return this.filter(filter, this.indexQuery()).getRawMany();
+    async filterIndex(filter: SearchFilter) {
+        return (await this.filter(filter, this.indexQuery())).getRawMany();
     }
 
     //processes a filter object and adds where conditions to the index query
-    filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): SelectQueryBuilder<Publication> {
+    async filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): Promise<SelectQueryBuilder<Publication>> {
         this.funder = false;
         this.author = false;
         this.identifiers = false;
@@ -385,6 +386,12 @@ export class PublicationService {
         //let indexQuery = this.indexQuery();
         let first = false;
         if (filter) for (let expr of filter.expressions) {
+            if (expr.key.includes("institute_id")) {
+                expr.comp = CompareOperation.IN;
+                let ids = [expr.value].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
+                expr.value = '('+ids.join(',')+')';
+            }
+
             let compareString;
             switch (expr.comp) {
                 case CompareOperation.INCLUDES:
@@ -460,6 +467,12 @@ export class PublicationService {
                 break;
             case 'author_id_corr':
                 where = "\"authorPublications\".\"authorId\"= " + value + " and \"authorPublications\".corresponding";
+                break;
+            case 'institute_id':
+                where = '\"authorPublications\".\"instituteId\"=' + value;
+                break;
+            case 'institute_id_corr':
+                where = "\"authorPublications\".\"instituteId\"= " + value + " and \"authorPublications\".corresponding";
                 break;
             case 'inst_authors':
                 this.author = true;

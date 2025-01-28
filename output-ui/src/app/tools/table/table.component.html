@@ -127,7 +127,7 @@
             <ng-container *ngIf="col.type === 'pubs'">
               <td mat-cell *matCellDef="let d">
                 {{d[col.colName]}} 
-                <button mat-icon-button matTooltip="Publikationen anzeigen" (click)="this.parent.showPubs(d['id'], col.colName)"
+                <button mat-icon-button matTooltip="Publikationen anzeigen" (click)="this.showPubs(d['id'], col.colName)"
                 [matTooltipShowDelay]="800" *ngIf="d[col.colName]!=0"> <mat-icon>remove_red_eye</mat-icon></button>
                 <button mat-icon-button disabled *ngIf="d[col.colName]==0"></button>
               </td>

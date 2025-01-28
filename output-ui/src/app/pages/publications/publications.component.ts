@@ -1,5 +1,4 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { SelectionModel } from '@angular/cdk/collections';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -17,7 +16,6 @@ import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression }
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
 import { FilterViewComponent } from '../../tools/filter-view/filter-view.component';
-import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
 

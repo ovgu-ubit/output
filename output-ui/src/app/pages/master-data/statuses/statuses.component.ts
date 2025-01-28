@@ -1,11 +1,9 @@
-import { SelectionModel } from '@angular/cdk/collections';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { StatusService } from 'src/app/services/entities/status.service';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { TableComponent } from 'src/app/tools/table/table.component';
 import { Status } from '../../../../../../output-interfaces/Publication';
 import { StatusFormComponent } from '../../windows/status-form/status-form.component';
@@ -15,15 +13,15 @@ import { StatusFormComponent } from '../../windows/status-form/status-form.compo
   templateUrl: './statuses.component.html',
   styleUrl: './statuses.component.css'
 })
-export class StatusesComponent implements TableParent<Status>, OnInit{
+export class StatusesComponent implements TableParent<Status>, OnInit {
   buttons: TableButton[] = [
   ];
   loading: boolean = true;
   destroy$ = new Subject();
-        
+
   formComponent = StatusFormComponent;
 
-  statuses:Status[] = [];
+  statuses: Status[] = [];
 
   @ViewChild(TableComponent) table: TableComponent<Status, Status>;
   headers: TableHeader[] = [
@@ -33,7 +31,7 @@ export class StatusesComponent implements TableParent<Status>, OnInit{
   ];
   reporting_year;
 
-  constructor(public statusService:StatusService, private dialog:MatDialog, private _snackBar: MatSnackBar) {}
+  constructor(public statusService: StatusService, private dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     this.loading = true;
@@ -48,7 +46,7 @@ export class StatusesComponent implements TableParent<Status>, OnInit{
       })
     })
   }
-  
+
   getName() {
     return 'Status';
   }

@@ -8,8 +8,8 @@ import { MatTableDataSource } from '@angular/material/table';
 import { Alert } from 'src/app/interfaces/alert';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { selectReportingYear, ViewConfig } from 'src/app/services/redux';
-import { SearchFilter } from '../../../../../output-interfaces/Config';
+import { resetViewConfig, selectReportingYear, setViewConfig, ViewConfig } from 'src/app/services/redux';
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../../output-interfaces/Config';
 import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { MatDialog } from '@angular/material/dialog';
 import { Entity } from '../../../../../output-interfaces/Publication';
@@ -54,6 +54,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   @Input() combineAlias? = true;
   @Input() softDelete? = false;
+  @Input() filter_key? = "";
 
   @Input() parent: TableParent<T>;
   @Input() serviceClass: EntityService<E, T>;
@@ -313,6 +314,43 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       });
     }
   }
+
+  async showPubs?(id:number,field?:string) {
+    let filterkey = null;
+    let date_filter = [{
+      op: JoinOperation.AND,
+      key: 'pub_date',
+      comp: CompareOperation.GREATER_THAN,
+      value: (Number(this.reporting_year)-1)+'-12-31 23:59:59'
+    },{
+      op: JoinOperation.AND,
+      key: 'pub_date',
+      comp: CompareOperation.SMALLER_THAN,
+      value: (Number(this.reporting_year)+1)+'-01-01 00:00:00'
+    }]
+
+    filterkey = this.filter_key;
+    if (field === 'pub_corr_count') filterkey = this.filter_key+'_corr'
+    else if (field === 'pub_count_total') {
+      date_filter = []
+    }
+      this.store.dispatch(resetViewConfig());
+      let viewConfig:ViewConfig = {
+        sortDir: 'asc' as SortDirection,
+        filter: {
+          filter: {
+            expressions: [{
+              op: JoinOperation.AND,
+              key: filterkey,
+              comp: CompareOperation.EQUALS,
+              value: id
+            },...date_filter]
+          }
+        }
+      }
+      this.store.dispatch(setViewConfig({viewConfig}))
+      this.router.navigateByUrl('publications')
+    }
 
   /**
    * applies a search filter
