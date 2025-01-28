@@ -188,7 +188,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
     if (!this.contract.invoice_amount) this.contract.invoice_amount = undefined;
     if (!this.contract.start_date) this.contract.start_date = undefined;
     if (!this.contract.end_date) this.contract.end_date = undefined;
-    this.dialogRef.close(this.contract)
+    this.dialogRef.close({ ...this.contract, updated: true })
   }
 
   close() {

@@ -8,7 +8,7 @@ import { EntityService } from 'src/app/interfaces/service';
 @Injectable({
   providedIn: 'root'
 })
-export class AuthorService implements EntityService<Author,AuthorIndex>{
+export class AuthorService implements EntityService<Author, AuthorIndex> {
 
   constructor(private http: HttpClient) { }
 
@@ -33,10 +33,10 @@ export class AuthorService implements EntityService<Author,AuthorIndex>{
   }
 
   public delete(ids: number[]) {
-    return this.http.delete<Author[]>(environment.api + 'authors', { withCredentials: true, body: ids.map(e => ({id: e}))});
+    return this.http.delete<Author[]>(environment.api + 'authors', { withCredentials: true, body: ids.map(e => ({ id: e })) });
   }
 
-  public combine(id1: number, ids: number[], options?: {aliases_first_name?: string[], aliases_last_name?: string[]}) {
+  public combine(id1: number, ids: number[], options?: { aliases_first_name?: string[], aliases_last_name?: string[] }) {
     return this.http.post(environment.api + 'authors/combine', { id1, ids, aliases_first_name: options?.aliases_first_name, aliases_last_name: options?.aliases_last_name }, { withCredentials: true });
   }
 }

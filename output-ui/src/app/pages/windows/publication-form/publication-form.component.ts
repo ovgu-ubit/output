@@ -229,7 +229,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     ob$ = merge(ob$, this.languageService.getLanguages().pipe(map(data => {
       this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
-    ob$ = merge(ob$, this.geService.getGreaterEntities().pipe(map(data => {
+    ob$ = merge(ob$, this.geService.getAll().pipe(map(data => {
       this.greater_entities = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filtered_greater_entities = this.form.get('biblio_info').get('ge').valueChanges.pipe(
         startWith(this.pub?.greater_entity?.label),
@@ -490,7 +490,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
             if (dialogResult) {
-              this.geService.insert(dialogResult).subscribe({
+              this.geService.add(dialogResult).subscribe({
                 next: data => {
                   this._snackBar.open('Größere Einheit wurde hinzugefügt', 'Super!', {
                     duration: 5000,

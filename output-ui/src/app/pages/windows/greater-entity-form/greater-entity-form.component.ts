@@ -33,8 +33,8 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.greater_entity.id) {
-      this.geService.getGreaterEntity(this.data.greater_entity.id).subscribe({
+    if (this.data.entity?.id) {
+      this.geService.getOne(this.data.entity?.id).subscribe({
         next: data => {
           this.ge = data;
           this.form.patchValue(this.ge)
@@ -50,7 +50,7 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
       })
     }
     else this.ge = {
-      label: this.data.greater_entity.label,
+      label: this.data.greater_entity?.label,
       identifiers: []
     }
     this.form.patchValue(this.ge)
@@ -83,7 +83,7 @@ export class GreaterEntityFormComponent implements OnInit, AfterViewInit {
     this.ge = { ...this.ge, ...this.form.getRawValue(),
       doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined,
       doaj_until: this.form.get('doaj_until').value ? this.form.get('doaj_until').value.format() : undefined, }
-    this.dialogRef.close(this.ge)
+    this.dialogRef.close({ ...this.ge, updated: true })
   }
 
   close() {

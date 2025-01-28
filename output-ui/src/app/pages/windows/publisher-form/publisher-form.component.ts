@@ -82,7 +82,7 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
   action() {
     if (this.form.invalid) return;
     this.publisher = {...this.publisher, ...this.form.getRawValue()}
-    this.dialogRef.close(this.publisher)
+    this.dialogRef.close({ ...this.publisher, updated: true })
   }
 
   close() {

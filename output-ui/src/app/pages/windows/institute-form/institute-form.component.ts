@@ -95,7 +95,7 @@ export class InstituteFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
     this.institute = { ...this.institute, ...this.form.getRawValue() }
     if (!this.institute.id) this.institute.id = undefined;
-    this.dialogRef.close(this.institute)
+    this.dialogRef.close({ ...this.institute, updated: true })
   }
 
   close() {
