@@ -34,8 +34,8 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.publisher.id) {
-      this.publisherService.getPublisher(this.data.publisher.id).subscribe({
+    if (this.data.entity?.id) {
+      this.publisherService.getOne(this.data.entity?.id).subscribe({
         next: data => {
           this.publisher = data;
           this.form.patchValue(this.publisher)
@@ -51,7 +51,7 @@ export class PublisherFormComponent implements OnInit, AfterViewInit{
       })
     }
     else this.publisher = {
-      label: this.data.publisher.label,
+      label: this.data.publisher?.label,
       aliases: []
     }
     this.form.patchValue(this.publisher)

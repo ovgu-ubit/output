@@ -46,6 +46,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() name: string;
   @Input() nameSingle: string;
   @Input() icon?: string;
+  @Input() combineAlias? = true;
 
   @Input() parent: TableParent<T>;
   @Input() serviceClass: EntityService<E, T>;
@@ -233,7 +234,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           maxHeight: '800px',
           data: {
             ents: this.selection.selected,
-            aliases: true
+            aliases: this.combineAlias
           },
           disableClose: true
         });

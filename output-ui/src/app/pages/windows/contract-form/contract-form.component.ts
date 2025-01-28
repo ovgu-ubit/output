@@ -40,8 +40,8 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
     if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
       this.disable();
     }
-    if (this.data.contract.id) {
-      this.contractService.getContract(this.data.contract.id).subscribe({
+    if (this.data.entity.id) {
+      this.contractService.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.contract = data;
           this.form.patchValue(this.contract)
@@ -58,11 +58,11 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
       })
     }
     else this.contract = {
-      label: this.data.contract.label,
+      label: this.data.contract?.label,
       publisher: null,
       identifiers: []
     }
-    this.publisherService.getPublishers().subscribe({
+    this.publisherService.getAll().subscribe({
       next: data => {
         this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
         this.filtered_publishers = this.form.get('publ').valueChanges.pipe(
@@ -140,7 +140,7 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
           dialogRef1.afterClosed().subscribe(dialogResult => {
             this.form.get('publ').enable();
             if (dialogResult) {
-              this.publisherService.insert(dialogResult).subscribe({
+              this.publisherService.add(dialogResult).subscribe({
                 next: data => {
                   this._snackBar.open('Verlag wurde hinzugefügt', 'Super!', {
                     duration: 5000,
@@ -207,10 +207,10 @@ export class ContractFormComponent implements OnInit, AfterViewInit {
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else if (this.contract.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
+        } else if (this.contract?.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
         else this.close()
       });
-    } else if (this.contract.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
+    } else if (this.contract?.id) this.dialogRef.close({ id: this.contract.id, locked_at: null })
     else this.close()
   }
   

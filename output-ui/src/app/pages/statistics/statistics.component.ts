@@ -108,7 +108,7 @@ export class StatisticsComponent implements OnInit {
         );
       })))
 
-    ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(
+    ob$ = merge(ob$, this.publisherService.getAll().pipe(map(
       data => {
         this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
         this.publishers.push({label: 'Unbekannt'})
@@ -121,7 +121,7 @@ export class StatisticsComponent implements OnInit {
           map(value => this._filterPublisher(value || '')),
         );
       })));
-    ob$ = merge(ob$, this.contractService.getContracts().pipe(map(
+    ob$ = merge(ob$, this.contractService.getAll().pipe(map(
       data => {
         this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
         this.contracts.push({label: 'Unbekannt', publisher: null})

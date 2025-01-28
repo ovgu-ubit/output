@@ -3,36 +3,34 @@ import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Publisher } from '../../../../../output-interfaces/Publication';
 import { PublisherIndex } from '../../../../../output-interfaces/PublicationIndex';
+import { EntityService } from 'src/app/interfaces/service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class PublisherService {
+export class PublisherService implements EntityService<Publisher, PublisherIndex> {
 
-  
   constructor(private http: HttpClient) { }
 
-  public getPublishers() {
+  public getAll() {
     return this.http.get<Publisher[]>(environment.api + 'publisher', { withCredentials: true });
   }
-
-  public getPublisher(id:number) {
-    return this.http.get<Publisher>(environment.api + 'publisher/one?id='+id, { withCredentials: true });
+  public getOne(id: number) {
+    return this.http.get<Publisher>(environment.api + 'publisher/one?id=' + id, { withCredentials: true });
   }
-
-  public insert(ge:Publisher) {
+  public add(ge: Publisher) {
     return this.http.post<Publisher>(environment.api + 'publisher', ge, { withCredentials: true });
   }
-  public update(ge:Publisher) {
+  public update(ge: Publisher) {
     return this.http.put<Publisher>(environment.api + 'publisher', ge, { withCredentials: true });
   }
-  public index(reporting_year:number) {
-    return this.http.get<PublisherIndex[]>(environment.api + 'publisher/index?reporting_year='+reporting_year, { withCredentials: true });
+  public index(reporting_year: number) {
+    return this.http.get<PublisherIndex[]>(environment.api + 'publisher/index?reporting_year=' + reporting_year, { withCredentials: true });
   }
-  public delete(insts:Publisher[]) {
-    return this.http.delete<Publisher[]>(environment.api + 'publisher', { withCredentials: true, body: insts });
+  public delete(ids: number[]) {
+    return this.http.delete<Publisher[]>(environment.api + 'publisher', { withCredentials: true, body: ids.map(e => ({ id: e })) });
   }
-  public combine(id1:number, ids:number[], aliases?:string[]) {
-    return this.http.post(environment.api + 'publisher/combine', {id1,ids,aliases}, { withCredentials: true });
+  public combine(id1: number, ids: number[], options?: { aliases: string[] }) {
+    return this.http.post(environment.api + 'publisher/combine', { id1, ids, aliases: options.aliases }, { withCredentials: true });
   }
 }

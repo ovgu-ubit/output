@@ -236,14 +236,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map(value => this._filterGE(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(data => {
+    ob$ = merge(ob$, this.publisherService.getAll().pipe(map(data => {
       this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filtered_publishers = this.form.get('biblio_info').get('publ').valueChanges.pipe(
         startWith(this.pub?.publisher?.label),
         map(value => this._filterPublisher(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.contractService.getContracts().pipe(map(data => {
+    ob$ = merge(ob$, this.contractService.getAll().pipe(map(data => {
       this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filtered_contracts = this.form.get('finance_info').get('contr').valueChanges.pipe(
         startWith(this.pub?.contract?.label),
@@ -318,7 +318,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
             if (dialogResult) {
-              this.publisherService.insert(dialogResult).subscribe({
+              this.publisherService.add(dialogResult).subscribe({
                 next: data => {
                   this._snackBar.open('Verlag wurde hinzugefügt', 'Super!', {
                     duration: 5000,
@@ -384,7 +384,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
             if (dialogResult && dialogResult.label) {
-              this.contractService.insert(dialogResult).subscribe({
+              this.contractService.add(dialogResult).subscribe({
                 next: data => {
                   this._snackBar.open('Vertrag wurde hinzugefügt', 'Super!', {
                     duration: 5000,
