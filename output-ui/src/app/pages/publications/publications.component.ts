@@ -1,15 +1,15 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concat, concatMap, map, merge, of, takeUntil } from 'rxjs';
+import { Observable, concatMap, map, merge } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectReportingYear, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
+import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
@@ -242,7 +242,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
   createLink() {
     this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
+      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
     }))
     let link = environment.self + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
@@ -255,16 +255,16 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   filterToQuery(): string {
-    if (!this.indexOptions.filter) return '';
+    if (!this.indexOptions) return '';
     let res = '?';
-    for (let expr of this.indexOptions.filter.expressions) {
+    if (this.indexOptions.filter) for (let expr of this.indexOptions.filter.expressions) {
       res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
     }
-    if (this.indexOptions.filter.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
-    for (let path of this.indexOptions.paths) {
+    if (this.indexOptions.filter?.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
+    if (this.indexOptions.paths) for (let path of this.indexOptions.paths) {
       res += 'path=' + path + '&';
     }
-    if (this.indexOptions.paths.length > 0) res = res.slice(0, res.length - 1);
+    if (this.indexOptions.paths?.length > 0) res = res.slice(0, res.length - 1);
     return res;
   }
 
