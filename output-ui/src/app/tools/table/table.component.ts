@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { Location } from '@angular/common';
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
@@ -18,7 +18,7 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/co
 import { SelectionModel } from '@angular/cdk/collections';
 import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, combineLatestWith, concat, concatMap, concatWith, map, merge, mergeWith, Observable, of, take } from 'rxjs';
+import { catchError, combineLatestWith, concat, concatMap, concatWith, map, merge, mergeWith, Observable, of, Subject, take, takeUntil } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { Store } from '@ngrx/store';
 
@@ -41,7 +41,7 @@ export class CustomPaginator extends MatPaginatorIntl {
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss']
 })
-export class TableComponent<T extends Entity, E extends Entity> implements OnInit {
+export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy {
 
   @Input() data: Array<T>;
   @Input() wide?: boolean;
@@ -77,6 +77,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   dataSource2: MatTableDataSource<T>;
   alerts: Alert[] = [];
 
+  destroy$ = new Subject();
+
   id;
   public indexOptions: any;
 
@@ -89,25 +91,30 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   public ngOnInit(): void {
     this.loading = true;
-    let ob$: Observable<any> = this.store.select(selectReportingYear).pipe(concatMap(data => {
-      if (data) {
-        return of(data)
-      } else {
-        return this.publicationService.getDefaultReportingYear();
-      }
-    }), map(data => {
-      this.reporting_year = data;
-      let col = this.headers.find(e => e.colName === 'pub_count');
-      if (col) col.colTitle += ' ' + data
-      col = this.headers.find(e => e.colName === 'pub_count_corr')
-      if (col) col.colTitle += ' ' + data
-    }), concatMap(data => this.updateData()))
+    let ob$: Observable<any> = this.parent.preProcessing ? this.parent.preProcessing() : of(null);
 
+    ob$ = ob$.pipe(concatMap(data => {
+      return this.store.select(selectReportingYear).pipe(concatMap(data => {
+        if (data) {
+          return of(data)
+        } else {
+          return this.publicationService.getDefaultReportingYear();
+        }
+      }), map(data => {
+        this.reporting_year = data;
+        if (this.name.includes('Publikationen des Jahres ')) this.name = 'Publikationen des Jahres ' + this.reporting_year;
+        let col = this.headers.find(e => e.colName === 'pub_count');
+        if (col) col.colTitle += ' ' + data
+        col = this.headers.find(e => e.colName === 'pub_count_corr')
+        if (col) col.colTitle += ' ' + data
+      }), concatMap(data => this.updateData()))
+    }));
+    
     ob$ = merge(ob$, this.route.queryParamMap.pipe(map(params => {
       if (params.get('id')) {
         this.id = params.get('id');
       }
-    })));
+    })))
 
     this.dataSource = new MatTableDataSource<T>(this.data);
     //populate the headerNames field for template access
@@ -128,7 +135,12 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       })
       console.log(err)
       return of(null)
-    })).subscribe();
+    }), takeUntil(this.destroy$)).subscribe();
+    window.onbeforeunload = () => this.ngOnDestroy();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next('');
   }
 
   /**
@@ -136,6 +148,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
    * @param data the data to be displayed
    */
   public update(data): void {
+    if (this.parent.indexOptions?.filter || this.parent.indexOptions?.paths) this.name = 'Gefilterte Publikationen';
     this.data = data;
     this.dataSource = new MatTableDataSource<T>(data);
     this.dataSource2 = new MatTableDataSource<T>(data);
@@ -156,7 +169,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   public updateData() {
-    return this.serviceClass.index(this.reporting_year, this.indexOptions).pipe(map(data => {
+    return this.serviceClass.index(this.reporting_year, this.parent.indexOptions).pipe(map(data => {
       this.loading = false;
       this.update(data);
     }))

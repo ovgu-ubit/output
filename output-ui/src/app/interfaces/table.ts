@@ -1,8 +1,10 @@
-import { SelectionModel } from "@angular/cdk/collections";
+import { Observable } from "rxjs";
 
 export interface TableParent<T> {
-
-  buttons: TableButton[]
+  buttons: TableButton[];
+  preProcessing?: (() => Observable<void>),
+  postProcessing?: (() => Observable<void>)
+  indexOptions?:any;
 }
 
 export interface TableHeader {

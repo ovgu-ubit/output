@@ -1,5 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -32,9 +32,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   name = 'Publikationen des Jahres ';
   institution = '';
 
-  reporting_year: number;
-  filter: { filter: SearchFilter, paths?: string[] };
-  doi_import_service: string;
+  indexOptions?: { soft: boolean, filter: SearchFilter, paths?: string[] };
 
   soft_deletes = false;
 
@@ -50,9 +48,6 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
   ];
-  loading: boolean;
-
-  destroy$ = new Subject();
 
   formComponent = PublicationFormComponent;
 
@@ -60,12 +55,9 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
   ];
-
-  publications: PublicationIndex[] = [];
   viewConfig: ViewConfig;
 
-  ngOnInit(): void {
-    this.loading = true;
+  preProcessing() {
     let ob$: Observable<any> = this.enrichService.getEnrichs().pipe(map(data => {
       let sub_buttons = data.map(e => {
         return {
@@ -78,7 +70,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
       })
     }))
-    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(map(data => {
+
+    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
       if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
       if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
@@ -98,74 +91,33 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
-    })))
-    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
-      this.doi_import_service = data;
-    })))
-    ob$ = concat(ob$, this.configService.getInstition().pipe(map(data => {
-      this.institution = data.short_label;
-      let header = this.headers.find(e => e.colName === 'authors_inst')
-      if (header) header.colTitle = 'Autoren ' + this.institution;
+      return this.configService.getInstition().pipe(map(data => {
+        this.institution = data.short_label;
+        let header = this.headers.find(e => e.colName === 'authors_inst')
+        if (header) header.colTitle = 'Autoren ' + this.institution;
+      }))
     })))
 
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
-        this.filter = this.queryToFilter(params);
-        if (this.filter) this.viewConfig = { ...this.viewConfig, filter: this.filter }
+        let filter = this.queryToFilter(params);
+        if (filter) this.viewConfig = { ...this.viewConfig, filter }
+
+        this.indexOptions = { soft: false, filter: this.viewConfig.filter?.filter, paths: this.viewConfig.filter?.paths }
       }));
     })));
-    ob$ = ob$.pipe(concatMap(data => {
-      return this.store.select(selectReportingYear).pipe(concatMap(data => {
-        let ob1$: Observable<any>
-        if (data) {
-          ob1$ = of(data);
-        } else {
-          ob1$ = this.publicationService.getDefaultReportingYear();
-        }
-        return ob1$.pipe(map(data => {
-          this.reporting_year = data;
-        }));
-      }));
-    }))
 
-    ob$ = ob$.pipe(concatMap(data => {
-      if (!this.viewConfig?.filter || this.viewConfig?.filter.filter.expressions.length === 0 && this.viewConfig?.filter.paths.length === 0) {
-        return this.publicationService.index(this.reporting_year).pipe(map(data => {
-          this.publications = data;
-          this.name = 'Publikationen des Jahres ' + this.reporting_year;
-          this.table.update(this.publications);
-          this.loading = false;
-        }));
-      } else {
-        return this.publicationService.index(null, { filter: this.viewConfig.filter.filter, paths: this.viewConfig.filter.paths }).pipe(map(data => {
-          this.publications = data;
-          this.filter = this.viewConfig.filter;
-          this.name = 'Gefilterte Publikationen';
-          this.table.update(this.publications);
-          this.loading = false;
-        }))
-      }
-    }))
-    ob$.pipe(takeUntil(this.destroy$)).subscribe({
-      next: data => {
+    return ob$;
+  }
 
-      }, error: err => {
-        this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
-      }
-    })
-    window.onbeforeunload = () => this.ngOnDestroy();
+  ngOnInit(): void {
   }
 
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
+      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
     }))
-    this.destroy$.next('');
   }
 
   changeReportingYear() {
@@ -173,14 +125,14 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       width: '400px',
       disableClose: true,
       data: {
-        reporting_year: this.reporting_year
+        reporting_year: this.table?.reporting_year
       }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.reporting_year = result;
-        this.store.dispatch(setReportingYear({ reporting_year: this.reporting_year }))
-        this.table.updateData();
+        this.table.reporting_year = result;
+        this.store.dispatch(setReportingYear({ reporting_year: this.table.reporting_year }))
+        this.table.updateData().subscribe();
       }
     });
   }
@@ -198,7 +150,7 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.table.updateData();
+        this.table.updateData().subscribe();
       }, error: err => {
         this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
           duration: 5000,
@@ -223,13 +175,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.table.updateData();
+        this.table.updateData().subscribe();
       }
     })
   }
 
   resetView() {
-    this.name = 'Publikationen des Jahres ' + this.reporting_year;
+    this.name = 'Publikationen des Jahres ' + this.table.reporting_year;
     this._snackBar.open(`Ansicht wurde zurückgesetzt`, 'Super!', {
       duration: 5000,
       panelClass: [`success-snackbar`],
@@ -238,13 +190,12 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
     this.viewConfig = initialState.viewConfig
-    this.filter = null;
-    this.table.indexOptions = {
+    this.indexOptions = {
       soft: false,
-      filter: this.filter?.filter,
-      paths: this.filter?.paths
+      filter: null,
+      paths: null
     }
-    this.table.updateData();
+    this.table.updateData().subscribe();
   }
 
   extendedFilters() {
@@ -258,16 +209,15 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.filter = result;
         this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
         if (result.filter.expressions.length > 0 || result.paths.length > 0) {
           this.name = 'Gefilterte Publikationen';
-          this.table.indexOptions = {
+          this.indexOptions = {
             soft: false,
-            filter: this.filter?.filter,
-            paths: this.filter?.paths
+            filter: result.filter,
+            paths: result.paths
           }
-          this.table.updateData();
+          this.table.updateData().subscribe();
         } else this.resetView()
       }
     })
@@ -282,18 +232,17 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
-    this.filter = null;
-    this.table.indexOptions = {
+    this.indexOptions = {
       soft: true,
-      filter: this.filter?.filter,
-      paths: this.filter?.paths
+      filter: null,
+      paths: null
     }
-    this.table.updateData()
+    this.table.updateData().subscribe()
   }
 
   createLink() {
     this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
+      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
     }))
     let link = environment.self + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
@@ -306,16 +255,16 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   filterToQuery(): string {
-    if (!this.filter) return '';
+    if (!this.indexOptions.filter) return '';
     let res = '?';
-    for (let expr of this.filter.filter.expressions) {
+    for (let expr of this.indexOptions.filter.expressions) {
       res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
     }
-    if (this.filter.filter.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
-    for (let path of this.filter.paths) {
+    if (this.indexOptions.filter.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
+    for (let path of this.indexOptions.paths) {
       res += 'path=' + path + '&';
     }
-    if (this.filter.paths.length > 0) res = res.slice(0, res.length - 1);
+    if (this.indexOptions.paths.length > 0) res = res.slice(0, res.length - 1);
     return res;
   }
 

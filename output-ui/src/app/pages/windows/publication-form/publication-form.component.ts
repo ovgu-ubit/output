@@ -655,7 +655,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.pub.pub_type = this.form.get('biblio_info').get('pub_type').value !== -1 ? this.pub_types.find(e => e.id === this.form.get('biblio_info').get('pub_type').value) : null;
     this.pub.oa_category = this.form.get('oa_info').get('oa_cat').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('oa_info').get('oa_cat').value) : null;
     this.pub.language = this.form.get('biblio_info').get('language').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('biblio_info').get('language').value) : null;
-    this.dialogRef.close(this.pub);
+    this.dialogRef.close({...this.pub, updated: true});
   }
 
   getAuthorInfo() {
