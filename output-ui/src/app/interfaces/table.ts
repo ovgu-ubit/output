@@ -3,9 +3,6 @@ import { SelectionModel } from "@angular/cdk/collections";
 export interface TableParent<T> {
 
   buttons: TableButton[]
-
-  loading: boolean;
-  showPubs?(id:number,field?:string):void;
 }
 
 export interface TableHeader {

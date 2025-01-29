@@ -14,12 +14,11 @@ import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { MatDialog } from '@angular/material/dialog';
 import { Entity } from '../../../../../output-interfaces/Publication';
 import { ComponentType } from '@angular/cdk/portal';
-import { AuthorFormComponent } from 'src/app/pages/windows/author-form/author-form.component';
 import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 import { SelectionModel } from '@angular/cdk/collections';
 import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import { concatMap, map, merge, Observable, of } from 'rxjs';
+import { catchError, combineLatestWith, concat, concatMap, concatWith, map, merge, mergeWith, Observable, of, take } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { Store } from '@ngrx/store';
 
@@ -79,19 +78,18 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   alerts: Alert[] = [];
 
   id;
-  public indexOptions:any;
+  public indexOptions: any;
 
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
     public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
-    private publicationService: PublicationService, private store: Store) {
-  }
+    private publicationService: PublicationService, private store: Store) {  }
 
   public ngOnInit(): void {
     this.loading = true;
-    let ob$:Observable<any> = this.store.select(selectReportingYear).pipe(concatMap(data => {
+    let ob$: Observable<any> = this.store.select(selectReportingYear).pipe(concatMap(data => {
       if (data) {
         return of(data)
       } else {
@@ -99,7 +97,12 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       }
     }), map(data => {
       this.reporting_year = data;
-    }))
+      let col = this.headers.find(e => e.colName === 'pub_count');
+      if (col) col.colTitle += ' ' + data
+      col = this.headers.find(e => e.colName === 'pub_count_corr')
+      if (col) col.colTitle += ' ' + data
+    }), concatMap(data => this.updateData()))
+
     ob$ = merge(ob$, this.route.queryParamMap.pipe(map(params => {
       if (params.get('id')) {
         this.id = params.get('id');
@@ -118,7 +121,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
     this.defaultFilterPredicate = this.dataSource.filterPredicate;
 
-    ob$.subscribe();
+    ob$.pipe(catchError(err => {
+      this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
+      console.log(err)
+      return of(null)
+    })).subscribe();
   }
 
   /**
@@ -146,13 +156,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   public updateData() {
-    this.loading = true;
-    this.serviceClass.index(this.reporting_year, this.indexOptions).subscribe({
-      next: data => {
-        this.loading = false;
-        this.update(data);
-      }
-    })
+    return this.serviceClass.index(this.reporting_year, this.indexOptions).pipe(map(data => {
+      this.loading = false;
+      this.update(data);
+    }))
   }
 
   edit(row: any) {
@@ -166,31 +173,31 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       },
       disableClose: true
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(concatMap(result => {
       this.location.replaceState(this.router.url.split('?')[0])
       // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
       if (result && result.updated) {
-        this.serviceClass.update(result).subscribe({
-          next: data => {
-            this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.updateData();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
+        return this.serviceClass.update(result).pipe(concatMap(data => {
+          this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
+            duration: 5000,
+            panelClass: [`success-snackbar`],
+            verticalPosition: 'top'
+          })
+          this.loading = true;
+          return this.updateData();
+        }))
       } else if (result && result.id) {
-        this.serviceClass.update(result).subscribe();
-      }
-    })
+        return this.serviceClass.update(result);
+      } else return of(null)
+    })).pipe(catchError(err => {
+      this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
+        duration: 5000,
+        panelClass: [`danger-snackbar`],
+        verticalPosition: 'top'
+      })
+      console.log(err);
+      return of(null)
+    })).subscribe();
   }
 
   add() {
@@ -204,36 +211,34 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       },
       disableClose: true
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(concatMap(result => {
       if (result) {
-        this.serviceClass.add(result).subscribe({
-          next: data => {
-            this._snackBar.open(`${this.nameSingle} wurde angelegt`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.updateData();
-          }, error: err => {
-            if (err.status === 400) {
-              this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          }
+        return this.serviceClass.add(result).pipe(concatMap(data => {
+          this._snackBar.open(`${this.nameSingle} wurde angelegt`, 'Super!', {
+            duration: 5000,
+            panelClass: [`success-snackbar`],
+            verticalPosition: 'top'
+          })
+          return this.updateData();
+        }))
+      } else return of(null)
+    }), catchError(err => {
+      if (err.status === 400) {
+        this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
+          duration: 5000,
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
         })
+      } else {
+        this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
+          duration: 5000,
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
+        console.log(err);
       }
-
-    });
+      return of(null)
+    })).subscribe();
   }
 
   delete() {
@@ -250,27 +255,27 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       data
     });
 
-    dialogRef.afterClosed().subscribe(dialogResult => {
+    dialogRef.afterClosed().pipe(concatMap(dialogResult => {
       if (dialogResult) {
-        this.serviceClass.delete(this.selection.selected.map(e => e.id), dialogResult.soft).subscribe({
-          next: data => {
-            this._snackBar.open(`${data['affected']} ${this.name} gelöscht`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.updateData();
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
+        return this.serviceClass.delete(this.selection.selected.map(e => e.id), dialogResult.soft).pipe(concatMap(data => {
+          this._snackBar.open(`${data['affected']} ${this.name} gelöscht`, 'Super!', {
+            duration: 5000,
+            panelClass: [`success-snackbar`],
+            verticalPosition: 'top'
+          })
+          return this.updateData();
+        }))
+      } else return of(null)
+    }),
+      catchError(err => {
+        this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
+          duration: 5000,
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
         })
-      }
-    });
+        console.log(err);
+        return of(null)
+      })).subscribe()
   }
 
   combine() {
@@ -291,66 +296,66 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         },
         disableClose: true
       });
-      dialogRef.afterClosed().subscribe(result => {
+      dialogRef.afterClosed().pipe(concatMap(result => {
         if (result) {
-          this.serviceClass.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), { aliases: result.aliases, aliases_first_name: result.aliases_first_name, aliases_last_name: result.aliases_last_name }).subscribe({
-            next: data => {
+          return this.serviceClass.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id), { aliases: result.aliases, aliases_first_name: result.aliases_first_name, aliases_last_name: result.aliases_last_name }).pipe(concatMap(
+            data => {
               this._snackBar.open(`${this.name} wurden zusammengeführt`, 'Super!', {
                 duration: 5000,
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
-              this.updateData();
-            }, error: err => {
-              this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          })
-        }
-      });
+              return this.updateData();
+            }))
+        } else return of(null)
+      }), catchError(err => {
+        this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
+          duration: 5000,
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
+        console.log(err);
+        return of(null)
+      })).subscribe();
     }
   }
 
-  async showPubs?(id:number,field?:string) {
+  async showPubs?(id: number, field?: string) {
     let filterkey = null;
     let date_filter = [{
       op: JoinOperation.AND,
       key: 'pub_date',
       comp: CompareOperation.GREATER_THAN,
-      value: (Number(this.reporting_year)-1)+'-12-31 23:59:59'
-    },{
+      value: (Number(this.reporting_year) - 1) + '-12-31 23:59:59'
+    }, {
       op: JoinOperation.AND,
       key: 'pub_date',
       comp: CompareOperation.SMALLER_THAN,
-      value: (Number(this.reporting_year)+1)+'-01-01 00:00:00'
+      value: (Number(this.reporting_year) + 1) + '-01-01 00:00:00'
     }]
 
     filterkey = this.filter_key;
-    if (field === 'pub_corr_count') filterkey = this.filter_key+'_corr'
+    if (field === 'pub_count_corr') filterkey = this.filter_key + '_corr'
     else if (field === 'pub_count_total') {
       date_filter = []
     }
-      this.store.dispatch(resetViewConfig());
-      let viewConfig:ViewConfig = {
-        sortDir: 'asc' as SortDirection,
+    this.store.dispatch(resetViewConfig());
+    let viewConfig: ViewConfig = {
+      sortDir: 'asc' as SortDirection,
+      filter: {
         filter: {
-          filter: {
-            expressions: [{
-              op: JoinOperation.AND,
-              key: filterkey,
-              comp: CompareOperation.EQUALS,
-              value: id
-            },...date_filter]
-          }
+          expressions: [{
+            op: JoinOperation.AND,
+            key: filterkey,
+            comp: CompareOperation.EQUALS,
+            value: id
+          }, ...date_filter]
         }
       }
-      this.store.dispatch(setViewConfig({viewConfig}))
-      this.router.navigateByUrl('publications')
     }
+    this.store.dispatch(setViewConfig({ viewConfig }))
+    this.router.navigateByUrl('publications')
+  }
 
   /**
    * applies a search filter

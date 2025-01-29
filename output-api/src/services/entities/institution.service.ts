@@ -101,7 +101,7 @@ export class InstitutionService {
                 .leftJoin("publication", "pub", "aut_pub.\"publicationId\" = pub.id")
                 .leftJoin("author_institutes_institute", "aut_inst", "aut_inst.\"instituteId\" = institute.id")
                 .select("COUNT(distinct pub.id)", "pub_count")
-                .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_corr_count")
+                .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_count_corr")
                 .addSelect("COUNT(distinct aut_inst.\"authorId\")", "author_count_total")
                 .addSelect("COUNT(distinct id_descendant)-1","sub_inst_count")
                 .where("ic.id_ancestor = :id",{id:inst.id})

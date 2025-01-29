@@ -1,5 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="pub_types" [headers]="headers" [parent]="this" [icon]="'category'" #table
-nameSingle="Publikationsart" [serviceClass]="this.pubTypeService"
-[formComponent]="this.formComponent" filter_key="pub_type_id">
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'category'" #table
+    nameSingle="Publikationsart" [serviceClass]="this.pubTypeService" [formComponent]="this.formComponent"
+    filter_key="pub_type_id">
 </appTable>

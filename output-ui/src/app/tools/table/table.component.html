@@ -1,17 +1,17 @@
-<div *ngIf="parent.loading" class="d-flex justify-content-center">
+<div *ngIf="this.loading" class="d-flex justify-content-center">
   <div class="spinner-border" role="status">
   </div>
 </div>
-<div class="jumbotron" [hidden]="parent.loading">
+<div class="jumbotron" [hidden]="this.loading">
   <div class="container-fluid">
 
     <mat-toolbar color="accent">
       <span>
         <h4 *ngIf="!this.icon">
-          <mat-icon>book</mat-icon> {{name}} ({{ data.length }})
+          <mat-icon>book</mat-icon> {{name}} ({{ this.dataSource.data.length }})
         </h4>
         <h4 *ngIf="this.icon">
-          <mat-icon>{{this.icon}}</mat-icon> {{name}} ({{ data.length }})
+          <mat-icon>{{this.icon}}</mat-icon> {{name}} ({{ this.dataSource.data.length }})
         </h4>
       </span>
       <span class="fill-remaining-space"></span>
