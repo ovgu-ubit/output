@@ -5,7 +5,7 @@
 <div class="jumbotron" [hidden]="this.loading">
   <div class="container-fluid">
 
-    <mat-toolbar color="accent">
+    <mat-toolbar color="accent" style="display: flex;justify-content: space-between;">
       <span>
         <h4 *ngIf="!this.icon">
           <mat-icon>book</mat-icon> {{name}} ({{ this.dataSource.data.length }})
@@ -14,18 +14,13 @@
           <mat-icon>{{this.icon}}</mat-icon> {{name}} ({{ this.dataSource.data.length }})
         </h4>
       </span>
-      <span class="fill-remaining-space"></span>
-
       <span>
-        <button mat-raised-button (click)="this.add()" [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>&nbsp;
-        <button mat-raised-button (click)="this.delete()" [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>&nbsp;
-        <button mat-raised-button *ngIf="this.serviceClass.combine" (click)="this.combine()" [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>&nbsp;
-        <div mat-dialog-actions align="end" *ngIf="this.parent.buttons!=null" style="display:flex; flex-flow: row wrap">
+        <div mat-dialog-actions align="end" style="display:flex; flex-flow: row wrap;gap: 5px;">
           <ng-container *ngFor="let button of this.parent.buttons">
             <ng-container *ngIf="button.sub_buttons && button.sub_buttons.length > 0">
               <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
               [matTooltipShowDelay]="800">{{button.title}}<mat-icon>
-                  keyboard_arrow_down</mat-icon></button>&nbsp;
+                  keyboard_arrow_down</mat-icon></button>
               <mat-menu #buttonMenu="matMenu" xPosition="before">
                 <ng-container *ngFor="let sub_button of button.sub_buttons;let idx = index">
                   <button mat-menu-item (click)="sub_button.action_function()" [disabled]="this.isButtonDisabled(sub_button)">{{sub_button.title}}</button>
@@ -34,13 +29,16 @@
             </ng-container>
             <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && button.icon">
               <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
-              [matTooltipShowDelay]="800"><mat-icon>{{button.title}}</mat-icon></button>&nbsp;
+              [matTooltipShowDelay]="800"><mat-icon>{{button.title}}</mat-icon></button>
             </ng-container>
             <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && !button.icon">
               <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
-              [matTooltipShowDelay]="800">{{button.title}}</button>&nbsp;
+              [matTooltipShowDelay]="800">{{button.title}}</button>
             </ng-container>
           </ng-container>
+          <button mat-raised-button (click)="this.add()" [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
+          <button mat-raised-button (click)="this.delete()" [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
+          <button mat-raised-button *ngIf="this.serviceClass.combine" (click)="this.combine()" [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
         </div>
       </span>
     </mat-toolbar>
