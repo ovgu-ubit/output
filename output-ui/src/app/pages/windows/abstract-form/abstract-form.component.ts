@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Inject, Input, OnInit } from '@angular/core';
+import { AfterViewInit, Component, Inject, Input, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -7,6 +7,8 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 import { Entity } from '../../../../../../output-interfaces/Publication';
 import { EntityService } from 'src/app/interfaces/service';
 import { Observable, of, concatMap, map } from 'rxjs'
+import { Alias, AliasPubType } from '../../../../../../output-interfaces/Alias';
+import { MatTable, MatTableDataSource } from '@angular/material/table';
 
 @Component({
   selector: 'app-abstract-form',
@@ -24,8 +26,14 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   @Input() data: any;
   @Input() preProcessing?: Observable<any>
 
+  aliasForm: FormGroup = this.formBuilder.group({
+    alias: ['', Validators.required]
+  });
+
   entity: T;
   disabled: boolean;
+
+  @ViewChild(MatTable) table: MatTable<Alias<T>>;
 
   constructor(public tokenService: AuthorizationService,
     private formBuilder: FormBuilder,
@@ -77,10 +85,10 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   disable() {
     this.disabled = true;
     this.form.disable();
+    this.aliasForm.disable();
   }
 
   action() {
-    console.log(this.form.errors)
     if (this.form.invalid) return;
     this.entity = { ...this.entity, ...this.form.getRawValue() }
     if (!this.entity.id) this.entity.id = undefined;
@@ -108,5 +116,21 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       });
     } else if (this.entity?.id) this.dialogRef.close({ id: this.entity.id, locked_at: null })
     else this.close()
+  }
+
+  deleteAlias(elem: Alias<T>) {
+    if (this.disabled) return;
+    this.entity.aliases = this.entity.aliases.filter((e) => e.alias !== elem.alias)
+  }
+
+  addAlias() {
+    if (this.disabled) return;
+    if (this.aliasForm.invalid) return;
+    this.entity.aliases.push({
+      alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
+      elementId: this.entity.id
+    })
+    this.aliasForm.reset();
+    if (this.table) this.table.dataSource = new MatTableDataSource<Alias<T>>(this.entity.aliases);
   }
 }

@@ -3,6 +3,7 @@ import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, 
 export interface Entity {
     id?: number;
     locked_at?: Date;
+    aliases?
 }
 
 export interface Publication extends Entity {
