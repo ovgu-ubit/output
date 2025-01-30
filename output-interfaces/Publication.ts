@@ -2,6 +2,7 @@ import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, 
 
 export interface Entity {
     id?: number;
+    locked_at?: Date;
 }
 
 export interface Publication extends Entity {
@@ -40,7 +41,6 @@ export interface Publication extends Entity {
     best_oa_host?: string;
     best_oa_license?: string;
     opus_share_it?: string;
-    locked_at?: Date;
     abstract?: string;
     page_count?: number;
     peer_reviewed?: boolean;
@@ -61,7 +61,6 @@ export interface Author extends Entity {
     gnd_id?: string;
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
-    locked_at?: Date;
     aliases_first_name?: AliasAuthorFirstName[];
     aliases_last_name?: AliasAuthorLastName[];
 }
@@ -78,7 +77,6 @@ export interface AuthorPublication {
 
 export interface Role extends Entity {
     label: string;
-    locked_at?: Date;
 }
 
 export interface Contract extends Entity {
@@ -94,13 +92,11 @@ export interface Contract extends Entity {
     verification_method?: string;
 	publications?: Publication[];
     identifiers?:ContractIdentifier[];
-    locked_at?: Date;
 }
 
 export interface CostCenter extends Entity {
     number?: string;
     label?: string;
-    locked_at?: Date;
 }
 
 export interface CostItem extends Entity {
@@ -116,7 +112,6 @@ export interface CostItem extends Entity {
 
 export interface CostType extends Entity {
     label: string;
-    locked_at?: Date;
 }
 
 export interface Funder extends Entity {
@@ -125,7 +120,6 @@ export interface Funder extends Entity {
     ror_id?: string;
     publications?: Publication[];
     aliases?: AliasFunder[];
-    locked_at?: Date;
 }
 
 export interface GreaterEntity extends Entity {
@@ -135,7 +129,6 @@ export interface GreaterEntity extends Entity {
     doaj_until?: Date;
     identifiers?: Identifier[];
     publications?: Publication[]
-    locked_at?: Date;
 }
 
 export interface Identifier extends Entity {
@@ -164,7 +157,6 @@ export interface Institute extends Entity {
 	authors?: Author[];
 	authorPublications?: AuthorPublication[];
     aliases?: AliasInstitute[];
-    locked_at?: Date;
 }
 
 export interface Invoice extends Entity {
@@ -180,21 +172,18 @@ export interface Invoice extends Entity {
 export interface OA_Category extends Entity {
     label: string;
     is_oa: boolean;
-    locked_at?: Date;
 }
 
 export interface PublicationType extends Entity {
     label: string;
     review: boolean;
     aliases?: AliasPubType[];
-    locked_at?: Date;
 }
 
 export interface Publisher extends Entity {
     label: string;
     doi_prefixes?: PublisherDOI[];
     aliases?: AliasPublisher[];
-    locked_at?: Date;
 }
 
 export interface PublisherDOI {
@@ -210,5 +199,4 @@ export interface Language extends Entity {
 export interface Status extends Entity {
     label: string;
     description?: string;
-    locked_at?: Date;
 }

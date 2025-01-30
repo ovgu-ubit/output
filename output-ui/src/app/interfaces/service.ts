@@ -17,7 +17,4 @@ export interface EntityService<T, E> {
 }
 
 export interface EntityFormComponent<T> {
-    action();
-    close();
-    abort();
 }

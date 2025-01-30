@@ -1,0 +1,26 @@
+<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+    <h1>{{this.name}}</h1>
+    <div style="display: flex;justify-content: flex-end;">
+        <div *ngIf="!this.disabled; else else1">
+            <button mat-icon-button (click)="this.action()" [matTooltip]="this.name + ' speichern'"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+        <ng-template #else1>
+            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </ng-template>
+    </div>
+</mat-toolbar>
+<mat-dialog-content>
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()">
+        <mat-form-field *ngFor="let field of this.fields" appearance="fill">
+            <mat-label>{{field.title}}</mat-label>
+            <input *ngIf="field.type === 'number'" matInput [type]="'number'" [placeholder]="field.title"
+                [formControlName]="field.key" />
+            <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
+        </mat-form-field>
+    </form>
+</mat-dialog-content>

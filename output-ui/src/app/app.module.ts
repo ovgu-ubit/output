@@ -83,6 +83,7 @@ import { RoleFormComponent } from './pages/windows/role-form/role-form.component
 import { StatusesComponent } from './pages/master-data/statuses/statuses.component';
 import { StatusFormComponent } from './pages/windows/status-form/status-form.component';
 import { DoiFormComponent } from './pages/windows/doi-form/doi-form.component';
+import { AbstractFormComponent } from './pages/windows/abstract-form/abstract-form.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -135,7 +136,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         RoleFormComponent,
         DoiFormComponent,
         StatusesComponent,
-        StatusFormComponent
+        StatusFormComponent,
+        AbstractFormComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,
