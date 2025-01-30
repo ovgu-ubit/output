@@ -131,7 +131,28 @@
                 </mat-card-actions>
             </mat-card>
 
-            <mat-form-field *ngIf="field.type!=='boolean' && field.type!=='alias_table' && field.type!=='id_table' && field.type!=='doi_table'" appearance="fill">
+            <mat-form-field *ngIf="field.type==='publisher'" appearance="fill" style="width: 100%;">
+                <mat-label>Verlag</mat-label>
+                <input type="text"
+                    placeholder="Auswählen oder Eingeben"
+                    matInput
+                    [matAutocomplete]="autoPublisher"
+                    formControlName="publ"
+                    (keydown.enter)="addPublisher($event.target)"
+                    #input_publ>
+                <button type="button" matSuffix mat-icon-button (click)="addPublisher(input_publ)" matTooltip="Element bearbeiten"
+                [matTooltipShowDelay]="800">
+                    <mat-icon *ngIf="!this.disabled; else else2">edit</mat-icon>
+                    <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
+                </button>
+                <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPubl($event)">
+                <mat-option *ngFor="let publisher of this.filtered_publishers | async" [value]="publisher.label">
+                    {{publisher.label}} 
+                </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="field.type!=='boolean' && field.type!=='alias_table' && field.type!=='id_table' && field.type!=='doi_table' && field.type!=='publisher'" appearance="fill">
                 <mat-label>{{field.title}}</mat-label>
                 <input *ngIf="field.type === 'number'" matInput [type]="'number'" [placeholder]="field.title"
                     [formControlName]="field.key" />
