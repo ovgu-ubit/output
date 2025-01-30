@@ -1,11 +1,12 @@
 import { AfterViewInit, Component, Inject, Input, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { Entity } from '../../../../../../output-interfaces/Publication';
 import { EntityService } from 'src/app/interfaces/service';
+import { Observable, of, concatMap, map } from 'rxjs'
 
 @Component({
   selector: 'app-abstract-form',
@@ -18,9 +19,10 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   @Input() service: EntityService<T, any>;
   @Input() name: string;
-  @Input() fields: { key: string, title: string, type?: string, required?:boolean }[];
+  @Input() fields: { key: string, title: string, type?: string, required?: boolean }[];
   @Input() dialogRef: MatDialogRef<any>;
   @Input() data: any;
+  @Input() preProcessing?: Observable<any>
 
   entity: T;
   disabled: boolean;
@@ -30,12 +32,14 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     private _snackBar: MatSnackBar, private dialog: MatDialog) { }
 
   ngAfterViewInit(): void {
-    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
-      this.disable();
-    }
-    if (this.data.entity?.id) {
-      this.service.getOne(this.data.entity.id).subscribe({
-        next: data => {
+    if (!this.preProcessing) this.preProcessing = of(null);
+    let ob$ = this.preProcessing.pipe(concatMap(data => {
+      if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+        this.disable();
+      }
+      if (this.data.entity?.id) {
+        this.form.controls.id.disable();
+        return this.service.getOne(this.data.entity.id).pipe(map(data => {
           this.entity = data;
           this.form.patchValue(this.entity)
           if (this.entity.locked_at) {
@@ -47,25 +51,27 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
             })
           }
         }
-      })
-    }
-    else {
-      /*this.entity = {
-        label: ''
-      };*/
-      this.fields = this.fields.filter(e => e.key !== 'id')
-      this.form.patchValue(this.entity)
-    }
+        ))
+      } else {
+        /*this.entity = {
+                label: ''
+              };*/
+        this.fields = this.fields.filter(e => e.key !== 'id' || e.type === 'status')
+        this.form.patchValue(this.entity)
+      }
+      return of(null)
+    })).subscribe();
+
   }
 
   ngOnInit(): void {
     let group = {};
     for (let field of this.fields) {
-      group[field.key] = field.required? ['', Validators.required] : ['']
+      group[field.key] = field.required ? ['', Validators.required] : ['']
     }
 
     this.form = this.formBuilder.group(group);
-    this.form.controls.id.disable();
+
   }
 
   disable() {
@@ -74,6 +80,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   }
 
   action() {
+    console.log(this.form.errors)
     if (this.form.invalid) return;
     this.entity = { ...this.entity, ...this.form.getRawValue() }
     if (!this.entity.id) this.entity.id = undefined;

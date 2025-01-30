@@ -20,6 +20,18 @@
             <mat-label>{{field.title}}</mat-label>
             <input *ngIf="field.type === 'number'" matInput [type]="'number'" [placeholder]="field.title"
                 [formControlName]="field.key" />
+            <ng-container *ngIf="field.type === 'status'">
+                <input matInput [type]="'number'" [placeholder]="field.title" [formControlName]="field.key" />
+                @if (this.form.errors?.status_pattern) {
+                <mat-error>Der Status muss eine nicht-negative Zahl sein</mat-error>
+                }
+                @if (this.form.errors?.status_required) {
+                <mat-error>Der Status muss angeben werden</mat-error>
+                }
+                @if (this.form.errors?.status_notUnique) {
+                <mat-error>Der Status muss eindeutig sein, diese Zahl wird bereits verwendet</mat-error>
+                }
+            </ng-container>
             <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
         </mat-form-field>
     </form>
