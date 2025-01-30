@@ -4,6 +4,7 @@ export interface Entity {
     id?: number;
     locked_at?: Date;
     aliases?
+    identifiers?
 }
 
 export interface Publication extends Entity {

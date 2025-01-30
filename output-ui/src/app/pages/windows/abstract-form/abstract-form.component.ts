@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { Entity } from '../../../../../../output-interfaces/Publication';
+import { Entity, Identifier } from '../../../../../../output-interfaces/Publication';
 import { EntityService } from 'src/app/interfaces/service';
 import { Observable, of, concatMap, map } from 'rxjs'
 import { Alias, AliasPubType } from '../../../../../../output-interfaces/Alias';
@@ -29,11 +29,17 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   aliasForm: FormGroup = this.formBuilder.group({
     alias: ['', Validators.required]
   });
+  idForm = this.formBuilder.group({
+    type: ['', Validators.required],
+    value: ['', Validators.required]
+  })
 
   entity: T;
   disabled: boolean;
+  today = new Date();
 
   @ViewChild(MatTable) table: MatTable<Alias<T>>;
+  @ViewChild(MatTable) idTable: MatTable<Identifier>;
 
   constructor(public tokenService: AuthorizationService,
     private formBuilder: FormBuilder,
@@ -86,11 +92,13 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     this.disabled = true;
     this.form.disable();
     this.aliasForm.disable();
+    this.idForm.disable();
   }
 
   action() {
     if (this.form.invalid) return;
     this.entity = { ...this.entity, ...this.form.getRawValue() }
+    //doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined
     if (!this.entity.id) this.entity.id = undefined;
     this.dialogRef.close({ ...this.entity, updated: true })
   }
@@ -132,5 +140,19 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     })
     this.aliasForm.reset();
     if (this.table) this.table.dataSource = new MatTableDataSource<Alias<T>>(this.entity.aliases);
+  }
+
+  deleteId(elem) {
+    if (this.disabled) return;
+    this.entity.identifiers = this.entity.identifiers.filter(e => e.id !== elem.id)
+  }
+  addId() {
+    if (this.disabled || this.idForm.invalid) return;
+    this.entity.identifiers.push({
+      type: this.idForm.get('type').value,
+      value: this.idForm.get('value').value
+    })
+    this.idForm.reset();
+    if (this.table) this.idTable.dataSource = new MatTableDataSource<Identifier>(this.entity.identifiers);
   }
 }

@@ -16,7 +16,7 @@
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
-        <ng-container *ngFor="let field of this.fields">
+        <ng-container *ngFor="let field of this.fields; let i = index;">
             <mat-checkbox *ngIf="field.type==='boolean'" [formControlName]="field.key">{{field.title}}</mat-checkbox>
 
             <mat-expansion-panel *ngIf="field.type==='alias_table'">
@@ -54,7 +54,49 @@
                 </form>
             </mat-expansion-panel>
 
-            <mat-form-field *ngIf="field.type!=='boolean' && field.type!=='alias_table'" appearance="fill">
+            <mat-card *ngIf="field.type==='id_table'">
+                <mat-card-header><mat-card-subtitle>Identifikatoren</mat-card-subtitle></mat-card-header>
+                <mat-card-content>
+                    <table *ngIf="this.entity?.identifiers && this.entity.identifiers.length>0" mat-table
+                        [dataSource]="this.entity.identifiers">
+                        <ng-container matColumnDef="type">
+                            <th mat-header-cell *matHeaderCellDef> Art </th>
+                            <td mat-cell *matCellDef="let element"> {{element.type}} </td>
+                        </ng-container>
+    
+                        <ng-container matColumnDef="value">
+                            <th mat-header-cell *matHeaderCellDef> Wert </th>
+                            <td mat-cell *matCellDef="let element"> {{element.value}} </td>
+                        </ng-container>
+    
+                        <ng-container matColumnDef="delete">
+                            <th mat-header-cell *matHeaderCellDef> </th>
+                            <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                    (click)="this.deleteId(element)" matTooltip="Identifikator löschen"
+                                    [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                        </ng-container>
+    
+                        <tr mat-header-row *matHeaderRowDef="['type', 'value', 'delete']"></tr>
+                        <tr mat-row *matRowDef="let row; columns: ['type', 'value', 'delete'];"></tr>
+                    </table>
+                </mat-card-content>
+                <mat-card-actions>
+                    <form [formGroup]="idForm" style="display: flex;gap:5px">
+                        <mat-form-field appearance="fill">
+                            <mat-label>Art</mat-label>
+                            <input matInput placeholder="Art" formControlName="type" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Wert</mat-label>
+                            <input matInput placeholder="Wert" formControlName="value" />
+                        </mat-form-field>
+                        <button matSuffix mat-icon-button type="button" (click)="this.addId()"
+                            matTooltip="Identifikator hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                    </form>
+                </mat-card-actions>
+            </mat-card>
+
+            <mat-form-field *ngIf="field.type!=='boolean' && field.type!=='alias_table' && field.type!=='id_table'" appearance="fill">
                 <mat-label>{{field.title}}</mat-label>
                 <input *ngIf="field.type === 'number'" matInput [type]="'number'" [placeholder]="field.title"
                     [formControlName]="field.key" />
@@ -70,10 +112,15 @@
                     <mat-error>Der Status muss eindeutig sein, diese Zahl wird bereits verwendet</mat-error>
                     }
                 </ng-container>
+                <ng-container *ngIf="field.type==='date'">
+                    <input matInput [matDatepicker]="i" [formControlName]="field.key">
+                    <mat-hint>T.M.JJJJ</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="i"></mat-datepicker-toggle>
+                    <mat-datepicker #i [startAt]="this.entity && this.entity[field.key]? this.entity[field.key] : today"
+                        startView="year" color="accent"></mat-datepicker>
+                </ng-container>
                 <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
             </mat-form-field>
-
-
         </ng-container>
     </form>
 </mat-dialog-content>
