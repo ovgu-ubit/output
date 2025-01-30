@@ -1,8 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { AuthorizationService } from 'src/app/security/authorization.service';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
 
 @Component({
@@ -22,9 +19,8 @@ export class GreaterEntityFormComponent implements OnInit {
     { key: 'identifier', title: 'Identifikatoren', type: 'id_table' },
   ]
 
-  constructor(public dialogRef: MatDialogRef<GreaterEntityFormComponent>, public tokenService: AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, public service: GreaterEntityService, private _snackBar: MatSnackBar,
-    private dialog: MatDialog) { }
+  constructor(public dialogRef: MatDialogRef<GreaterEntityFormComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any, public service: GreaterEntityService) { }
 
   ngOnInit(): void {
   }

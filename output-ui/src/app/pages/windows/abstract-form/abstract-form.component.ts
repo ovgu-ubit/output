@@ -33,6 +33,9 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     type: ['', Validators.required],
     value: ['', Validators.required]
   })
+  prefixForm = this.formBuilder.group({
+    doi_prefix: ['', Validators.required],
+  });
 
   entity: T;
   disabled: boolean;
@@ -40,6 +43,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   @ViewChild(MatTable) table: MatTable<Alias<T>>;
   @ViewChild(MatTable) idTable: MatTable<Identifier>;
+  @ViewChild('table_doi') tableDOI: MatTable<any>;
 
   constructor(public tokenService: AuthorizationService,
     private formBuilder: FormBuilder,
@@ -154,5 +158,21 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     })
     this.idForm.reset();
     if (this.table) this.idTable.dataSource = new MatTableDataSource<Identifier>(this.entity.identifiers);
+  }
+
+  deletePrefix(elem:any) {
+    if (this.disabled) return;
+    this.entity.doi_prefixes = this.entity.doi_prefixes.filter((e) => e.doi_prefix !== elem.doi_prefix)
+  }
+
+  addPrefix() {
+    if (this.disabled) return;
+    if (this.prefixForm.invalid) return;
+    this.entity.doi_prefixes.push({
+      doi_prefix: this.prefixForm.get('doi_prefix').value.toLocaleLowerCase().trim(),
+      //publisherId: this.entity.id
+    })
+    this.prefixForm.reset();
+    if (this.tableDOI) this.tableDOI.dataSource = new MatTableDataSource<any>(this.entity.doi_prefixes);
   }
 }

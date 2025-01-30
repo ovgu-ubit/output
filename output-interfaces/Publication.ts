@@ -5,6 +5,7 @@ export interface Entity {
     locked_at?: Date;
     aliases?
     identifiers?
+    doi_prefixes?
 }
 
 export interface Publication extends Entity {
