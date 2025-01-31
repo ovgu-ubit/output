@@ -188,6 +188,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     });
     dialogRef.afterClosed().pipe(concatMap(result => {
       this.location.replaceState(this.router.url.split('?')[0])
+      this.id = null;
       // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
       if (result && result.updated) {
         return this.serviceClass.update(result).pipe(concatMap(data => {

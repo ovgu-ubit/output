@@ -65,8 +65,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   langs: Language[];
   greater_entities: GreaterEntity[];
   filtered_greater_entities: Observable<GreaterEntity[]>;
-  publishers: Publisher[];
-  filtered_publishers: Observable<Publisher[]>;
   contracts: Contract[];
   filtered_contracts: Observable<Contract[]>;
   funders: Funder[];
@@ -87,10 +85,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
   optional_fields;
 
+  publisherForm = PublisherFormComponent;
+  contractForm = ContractFormComponent;
+
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
-    private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
+    private oaService: OACategoryService, private geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
     private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
@@ -111,7 +112,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         pub_type: [''],
         ge: [''],
         peer_reviewed: [''],
-        publ: [''],
         pub_date: [''],
         pub_date_print: [''],
         pub_date_submitted: [''],
@@ -137,7 +137,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         best_oa_license: [''],
       }),
       finance_info: this.formBuilder.group({
-        contr: [''],
         funder: [''],
         cost_approach: ['']
       }),
@@ -244,8 +243,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (this.pub?.locked_finance) this.form.get('finance_info').disable();
       }
       if (this.pub.greater_entity) this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-      if (this.pub.publisher) this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-      if (this.pub.contract) this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
 
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
@@ -278,20 +275,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map(value => this._filterGE(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.publisherService.getAll().pipe(map(data => {
-      this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_publishers = this.form.get('biblio_info').get('publ').valueChanges.pipe(
-        startWith(this.pub?.publisher?.label),
-        map(value => this._filterPublisher(value || '')),
-      );
-    })))
-    ob$ = merge(ob$, this.contractService.getAll().pipe(map(data => {
-      this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_contracts = this.form.get('finance_info').get('contr').valueChanges.pipe(
-        startWith(this.pub?.contract?.label),
-        map(value => this._filterContract(value || '')),
-      );
-    })))
     ob$ = merge(ob$, this.funderService.getAll().pipe(map(data => {
       this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filteredFunders = this.form.get('finance_info').get('funder').valueChanges.pipe(
@@ -321,11 +304,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
     return this.greater_entities.filter(ge => ge?.label.toLowerCase().includes(filterValue) || ge?.identifiers.find(e => e.value.toLowerCase().includes(filterValue)));
   }
-  private _filterPublisher(value: string): Publisher[] {
-    const filterValue = value.toLowerCase();
-
-    return this.publishers.filter(pub => pub?.label.toLowerCase().includes(filterValue));
-  }
   private _filterContract(value: string): Contract[] {
     const filterValue = value.toLowerCase();
 
@@ -338,136 +316,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     return this.funders.filter(pub => pub?.label.toLowerCase().includes(filterValue));
   }
 
-  addPublisher(event) {
-    if (!event.value) return;
-    if (!this.publishers.find(e => e.label === event.value)) {
-      let dialogData = new ConfirmDialogModel("Neuer Verlag", `Möchten Sie den Verlag "${event.value}" anlegen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(PublisherFormComponent, {
-            width: "400px",
-            data: {
-              publisher: {
-                label: event.value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult) {
-              this.publisherService.add(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Verlag wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.pub.publisher = data[0];
-                  this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-                  this.loadMasterData().subscribe();
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      let dialogRef = this.dialog.open(PublisherFormComponent, {
-        width: "400px",
-        data: {
-          publisher: this.pub.publisher
-        }
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.label) {
-          this.publisherService.update(dialogResult).subscribe({
-            next: data => {
-              this._snackBar.open('Verlag wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.publisher = data[0];
-              this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-              this.loadMasterData().subscribe();
-            }
-          })
-        } else if (dialogResult && dialogResult.id) {
-          this.publisherService.update(dialogResult).subscribe();
-        }
-      });
-    }
+  setPublisher(event) {
+    this.pub.publisher = event;
   }
 
-  addContract(event) {
-    if (!event.value) return;
-    if (!this.contracts.find(e => e.label === event.value)) {
-      let dialogData = new ConfirmDialogModel("Neuer Vertrag", `Möchten Sie den Vertrag "${event.value}" anlegen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(ContractFormComponent, {
-            width: "400px",
-            data: {
-              contract: {
-                label: event.value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult && dialogResult.label) {
-              this.contractService.add(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Vertrag wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.pub.contract = data[0];
-                  this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
-                  this.loadMasterData().subscribe();
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      let dialogRef = this.dialog.open(ContractFormComponent, {
-        width: "400px",
-        data: {
-          contract: this.pub.contract
-        }
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.label) {
-          this.contractService.update(dialogResult).subscribe({
-            next: data => {
-              this._snackBar.open('Vertrag wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.contract = data[0];
-              this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
-              this.loadMasterData().subscribe();
-            }
-          })
-        } else if (dialogResult && dialogResult.id) {
-          this.contractService.update(dialogResult).subscribe();
-        }
-      });
-    }
+  setContract(event) {
+    this.pub.contract = event;
   }
 
   addFunder(event) {
@@ -580,14 +434,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
     this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
   }
-  selectedPubl(event: MatAutocompleteSelectedEvent): void {
-    this.pub.publisher = this.publishers.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-  }
-  selectedContr(event: MatAutocompleteSelectedEvent): void {
-    this.pub.contract = this.contracts.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
-  }
   selectedFunder(event: MatAutocompleteSelectedEvent): void {
     this.addFunder({ value: event.option.value })
   }
@@ -620,8 +466,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     if (this.form.invalid) return;
 
     if (!this.form.get('biblio_info').get('ge').value) this.pub.greater_entity = null;
-    if (!this.form.get('biblio_info').get('publ').value) this.pub.publisher = null;
-    if (!this.form.get('finance_info').get('contr').value) this.pub.contract = null;
 
     let formValue = {
       ...this.form.get('author_info').getRawValue(),
@@ -655,7 +499,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.pub.pub_type = this.form.get('biblio_info').get('pub_type').value !== -1 ? this.pub_types.find(e => e.id === this.form.get('biblio_info').get('pub_type').value) : null;
     this.pub.oa_category = this.form.get('oa_info').get('oa_cat').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('oa_info').get('oa_cat').value) : null;
     this.pub.language = this.form.get('biblio_info').get('language').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('biblio_info').get('language').value) : null;
-    this.dialogRef.close({...this.pub, updated: true});
+    this.dialogRef.close({ ...this.pub, updated: true });
   }
 
   getAuthorInfo() {

@@ -6,6 +6,7 @@ export interface Entity {
     aliases?
     identifiers?
     doi_prefixes?
+    label?
 }
 
 export interface Publication extends Entity {
