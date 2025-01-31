@@ -27,6 +27,7 @@ import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { DoiFormComponent } from '../doi-form/doi-form.component';
 import { EnrichService } from 'src/app/services/enrich.service';
+import { FunderFormComponent } from '../funder-form/funder-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -67,15 +68,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   filtered_greater_entities: Observable<GreaterEntity[]>;
   contracts: Contract[];
   filtered_contracts: Observable<Contract[]>;
-  funders: Funder[];
-  filteredFunders: Observable<Funder[]>;
   statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
   displayedColumnsId: string[] = ['type', 'value', 'delete'];
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
-  @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
   @ViewChild('tableID') tableId: MatTable<PublicationIdentifier>;
@@ -87,12 +85,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   publisherForm = PublisherFormComponent;
   contractForm = ContractFormComponent;
+  funderForm = FunderFormComponent;
 
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
     private oaService: OACategoryService, private geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
+    public funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
@@ -137,7 +136,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         best_oa_license: [''],
       }),
       finance_info: this.formBuilder.group({
-        funder: [''],
         cost_approach: ['']
       }),
     }, {
@@ -275,15 +273,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         map(value => this._filterGE(value || '')),
       );
     })))
-    ob$ = merge(ob$, this.funderService.getAll().pipe(map(data => {
-      this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filteredFunders = this.form.get('finance_info').get('funder').valueChanges.pipe(
-        startWith(''),
-        //map(value => typeof value === 'string' ? value : value.name),
-        map((name) => {
-          return this._filterFunders(name);
-        }));
-    })))
     ob$ = merge(ob$, this.statusService.getAll().pipe(map(data => {
       this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
@@ -304,64 +293,27 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
     return this.greater_entities.filter(ge => ge?.label.toLowerCase().includes(filterValue) || ge?.identifiers.find(e => e.value.toLowerCase().includes(filterValue)));
   }
-  private _filterContract(value: string): Contract[] {
-    const filterValue = value.toLowerCase();
-
-    return this.contracts.filter(pub => pub?.label.toLowerCase().includes(filterValue));
-  }
-
-  private _filterFunders(value) {
-    if (!value) value = '';
-    const filterValue = value.toLowerCase();
-    return this.funders.filter(pub => pub?.label.toLowerCase().includes(filterValue));
-  }
 
   setPublisher(event) {
     this.pub.publisher = event;
+    this.form.markAsDirty()
   }
 
   setContract(event) {
     this.pub.contract = event;
+    this.form.markAsDirty()
   }
 
-  addFunder(event) {
-    if (!event.value) return;
-    let funder = this.funders.find(e => e.label.toLocaleLowerCase() === event.value.toLocaleLowerCase());
-    if (funder) this.pub.funders.push(funder);
-    else {
-      // new funder
-      let dialogData = new ConfirmDialogModel("Förderer anlegen", `Möchten sSie Förderer "${event.value}" hinzufügen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-      let value = event.value;
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          this.funderService.add({ label: value }).subscribe({
-            next: data => {
-              this._snackBar.open('Förderer wurde hinzugefügt', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.funders.push(data[0])
-              this.loadMasterData().subscribe();
-            }
-          })
-        }
-      })
-    }
-    this.funderInput.nativeElement.value = '';
-    this.form.get('finance_info').get('funder').setValue('');
+  setFunder(event) {
+    if (!this.pub.funders) this.pub.funders = [];
+    this.pub.funders.push(event);
+    this.form.markAsDirty()
   }
 
   removeFunder(funder) {
     if (this.disabled) return;
     this.pub.funders = this.pub.funders.filter(ap => ap.id !== funder.id)
-    this.form.get('finance_info').get('funder').setValue('');
+    this.form.markAsDirty()
   }
 
   addGreaterEntity(event) {
@@ -433,9 +385,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   selectedGE(event: MatAutocompleteSelectedEvent): void {
     this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
     this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-  }
-  selectedFunder(event: MatAutocompleteSelectedEvent): void {
-    this.addFunder({ value: event.option.value })
   }
 
   close() {

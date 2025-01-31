@@ -28,6 +28,9 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   disabled: boolean;
 
   @Input()
+  resetOnSelect?: boolean;
+
+  @Input()
   serviceClass: EntityService<T, any>
 
   @Input() formComponent: ComponentType<EntityFormComponent<T>>;
@@ -69,7 +72,6 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   select(event) {
     if (this.disabled) return;
-    // publisher delete
     if (!event.value) {
       this.selected.next(null)
       return;
@@ -148,7 +150,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   selectedEnt(event: MatAutocompleteSelectedEvent): void {
     if (this.disabled) return;
     this.ent = this.ents.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('input').setValue(this.ent.label)
+    if (!this.resetOnSelect) this.form.get('input').setValue(this.ent.label)
+    else this.form.get('input').setValue('');
     this.selected.next(this.ent)
   }
 }

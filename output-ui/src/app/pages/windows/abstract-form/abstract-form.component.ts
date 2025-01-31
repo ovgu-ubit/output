@@ -143,6 +143,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   addAlias() {
     if (this.disabled) return;
     if (this.aliasForm.invalid) return;
+    if (!this.entity.aliases) this.entity.aliases = [];
     this.entity.aliases.push({
       alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
       elementId: this.entity.id
@@ -157,6 +158,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   }
   addId() {
     if (this.disabled || this.idForm.invalid) return;
+    if (!this.entity.identifiers) this.entity.identifiers = [];
     this.entity.identifiers.push({
       type: this.idForm.get('type').value,
       value: this.idForm.get('value').value

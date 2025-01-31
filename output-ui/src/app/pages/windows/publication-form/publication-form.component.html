@@ -239,7 +239,8 @@
                 <mat-checkbox formControlName="peer_reviewed"
                     *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>
 
-                <app-select-entity name="Verlag" [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                <app-select-entity name="Verlag"
+                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
                     [serviceClass]="this.publisherService" [formComponent]="this.publisherForm"
                     (selected)="this.setPublisher($event)"
                     [ent]="this.pub? this.pub.publisher : undefined"></app-select-entity>
@@ -410,7 +411,8 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <app-select-entity name="Vertrag" [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                <app-select-entity name="Vertrag"
+                    [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
                     [serviceClass]="this.contractService" [formComponent]="this.contractForm"
                     (selected)="this.setContract($event)"
                     [ent]="this.pub? this.pub.contract : undefined"></app-select-entity>
@@ -466,34 +468,25 @@
                         formControlName="cost_approach" />
                 </mat-form-field>
 
-                <app-select-entity name="Förderer" [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
-                [serviceClass]="this.funderService" [formComponent]="this.funderForm"
-                (selected)="this.setFunder($event)"
-                [ent]="this.pub? this.pub.funder : undefined"></app-select-entity>
-
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Förderer</mat-label>
-                    <mat-chip-grid #funder_list [disabled]="this.disabled || this.pub?.locked">
-                        <mat-chip-row [removable]="true" *ngFor="let funder of this.pub?.funders"
-                            (removed)="removeFunder(funder)">
-                            {{funder.label}}
-                            <button matChipRemove
-                                *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
-                                <mat-icon>cancel</mat-icon>
-                            </button>
-                        </mat-chip-row>
-                    </mat-chip-grid>
-                    <input matInput #funderInput formControlName="funder" placeholder="Föderer hinzufügen"
-                        [matAutocomplete]="autoFunder" [matChipInputFor]="funder_list"
-                        (matChipInputTokenEnd)="addFunder($event)" [matChipInputSeparatorKeyCodes]="[]"
-                        (keydown.enter)="addFunder($event.target)">
-                    <mat-autocomplete #autoFunder="matAutocomplete" (optionSelected)="selectedFunder($event)">
-                        <mat-option *ngFor="let funder of filteredFunders | async" [value]="funder.label">
-                            {{funder.label}}
-                        </mat-option>
-                    </mat-autocomplete>
-                </mat-form-field>
-
+                <mat-card>
+                    <mat-card-header><mat-card-subtitle>Förderer</mat-card-subtitle></mat-card-header>
+                    <mat-card-content>
+                        <app-select-entity name="Förderer"
+                            [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                            [serviceClass]="this.funderService" [formComponent]="this.funderForm"
+                            (selected)="this.setFunder($event)" [resetOnSelect]="true"></app-select-entity>
+                        <mat-chip-set [disabled]="this.disabled || this.pub?.locked">
+                            <mat-chip [removable]="true" *ngFor="let funder of this.pub?.funders"
+                                (removed)="removeFunder(funder)">
+                                {{funder.label}}
+                                <button matChipRemove
+                                    *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
+                                    <mat-icon>cancel</mat-icon>
+                                </button>
+                            </mat-chip>
+                        </mat-chip-set>
+                    </mat-card-content>
+                </mat-card>
             </mat-expansion-panel>
 
             <mat-expansion-panel>
