@@ -64,10 +64,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   pub_types: PublicationType[];
   oa_categories: OA_Category[];
   langs: Language[];
-  greater_entities: GreaterEntity[];
-  filtered_greater_entities: Observable<GreaterEntity[]>;
-  contracts: Contract[];
-  filtered_contracts: Observable<Contract[]>;
   statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
@@ -86,11 +82,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   publisherForm = PublisherFormComponent;
   contractForm = ContractFormComponent;
   funderForm = FunderFormComponent;
+  geForm = GreaterEntityFormComponent;
 
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
-    private oaService: OACategoryService, private geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
+    private oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
     public funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
@@ -109,7 +106,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       }),
       biblio_info: this.formBuilder.group({
         pub_type: [''],
-        ge: [''],
         peer_reviewed: [''],
         pub_date: [''],
         pub_date_print: [''],
@@ -266,13 +262,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     ob$ = merge(ob$, this.languageService.getAll().pipe(map(data => {
       this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
-    ob$ = merge(ob$, this.geService.getAll().pipe(map(data => {
-      this.greater_entities = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_greater_entities = this.form.get('biblio_info').get('ge').valueChanges.pipe(
-        startWith(this.pub?.greater_entity?.label),
-        map(value => this._filterGE(value || '')),
-      );
-    })))
     ob$ = merge(ob$, this.statusService.getAll().pipe(map(data => {
       this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
     })))
@@ -286,12 +275,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.disabled = true;
     this.form.disable();
     this.idForm.disable();
-  }
-
-  private _filterGE(value: string): GreaterEntity[] {
-    const filterValue = value.toLowerCase();
-
-    return this.greater_entities.filter(ge => ge?.label.toLowerCase().includes(filterValue) || ge?.identifiers.find(e => e.value.toLowerCase().includes(filterValue)));
   }
 
   setPublisher(event) {
@@ -316,75 +299,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.markAsDirty()
   }
 
-  addGreaterEntity(event) {
-    if (!event.value) return;
-    if (!this.greater_entities.find(e => e.label === event.value)) {
-      let dialogData = new ConfirmDialogModel("Neue Größere Einheit", `Möchten Sie die Größere Einheit "${event.value}" anlegen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(GreaterEntityFormComponent, {
-            width: "400px",
-            data: {
-              greater_entity: {
-                label: event.value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult) {
-              this.geService.add(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Größere Einheit wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.pub.greater_entity = data[0];
-                  this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-                  this.loadMasterData().subscribe();
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      let dialogRef = this.dialog.open(GreaterEntityFormComponent, {
-        width: "400px",
-        data: {
-          greater_entity: this.pub.greater_entity
-        }
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.label) {
-          this.geService.update(dialogResult).subscribe({
-            next: data => {
-              this._snackBar.open('Größere Einheit wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.greater_entity = data[0];
-              this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-              this.loadMasterData().subscribe();
-            }
-          })
-        } else if (dialogResult && dialogResult.id) {
-          this.geService.update(dialogResult).subscribe();
-        }
-      });
-    }
-  }
-
-  selectedGE(event: MatAutocompleteSelectedEvent): void {
-    this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
+  setGE(event) {
+    this.pub.greater_entity = event;
+    this.form.markAsDirty()
   }
 
   close() {
@@ -413,8 +330,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   action(): void {
     this.submitted = true;
     if (this.form.invalid) return;
-
-    if (!this.form.get('biblio_info').get('ge').value) this.pub.greater_entity = null;
 
     let formValue = {
       ...this.form.get('author_info').getRawValue(),

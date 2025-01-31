@@ -16,6 +16,10 @@
     <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectedEnt($event)">
     <mat-option *ngFor="let ent of this.filtered_ents | async" [value]="ent.label">
         {{ent.label}} 
+        <ng-container *ngIf="ent.identifiers && ent.identifiers.length > 0">
+            (<ng-container
+                *ngFor="let ide of ent.identifiers">{{ide.value}}&nbsp;</ng-container>)
+        </ng-container>
     </mat-option>
     </mat-autocomplete>
 </mat-form-field>

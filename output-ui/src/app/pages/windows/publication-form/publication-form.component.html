@@ -213,28 +213,12 @@
                     </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Größere Einheit</mat-label>
-                    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoGe"
-                        formControlName="ge" (keydown.enter)="addGreaterEntity($event.target)" #input_ge>
-                    <button type="button" matSuffix mat-icon-button (click)="addGreaterEntity(input_ge)"
-                        matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon
-                            *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else2">edit</mat-icon>
-                        <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
-                    </button>
-                    <mat-autocomplete #autoGe="matAutocomplete" (optionSelected)="selectedGE($event)">
-                        <mat-option *ngFor="let greater_entity of this.filtered_greater_entities | async"
-                            [value]="greater_entity.label">
-                            {{greater_entity.label}}
-                            <ng-container *ngIf="greater_entity.identifiers && greater_entity.identifiers.length > 0">
-                                (<ng-container
-                                    *ngFor="let ide of greater_entity.identifiers">{{ide.value}}&nbsp;</ng-container>)
-                            </ng-container>
-                        </mat-option>
-                    </mat-autocomplete>
-                    <mat-hint>{{this.pub?.greater_entity?.rating}}</mat-hint>
-                </mat-form-field>
+                <app-select-entity name="Größere Einheit"
+                            [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                            [serviceClass]="this.geService" [formComponent]="this.geForm"
+                            (selected)="this.setGE($event)" 
+                            [ent]="this.pub? this.pub.greater_entity : undefined"></app-select-entity>
+                <div style="float:left;margin-top: -20px;">{{this.pub?.greater_entity?.rating}}</div>
 
                 <mat-checkbox formControlName="peer_reviewed"
                     *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>

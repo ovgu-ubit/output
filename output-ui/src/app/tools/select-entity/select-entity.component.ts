@@ -144,7 +144,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   private _filterEnt(value: string): T[] {
     const filterValue = value.toLowerCase();
 
-    return this.ents.filter(pub => pub?.label.toLowerCase().includes(filterValue));
+    return this.ents.filter(pub => pub?.label.toLowerCase().includes(filterValue) || (pub?.identifiers && pub?.identifiers.find(e => e.value.toLowerCase().includes(filterValue))));
   }
 
   selectedEnt(event: MatAutocompleteSelectedEvent): void {
