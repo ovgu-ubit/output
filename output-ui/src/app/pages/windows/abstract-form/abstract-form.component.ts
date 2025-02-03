@@ -29,9 +29,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   @Input() data: any;
   @Input() preProcessing?: Observable<any>
 
-  aliasForm: FormGroup = this.formBuilder.group({
-    alias: ['', Validators.required]
-  });
   prefixForm = this.formBuilder.group({
     doi_prefix: ['', Validators.required],
   });
@@ -42,7 +39,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   publisherForm = PublisherFormComponent;
 
-  @ViewChild(MatTable) table: MatTable<Alias<T>>;
   @ViewChild('table_doi') tableDOI: MatTable<any>;
 
   constructor(public tokenService: AuthorizationService,
@@ -95,7 +91,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   disable() {
     this.disabled = true;
     this.form.disable();
-    this.aliasForm.disable();
   }
 
   action() {
@@ -127,23 +122,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       });
     } else if (this.entity?.id) this.dialogRef.close({ id: this.entity.id, locked_at: null })
     else this.close()
-  }
-
-  deleteAlias(elem: Alias<T>) {
-    if (this.disabled) return;
-    this.entity.aliases = this.entity.aliases.filter((e) => e.alias !== elem.alias)
-  }
-
-  addAlias() {
-    if (this.disabled) return;
-    if (this.aliasForm.invalid) return;
-    if (!this.entity.aliases) this.entity.aliases = [];
-    this.entity.aliases.push({
-      alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
-      elementId: this.entity.id
-    })
-    this.aliasForm.reset();
-    if (this.table) this.table.dataSource = new MatTableDataSource<Alias<T>>(this.entity.aliases);
   }
 
   deletePrefix(elem: any) {

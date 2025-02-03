@@ -1,12 +1,10 @@
-import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
+import {Aliasable, AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
 
 export interface Entity {
     id?: number;
     locked_at?: Date;
-    aliases?
-    identifiers?
     doi_prefixes?
-    label?
+    label?: string;
 }
 
 export interface Identifiable<T> extends Entity{
@@ -120,12 +118,11 @@ export interface CostType extends Entity {
     label: string;
 }
 
-export interface Funder extends Entity {
+export interface Funder extends Entity, Aliasable<Funder> {
     label: string;
     doi?: string;
     ror_id?: string;
     publications?: Publication[];
-    aliases?: AliasFunder[];
 }
 
 export interface GreaterEntity extends Identifiable<GreaterEntity>{
@@ -151,14 +148,13 @@ export interface PublicationIdentifier extends IIdentifier<Publication> {
 export interface ContractIdentifier extends IIdentifier<Contract> {
 }
 
-export interface Institute extends Entity {
+export interface Institute extends Entity, Aliasable<Institute> {
     super_institute?: Institute
 	sub_institutes?: Institute[]
     label: string;
     short_label?: string;
 	authors?: Author[];
 	authorPublications?: AuthorPublication[];
-    aliases?: AliasInstitute[];
 }
 
 export interface Invoice extends Entity {
@@ -176,16 +172,14 @@ export interface OA_Category extends Entity {
     is_oa: boolean;
 }
 
-export interface PublicationType extends Entity {
+export interface PublicationType extends Entity, Aliasable<PublicationType> {
     label: string;
     review: boolean;
-    aliases?: AliasPubType[];
 }
 
-export interface Publisher extends Entity {
+export interface Publisher extends Entity, Aliasable<Publisher> {
     label: string;
     doi_prefixes?: PublisherDOI[];
-    aliases?: AliasPublisher[];
 }
 
 export interface PublisherDOI {

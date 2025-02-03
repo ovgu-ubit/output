@@ -86,6 +86,7 @@ import { DoiFormComponent } from './pages/windows/doi-form/doi-form.component';
 import { AbstractFormComponent } from './pages/windows/abstract-form/abstract-form.component';
 import { SelectEntityComponent } from './tools/select-entity/select-entity.component';
 import { IdTableComponent } from './tools/id-table/id-table.component';
+import { AliasTableComponent } from './tools/alias-table/alias-table.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -141,7 +142,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         StatusFormComponent,
         AbstractFormComponent,
         SelectEntityComponent,
-        IdTableComponent
+        IdTableComponent,
+        AliasTableComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,

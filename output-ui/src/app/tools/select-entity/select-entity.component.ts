@@ -1,5 +1,5 @@
 import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
-import { Entity } from '../../../../../output-interfaces/Publication';
+import { Entity, Identifiable } from '../../../../../output-interfaces/Publication';
 import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { ComponentType } from '@angular/cdk/portal';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -144,8 +144,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   private _filterEnt(value: string): T[] {
     const filterValue = value.toLowerCase();
-
-    return this.ents.filter(pub => pub?.label.toLowerCase().includes(filterValue) || (pub?.identifiers && pub?.identifiers.find(e => e.value.toLowerCase().includes(filterValue))));
+    return this.ents.filter(pub => pub && (pub.label.toLowerCase().includes(filterValue) || (pub['identifiers'] && pub['identifiers'].find(e => e.value.toLowerCase().includes(filterValue)))));
   }
 
   selectedEnt(event: MatAutocompleteSelectedEvent): void {
