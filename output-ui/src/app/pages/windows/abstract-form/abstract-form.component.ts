@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, Input, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validator, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -24,7 +24,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   @Input() service: EntityService<T, any>;
   @Input() name: string;
-  @Input() fields: { key: string, title: string, type?: string, required?: boolean }[];
+  @Input() fields: { key: string, title: string, type?: string, required?: boolean, pattern?:RegExp }[];
   @Input() dialogRef: MatDialogRef<any>;
   @Input() data: any;
   @Input() preProcessing?: Observable<any>
@@ -82,7 +82,12 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   ngOnInit(): void {
     let group = {};
     for (let field of this.fields) {
-      if (field.type !== 'publisher') group[field.key] = field.required ? ['', Validators.required] : ['']
+      if (field.type !== 'publisher') {
+        let vals = [];
+        if (field.required) vals.push(Validators.required)
+        if (field.pattern) vals.push(Validators.pattern(field.pattern))
+        group[field.key] = ['', vals]
+      }
     }
 
     this.form = this.formBuilder.group(group);

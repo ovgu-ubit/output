@@ -21,6 +21,19 @@ import { EntityFormComponent } from 'src/app/interfaces/service';
 })
 export class AuthorFormComponent implements OnInit, AfterViewInit, EntityFormComponent<Author> {
 
+  name = "Person"
+  fields = [
+    { key: 'id', title: 'ID', type: 'number' },
+    { key: 'title', title: 'Titel' },
+    { key: 'first_name', title: 'Vorname(n)', required: true },
+    { key: 'last_name', title: 'Nachname',  required: true },
+    { key: 'orcid', title: 'ORCID', pattern: /^(\d{4}-){3}\d{3}(\d|X)$/ },
+    { key: 'gnd_id', title: 'GND-ID', pattern: /^[0-9X-]*$/ },
+    // { key: 'inst', title: 'Institute', type: 'institute' },
+   // { key: 'alias_first', title: 'Aliase Vorname', type: 'alias' },
+   // { key: 'alias_last', title: 'Aliase Nachname', type: 'alias' },
+  ]
+
   public form: FormGroup;
   aliasForm: FormGroup = this.formBuilder.group({
     alias: [''],
@@ -38,12 +51,12 @@ export class AuthorFormComponent implements OnInit, AfterViewInit, EntityFormCom
   alias_data: { alias: string, first_name: boolean }[];
 
   constructor(public dialogRef: MatDialogRef<AuthorFormComponent>, public tokenService: AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private authorService: AuthorService, private instService: InstituteService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, public service: AuthorService, private instService: InstituteService,
     private dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
     if (this.data.entity?.id) {
-      this.authorService.getOne(this.data.entity.id).subscribe({
+      this.service.getOne(this.data.entity.id).subscribe({
         next: data => {
           this.author = data;
           this.form.patchValue(this.author)
