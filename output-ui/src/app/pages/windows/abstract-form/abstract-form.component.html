@@ -163,6 +163,7 @@
                         <mat-error>Der Status muss eindeutig sein, diese Zahl wird bereits verwendet</mat-error>
                         }
                     </ng-container>
+                    <textarea *ngIf="field.type=='text'" matInput [placeholder]="field.title" [formControlName]="field.key"></textarea>
                     <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
                 </mat-form-field>
             </div>

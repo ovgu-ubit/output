@@ -8,7 +8,7 @@
         formControlName="input"
         (keydown.enter)="select($event.target)"
         #input_ent>
-    <button type="button" matSuffix mat-icon-button (click)="select(input_ent)" [matTooltip]="this.name+' bearbeiten'"
+    <button *ngIf="this.formComponent" type="button" matSuffix mat-icon-button (click)="select(input_ent)" [matTooltip]="this.name+' bearbeiten'"
     [matTooltipShowDelay]="800">
         <mat-icon *ngIf="!this.disabled; else else2">edit</mat-icon>
         <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>

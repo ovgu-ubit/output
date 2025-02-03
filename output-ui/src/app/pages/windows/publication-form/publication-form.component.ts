@@ -28,6 +28,8 @@ import { PublisherFormComponent } from '../publisher-form/publisher-form.compone
 import { DoiFormComponent } from '../doi-form/doi-form.component';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { FunderFormComponent } from '../funder-form/funder-form.component';
+import { OaCategoryFormComponent } from '../oa-category-form/oa-category-form.component';
+import { PubTypeFormComponent } from '../pub-type-form/pub-type-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -61,9 +63,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   doi_import_service: string;
 
-  pub_types: PublicationType[];
-  oa_categories: OA_Category[];
-  langs: Language[];
   statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
@@ -83,12 +82,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   contractForm = ContractFormComponent;
   funderForm = FunderFormComponent;
   geForm = GreaterEntityFormComponent;
+  oaForm = OaCategoryFormComponent;
+  ptForm = PubTypeFormComponent;
 
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
-    private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
-    private oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
-    public funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
+    private dialog: MatDialog, public pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar,
+    public oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
+    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
@@ -105,13 +106,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         authors: [''],
       }),
       biblio_info: this.formBuilder.group({
-        pub_type: [''],
         peer_reviewed: [''],
         pub_date: [''],
         pub_date_print: [''],
         pub_date_submitted: [''],
         pub_date_accepted: [''],
-        language: [''],
         abstract: [''],
         volume: [''],
         issue: [''],
@@ -123,7 +122,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         page_count: [''],
       }),
       oa_info: this.formBuilder.group({
-        oa_cat: [''],
         second_pub: [''],
         is_oa: [''],
         oa_status: [''],
@@ -224,9 +222,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.form.get('biblio_info').patchValue(data);
       this.form.get('oa_info').patchValue(data);
       this.form.get('finance_info').patchValue(data);
-      this.form.get('oa_info').get('oa_cat').setValue(this.pub.oa_category ? this.pub.oa_category.id : -1)
-      this.form.get('biblio_info').get('language').setValue(this.pub.language ? this.pub.language.id : -1)
-      this.form.get('biblio_info').get('pub_type').setValue(this.pub.pub_type ? this.pub.pub_type.id : -1)
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('oa_info').get('best_oa_license').setValue('Sonstige')
 
       if (this.pub?.locked) this.setLock(true);
@@ -236,7 +231,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (this.pub?.locked_oa) this.form.get('oa_info').disable();
         if (this.pub?.locked_finance) this.form.get('finance_info').disable();
       }
-      if (this.pub.greater_entity) this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
 
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
@@ -253,19 +247,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   loadMasterData() {
-    let ob$ = this.pubTypeService.getAll().pipe(map(data => {
-      this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
-    }))
-    ob$ = merge(ob$, this.oaService.getAll().pipe(map(data => {
-      this.oa_categories = data.sort((a, b) => a.label.localeCompare(b.label));
-    })))
-    ob$ = merge(ob$, this.languageService.getAll().pipe(map(data => {
-      this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
-    })))
-    ob$ = merge(ob$, this.statusService.getAll().pipe(map(data => {
+    return this.statusService.getAll().pipe(map(data => {
       this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
-    })))
-    return ob$;
+    }))
   }
 
   ngAfterViewInit(): void {
@@ -301,6 +285,21 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   setGE(event) {
     this.pub.greater_entity = event;
+    this.form.markAsDirty()
+  }
+
+  setOA(event) {
+    this.pub.oa_category = event;
+    this.form.markAsDirty()
+  }
+
+  setLang(event) {
+    this.pub.language = event;
+    this.form.markAsDirty()
+  }
+
+  setPubType(event) {
+    this.pub.pub_type = event;
     this.form.markAsDirty()
   }
 
@@ -360,9 +359,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (!this.pub[key]) this.pub[key] = undefined;
       }
     }
-    this.pub.pub_type = this.form.get('biblio_info').get('pub_type').value !== -1 ? this.pub_types.find(e => e.id === this.form.get('biblio_info').get('pub_type').value) : null;
-    this.pub.oa_category = this.form.get('oa_info').get('oa_cat').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('oa_info').get('oa_cat').value) : null;
-    this.pub.language = this.form.get('biblio_info').get('language').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('biblio_info').get('language').value) : null;
     this.dialogRef.close({ ...this.pub, updated: true });
   }
 

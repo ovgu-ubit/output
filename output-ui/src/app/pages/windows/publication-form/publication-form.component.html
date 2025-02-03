@@ -204,14 +204,11 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Publikationstyp</mat-label>
-                    <mat-select formControlName="pub_type">
-                        <mat-option [value]="-1"></mat-option>
-                        <mat-option *ngFor="let pub_type of this.pub_types"
-                            [value]="pub_type.id">{{pub_type.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <app-select-entity name="Publikationstyp"
+                            [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                            [serviceClass]="this.pubTypeService" [formComponent]="this.ptForm"
+                            (selected)="this.setPubType($event)" 
+                            [ent]="this.pub? this.pub.pub_type : undefined"></app-select-entity>
 
                 <app-select-entity name="Größere Einheit"
                             [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
@@ -267,13 +264,12 @@
                         color="accent"></mat-datepicker>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Sprache</mat-label>
-                    <mat-select formControlName="language">
-                        <mat-option [value]="-1"></mat-option>
-                        <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <app-select-entity name="Sprache"
+                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                    [serviceClass]="this.languageService"
+                    (selected)="this.setLang($event)"
+                    [ent]="this.pub? this.pub.language : undefined"></app-select-entity>
+                    
                 <mat-card
                     *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
@@ -335,14 +331,11 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>OA-Kategorie</mat-label>
-                    <mat-select formControlName="oa_cat">
-                        <mat-option [value]="-1"></mat-option>
-                        <mat-option *ngFor="let oa_cat of this.oa_categories"
-                            [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <app-select-entity name="OA-Kategorie"
+                    [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                    [serviceClass]="this.oaService" [formComponent]="this.oaForm"
+                    (selected)="this.setOA($event)"
+                    [ent]="this.pub? this.pub.oa_category : undefined"></app-select-entity>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Zweitveröffentlichung</mat-label>

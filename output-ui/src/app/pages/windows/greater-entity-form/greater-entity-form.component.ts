@@ -12,8 +12,8 @@ export class GreaterEntityFormComponent implements OnInit {
   name = "Größere Einheit"
   fields = [
     { key: 'id', title: 'ID', type: 'number' },
-    { key: 'label', title: 'Bezeichnung', required: true },
-    { key: 'rating', title: 'Bemerkung' },
+    { key: 'label', title: 'Bezeichnung', required: true, type: 'text' },
+    { key: 'rating', title: 'Bemerkung', type: 'text' },
     { key: 'doaj_since', title: 'Im DOAJ seit', type: 'date' },
     { key: 'doaj_until', title: 'Im DOAJ bis', type: 'date' },
     { key: 'identifier', title: 'Identifikatoren', type: 'id_table' },

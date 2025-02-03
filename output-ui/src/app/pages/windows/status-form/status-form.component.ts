@@ -29,7 +29,7 @@ export class StatusFormComponent implements OnInit {
   fields = [
     { key: 'id', title: 'Status', type: 'status', required: true },
     { key: 'label', title: 'Bezeichnung', required: true },
-    { key: 'description', title: 'Beschreibung' },
+    { key: 'description', title: 'Beschreibung', type: 'text' },
   ]
   statuses: Status[];
   @ViewChild(AbstractFormComponent) formC;

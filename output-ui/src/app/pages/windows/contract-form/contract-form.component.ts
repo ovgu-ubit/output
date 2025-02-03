@@ -19,9 +19,10 @@ export class ContractFormComponent implements OnInit {
     { key: 'end_date', title: 'Enddatum', type: 'date' },
     { key: 'internal_number', title: 'Interne Nummer' },
     { key: 'invoice_amount', title: 'Rechnungsbetrag', type: 'number' },
-    { key: 'invoice_information', title: 'Rechnungsinformationen' },
-    { key: 'sec_pub', title: 'Zweitveröffentlichungsoption' },
-    { key: 'gold_option', title: 'Gold-Option' },
+    { key: 'invoice_information', title: 'Rechnungsinformationen', type: 'text' },
+    { key: 'sec_pub', title: 'Zweitveröffentlichungsoption', type: 'text' },
+    { key: 'gold_option', title: 'Gold-Option', type: 'text' },
+    { key: 'verification_method', title: 'Verifikationsmethode', type: 'text' },
     { key: 'identifier', title: 'Identifikatoren', type: 'id_table' },
   ]
 

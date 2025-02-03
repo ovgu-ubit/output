@@ -12,7 +12,7 @@ export class PublisherFormComponent implements OnInit{
   name = "Verlag"
   fields = [
     { key: 'id', title: 'ID', type: 'number' },
-    { key: 'label', title: 'Bezeichnung', required: true },
+    { key: 'label', title: 'Bezeichnung', required: true, type: 'text' },
     { key: 'alias', title: 'Aliase', type: 'alias_table' },
     { key: 'prefix', title: 'DOI-Präfixe', type: 'doi_table' },
   ]

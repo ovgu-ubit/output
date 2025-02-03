@@ -33,7 +33,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   @Input()
   serviceClass: EntityService<T, any>
 
-  @Input() formComponent: ComponentType<EntityFormComponent<T>>;
+  @Input() 
+  formComponent?: ComponentType<EntityFormComponent<T>>;
 
   @Output()
   selected = new EventEmitter<T>();
@@ -77,7 +78,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
       return;
     }
     this.form.get('input').disable();
-    if (!this.ents.find(e => e.label === event.value)) {
+    if (!this.ents.find(e => e.label === event.value) && this.formComponent) {
       let dialogData = new ConfirmDialogModel("Neuer " + this.name, `Möchten Sie den ${this.name} "${event.value}" anlegen?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -114,7 +115,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
           });
         } else this.form.get('input').enable();
       });
-    } else {
+    } else if (this.formComponent) {
       let dialogRef = this.dialog.open(this.formComponent, {
         width: "600px",
         data: {

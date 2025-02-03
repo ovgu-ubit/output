@@ -12,7 +12,7 @@ export class PubTypeFormComponent implements OnInit {
   name = "Publikationsart"
   fields = [
     { key: 'id', title: 'ID', type: 'number' },
-    { key: 'label', title: 'Bezeichnung', required: true },
+    { key: 'label', title: 'Bezeichnung', required: true, type: 'text'  },
     { key: 'review', title: 'Begutachtet?', type: 'boolean' },
     { key: 'alias', title: 'Aliase', type: 'alias_table' },
   ]
