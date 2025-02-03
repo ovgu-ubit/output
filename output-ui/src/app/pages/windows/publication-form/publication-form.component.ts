@@ -200,7 +200,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
     ob$ = merge(ob$, this.loadMasterData());
 
-
     ob$.subscribe({
       complete: () => {
       }

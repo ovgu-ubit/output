@@ -1,227 +1,77 @@
-import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { AfterViewInit, Component, inject, Inject, OnInit, ViewChild } from '@angular/core';
+import { FormGroup, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { Observable, map, startWith } from 'rxjs';
-import { AuthorizationService } from 'src/app/security/authorization.service';
+import { EntityFormComponent } from 'src/app/interfaces/service';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { InstituteService } from 'src/app/services/entities/institute.service';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
 import { Author, Institute } from '../../../../../../output-interfaces/Publication';
+import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { InstituteFormComponent } from '../institute-form/institute-form.component';
-import { AliasAuthorFirstName, AliasAuthorLastName } from '../../../../../../output-interfaces/Alias';
-import { EntityFormComponent } from 'src/app/interfaces/service';
 
 @Component({
   selector: 'app-author-form',
   templateUrl: './author-form.component.html',
   styleUrls: ['./author-form.component.css']
 })
-export class AuthorFormComponent implements OnInit, AfterViewInit, EntityFormComponent<Author> {
+export class AuthorFormComponent extends AbstractFormComponent<Author> implements OnInit, AfterViewInit, EntityFormComponent<Author> {
 
-  name = "Person"
-  fields = [
+  override name = "Person"
+  override fields = [
     { key: 'id', title: 'ID', type: 'number' },
     { key: 'title', title: 'Titel' },
     { key: 'first_name', title: 'Vorname(n)', required: true },
-    { key: 'last_name', title: 'Nachname',  required: true },
+    { key: 'last_name', title: 'Nachname', required: true },
     { key: 'orcid', title: 'ORCID', pattern: /^(\d{4}-){3}\d{3}(\d|X)$/ },
     { key: 'gnd_id', title: 'GND-ID', pattern: /^[0-9X-]*$/ },
     // { key: 'inst', title: 'Institute', type: 'institute' },
-   // { key: 'alias_first', title: 'Aliase Vorname', type: 'alias' },
-   // { key: 'alias_last', title: 'Aliase Nachname', type: 'alias' },
+    // { key: 'alias_first', title: 'Aliase Vorname', type: 'alias' },
+    // { key: 'alias_last', title: 'Aliase Nachname', type: 'alias' },
   ]
 
-  public form: FormGroup;
   aliasForm: FormGroup = this.formBuilder.group({
     alias: [''],
     first_name: ['']
   });
 
-  author: Author;
-  institutes: Institute[];
-  filtered_institutes: Observable<Institute[]>;
+  override entity: Author;
   displayedColumns: string[] = ['id', 'label', 'short_label', 'delete'];
-  disabled = false;
 
   @ViewChild(MatTable) table: MatTable<Institute>;
   @ViewChild('tableAlias') tableAlias: MatTable<{ alias: string, first_name: boolean }>;
   alias_data: { alias: string, first_name: boolean }[];
 
-  constructor(public dialogRef: MatDialogRef<AuthorFormComponent>, public tokenService: AuthorizationService,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, public service: AuthorService, private instService: InstituteService,
-    private dialog: MatDialog, private _snackBar: MatSnackBar) { }
+  override service = inject(AuthorService)
 
-  ngOnInit(): void {
-    if (this.data.entity?.id) {
-      this.service.getOne(this.data.entity.id).subscribe({
-        next: data => {
-          this.author = data;
-          this.form.patchValue(this.author)
-          this.updateAlias();
-          if (this.author.locked_at) {
-            this.disable();
-            this._snackBar.open('Autor*in wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
-              duration: 5000,
-              panelClass: [`warning-snackbar`],
-              verticalPosition: 'top'
-            })
-          }
-        }
-      })
-    }
-    else this.author = {
-      first_name: this.data.author?.first_name,
-      last_name: this.data.author?.last_name
-    }
-    this.instService.getAll().subscribe({
-      next: data => {
-        this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));;
-        this.filtered_institutes = this.form.get('inst').valueChanges.pipe(
-          startWith(''),
-          map(value => this._filterInst(value || '')),
-        );
-      }
-    })
+  instForm = InstituteFormComponent;
 
+  constructor(public override dialogRef: MatDialogRef<AuthorFormComponent>, @Inject(MAT_DIALOG_DATA) public override data: any, public instService: InstituteService) { super(); }
+
+  override ngOnInit(): void {
     this.form = this.formBuilder.group({
       id: [''],
       title: [''],
       first_name: ['', Validators.required],
       last_name: ['', Validators.required],
       orcid: ['', Validators.pattern(/^(\d{4}-){3}\d{3}(\d|X)$/)],
-      gnd_id: ['', Validators.pattern(/^[0-9X-]*$/)],
-      inst: ['']
+      gnd_id: ['', Validators.pattern(/^[0-9X-]*$/)]
     });
-    this.form.controls.id.disable();
-    this.form.patchValue(this.author)
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
-      this.disable();
-    }
-  }
-
-  disable() {
-    this.disabled = true;
-    this.form.disable();
-  }
-
-  action() {
-    if (this.form.invalid) return;
-    this.author = { ...this.author, ...this.form.getRawValue() }
-    if (!this.author.id) this.author.id = undefined;
-    if (!this.author.title) this.author.title = undefined;
-    if (!this.author.gnd_id) this.author.gnd_id = undefined;
-    if (!this.author.orcid) this.author.orcid = undefined;
-    this.dialogRef.close({ ...this.author, updated: true })
-  }
-
-  close() {
-    this.dialogRef.close(null)
-  }
-
-  abort() {
-    if (this.form.dirty) {
-      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) { //save
-          this.action();
-        } else if (this.author.id) this.dialogRef.close({ id: this.author.id, locked_at: null })
-        else this.close()
-      });
-    } else if (this.author.id) this.dialogRef.close({ id: this.author.id, locked_at: null })
-    else this.close()
   }
 
   deleteInst(row) {
     if (this.disabled) return;
-    this.author.institutes = this.author.institutes.filter(e => e.id !== row.id)
+    this.entity.institutes = this.entity.institutes.filter(e => e.id !== row.id)
   }
 
-  addInst(event) {
-    if (!event.value || this.disabled) return;
-    if (!this.institutes.find(e => e.label === event.value)) {
-      //new institute
-      let dialogData = new ConfirmDialogModel("Neues Institut", `Möchten Sie das Institut "${event.value}" anlegen?`);
-      let value = event.value;
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(InstituteFormComponent, {
-            width: "400px",
-            data: {
-              institute: {
-                label: value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult) {
-              this.instService.add(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Institut wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  if (!this.author.institutes) this.author.institutes = [];
-                  this.author.institutes = this.author.institutes.concat(data)
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      //existing institute
-      if (!this.author.institutes) this.author.institutes = [];
-      this.author.institutes.push(this.institutes.find(e => e.label === event.value))
-    }
-    this.form.get('inst').reset();
-    this.table.dataSource = new MatTableDataSource<Institute>(this.author.institutes);
+  setInst(event) {
+    if (!this.entity.institutes.find(e => e.id === event.id)) this.entity.institutes.push(event)
+    this.table.dataSource = new MatTableDataSource<Institute>(this.entity.institutes);
   }
-
-  selectedInst(event: MatAutocompleteSelectedEvent): void {
-    this.addInst(event.option);
-  }
-
-  private _filterInst(value: string): Institute[] {
-    const filterValue = value.toLowerCase();
-
-    return this.institutes.filter(inst => inst?.label.toLowerCase().includes(filterValue) || inst?.short_label?.toLowerCase().includes(filterValue));
-  }
-
-  enter(event) {
-    if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
-    return true;
-  }
-
-  escape(event) {
-    if (event.key === 'Escape') {
-      this.abort();
-      return false;
-    }
-    return true;
-  }
-
 
   deleteAlias(elem: { alias: string, first_name: boolean }) {
     if (this.disabled) return;
-    if (elem.first_name) this.author.aliases_first_name = this.author.aliases_first_name.filter(e => e.alias !== elem.alias)
-    else this.author.aliases_last_name = this.author.aliases_last_name.filter(e => e.alias !== elem.alias)
+    if (elem.first_name) this.entity.aliases_first_name = this.entity.aliases_first_name.filter(e => e.alias !== elem.alias)
+    else this.entity.aliases_last_name = this.entity.aliases_last_name.filter(e => e.alias !== elem.alias)
     this.updateAlias();
   }
 
@@ -230,21 +80,21 @@ export class AuthorFormComponent implements OnInit, AfterViewInit, EntityFormCom
     if (this.aliasForm.invalid) return;
     if (this.aliasForm.get('first_name').value === undefined || this.aliasForm.get('first_name').value === null) return;
     if (this.aliasForm.get('first_name').value) {
-      this.author.aliases_first_name.push({
+      this.entity.aliases_first_name.push({
         alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
-        elementId: this.author.id
+        elementId: this.entity.id
       })
-    } else this.author.aliases_last_name.push({
+    } else this.entity.aliases_last_name.push({
       alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),
-      elementId: this.author.id
+      elementId: this.entity.id
     })
     this.aliasForm.reset();
     this.updateAlias();
   }
 
   updateAlias() {
-    this.alias_data = this.author.aliases_first_name.map(e => { return { alias: e.alias, first_name: true } })
-    this.alias_data = this.alias_data.concat(this.author.aliases_last_name.map(e => { return { alias: e.alias, first_name: false } }));
+    this.alias_data = this.entity.aliases_first_name.map(e => { return { alias: e.alias, first_name: true } })
+    this.alias_data = this.alias_data.concat(this.entity.aliases_last_name.map(e => { return { alias: e.alias, first_name: false } }));
     if (this.tableAlias) this.tableAlias.dataSource = new MatTableDataSource<{ alias: string, first_name: boolean }>(this.alias_data);
   }
 }

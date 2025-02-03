@@ -20,6 +20,9 @@
             (<ng-container
                 *ngFor="let ide of ent['identifiers']">{{ide.value}}&nbsp;</ng-container>)
         </ng-container>
+        <ng-container *ngIf="ent['short_label']">
+            ({{ent['short_label']}})
+        </ng-container>
     </mat-option>
     </mat-autocomplete>
 </mat-form-field>

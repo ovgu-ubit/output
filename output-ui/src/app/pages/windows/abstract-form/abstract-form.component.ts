@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Input, OnInit, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validator, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -29,10 +29,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   @Input() data: any;
   @Input() preProcessing?: Observable<any>
 
-  prefixForm = this.formBuilder.group({
-    doi_prefix: ['', Validators.required],
-  });
-
   entity: T;
   disabled: boolean;
   today = new Date();
@@ -41,10 +37,15 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   @ViewChild('table_doi') tableDOI: MatTable<any>;
 
-  constructor(public tokenService: AuthorizationService,
-    private formBuilder: FormBuilder,
-    private _snackBar: MatSnackBar, private dialog: MatDialog,
-    public publisherService: PublisherService) { }
+  public tokenService = inject(AuthorizationService);
+  formBuilder = inject(FormBuilder)
+  _snackBar = inject(MatSnackBar)
+  public publisherService= inject(PublisherService)
+  dialog = inject(MatDialog)
+
+  prefixForm = this.formBuilder.group({
+    doi_prefix: ['', Validators.required],
+  });
 
   ngAfterViewInit(): void {
     if (!this.preProcessing) this.preProcessing = of(null);
@@ -70,14 +71,13 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       } else {
         this.fields = this.fields.filter(e => e.key !== 'id' || e.type === 'status')
         if (this.data.entity?.label) this.form.get('label').setValue(this.data.entity.label)
+        if (this.data.entity?.first_name) this.form.get('first_name').setValue(this.data.entity.first_name)
+        if (this.data.entity?.last_name) this.form.get('last_name').setValue(this.data.entity.last_name)
         this.entity = {} as any
         return of(null)
       }
     })).subscribe();
   }
-
-  publishers: Publisher[];
-  filtered_publishers: Observable<Publisher[]>;
 
   ngOnInit(): void {
     let group = {};
@@ -147,5 +147,18 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   setPublisher(event) {
     this.entity['publisher'] = event;
+  }
+  
+  enter(event) {
+    if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
+    return true;
+  }
+
+  escape(event) {
+    if (event.key === 'Escape') {
+      this.abort();
+      return false;
+    }
+    return true;
   }
 }
