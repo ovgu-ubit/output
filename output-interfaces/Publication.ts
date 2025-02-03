@@ -9,7 +9,11 @@ export interface Entity {
     label?
 }
 
-export interface Publication extends Entity {
+export interface Identifiable<T> extends Entity{
+    identifiers?: IIdentifier<T>[]
+}
+
+export interface Publication extends Identifiable<Publication> {
     authorPublications?: AuthorPublication[];
     pub_type?: PublicationType
     oa_category?: OA_Category
@@ -48,7 +52,6 @@ export interface Publication extends Entity {
     abstract?: string;
     page_count?: number;
     peer_reviewed?: boolean;
-    identifiers?: PublicationIdentifier[];
     volume?: string;
     issue?: string;
     first_page?: string;
@@ -83,7 +86,7 @@ export interface Role extends Entity {
     label: string;
 }
 
-export interface Contract extends Entity {
+export interface Contract extends Identifiable<Contract> {
     publisher: Publisher
     label: string;
     start_date?: Date;
@@ -95,7 +98,6 @@ export interface Contract extends Entity {
     gold_option?: string;
     verification_method?: string;
 	publications?: Publication[];
-    identifiers?:ContractIdentifier[];
 }
 
 export interface CostCenter extends Entity {
@@ -126,31 +128,27 @@ export interface Funder extends Entity {
     aliases?: AliasFunder[];
 }
 
-export interface GreaterEntity extends Entity {
+export interface GreaterEntity extends Identifiable<GreaterEntity>{
     label: string;
     rating?: string;
     doaj_since?: Date;
     doaj_until?: Date;
-    identifiers?: Identifier[];
     publications?: Publication[]
 }
 
-export interface Identifier extends Entity {
+export interface IIdentifier<T> extends Entity {
     type: string;
     value: string;
-    entity?: GreaterEntity
+    entity?: T
 }
 
-export interface PublicationIdentifier extends Entity {
-    type: string;
-    value: string;
-    publication?: Publication;
+export interface Identifier extends IIdentifier<GreaterEntity> {
 }
 
-export interface ContractIdentifier extends Entity {
-    type: string;
-    value: string;
-    contract?: Contract
+export interface PublicationIdentifier extends IIdentifier<Publication> {
+}
+
+export interface ContractIdentifier extends IIdentifier<Contract> {
 }
 
 export interface Institute extends Entity {

@@ -54,7 +54,6 @@ export class PubValidator {
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   institution: string;
   public form: FormGroup;
-  public idForm: FormGroup;
   submitted = false;
 
   edit: boolean = false;
@@ -71,7 +70,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
-  @ViewChild('tableID') tableId: MatTable<PublicationIdentifier>;
 
   today = new Date();
   disabled = false;
@@ -140,11 +138,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.get('oa_info').get('oa_status').disable();
     this.form.get('oa_info').get('is_journal_oa').disable();
     this.form.get('oa_info').get('best_oa_host').disable();
-
-    this.idForm = this.formBuilder.group({
-      type: ['', Validators.required],
-      value: ['', Validators.required]
-    })
   }
 
   ngOnInit(): void {
@@ -258,7 +251,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disable() {
     this.disabled = true;
     this.form.disable();
-    this.idForm.disable();
   }
 
   setPublisher(event) {
@@ -483,20 +475,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         }
       }
     });
-  }
-
-  deleteId(elem) {
-    if (this.disabled) return;
-    this.pub.identifiers = this.pub.identifiers.filter(e => e.id !== elem.id)
-  }
-  addId() {
-    if (this.disabled || this.idForm.invalid) return;
-    this.pub.identifiers.push({
-      type: this.idForm.get('type').value,
-      value: this.idForm.get('value').value
-    })
-    this.idForm.reset();
-    if (this.tableId) this.tableId.dataSource = new MatTableDataSource<PublicationIdentifier>(this.pub.identifiers);
   }
 
   showStatusLabel(long: boolean) {

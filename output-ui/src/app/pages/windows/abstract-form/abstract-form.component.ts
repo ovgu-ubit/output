@@ -32,10 +32,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   aliasForm: FormGroup = this.formBuilder.group({
     alias: ['', Validators.required]
   });
-  idForm = this.formBuilder.group({
-    type: ['', Validators.required],
-    value: ['', Validators.required]
-  })
   prefixForm = this.formBuilder.group({
     doi_prefix: ['', Validators.required],
   });
@@ -47,7 +43,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   publisherForm = PublisherFormComponent;
 
   @ViewChild(MatTable) table: MatTable<Alias<T>>;
-  @ViewChild(MatTable) idTable: MatTable<Identifier>;
   @ViewChild('table_doi') tableDOI: MatTable<any>;
 
   constructor(public tokenService: AuthorizationService,
@@ -101,7 +96,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     this.disabled = true;
     this.form.disable();
     this.aliasForm.disable();
-    this.idForm.disable();
   }
 
   action() {
@@ -150,21 +144,6 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     })
     this.aliasForm.reset();
     if (this.table) this.table.dataSource = new MatTableDataSource<Alias<T>>(this.entity.aliases);
-  }
-
-  deleteId(elem) {
-    if (this.disabled) return;
-    this.entity.identifiers = this.entity.identifiers.filter(e => e.id !== elem.id)
-  }
-  addId() {
-    if (this.disabled || this.idForm.invalid) return;
-    if (!this.entity.identifiers) this.entity.identifiers = [];
-    this.entity.identifiers.push({
-      type: this.idForm.get('type').value,
-      value: this.idForm.get('value').value
-    })
-    this.idForm.reset();
-    if (this.table) this.idTable.dataSource = new MatTableDataSource<Identifier>(this.entity.identifiers);
   }
 
   deletePrefix(elem: any) {

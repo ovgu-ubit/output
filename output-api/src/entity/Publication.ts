@@ -142,7 +142,7 @@ export class Publication implements IPublication {
     @Column({ nullable: true })
     peer_reviewed?: boolean;
 
-    @OneToMany(() => PublicationIdentifier, (ide) => ide.publication, {cascade: true})
+    @OneToMany(() => PublicationIdentifier, (ide) => ide.entity, {cascade: true})
     identifiers?: PublicationIdentifier[];
 
     @Column({ nullable: true,  type: "float" })

@@ -60,40 +60,8 @@
                     Andere Identifikatoren
                 </mat-panel-title>
             </mat-expansion-panel-header>
-            <table #tableID *ngIf="this.pub?.identifiers && this.pub.identifiers.length>0" mat-table
-                [dataSource]="this.pub.identifiers">
-                <ng-container matColumnDef="type">
-                    <th mat-header-cell *matHeaderCellDef> Art </th>
-                    <td mat-cell *matCellDef="let element"> {{element.type}} </td>
-                </ng-container>
-
-                <ng-container matColumnDef="value">
-                    <th mat-header-cell *matHeaderCellDef> Wert </th>
-                    <td mat-cell *matCellDef="let element"> {{element.value}} </td>
-                </ng-container>
-
-                <ng-container matColumnDef="delete">
-                    <th mat-header-cell *matHeaderCellDef> </th>
-                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                            (click)="this.deleteId(element)" matTooltip="Identifikator löschen"
-                            [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="displayedColumnsId"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumnsId;"></tr>
-            </table>
-            <form [formGroup]="idForm" style="display: flex;gap:5px">
-                <mat-form-field appearance="fill">
-                    <mat-label>Art</mat-label>
-                    <input matInput placeholder="Art" formControlName="type" />
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                    <mat-label>Wert</mat-label>
-                    <input matInput placeholder="Wert" formControlName="value" />
-                </mat-form-field>
-                <button matSuffix mat-icon-button type="button" (click)="this.addId()"
-                    matTooltip="Identifikator hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
-            </form>
+           
+            <app-id-table [disabled]="this.disabled" [entity]="this.pub"></app-id-table>
         </mat-expansion-panel><br>
 
         <mat-form-field appearance="fill" style="width: 100%;">

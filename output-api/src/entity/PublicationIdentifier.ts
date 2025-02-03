@@ -16,5 +16,5 @@ export class PublicationIdentifier implements IPublicationIdentifier {
     value: string;
 
     @ManyToOne(() => Publication, (ge) => ge.id)
-    publication?: Publication
+    entity?: Publication
 }

@@ -43,7 +43,7 @@ export class Contract implements IContract {
     @OneToMany(() => Publication, (p) => p.contract)
     publications?: Publication[];
     
-    @OneToMany(() => ContractIdentifier, (ide) => ide.contract, {cascade: true})
+    @OneToMany(() => ContractIdentifier, (ide) => ide.entity, {cascade: true})
     identifiers?: ContractIdentifier[];
     
     @Column({ nullable: true, type: 'timestamptz' })
