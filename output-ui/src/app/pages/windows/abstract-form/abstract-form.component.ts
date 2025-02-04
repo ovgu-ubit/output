@@ -103,6 +103,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     this.entity = { ...this.entity, ...this.form.getRawValue() }
     //doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined
     for (let field of this.fields) if (!this.entity[field.key]) this.entity[field.key] = undefined;
+    if (!this.entity.id) this.entity.id = undefined;
     this.dialogRef.close({ ...this.entity, updated: true })
   }
 

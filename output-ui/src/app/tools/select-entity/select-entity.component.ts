@@ -43,6 +43,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     input: ['']
   });
 
+  exists = false;
+
   constructor(private _snackBar: MatSnackBar, private dialog: MatDialog) { }
 
   ngOnInit(): void {
@@ -66,9 +68,17 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
       this.ents = data.sort((a, b) => a.label.localeCompare(b.label));
       this.filtered_ents = this.form.get('input').valueChanges.pipe(
         startWith(this.ent ? this.ent.label : ''),
+        map(value => this.test(value)),
         map(value => this._filterEnt(value || '')),
       );
     })).subscribe();
+  }
+
+  test(value:string) {
+    if (!value || this.ents.find(e => e.label === value)) {
+      this.exists = true;
+    } else this.exists = false;
+    return value;
   }
 
   select(event) {

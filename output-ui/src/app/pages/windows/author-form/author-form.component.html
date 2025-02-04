@@ -1,8 +1,8 @@
 <mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
-    <h1>Autor</h1>
+    <h1>Person</h1>
     <div style="display: flex;justify-content: flex-end;">
         <div *ngIf="!this.disabled; else else1">
-            <button mat-icon-button (click)="this.action()" matTooltip="Autor speichern"
+            <button mat-icon-button (click)="this.action()" matTooltip="Person speichern"
                 [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
             <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
                 [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
