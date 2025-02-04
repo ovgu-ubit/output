@@ -215,7 +215,9 @@ export class PublicationService {
                 oa_category: true,
                 invoices: invoice,
                 authorPublications: {
-                    author: true,
+                    author: {
+                        institutes: true
+                    },
                     institute: true,
                     role: true
                 },

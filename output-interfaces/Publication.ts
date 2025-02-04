@@ -78,6 +78,7 @@ export interface AuthorPublication {
     institute?: Institute
     corresponding?: boolean;
     affiliation?: string;
+    role?: Role;
 }
 
 export interface Role extends Entity {

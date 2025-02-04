@@ -458,19 +458,18 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   addAuthorship(authorPub?) {
     if (this.disabled) return;
     let data = {};
-    if (authorPub) data = { authorPub, authors: this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId).map(e => e.authorId) }
-    else data = { authors: this.pub.authorPublications.map(e => e.authorId) }
+    data = { entity: authorPub }
     let dialogRef = this.dialog.open(AuthorshipFormComponent, {
       minWidth: "450px",
       data
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data.authorId) {
+        if (data.author) {
+          //if edit mode, delete the original version
           if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
-          //this.pub.authorPublications.push(data)
-          //if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
           this.pub.authorPublications = this.pub.authorPublications.concat([data])
+          if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
         }
       }
     });

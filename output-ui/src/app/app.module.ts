@@ -87,6 +87,7 @@ import { AbstractFormComponent } from './pages/windows/abstract-form/abstract-fo
 import { SelectEntityComponent } from './tools/select-entity/select-entity.component';
 import { IdTableComponent } from './tools/id-table/id-table.component';
 import { AliasTableComponent } from './tools/alias-table/alias-table.component';
+import { SelectAuthorComponent } from './tools/select-author/select-author.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -143,7 +144,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         AbstractFormComponent,
         SelectEntityComponent,
         IdTableComponent,
-        AliasTableComponent
+        AliasTableComponent,
+        SelectAuthorComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,

@@ -45,16 +45,27 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   exists = false;
 
-  constructor(private _snackBar: MatSnackBar, private dialog: MatDialog) { }
+  _snackBar =  inject(MatSnackBar);
+  dialog = inject(MatDialog)
+
+  constructor() { }
 
   ngOnInit(): void {
 
   }
 
+  getValue(ent?:T) {
+    if (ent) return ent.label;
+    return this.ent?.label;
+  }
+  setValue(ent:any, value:string) {
+    ent.label = value;
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['serviceClass']) this.updateEnts();
     if (changes['ent']) {
-      if (this.ent) this.form.get('input').setValue(this.ent.label)
+      if (this.ent) this.form.get('input').setValue(this.getValue())
       else this.form.get('input').setValue('')
     }
     if (changes['disabled']) {
@@ -65,9 +76,9 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   updateEnts() {
     this.serviceClass.getAll().pipe(map(data => {
-      this.ents = data.sort((a, b) => a.label.localeCompare(b.label));
+      this.ents = data.sort((a, b) => this.getValue(a).localeCompare(this.getValue(b)));
       this.filtered_ents = this.form.get('input').valueChanges.pipe(
-        startWith(this.ent ? this.ent.label : ''),
+        startWith(this.ent ? this.getValue() : ''),
         map(value => this.test(value)),
         map(value => this._filterEnt(value || '')),
       );
@@ -75,7 +86,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   }
 
   test(value:string) {
-    if (!value || this.ents.find(e => e.label === value)) {
+    if (!value || this.ents.find(e => this.getValue(e) === value)) {
       this.exists = true;
     } else this.exists = false;
     return value;
@@ -88,7 +99,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
       return;
     }
     this.form.get('input').disable();
-    if (!this.ents.find(e => e.label === event.value) && this.formComponent) {
+    if (!this.ents.find(e => this.getValue(e) === event.value) && this.formComponent) {
       let dialogData = new ConfirmDialogModel("Neuer " + this.name, `Möchten Sie den ${this.name} "${event.value}" anlegen?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -98,12 +109,13 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) {
+          let entity = {} as any;
+          this.setValue(entity, event.value)
+
           let dialogRef1 = this.dialog.open(this.formComponent, {
             width: "600px",
             data: {
-              entity: {
-                label: event.value
-              }
+              entity
             }
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
@@ -117,7 +129,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
                     verticalPosition: 'top'
                   })
                   this.ent = data[0];
-                  this.form.get('input').setValue(this.ent.label)
+                  this.form.get('input').setValue(this.getValue())
                   this.selected.next(this.ent)
                 }
               })
@@ -142,7 +154,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
                 verticalPosition: 'top'
               })
               this.ent = data[0];
-              this.form.get('input').setValue(this.ent.label)
+              this.form.get('input').setValue(this.getValue())
               this.selected.next(this.ent)
             }
           })
@@ -152,15 +164,15 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     }
   }
 
-  private _filterEnt(value: string): T[] {
+  _filterEnt(value: string): T[] {
     const filterValue = value.toLowerCase();
-    return this.ents.filter(pub => pub && (pub.label.toLowerCase().includes(filterValue) || (pub['identifiers'] && pub['identifiers'].find(e => e.value.toLowerCase().includes(filterValue)))));
+    return this.ents.filter(pub => pub && (this.getValue(pub).toLowerCase().includes(filterValue) || (pub['identifiers'] && pub['identifiers'].find(e => e.value.toLowerCase().includes(filterValue)))));
   }
 
   selectedEnt(event: MatAutocompleteSelectedEvent): void {
     if (this.disabled) return;
-    this.ent = this.ents.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    if (!this.resetOnSelect) this.form.get('input').setValue(this.ent.label)
+    this.ent = this.ents.find(e => this.getValue(e).trim().toLowerCase() === event.option.value.trim().toLowerCase());
+    if (!this.resetOnSelect) this.form.get('input').setValue(this.getValue())
     else this.form.get('input').setValue('');
     this.selected.next(this.ent)
   }
