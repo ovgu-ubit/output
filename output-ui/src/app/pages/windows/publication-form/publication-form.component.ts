@@ -431,7 +431,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       maxWidth: "850px",
       data: {
         entity: invoice
-      }
+      },
+      disableClose: true
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
@@ -461,7 +462,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     data = { entity: authorPub }
     let dialogRef = this.dialog.open(AuthorshipFormComponent, {
       minWidth: "450px",
-      data
+      data,
+      disableClose: true
     });
     dialogRef.afterClosed().subscribe({
       next: data => {

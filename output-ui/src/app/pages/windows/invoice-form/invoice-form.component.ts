@@ -51,7 +51,8 @@ export class InvoiceFormComponent extends AbstractFormComponent<Invoice> impleme
       maxWidth: "600px",
       data: {
         entity: cost_item
-      }
+      },
+      disableClose: true
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
