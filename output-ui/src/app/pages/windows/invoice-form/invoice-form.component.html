@@ -16,7 +16,7 @@
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
-        <mat-form-field *ngIf="this.invoice?.id" appearance="fill">
+        <mat-form-field *ngIf="this.entity?.id" appearance="fill">
             <mat-label>ID</mat-label>
             <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
         </mat-form-field>
@@ -26,20 +26,18 @@
             <input matInput placeholder="Rechnungsnummer" formControlName="number" />
         </mat-form-field>
 
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Kostenstelle</mat-label>
-            <mat-select formControlName="cost_center">
-                <mat-option [value]="-1"></mat-option>
-                <mat-option *ngFor="let cc of this.costCenters" [value]="cc.id">{{cc.label}}</mat-option>
-            </mat-select>
-        </mat-form-field>
+        <app-select-entity name="Kostenstelle"
+                    [disabled]="this.disabled"
+                    [serviceClass]="this.ccService" [formComponent]="this.ccForm"
+                    (selected)="this.setCostCenter($event)"
+                    [ent]="this.entity? this.entity.cost_center : undefined"></app-select-entity>
 
         <mat-form-field appearance="fill">
             <mat-label>Rechnungsdatum</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="date">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker [startAt]="this.invoice?.date? this.invoice.date : today" startView="month"
+            <mat-datepicker #picker [startAt]="this.entity?.date? this.entity.date : today" startView="month"
                 color="accent"></mat-datepicker>
         </mat-form-field>
 
@@ -48,7 +46,7 @@
             <input matInput [matDatepicker]="picker1" formControlName="booking_date">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-            <mat-datepicker #picker1 [startAt]="this.invoice?.booking_date? this.invoice.booking_date : today"
+            <mat-datepicker #picker1 [startAt]="this.entity?.booking_date? this.entity.booking_date : today"
                 startView="month" color="accent"></mat-datepicker>
         </mat-form-field>
 
@@ -61,8 +59,8 @@
             <mat-card-header><mat-card-subtitle>Rechnungsposten</mat-card-subtitle></mat-card-header>
             <mat-card-content>
 
-                <table *ngIf="this.invoice?.cost_items && this.invoice.cost_items.length>0" mat-table
-                    [dataSource]="this.invoice.cost_items">
+                <table *ngIf="this.entity?.cost_items && this.entity.cost_items.length>0" mat-table
+                    [dataSource]="this.entity.cost_items">
                     <ng-container matColumnDef="label">
                         <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
                         <td mat-cell *matCellDef="let element"> {{element.label}} </td>

@@ -12,6 +12,8 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confir
 import { Alias } from '../../../../../../output-interfaces/Alias';
 import { Entity, Identifier, Publisher } from '../../../../../../output-interfaces/Publication';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
+import { CostTypeFormComponent } from '../cost-type-form/cost-type-form.component';
+import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 
 @Component({
   selector: 'app-abstract-form',
@@ -24,7 +26,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   @Input() service: EntityService<T, any>;
   @Input() name: string;
-  @Input() fields: { key: string, title: string, type?: string, required?: boolean, pattern?:RegExp }[];
+  @Input() fields: { key: string, title: string, type?: string, required?: boolean, pattern?: RegExp, select?: string[] }[];
   @Input() dialogRef: MatDialogRef<any>;
   @Input() data: any;
   @Input() preProcessing?: Observable<any>
@@ -34,13 +36,15 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   today = new Date();
 
   publisherForm = PublisherFormComponent;
+  ctForm = CostTypeFormComponent;
 
   @ViewChild('table_doi') tableDOI: MatTable<any>;
 
   public tokenService = inject(AuthorizationService);
   formBuilder = inject(FormBuilder)
   _snackBar = inject(MatSnackBar)
-  public publisherService= inject(PublisherService)
+  public publisherService = inject(PublisherService)
+  public ctService = inject(CostTypeService)
   dialog = inject(MatDialog)
 
   prefixForm = this.formBuilder.group({
@@ -53,7 +57,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
         this.disable();
       }
-      if (this.data.entity?.id) {
+      if (this.data.entity?.id && this.service) {//edit mode with current db entity
         this.form.controls.id.disable();
         return this.service.getOne(this.data.entity.id).pipe(map(data => {
           this.entity = data;
@@ -68,12 +72,20 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
           }
         }
         ))
-      } else {
+      } else if (this.data.entity?.id) { //Edit mode with giving entity
+        this.entity = this.data.entity;
+        this.form.patchValue(this.entity)
+        this.form.controls.id.disable();
+        return of(null)
+      }
+      else {
         this.fields = this.fields.filter(e => e.key !== 'id' || e.type === 'status')
-        if (this.data.entity?.label) this.form.get('label').setValue(this.data.entity.label)
-        if (this.data.entity?.first_name) this.form.get('first_name').setValue(this.data.entity.first_name)
-        if (this.data.entity?.last_name) this.form.get('last_name').setValue(this.data.entity.last_name)
-        this.entity = {} as any
+        if (this.data.entity) {
+          for (let field of this.fields) {
+            if (this.data.entity[field.key]) this.form.get(field.key)?.setValue(this.data.entity[field.key])
+          }
+          this.entity = this.data.entity as any
+        } else this.entity = {} as any
         return of(null)
       }
     })).subscribe();
@@ -82,7 +94,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   ngOnInit(): void {
     let group = {};
     for (let field of this.fields) {
-      if (field.type !== 'publisher') {
+      if (field.type !== 'publisher' && field.type !== 'cost_type') {
         let vals = [];
         if (field.required) vals.push(Validators.required)
         if (field.pattern) vals.push(Validators.pattern(field.pattern))
@@ -149,7 +161,11 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   setPublisher(event) {
     this.entity['publisher'] = event;
   }
-  
+
+  setCostType(event) {
+    this.entity['cost_type'] = event;
+  }
+
   enter(event) {
     if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
     return true;

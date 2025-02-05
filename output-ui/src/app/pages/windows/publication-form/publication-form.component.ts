@@ -430,18 +430,18 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
       maxWidth: "850px",
       data: {
-        invoice
+        entity: invoice
       }
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data && data.cost_items) {
+        if (data && data.updated) {
           this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
           this.pub.invoices.push(data)
           if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
-        } else if (data && data.id) {
+        } /*else if (data && data.id) {
           this.invoiceService.update(data).subscribe();
-        }
+        }*/
       }
     });
   }

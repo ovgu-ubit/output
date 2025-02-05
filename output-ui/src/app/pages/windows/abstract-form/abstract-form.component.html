@@ -20,7 +20,8 @@
             <div [ngSwitch]="field.type">
                 <mat-checkbox *ngSwitchCase="'boolean'" [formControlName]="field.key">{{field.title}}</mat-checkbox>
 
-                <app-alias-table *ngSwitchCase="'alias_table'" [name]="this.name" [disabled]="this.disabled" [entity]="this.entity"></app-alias-table>
+                <app-alias-table *ngSwitchCase="'alias_table'" [name]="this.name" [disabled]="this.disabled"
+                    [entity]="this.entity"></app-alias-table>
 
                 <mat-expansion-panel *ngSwitchCase="'doi_table'">
                     <mat-expansion-panel-header>
@@ -57,12 +58,18 @@
                     </form>
                 </mat-expansion-panel>
 
-                <app-id-table *ngSwitchCase="'id_table'" [disabled]="this.disabled" [entity]="this.entity"></app-id-table>
+                <app-id-table *ngSwitchCase="'id_table'" [disabled]="this.disabled"
+                    [entity]="this.entity"></app-id-table>
 
                 <app-select-entity *ngSwitchCase="'publisher'" name="Verlag" [disabled]="this.disabled"
                     [serviceClass]="this.publisherService" [formComponent]="this.publisherForm"
                     (selected)="this.setPublisher($event)"
                     [ent]="this.entity? this.entity['publisher'] : undefined"></app-select-entity>
+
+                <app-select-entity *ngSwitchCase="'cost_type'" name="Kostenart" [disabled]="this.disabled"
+                    [serviceClass]="this.ctService" [formComponent]="this.ctForm"
+                    (selected)="this.setCostType($event)"
+                    [ent]="this.entity? this.entity['cost_type'] : undefined"></app-select-entity>
 
                 <mat-form-field *ngSwitchCase="'date'">
                     <mat-label>{{field.title}}</mat-label>
@@ -71,6 +78,13 @@
                     <mat-datepicker-toggle matIconSuffix [for]="i"></mat-datepicker-toggle>
                     <mat-datepicker #i [startAt]="this.entity && this.entity[field.key]? this.entity[field.key] : today"
                         startView="year" color="accent"></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field *ngSwitchCase="'select'">
+                    <mat-label>{{field.title}}</mat-label>
+                    <mat-select [formControlName]="field.key">
+                        <mat-option *ngFor="let cc of field.select" [value]="cc">{{cc}}</mat-option>
+                    </mat-select>
                 </mat-form-field>
 
                 <mat-form-field *ngSwitchDefault>
@@ -89,7 +103,8 @@
                         <mat-error>Der Status muss eindeutig sein, diese Zahl wird bereits verwendet</mat-error>
                         }
                     </ng-container>
-                    <textarea *ngIf="field.type=='text'" matInput [placeholder]="field.title" [formControlName]="field.key"></textarea>
+                    <textarea *ngIf="field.type=='text'" matInput [placeholder]="field.title"
+                        [formControlName]="field.key"></textarea>
                     <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
                 </mat-form-field>
             </div>

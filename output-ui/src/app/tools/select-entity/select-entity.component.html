@@ -20,6 +20,9 @@
                 <ng-container *ngIf="ent['short_label']">
                     ({{ent['short_label']}})
                 </ng-container>
+                <ng-container *ngIf="ent['number']">
+                    ({{ent['number']}})
+                </ng-container>
             </mat-option>
         </mat-autocomplete>
     </mat-form-field>
