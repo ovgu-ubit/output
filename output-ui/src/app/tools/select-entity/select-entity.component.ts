@@ -140,6 +140,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
                   this.ent = data[0];
                   this.form.get('input').setValue(this.getValue())
                   this.selected.next(this.ent)
+                  this.updateEnts()
                 }
               })
             }
@@ -166,9 +167,10 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
               this.ent = data[0];
               this.form.get('input').setValue(this.getValue())
               this.selected.next(this.ent)
+              this.updateEnts()
             }
           })
-        }
+        } else if (dialogResult && dialogResult.id) this.serviceClass.update(dialogResult).subscribe();
         this.form.get('input').enable();
       });
     }
