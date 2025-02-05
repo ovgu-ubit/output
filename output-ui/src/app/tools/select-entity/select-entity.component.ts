@@ -124,7 +124,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
             width: "600px",
             data: {
               entity
-            }
+            },
+            disableClose: true
           });
           dialogRef1.afterClosed().subscribe(dialogResult => {
             this.form.get('input').enable();
@@ -150,7 +151,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
         width: "600px",
         data: {
           entity: this.ent
-        }
+        },
+        disableClose: true
       });
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult && dialogResult.updated) {
