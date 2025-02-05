@@ -88,6 +88,7 @@ import { SelectEntityComponent } from './tools/select-entity/select-entity.compo
 import { IdTableComponent } from './tools/id-table/id-table.component';
 import { AliasTableComponent } from './tools/alias-table/alias-table.component';
 import { SelectAuthorComponent } from './tools/select-author/select-author.component';
+import { WindowToolbarComponent } from './tools/window-toolbar/window-toolbar.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -145,7 +146,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         SelectEntityComponent,
         IdTableComponent,
         AliasTableComponent,
-        SelectAuthorComponent
+        SelectAuthorComponent,
+        WindowToolbarComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,

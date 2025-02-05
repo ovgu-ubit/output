@@ -1,23 +1,8 @@
-<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
-    <h1 mat-dialog-title style="color:white">Publikation</h1>
-    <div style="display: flex;justify-content: flex-end;">
-        <button mat-icon-button (click)="this.lock()" matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800"
-            [disabled]="this.disabled">
-            <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
-            <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
-        </button>
-        <div *ngIf="!this.disabled; else else1">
-            <button mat-icon-button (click)="this.action()" matTooltip="Publikation speichern"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
-            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </div>
-        <ng-template #else1>
-            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </ng-template>
-    </div>
-</mat-toolbar>
+<app-window-toolbar
+    name="Publikation"
+    [disabled]="this.disabled"
+    [parent]="this"
+    [lockable]="true"></app-window-toolbar>
 
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">

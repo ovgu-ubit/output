@@ -34,7 +34,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   serviceClass: EntityService<T, any>
 
   @Input() 
-  formComponent?: ComponentType<EntityFormComponent<T>>;
+  formComponent?: ComponentType<any>;
 
   @Output()
   selected = new EventEmitter<T>();

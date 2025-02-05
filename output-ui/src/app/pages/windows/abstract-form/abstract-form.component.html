@@ -1,18 +1,7 @@
-<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
-    <h1>{{this.name}}</h1>
-    <div style="display: flex;justify-content: flex-end;">
-        <div *ngIf="!this.disabled; else else1">
-            <button mat-icon-button (click)="this.action()" [matTooltip]="this.name + ' speichern'"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
-            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </div>
-        <ng-template #else1>
-            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </ng-template>
-    </div>
-</mat-toolbar>
+<app-window-toolbar
+    [name]="this.name"
+    [disabled]="this.disabled"
+    [parent]="this"></app-window-toolbar>
 <mat-dialog-content>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
