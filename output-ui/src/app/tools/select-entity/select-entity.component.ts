@@ -93,6 +93,10 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   }
 
   select(event) {
+    if (!event.value) {
+      this.selected.next(null)
+      return;
+    }
     if (this.disabled) {
       let dialogRef = this.dialog.open(this.formComponent, {
         width: "600px",
@@ -100,10 +104,6 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
           entity: this.ent
         }
       });
-      return;
-    }
-    if (!event.value) {
-      this.selected.next(null)
       return;
     }
     this.form.get('input').disable();
