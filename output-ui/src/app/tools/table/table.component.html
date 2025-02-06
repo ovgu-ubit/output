@@ -101,6 +101,10 @@
             </mat-checkbox>
           </td>
         </ng-container>
+        <ng-container matColumnDef="select-filter" sticky>
+          <th mat-header-cell *matHeaderCellDef style="width: 10px;">
+          </th>
+        </ng-container>
 
         <ng-container matColumnDef="edit">
           <th mat-header-cell *matHeaderCellDef style="width: 15px;">
@@ -114,6 +118,10 @@
             </button>
           </td>
         </ng-container>
+        <ng-container matColumnDef="edit-filter" sticky>
+          <th mat-header-cell *matHeaderCellDef style="width: 15px;">
+          </th>
+        </ng-container>
 
         <ng-container *ngFor="let col of headers;let idx = index">
           <ng-container [matColumnDef]="col.colName">
@@ -122,7 +130,8 @@
               <div class="numbered-sort-header">
                 <div style="display: flex;flex-direction: column;">
                   <mat-icon [ngClass]="{'top': true, 'active':renderHeader(col).asc }">arrow_drop_up</mat-icon>
-                  <mat-icon [ngClass]="{'bottom': true, 'active':renderHeader(col).asc === false }">arrow_drop_down</mat-icon>
+                  <mat-icon
+                    [ngClass]="{'bottom': true, 'active':renderHeader(col).asc === false }">arrow_drop_down</mat-icon>
                 </div>
                 <div>{{renderHeader(col).text}}</div>
               </div>
@@ -170,9 +179,17 @@
               <td mat-cell *matCellDef="let d" [innerHTML]="formatAuthors(d)"></td>
             </ng-container>
           </ng-container>
+          <ng-container [matColumnDef]="col.colName+'-filter'">
+            <th mat-header-cell *matHeaderCellDef>
+              <input matInput [placeholder]="col.colTitle+' filtern...'" type="text" style="width: 100%;"
+                (keyup)="filter()" [ngModel]="filterValues.get(col.colName)"
+                (ngModelChange)="filterValues.set(col.colName, $event)" />
+            </th>
+          </ng-container>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="headerNames; sticky: true"></tr>
+        <tr mat-header-row *matHeaderRowDef="headerNames; sticky: true" class="first-header-row"></tr>
+        <tr mat-header-row *matHeaderRowDef="headerNamesFilter; sticky: true" style="height: 0px;"></tr>
         <tr mat-row *matRowDef="let row; columns: headerNames;"></tr>
       </table>
     </div>

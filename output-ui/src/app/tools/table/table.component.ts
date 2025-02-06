@@ -73,6 +73,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   trunc: number = 60;
   headerNames = [];
+  headerNamesFilter = [];
   dataSource: MatTableDataSource<T>;
   dataSource2: MatTableDataSource<T>;
   alerts: Alert[] = [];
@@ -82,12 +83,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   id;
   public indexOptions: any;
 
+  filterValues: Map<string, string> = new Map();
+
   columnFilter: string = null;
   defaultFilterPredicate?: (data: any, filter: string) => boolean;
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
     public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
-    private publicationService: PublicationService, private store: Store) {  }
+    private publicationService: PublicationService, private store: Store) { }
 
   public ngOnInit(): void {
     this.loading = true;
@@ -109,7 +112,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         if (col) col.colTitle += ' ' + data
       }), concatMap(data => this.updateData()))
     }));
-    
+
     ob$ = merge(ob$, this.route.queryParamMap.pipe(map(params => {
       if (params.get('id')) {
         this.id = params.get('id');
@@ -122,6 +125,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     //adding the meta columns at the beginning
     this.headerNames.unshift('edit');
     this.headerNames.unshift('select');
+    this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
     this.pageForm = this.formBuilder.group({
       pageNumber: ['', [Validators.required, Validators.pattern("^[0-9]*$")]]
     });
@@ -157,12 +161,31 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     //adding the meta columns at the beginning
     this.headerNames.unshift('edit');
     this.headerNames.unshift('select');
+    this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
     this.selection.clear();
     this.dataSource.paginator = this.paginator;
     this.dataSource2.paginator = this.paginator2;
     /*this.dataSource.sort = this.sort;
     this.announceSortChange(this.sort);*/
     this.filterColumn();
+    this.dataSource.filterPredicate = function (data, filter): boolean {
+      /* if (filter.includes("*") || filter.includes("?")) {
+         let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+         let result = false;
+         for (let key of Object.keys(this.filterValues)) {
+           if (data[key]?.toString().toLowerCase().match(new RegExp(regex))) result=true
+         }
+         return result;
+       }
+       else {*/
+      let result = true
+      let filterJSON = JSON.parse(filter)
+      for (let key of Object.keys(filterJSON)) {
+        if (filterJSON[key]) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key])) 
+      }
+      return result;
+      //}
+    };
     if (this.id) {
       this.edit({ id: this.id });
     }
@@ -378,6 +401,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   public doFilter = (value: string) => {
     if (value !== null && value !== undefined) this.dataSource.filter = value.trim().toLocaleLowerCase();
   }
+  public filter() {
+    let filter = new Object();
+    this.filterValues.forEach((value, key) => {
+      filter[key] = value?.trim().toLocaleLowerCase();
+    })    
+    this.dataSource.filter = JSON.stringify(filter);
+  }
 
   /**
    * changes the filter to only be applied to the chosen column
@@ -462,34 +492,34 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     return `<a class="link-secondary" href="https://dx.doi.org/${doi}" target="_blank">${doi}</a>`;
   }
 
-  sort_state: {key:string, dir:SortDirection}[] = [];
+  sort_state: { key: string, dir: SortDirection }[] = [];
 
   announceSortChange(sortState: Sort) {
     this.sort_state = this.sort_state.filter(e => e.key !== sortState.active)
     if (sortState?.direction) {
-      this.sort_state.push({key:sortState.active, dir:sortState.direction});
+      this.sort_state.push({ key: sortState.active, dir: sortState.direction });
 
-      this.dataSource = new MatTableDataSource<T>(this.data.sort((a, b) => {
-        for (let i=0;i<this.sort_state.length;i++) {
+      this.dataSource.data = this.dataSource.data.sort((a, b) => {
+        for (let i = 0; i < this.sort_state.length; i++) {
           let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
           let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
           if (compare !== 0) return compare;
         }
         return 0;
-      }))
+      })
 
       this.dataSource.paginator = this.paginator;
     }
   }
 
-  renderHeader(col):{text:string, asc:boolean} {
+  renderHeader(col): { text: string, asc: boolean } {
     let sort = {
       text: '',
       asc: null
     };
-    for (let i=0;i<this.sort_state.length;i++) {
+    for (let i = 0; i < this.sort_state.length; i++) {
       if (this.sort_state[i].key === col.colName) {
-        sort.text = (i+1)+"";
+        sort.text = (i + 1) + "";
         if (this.sort_state[i].dir === 'asc') sort.asc = true;
         else sort.asc = false;
         break;
