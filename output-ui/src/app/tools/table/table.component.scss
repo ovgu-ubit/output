@@ -91,4 +91,14 @@ mat-toolbar {
   font-size: 10px!important;
   color: grey;
   size: 5px;
+  display: flex;
+}
+.numbered-sort-header .top {
+  margin-bottom:-8px
+}
+.numbered-sort-header .bottom {
+  margin-top: -8px
+}
+.numbered-sort-header .active {
+  color: white
 }
