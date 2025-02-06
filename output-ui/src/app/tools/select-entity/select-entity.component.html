@@ -4,7 +4,7 @@
         <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="auto"
             formControlName="input" (keydown.enter)="select($event.target)" #input_ent>
         <button *ngIf="this.formComponent" type="button" matSuffix mat-icon-button (click)="select(input_ent)"
-            [matTooltip]="this.name+' bearbeiten'" [matTooltipShowDelay]="800">
+            [matTooltip]="this.name+' bearbeiten'" [matTooltipShowDelay]="800" [disabled]="!input_ent.value">
             <ng-container *ngIf="this.exists; else else3">
                 <mat-icon *ngIf="!this.disabled; else else2">edit</mat-icon>
                 <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
