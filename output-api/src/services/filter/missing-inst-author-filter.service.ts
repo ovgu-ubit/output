@@ -19,6 +19,6 @@ export class MissingInstAuthorFilterService extends AbstractFilterService<Public
     }
 
     getName() {
-        return 'Kein*e Autor*in der Intitution zugeordnet'
+        return 'Kein*e Autor*in der Institution zugeordnet'
     }
 }
