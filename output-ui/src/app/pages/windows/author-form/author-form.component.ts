@@ -64,8 +64,9 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
   }
 
   setInst(event) {
+    if (!this.entity.institutes) this.entity.institutes = [];
     if (!this.entity.institutes.find(e => e.id === event.id)) this.entity.institutes.push(event)
-    this.table.dataSource = new MatTableDataSource<Institute>(this.entity.institutes);
+    if (this.table) this.table.dataSource = new MatTableDataSource<Institute>(this.entity.institutes);
   }
 
   deleteAlias(elem: { alias: string, first_name: boolean }) {
@@ -79,6 +80,10 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
     if (this.disabled) return;
     if (this.aliasForm.invalid) return;
     if (this.aliasForm.get('first_name').value === undefined || this.aliasForm.get('first_name').value === null) return;
+
+    if (!this.entity.aliases_first_name) this.entity.aliases_first_name = [];
+    if (!this.entity.aliases_last_name) this.entity.aliases_last_name = [];
+
     if (this.aliasForm.get('first_name').value) {
       this.entity.aliases_first_name.push({
         alias: this.aliasForm.get('alias').value.toLocaleLowerCase().trim(),

@@ -45,7 +45,7 @@ export class AuthorController {
     })
     @ApiResponse({ status: 201, description: 'Saved objects are returned.' })
     async save(@Req() request: Request) {
-        return this.authorService.save(request.body);
+        return this.authorService.save([request.body]);
     }
 
     @Put()

@@ -427,6 +427,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   addInvoice(invoice?: Invoice) {
+    if (!this.pub.invoices) this.pub.invoices = [];
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
       maxWidth: "850px",
       data: {
@@ -458,6 +459,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
   addAuthorship(authorPub?) {
     if (this.disabled) return;
+    if (!this.pub.authorPublications) this.pub.authorPublications = [];
     let data = {};
     data = { entity: authorPub }
     let dialogRef = this.dialog.open(AuthorshipFormComponent, {
