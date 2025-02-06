@@ -37,9 +37,11 @@ export class PublicationController {
         isArray: true
     })
     all(@Query('yop') yop: number, @Req() request: Request) {
-        if (!yop) throw new BadRequestException('no reporting year');
-        let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
+        let year;
+        if (!yop) year = this.appConfigService.get("reporting_year");
+        else year = yop;
+        let beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+        let endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
         //Show all
         return this.repository.find({ where: [{ pub_date: Between(beginDate, endDate) }, ], relations: {
             oa_category: true,
@@ -112,8 +114,9 @@ export class PublicationController {
     @Put()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async update(@Body() body: Publication[]) {
-            return this.publicationService.update(body);
+    async update(@Body() body: Publication[] | Publication) {
+        if (Array.isArray(body)) return this.publicationService.update(body);
+        else return this.publicationService.update([body]);
     }
 
     @Delete()

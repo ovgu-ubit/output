@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="publishers" [headers]="headers" [parent]="this" [icon]="'account_balance'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'account_balance'"
+    #table nameSingle="Verlag" [serviceClass]="this.publisherService" [formComponent]="this.formComponent"
+    filter_key="publisher_id">
 </appTable>

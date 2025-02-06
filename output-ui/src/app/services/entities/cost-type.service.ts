@@ -2,31 +2,31 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { CostType } from '../../../../../output-interfaces/Publication';
 import { environment } from 'src/environments/environment';
+import { EntityService } from 'src/app/interfaces/service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class CostTypeService {
+export class CostTypeService implements EntityService<CostType, CostType> {
 
   constructor(private http: HttpClient) { }
 
-  public getCostTypes() {
+  public getAll() {
     return this.http.get<CostType[]>(environment.api + 'invoice/cost_type', { withCredentials: true });
   }
-  
-  public getCostType(id:number) {
+  public index(reporting_year:number) {
+    return this.getAll();
+  }
+  public getOne(id:number) {
     return this.http.get<CostType>(environment.api + 'invoice/cost_type/'+id, { withCredentials: true });
   }
-  
-  public insertCostType(ct:CostType) {
+  public add(ct:CostType) {
     return this.http.post<CostType>(environment.api + 'invoice/cost_type', ct, { withCredentials: true });
   }
-
-  public updateCostType(ct:CostType) {
+  public update(ct:CostType) {
     return this.http.put<CostType>(environment.api + 'invoice/cost_type', ct, { withCredentials: true });
   }
-
-  public deleteCostType(ct:CostType[]) {
-    return this.http.delete<CostType>(environment.api + 'invoice/cost_type', {body: ct, withCredentials: true });
+  public delete(ids:number[]) {
+    return this.http.delete<CostType[]>(environment.api + 'invoice/cost_type', {body: ids.map(e => ({ id: e })), withCredentials: true });
   }
 }

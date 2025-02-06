@@ -6,9 +6,11 @@ import { Cron } from '@nestjs/schedule';
 @Injectable()
 export class ReportItemService {
 
-    path = this.configService.get('LOG_PATH')
+    path:string;
 
-    constructor(private configService:ConfigService) { }
+    constructor(private configService:ConfigService) {
+        this.path = this.configService.get('LOG_PATH')
+     }
 
     createReport(type:'Import'|'Enrich'|'Check'|'Export', label:string,by_user:string): string {
         if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)

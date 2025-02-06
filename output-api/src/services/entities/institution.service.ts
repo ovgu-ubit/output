@@ -13,13 +13,15 @@ import { Publication } from '../../entity/Publication';
 @Injectable()
 export class InstitutionService {
 
-    repository: TreeRepository<Institute> = this.manager.getTreeRepository(Institute);
+    repository: TreeRepository<Institute>;
 
     constructor(@InjectEntityManager() private manager: EntityManager, private configService: ConfigService,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Author) private autRepository: Repository<Author>,
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
-        @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) { }
+        @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) {
+            this.repository = this.manager.getTreeRepository(Institute);
+         }
 
     public save(inst: any[]) {
         return this.repository.save(inst).catch(err => {
@@ -99,7 +101,7 @@ export class InstitutionService {
                 .leftJoin("publication", "pub", "aut_pub.\"publicationId\" = pub.id")
                 .leftJoin("author_institutes_institute", "aut_inst", "aut_inst.\"instituteId\" = institute.id")
                 .select("COUNT(distinct pub.id)", "pub_count")
-                .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_corr_count")
+                .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_count_corr")
                 .addSelect("COUNT(distinct aut_inst.\"authorId\")", "author_count_total")
                 .addSelect("COUNT(distinct id_descendant)-1","sub_inst_count")
                 .where("ic.id_ancestor = :id",{id:inst.id})

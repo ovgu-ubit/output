@@ -1,0 +1,102 @@
+<app-window-toolbar
+    [name]="this.name"
+    [disabled]="this.disabled"
+    [parent]="this"></app-window-toolbar>
+<mat-dialog-content>
+    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+        (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
+        <ng-container *ngFor="let field of this.fields; let i = index;">
+            <div [ngSwitch]="field.type">
+                <mat-checkbox *ngSwitchCase="'boolean'" [formControlName]="field.key">{{field.title}}</mat-checkbox>
+
+                <app-alias-table *ngSwitchCase="'alias_table'" [name]="this.name" [disabled]="this.disabled"
+                    [entity]="this.entity"></app-alias-table>
+
+                <mat-expansion-panel *ngSwitchCase="'doi_table'">
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>
+                            DOI-Präfixe
+                        </mat-panel-title>
+                        <mat-panel-description>
+                            Institutionsteil der DOI beginnend mit 10. bis zum /
+                        </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <table #table_doi *ngIf="this.entity?.doi_prefixes && this.entity.doi_prefixes.length>0" mat-table
+                        [dataSource]="this.entity.doi_prefixes">
+                        <ng-container matColumnDef="doi_prefix">
+                            <th mat-header-cell *matHeaderCellDef> Präfix </th>
+                            <td mat-cell *matCellDef="let element"> {{element.doi_prefix}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="delete">
+                            <th mat-header-cell *matHeaderCellDef> </th>
+                            <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                    (click)="this.deletePrefix(element)" matTooltip="Präfix löschen"
+                                    [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="['doi_prefix','delete']"></tr>
+                        <tr mat-row *matRowDef="let row; columns: ['doi_prefix','delete'];"></tr>
+                    </table>
+                    <form [formGroup]="prefixForm" style="display: flex;gap:5px">
+                        <mat-form-field appearance="fill">
+                            <mat-label>DOI-Prefix</mat-label>
+                            <input matInput placeholder="10." formControlName="doi_prefix" />
+                        </mat-form-field>
+                        <button matSuffix mat-icon-button type="button" (click)="this.addPrefix()"
+                            matTooltip="Präfix hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                    </form>
+                </mat-expansion-panel>
+
+                <app-id-table *ngSwitchCase="'id_table'" [disabled]="this.disabled"
+                    [entity]="this.entity"></app-id-table>
+
+                <app-select-entity *ngSwitchCase="'publisher'" name="Verlag" [disabled]="this.disabled"
+                    [serviceClass]="this.publisherService" [formComponent]="this.publisherForm"
+                    (selected)="this.setPublisher($event)"
+                    [ent]="this.entity? this.entity['publisher'] : undefined"></app-select-entity>
+
+                <app-select-entity *ngSwitchCase="'cost_type'" name="Kostenart" [disabled]="this.disabled"
+                    [serviceClass]="this.ctService" [formComponent]="this.ctForm"
+                    (selected)="this.setCostType($event)"
+                    [ent]="this.entity? this.entity['cost_type'] : undefined"></app-select-entity>
+
+                <mat-form-field *ngSwitchCase="'date'">
+                    <mat-label>{{field.title}}</mat-label>
+                    <input matInput [matDatepicker]="i" [formControlName]="field.key">
+                    <mat-hint>T.M.JJJJ</mat-hint>
+                    <mat-datepicker-toggle matIconSuffix [for]="i"></mat-datepicker-toggle>
+                    <mat-datepicker #i [startAt]="this.entity && this.entity[field.key]? this.entity[field.key] : today"
+                        startView="year" color="accent"></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field *ngSwitchCase="'select'">
+                    <mat-label>{{field.title}}</mat-label>
+                    <mat-select [formControlName]="field.key">
+                        <mat-option *ngFor="let cc of field.select" [value]="cc">{{cc}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field *ngSwitchDefault>
+                    <mat-label>{{field.title}}</mat-label>
+                    <input *ngIf="field.type === 'number'" matInput [type]="'number'" [placeholder]="field.title"
+                        [formControlName]="field.key" />
+                    <ng-container *ngIf="field.type === 'status'">
+                        <input matInput [type]="'number'" [placeholder]="field.title" [formControlName]="field.key" />
+                        @if (this.form.errors?.status_pattern) {
+                        <mat-error>Der Status muss eine nicht-negative Zahl sein</mat-error>
+                        }
+                        @if (this.form.errors?.status_required) {
+                        <mat-error>Der Status muss angeben werden</mat-error>
+                        }
+                        @if (this.form.errors?.status_notUnique) {
+                        <mat-error>Der Status muss eindeutig sein, diese Zahl wird bereits verwendet</mat-error>
+                        }
+                    </ng-container>
+                    <textarea *ngIf="field.type=='text'" matInput [placeholder]="field.title"
+                        [formControlName]="field.key"></textarea>
+                    <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
+                </mat-form-field>
+            </div>
+        </ng-container>
+    </form>
+</mat-dialog-content>

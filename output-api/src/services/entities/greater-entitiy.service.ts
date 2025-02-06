@@ -165,7 +165,7 @@ export class GreaterEntityService {
             if (res.doaj_since === null && aut.doaj_since !== null) res.doaj_since = aut.doaj_since;
             if (res.doaj_until === null && aut.doaj_until !== null) res.doaj_until = aut.doaj_until;
             if (!res.identifiers) res.identifiers = [];
-            res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
+            res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
         }
         
         //update publication 1

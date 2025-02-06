@@ -1,23 +1,8 @@
-<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
-    <h1 mat-dialog-title style="color:white">Publikation</h1>
-    <div style="display: flex;justify-content: flex-end;">
-        <button mat-icon-button (click)="this.lock()" matTooltip="Publikation (ent)sperren" [matTooltipShowDelay]="800"
-            [disabled]="this.disabled">
-            <mat-icon *ngIf="this.pub?.locked">lock</mat-icon>
-            <mat-icon *ngIf="!this.pub?.locked">lock_open</mat-icon>
-        </button>
-        <div *ngIf="!this.disabled; else else1">
-            <button mat-icon-button (click)="this.action()" matTooltip="Publikation speichern"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
-            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </div>
-        <ng-template #else1>
-            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </ng-template>
-    </div>
-</mat-toolbar>
+<app-window-toolbar
+    name="Publikation"
+    [disabled]="this.disabled"
+    [parent]="this"
+    [lockable]="true"></app-window-toolbar>
 
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
@@ -60,40 +45,8 @@
                     Andere Identifikatoren
                 </mat-panel-title>
             </mat-expansion-panel-header>
-            <table #tableID *ngIf="this.pub?.identifiers && this.pub.identifiers.length>0" mat-table
-                [dataSource]="this.pub.identifiers">
-                <ng-container matColumnDef="type">
-                    <th mat-header-cell *matHeaderCellDef> Art </th>
-                    <td mat-cell *matCellDef="let element"> {{element.type}} </td>
-                </ng-container>
-
-                <ng-container matColumnDef="value">
-                    <th mat-header-cell *matHeaderCellDef> Wert </th>
-                    <td mat-cell *matCellDef="let element"> {{element.value}} </td>
-                </ng-container>
-
-                <ng-container matColumnDef="delete">
-                    <th mat-header-cell *matHeaderCellDef> </th>
-                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                            (click)="this.deleteId(element)" matTooltip="Identifikator löschen"
-                            [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="displayedColumnsId"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumnsId;"></tr>
-            </table>
-            <form [formGroup]="idForm" style="display: flex;gap:5px">
-                <mat-form-field appearance="fill">
-                    <mat-label>Art</mat-label>
-                    <input matInput placeholder="Art" formControlName="type" />
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                    <mat-label>Wert</mat-label>
-                    <input matInput placeholder="Wert" formControlName="value" />
-                </mat-form-field>
-                <button matSuffix mat-icon-button type="button" (click)="this.addId()"
-                    matTooltip="Identifikator hinzufügen" [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
-            </form>
+           
+            <app-id-table [disabled]="this.disabled" [entity]="this.pub"></app-id-table>
         </mat-expansion-panel><br>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -172,7 +125,8 @@
                             <ng-container matColumnDef="delete">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.deleteAuthorship(element)" matTooltip="Beteiligte Person entfernen"
+                                        (click)="this.deleteAuthorship(element)"
+                                        matTooltip="Beteiligte Person entfernen"
                                         [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>delete</mat-icon></button>
                                 </td>
                             </ng-container>
@@ -203,58 +157,27 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Publikationstyp</mat-label>
-                    <mat-select formControlName="pub_type">
-                        <mat-option [value]="-1"></mat-option>
-                        <mat-option *ngFor="let pub_type of this.pub_types"
-                            [value]="pub_type.id">{{pub_type.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <app-select-entity name="Publikationstyp"
+                            [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                            [serviceClass]="this.pubTypeService" [formComponent]="this.ptForm"
+                            (selected)="this.setPubType($event)" 
+                            [ent]="this.pub? this.pub.pub_type : undefined"></app-select-entity>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Größere Einheit</mat-label>
-                    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoGe"
-                        formControlName="ge" (keydown.enter)="addGreaterEntity($event.target)" #input_ge>
-                    <button type="button" matSuffix mat-icon-button (click)="addGreaterEntity(input_ge)"
-                        matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon
-                            *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else2">edit</mat-icon>
-                        <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
-                    </button>
-                    <mat-autocomplete #autoGe="matAutocomplete" (optionSelected)="selectedGE($event)">
-                        <mat-option *ngFor="let greater_entity of this.filtered_greater_entities | async"
-                            [value]="greater_entity.label">
-                            {{greater_entity.label}}
-                            <ng-container *ngIf="greater_entity.identifiers && greater_entity.identifiers.length > 0">
-                                (<ng-container
-                                    *ngFor="let ide of greater_entity.identifiers">{{ide.value}}&nbsp;</ng-container>)
-                            </ng-container>
-                        </mat-option>
-                    </mat-autocomplete>
-                    <mat-hint>{{this.pub?.greater_entity?.rating}}</mat-hint>
-                </mat-form-field>
+                <app-select-entity name="Größere Einheit"
+                            [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                            [serviceClass]="this.geService" [formComponent]="this.geForm"
+                            (selected)="this.setGE($event)" 
+                            [ent]="this.pub? this.pub.greater_entity : undefined"></app-select-entity>
+                <div style="float:left;margin-top: -20px;">{{this.pub?.greater_entity?.rating}}</div>
 
                 <mat-checkbox formControlName="peer_reviewed"
                     *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Verlag</mat-label>
-                    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoPublisher"
-                        formControlName="publ" (keydown.enter)="addPublisher($event.target)" #input_publ>
-                    <button type="button" matSuffix mat-icon-button (click)="addPublisher(input_publ)"
-                        matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon
-                            *ngIf="!this.disabled && !this.pub?.locked_biblio && !this.pub?.locked; else else3">edit</mat-icon>
-                        <ng-template #else3><mat-icon>remove_red_eye</mat-icon></ng-template>
-                    </button>
-                    <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPubl($event)">
-                        <mat-option *ngFor="let publisher of this.filtered_publishers | async"
-                            [value]="publisher.label">
-                            {{publisher.label}}
-                        </mat-option>
-                    </mat-autocomplete>
-                </mat-form-field>
+                <app-select-entity name="Verlag"
+                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                    [serviceClass]="this.publisherService" [formComponent]="this.publisherForm"
+                    (selected)="this.setPublisher($event)"
+                    [ent]="this.pub? this.pub.publisher : undefined"></app-select-entity>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Publikationsdatum</mat-label>
@@ -294,13 +217,12 @@
                         color="accent"></mat-datepicker>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Sprache</mat-label>
-                    <mat-select formControlName="language">
-                        <mat-option [value]="-1"></mat-option>
-                        <mat-option *ngFor="let lang of this.langs" [value]="lang.id">{{lang.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <app-select-entity name="Sprache"
+                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+                    [serviceClass]="this.languageService"
+                    (selected)="this.setLang($event)"
+                    [ent]="this.pub? this.pub.language : undefined"></app-select-entity>
+                    
                 <mat-card
                     *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
@@ -362,14 +284,11 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>OA-Kategorie</mat-label>
-                    <mat-select formControlName="oa_cat">
-                        <mat-option [value]="-1"></mat-option>
-                        <mat-option *ngFor="let oa_cat of this.oa_categories"
-                            [value]="oa_cat.id">{{oa_cat.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <app-select-entity name="OA-Kategorie"
+                    [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                    [serviceClass]="this.oaService" [formComponent]="this.oaForm"
+                    (selected)="this.setOA($event)"
+                    [ent]="this.pub? this.pub.oa_category : undefined"></app-select-entity>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Zweitveröffentlichung</mat-label>
@@ -422,22 +341,11 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Vertrag</mat-label>
-                    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoContract"
-                        formControlName="contr" (keydown.enter)="addContract($event.target)" #input_contr>
-                    <button type="button" matSuffix mat-icon-button (click)="addContract(input_contr)"
-                        matTooltip="Element bearbeiten" [matTooltipShowDelay]="800">
-                        <mat-icon
-                            *ngIf="!this.disabled && !this.pub?.locked_finance && !this.pub?.locked; else else4">edit</mat-icon>
-                        <ng-template #else4><mat-icon>remove_red_eye</mat-icon></ng-template>
-                    </button>
-                    <mat-autocomplete #autoContract="matAutocomplete" (optionSelected)="selectedContr($event)">
-                        <mat-option *ngFor="let contract of this.filtered_contracts | async" [value]="contract.label">
-                            {{contract.label}}
-                        </mat-option>
-                    </mat-autocomplete>
-                </mat-form-field>
+                <app-select-entity name="Vertrag"
+                    [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                    [serviceClass]="this.contractService" [formComponent]="this.contractForm"
+                    (selected)="this.setContract($event)"
+                    [ent]="this.pub? this.pub.contract : undefined"></app-select-entity>
 
                 <mat-card
                     *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
@@ -483,35 +391,32 @@
                             hinzufügen</button>
                     </mat-card-actions>
                 </mat-card><br>
-                
+
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Kostenansatz in EUR</mat-label>
-                    <input matInput [type]="'number'" placeholder="Kostenansatz in EUR" formControlName="cost_approach" />
+                    <input matInput [type]="'number'" placeholder="Kostenansatz in EUR"
+                        formControlName="cost_approach" />
                 </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Förderer</mat-label>
-                    <mat-chip-grid #funder_list [disabled]="this.disabled || this.pub?.locked">
-                        <mat-chip-row [removable]="true" *ngFor="let funder of this.pub?.funders"
-                            (removed)="removeFunder(funder)">
-                            {{funder.label}}
-                            <button matChipRemove
-                                *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
-                                <mat-icon>cancel</mat-icon>
-                            </button>
-                        </mat-chip-row>
-                    </mat-chip-grid>
-                    <input matInput #funderInput formControlName="funder" placeholder="Föderer hinzufügen"
-                        [matAutocomplete]="autoFunder" [matChipInputFor]="funder_list"
-                        (matChipInputTokenEnd)="addFunder($event)" [matChipInputSeparatorKeyCodes]="[]"
-                        (keydown.enter)="addFunder($event.target)">
-                    <mat-autocomplete #autoFunder="matAutocomplete" (optionSelected)="selectedFunder($event)">
-                        <mat-option *ngFor="let funder of filteredFunders | async" [value]="funder.label">
-                            {{funder.label}}
-                        </mat-option>
-                    </mat-autocomplete>
-                </mat-form-field>
-
+                <mat-card>
+                    <mat-card-header><mat-card-subtitle>Förderer</mat-card-subtitle></mat-card-header>
+                    <mat-card-content>
+                        <app-select-entity name="Förderer"
+                            [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                            [serviceClass]="this.funderService" [formComponent]="this.funderForm"
+                            (selected)="this.setFunder($event)" [resetOnSelect]="true"></app-select-entity>
+                        <mat-chip-set [disabled]="this.disabled || this.pub?.locked">
+                            <mat-chip [removable]="true" *ngFor="let funder of this.pub?.funders"
+                                (removed)="removeFunder(funder)">
+                                {{funder.label}}
+                                <button matChipRemove
+                                    *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
+                                    <mat-icon>cancel</mat-icon>
+                                </button>
+                            </mat-chip>
+                        </mat-chip-set>
+                    </mat-card-content>
+                </mat-card>
             </mat-expansion-panel>
 
             <mat-expansion-panel>

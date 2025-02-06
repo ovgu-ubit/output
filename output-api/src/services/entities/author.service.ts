@@ -210,7 +210,7 @@ export class AuthorService {
             .addSelect("a.last_name", "last_name")
             .addSelect("COUNT(b)", "pub_count_total")
             .addSelect("a.institutes", "institutes")
-            .addSelect("SUM(CASE WHEN b.pub_date >= '"+beginDate.toISOString()+"' and b.pub_date <= '"+endDate.toISOString()+"' and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_corr_count")
+            .addSelect("SUM(CASE WHEN b.pub_date >= '"+beginDate.toISOString()+"' and b.pub_date <= '"+endDate.toISOString()+"' and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
             .addSelect("SUM(CASE WHEN b.pub_date >= '"+beginDate.toISOString()+"' and b.pub_date <= '"+endDate.toISOString()+"' THEN 1 ELSE 0 END)", "pub_count")
             .groupBy("a.id")
             .addGroupBy("a.orcid")

@@ -1,29 +1,23 @@
-import { SelectionModel } from '@angular/cdk/collections';
-import { Location } from '@angular/common';
+import { Clipboard } from '@angular/cdk/clipboard';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Clipboard } from '@angular/cdk/clipboard';
-import { ActivatedRoute, ParamMap, Router, UrlSerializer } from '@angular/router';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, concat, concatMap, concatWith, firstValueFrom, map, merge, of, takeUntil } from 'rxjs';
+import { Observable, concatMap, map, merge } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
+import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectReportingYear, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
-import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
+import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
 import { FilterViewComponent } from '../../tools/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../windows/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../windows/reporting-year-form/reporting-year-form.component';
-import { DeletePublicationDialogComponent } from 'src/app/tools/delete-publication-dialog/delete-publication-dialog.component';
-import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../output-interfaces/Config';
-import { ConfigService } from 'src/app/services/config.service';
-import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
 
 @Component({
   selector: 'app-publications',
@@ -31,17 +25,14 @@ import { DoiFormComponent } from '../windows/doi-form/doi-form.component';
   styleUrls: ['./publications.component.css']
 })
 export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
-  constructor(private publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
-    private location: Location, private router: Router, private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
+  constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
+    private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService: ConfigService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
 
-  reporting_year: number;
-  filter: { filter: SearchFilter, paths?: string[] };
-  id;
-  doi_import_service:string;
+  indexOptions?: { soft: boolean, filter: SearchFilter, paths?: string[] };
 
   soft_deletes = false;
 
@@ -56,25 +47,17 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       ]
     },
     { title: 'Sperren', action_function: this.lockSelected.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Hinzufügen', action_function: this.addPublication.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Löschen', action_function: this.deleteSelected.bind(this), roles: ['writer', 'admin'] },
-    { title: 'Zusammenführen', action_function: this.combine.bind(this), roles: ['writer', 'admin'] },
   ];
-  loading: boolean;
-  selection: SelectionModel<any> = new SelectionModel<PublicationIndex>(true, []);
 
-  destroy$ = new Subject();
+  formComponent = PublicationFormComponent;
 
-  @ViewChild(TableComponent) table: TableComponent<PublicationIndex>;
+  @ViewChild(TableComponent) table: TableComponent<PublicationIndex, Publication>;
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
   ];
-
-  publications: PublicationIndex[] = [];
   viewConfig: ViewConfig;
 
-  ngOnInit(): void {
-    this.loading = true;
+  preProcessing() {
     let ob$: Observable<any> = this.enrichService.getEnrichs().pipe(map(data => {
       let sub_buttons = data.map(e => {
         return {
@@ -87,7 +70,8 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
         title: 'Anreichern mit', action_function: () => { }, sub_buttons, roles: ['admin']
       })
     }))
-    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(map(data => {
+
+    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
       if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
       if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
@@ -107,150 +91,33 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
-    })))
-    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
-      this.doi_import_service = data;
-    })))
-    ob$ = concat(ob$, this.configService.getInstition().pipe(map(data => {
-      this.institution = data.short_label;
-      let header = this.headers.find(e => e.colName === 'authors_inst')
-      if (header) header.colTitle = 'Autoren ' + this.institution;
+      return this.configService.getInstition().pipe(map(data => {
+        this.institution = data.short_label;
+        let header = this.headers.find(e => e.colName === 'authors_inst')
+        if (header) header.colTitle = 'Autoren ' + this.institution;
+      }))
     })))
 
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
-        if (params.get('id')) {
-          this.id = params.get('id');
-        }
-        this.filter = this.queryToFilter(params);
-        if (this.filter) this.viewConfig = { ...this.viewConfig, filter: this.filter }
+        let filter = this.queryToFilter(params);
+        if (filter) this.viewConfig = { ...this.viewConfig, filter }
+
+        this.indexOptions = { soft: false, filter: this.viewConfig.filter?.filter, paths: this.viewConfig.filter?.paths }
       }));
     })));
-    ob$ = ob$.pipe(concatMap(data => {
-      return this.store.select(selectReportingYear).pipe(concatMap(data => {
-        let ob1$: Observable<any>
-        if (data) {
-          ob1$ = of(data);
-        } else {
-          ob1$ = this.publicationService.getDefaultReportingYear();
-        }
-        return ob1$.pipe(map(data => {
-          this.reporting_year = data;
-        }));
-      }));
-    }))
 
-    ob$ = ob$.pipe(concatMap(data => {
-      if (!this.viewConfig?.filter || this.viewConfig?.filter.filter.expressions.length === 0 && this.viewConfig?.filter.paths.length === 0) {
-        return this.publicationService.index(this.reporting_year).pipe(map(data => {
-          this.publications = data;
-          this.name = 'Publikationen des Jahres ' + this.reporting_year;
-          this.table.update(this.publications);
-          this.loading = false;
-          if (this.id) {
-            this.edit({ id: this.id });
-          }
-        }));
-      } else {
-        return this.publicationService.filter(this.viewConfig.filter.filter, this.viewConfig.filter.paths).pipe(map(data => {
-          this.publications = data;
-          this.filter = this.viewConfig.filter;
-          this.name = 'Gefilterte Publikationen';
-          this.table.update(this.publications);
-          this.loading = false;
-          if (this.id) {
-            this.edit({ id: this.id });
-          }
-        }))
-      }
-    }))
-    ob$.pipe(takeUntil(this.destroy$)).subscribe({
-      next: data => {
+    return ob$;
+  }
 
-      }, error: err => {
-        this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
-      }
-    })
-    window.onbeforeunload = () => this.ngOnDestroy();
+  ngOnInit(): void {
   }
 
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
+      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
     }))
-    this.destroy$.next('');
-  }
-
-  update(soft?: boolean): void {
-    this.loading = true;
-    if (!soft && (!this.filter || (this.filter.filter.expressions.length === 0 && this.filter.paths.length === 0))) this.publicationService.index(this.reporting_year).subscribe({
-      next: data => {
-        this.loading = false;
-        this.publications = data;
-        this.name = 'Publikationen des Jahres ' + this.reporting_year;
-        this.soft_deletes = false;
-        this.table.update(this.publications);
-      }, error: err => console.log(err)
-    });
-    else if (!soft && this.filter && (this.filter.filter.expressions.length > 0 || this.filter.paths.length > 0)) this.publicationService.filter(this.filter.filter, this.filter.paths).subscribe({
-      next: data => {
-        this.loading = false;
-        this.publications = data;
-        this.name = 'Gefilterte Publikationen'
-        this.soft_deletes = false;
-        this.table.update(this.publications);
-      }, error: err => console.log(err)
-    });
-    else if (soft) this.publicationService.softIndex().subscribe({
-      next: data => {
-        this.loading = false;
-        this.publications = data;
-        this.name = 'Soft-deleted Publikationen';
-        this.table.update(this.publications);
-        this.soft_deletes = true;
-      }, error: err => console.log(err)
-    });
-  }
-
-  edit(row: any) {
-    this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
-    let dialogRef = this.dialog.open(PublicationFormComponent, {
-      width: '800px',
-      maxHeight: "90%",
-      data: {
-        id: row.id
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      this.location.replaceState(this.router.url.split('?')[0])
-      if (result && result.title) {
-        this.publicationService.save([result]).subscribe({
-          next: data => {
-            this._snackBar.open(`Publikation geändert`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update(this.soft_deletes);
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      } else if (result && result.id) {
-        this.publicationService.save([result]).subscribe();
-      }
-    });
   }
 
   changeReportingYear() {
@@ -258,32 +125,32 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
       width: '400px',
       disableClose: true,
       data: {
-        reporting_year: this.reporting_year
+        reporting_year: this.table?.reporting_year
       }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.reporting_year = result;
-        this.store.dispatch(setReportingYear({ reporting_year: this.reporting_year }))
-        this.update();
+        this.table.reporting_year = result;
+        this.store.dispatch(setReportingYear({ reporting_year: this.table.reporting_year }))
+        this.table.updateData().subscribe();
       }
     });
   }
 
   lockSelected() {
-    if (this.selection.selected.length === 0) return;
+    if (this.table.selection.selected.length === 0) return;
     let save = []
-    for (let pub of this.selection.selected) {
+    for (let pub of this.table.selection.selected) {
       save.push({ id: pub.id, locked: !pub.locked });
     }
-    this.publicationService.save(save).subscribe({
+    this.publicationService.updateAll(save).subscribe({
       next: data => {
         this._snackBar.open(`Sperr-Status von ${data} Publikationen geändert`, 'Super!', {
           duration: 5000,
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update(this.soft_deletes);
+        this.table.updateData().subscribe();
       }, error: err => {
         this._snackBar.open(`Fehler beim Ändern der Publikation`, 'Oh oh!', {
           duration: 5000,
@@ -295,174 +162,10 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     })
   }
 
-  deleteSelected() {
-    if (this.selection.selected.length === 0) return;
-
-    let dialogRef = this.dialog.open(DeletePublicationDialogComponent, {
-      maxWidth: "400px",
-      data: {
-        pubs: this.selection.selected,
-        soft: this.soft_deletes
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(dialogResult => {
-      if (dialogResult) {
-        this.publicationService.delete(this.selection.selected.map(e => { return { id: e.id } }), dialogResult.soft).subscribe({
-          next: data => {
-            this._snackBar.open(`${data['affected']} Publikationen gelöscht`, 'Super!', {
-              duration: 5000,
-              panelClass: [`success-snackbar`],
-              verticalPosition: 'top'
-            })
-            this.update(this.soft_deletes);
-          }, error: err => {
-            this._snackBar.open(`Fehler beim Löschen der Publikation`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        })
-      }
-    });
-  }
-
-  addPublication() {
-    let dialogRef = this.dialog.open(DoiFormComponent, {
-      width: '800px',
-      maxHeight: '800px',
-      data: {
-      },
-      disableClose: true
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (!result) return;
-      if (!result.doi) {
-        let dialogRef1 = this.dialog.open(PublicationFormComponent, {
-          width: '800px',
-          maxHeight: '800px',
-          data: {
-          },
-          disableClose: true
-        });
-        dialogRef1.afterClosed().subscribe(result => {
-          if (result) {
-            let pubInit = JSON.parse(JSON.stringify(result));
-            pubInit.authorPublications = [];
-            this.publicationService.insert(pubInit).subscribe({
-              next: data => {
-                if (Array.isArray(data)) data = data[0]
-                result.id = data.id;
-                for (let autPub of result.authorPublications) {
-                  autPub.publicationId = data.id;
-                }
-                this.publicationService.save([result]).subscribe({
-                  next: data => {
-                    this._snackBar.open(`Publikation hinzugefügt`, 'Super!', {
-                      duration: 5000,
-                      panelClass: [`success-snackbar`],
-                      verticalPosition: 'top'
-                    })
-                    this.update()
-                  }, error: err => {
-                    if (err.status === 400) {
-                      this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                        duration: 5000,
-                        panelClass: [`danger-snackbar`],
-                        verticalPosition: 'top'
-                      })
-                    } else {
-                      this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                        duration: 5000,
-                        panelClass: [`danger-snackbar`],
-                        verticalPosition: 'top'
-                      })
-                      console.log(err);
-                    }
-                  }
-                })
-              }, error: err => {
-                if (err.status === 400) {
-                  this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-                    duration: 5000,
-                    panelClass: [`danger-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                } else {
-                  this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-                    duration: 5000,
-                    panelClass: [`danger-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  console.log(err);
-                }
-              }
-            })
-          }
-
-        });
-      }
-      else {
-        let pub: Publication = {
-          doi: result.doi,
-          dataSource: 'Manuell per DOI hinzugefügt'
-        }
-        this.publicationService.insert(pub).subscribe({
-          next: data => {
-            if (!Array.isArray(data)) return;
-            let id = [data[0].id]
-            this.filter = {
-              filter: {
-                expressions: [
-                  {
-                    op: JoinOperation.AND,
-                    key: 'id',
-                    comp: CompareOperation.EQUALS,
-                    value: id[0]
-                  }
-                ]
-              }
-            }
-            this.enrichService.startID(this.doi_import_service, id).subscribe({
-              next: data => {
-                this.update(); 
-                this._snackBar.open(`Publikation hinzugefügt, bitte Seite aktualisieren`, 'Super!', {
-                  duration: 5000,
-                  panelClass: [`success-snackbar`],
-                  verticalPosition: 'top'
-                })
-                window.location.reload()
-              }, error: err => {
-                this._snackBar.open(`Publikation konnte nicht angereichert werden`, 'Hmm ok.', {
-                  duration: 5000,
-                  panelClass: [`danger-snackbar`],
-                  verticalPosition: 'top'
-                })
-                console.log(err);
-              }
-            })
-
-          }, error: err => {
-            this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
-            console.log(err);
-          }
-        });
-      }
-    });
-
-
-  }
-
   startEnrich(name: string) {
-    if (this.selection.selected.length === 0) return;
+    if (this.table.selection.selected.length === 0) return;
     let save = []
-    for (let pub of this.selection.selected) {
+    for (let pub of this.table.selection.selected) {
       if (!pub.locked) save.push(pub.id);
     }
     this.enrichService.startID(name, save).subscribe({
@@ -472,53 +175,13 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'
         })
-        this.update(this.soft_deletes);
+        this.table.updateData().subscribe();
       }
     })
   }
 
-  combine() {
-    if (this.selection.selected.length < 2) {
-      this._snackBar.open(`Bitte selektieren Sie min. zwei Publikationen`, 'Alles klar!', {
-        duration: 5000,
-        panelClass: [`warning-snackbar`],
-        verticalPosition: 'top'
-      })
-    } else {
-      //selection dialog
-      let dialogRef = this.dialog.open(CombineDialogComponent<Publication>, {
-        width: '800px',
-        maxHeight: '800px',
-        data: {
-          ents: this.selection.selected
-        },
-        disableClose: true
-      });
-      dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          this.publicationService.combine(result.id, this.selection.selected.filter(e => e.id !== result.id).map(e => e.id)).subscribe({
-            next: data => {
-              this._snackBar.open(`Publikationen wurden zusammengeführt`, 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.update(this.soft_deletes);
-            }, error: err => {
-              this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-                duration: 5000,
-                panelClass: [`danger-snackbar`],
-                verticalPosition: 'top'
-              })
-              console.log(err);
-            }
-          })
-        }
-      });
-    }
-  }
-
   resetView() {
+    this.name = 'Publikationen des Jahres ' + this.table.reporting_year;
     this._snackBar.open(`Ansicht wurde zurückgesetzt`, 'Super!', {
       duration: 5000,
       panelClass: [`success-snackbar`],
@@ -527,8 +190,12 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
     this.viewConfig = initialState.viewConfig
-    this.filter = null;
-    this.update();
+    this.indexOptions = {
+      soft: false,
+      filter: null,
+      paths: null
+    }
+    this.table.updateData().subscribe();
   }
 
   extendedFilters() {
@@ -542,48 +209,22 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.filter = result;
         this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
-        if (result.filter.expressions.length > 0 || result.paths.length > 0) this.publicationService.filter(result.filter, result.paths).subscribe({
-          next: data => {
-            if (data.length === 0) {
-              this._snackBar.open(`Keine Publikationen gefunden`, 'Na gut...', {
-                duration: 5000,
-                panelClass: [`warning-snackbar`],
-                verticalPosition: 'top'
-              })
-            } else {
-              this._snackBar.open(`${data.length} Publikationen gefiltert`, 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              });
-            }
-            this.publications = data;
-            this.name = 'Gefilterte Publikationen';
-            this.table.update(this.publications);
-          },
-          error: err => {
-            this._snackBar.open(`Filter kann nicht angewandt werden, bitte anpassen`, 'Puh...', {
-              duration: 5000,
-              panelClass: [`danger-snackbar`],
-              verticalPosition: 'top'
-            })
+        if (result.filter.expressions.length > 0 || result.paths.length > 0) {
+          this.name = 'Gefilterte Publikationen';
+          this.indexOptions = {
+            soft: false,
+            filter: result.filter,
+            paths: result.paths
           }
-        });
-        else {
-          this._snackBar.open(`Alle Filter zurückgesetzt`, 'Super!', {
-            duration: 5000,
-            panelClass: [`success-snackbar`],
-            verticalPosition: 'top'
-          });
-          this.update()
-        }
+          this.table.updateData().subscribe();
+        } else this.resetView()
       }
-    });
+    })
   }
 
   softdeletes() {
+    this.name = 'Soft-deleted Publikationen';
     this._snackBar.open(`Ansicht wurde geändert`, 'Super!', {
       duration: 5000,
       panelClass: [`success-snackbar`],
@@ -591,13 +232,17 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
-    this.filter = null;
-    this.update(true);
+    this.indexOptions = {
+      soft: true,
+      filter: null,
+      paths: null
+    }
+    this.table.updateData().subscribe()
   }
 
   createLink() {
     this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: this.filter }
+      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
     }))
     let link = environment.self + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
@@ -610,16 +255,16 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
   }
 
   filterToQuery(): string {
-    if (!this.filter) return '';
+    if (!this.indexOptions) return '';
     let res = '?';
-    for (let expr of this.filter.filter.expressions) {
+    if (this.indexOptions.filter) for (let expr of this.indexOptions.filter.expressions) {
       res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
     }
-    if (this.filter.filter.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
-    for (let path of this.filter.paths) {
+    if (this.indexOptions.filter?.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
+    if (this.indexOptions.paths) for (let path of this.indexOptions.paths) {
       res += 'path=' + path + '&';
     }
-    if (this.filter.paths.length > 0) res = res.slice(0, res.length - 1);
+    if (this.indexOptions.paths?.length > 0) res = res.slice(0, res.length - 1);
     return res;
   }
 

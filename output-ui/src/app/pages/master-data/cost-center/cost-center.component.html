@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="cost_centers" [headers]="headers" [parent]="this" [icon]="'payments'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'payments'" #table
+    nameSingle="Kostenstelle" [serviceClass]="this.ccService" [formComponent]="this.formComponent"
+    [combineAlias]="false" filter_key="cost_center_id">
 </appTable>

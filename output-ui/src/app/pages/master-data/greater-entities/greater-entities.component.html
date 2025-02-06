@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="ges" [headers]="headers" [parent]="this" [icon]="'menu_book'" #table>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'menu_book'"
+    #table nameSingle="Größere Einheit" [serviceClass]="this.geService" [formComponent]="this.formComponent"
+    [combineAlias]="false" filter_key="greater_entity_id">
 </appTable>

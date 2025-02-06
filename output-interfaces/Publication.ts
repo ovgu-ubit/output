@@ -1,7 +1,17 @@
-import {AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
+import {Aliasable, AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
 
-export interface Publication {
+export interface Entity {
     id?: number;
+    locked_at?: Date;
+    doi_prefixes?
+    label?: string;
+}
+
+export interface Identifiable<T> extends Entity{
+    identifiers?: IIdentifier<T>[]
+}
+
+export interface Publication extends Identifiable<Publication> {
     authorPublications?: AuthorPublication[];
     pub_type?: PublicationType
     oa_category?: OA_Category
@@ -37,11 +47,9 @@ export interface Publication {
     best_oa_host?: string;
     best_oa_license?: string;
     opus_share_it?: string;
-    locked_at?: Date;
     abstract?: string;
     page_count?: number;
     peer_reviewed?: boolean;
-    identifiers?: PublicationIdentifier[];
     volume?: string;
     issue?: string;
     first_page?: string;
@@ -49,8 +57,7 @@ export interface Publication {
     cost_approach?: number;
 }
 
-export interface Author {
-    id?: number;
+export interface Author extends Entity {
     first_name: string;
     last_name: string;
     title?: string;
@@ -59,7 +66,6 @@ export interface Author {
     gnd_id?: string;
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
-    locked_at?: Date;
     aliases_first_name?: AliasAuthorFirstName[];
     aliases_last_name?: AliasAuthorLastName[];
 }
@@ -72,16 +78,14 @@ export interface AuthorPublication {
     institute?: Institute
     corresponding?: boolean;
     affiliation?: string;
+    role?: Role;
 }
 
-export interface Role {
-    id?: number;
+export interface Role extends Entity {
     label: string;
-    locked_at?: Date;
 }
 
-export interface Contract {
-    id?: number;
+export interface Contract extends Identifiable<Contract> {
     publisher: Publisher
     label: string;
     start_date?: Date;
@@ -93,19 +97,14 @@ export interface Contract {
     gold_option?: string;
     verification_method?: string;
 	publications?: Publication[];
-    identifiers?:ContractIdentifier[];
-    locked_at?: Date;
 }
 
-export interface CostCenter {
-    id?: number;
+export interface CostCenter extends Entity {
     number?: string;
     label?: string;
-    locked_at?: Date;
 }
 
-export interface CostItem {
-    id?: number;
+export interface CostItem extends Entity {
     label?: string;
     invoice?: Invoice
     cost_type?: CostType
@@ -116,68 +115,50 @@ export interface CostItem {
     vat?: number;
 }
 
-export interface CostType{
-    id?: number;
+export interface CostType extends Entity {
     label: string;
-    locked_at?: Date;
 }
 
-export interface Funder {
-    id?: number;
+export interface Funder extends Entity, Aliasable<Funder> {
     label: string;
     doi?: string;
     ror_id?: string;
     publications?: Publication[];
-    aliases?: AliasFunder[];
-    locked_at?: Date;
 }
 
-export interface GreaterEntity {
-    id?: number;
+export interface GreaterEntity extends Identifiable<GreaterEntity>{
     label: string;
     rating?: string;
     doaj_since?: Date;
     doaj_until?: Date;
-    identifiers?: Identifier[];
     publications?: Publication[]
-    locked_at?: Date;
 }
 
-export interface Identifier {
-    id?: number;
+export interface IIdentifier<T> extends Entity {
     type: string;
     value: string;
-    entity?: GreaterEntity
+    entity?: T
 }
 
-export interface PublicationIdentifier {
-    id?: number;
-    type: string;
-    value: string;
-    publication?: Publication;
+export interface Identifier extends IIdentifier<GreaterEntity> {
 }
 
-export interface ContractIdentifier {
-    id?: number;
-    type: string;
-    value: string;
-    contract?: Contract
+export interface PublicationIdentifier extends IIdentifier<Publication> {
 }
 
-export interface Institute {
-    id?: number;
+export interface ContractIdentifier extends IIdentifier<Contract> {
+}
+
+export interface Institute extends Entity, Aliasable<Institute> {
     super_institute?: Institute
 	sub_institutes?: Institute[]
     label: string;
     short_label?: string;
 	authors?: Author[];
 	authorPublications?: AuthorPublication[];
-    aliases?: AliasInstitute[];
-    locked_at?: Date;
 }
 
-export interface Invoice {
-    id?: number;
+export interface Invoice extends Entity {
     cost_center?: CostCenter
     cost_items?: CostItem[]
     publication?: Publication
@@ -187,27 +168,19 @@ export interface Invoice {
     booking_amount?: number;
 }
 
-export interface OA_Category {
-    id?: number;
+export interface OA_Category extends Entity {
     label: string;
     is_oa: boolean;
-    locked_at?: Date;
 }
 
-export interface PublicationType {
-    id?: number;
+export interface PublicationType extends Entity, Aliasable<PublicationType> {
     label: string;
     review: boolean;
-    aliases?: AliasPubType[];
-    locked_at?: Date;
 }
 
-export interface Publisher {
-    id?: number;
+export interface Publisher extends Entity, Aliasable<Publisher> {
     label: string;
     doi_prefixes?: PublisherDOI[];
-    aliases?: AliasPublisher[];
-    locked_at?: Date;
 }
 
 export interface PublisherDOI {
@@ -216,14 +189,11 @@ export interface PublisherDOI {
     doi_prefix: string;
 }
 
-export interface Language {
-    id?: number;
+export interface Language extends Entity {
     label: string;
 }
 
-export interface Status {
-    id?: number;
+export interface Status extends Entity {
     label: string;
     description?: string;
-    locked_at?: Date;
 }
