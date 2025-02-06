@@ -22,11 +22,15 @@ export class AuthorService {
         @InjectRepository(AliasAuthorLastName) private aliasLastNameRepository: Repository<AliasAuthorLastName>,
         private configService: ConfigService) { }
 
-    public save(aut: any[]) {
-        return this.repository.save(aut).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    public async save(aut: any[]) {
+        let errors = [];
+        for (let auth of aut) {
+            let obj = {...auth, institutes:undefined}
+            let authEnt = await this.repository.save(obj).catch(err => {errors.push(err)});
+            await this.repository.save({id:authEnt.id, institutes: auth.institutes}).catch(err => {errors.push(err)});
+        }
+        for (let err of errors) console.log(err.message)
+        return aut.length - errors.length;
     }
 
     public get(id?:number) {

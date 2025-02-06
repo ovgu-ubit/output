@@ -150,6 +150,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   addPrefix() {
     if (this.disabled) return;
     if (this.prefixForm.invalid) return;
+    if (!this.entity.doi_prefixes) this.entity.doi_prefixes = [];
     this.entity.doi_prefixes.push({
       doi_prefix: this.prefixForm.get('doi_prefix').value.toLocaleLowerCase().trim(),
       //publisherId: this.entity.id
