@@ -1,4 +1,4 @@
-<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+<mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
     <h1>Rechnung</h1>
     <div style="display: flex;justify-content: flex-end;">
         <div *ngIf="!this.disabled; else else1">
@@ -37,8 +37,7 @@
             <input matInput [matDatepicker]="picker" formControlName="date">
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker [startAt]="this.entity?.date? this.entity.date : today" startView="month"
-                color="accent"></mat-datepicker>
+            <mat-datepicker #picker [startAt]="this.entity?.date? this.entity.date : today" startView="month"></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -47,7 +46,7 @@
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
             <mat-datepicker #picker1 [startAt]="this.entity?.booking_date? this.entity.booking_date : today"
-                startView="month" color="accent"></mat-datepicker>
+                startView="month"></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="fill">

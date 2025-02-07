@@ -184,8 +184,7 @@
                     <input matInput [matDatepicker]="picker" formControlName="pub_date">
                     <mat-hint>T.M.JJJJ</mat-hint>
                     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub?.pub_date : today" startView="year"
-                        color="accent"></mat-datepicker>
+                    <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub?.pub_date : today" startView="year"></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_print">
@@ -194,7 +193,7 @@
                     <mat-hint>T.M.JJJJ</mat-hint>
                     <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
                     <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub?.pub_date_print : today"
-                        startView="year" color="accent"></mat-datepicker>
+                        startView="year"></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
@@ -203,8 +202,7 @@
                     <mat-hint>T.M.JJJJ</mat-hint>
                     <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
                     <mat-datepicker #picker3
-                        [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today" startView="year"
-                        color="accent"></mat-datepicker>
+                        [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today" startView="year"></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_submitted">
@@ -213,8 +211,7 @@
                     <mat-hint>T.M.JJJJ</mat-hint>
                     <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
                     <mat-datepicker #picker4
-                        [startAt]="this.pub?.pub_date_submitted? this.pub?.pub_date_submitted : today" startView="year"
-                        color="accent"></mat-datepicker>
+                        [startAt]="this.pub?.pub_date_submitted? this.pub?.pub_date_submitted : today" startView="year"></mat-datepicker>
                 </mat-form-field>
 
                 <app-select-entity name="Sprache"

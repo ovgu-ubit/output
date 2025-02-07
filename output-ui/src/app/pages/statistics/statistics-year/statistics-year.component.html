@@ -2,9 +2,9 @@
 <div style="display:flex;flex-flow: column nowrap;gap: 10px">
 <div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
   <div>
-    <button mat-raised-button color="primary" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten
+    <button mat-raised-button class="primary-button" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten
       wechseln</button>
-    <button mat-raised-button color="primary" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
+    <button mat-raised-button class="primary-button" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
       wechseln</button>
   </div>
   <mat-card [hidden]="this.hidden()">
@@ -21,7 +21,7 @@
             </button>
           </mat-chip-option>
       </mat-chip-listbox>
-        <button mat-raised-button color="accent" (click)="this.resetFilter()">Alle Filter zurücksetzen</button>
+        <button mat-raised-button  class="secondary-button" (click)="this.resetFilter()">Alle Filter zurücksetzen</button>
       </div>
     </mat-card-content>
   </mat-card>

@@ -12,7 +12,7 @@
                     </mat-panel-description>
                 </mat-expansion-panel-header>
 
-                <button mat-raised-button (click)="this.startImport(im)" color="primary" [disabled]="this.obs$[im.label]">Check
+                <button mat-raised-button (click)="this.startImport(im)"  class="primary-button" [disabled]="this.obs$[im.label]">Check
                     starten</button>
 
                 <div *ngIf="this.obs$[im.label]">{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %

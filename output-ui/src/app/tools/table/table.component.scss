@@ -27,64 +27,42 @@ th.mat-mdc-header-cell:first-of-type {
   padding-top: 2px;
 }
 
-.fill-remaining-space {
-  /* This fills the remaining space, by using flexbox.
-   Every toolbar row uses a flexbox row layout. */
-  flex: 1 1 auto;
-}
-
-mat-mdc-icon.icon-red {
-  color: lightcoral;
-}
-
-a.small {
-  height: 0px;
-}
-
-.smallText {
-  font-size: 15px;
-  display: inline
-}
-
-
 .pageInput {
   width: 150px;
 }
 
-.mat-mdc-checkbox.mat-accent {
-  --mdc-checkbox-unselected-icon-color : white;
-  --mdc-checkbox-unselected-hover-icon-color: white;
-  --mdc-checkbox-unselected-focus-icon-color: white;
+.mat-mdc-row .mat-mdc-cell {
+  border-bottom: 1px solid mat.get-theme-color(style.$theme, secondary, 90);
+  border-top: 1px solid mat.get-theme-color(style.$theme, secondary, 90);
 }
 
-/* table */
 .mat-mdc-row:nth-child(odd)>td.mat-mdc-cell {
-  background-color: mat.m2-get-color-from-palette(style.$my-accent-palette, 50);
+  background-color: mat.get-theme-color(style.$theme, secondary, 100);
 }
 
 .mat-mdc-row:nth-child(even)>td.mat-mdc-cell {
-  background-color: mat.m2-get-color-from-palette(style.$my-accent-palette, 200);
+  background-color: mat.get-theme-color(style.$theme, secondary, 98);
 }
 
 .mat-mdc-row>td.mat-mdc-cell:hover {
-  background-color: mat.m2-get-color-from-palette(style.$my-primary-palette, 50);
+  background-color: mat.get-theme-color(style.$theme, primary, 90);
 }
 
 tr:hover td {
-  background-color: mat.m2-get-color-from-palette(style.$my-primary-palette, 50) !important;
+  background-color: mat.get-theme-color(style.$theme, primary, 90) !important;
 }
 
 th.mat-mdc-header-cell {
-  background-color: mat.m2-get-color-from-palette(style.$my-primary-palette, 900) !important;
-  color: mat.m2-get-color-from-palette(style.$my-primary-palette, 900-contrast);
+  background-color: mat.get-theme-color(style.$theme, primary, 20) !important;
+  color: mat.get-theme-color(style.$theme, neutral, 100);
 }
 
 .table_header {
-  background-color: mat.m2-get-color-from-palette(style.$my-accent-palette, 500) !important;
+  background-color: mat.get-theme-color(style.$theme, secondary, 60) !important;
 }
 
 mat-toolbar {
-  margin-bottom: 5px!important;
+margin-bottom: 5px!important;
 }
 
 .numbered-sort-header {
