@@ -1,5 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -24,7 +24,7 @@ import { ReportingYearFormComponent } from '../windows/reporting-year-form/repor
   templateUrl: './publications.component.html',
   styleUrls: ['./publications.component.css']
 })
-export class PublicationsComponent implements OnInit, OnDestroy, TableParent<PublicationIndex> {
+export class PublicationsComponent implements AfterViewInit, OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService: ConfigService) { }
@@ -110,10 +110,11 @@ export class PublicationsComponent implements OnInit, OnDestroy, TableParent<Pub
 
     return ob$;
   }
-
-  ngOnInit(): void {
+    
+  ngAfterViewInit(): void {
+    this.store.select(selectViewConfig).subscribe(data => this.table.setViewConfig(data))
   }
-
+  
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
       viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }

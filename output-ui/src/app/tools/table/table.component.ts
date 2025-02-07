@@ -1,26 +1,26 @@
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { SelectionModel } from '@angular/cdk/collections';
+import { ComponentType } from '@angular/cdk/portal';
 import { Location } from '@angular/common';
+import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { FormControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, takeUntil } from 'rxjs';
 import { Alert } from 'src/app/interfaces/alert';
+import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { resetViewConfig, selectReportingYear, setViewConfig, ViewConfig } from 'src/app/services/redux';
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../../output-interfaces/Config';
-import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
-import { MatDialog } from '@angular/material/dialog';
-import { Entity } from '../../../../../output-interfaces/Publication';
-import { ComponentType } from '@angular/cdk/portal';
-import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
-import { SelectionModel } from '@angular/cdk/collections';
-import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
-import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, combineLatestWith, concat, concatMap, concatWith, map, merge, mergeWith, Observable, of, Subject, take, takeUntil } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { Store } from '@ngrx/store';
+import { resetViewConfig, selectReportingYear, setViewConfig, ViewConfig } from 'src/app/services/redux';
+import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
+import { Entity } from '../../../../../output-interfaces/Publication';
+import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {
@@ -68,7 +68,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   selection: SelectionModel<T> = new SelectionModel<T>(true, []);
 
-  filterValue: string;
   pageForm: UntypedFormGroup;
 
   trunc: number = 60;
@@ -85,8 +84,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   filterValues: Map<string, string> = new Map();
 
-  columnFilter: string = null;
-  defaultFilterPredicate?: (data: any, filter: string) => boolean;
+  filterControls: { [key: string]: FormControl } = {};
+  searchControl = new FormControl('')
+  columnFilter: boolean;
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
     public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
@@ -118,19 +118,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         this.id = params.get('id');
       }
     })))
-
-    this.dataSource = new MatTableDataSource<T>(this.data);
-    //populate the headerNames field for template access
-    this.headerNames = this.headers.map(x => x.colName);
-    //adding the meta columns at the beginning
-    this.headerNames.unshift('edit');
-    this.headerNames.unshift('select');
-    this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
     this.pageForm = this.formBuilder.group({
       pageNumber: ['', [Validators.required, Validators.pattern("^[0-9]*$")]]
     });
-
-    this.defaultFilterPredicate = this.dataSource.filterPredicate;
+    this.dataSource = new MatTableDataSource<T>(this.data);
 
     ob$.pipe(catchError(err => {
       this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
@@ -140,6 +131,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       console.log(err)
       return of(null)
     }), takeUntil(this.destroy$)).subscribe();
+    
+    this.searchControl.valueChanges.pipe(debounceTime(300)).subscribe(data => {
+      if (!data && this.columnFilter) return
+      if (data) this.columnFilter = false;
+      this.doFilter(data)
+    })
+
     window.onbeforeunload = () => this.ngOnDestroy();
   }
 
@@ -161,31 +159,69 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     //adding the meta columns at the beginning
     this.headerNames.unshift('edit');
     this.headerNames.unshift('select');
+    this.headerNames.map(e => {
+      this.filterControls[e] = new FormControl('')
+      this.filterControls[e].valueChanges
+        .pipe(debounceTime(300)) // 300ms Verzögerung
+        .subscribe(value => {
+          if (!this.filterValues.set) this.filterValues = new Map<string, string>();
+          this.columnFilter = true;
+          this.searchControl.setValue('')
+          this.filterValues.set(e, value)
+          let filter = new Object();
+          this.filterValues.forEach((value, key) => {
+            filter[key] = value?.trim().toLocaleLowerCase();
+          })
+          this.dataSource.filter = JSON.stringify(filter);
+          this.dataSource2.filter = JSON.stringify(filter);
+        })
+    })
     this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
     this.selection.clear();
     this.dataSource.paginator = this.paginator;
     this.dataSource2.paginator = this.paginator2;
-    /*this.dataSource.sort = this.sort;
-    this.announceSortChange(this.sort);*/
-    this.filterColumn();
     this.dataSource.filterPredicate = function (data, filter): boolean {
-      /* if (filter.includes("*") || filter.includes("?")) {
-         let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
-         let result = false;
-         for (let key of Object.keys(this.filterValues)) {
-           if (data[key]?.toString().toLowerCase().match(new RegExp(regex))) result=true
-         }
-         return result;
-       }
-       else {*/
-      let result = true
-      let filterJSON = JSON.parse(filter)
-      for (let key of Object.keys(filterJSON)) {
-        if (filterJSON[key]) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key])) 
+      let filterJSON
+      try {
+        filterJSON = JSON.parse(filter)
+      } catch (err) { filterJSON = filter; }
+      if (typeof filterJSON === 'string' || typeof filterJSON === 'number') {
+        if (filter.includes("*") || filter.includes("?")) {
+          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+          let regexp = new RegExp(regex);
+          for (let key of Object.keys(data)) {
+            if (data[key]?.toString().toLowerCase().match(regexp)) return true;
+          }
+          return false;
+        }
+        else {
+          for (let key of Object.keys(data)) {
+            if (data[key]?.toString().toLowerCase().includes(filter)) return true;
+          }
+          return false;
+        }
+      } else {
+        let result = true
+        for (let key of Object.keys(filterJSON)) {
+          if (filterJSON[key] && !(filterJSON[key].includes("*") || filterJSON[key].includes("?"))) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key]))
+          else {
+            let regex = filterJSON[key].replaceAll("*", ".*").replaceAll("?", ".");
+            let regexp = new RegExp(regex);
+            result = result && (data[key]?.toString().toLowerCase().match(regexp))
+          }
+        }
+        return result;
       }
-      return result;
-      //}
     };
+    this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
+    this.dataSource.data = this.dataSource.data.sort((a, b) => {
+      for (let i = 0; i < this.sort_state.length; i++) {
+        let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
+        let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
+        if (compare !== 0) return compare;
+      }
+      return 0;
+    })
     if (this.id) {
       this.edit({ id: this.id });
     }
@@ -378,7 +414,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     }
     this.store.dispatch(resetViewConfig());
     let viewConfig: ViewConfig = {
-      sortDir: 'asc' as SortDirection,
+      sortState: [],
+      filterColumn: new Map<string, string>(),
       filter: {
         filter: {
           expressions: [{
@@ -394,51 +431,27 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.router.navigateByUrl('publications')
   }
 
+  filterAvailable(col: TableHeader) {
+    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime')
+  }
+
   /**
    * applies a search filter
    * @param value the filter value (is looked for trimmed and lowercase)
    */
   public doFilter = (value: string) => {
-    if (value !== null && value !== undefined) this.dataSource.filter = value.trim().toLocaleLowerCase();
+    if (value !== null && value !== undefined) {
+      this.dataSource.filter = value.trim().toLocaleLowerCase();
+      this.dataSource2.filter = value.trim().toLocaleLowerCase();
+    }
   }
+
   public filter() {
     let filter = new Object();
     this.filterValues.forEach((value, key) => {
       filter[key] = value?.trim().toLocaleLowerCase();
-    })    
-    this.dataSource.filter = JSON.stringify(filter);
-  }
-
-  /**
-   * changes the filter to only be applied to the chosen column
-   */
-  public filterColumn() {
-    if (this.columnFilter) {
-      this.dataSource.filterPredicate = function (data, filter: string): boolean {
-        if (filter.includes("*") || filter.includes("?")) {
-          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
-          return data[this.columnFilter]?.toString().toLowerCase().match(new RegExp(regex))
-        }
-        else return data[this.columnFilter]?.toString().toLowerCase().includes(filter);
-      }.bind(this);
-    } else {
-      this.dataSource.filterPredicate = function (data, filter: string): boolean {
-        if (filter.includes("*") || filter.includes("?")) {
-          let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
-          for (let key of Object.keys(data)) {
-            if (data[key]?.toString().toLowerCase().match(new RegExp(regex))) return true;
-          }
-          return false;
-        }
-        else {
-          for (let key of Object.keys(data)) {
-            if (data[key]?.toString().toLowerCase().includes(filter)) return true;
-          }
-          return false;
-        }
-      }.bind(this);
-      //this.doFilter(this.filterValue);
-    }
+    })
+    //this.dataSource.filter = JSON.stringify(filter);
   }
 
   /*
@@ -583,12 +596,11 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   getViewConfig(): ViewConfig {
     let res: ViewConfig = {
-      sortColumn: this.sort.active,
-      sortDir: this.sort.direction,
+      sortState: this.sort_state,
       page: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
-      filterValue: this.filterValue,
-      filterColumn: this.columnFilter
+      filterValue: this.searchControl.value,
+      filterColumn: this.filterValues
     }
     return res;
   }
@@ -607,17 +619,16 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.paginator2.page.next({
       pageIndex: this.paginator2.pageIndex,
       pageSize: this.paginator2.pageSize,
-      length: this.dataSource2.data.length
+      length: this.dataSource2?.data.length
     });
+    let searchValue = viewConfig.filterValue ? viewConfig.filterValue : '';
+    if (searchValue) this.columnFilter = false;
+    else this.columnFilter = true;
+    this.searchControl.setValue(searchValue);
+    this.filterValues = viewConfig.filterColumn;
+    if (this.filterValues.get) for (let col of this.headerNames) this.filterControls[col].setValue(this.filterValues.get(col))
 
-    this.filterValue = viewConfig.filterValue ? viewConfig.filterValue : '';
-    this.columnFilter = viewConfig.filterColumn;
-    //this.filterColumn();
-
-    /*this.sort.active = viewConfig.sortColumn ? viewConfig.sortColumn : this.headerNames[this.id_col];
-    this.sort.direction = viewConfig.sortDir;
-    this.dataSource.sort = this.sort;
-    this.sort.sortChange.emit();*/
+    this.sort_state = viewConfig.sortState;
 
     this.update(this.data);
   }

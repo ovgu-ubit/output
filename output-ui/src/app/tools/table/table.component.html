@@ -54,19 +54,11 @@
     <div style="display: flex; flex-flow: row wrap; justify-content: space-between;">
       <div style="display: flex; flex-direction: row;justify-content: flex-start; gap: 10px">
         <mat-form-field>
-          <input matInput type="text" [(ngModel)]="filterValue" (keyup)="doFilter(filterValue)" placeholder="Filter">
-          <button type="button" *ngIf="filterValue" matSuffix mat-icon-button aria-label="Clear"
-            (click)="filterValue = '';doFilter(filterValue);">
+          <input matInput type="text" [formControl]="searchControl" placeholder="Alle Spalten filtern">
+          <button type="button" *ngIf="searchControl.value" matSuffix mat-icon-button aria-label="Clear"
+            (click)="searchControl.setValue('')">
             <mat-icon>close</mat-icon>
           </button>
-        </mat-form-field>
-        <mat-form-field>
-          <mat-select [(ngModel)]="columnFilter" (selectionChange)="filterColumn()">
-            <mat-option [value]="null">Alle Felder</mat-option>
-            <mat-option *ngFor="let header of this.headers" [value]="header.colName">
-              {{ header.colTitle }}
-            </mat-option>
-          </mat-select>
         </mat-form-field>
       </div>
       <form [formGroup]="pageForm" (ngSubmit)="goToPage()">
@@ -181,15 +173,14 @@
           </ng-container>
           <ng-container [matColumnDef]="col.colName+'-filter'">
             <th mat-header-cell *matHeaderCellDef>
-              <input matInput [placeholder]="col.colTitle+' filtern...'" type="text" style="width: 100%;"
-                (keyup)="filter()" [ngModel]="filterValues.get(col.colName)"
-                (ngModelChange)="filterValues.set(col.colName, $event)" />
+              <input *ngIf="filterAvailable(col)" matInput [placeholder]="col.colTitle+' filtern...'" type="text" [formControl]="filterControls[col.colName]"
+                 />
             </th>
           </ng-container>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="headerNames; sticky: true" class="first-header-row"></tr>
-        <tr mat-header-row *matHeaderRowDef="headerNamesFilter; sticky: true" style="height: 0px;"></tr>
+        <tr mat-header-row *matHeaderRowDef="headerNamesFilter; sticky: true" class="second-header-row"></tr>
         <tr mat-row *matRowDef="let row; columns: headerNames;"></tr>
       </table>
     </div>

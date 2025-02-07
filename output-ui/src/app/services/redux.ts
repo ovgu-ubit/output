@@ -14,18 +14,18 @@ export interface State {
 }
 
 export interface ViewConfig {
-  sortColumn?: string;
-  sortDir: SortDirection;
+  sortState: { key: string, dir: SortDirection }[];
   page?: number;
   pageSize?: number;
   filterValue?: string;
-  filterColumn?: string;
-  filter?: {filter: SearchFilter, paths?: string[]};
+  filterColumn: Map<string, string>;
+  filter?: { filter: SearchFilter, paths?: string[] };
 }
 
 export const initialState: State = {
   viewConfig: {
-    sortDir: 'asc' as SortDirection,
+    sortState: [],
+    filterColumn: new Map<string, string>(),
     filter: {
       filter: {
         expressions: []
@@ -57,7 +57,8 @@ export const viewConfigReducer = createReducer(
     return {
       ...state,
       viewConfig: {
-        sortDir: 'asc' as SortDirection
+        sortState: [],
+        filterColumn: new Map<string, string>(),
       },
       valid_from: new Date()
     }
@@ -87,7 +88,7 @@ export const hydrationMetaReducer = (
       if (storageValue) {
         try {
           let state = JSON.parse(storageValue);
-          if ((new Date().getTime() - Date.parse(state.viewConfigReducer.valid_from)) < 4*60*60*1000) return state; //if state is older than 4 hours, it is resetted
+          if ((new Date().getTime() - Date.parse(state.viewConfigReducer.valid_from)) < 4 * 60 * 60 * 1000) return state; //if state is older than 4 hours, it is resetted
         } catch (err) {
           localStorage.removeItem("state");
         }
