@@ -116,11 +116,13 @@ $theme: mat.define-theme((
   color: (
     theme-type: light,
     primary: $ovgu-primary-map,
-    tertiary:  mat.$violet-palette
+    tertiary:  mat.$violet-palette,
+    use-system-variables: true,
   ),
   typography: (
     brand-family: 'Roboto',
-    bold-weight: 900
+    bold-weight: 900,
+    use-system-variables: true,
   ),
   density: (
     scale: -1
