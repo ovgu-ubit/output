@@ -18,27 +18,31 @@
         <div mat-dialog-actions align="end" style="display:flex; flex-flow: row wrap;gap: 5px;">
           <ng-container *ngFor="let button of this.parent.buttons">
             <ng-container *ngIf="button.sub_buttons && button.sub_buttons.length > 0">
-              <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
-              [matTooltipShowDelay]="800">{{button.title}}<mat-icon>
+              <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)"
+                [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}<mat-icon>
                   keyboard_arrow_down</mat-icon></button>
               <mat-menu #buttonMenu="matMenu" xPosition="before">
                 <ng-container *ngFor="let sub_button of button.sub_buttons;let idx = index">
-                  <button mat-menu-item (click)="sub_button.action_function()" [disabled]="this.isButtonDisabled(sub_button)">{{sub_button.title}}</button>
+                  <button mat-menu-item (click)="sub_button.action_function()"
+                    [disabled]="this.isButtonDisabled(sub_button)">{{sub_button.title}}</button>
                 </ng-container>
               </mat-menu>
             </ng-container>
             <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && button.icon">
-              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
-              [matTooltipShowDelay]="800"><mat-icon>{{button.title}}</mat-icon></button>
+              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)"
+                [matTooltip]="button.tooltip" [matTooltipShowDelay]="800"><mat-icon>{{button.title}}</mat-icon></button>
             </ng-container>
             <ng-container *ngIf="(!button.sub_buttons || button.sub_buttons.length === 0) && !button.icon">
-              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)" [matTooltip]="button.tooltip"
-              [matTooltipShowDelay]="800">{{button.title}}</button>
+              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)"
+                [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}</button>
             </ng-container>
           </ng-container>
-          <button mat-raised-button (click)="this.add()" [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
-          <button mat-raised-button (click)="this.delete()" [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
-          <button mat-raised-button *ngIf="this.serviceClass.combine" (click)="this.combine()" [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
+          <button mat-raised-button (click)="this.add()"
+            [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
+          <button mat-raised-button (click)="this.delete()"
+            [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
+          <button mat-raised-button *ngIf="this.serviceClass.combine" (click)="this.combine()"
+            [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
         </div>
       </span>
     </mat-toolbar>
@@ -50,41 +54,33 @@
     <div style="display: flex; flex-flow: row wrap; justify-content: space-between;">
       <div style="display: flex; flex-direction: row;justify-content: flex-start; gap: 10px">
         <mat-form-field>
-          <input matInput type="text" [(ngModel)]="filterValue" (keyup)="doFilter(filterValue)" placeholder="Filter">
-          <button type="button" *ngIf="filterValue" matSuffix mat-icon-button aria-label="Clear"
-            (click)="filterValue = '';doFilter(filterValue);">
+          <input matInput type="text" [formControl]="searchControl" placeholder="Alle Spalten filtern">
+          <button type="button" *ngIf="searchControl.value" matSuffix mat-icon-button aria-label="Clear"
+            (click)="searchControl.setValue('')">
             <mat-icon>close</mat-icon>
           </button>
         </mat-form-field>
-        <mat-form-field>
-          <mat-select [(ngModel)]="columnFilter" (selectionChange)="filterColumn()">
-            <mat-option [value]="null">Alle Felder</mat-option>
-            <mat-option *ngFor="let header of this.headers" [value]="header.colName">
-              {{ header.colTitle }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
       </div>
-        <form [formGroup]="pageForm" (ngSubmit)="goToPage()">
-          <mat-form-field class="pageInput">
-            <input matInput type="text" placeholder="Seitenzahl" formControlName="pageNumber"
-              [ngClass]="{ 'is-invalid': this.pageForm.controls.pageNumber.value != '' && this.pageForm.controls.pageNumber.errors }">
-            <div *ngIf="this.pageForm.controls.pageNumber.errors" class="invalid-feedback">
-              <div *ngIf="this.pageForm.controls.pageNumber.errors">Bitte geben Sie eine gültige Zahl ein</div>
-            </div>
-            <button matSuffix mat-icon-button type="submit" matTooltip="Zur Seite" [matTooltipShowDelay]="300">
-              <mat-icon>arrow_forward</mat-icon>
-            </button>
-          </mat-form-field>
+      <form [formGroup]="pageForm" (ngSubmit)="goToPage()">
+        <mat-form-field class="pageInput">
+          <input matInput type="text" placeholder="Seitenzahl" formControlName="pageNumber"
+            [ngClass]="{ 'is-invalid': this.pageForm.controls.pageNumber.value != '' && this.pageForm.controls.pageNumber.errors }">
+          <div *ngIf="this.pageForm.controls.pageNumber.errors" class="invalid-feedback">
+            <div *ngIf="this.pageForm.controls.pageNumber.errors">Bitte geben Sie eine gültige Zahl ein</div>
+          </div>
+          <button matSuffix mat-icon-button type="submit" matTooltip="Zur Seite" [matTooltipShowDelay]="300">
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </mat-form-field>
 
-        </form>
-        <mat-paginator #paginatorTop [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons (page)="handlePageTop($event)">
-        </mat-paginator>
+      </form>
+      <mat-paginator #paginatorTop [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons
+        (page)="handlePageTop($event)">
+      </mat-paginator>
     </div>
     <div class="mat-elevation-z8">
       <table mat-table class="table" [class.table-wide]="this.wide" [dataSource]="this.dataSource" matSort
-        (matSortChange)="announceSortChange($event)" [matSortActive]="headerNames[this.id_col]" matSortDirection="asc"
-        matSortDisableClear>
+        (matSortChange)="announceSortChange($event)">
 
         <ng-container matColumnDef="select" sticky>
           <th mat-header-cell *matHeaderCellDef style="width: 10px;">
@@ -93,10 +89,13 @@
           </th>
           <td mat-cell *matCellDef="let row">
             <mat-checkbox style="padding-top: 8px" (click)="$event.stopPropagation()"
-              (change)="this.selection.toggle(row)" [checked]="this.selection.isSelected(row)"
-              color="primary">
+              (change)="this.selection.toggle(row)" [checked]="this.selection.isSelected(row)" color="primary">
             </mat-checkbox>
           </td>
+        </ng-container>
+        <ng-container matColumnDef="select-filter" sticky>
+          <th mat-header-cell *matHeaderCellDef style="width: 10px;">
+          </th>
         </ng-container>
 
         <ng-container matColumnDef="edit">
@@ -105,15 +104,30 @@
           <td mat-cell *matCellDef="let row">
             <button mat-icon-button (click)="this.edit(row)" matTooltip="Element untersuchen"
               [matTooltipShowDelay]="800">
-              <mat-icon *ngIf="((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked); else else1">edit</mat-icon>
+              <mat-icon
+                *ngIf="((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked); else else1">edit</mat-icon>
               <ng-template #else1><mat-icon>remove_red_eye</mat-icon></ng-template>
             </button>
           </td>
         </ng-container>
+        <ng-container matColumnDef="edit-filter" sticky>
+          <th mat-header-cell *matHeaderCellDef style="width: 15px;">
+          </th>
+        </ng-container>
 
         <ng-container *ngFor="let col of headers;let idx = index">
           <ng-container [matColumnDef]="col.colName">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header> {{col.colTitle}} </th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              {{col.colTitle}}
+              <div class="numbered-sort-header">
+                <div style="display: flex;flex-direction: column;">
+                  <mat-icon [ngClass]="{'top': true, 'active':renderHeader(col).asc }">arrow_drop_up</mat-icon>
+                  <mat-icon
+                    [ngClass]="{'bottom': true, 'active':renderHeader(col).asc === false }">arrow_drop_down</mat-icon>
+                </div>
+                <div>{{renderHeader(col).text}}</div>
+              </div>
+            </th>
             <ng-container *ngIf="!col.type || col.type === 'string'">
               <td mat-cell *matCellDef="let d" [innerText]="truncString(d[col.colName], this.trunc, col)"
                 [matTooltip]="d[col.colName] && d[col.colName].length > this.trunc? d[col.colName] : null"
@@ -124,9 +138,10 @@
             </ng-container>
             <ng-container *ngIf="col.type === 'pubs'">
               <td mat-cell *matCellDef="let d">
-                {{d[col.colName]}} 
-                <button mat-icon-button matTooltip="Publikationen anzeigen" (click)="this.showPubs(d['id'], col.colName)"
-                [matTooltipShowDelay]="800" *ngIf="d[col.colName]!=0"> <mat-icon>remove_red_eye</mat-icon></button>
+                {{d[col.colName]}}
+                <button mat-icon-button matTooltip="Publikationen anzeigen"
+                  (click)="this.showPubs(d['id'], col.colName)" [matTooltipShowDelay]="800" *ngIf="d[col.colName]!=0">
+                  <mat-icon>remove_red_eye</mat-icon></button>
                 <button mat-icon-button disabled *ngIf="d[col.colName]==0"></button>
               </td>
             </ng-container>
@@ -149,21 +164,29 @@
               <td mat-cell *matCellDef="let d" [innerHTML]="doiHTML(d[col.colName])"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'link'">
-              <td mat-cell *matCellDef="let d"><a [href]="d[col.colName]" class="link-secondary" target="_blank">{{d[col.colName]}}</a></td>
+              <td mat-cell *matCellDef="let d"><a [href]="d[col.colName]" class="link-secondary"
+                  target="_blank">{{d[col.colName]}}</a></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'authors'">
               <td mat-cell *matCellDef="let d" [innerHTML]="formatAuthors(d)"></td>
             </ng-container>
           </ng-container>
+          <ng-container [matColumnDef]="col.colName+'-filter'">
+            <th mat-header-cell *matHeaderCellDef>
+              <input *ngIf="filterAvailable(col)" matInput [placeholder]="col.colTitle+' filtern...'" type="text" [formControl]="filterControls[col.colName]"
+                 />
+            </th>
+          </ng-container>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="headerNames; sticky: true"></tr>
+        <tr mat-header-row *matHeaderRowDef="headerNames; sticky: true" class="first-header-row"></tr>
+        <tr mat-header-row *matHeaderRowDef="headerNamesFilter; sticky: true" class="second-header-row"></tr>
         <tr mat-row *matRowDef="let row; columns: headerNames;"></tr>
       </table>
     </div>
     <div style="display: flex; justify-content: flex-end;">
       <mat-paginator #paginatorBottom [pageSize]="10" showFirstLastButtons (page)="handlePageBottom($event)">
       </mat-paginator>
-  </div>
+    </div>
   </div>
 </div>
