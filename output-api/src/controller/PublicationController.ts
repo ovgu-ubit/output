@@ -1,17 +1,16 @@
-import { Publication } from "../entity/Publication";
-import { InjectRepository } from "@nestjs/typeorm";
-import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards, Inject, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, InternalServerErrorException, NotFoundException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
-import { PublicationService } from "../services/entities/publication.service";
-import { AppConfigService } from "../services/app-config.service";
+import { SearchFilter } from "../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
+import { Publication } from "../entity/Publication";
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
-import { SearchFilter } from "../../../output-interfaces/Config";
+import { AppConfigService } from "../services/app-config.service";
+import { PublicationService } from "../services/entities/publication.service";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
-import { ConfigService } from "@nestjs/config";
-import { RoleService } from "../services/entities/role.service";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -87,8 +86,8 @@ export class PublicationController {
         example: "2022"
     })
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean) : Promise<PublicationIndex[]> {
-        if (!yop && !soft) throw new BadRequestException('reporting year or soft has to be given');
-        if (yop) return await this.publicationService.index(yop);
+        if ((yop == null || yop == undefined) && !soft) throw new BadRequestException('reporting year or soft has to be given');
+        if (!soft) return await this.publicationService.index(yop);
         else return await this.publicationService.softIndex();
     }
 
