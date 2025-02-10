@@ -26,9 +26,10 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService, protected roleService: RoleService,  protected configService: ConfigService, protected http: HttpService,
-        ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
+    ) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
+        this.param_string = 'token=' + this.configService.get('api_key_oam');
     }
 
     protected updateMapping: UpdateMapping = {
@@ -48,17 +49,16 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.IGNORE,
-        abstract :UpdateOptions.IGNORE,
-        citation :UpdateOptions.IGNORE,
-        page_count :UpdateOptions.IGNORE,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.IGNORE,
+        citation: UpdateOptions.IGNORE,
+        page_count: UpdateOptions.IGNORE,
+        peer_reviewed: UpdateOptions.IGNORE,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://open-access-monitor.de/api/Data/public';
-    protected param_string = 'token='+this.configService.get('api_key_oam');
     protected name = 'Open-Access-Monitor';
     protected parallelCalls = 1;
-    
+
     protected createUrl(doi: string) {
         return `${this.url}?${this.param_string}&query={find:'Publications',filter:{doi:'${doi}'}}`;
     }
@@ -85,19 +85,19 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getGreaterEntity(element: any): GreaterEntity {
-        return { 
+        return {
             label: element['journal']['title'],
-            identifiers: element['journal']['issns'].map(e => {return {type:'issn', value:e}})
+            identifiers: element['journal']['issns'].map(e => { return { type: 'issn', value: e } })
         }
     }
     protected getPublisher(element: any): Publisher {
-        return {label: element['publisher']['name']};
+        return { label: element['publisher']['name'] };
     }
     protected getPubDate(element: any): Date {
-        let string =  element['published_date'];
+        let string = element['published_date'];
         try {
             let dates = string.split('-');
-            return new Date(Date.UTC(dates[0],dates[1]-1,dates[2]));
+            return new Date(Date.UTC(dates[0], dates[1] - 1, dates[2]));
         } catch (err) {
             return null;
         }
@@ -115,7 +115,7 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getOACategory(element: any): string {
-        switch(element['oa_color']) {
+        switch (element['oa_color']) {
             case 0:
                 return 'Closed';
             case 1:
@@ -149,7 +149,7 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
         return null;
     }
     protected getPageCount(element: any): number {

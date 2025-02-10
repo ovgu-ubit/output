@@ -1,0 +1,22 @@
+<div [formGroup]="form">
+    <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-label>{{this.name}}</mat-label>
+        <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="auto"
+            formControlName="input" (keydown.enter)="select($event.target)" #input_ent>
+        <button *ngIf="this.formComponent" type="button" matSuffix mat-icon-button (click)="select(input_ent)"
+            [matTooltip]="this.name+' bearbeiten'" [matTooltipShowDelay]="800">
+            <ng-container *ngIf="this.exists; else else3">
+                <mat-icon *ngIf="!this.disabled; else else2">edit</mat-icon>
+                <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
+            </ng-container>
+            <ng-template #else3><mat-icon>save</mat-icon></ng-template>
+        </button>
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectedEnt($event)">
+            <mat-option *ngFor="let ent of this.filtered_ents | async" [value]="ent.last_name + ', '+ent.first_name">
+                {{ent.last_name}}, {{ent.first_name}} <ng-container *ngIf="ent.orcid">
+                    ({{ent.orcid}})
+                </ng-container>
+            </mat-option>
+        </mat-autocomplete>
+    </mat-form-field>
+</div>

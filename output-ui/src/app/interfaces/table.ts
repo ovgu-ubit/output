@@ -1,14 +1,9 @@
-import { SelectionModel } from "@angular/cdk/collections";
+import { Observable } from "rxjs";
 
 export interface TableParent<T> {
-  update(): void;
-  edit(row: any):void;
-
-  buttons: TableButton[]
-
-  loading: boolean;
-  selection: SelectionModel<T>;
-  showPubs?(id:number,field?:string):void;
+  buttons: TableButton[];
+  preProcessing?: (() => Observable<void>),
+  indexOptions?:any;
 }
 
 export interface TableHeader {

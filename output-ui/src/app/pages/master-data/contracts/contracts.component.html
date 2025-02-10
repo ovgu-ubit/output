@@ -1,3 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
-<appTable [name]="this.getName()" [wide]=false [id_col]=2 [data]="contracts" [headers]="headers" [parent]="this" [icon]="'handshake'">
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'handshake'"
+    nameSingle="Vertrag" [serviceClass]="this.contractService" [formComponent]="this.formComponent"
+    [combineAlias]="false" filter_key="contract_id">
 </appTable>

@@ -36,6 +36,7 @@ export class CSVImportService extends AbstractImportService {
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        this.path = this.configService.get('CONFIG_PATH')
     }
 
     protected updateMapping: UpdateMapping = {
@@ -71,7 +72,7 @@ export class CSVImportService extends AbstractImportService {
 
     protected name = 'CSV-Import'
 
-    private path = this.configService.get('CONFIG_PATH');
+    private path: string;
 
     public setUp(file: Express.Multer.File, importConfig: CSVMapping, updateMapping?: UpdateMapping) {
         this.file = file;
@@ -315,7 +316,7 @@ export class CSVImportService extends AbstractImportService {
         return element[this.importConfig.mapping.license];
     }
     protected getInvoiceInformation(element: any) {
-        let res:any[] = [];
+        let res: any[] = [];
         if (this.importConfig.mapping.invoice && this.importConfig.mapping.invoice.startsWith('$')) res = [{
             cost_items: [{
                 euro_value: this.parseNumber(this.importConfig.mapping.invoice.slice(1, this.importConfig.mapping.invoice.length)),

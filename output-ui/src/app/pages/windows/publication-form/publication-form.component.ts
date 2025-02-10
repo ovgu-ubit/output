@@ -4,7 +4,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { Observable, map, merge, startWith } from 'rxjs';
+import { Observable, concat, concatMap, delay, map, merge, of, startWith } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfigService } from 'src/app/services/config.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
@@ -25,6 +25,11 @@ import { ContractFormComponent } from '../contract-form/contract-form.component'
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
+import { DoiFormComponent } from '../doi-form/doi-form.component';
+import { EnrichService } from 'src/app/services/enrich.service';
+import { FunderFormComponent } from '../funder-form/funder-form.component';
+import { OaCategoryFormComponent } from '../oa-category-form/oa-category-form.component';
+import { PubTypeFormComponent } from '../pub-type-form/pub-type-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -49,46 +54,41 @@ export class PubValidator {
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   institution: string;
   public form: FormGroup;
-  public idForm: FormGroup;
   submitted = false;
 
   edit: boolean = false;
   loading: boolean;
   pub: Publication;
 
-  pub_types: PublicationType[];
-  oa_categories: OA_Category[];
-  langs: Language[];
-  greater_entities: GreaterEntity[];
-  filtered_greater_entities: Observable<GreaterEntity[]>;
-  publishers: Publisher[];
-  filtered_publishers: Observable<Publisher[]>;
-  contracts: Contract[];
-  filtered_contracts: Observable<Contract[]>;
-  funders: Funder[];
-  filteredFunders: Observable<Funder[]>;
+  doi_import_service: string;
+
   statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
   displayedColumnsId: string[] = ['type', 'value', 'delete'];
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
-  @ViewChild('funderInput') funderInput: ElementRef<HTMLInputElement>;
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
-  @ViewChild('tableID') tableId: MatTable<PublicationIdentifier>;
 
   today = new Date();
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
   optional_fields;
 
+  publisherForm = PublisherFormComponent;
+  contractForm = ContractFormComponent;
+  funderForm = FunderFormComponent;
+  geForm = GreaterEntityFormComponent;
+  oaForm = OaCategoryFormComponent;
+  ptForm = PubTypeFormComponent;
+
   constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
-    private dialog: MatDialog, private pubTypeService: PublicationTypeService, private authorService: AuthorService, private _snackBar: MatSnackBar,
-    private oaService: OACategoryService, private geService: GreaterEntityService, private publisherService: PublisherService, private contractService: ContractService,
-    private funderService: FunderService, private languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
-    private statusService: StatusService) {
+    private dialog: MatDialog, public pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar,
+    public oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
+    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
+    private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
       title: [''],
@@ -104,15 +104,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         authors: [''],
       }),
       biblio_info: this.formBuilder.group({
-        pub_type: [''],
-        ge: [''],
         peer_reviewed: [''],
-        publ: [''],
         pub_date: [''],
         pub_date_print: [''],
         pub_date_submitted: [''],
         pub_date_accepted: [''],
-        language: [''],
         abstract: [''],
         volume: [''],
         issue: [''],
@@ -124,7 +120,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         page_count: [''],
       }),
       oa_info: this.formBuilder.group({
-        oa_cat: [''],
         second_pub: [''],
         is_oa: [''],
         oa_status: [''],
@@ -133,8 +128,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         best_oa_license: [''],
       }),
       finance_info: this.formBuilder.group({
-        contr: [''],
-        funder: [''],
         cost_approach: ['']
       }),
     }, {
@@ -145,11 +138,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.get('oa_info').get('oa_status').disable();
     this.form.get('oa_info').get('is_journal_oa').disable();
     this.form.get('oa_info').get('best_oa_host').disable();
-
-    this.idForm = this.formBuilder.group({
-      type: ['', Validators.required],
-      value: ['', Validators.required]
-    })
   }
 
   ngOnInit(): void {
@@ -161,19 +149,56 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.institution = data.short_label;
     }
     )));
-    if (this.data['id']) {
+    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
+      this.doi_import_service = data;
+    })))
+    if (this.data.entity?.id) {
       this.edit = true;
       this.loading = true;
-      ob$ = merge(ob$, this.loadPub(this.data['id']));
+      ob$ = merge(ob$, this.loadPub(this.data.entity?.id));
     } else {
       this.edit = false;
       this.pub = {
         authorPublications: [],
         identifiers: []
       };
+      let dialogRef = this.dialog.open(DoiFormComponent, {
+        width: '800px',
+        maxHeight: '800px',
+        data: {
+        },
+        disableClose: true
+      });
+      ob$ = concat(ob$, dialogRef.afterClosed().pipe(map(result => {
+        if (!result) return;
+        if (result.doi) {
+          this.pub.doi = result.doi;
+          this.pub.dataSource = 'Manuell per DOI hinzugefügt'
+          this.publicationService.add(this.pub).pipe(concatMap(data => {
+            if (!Array.isArray(data)) return of(null);
+            this.pub.id = data[0].id
+            /*this.filter = {
+              filter: {
+                expressions: [
+                  {
+                    op: JoinOperation.AND,
+                    key: 'id',
+                    comp: CompareOperation.EQUALS,
+                    value: id[0]
+                  }
+                ]
+              }
+            }*/
+            this.loading = true;
+            return this.enrichService.startID(this.doi_import_service, [this.pub.id]).pipe(delay(2000))//wait for 2 seconds to complete enrich
+          })).pipe(concatMap(data => {
+            this.edit = true;
+            return this.loadPub(this.pub.id);
+          })).subscribe()
+        }
+      })));
     }
     ob$ = merge(ob$, this.loadMasterData());
-
 
     ob$.subscribe({
       complete: () => {
@@ -182,16 +207,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   loadPub(id: number) {
-    return this.publicationService.getPublication(id).pipe(map(data => {
+    return this.publicationService.getOne(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
       this.form.get('author_info').patchValue(data);
       this.form.get('biblio_info').patchValue(data);
       this.form.get('oa_info').patchValue(data);
       this.form.get('finance_info').patchValue(data);
-      this.form.get('oa_info').get('oa_cat').setValue(this.pub.oa_category ? this.pub.oa_category.id : -1)
-      this.form.get('biblio_info').get('language').setValue(this.pub.language ? this.pub.language.id : -1)
-      this.form.get('biblio_info').get('pub_type').setValue(this.pub.pub_type ? this.pub.pub_type.id : -1)
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('oa_info').get('best_oa_license').setValue('Sonstige')
 
       if (this.pub?.locked) this.setLock(true);
@@ -201,9 +223,6 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (this.pub?.locked_oa) this.form.get('oa_info').disable();
         if (this.pub?.locked_finance) this.form.get('finance_info').disable();
       }
-      if (this.pub.greater_entity) this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-      if (this.pub.publisher) this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-      if (this.pub.contract) this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
 
       if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
@@ -220,49 +239,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   loadMasterData() {
-    let ob$ = this.pubTypeService.getPubTypes().pipe(map(data => {
-      this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
-    }))
-    ob$ = merge(ob$, this.oaService.getOACategories().pipe(map(data => {
-      this.oa_categories = data.sort((a, b) => a.label.localeCompare(b.label));
-    })))
-    ob$ = merge(ob$, this.languageService.getLanguages().pipe(map(data => {
-      this.langs = data.sort((a, b) => a.label.localeCompare(b.label));
-    })))
-    ob$ = merge(ob$, this.geService.getGreaterEntities().pipe(map(data => {
-      this.greater_entities = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_greater_entities = this.form.get('biblio_info').get('ge').valueChanges.pipe(
-        startWith(this.pub?.greater_entity?.label),
-        map(value => this._filterGE(value || '')),
-      );
-    })))
-    ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(data => {
-      this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_publishers = this.form.get('biblio_info').get('publ').valueChanges.pipe(
-        startWith(this.pub?.publisher?.label),
-        map(value => this._filterPublisher(value || '')),
-      );
-    })))
-    ob$ = merge(ob$, this.contractService.getContracts().pipe(map(data => {
-      this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filtered_contracts = this.form.get('finance_info').get('contr').valueChanges.pipe(
-        startWith(this.pub?.contract?.label),
-        map(value => this._filterContract(value || '')),
-      );
-    })))
-    ob$ = merge(ob$, this.funderService.getFunders().pipe(map(data => {
-      this.funders = data.sort((a, b) => a.label.localeCompare(b.label));
-      this.filteredFunders = this.form.get('finance_info').get('funder').valueChanges.pipe(
-        startWith(''),
-        //map(value => typeof value === 'string' ? value : value.name),
-        map((name) => {
-          return this._filterFunders(name);
-        }));
-    })))
-    ob$ = merge(ob$, this.statusService.getStatuses().pipe(map(data => {
+    return this.statusService.getAll().pipe(map(data => {
       this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
-    })))
-    return ob$;
+    }))
   }
 
   ngAfterViewInit(): void {
@@ -271,283 +250,48 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disable() {
     this.disabled = true;
     this.form.disable();
-    this.idForm.disable();
   }
 
-  private _filterGE(value: string): GreaterEntity[] {
-    const filterValue = value.toLowerCase();
-
-    return this.greater_entities.filter(ge => ge?.label.toLowerCase().includes(filterValue) || ge?.identifiers.find(e => e.value.toLowerCase().includes(filterValue)));
-  }
-  private _filterPublisher(value: string): Publisher[] {
-    const filterValue = value.toLowerCase();
-
-    return this.publishers.filter(pub => pub?.label.toLowerCase().includes(filterValue));
-  }
-  private _filterContract(value: string): Contract[] {
-    const filterValue = value.toLowerCase();
-
-    return this.contracts.filter(pub => pub?.label.toLowerCase().includes(filterValue));
+  setPublisher(event) {
+    this.pub.publisher = event;
+    this.form.markAsDirty()
   }
 
-  private _filterFunders(value) {
-    if (!value) value = '';
-    const filterValue = value.toLowerCase();
-    return this.funders.filter(pub => pub?.label.toLowerCase().includes(filterValue));
+  setContract(event) {
+    this.pub.contract = event;
+    this.form.markAsDirty()
   }
 
-  addPublisher(event) {
-    if (!event.value) return;
-    if (!this.publishers.find(e => e.label === event.value)) {
-      let dialogData = new ConfirmDialogModel("Neuer Verlag", `Möchten Sie den Verlag "${event.value}" anlegen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(PublisherFormComponent, {
-            width: "400px",
-            data: {
-              publisher: {
-                label: event.value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult) {
-              this.publisherService.insert(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Verlag wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.pub.publisher = data[0];
-                  this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-                  this.loadMasterData().subscribe();
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      let dialogRef = this.dialog.open(PublisherFormComponent, {
-        width: "400px",
-        data: {
-          publisher: this.pub.publisher
-        }
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.label) {
-          this.publisherService.update(dialogResult).subscribe({
-            next: data => {
-              this._snackBar.open('Verlag wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.publisher = data[0];
-              this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
-              this.loadMasterData().subscribe();
-            }
-          })
-        } else if (dialogResult && dialogResult.id) {
-          this.publisherService.update(dialogResult).subscribe();
-        }
-      });
-    }
-  }
-
-  addContract(event) {
-    if (!event.value) return;
-    if (!this.contracts.find(e => e.label === event.value)) {
-      let dialogData = new ConfirmDialogModel("Neuer Vertrag", `Möchten Sie den Vertrag "${event.value}" anlegen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(ContractFormComponent, {
-            width: "400px",
-            data: {
-              contract: {
-                label: event.value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult && dialogResult.label) {
-              this.contractService.insert(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Vertrag wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.pub.contract = data[0];
-                  this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
-                  this.loadMasterData().subscribe();
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      let dialogRef = this.dialog.open(ContractFormComponent, {
-        width: "400px",
-        data: {
-          contract: this.pub.contract
-        }
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.label) {
-          this.contractService.update(dialogResult).subscribe({
-            next: data => {
-              this._snackBar.open('Vertrag wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.contract = data[0];
-              this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
-              this.loadMasterData().subscribe();
-            }
-          })
-        } else if (dialogResult && dialogResult.id) {
-          this.contractService.update(dialogResult).subscribe();
-        }
-      });
-    }
-  }
-
-  addFunder(event) {
-    if (!event.value) return;
-    let funder = this.funders.find(e => e.label.toLocaleLowerCase() === event.value.toLocaleLowerCase());
-    if (funder) this.pub.funders.push(funder);
-    else {
-      // new funder
-      let dialogData = new ConfirmDialogModel("Förderer anlegen", `Möchten sSie Förderer "${event.value}" hinzufügen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-      let value = event.value;
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          this.funderService.insert({ label: value }).subscribe({
-            next: data => {
-              this._snackBar.open('Förderer wurde hinzugefügt', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.funders.push(data[0])
-              this.loadMasterData().subscribe();
-            }
-          })
-        }
-      })
-    }
-    this.funderInput.nativeElement.value = '';
-    this.form.get('finance_info').get('funder').setValue('');
+  setFunder(event) {
+    if (!this.pub.funders) this.pub.funders = [];
+    this.pub.funders.push(event);
+    this.form.markAsDirty()
   }
 
   removeFunder(funder) {
     if (this.disabled) return;
     this.pub.funders = this.pub.funders.filter(ap => ap.id !== funder.id)
-    this.form.get('finance_info').get('funder').setValue('');
+    this.form.markAsDirty()
   }
 
-  addGreaterEntity(event) {
-    if (!event.value) return;
-    if (!this.greater_entities.find(e => e.label === event.value)) {
-      let dialogData = new ConfirmDialogModel("Neue Größere Einheit", `Möchten Sie die Größere Einheit "${event.value}" anlegen?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let dialogRef1 = this.dialog.open(GreaterEntityFormComponent, {
-            width: "400px",
-            data: {
-              greater_entity: {
-                label: event.value
-              }
-            }
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            if (dialogResult) {
-              this.geService.insert(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open('Größere Einheit wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.pub.greater_entity = data[0];
-                  this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-                  this.loadMasterData().subscribe();
-                }
-              })
-            }
-          });
-        }
-      });
-    } else {
-      let dialogRef = this.dialog.open(GreaterEntityFormComponent, {
-        width: "400px",
-        data: {
-          greater_entity: this.pub.greater_entity
-        }
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.label) {
-          this.geService.update(dialogResult).subscribe({
-            next: data => {
-              this._snackBar.open('Größere Einheit wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.pub.greater_entity = data[0];
-              this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
-              this.loadMasterData().subscribe();
-            }
-          })
-        } else if (dialogResult && dialogResult.id) {
-          this.geService.update(dialogResult).subscribe();
-        }
-      });
-    }
+  setGE(event) {
+    this.pub.greater_entity = event;
+    this.form.markAsDirty()
   }
 
-  selectedGE(event: MatAutocompleteSelectedEvent): void {
-    this.pub.greater_entity = this.greater_entities.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('biblio_info').get('ge').setValue(this.pub.greater_entity.label)
+  setOA(event) {
+    this.pub.oa_category = event;
+    this.form.markAsDirty()
   }
-  selectedPubl(event: MatAutocompleteSelectedEvent): void {
-    this.pub.publisher = this.publishers.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('biblio_info').get('publ').setValue(this.pub.publisher.label)
+
+  setLang(event) {
+    this.pub.language = event;
+    this.form.markAsDirty()
   }
-  selectedContr(event: MatAutocompleteSelectedEvent): void {
-    this.pub.contract = this.contracts.find(e => e.label.trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    this.form.get('finance_info').get('contr').setValue(this.pub.contract.label)
-  }
-  selectedFunder(event: MatAutocompleteSelectedEvent): void {
-    this.addFunder({ value: event.option.value })
+
+  setPubType(event) {
+    this.pub.pub_type = event;
+    this.form.markAsDirty()
   }
 
   close() {
@@ -569,17 +313,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
         else this.close()
       });
-    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
+    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null  })
     else this.close()
   }
 
   action(): void {
     this.submitted = true;
     if (this.form.invalid) return;
-
-    if (!this.form.get('biblio_info').get('ge').value) this.pub.greater_entity = null;
-    if (!this.form.get('biblio_info').get('publ').value) this.pub.publisher = null;
-    if (!this.form.get('finance_info').get('contr').value) this.pub.contract = null;
 
     let formValue = {
       ...this.form.get('author_info').getRawValue(),
@@ -610,10 +350,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (!this.pub[key]) this.pub[key] = undefined;
       }
     }
-    this.pub.pub_type = this.form.get('biblio_info').get('pub_type').value !== -1 ? this.pub_types.find(e => e.id === this.form.get('biblio_info').get('pub_type').value) : null;
-    this.pub.oa_category = this.form.get('oa_info').get('oa_cat').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('oa_info').get('oa_cat').value) : null;
-    this.pub.language = this.form.get('biblio_info').get('language').value !== -1 ? this.oa_categories.find(e => e.id === this.form.get('biblio_info').get('language').value) : null;
-    this.dialogRef.close(this.pub);
+    this.dialogRef.close({ ...this.pub, updated: true });
   }
 
   getAuthorInfo() {
@@ -690,21 +427,23 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   addInvoice(invoice?: Invoice) {
+    if (!this.pub.invoices) this.pub.invoices = [];
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
       maxWidth: "850px",
       data: {
-        invoice
-      }
+        entity: invoice
+      },
+      disableClose: true
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data && data.cost_items) {
+        if (data && data.updated) {
           this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
           this.pub.invoices.push(data)
           if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
-        } else if (data && data.id) {
+        } /*else if (data && data.id) {
           this.invoiceService.update(data).subscribe();
-        }
+        }*/
       }
     });
   }
@@ -720,46 +459,33 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
   addAuthorship(authorPub?) {
     if (this.disabled) return;
+    if (!this.pub.authorPublications) this.pub.authorPublications = [];
     let data = {};
-    if (authorPub) data = { authorPub, authors: this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId).map(e => e.authorId) }
-    else data = { authors: this.pub.authorPublications.map(e => e.authorId) }
+    data = { entity: authorPub }
     let dialogRef = this.dialog.open(AuthorshipFormComponent, {
       minWidth: "450px",
-      data
+      data,
+      disableClose: true
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data.authorId) {
+        if (data.author) {
+          //if edit mode, delete the original version
           if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
-          //this.pub.authorPublications.push(data)
-          //if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
           this.pub.authorPublications = this.pub.authorPublications.concat([data])
+          if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
         }
       }
     });
   }
 
-  deleteId(elem) {
-    if (this.disabled) return;
-    this.pub.identifiers = this.pub.identifiers.filter(e => e.id !== elem.id)
-  }
-  addId() {
-    if (this.disabled || this.idForm.invalid) return;
-    this.pub.identifiers.push({
-      type: this.idForm.get('type').value,
-      value: this.idForm.get('value').value
-    })
-    this.idForm.reset();
-    if (this.tableId) this.tableId.dataSource = new MatTableDataSource<PublicationIdentifier>(this.pub.identifiers);
-  }
-
-  showStatusLabel(long:boolean) {
+  showStatusLabel(long: boolean) {
     let value = this.statuses?.find(e => e.id == this.form.get('status').value)?.label
     if (!value) return "";
     if (long) return value
     else {
-     if (value.length>27) return value.slice(0,27)+"...";
-     else return value;
+      if (value.length > 27) return value.slice(0, 27) + "...";
+      else return value;
     }
   }
 }

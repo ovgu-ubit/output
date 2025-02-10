@@ -30,6 +30,7 @@ export class StatisticsComponent implements OnInit {
       type: 'column',
       plotBorderWidth: null,
       plotShadow: false,
+      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
     },
     title: {
       text: 'Anzahl Publikationen nach Jahr'
@@ -94,7 +95,7 @@ export class StatisticsComponent implements OnInit {
   ngOnInit(): void {
     exporting(Highcharts);
     let ob$: Observable<any> = this.updateChart();
-    ob$ = merge(ob$, this.instService.getinstitutes().pipe(map(
+    ob$ = merge(ob$, this.instService.getAll().pipe(map(
       data => {
         this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));
         this.institutes.push({label: 'Unbekannt'})
@@ -108,7 +109,7 @@ export class StatisticsComponent implements OnInit {
         );
       })))
 
-    ob$ = merge(ob$, this.publisherService.getPublishers().pipe(map(
+    ob$ = merge(ob$, this.publisherService.getAll().pipe(map(
       data => {
         this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
         this.publishers.push({label: 'Unbekannt'})
@@ -121,7 +122,7 @@ export class StatisticsComponent implements OnInit {
           map(value => this._filterPublisher(value || '')),
         );
       })));
-    ob$ = merge(ob$, this.contractService.getContracts().pipe(map(
+    ob$ = merge(ob$, this.contractService.getAll().pipe(map(
       data => {
         this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
         this.contracts.push({label: 'Unbekannt', publisher: null})
@@ -134,12 +135,12 @@ export class StatisticsComponent implements OnInit {
           map(value => this._filterContract(value || '')),
         );
       })));
-    ob$ = merge(ob$, this.oaService.getOACategories().pipe(map(
+    ob$ = merge(ob$, this.oaService.getAll().pipe(map(
       data => {
         this.oa_cats = data.sort((a, b) => a.label.localeCompare(b.label));
         this.oa_cats.push({label: 'Unbekannt', is_oa: null})
       })));
-    ob$ = merge(ob$, this.pubTypeService.getPubTypes().pipe(map(
+    ob$ = merge(ob$, this.pubTypeService.getAll().pipe(map(
       data => {
         this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
         this.pub_types.push({label: 'Unbekannt', review: null})

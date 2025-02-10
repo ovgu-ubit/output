@@ -3,15 +3,16 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { InstituteIndex } from '../../../../../output-interfaces/PublicationIndex';
 import { Institute } from '../../../../../output-interfaces/Publication';
+import { EntityService } from 'src/app/interfaces/service';
 @Injectable({
   providedIn: 'root'
 })
-export class InstituteService {
+export class InstituteService implements EntityService<Institute,InstituteIndex> {
 
   
   constructor(private http: HttpClient) { }
 
-  public getinstitutes() {
+  public getAll() {
     return this.http.get<Institute[]>(environment.api + 'institute', { withCredentials: true });
   }
 
@@ -19,11 +20,11 @@ export class InstituteService {
     return this.http.get<InstituteIndex[]>(environment.api + 'institute/index?reporting_year='+yop, { withCredentials: true });
   }
 
-  public getInstitute(id:number) {
+  public getOne(id:number) {
     return this.http.get<Institute>(environment.api + 'institute/'+id, { withCredentials: true });
   }
 
-  public addInstitute(inst:Institute) {
+  public add(inst:Institute) {
     return this.http.post<Institute>(environment.api + 'institute', inst, { withCredentials: true });
   }
 
@@ -31,12 +32,12 @@ export class InstituteService {
     return this.http.put<Institute>(environment.api + 'institute', inst, { withCredentials: true });
   }
   
-  public delete(insts:Institute[]) {
-    return this.http.delete<Institute[]>(environment.api + 'institute', { withCredentials: true, body: insts });
+  public delete(ids:number[]) {
+    return this.http.delete<Institute[]>(environment.api + 'institute', { withCredentials: true, body: ids.map(e => ({id:e})) });
   }
 
-  public combine(id1:number, ids:number[], aliases?:string[]) {
-    return this.http.post(environment.api + 'institute/combine', {id1,ids,aliases}, { withCredentials: true });
+  public combine(id1:number, ids:number[], options?: {aliases: string[]}) {
+    return this.http.post(environment.api + 'institute/combine', {id1,ids,aliases: options.aliases}, { withCredentials: true });
   }
 
   public getSubInstitutes(id:number) {

@@ -1,12 +1,16 @@
 <h2 mat-dialog-title>
-    {{title}}
-  </h2>
-  
-  <mat-dialog-content>
-    {{message}}
-  </mat-dialog-content>
-  
-  <mat-dialog-actions>
-    <button mat-raised-button color="primary" class="btn-primary" mat-dialog-close>Nein</button>
-    <button mat-raised-button color="primary" class="btn-primary" mat-dialog-close="true">Ja</button>
-  </mat-dialog-actions>
+  {{title}}
+</h2>
+
+<mat-dialog-content>
+  {{message}} <br>
+  <mat-checkbox [(ngModel)]="soft_delete" matTooltip="D.h. diese Entität(en) werden bei künftigen Imports ignoriert"
+    *ngIf="this.soft">
+    Soft-Delete
+  </mat-checkbox>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button mat-raised-button  class="secondary-button" (click)="onDismiss()">Nein</button>
+  <button mat-raised-button  class="primary-button" (click)="onConfirm()">Ja</button>
+</mat-dialog-actions>

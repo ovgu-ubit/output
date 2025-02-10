@@ -8,9 +8,12 @@ import { AuthorizationService } from "./authorization.service";
 
 @Injectable()
 export class TokenAuthorizationService extends AuthorizationService {
-    constructor(protected reflector: Reflector, protected configService: ConfigService, private jwtService: JwtService, private httpService: HttpService) { super(reflector, configService) }
+    constructor(protected reflector: Reflector, protected configService: ConfigService, private jwtService: JwtService, private httpService: HttpService) { 
+        super(reflector, configService) 
+        this.AUTH_API = this.configService.get<string>('AUTH_API').replace(/\/?$/, '/') + 'auth/';
+    }
 
-    private AUTH_API = this.configService.get<string>('AUTH_API').replace(/\/?$/, '/') + 'auth/';
+    private AUTH_API:string;
 
     override async verify(context: ExecutionContext) {
         let request = context.switchToHttp().getRequest();

@@ -1,5 +1,4 @@
 import {Entity, PrimaryGeneratedColumn, Column, ManyToOne, Unique} from "typeorm";
-import { GreaterEntity } from "./GreaterEntity";
 import { ContractIdentifier as IContractIdentifier } from "../../../output-interfaces/Publication"
 import { Contract } from "./Contract";
 
@@ -17,5 +16,5 @@ export class ContractIdentifier implements IContractIdentifier {
     value: string;
 
     @ManyToOne(() => Contract, (ge) => ge.id)
-    contract?: Contract
+    entity?: Contract
 }

@@ -76,7 +76,6 @@ import { ConfirmDialogComponent } from './tools/confirm-dialog/confirm-dialog.co
 import { CsvFormatComponent } from './tools/csv-format/csv-format.component';
 import { LogDialogComponent } from './tools/log-dialog/log-dialog.component';
 import { TableComponent } from './tools/table/table.component';
-import { DeletePublicationDialogComponent } from './tools/delete-publication-dialog/delete-publication-dialog.component';
 import { AliasFormComponent } from './tools/alias-form/alias-form.component';
 import { AuthorshipFormComponent } from './pages/windows/authorship-form/authorship-form.component';
 import { RolesComponent } from './pages/master-data/roles/roles.component';
@@ -84,6 +83,12 @@ import { RoleFormComponent } from './pages/windows/role-form/role-form.component
 import { StatusesComponent } from './pages/master-data/statuses/statuses.component';
 import { StatusFormComponent } from './pages/windows/status-form/status-form.component';
 import { DoiFormComponent } from './pages/windows/doi-form/doi-form.component';
+import { AbstractFormComponent } from './pages/windows/abstract-form/abstract-form.component';
+import { SelectEntityComponent } from './tools/select-entity/select-entity.component';
+import { IdTableComponent } from './tools/id-table/id-table.component';
+import { AliasTableComponent } from './tools/alias-table/alias-table.component';
+import { SelectAuthorComponent } from './tools/select-author/select-author.component';
+import { WindowToolbarComponent } from './tools/window-toolbar/window-toolbar.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -130,14 +135,19 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         CostTypesComponent,
         CostCenterFormComponent,
         CostTypeFormComponent,
-        DeletePublicationDialogComponent,
         AliasFormComponent,
         AuthorshipFormComponent,
         RolesComponent,
         RoleFormComponent,
         DoiFormComponent,
         StatusesComponent,
-        StatusFormComponent
+        StatusFormComponent,
+        AbstractFormComponent,
+        SelectEntityComponent,
+        IdTableComponent,
+        AliasTableComponent,
+        SelectAuthorComponent,
+        WindowToolbarComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,

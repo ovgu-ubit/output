@@ -1,4 +1,4 @@
-<mat-toolbar color="primary" style="display: flex;justify-content: space-between;">
+<mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
     <h1>Autorenschaft bearbeiten</h1>
     <div style="display: flex;justify-content: flex-end;">
         <div>
@@ -11,34 +11,19 @@
 </mat-toolbar>
 <div style="padding: 5px">
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Person</mat-label>
-            <input matInput #authorInput formControlName="author" placeholder="Person auswählen oder hinzufügen"
-                [matAutocomplete]="auto" (keydown.enter)="addAuthor()">
-            <button type="button" matSuffix mat-icon-button (click)="addAuthor()"
-                matTooltip="Person hinzufügen" [matTooltipShowDelay]="800">
-                <mat-icon
-                    *ngIf="!this.disabled; else else2">edit</mat-icon>
-                <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
-            </button>
-            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
-                <mat-option *ngFor="let author of filteredAuthors | async"
-                    [value]="author.id">
-                    {{author.last_name}}, {{author.first_name}} <ng-container *ngIf="author.orcid">
-                        ({{author.orcid}})
-                    </ng-container>
-                </mat-option>
-            </mat-autocomplete>
-        </mat-form-field>
+        <app-select-author name="Person" [disabled]="this.disabled"
+                    [serviceClass]="this.authorService" [formComponent]="this.authorForm"
+                    (selected)="this.setAut($event)"
+                    [ent]="this.entity? this.entity['author'] : undefined"></app-select-author>
 
         <mat-checkbox formControlName="corresponding">Corresponding?</mat-checkbox>
 
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Rolle</mat-label>
-            <mat-select [(value)]="this.role" [compareWith]="compare" [disabled]="this.disabled">
-                <mat-option *ngFor="let inst of this.roles" [value]="inst">{{inst.label}}</mat-option>
-            </mat-select>
-        </mat-form-field>
+        <app-select-entity name="Rolle" style="width: 100%;"
+        [disabled]="this.disabled"
+        [serviceClass]="this.roleService" [formComponent]="this.roleForm"
+        (selected)="this.setRole($event)"
+        [ent]="this.entity? this.entity['role'] : undefined"></app-select-entity>
+
         <mat-card>
             <mat-card-title><mat-card-subtitle>Institutszuordnung</mat-card-subtitle></mat-card-title>
             <mat-card-content style="display: flex; flex-direction: column;justify-content: space-evenly;">
@@ -49,23 +34,17 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Institut d. Person auswählen</mat-label>
-                    <mat-select [(value)]="this.institute" [compareWith]="compare" [disabled]="this.disabled">
+                    <mat-select [(value)]="this.entity.institute" [compareWith]="compare" [disabled]="this.disabled">
                         <mat-option [value]="null">- keine Angabe -</mat-option>
-                        <mat-option *ngFor="let inst of this.author?.institutes"
+                        <mat-option *ngFor="let inst of this.entity.author?.institutes"
                             [value]="inst">{{inst.label}}</mat-option>
                     </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="fill">
-                    <mat-label>Sonstiges Institut auswählen</mat-label>
-                    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="autoPublisher"
-                        formControlName="inst" (keydown.enter)="addInst($event.target)" #input_publ>
-                    <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedInst($event)">
-                        <mat-option *ngFor="let inst of this.filtered_institutes | async" [value]="inst.label">
-                            {{inst.label}} ({{inst.short_label}})
-                        </mat-option>
-                    </mat-autocomplete>
-                </mat-form-field>
+                <app-select-entity name="Sonstiges Institut auswählen" style="width: 100%;"
+                [disabled]="this.disabled"
+                [serviceClass]="this.instService" [formComponent]="this.instForm"
+                (selected)="this.setInst($event)"></app-select-entity>
             </mat-card-content>
         </mat-card>
     </form>

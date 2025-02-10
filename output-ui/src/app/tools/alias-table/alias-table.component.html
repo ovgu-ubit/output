@@ -1,0 +1,34 @@
+<mat-expansion-panel>
+    <mat-expansion-panel-header>
+        <mat-panel-title>
+            Aliase
+        </mat-panel-title>
+        <mat-panel-description>
+            Werden beim Import auf diese(s) {{this.name}} abgebildet
+        </mat-panel-description>
+    </mat-expansion-panel-header>
+    <table *ngIf="this.entity?.aliases && this.entity.aliases.length>0" mat-table [dataSource]="this.entity.aliases">
+        <ng-container matColumnDef="alias">
+            <th mat-header-cell *matHeaderCellDef> Alias </th>
+            <td mat-cell *matCellDef="let element"> {{element.alias}} </td>
+        </ng-container>
+        <ng-container matColumnDef="delete">
+            <th mat-header-cell *matHeaderCellDef> </th>
+            <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                    (click)="this.deleteAlias(element)" matTooltip="Alias löschen"
+                    [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="['alias','delete']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['alias','delete'];"></tr>
+    </table>
+    <form [formGroup]="aliasForm" style="width: 100%;display: flex;gap:5px;justify-content: space-around;"
+        *ngIf="!this.disabled">
+        <mat-form-field style="width: 90%;">
+            <mat-label>Alias</mat-label>
+            <input matInput placeholder="Alias" formControlName="alias" />
+        </mat-form-field>
+        <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
+            matTooltip="Alias hinzufügen"><mat-icon>add</mat-icon></button>
+    </form>
+</mat-expansion-panel>

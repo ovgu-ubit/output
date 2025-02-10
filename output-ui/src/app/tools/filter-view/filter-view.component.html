@@ -49,7 +49,7 @@
                         <input matInput [matDatepicker]="picker" formControlName="value">
                         <mat-hint>T.M.JJJJ</mat-hint>
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker startView="year" color="accent"></mat-datepicker>
+                        <mat-datepicker #picker startView="year"></mat-datepicker>
                     </mat-form-field>
                     <mat-form-field *ngIf="!date(i)">
                         <mat-label>Suchwert</mat-label>
@@ -69,13 +69,13 @@
         </div>
         <br />
         <div class="form-group" align="center">
-            <button mat-raised-button type="reset" color="warn" (click)="this.reset()">Alle Filter
+            <button mat-raised-button type="reset" (click)="this.reset()">Alle Filter
                 zurücksetzen</button>&nbsp;
-            <button mat-raised-button type="submit" color="primary" (click)="this.action()">Filter
+            <button mat-raised-button type="submit"  class="primary-button" (click)="this.action()">Filter
                 anwenden</button>&nbsp;
-            <button mat-raised-button type="reset" color="accent" (click)="this.resetForm()">Formular
+            <button mat-raised-button type="reset"  class="secondary-button" (click)="this.resetForm()">Formular
                 zurücksetzen</button>&nbsp;
-            <button mat-raised-button color="accent" (click)="this.abort()">Abbrechen</button>
+            <button mat-raised-button  class="secondary-button"(click)="this.abort()">Abbrechen</button>
         </div>
     </form>
 </div>
