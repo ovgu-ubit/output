@@ -221,7 +221,7 @@ html {
   }
 }
 .mat-toolbar.secondary-toolbar {
-  background-color: mat.get-theme-color($theme, secondary, 60) !important;
+  background-color: mat.get-theme-color($theme, secondary, 80) !important;
   color: mat.get-theme-color($theme, neutral, 0) !important;
   .mat-mdc-raised-button {
     color: mat.get-theme-color($theme, neutral, 0) !important;
