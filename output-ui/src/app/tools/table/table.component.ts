@@ -98,14 +98,17 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
     ob$ = ob$.pipe(concatMap(data => {
       return this.store.select(selectReportingYear).pipe(concatMap(data => {
-        if (data) {
+        if (data !== undefined) {
           return of(data)
         } else {
           return this.publicationService.getDefaultReportingYear();
         }
       }), map(data => {
         this.reporting_year = data;
-        if (this.name.includes('Publikationen des Jahres ')) this.name = 'Publikationen des Jahres ' + this.reporting_year;
+        if (this.name.includes('Publikationen des Jahres ')) {
+          if (this.reporting_year) this.name = 'Publikationen des Jahres ' + this.reporting_year;
+          else this.name = 'Publikationen des Jahres ohne Datumsangabe'
+        }
         let col = this.headers.find(e => e.colName === 'pub_count');
         if (col) col.colTitle += ' ' + data
         col = this.headers.find(e => e.colName === 'pub_count_corr')

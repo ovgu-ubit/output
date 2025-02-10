@@ -7,6 +7,6 @@ export class Config implements IConfig {
     @PrimaryColumn()
     key: string;
 
-    @Column()
+    @Column({nullable: true})
     value: string;
 }
