@@ -16,7 +16,7 @@ export class AppConfigService {
 
     
     setDefaultReportingYear(value:number) {
-        this.repository.save({key: 'reporting_year', value: value+''})
+        this.repository.save({key: 'reporting_year', value: value as any as string})
     }
 }
 

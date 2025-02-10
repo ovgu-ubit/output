@@ -196,7 +196,12 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       filter: null,
       paths: null
     }
-    this.table.updateData().subscribe();
+    this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
+      this.table.reporting_year = data;
+      if (data) this.name = 'Publikationen des Jahres ' + data;
+      else this.name = 'Publikationen des Jahres ohne Datumsangabe'
+      return this.table.updateData();
+    })).subscribe();
   }
 
   extendedFilters() {
