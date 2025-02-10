@@ -16,11 +16,11 @@ import { AbstractFilterService } from "../services/filter/abstract-filter.servic
 @ApiTags("publications")
 export class PublicationController {
 
-    constructor(@InjectRepository(Publication) private repository, 
-    private publicationService:PublicationService, 
-    private appConfigService:AppConfigService,
-    private configService:ConfigService,
-    @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex|Publication>[]) { }
+    constructor(@InjectRepository(Publication) private repository,
+        private publicationService: PublicationService,
+        private appConfigService: AppConfigService,
+        private configService: ConfigService,
+        @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -42,9 +42,10 @@ export class PublicationController {
         let beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
         let endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
         //Show all
-        return this.repository.find({ where: [{ pub_date: Between(beginDate, endDate) }, ], relations: {
-            oa_category: true,
-                invoices: request['user']? request['user']['read'] : false,
+        return this.repository.find({
+            where: [{ pub_date: Between(beginDate, endDate) },], relations: {
+                oa_category: true,
+                invoices: request['user'] ? request['user']['read'] : false,
                 authorPublications: {
                     author: true,
                     institute: true
@@ -54,7 +55,8 @@ export class PublicationController {
                 publisher: true,
                 contract: true,
                 funders: true
-        } }).catch(err => {
+            }
+        }).catch(err => {
             console.log(err);
             throw new InternalServerErrorException('Failure while selecting');
         });
@@ -74,7 +76,7 @@ export class PublicationController {
     })
     async one(@Query('id') id: number, @Req() request: Request) {
         if (!id) throw new BadRequestException('id must be given')
-        return await this.publicationService.getPublication(id, request['user']? request['user']['read'] : false, request['user']? request['user']['write'] : false);
+        return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write'] : false);
     }
 
     @Get('publicationIndex')
@@ -85,9 +87,13 @@ export class PublicationController {
         description: 'The YOP that should be reported.',
         example: "2022"
     })
-    async index(@Query('yop') yop: number, @Query('soft') soft?: boolean) : Promise<PublicationIndex[]> {
-        if ((yop == null || yop == undefined) && !soft) throw new BadRequestException('reporting year or soft has to be given');
-        if (!soft) return await this.publicationService.index(yop);
+    async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
+        if ((yop === null || yop === undefined) && !soft) throw new BadRequestException('reporting year or soft has to be given');
+        
+        if (!soft) {
+            if (Number.isNaN(yop)) return await this.publicationService.index(null);
+            else return await this.publicationService.index(yop);
+        }
         else return await this.publicationService.softIndex();
     }
 
@@ -121,8 +127,8 @@ export class PublicationController {
     @Delete()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async remove(@Body('publications') publications: Publication[],@Body('soft') soft?: boolean) {
-        return this.publicationService.delete(publications,soft);
+    async remove(@Body('publications') publications: Publication[], @Body('soft') soft?: boolean) {
+        return this.publicationService.delete(publications, soft);
     }
 
     @Get('reporting_year')
@@ -131,7 +137,7 @@ export class PublicationController {
         type: 'boolean',
         required: false
     })
-    getReportingYear(@Query('default') standard:boolean) {
+    getReportingYear(@Query('default') standard: boolean) {
         if (standard) return this.appConfigService.get('reporting_year');
         else return this.publicationService.getReportingYears();
     }
@@ -147,7 +153,7 @@ export class PublicationController {
             }
         }
     })
-    setReportingYear(@Body('year') year:number) {
+    setReportingYear(@Body('year') year: number) {
         return this.appConfigService.setDefaultReportingYear(year);
     }
 
@@ -163,9 +169,9 @@ export class PublicationController {
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        let res = await this.publicationService.combine(id1,ids);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publication') 
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publication') 
+        let res = await this.publicationService.combine(id1, ids);
+        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publication')
+        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publication')
         else return res;
     }
 
@@ -187,7 +193,7 @@ export class PublicationController {
             }
         }
     })
-    async filter(@Body('filter') filter:SearchFilter, @Body('paths') paths:string[]) {
+    async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
         let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (let path of paths) {
             let so = this.configService.get('filter_services').findIndex(e => e.path === path)
@@ -200,10 +206,11 @@ export class PublicationController {
     @Get('filter')
     get_filter() {
         let result = [];
-        for (let i=0;i<this.configService.get('filter_services').length;i++) {
-          result.push({
-            path: this.configService.get('filter_services')[i].path, 
-            label:this.filterServices[i].getName()})
+        for (let i = 0; i < this.configService.get('filter_services').length; i++) {
+            result.push({
+                path: this.configService.get('filter_services')[i].path,
+                label: this.filterServices[i].getName()
+            })
         }
         return result;
     }

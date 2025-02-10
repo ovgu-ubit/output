@@ -1,4 +1,4 @@
-<br/>
+<br />
 <div class="container-fluid">
     <form (ngSubmit)="this.action()" align="center">
 
@@ -7,24 +7,24 @@
                 <mat-form-field appearance="fill">
                     <mat-label>Berichtsjahr</mat-label>
                     <mat-select [(value)]="this.reporting_year">
-                        <mat-option *ngFor="let year of this.reporting_years" [value]="year">{{year}}</mat-option>
-                      </mat-select>
+                        <mat-option *ngFor="let year of this.reporting_years" [value]="year">{{year != null? year : 'Ohne Datumsangabe'}}</mat-option>
+                    </mat-select>
                 </mat-form-field>
             </div>
         </div>
 
         <div class="row justify-content-md-center">
             <div class="form-group col-md-12">
-                <mat-checkbox [(ngModel)]="checked" [checked]="checked" name="default" [disabled]="!this.tokenService.hasRole('writer')">Als Standard übernehmen</mat-checkbox>
+                <mat-checkbox [(ngModel)]="checked" [checked]="checked" name="default"
+                    [disabled]="!this.tokenService.hasRole('writer')">Als Standard übernehmen</mat-checkbox>
             </div>
         </div>
 
         <div class="form-group" align="center">
-            <button mat-raised-button type="submit"  class="primary-button">Berichtsjahr ändern</button>&nbsp;
-            <button mat-raised-button type="reset"  class="secondary-button"
-                (click)="this.abort()">Abbrechen</button>
+            <button mat-raised-button type="submit" class="primary-button">Berichtsjahr ändern</button>&nbsp;
+            <button mat-raised-button type="reset" class="secondary-button" (click)="this.abort()">Abbrechen</button>
         </div>
 
     </form>
 </div>
-<br/>
+<br />

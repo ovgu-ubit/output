@@ -31,7 +31,7 @@ export class ReportingYearFormComponent implements OnInit{
   }
 
   abort(): void {
-    this.dialogRef.close(null)
+    this.dialogRef.close(undefined)
   }
 
   action(): void {
