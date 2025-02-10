@@ -5,7 +5,7 @@
 <div class="jumbotron" [hidden]="this.loading">
   <div class="container-fluid">
 
-    <mat-toolbar color="accent" style="display: flex;justify-content: space-between;">
+    <mat-toolbar class="secondary-toolbar" style="display: flex;justify-content: space-between;">
       <span>
         <h4 *ngIf="!this.icon">
           <mat-icon>book</mat-icon> {{name}} ({{ this.dataSource.data.length }})
@@ -84,12 +84,12 @@
 
         <ng-container matColumnDef="select" sticky>
           <th mat-header-cell *matHeaderCellDef style="width: 10px;">
-            <mat-checkbox (change)="$event ? masterToggle() : null" [checked]="isAllSelected()" color="accent">
+            <mat-checkbox (change)="$event ? masterToggle() : null" [checked]="isAllSelected()">
             </mat-checkbox>
           </th>
           <td mat-cell *matCellDef="let row">
             <mat-checkbox style="padding-top: 8px" (click)="$event.stopPropagation()"
-              (change)="this.selection.toggle(row)" [checked]="this.selection.isSelected(row)" color="primary">
+              (change)="this.selection.toggle(row)" [checked]="this.selection.isSelected(row)">
             </mat-checkbox>
           </td>
         </ng-container>

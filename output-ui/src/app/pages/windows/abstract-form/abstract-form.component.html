@@ -66,7 +66,7 @@
                     <mat-hint>T.M.JJJJ</mat-hint>
                     <mat-datepicker-toggle matIconSuffix [for]="i"></mat-datepicker-toggle>
                     <mat-datepicker #i [startAt]="this.entity && this.entity[field.key]? this.entity[field.key] : today"
-                        startView="year" color="accent"></mat-datepicker>
+                        startView="year"></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field *ngSwitchCase="'select'">

@@ -18,10 +18,10 @@
             </mat-form-field>
             <input *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;" type="file" #fileUpload (change)="setFile($event)">
             <div *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;">{{this.csv_format?.name}}</div>
-            <button *ngIf="im.path === 'csv' || im.path === 'xls'" mat-raised-button color="accent" type="button" (click)="this.csvFormat(im.path)">Import konfigurieren</button>
+            <button *ngIf="im.path === 'csv' || im.path === 'xls'" mat-raised-button  class="secondary-button" type="button" (click)="this.csvFormat(im.path)">Import konfigurieren</button>
             <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
-            <button mat-raised-button [hidden]="!this.forms[im.label].get('update').value" type="button" color="accent" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Update konfigurieren</button>
-            <button mat-raised-button type="submit" color="primary" [disabled]="this.obs$[im.label]">Import starten</button>
+            <button mat-raised-button [hidden]="!this.forms[im.label].get('update').value" type="button"  class="secondary-button" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Update konfigurieren</button>
+            <button mat-raised-button type="submit"  class="primary-button" [disabled]="this.obs$[im.label]">Import starten</button>
         </form>
             
             <div *ngIf="this.obs$[im.label]">{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %</div>

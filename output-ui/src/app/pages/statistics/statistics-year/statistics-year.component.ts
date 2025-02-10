@@ -19,7 +19,8 @@ export class StatisticsYearComponent implements OnInit {
   chartOptions: Highcharts.Options = {
     chart: {
       plotBorderWidth: null,
-      plotShadow: false
+      plotShadow: false,
+      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color"),
     },
     title: {
       text: 'Anteil Corresponding'
@@ -44,7 +45,15 @@ export class StatisticsYearComponent implements OnInit {
           }
         }
       }
-    },
+    },navigation: {
+      buttonOptions: {
+        theme: {
+          fill: window.getComputedStyle(document.body).getPropertyValue("background-color"),
+        }
+      }, menuStyle : {
+        backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
+      }
+    }
 
   }; // required
   chartOptionsLocked = {
