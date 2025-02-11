@@ -54,7 +54,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   ngAfterViewInit(): void {
     if (!this.preProcessing) this.preProcessing = of(null);
     this.preProcessing.pipe(concatMap(data => {
-      if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+      if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data.locked) {
         this.disable();
       }
       if (this.data.entity?.id && this.service) {//edit mode with current db entity
