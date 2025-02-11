@@ -110,9 +110,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           else this.name = 'Publikationen des Jahres ohne Datumsangabe'
         }
         let col = this.headers.find(e => e.colName === 'pub_count');
-        if (col) col.colTitle += ' ' + data
+        if (col) col.colTitle += ' ' + (data? data : 'ohne Datum')
         col = this.headers.find(e => e.colName === 'pub_count_corr')
-        if (col) col.colTitle += ' ' + data
+        if (col) col.colTitle += ' ' + (data? data : 'ohne Datum')
       }), concatMap(data => this.updateData()))
     }));
 
@@ -398,7 +398,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   async showPubs?(id: number, field?: string) {
     let filterkey = null;
-    let date_filter = [{
+    let date_filter;
+    if (this.reporting_year) date_filter = [{
       op: JoinOperation.AND,
       key: 'pub_date',
       comp: CompareOperation.GREATER_THAN,
@@ -408,7 +409,12 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       key: 'pub_date',
       comp: CompareOperation.SMALLER_THAN,
       value: (Number(this.reporting_year) + 1) + '-01-01 00:00:00'
-    }]
+    }]; else date_filter = [{
+      op: JoinOperation.AND,
+      key: 'pub_date',
+      comp: CompareOperation.EQUALS,
+      value: null
+    }];
 
     filterkey = this.filter_key;
     if (field === 'pub_count_corr') filterkey = this.filter_key + '_corr'

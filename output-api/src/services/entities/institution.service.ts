@@ -20,8 +20,8 @@ export class InstitutionService {
         @InjectRepository(Author) private autRepository: Repository<Author>,
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
         @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) {
-            this.repository = this.manager.getTreeRepository(Institute);
-         }
+        this.repository = this.manager.getTreeRepository(Institute);
+    }
 
     public save(inst: any[]) {
         return this.repository.save(inst).catch(err => {
@@ -31,11 +31,11 @@ export class InstitutionService {
     }
 
     public get() {
-        return this.repository.find({relations:{aliases:true,super_institute: true, sub_institutes: true}});
+        return this.repository.find({ relations: { aliases: true, super_institute: true, sub_institutes: true } });
     }
     public async one(id: number, writer: boolean) {
         let inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
-        
+
         if (writer && !inst.locked_at) {
             await this.save([{
                 id: inst.id,
@@ -48,7 +48,7 @@ export class InstitutionService {
             }]);
             return this.one(id, writer);
         }
-        
+
         return inst;
     }
 
@@ -62,7 +62,7 @@ export class InstitutionService {
                 aut.institutes = aut.institutes.filter(e => e.id !== inst.id);
                 this.autRepository.save([aut])
             }
-            await this.aliasRepository.delete({elementId: instE.id});
+            await this.aliasRepository.delete({ elementId: instE.id });
         }
         return await this.repository.delete(insts.map(p => p.id));
     }
@@ -85,31 +85,37 @@ export class InstitutionService {
     }
 
     public async index(reporting_year: number): Promise<InstituteIndex[]> {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let time;
         let result;
 
         time = new Date();
-        let instIDs = (await this.repository.find({relations: {authors: true}}))
+        let instIDs = (await this.repository.find({ relations: { authors: true } }))
         result = [];
         for (let inst of instIDs) {
             let query = this.repository.createQueryBuilder("institute")
-                .innerJoin("institute_closure", "ic", "ic.id_descendant = institute.id", )
+                .innerJoin("institute_closure", "ic", "ic.id_descendant = institute.id",)
                 .leftJoin("author_publication", "aut_pub", "aut_pub.\"instituteId\" = institute.id")
                 .leftJoin("publication", "pub", "aut_pub.\"publicationId\" = pub.id")
                 .leftJoin("author_institutes_institute", "aut_inst", "aut_inst.\"instituteId\" = institute.id")
                 .select("COUNT(distinct pub.id)", "pub_count")
                 .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_count_corr")
                 .addSelect("COUNT(distinct aut_inst.\"authorId\")", "author_count_total")
-                .addSelect("COUNT(distinct id_descendant)-1","sub_inst_count")
-                .where("ic.id_ancestor = :id",{id:inst.id})
-                .andWhere('(pub is NULL or pub_date between :beginDate and :endDate)', { beginDate, endDate })
-            
+                .addSelect("COUNT(distinct id_descendant)-1", "sub_inst_count")
+                .where("ic.id_ancestor = :id", { id: inst.id })
+
+            if (reporting_year) {
+                let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+                let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+                query = query
+                    .andWhere('(pub is NULL or pub_date between :beginDate and :endDate)', { beginDate, endDate })
+            }
+            else {
+                query = query
+                    .andWhere('(pub is NULL or pub_date IS NULL)')
+            }
             //console.log(query.getSql());
             let res = await query.getRawOne() as any;
-            result.push({ ...res, sub_inst_count:res.sub_inst_count < 0? 0: res.sub_inst_count, id: inst.id, label: inst.label, short_label: inst.short_label, author_count: inst.authors?.length });
+            result.push({ ...res, sub_inst_count: res.sub_inst_count < 0 ? 0 : res.sub_inst_count, id: inst.id, label: inst.label, short_label: inst.short_label, author_count: inst.authors?.length });
         }
         //console.log('SQL: ' + (new Date().getTime() - time.getTime()) / 1000)
 
@@ -121,12 +127,12 @@ export class InstitutionService {
         let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } });
         let authors = []
         for (let id of ids) {
-            authors.push( await this.repository.findOne({ where: { id}, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } }))
+            authors.push(await this.repository.findOne({ where: { id }, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } }))
         }
-        
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
-        
-        let res = {...aut1};
+
+        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+
+        let res = { ...aut1 };
         res.authorPublications = undefined;
 
         for (let aut of authors) {
@@ -139,7 +145,7 @@ export class InstitutionService {
             }
 
             for (let alias of aut.aliases) {
-                res.aliases.push({elementId: res.id, alias: alias.alias})
+                res.aliases.push({ elementId: res.id, alias: alias.alias })
             }
 
             if (!res.label && aut.label) res.label = aut.label;
@@ -153,15 +159,15 @@ export class InstitutionService {
         if (alias_strings) {
             for (let alias of alias_strings) {
                 //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias});
+                res.aliases.push({ elementId: res.id, alias });
             }
         }
-        
+
         //update publication 1
         if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({elementId: In(authors.map(e => e.id))}) && await this.repository.delete({id: In(authors.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
+            if (await this.aliasRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
+            else return { error: 'delete' };
+        } else return { error: 'update' };
     }
 
     async findSuperInstitute(id: number) {

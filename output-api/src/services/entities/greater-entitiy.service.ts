@@ -13,8 +13,8 @@ import { PublicationService } from './publication.service';
 export class GreaterEntityService {
 
     constructor(@InjectRepository(GreaterEntity) private repository: Repository<GreaterEntity>,
-        @InjectRepository(Identifier) private idRepository: Repository<Identifier>, private publicationService:PublicationService,
-        private configService:ConfigService) { }
+        @InjectRepository(Identifier) private idRepository: Repository<Identifier>, private publicationService: PublicationService,
+        private configService: ConfigService) { }
 
     public async save(pubs: any[]) {
         for (let pub of pubs) {
@@ -37,12 +37,12 @@ export class GreaterEntityService {
     }
 
     public get() {
-        return this.repository.find({relations: {identifiers:true}});
+        return this.repository.find({ relations: { identifiers: true } });
     }
 
-    public async one(id:number, writer:boolean) {
-        let ge = await this.repository.findOne({where: {id},relations: {identifiers:true}});
-        
+    public async one(id: number, writer: boolean) {
+        let ge = await this.repository.findOne({ where: { id }, relations: { identifiers: true } });
+
         if (writer && !ge.locked_at) {
             await this.save([{
                 id: ge.id,
@@ -54,11 +54,11 @@ export class GreaterEntityService {
                 locked_at: null
             }]);
             return this.one(id, writer);
-        }        
+        }
         return ge;
     }
 
-    public async findOrSave(ge:GreaterEntity): Promise<GreaterEntity> {
+    public async findOrSave(ge: GreaterEntity): Promise<GreaterEntity> {
         if (!ge.label && !ge.identifiers) return null;
         let result = null;
         let ids2save = [];
@@ -68,7 +68,7 @@ export class GreaterEntityService {
             for (let { type, value } of ge.identifiers) {
                 let id = await this.idRepository.findOne({
                     where: { value: ILike(value) },
-                    relations: { entity: {identifiers:true} }
+                    relations: { entity: { identifiers: true } }
                 });
                 //if you find it, you got the entity
                 if (result && id && id.entity.id !== result.id) throw { origin: 'GE-Service', text: 'amibiguous id ' + id.value + ': ge ' + result.label + ' or ' + id.entity.label } as AppError;
@@ -86,8 +86,8 @@ export class GreaterEntityService {
         if (result) {
             //doaj info
             let flag = false;
-            if (ge.doaj_since && !result.doaj_since) {result.doaj_since = ge.doaj_since;flag=true;}
-            if (ge.doaj_until && result.doaj_since && !result.doaj_until) {result.doaj_until = ge.doaj_until;flag=true;}
+            if (ge.doaj_since && !result.doaj_since) { result.doaj_since = ge.doaj_since; flag = true; }
+            if (ge.doaj_until && result.doaj_since && !result.doaj_until) { result.doaj_until = ge.doaj_until; flag = true; }
             if (flag) await this.repository.save(result)
 
             //find associated ids
@@ -104,26 +104,22 @@ export class GreaterEntityService {
         }
     }
 
-    public async index(reporting_year:number): Promise<GreaterEntityIndex[]> {
-        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+    public async index(reporting_year: number): Promise<GreaterEntityIndex[]> {
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("greater_entity", "ge")
-                .leftJoin("ge.identifiers","identifier")
-                .select("ge.id","id")
-                .addSelect("ge.label","label")
-                .addSelect("ge.rating","rating")
-                .addSelect("ge.doaj_since","doaj_since")
-                .addSelect("ge.doaj_until","doaj_until")
-                .addSelect("STRING_AGG(identifier.value, '; ')","identifiers")
+                .leftJoin("ge.identifiers", "identifier")
+                .select("ge.id", "id")
+                .addSelect("ge.label", "label")
+                .addSelect("ge.rating", "rating")
+                .addSelect("ge.doaj_since", "doaj_since")
+                .addSelect("ge.doaj_until", "doaj_until")
+                .addSelect("STRING_AGG(identifier.value, '; ')", "identifiers")
                 //.addSelect("STRING_AGG(CONCAT(identifier.value,'(',identifier.type,')'), '; ')","identifiers")
                 .groupBy("ge.id")
                 .addGroupBy("ge.label")
                 .addGroupBy("ge.rating")
                 , "a")
-            .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date between :beginDate and :endDate",{beginDate, endDate} )
             .select("a.id", "id")
             .addSelect("a.label", "label")
             .addSelect("a.rating", "rating")
@@ -138,26 +134,36 @@ export class GreaterEntityService {
             .addGroupBy("a.doaj_until")
             .addGroupBy("a.identifiers")
 
+        if (reporting_year) {
+            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+        }
+        else {
+            query = query
+                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date IS NULL")
+        }
         //console.log(query.getSql());
 
         return query.getRawMany() as Promise<GreaterEntityIndex[]>;
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({where:{id:id1}, relations: {identifiers: true}});
+        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { identifiers: true } });
         let authors = []
         for (let id of ids) {
-            authors.push( await this.repository.findOne({where:{id},relations:{identifiers: true, publications:true}}))
+            authors.push(await this.repository.findOne({ where: { id }, relations: { identifiers: true, publications: true } }))
         }
-        
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
-        
-        let res = {...aut1};
+
+        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+
+        let res = { ...aut1 };
 
         for (let aut of authors) {
             let pubs = [];
             for (let pub of aut.publications) {
-                pubs.push({id:pub.id, greater_entity: aut1})
+                pubs.push({ id: pub.id, greater_entity: aut1 })
             }
             await this.publicationService.save(pubs)
             if (!res.label && aut.label) res.label = aut.label;
@@ -167,36 +173,36 @@ export class GreaterEntityService {
             if (!res.identifiers) res.identifiers = [];
             res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
         }
-        
+
         //update publication 1
         if (await this.repository.save(res)) {
-            if (await this.idRepository.delete({entity: {id: In(authors.map(e => e.id))}}) && await this.repository.delete({id: In(authors.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
-/*
-        let ides = [];
-        if (pub2.identifiers) for (let ide of pub2.identifiers) {
-            ides.push(ide.id)
-        }
-        if (ides.length>0) await this.idRepository.delete(ides)*/
-        
+            if (await this.idRepository.delete({ entity: { id: In(authors.map(e => e.id)) } }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
+            else return { error: 'delete' };
+        } else return { error: 'update' };
+        /*
+                let ides = [];
+                if (pub2.identifiers) for (let ide of pub2.identifiers) {
+                    ides.push(ide.id)
+                }
+                if (ides.length>0) await this.idRepository.delete(ides)*/
+
     }
-    
-    public async delete(insts:GreaterEntity[]) {
+
+    public async delete(insts: GreaterEntity[]) {
         for (let inst of insts) {
-            let conE: GreaterEntity = await this.repository.findOne({where:{id:inst.id},relations:{identifiers:true, publications:true},withDeleted: true});
+            let conE: GreaterEntity = await this.repository.findOne({ where: { id: inst.id }, relations: { identifiers: true, publications: true }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
-                pubs.push({id:pub.id, greater_entity: null})
+                pubs.push({ id: pub.id, greater_entity: null })
             }
-            if (pubs.length>0) await this.publicationService.save(pubs);
+            if (pubs.length > 0) await this.publicationService.save(pubs);
 
             let ides = [];
             if (conE.identifiers) for (let ide of conE.identifiers) {
                 ides.push(ide.id)
             }
-            if (ides.length>0) await this.idRepository.delete(ides)
-            
+            if (ides.length > 0) await this.idRepository.delete(ides)
+
         }
         return await this.repository.delete(insts.map(p => p.id));
     }
