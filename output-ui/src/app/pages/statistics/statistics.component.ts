@@ -156,6 +156,7 @@ export class StatisticsComponent implements OnInit {
   updateChart() {
     return this.statService.countPubByYear(this.filter, this.highlight).pipe(map(
       data => {
+        data = data.filter(e => e.pub_year)
         this.chartOptions.series = [{
           name: 'Anzahl Publikationen',
           type: 'column',
