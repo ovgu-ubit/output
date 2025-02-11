@@ -24,7 +24,15 @@ async function bootstrap() {
     const cert_passphrase: string = app.get(ConfigService).get<string>('APP_SSL_PASSPHRASE');
     const cors_origins: string[] = app.get(ConfigService).get<string>('APP_CORS_ORIGINS').split(',');
     const base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
-    
+
+    let processedCORS = [];
+    for (let cors_or of cors_origins) {
+        let obj;
+        if (cors_or.endsWith('/')) obj = cors_or.substring(0, cors_or.length - 1)
+        else obj = cors_or;
+        processedCORS.push(obj)
+    }
+
     const config = new DocumentBuilder()
         .setTitle('Output API')
         .setDescription('The Output API description')
@@ -42,12 +50,12 @@ async function bootstrap() {
 
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     app.enableCors({
-        origin: cors_origins,
+        origin: processedCORS,
         methods: 'GET, PUT, POST, DELETE',
         allowedHeaders: 'Content-Type, Authorization',
         credentials: true
     });
-    app.use(bodyParser.json({limit: '1mb'})); // parse requests of content-type "application/json"
+    app.use(bodyParser.json({ limit: '1mb' })); // parse requests of content-type "application/json"
     app.use(bodyParser.urlencoded({ extended: true })); // parse requests of content-type "application/x-www-form-urlencoded"
     app.use(cookieParser());
     await app.init();
