@@ -1,9 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Publication } from '../../entity/Publication';
 import { PublicationService } from '../entities/publication.service';
+import { PublisherService } from '../entities/publisher.service';
 import { ReportItemService } from '../report-item.service';
 import { AbstractPlausibilityService } from './abstract-plausibility.service';
-import { Publication } from '../../entity/Publication';
-import { PublisherService } from '../entities/publisher.service';
 
 @Injectable()
 /**
@@ -11,7 +11,7 @@ import { PublisherService } from '../entities/publisher.service';
  */
 export class PublisherDOIPrefixService extends AbstractPlausibilityService {
 
-    constructor(protected publicationService: PublicationService, protected reportService: ReportItemService, private publisherService:PublisherService) {
+    constructor(protected publicationService: PublicationService, protected reportService: ReportItemService, private publisherService: PublisherService) {
         super(publicationService, reportService)
     }
     name = 'Publisher DOI Prefix Check'
