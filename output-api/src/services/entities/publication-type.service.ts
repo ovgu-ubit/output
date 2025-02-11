@@ -68,11 +68,7 @@ export class PublicationTypeService {
     }
 
     public async index(reporting_year:number): Promise<PublicationTypeIndex[]> {
-        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.repository.createQueryBuilder("type")
-            .leftJoin("type.publications","publication", "publication.pub_date between :beginDate and :endDate",{beginDate, endDate})
             .select("type.id","id")
             .addSelect("type.label","label")
             .addSelect("type.review","review")
@@ -81,6 +77,16 @@ export class PublicationTypeService {
             .addGroupBy("type.label")
             .addGroupBy("type.review")
 
+        if (reporting_year) {
+            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .leftJoin("type.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+        }
+        else {
+            query = query
+                .leftJoin("type.publications", "publication", "publication.pub_date IS NULL")
+        }
         //console.log(query.getSql());
 
         return query.getRawMany() as Promise<PublicationTypeIndex[]>;

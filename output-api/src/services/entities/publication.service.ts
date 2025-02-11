@@ -164,11 +164,11 @@ export class PublicationService {
                 .getRawMany() as Promise<PublicationIndex[]>;
         } else {
             return indexQuery
-            .where('publication.pub_date IS NULL')
-            .andWhere('publication.pub_date_print IS NULL')
-            .andWhere('publication.pub_date_accepted IS NULL')
-            .andWhere('publication.pub_date_submitted IS NULL')
-            .getRawMany() as Promise<PublicationIndex[]>;
+                .where('publication.pub_date IS NULL')
+                .andWhere('publication.pub_date_print IS NULL')
+                .andWhere('publication.pub_date_accepted IS NULL')
+                .andWhere('publication.pub_date_submitted IS NULL')
+                .getRawMany() as Promise<PublicationIndex[]>;
         }
     }
 
@@ -519,6 +519,10 @@ export class PublicationService {
             case 'cost_center_id':
                 where = "cost_center.id=" + value;
                 this.cost_center = true;
+                break;
+            case 'pub_date':
+                if (value) where = "publication.pub_date = '" + value + "'";
+                else where = "publication.pub_date IS NULL"
                 break;
             default:
                 where = "publication." + key + " = '" + value + "'";
