@@ -56,7 +56,7 @@ export class InvoiceFormComponent extends AbstractFormComponent<Invoice> impleme
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data) {
+        if (data && data.updated) {
           if (idx > -1) this.entity.cost_items[idx] = data;
           else this.entity.cost_items.push(data)
           if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.entity.cost_items);

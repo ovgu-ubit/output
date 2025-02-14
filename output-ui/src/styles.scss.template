@@ -251,3 +251,6 @@ mat-panel-description {
 .mat-mdc-text-field-wrapper {
   background-color: mat.get-theme-color($theme, secondary, 90)!important;
 }
+.mat-sort-header-arrow {
+  display: none!important;
+}

@@ -25,16 +25,16 @@ export class AuthorService {
     public async save(aut: any[]) {
         let errors = [];
         for (let auth of aut) {
-            let obj = {...auth, institutes:undefined}
-            let authEnt = await this.repository.save(obj).catch(err => {errors.push(err)});
-            await this.repository.save({id:authEnt.id, institutes: auth.institutes}).catch(err => {errors.push(err)});
+            let obj = { ...auth, institutes: undefined }
+            let authEnt = await this.repository.save(obj).catch(err => { errors.push(err) });
+            await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { errors.push(err) });
         }
         for (let err of errors) console.log(err.message)
         return aut.length - errors.length;
     }
 
-    public get(id?:number) {
-        return this.repository.find({ relations: {institutes: true}});
+    public get(id?: number) {
+        return this.repository.find({ relations: { institutes: true } });
     }
 
     public async one(id: number, writer: boolean) {
@@ -72,22 +72,22 @@ export class AuthorService {
         }
         if (aliasL.length > 0) {
             for (let alias of aliasL) {
-                let aut = await this.repository.findOne({where: {id: alias.elementId}, relations: { institutes: true }})
+                let aut = await this.repository.findOne({ where: { id: alias.elementId }, relations: { institutes: true } })
                 if (aut.first_name.toLowerCase().includes(first_name.toLowerCase())) return aut;
             }
         }
         if (aliasF.length > 0) {
             for (let alias of aliasF) {
-                let aut = await this.repository.findOne({where: {id: alias.elementId}, relations: { institutes: true }})
+                let aut = await this.repository.findOne({ where: { id: alias.elementId }, relations: { institutes: true } })
                 if (aut.last_name.toLowerCase().includes(last_name.toLowerCase())) return aut;
             }
         }
         return null;
     }
 
-    public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<{author:Author,error:AppError}> {
+    public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<{ author: Author, error: AppError }> {
         if (!orcid && (!last_name || !first_name)) throw { origin: 'authorService', text: `weder ORCID, noch Vor- und Nachname sind gegeben` } as AppError;
-        let error:AppError = null;
+        let error: AppError = null;
         //1. find an existing entity
         let author: Author;
         //replace points from initials
@@ -101,7 +101,7 @@ export class AuthorService {
             if (authors.length > 1) {
                 //assign first author and give warning
                 author = authors[0];
-                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v,c,i,a) => {return v+', '+c.id},'')}` } as AppError;
+                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v, c, i, a) => { return v + ', ' + c.id }, '')}` } as AppError;
             } else if (authors.length > 0) author = authors[0];
             else {
                 //find via alias
@@ -123,12 +123,12 @@ export class AuthorService {
                 flag = true;
             }
 
-            if (flag) return {author: await this.repository.save(author), error};
-            else return {author, error};
-        } else return {author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }), error};
+            if (flag) return { author: await this.repository.save(author), error };
+            else return { author, error };
+        } else return { author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }), error };
         //3. if not found, save
     }
-    
+
     public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
         let aut1: Author = await this.repository.findOne({ where: { id: id1 }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
         let authors = []
@@ -151,30 +151,30 @@ export class AuthorService {
             if (!res.first_name && aut.first_name) res.first_name = aut.first_name;
             if (!res.last_name && aut.last_name) res.last_name = aut.last_name;
             if (aut.aliases_first_name) for (let alias of aut.aliases_first_name) {
-                res.aliases_first_name.push({elementId: res.id, alias: alias.alias})
+                res.aliases_first_name.push({ elementId: res.id, alias: alias.alias })
             }
             if (aut.aliases_last_name) for (let alias of aut.aliases_last_name) {
-                res.aliases_last_name.push({elementId: res.id, alias: alias.alias})
+                res.aliases_last_name.push({ elementId: res.id, alias: alias.alias })
             }
         }
         res.institutes = institutes;
         res.authorPublications = undefined;
-        
+
         //update aliases
         if (aliases_first_name) {
             for (let alias of aliases_first_name) {
-                res.aliases_first_name.push({elementId: res.id, alias});
+                res.aliases_first_name.push({ elementId: res.id, alias });
             }
         }
         if (aliases_last_name) {
             for (let alias of aliases_last_name) {
-                res.aliases_last_name.push({elementId: res.id, alias});
+                res.aliases_last_name.push({ elementId: res.id, alias });
             }
         }
 
         //update publication 1
         if (await this.repository.save(res)) {
-            if (await this.aliasFirstNameRepository.delete({elementId: In(authors.map(e => e.id))}) && await this.aliasLastNameRepository.delete({elementId: In(authors.map(e => e.id))}) && await this.pubAutRepository.delete({ authorId: In(authors.map(e => e.id)) })) {
+            if (await this.aliasFirstNameRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.aliasLastNameRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.pubAutRepository.delete({ authorId: In(authors.map(e => e.id)) })) {
                 if (await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
             }
             else return { error: 'delete' };
@@ -182,9 +182,6 @@ export class AuthorService {
     }
 
     public async index(reporting_year: number): Promise<AuthorIndex[]> {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("author", "author")
@@ -214,8 +211,6 @@ export class AuthorService {
             .addSelect("a.last_name", "last_name")
             .addSelect("COUNT(b)", "pub_count_total")
             .addSelect("a.institutes", "institutes")
-            .addSelect("SUM(CASE WHEN b.pub_date >= '"+beginDate.toISOString()+"' and b.pub_date <= '"+endDate.toISOString()+"' and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
-            .addSelect("SUM(CASE WHEN b.pub_date >= '"+beginDate.toISOString()+"' and b.pub_date <= '"+endDate.toISOString()+"' THEN 1 ELSE 0 END)", "pub_count")
             .groupBy("a.id")
             .addGroupBy("a.orcid")
             .addGroupBy("a.title")
@@ -224,6 +219,19 @@ export class AuthorService {
             .addGroupBy("a.orcid")
             .addGroupBy("a.gnd_id")
             .addGroupBy("a.institutes")
+
+        if (reporting_year) {
+            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .addSelect("SUM(CASE WHEN b.pub_date >= '" + beginDate.toISOString() + "' and b.pub_date <= '" + endDate.toISOString() + "' and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
+                .addSelect("SUM(CASE WHEN b.pub_date >= '" + beginDate.toISOString() + "' and b.pub_date <= '" + endDate.toISOString() + "' THEN 1 ELSE 0 END)", "pub_count")
+        }
+        else {
+            query = query
+                .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
+                .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL THEN 1 ELSE 0 END)", "pub_count")
+        }
 
         //console.log(query.getSql());
 

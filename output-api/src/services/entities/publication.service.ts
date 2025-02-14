@@ -35,7 +35,7 @@ export class PublicationService {
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
-        private configService: ConfigService, private instService:InstitutionService) { }
+        private configService: ConfigService, private instService: InstitutionService) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub).catch(err => {
@@ -146,22 +146,30 @@ export class PublicationService {
     //retrieves publication index for a reporting year
     public index(yop: number): Promise<PublicationIndex[]> {
         let indexQuery = this.indexQuery();
+        if (yop) {
+            let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
+            let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
 
-        let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
-
-        return indexQuery
-            .where('publication.pub_date >= :beginDate', { beginDate })
-            .andWhere('publication.pub_date <= :endDate', { endDate })
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null')
-                    .andWhere(new Brackets(qb => {
-                        qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
-                            .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
-                            .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
-                    }))
-            }))
-            .getRawMany() as Promise<PublicationIndex[]>;
+            return indexQuery
+                .where('publication.pub_date >= :beginDate', { beginDate })
+                .andWhere('publication.pub_date <= :endDate', { endDate })
+                .orWhere(new Brackets(qb => {
+                    qb.where('publication.pub_date is null')
+                        .andWhere(new Brackets(qb => {
+                            qb.where('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                                .orWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                                .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                        }))
+                }))
+                .getRawMany() as Promise<PublicationIndex[]>;
+        } else {
+            return indexQuery
+                .where('publication.pub_date IS NULL')
+                .andWhere('publication.pub_date_print IS NULL')
+                .andWhere('publication.pub_date_accepted IS NULL')
+                .andWhere('publication.pub_date_submitted IS NULL')
+                .getRawMany() as Promise<PublicationIndex[]>;
+        }
     }
 
     //retrieves publication index for soft deleted publications
@@ -391,7 +399,7 @@ export class PublicationService {
             if (expr.key.includes("institute_id")) {
                 expr.comp = CompareOperation.IN;
                 let ids = [expr.value].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
-                expr.value = '('+ids.join(',')+')';
+                expr.value = '(' + ids.join(',') + ')';
             }
 
             let compareString;
@@ -511,6 +519,10 @@ export class PublicationService {
             case 'cost_center_id':
                 where = "cost_center.id=" + value;
                 this.cost_center = true;
+                break;
+            case 'pub_date':
+                if (value) where = "publication.pub_date = '" + value + "'";
+                else where = "publication.pub_date IS NULL"
                 break;
             default:
                 where = "publication." + key + " = '" + value + "'";

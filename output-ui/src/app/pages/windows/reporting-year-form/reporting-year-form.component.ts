@@ -31,13 +31,15 @@ export class ReportingYearFormComponent implements OnInit{
   }
 
   abort(): void {
-    this.dialogRef.close(null)
+    this.dialogRef.close(undefined)
   }
 
   action(): void {
     this.submitted = true;
     if (this.checked) {
-      this.pubService.setDefaultReportingYear(Number(this.reporting_year)).subscribe();
+      let yop;
+      if (!this.reporting_year) yop = null; else yop = Number(this.reporting_year)
+      this.pubService.setDefaultReportingYear(yop).subscribe();
     }
     this.dialogRef.close(this.reporting_year);
   }

@@ -1,14 +1,12 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
-import { Publisher } from '../../entity/Publisher';
 import { PublisherIndex } from '../../../../output-interfaces/PublicationIndex';
-import { PublicationService } from './publication.service';
 import { AliasPublisher } from '../../entity/alias/AliasPublisher';
-import { PublisherDOI } from '../../entity/PublisherDOI';
 import { Publication } from '../../entity/Publication';
+import { Publisher } from '../../entity/Publisher';
+import { PublicationService } from './publication.service';
 
 @Injectable()
 export class PublisherService {
@@ -44,7 +42,7 @@ export class PublisherService {
         return publisher;
     }
 
-    public async findOrSave(publisher:Publisher): Promise<Publisher> {
+    public async findOrSave(publisher: Publisher): Promise<Publisher> {
         if (!publisher.label) return null;
         let label = await this.identifyPublisher(publisher.label);
         let publisher_ent: Publisher;
@@ -53,7 +51,7 @@ export class PublisherService {
             publisher_ent = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(publisher.doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
         }
         if (publisher_ent) return publisher_ent;
-        else return this.repository.save({ label, doi_prefixes:publisher.doi_prefixes });
+        else return this.repository.save({ label, doi_prefixes: publisher.doi_prefixes });
     }
 
     public async identifyPublisher(title: string) {
@@ -74,9 +72,6 @@ export class PublisherService {
     }
 
     public async index(reporting_year: number): Promise<PublisherIndex[]> {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
 
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
@@ -87,16 +82,25 @@ export class PublisherService {
                 .addSelect("STRING_AGG(DISTINCT doi_prefix.doi_prefix, ';')", "doi_prefix")
                 .groupBy("publisher.id")
                 .addGroupBy("publisher.label")
-            , "a")
-            .leftJoin(Publication, "publication", "publication.\"publisherId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+                , "a")
             .select("a.id", "id")
             .addSelect("a.label", "label")
-            .addSelect("a.doi_prefix", "doi_prefix")      
+            .addSelect("a.doi_prefix", "doi_prefix")
             .addSelect("COUNT(publication.id)", "pub_count")
             .groupBy("a.id")
             .addGroupBy("a.label")
             .addGroupBy("a.doi_prefix")
 
+        if (reporting_year) {
+            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .leftJoin(Publication, "publication", "publication.\"publisherId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+        }
+        else {
+            query = query
+                .leftJoin(Publication, "publication", "publication.\"publisherId\" = a.id and publication.pub_date IS NULL")
+        }
         //console.log(query.getSql());
 
         return query.getRawMany() as Promise<PublisherIndex[]>;
@@ -140,7 +144,7 @@ export class PublisherService {
 
     public async delete(insts: Publisher[]) {
         for (let inst of insts) {
-            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true }, withDeleted: true});
+            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({ id: pub.id, publisher: null })

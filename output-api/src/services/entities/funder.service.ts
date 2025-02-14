@@ -67,11 +67,7 @@ export class FunderService {
     }
     
     public async index(reporting_year:number): Promise<FunderIndex[]> {
-        if(!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         let query = this.repository.createQueryBuilder("funder")
-            .leftJoin("funder.publications","publication", "publication.pub_date between :beginDate and :endDate",{beginDate, endDate})
             .select("funder.id","id")
             .addSelect("funder.label","label")
             .addSelect("funder.doi","doi")
@@ -82,6 +78,16 @@ export class FunderService {
             .addGroupBy("funder.doi")
             .addGroupBy("funder.ror_id")
 
+        if (reporting_year) {
+            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .leftJoin("funder.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+        }
+        else {
+            query = query
+                .leftJoin("funder.publications", "publication", "publication.pub_date IS NULL")
+        }
         //console.log(query.getSql());
 
         return query.getRawMany() as Promise<FunderIndex[]>;

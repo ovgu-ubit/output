@@ -110,11 +110,11 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
 
     return ob$;
   }
-    
+
   ngAfterViewInit(): void {
     this.store.select(selectViewConfig).subscribe(data => this.table.setViewConfig(data))
   }
-  
+
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
       viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
@@ -130,7 +130,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       }
     });
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result !== undefined) {
         this.table.reporting_year = result;
         this.store.dispatch(setReportingYear({ reporting_year: this.table.reporting_year }))
         this.table.updateData().subscribe();
@@ -196,7 +196,12 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       filter: null,
       paths: null
     }
-    this.table.updateData().subscribe();
+    this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
+      this.table.reporting_year = data;
+      if (data) this.name = 'Publikationen des Jahres ' + data;
+      else this.name = 'Publikationen des Jahres ohne Datumsangabe'
+      return this.table.updateData();
+    })).subscribe();
   }
 
   extendedFilters() {
