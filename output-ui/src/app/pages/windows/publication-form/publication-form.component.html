@@ -280,7 +280,7 @@
                 </mat-expansion-panel-header>
 
                 <app-select-entity name="OA-Kategorie"
-                    [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                    [disabled]="this.disabled || this.pub?.locked_oa || this.pub?.locked"
                     [serviceClass]="this.oaService" [formComponent]="this.oaForm" (selected)="this.setOA($event)"
                     [ent]="this.pub? this.pub.oa_category : undefined"></app-select-entity>
 
