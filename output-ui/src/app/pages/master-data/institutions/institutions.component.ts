@@ -20,8 +20,8 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit {
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'short_label', colTitle: 'Kurzbezeichnung' },
     { colName: 'sub_inst_count', colTitle: 'Untergeordnete Institute gesamt', type: 'number' },
-    { colName: 'author_count', colTitle: 'Anzahl Autoren', type: 'number' },
-    { colName: 'author_count_total', colTitle: 'Anzahl Autoren gesamt', type: 'number' },
+    { colName: 'author_count', colTitle: 'Anzahl Personen', type: 'number' },
+    { colName: 'author_count_total', colTitle: 'Anzahl Personen gesamt', type: 'number' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
     { colName: 'pub_count_corr', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
   ];
