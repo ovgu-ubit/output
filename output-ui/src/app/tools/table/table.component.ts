@@ -1,7 +1,7 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { ComponentType } from '@angular/cdk/portal';
 import { Location } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
@@ -41,7 +41,7 @@ export class CustomPaginator extends MatPaginatorIntl {
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss']
 })
-export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy {
+export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
 
   @Input() data: Array<T>;
   @Input() wide?: boolean;
@@ -110,9 +110,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           else this.name = 'Publikationen des Jahres ohne Datumsangabe'
         }
         let col = this.headers.find(e => e.colName === 'pub_count');
-        if (col) col.colTitle += ' ' + (data? data : 'ohne Datum')
+        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
         col = this.headers.find(e => e.colName === 'pub_count_corr')
-        if (col) col.colTitle += ' ' + (data? data : 'ohne Datum')
+        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
       }), concatMap(data => this.updateData()))
     }));
 
@@ -134,7 +134,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       console.log(err)
       return of(null)
     }), takeUntil(this.destroy$)).subscribe();
-    
+
     this.searchControl.valueChanges.pipe(debounceTime(300)).subscribe(data => {
       if (!data && this.columnFilter) return
       if (data) this.columnFilter = false;
@@ -148,15 +148,71 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.destroy$.next('');
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['data']) {
+      let data = changes['data'].currentValue;
+      if (this.parent.indexOptions?.filter || this.parent.indexOptions?.paths) this.name = 'Gefilterte Publikationen';
+      this.data = data;
+      this.dataSource = new MatTableDataSource<T>(data);
+      this.dataSource2 = new MatTableDataSource<T>(data);
+      this.dataSource.paginator = this.paginator;
+      this.dataSource2.paginator = this.paginator2;
+      this.selection.clear();
+      this.dataSource.filterPredicate = function (data, filter): boolean {
+        let filterJSON
+        try {
+          filterJSON = JSON.parse(filter)
+        } catch (err) { filterJSON = filter; }
+        if (typeof filterJSON === 'string' || typeof filterJSON === 'number') {
+          if (filter.includes("*") || filter.includes("?")) {
+            let regex = "^" + filter.replaceAll("*", ".*").replaceAll("?", ".");
+            let regexp = new RegExp(regex);
+            for (let key of Object.keys(data)) {
+              if (data[key]?.toString().toLowerCase().match(regexp)) return true;
+            }
+            return false;
+          }
+          else {
+            for (let key of Object.keys(data)) {
+              if (data[key]?.toString().toLowerCase().includes(filter)) return true;
+            }
+            return false;
+          }
+        } else {
+          let result = true
+          for (let key of Object.keys(filterJSON)) {
+            if (filterJSON[key] && !(filterJSON[key].includes("*") || filterJSON[key].includes("?"))) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key]))
+            else {
+              let regex = filterJSON[key].replaceAll("*", ".*").replaceAll("?", ".");
+              let regexp = new RegExp(regex);
+              result = result && (data[key]?.toString().toLowerCase().match(regexp))
+            }
+          }
+          return result;
+        }
+      };
+      this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
+      this.dataSource.data = this.dataSource.data.sort((a, b) => {
+        for (let i = 0; i < this.sort_state.length; i++) {
+          let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
+          let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
+          if (compare !== 0) return compare;
+        }
+        return 0;
+      })
+    }
+  }
+
   /**
    * updates the view with new data
    * @param data the data to be displayed
    */
   public update(data): void {
-    if (this.parent.indexOptions?.filter || this.parent.indexOptions?.paths) this.name = 'Gefilterte Publikationen';
-    this.data = data;
-    this.dataSource = new MatTableDataSource<T>(data);
-    this.dataSource2 = new MatTableDataSource<T>(data);
+    //if (this.parent.indexOptions?.filter || this.parent.indexOptions?.paths) this.name = 'Gefilterte Publikationen';
+    //this.data = data;
+    //this.dataSource = new MatTableDataSource<T>(data);
+    //this.dataSource2 = new MatTableDataSource<T>(data);
+
     //populate the headerNames field for template access
     this.headerNames = this.headers.map(x => x.colName);
     //adding the meta columns at the beginning
@@ -180,10 +236,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         })
     })
     this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
-    this.selection.clear();
-    this.dataSource.paginator = this.paginator;
-    this.dataSource2.paginator = this.paginator2;
-    this.dataSource.filterPredicate = function (data, filter): boolean {
+    //this.selection.clear();
+    //this.dataSource.paginator = this.paginator;
+    //this.dataSource2.paginator = this.paginator2;
+    /*this.dataSource.filterPredicate = function (data, filter): boolean {
       let filterJSON
       try {
         filterJSON = JSON.parse(filter)
@@ -215,8 +271,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }
         return result;
       }
-    };
-    this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
+    };*/
+    /*this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
     this.dataSource.data = this.dataSource.data.sort((a, b) => {
       for (let i = 0; i < this.sort_state.length; i++) {
         let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
@@ -224,7 +280,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         if (compare !== 0) return compare;
       }
       return 0;
-    })
+    })*/
     if (this.id) {
       this.edit({ id: this.id });
     }
@@ -233,7 +289,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   public updateData() {
     return this.serviceClass.index(this.reporting_year, this.parent.indexOptions).pipe(map(data => {
       this.loading = false;
-      this.update(data);
+      //this.update(data);
+      this.data = data;
+      this.ngOnChanges({data: {currentValue: data, previousValue: null, firstChange: false, isFirstChange: () => false}})
     }))
   }
 

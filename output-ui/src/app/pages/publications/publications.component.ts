@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, concatMap, map, merge } from 'rxjs';
+import { Observable, concatMap, map, merge, take } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/services/enrich.service';
@@ -112,7 +112,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
   }
 
   ngAfterViewInit(): void {
-    this.store.select(selectViewConfig).subscribe(data => this.table.setViewConfig(data))
+    this.store.select(selectViewConfig).pipe(take(1)).subscribe(data => this.table.setViewConfig(data))
   }
 
   ngOnDestroy(): void {
