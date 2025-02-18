@@ -76,8 +76,8 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
       if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
       if (data.includes("link")) headers.push({ colName: 'link', colTitle: 'Link', type: 'link' })
-      if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Autoren' })
-      if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Autoren ' + this.institution, type: 'authors' })
+      if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Personen' })
+      if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Personen ' + this.institution, type: 'authors' })
       if (data.includes("corr_inst")) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
       if (data.includes("pub_type")) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
       if (data.includes("greater_entity")) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
@@ -94,7 +94,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       return this.configService.getInstition().pipe(map(data => {
         this.institution = data.short_label;
         let header = this.headers.find(e => e.colName === 'authors_inst')
-        if (header) header.colTitle = 'Autoren ' + this.institution;
+        if (header) header.colTitle = 'Personen ' + this.institution;
       }))
     })))
 

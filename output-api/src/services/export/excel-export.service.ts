@@ -61,7 +61,7 @@ export class ExcelExportService extends AbstractExportService {
                 link: pub.link,
                 authors: pub.authors,
                 authors_inst: pub.authorPublications?.map(e => { return e.author.last_name + ', ' + e.author.first_name }).join(' | '),
-                institutes: pub.authorPublications?.map(e => { return e.author.last_name + ', ' + e.author.first_name }).join(' | '),
+                institutes: pub.authorPublications?.map(e => { return e.institute?.label }).join(' | '),
                 corr_authors: pub.authorPublications?.filter(e => e.corresponding).map(e => { return e.author.last_name + ', ' + e.author.first_name }).join(' | '),
                 corr_institutes: pub.authorPublications?.filter(e => e.corresponding).map(e => { return e.institute?.label }).join(' | '),
                 greater_entity: pub.greater_entity?.label,
