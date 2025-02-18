@@ -217,7 +217,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       if (result) {
         this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
         if (result.filter.expressions.length > 0 || result.paths.length > 0) {
-          this.name = 'Gefilterte Publikationen';
+          //this.name = 'Gefilterte Publikationen';
           this.indexOptions = {
             soft: false,
             filter: result.filter,

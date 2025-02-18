@@ -8,10 +8,10 @@
     <mat-toolbar class="secondary-toolbar" style="display: flex;justify-content: space-between;">
       <span>
         <h4 *ngIf="!this.icon">
-          <mat-icon>book</mat-icon> {{name}} ({{ this.dataSource.data.length }})
+          <mat-icon>book</mat-icon> {{getName()}} ({{ this.dataSource.data.length }})
         </h4>
         <h4 *ngIf="this.icon">
-          <mat-icon>{{this.icon}}</mat-icon> {{name}} ({{ this.dataSource.data.length }})
+          <mat-icon>{{this.icon}}</mat-icon> {{getName()}} ({{ this.dataSource.data.length }})
         </h4>
       </span>
       <span>
