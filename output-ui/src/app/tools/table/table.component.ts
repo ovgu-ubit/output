@@ -10,13 +10,13 @@ import { MatSort, Sort, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, takeUntil } from 'rxjs';
+import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
 import { Alert } from 'src/app/interfaces/alert';
 import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { resetViewConfig, selectReportingYear, setViewConfig, ViewConfig } from 'src/app/services/redux';
+import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
 import { Entity } from '../../../../../output-interfaces/Publication';
 import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
@@ -50,6 +50,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() name: string;
   @Input() nameSingle: string;
   @Input() icon?: string;
+  @Input() publication_table?: boolean = false;
 
   @Input() combineAlias? = true;
   @Input() softDelete? = false;
@@ -105,9 +106,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }
       }), map(data => {
         this.reporting_year = data;
-        if (this.name.includes('Publikationen des Jahres ')) {
+        if (this.publication_table) {
           if (this.reporting_year) this.name = 'Publikationen des Jahres ' + this.reporting_year;
-          else this.name = 'Publikationen des Jahres ohne Datumsangabe'
+          else this.name = 'Publikationen ohne Datumsangabe'
         }
         let col = this.headers.find(e => e.colName === 'pub_count');
         if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
@@ -127,7 +128,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.dataSource = new MatTableDataSource<T>(this.data);
 
     ob$.pipe(catchError(err => {
-      this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+      this._snackBar.open(`Unerwarter Fehler (siehe Konsole)`, 'Oh oh!', {
         panelClass: [`danger-snackbar`],
         verticalPosition: 'top'
       })
@@ -173,6 +174,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           })
       })
       this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
+      if (this.publication_table) {
+        this.store.select(selectViewConfig).pipe(take(1)).subscribe(data => this.setViewConfig(data))
+      }
       if (this.id) {
         this.edit({ id: this.id });
       }
@@ -651,8 +655,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     else this.columnFilter = true;
     this.searchControl.setValue(searchValue);
     this.filterValues = viewConfig.filterColumn;
-    if (this.filterValues.get) for (let col of this.headerNames) this.filterControls[col].setValue(this.filterValues.get(col))
-
+    if (this.filterValues.get) for (let col of this.headerNames) {
+      if (this.filterValues.get(col)) this.filterControls[col].setValue(this.filterValues.get(col))
+    }
     this.sort_state = viewConfig.sortState;
 
     this.update(this.data);

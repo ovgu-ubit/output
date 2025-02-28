@@ -24,7 +24,7 @@ import { ReportingYearFormComponent } from '../windows/reporting-year-form/repor
   templateUrl: './publications.component.html',
   styleUrls: ['./publications.component.css']
 })
-export class PublicationsComponent implements AfterViewInit, OnDestroy, TableParent<PublicationIndex> {
+export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService: ConfigService) { }
@@ -111,10 +111,6 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
     return ob$;
   }
 
-  ngAfterViewInit(): void {
-    this.store.select(selectViewConfig).pipe(take(1)).subscribe(data => this.table.setViewConfig(data))
-  }
-
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
       viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
@@ -199,7 +195,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
     this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
       this.table.reporting_year = data;
       if (data) this.name = 'Publikationen des Jahres ' + data;
-      else this.name = 'Publikationen des Jahres ohne Datumsangabe'
+      else this.name = 'Publikationen ohne Datumsangabe'
       return this.table.updateData();
     })).subscribe();
   }
