@@ -12,11 +12,11 @@
         <div style="display: flex;flex-direction: row;justify-content: space-between;">
             <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
                 <mat-label>ID</mat-label>
-                <input matInput [type]="'number'" placeholder="ID" formControlName="id" />
+                <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
             </mat-form-field>
             <mat-form-field style="max-width: 200px;">
                 <mat-label>Status</mat-label>
-                <input matInput [type]="'number'" placeholder="Status" formControlName="status" />
+                <input matInput [type]="'number'" onwheel="return false;" placeholder="Status" formControlName="status" />
                 <mat-hint [matTooltip]="showStatusLabel(true)">{{showStatusLabel(false)}}</mat-hint>
             </mat-form-field>
         </div>
@@ -240,7 +240,7 @@
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
                             <mat-label>Seitenzahl</mat-label>
-                            <input matInput [type]="'number'" placeholder="Seitenzahl" formControlName="page_count" />
+                            <input matInput [type]="'number'" onwheel="return false;" placeholder="Seitenzahl" formControlName="page_count" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Verlagsort</mat-label>
@@ -391,7 +391,7 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Kostenansatz in EUR</mat-label>
-                    <input matInput [type]="'number'" placeholder="Kostenansatz in EUR"
+                    <input matInput type="number" onwheel="return false;" placeholder="Kostenansatz in EUR"
                         formControlName="cost_approach" />
                 </mat-form-field>
 
