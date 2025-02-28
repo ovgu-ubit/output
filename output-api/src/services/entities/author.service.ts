@@ -229,8 +229,8 @@ export class AuthorService {
         }
         else {
             query = query
-                .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
-                .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL THEN 1 ELSE 0 END)", "pub_count")
+                .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.pub_date_print IS NULL and b.pub_date_accepted IS NULL and b.pub_date_submitted IS NULL and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
+                .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.pub_date_print IS NULL and b.pub_date_accepted IS NULL and b.pub_date_submitted IS NULL THEN 1 ELSE 0 END)", "pub_count")
         }
 
         //console.log(query.getSql());

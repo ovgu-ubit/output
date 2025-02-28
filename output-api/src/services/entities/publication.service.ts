@@ -522,7 +522,7 @@ export class PublicationService {
                 break;
             case 'pub_date':
                 if (value) where = "publication.pub_date = '" + value + "'";
-                else where = "publication.pub_date IS NULL"
+                else where = "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL"
                 break;
             default:
                 where = "publication." + key + " = '" + value + "'";

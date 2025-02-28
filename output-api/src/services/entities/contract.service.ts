@@ -73,13 +73,13 @@ export class ContractService {
         }
         else {
             query = query
-                .leftJoin("contract.publications", "publication", "publication.\"contractId\" = contract.id and publication.pub_date IS NULL")
+                .leftJoin("contract.publications", "publication", "publication.\"contractId\" = contract.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
         }
         //console.log(query.getSql());
 
         return query.getRawMany() as Promise<ContractIndex[]>;
     }
-
+    
     public async combine(id1: number, ids: number[]) {
         let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true } });
         let authors = []
