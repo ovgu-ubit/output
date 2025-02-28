@@ -483,32 +483,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     //this.dataSource.filter = JSON.stringify(filter);
   }
 
-  /*
-    Selects all rows in the table
-  */
-  public SelectAll(): void {
-    this.data.forEach(element => {
-      this.selection.select(element);
-    });
-  }
-
-  /**
-   * Checks wether all rows in table are selected
-   * @returns if all elements are selected
-   */
-  public isAllSelected(): boolean {
-    const numSelected = this.selection.selected?.length;
-    const numRows = this.data?.length;
-    return numSelected === numRows;
-  }
-
-  /**
-  * toggles the row and all rows selection
-  */
-  public masterToggle(): void {
-    this.isAllSelected() ? this.selection.clear() : this.SelectAll();
-  }
-
   /**
    * cuts a string for display
    * @param text the original text to display
