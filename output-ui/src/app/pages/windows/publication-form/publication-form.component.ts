@@ -350,6 +350,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (!this.pub[key]) this.pub[key] = undefined;
       }
     }
+    for (let key of Object.keys(this.pub)) {
+      if (this.pub[key] === '') this.pub[key] = null;
+    }
     this.dialogRef.close({ ...this.pub, updated: true });
   }
 
@@ -423,7 +426,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   deleteInvoice(elem) {
-    this.pub.invoices = this.pub.invoices.filter(e => e.id !== elem.id)
+    if (elem.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== elem.id)
+    else this.pub.invoices = this.pub.invoices.filter(e => e !== elem)
   }
 
   addInvoice(invoice?: Invoice) {
@@ -436,16 +440,17 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       },
       disableClose: true
     });
+    if (invoice && !invoice.id) this.pub.invoices = this.pub.invoices.filter(e => e !== invoice)
     dialogRef.afterClosed().subscribe({
       next: data => {
         if (data && data.updated) {
-          this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
+          if (invoice?.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
           this.pub.invoices.push(data)
           if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
-        } /*else if (data && data.id) {
-          this.invoiceService.update(data).subscribe();
-        }*/
-      }
+        } else {
+          if (!invoice.id) this.pub.invoices.push(invoice)
+        }
+      } 
     });
   }
 
