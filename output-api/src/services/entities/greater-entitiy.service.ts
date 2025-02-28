@@ -142,7 +142,7 @@ export class GreaterEntityService {
         }
         else {
             query = query
-                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date IS NULL")
+                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
         }
         //console.log(query.getSql());
 

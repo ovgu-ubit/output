@@ -111,7 +111,7 @@ export class InstitutionService {
             }
             else {
                 query = query
-                    .andWhere('(pub is NULL or pub_date IS NULL)')
+                    .andWhere('(pub is NULL or (pub_date IS NULL and pub_date_print IS NULL and pub_date_accepted IS NULL and pub_date_submitted IS NULL))')
             }
             //console.log(query.getSql());
             let res = await query.getRawOne() as any;

@@ -85,7 +85,7 @@ export class PublicationTypeService {
         }
         else {
             query = query
-                .leftJoin("type.publications", "publication", "publication.pub_date IS NULL")
+                .leftJoin("type.publications", "publication", "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
         }
         //console.log(query.getSql());
 

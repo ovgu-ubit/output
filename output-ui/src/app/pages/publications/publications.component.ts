@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, concatMap, map, merge } from 'rxjs';
+import { Observable, concatMap, map, merge, take } from 'rxjs';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/services/enrich.service';
@@ -24,7 +24,7 @@ import { ReportingYearFormComponent } from '../windows/reporting-year-form/repor
   templateUrl: './publications.component.html',
   styleUrls: ['./publications.component.css']
 })
-export class PublicationsComponent implements AfterViewInit, OnDestroy, TableParent<PublicationIndex> {
+export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService: ConfigService) { }
@@ -111,10 +111,6 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
     return ob$;
   }
 
-  ngAfterViewInit(): void {
-    this.store.select(selectViewConfig).subscribe(data => this.table.setViewConfig(data))
-  }
-
   ngOnDestroy(): void {
     this.store.dispatch(setViewConfig({
       viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
@@ -199,7 +195,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
     this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
       this.table.reporting_year = data;
       if (data) this.name = 'Publikationen des Jahres ' + data;
-      else this.name = 'Publikationen des Jahres ohne Datumsangabe'
+      else this.name = 'Publikationen ohne Datumsangabe'
       return this.table.updateData();
     })).subscribe();
   }
@@ -217,7 +213,7 @@ export class PublicationsComponent implements AfterViewInit, OnDestroy, TablePar
       if (result) {
         this.viewConfig = { ...this.viewConfig, filter: { filter: result.filter, paths: result.paths } }
         if (result.filter.expressions.length > 0 || result.paths.length > 0) {
-          this.name = 'Gefilterte Publikationen';
+          //this.name = 'Gefilterte Publikationen';
           this.indexOptions = {
             soft: false,
             filter: result.filter,
