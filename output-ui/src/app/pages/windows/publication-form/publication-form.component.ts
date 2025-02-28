@@ -350,6 +350,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (!this.pub[key]) this.pub[key] = undefined;
       }
     }
+    for (let key of Object.keys(this.pub)) {
+      if (this.pub[key] === '') this.pub[key] = null;
+    }
     this.dialogRef.close({ ...this.pub, updated: true });
   }
 

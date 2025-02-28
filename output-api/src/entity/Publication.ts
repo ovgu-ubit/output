@@ -73,7 +73,8 @@ export class Publication implements IPublication {
     second_pub?: string;
 
     @Column({
-        default: ''
+        default: '',
+        nullable: true
     })
     add_info?: string;
 
