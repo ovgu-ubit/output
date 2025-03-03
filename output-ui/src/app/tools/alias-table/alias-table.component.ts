@@ -25,6 +25,10 @@ export class AliasTableComponent<T extends Aliasable<T>> {
   
   @ViewChild(MatTable) table: MatTable<Alias<T>>;
 
+  public isDirty() {
+    return this.aliasForm.dirty;
+  }
+
   deleteAlias(elem: Alias<T>) {
     if (this.disabled) return;
     this.entity.aliases = this.entity.aliases.filter((e) => e.alias !== elem.alias)
