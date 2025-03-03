@@ -508,6 +508,16 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     return `<a class="link-secondary" href="https://dx.doi.org/${doi}" target="_blank">${doi}</a>`;
   }
 
+  public orcidHTML(orcid: string) {
+    if (!orcid) return '';
+    return `<a class="link-secondary" href="https://orcid.org/${orcid}" target="_blank">${orcid}</a>`;
+  }
+
+  public gndHTML(gnd: string) {
+    if (!gnd) return '';
+    return `<a class="link-secondary" href="https://explore.gnd.network/gnd/${gnd}" target="_blank">${gnd}</a>`;
+  }
+
   sort_state: { key: string, dir: SortDirection }[] = [];
 
   announceSortChange(sortState: Sort) {
