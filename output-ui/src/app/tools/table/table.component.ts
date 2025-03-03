@@ -187,8 +187,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterName = false;
-  getName():string {
-    if (this.filterName) return "Gefilterte "+this.name.substring(0,this.name.indexOf(" "));
+  getName(): string {
+    if (this.filterName) return "Gefilterte " + this.name.substring(0, this.name.indexOf(" "));
     else return this.name;
   }
 
@@ -517,9 +517,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
       this.dataSource.data = this.dataSource.data.sort((a, b) => {
         for (let i = 0; i < this.sort_state.length; i++) {
-          let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
-          let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
-          if (compare !== 0) return compare;
+          if (this.sort_state[i].key === 'edit') {
+            return (a['locked'] > b['locked']? 1 : -1) * (this.sort_state[i].dir === 'asc' ? 1 : -1);
+          }
+          else {
+            let type = this.headers.find(e => e.colName === this.sort_state[i].key)?.type
+            let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
+            if (compare !== 0) return compare;
+          }
         }
         return 0;
       })
