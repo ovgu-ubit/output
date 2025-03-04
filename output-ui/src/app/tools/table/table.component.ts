@@ -187,8 +187,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterName = false;
-  getName():string {
-    if (this.filterName) return "Gefilterte "+this.name.substring(0,this.name.indexOf(" "));
+  getName(): string {
+    if (this.filterName) return "Gefilterte " + this.name.substring(0, this.name.indexOf(" "));
     else return this.name;
   }
 
@@ -228,6 +228,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       } else {
         let result = true
         for (let key of Object.keys(filterJSON)) {
+          if (!filterJSON[key]) continue;
+          if (this.headers.find(e => e.colName === key)?.type === 'number') filterJSON[key] = filterJSON[key].replaceAll("\.","");
+          if (this.headers.find(e => e.colName === key)?.type === 'euro') filterJSON[key] = filterJSON[key].replaceAll(" €","");
           if (filterJSON[key] && !(filterJSON[key].includes("*") || filterJSON[key].includes("?"))) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key]))
           else {
             let regex = filterJSON[key].replaceAll("*", ".*").replaceAll("?", ".");
@@ -237,7 +240,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }
         return result;
       }
-    };
+    }.bind(this);
     this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
     this.dataSource.data = this.dataSource.data.sort((a, b) => {
       for (let i = 0; i < this.sort_state.length; i++) {
@@ -261,7 +264,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
     // define Entity Form dialog by id to enforce edit mode
     let dialogRef = this.dialog.open(this.formComponent, {
-      width: '800px',
+      width: '1000px',
       maxHeight: '800px',
       data: {
         entity: { id: row.id }
@@ -508,6 +511,16 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     return `<a class="link-secondary" href="https://dx.doi.org/${doi}" target="_blank">${doi}</a>`;
   }
 
+  public orcidHTML(orcid: string) {
+    if (!orcid) return '';
+    return `<a class="link-secondary" href="https://orcid.org/${orcid}" target="_blank">${orcid}</a>`;
+  }
+
+  public gndHTML(gnd: string) {
+    if (!gnd) return '';
+    return `<a class="link-secondary" href="https://explore.gnd.network/gnd/${gnd}" target="_blank">${gnd}</a>`;
+  }
+
   sort_state: { key: string, dir: SortDirection }[] = [];
 
   announceSortChange(sortState: Sort) {
@@ -517,9 +530,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
       this.dataSource.data = this.dataSource.data.sort((a, b) => {
         for (let i = 0; i < this.sort_state.length; i++) {
-          let type = this.headers.find(e => e.colName === this.sort_state[i].key).type
-          let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
-          if (compare !== 0) return compare;
+          if (this.sort_state[i].key === 'edit') {
+            return (a['locked'] > b['locked']? 1 : -1) * (this.sort_state[i].dir === 'asc' ? 1 : -1);
+          }
+          else {
+            let type = this.headers.find(e => e.colName === this.sort_state[i].key)?.type
+            let compare = this.compare(type, a[this.sort_state[i].key], b[this.sort_state[i].key], this.sort_state[i].dir);
+            if (compare !== 0) return compare;
+          }
         }
         return 0;
       })

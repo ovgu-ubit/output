@@ -27,7 +27,7 @@ export class AuthorService {
         for (let auth of aut) {
             let obj = { ...auth, institutes: undefined }
             let authEnt = await this.repository.save(obj).catch(err => { errors.push(err) });
-            await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { errors.push(err) });
+            if (authEnt) await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { errors.push(err) });
         }
         for (let err of errors) console.log(err.message)
         return aut.length - errors.length;

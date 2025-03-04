@@ -48,7 +48,7 @@ export class InvoiceFormComponent extends AbstractFormComponent<Invoice> impleme
     let idx = -1;
     if (cost_item) idx = this.entity.cost_items.indexOf(cost_item);
     let dialogRef = this.dialog.open(CostItemFormComponent, {
-      maxWidth: "600px",
+      width: "750px",
       data: {
         entity: cost_item
       },

@@ -1,13 +1,12 @@
-import { AfterViewInit, Component, ElementRef, Inject, Injectable, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { AfterViewInit, Component, Inject, Injectable, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, ValidatorFn } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { Observable, concat, concatMap, delay, map, merge, of, startWith } from 'rxjs';
+import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfigService } from 'src/app/services/config.service';
-import { AuthorService } from 'src/app/services/entities/author.service';
+import { EnrichService } from 'src/app/services/enrich.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
@@ -19,17 +18,17 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { AuthorPublication, Contract, Funder, GreaterEntity, Invoice, Language, OA_Category, Publication, PublicationIdentifier, PublicationType, Publisher, Status } from '../../../../../../output-interfaces/Publication';
+import { AuthorPublication, Invoice, Publication, Status } from '../../../../../../output-interfaces/Publication';
 import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 import { ContractFormComponent } from '../contract-form/contract-form.component';
+import { DoiFormComponent } from '../doi-form/doi-form.component';
+import { FunderFormComponent } from '../funder-form/funder-form.component';
 import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
-import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
-import { DoiFormComponent } from '../doi-form/doi-form.component';
-import { EnrichService } from 'src/app/services/enrich.service';
-import { FunderFormComponent } from '../funder-form/funder-form.component';
 import { OaCategoryFormComponent } from '../oa-category-form/oa-category-form.component';
 import { PubTypeFormComponent } from '../pub-type-form/pub-type-form.component';
+import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
+import { IdTableComponent } from 'src/app/tools/id-table/id-table.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -70,6 +69,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
+  @ViewChild(IdTableComponent) idTable: IdTableComponent<Publication>;
 
   today = new Date();
   disabled = false;
@@ -313,11 +313,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
         else this.close()
       });
-    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null  })
+    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
     else this.close()
   }
 
-  action(): void {
+  async action() {
     this.submitted = true;
     if (this.form.invalid) return;
 
@@ -353,6 +353,20 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     for (let key of Object.keys(this.pub)) {
       if (this.pub[key] === '') this.pub[key] = null;
     }
+    if (this.idTable && this.idTable.isDirty()) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Identifier, möchten Sie diesen zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      let dialogResult = await firstValueFrom(dialogRef.afterClosed())
+      if (dialogResult) { //save
+        this.idTable.addId();
+      }
+    }
+
     this.dialogRef.close({ ...this.pub, updated: true });
   }
 
@@ -433,7 +447,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   addInvoice(invoice?: Invoice) {
     if (!this.pub.invoices) this.pub.invoices = [];
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
-      maxWidth: "850px",
+      width: "800px",
       data: {
         entity: invoice,
         locked: this.pub.locked || this.pub.locked_finance || this.disabled
@@ -450,7 +464,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         } else {
           if (!invoice.id) this.pub.invoices.push(invoice)
         }
-      } 
+      }
     });
   }
 

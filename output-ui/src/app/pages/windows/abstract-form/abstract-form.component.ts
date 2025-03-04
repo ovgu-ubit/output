@@ -1,19 +1,19 @@
-import { AfterViewInit, Component, Input, OnInit, ViewChild, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validator, Validators } from '@angular/forms';
-import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { AfterViewInit, Component, inject, Input, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { concatMap, map, Observable, of, startWith } from 'rxjs';
+import { concatMap, firstValueFrom, map, Observable, of } from 'rxjs';
 import { EntityService } from 'src/app/interfaces/service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
+import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { Alias } from '../../../../../../output-interfaces/Alias';
-import { Entity, Identifier, Publisher } from '../../../../../../output-interfaces/Publication';
-import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
+import { Entity } from '../../../../../../output-interfaces/Publication';
 import { CostTypeFormComponent } from '../cost-type-form/cost-type-form.component';
-import { CostTypeService } from 'src/app/services/entities/cost-type.service';
+import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
+import { AliasTableComponent } from 'src/app/tools/alias-table/alias-table.component';
+import { IdTableComponent } from 'src/app/tools/id-table/id-table.component';
 
 @Component({
   selector: 'app-abstract-form',
@@ -30,6 +30,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   @Input() dialogRef: MatDialogRef<any>;
   @Input() data: any;
   @Input() preProcessing?: Observable<any>
+  @Input() postProcessing?: Observable<any>
 
   entity: T;
   disabled: boolean;
@@ -39,6 +40,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   ctForm = CostTypeFormComponent;
 
   @ViewChild('table_doi') tableDOI: MatTable<any>;
+  @ViewChild(AliasTableComponent) aliasTable: AliasTableComponent<T>;
+  @ViewChild(IdTableComponent) idTable: IdTableComponent<T>;
 
   public tokenService = inject(AuthorizationService);
   formBuilder = inject(FormBuilder)
@@ -53,6 +56,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   ngAfterViewInit(): void {
     if (!this.preProcessing) this.preProcessing = of(null);
+    if (!this.postProcessing) this.postProcessing = of(null);
     this.preProcessing.pipe(concatMap(data => {
       if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data.locked) {
         this.disable();
@@ -88,7 +92,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         } else this.entity = {} as any
         return of(null)
       }
-    })).subscribe();
+    }), concatMap(data => {return this.postProcessing})).subscribe();
   }
 
   ngOnInit(): void {
@@ -110,8 +114,48 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     this.form.disable();
   }
 
-  action() {
+  async action() {
     if (this.form.invalid) return;
+    if (this.aliasTable && this.aliasTable.isDirty() || (this['aliasForm'] && this['aliasForm'].dirty)) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Alias, möchten Sie diesen zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      let dialogResult = await firstValueFrom(dialogRef.afterClosed())
+      if (dialogResult) { //save
+        if (!this['aliasForm']) this.aliasTable.addAlias();
+        else this['addAlias']();
+      }
+    }
+    if (this.idTable && this.idTable.isDirty()) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Identifier, möchten Sie diesen zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      let dialogResult = await firstValueFrom(dialogRef.afterClosed())
+      if (dialogResult) { //save
+        this.idTable.addId();
+      }
+    }
+    if (this.prefixForm && this.prefixForm.dirty) {
+      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Präfix, möchten Sie diesen zunächst speichern?`);
+
+      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: "400px",
+        data: dialogData
+      });
+
+      let dialogResult = await firstValueFrom(dialogRef.afterClosed())
+      if (dialogResult) { //save
+        this.addPrefix();
+      }
+    }
     this.entity = { ...this.entity, ...this.form.getRawValue() }
     //doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined
     for (let field of this.fields) if (this.entity[field.key] === '') this.entity[field.key] = null;
