@@ -261,7 +261,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
     // define Entity Form dialog by id to enforce edit mode
     let dialogRef = this.dialog.open(this.formComponent, {
-      width: '800px',
+      width: '1000px',
       maxHeight: '800px',
       data: {
         entity: { id: row.id }

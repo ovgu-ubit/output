@@ -447,7 +447,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   addInvoice(invoice?: Invoice) {
     if (!this.pub.invoices) this.pub.invoices = [];
     let dialogRef = this.dialog.open(InvoiceFormComponent, {
-      maxWidth: "850px",
+      width: "800px",
       data: {
         entity: invoice,
         locked: this.pub.locked || this.pub.locked_finance || this.disabled
