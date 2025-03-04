@@ -228,6 +228,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       } else {
         let result = true
         for (let key of Object.keys(filterJSON)) {
+          if (!filterJSON[key]) continue;
+          if (this.headers.find(e => e.colName === key)?.type === 'number') filterJSON[key] = filterJSON[key].replaceAll("\.","");
+          if (this.headers.find(e => e.colName === key)?.type === 'euro') filterJSON[key] = filterJSON[key].replaceAll(" €","");
           if (filterJSON[key] && !(filterJSON[key].includes("*") || filterJSON[key].includes("?"))) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key]))
           else {
             let regex = filterJSON[key].replaceAll("*", ".*").replaceAll("?", ".");
@@ -237,7 +240,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }
         return result;
       }
-    };
+    }.bind(this);
     this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
     this.dataSource.data = this.dataSource.data.sort((a, b) => {
       for (let i = 0; i < this.sort_state.length; i++) {
