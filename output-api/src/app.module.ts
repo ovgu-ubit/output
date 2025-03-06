@@ -72,6 +72,7 @@ import { StatusController } from "./controller/StatusController";
 import { StatusService } from "./services/entities/status.service";
 import { ExcelImportService } from "./services/import/excel-import.service";
 import { ScheduleModule } from "@nestjs/schedule";
+import { ContractIdentifier } from "./entity/ContractIdentifier";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -95,7 +96,7 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
+    TypeOrmModule.forFeature([Author, AuthorPublication, Contract, ContractIdentifier, CostCenter, CostItem, CostType, Funder, GreaterEntity, Identifier,
       Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
       AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status]),
     ScheduleModule.forRoot()

@@ -63,7 +63,7 @@ export class ContractController {
         }
     })
     async update(@Body() body: Contract) {
-        return this.contractService.save([body])
+        return this.contractService.update(body)
     }
 
     @Delete()
