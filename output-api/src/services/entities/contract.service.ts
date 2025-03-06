@@ -6,11 +6,13 @@ import { ILike, In, Repository } from 'typeorm';
 import { Contract } from '../../entity/Contract';
 import { ContractIndex } from '../../../../output-interfaces/PublicationIndex';
 import { PublicationService } from './publication.service';
+import { ContractIdentifier } from '../../entity/ContractIdentifier';
 
 @Injectable()
 export class ContractService {
 
-    constructor(@InjectRepository(Contract) private repository: Repository<Contract>, private configService: ConfigService, private publicationService: PublicationService) { }
+    constructor(@InjectRepository(Contract) private repository: Repository<Contract>, private configService: ConfigService, private publicationService: PublicationService,
+        @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>) { }
 
     public get() {
         return this.repository.find({ relations: { publisher: true } });
@@ -36,6 +38,30 @@ export class ContractService {
 
     public save(contracts: any[]) {
         return this.repository.save(contracts).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
+    }
+
+    public async update(contract: any) {
+        let orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
+        if (contract.identifiers) {
+            for (let id of contract.identifiers) {
+                if (!id.id) {
+                    id.value = id.value.toUpperCase();
+                    id.type = id.type.toLowerCase();
+                    id.id = (await this.idRepository.save(id).catch(err => {
+                        if (err.constraint) throw new BadRequestException(err.detail)
+                        else throw new InternalServerErrorException(err);
+                    })).id;
+                }
+            }
+        }
+        if (orig && orig.identifiers) orig.identifiers.forEach(async id => {
+            if (!contract.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
+        })
+
+        return await this.repository.save(contract).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
@@ -79,7 +105,7 @@ export class ContractService {
 
         return query.getRawMany() as Promise<ContractIndex[]>;
     }
-    
+
     public async combine(id1: number, ids: number[]) {
         let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true } });
         let authors = []
@@ -107,6 +133,8 @@ export class ContractService {
             if (!res.gold_option && aut.gold_option) res.gold_option = aut.gold_option;
             if (!res.verification_method && aut.verification_method) res.verification_method = aut.verification_method;
             if (!res.publisher && aut.publisher) res.publisher = aut.publisher;
+            if (!res.identifiers) res.identifiers = [];
+            res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
         }
 
         //update publication 1
