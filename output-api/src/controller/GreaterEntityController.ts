@@ -57,7 +57,7 @@ export class GreaterEntityController {
         }
     })
     async update(@Body() body: GreaterEntity) {
-        return this.geService.save([body])
+        return this.geService.update(body)
     }
 
     

@@ -67,7 +67,7 @@ export class AuthorshipFormComponent extends AbstractFormComponent<any> implemen
     return (i1?.id === i2?.id)
   }
 
-  override action() {
+  override async action() {
     if (!this.entity.author) return;
     if (this.entity.institute && !this.entity.author.institutes?.find(e => this.entity.institute.id === e.id)) {
       //save institute to author

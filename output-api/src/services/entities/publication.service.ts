@@ -187,6 +187,23 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
+            let orig = await this.pubRepository.findOne({where:{id:pub.id}, relations: {identifiers: true}})
+            if (pub.identifiers) {
+                for (let id of pub.identifiers) {
+                    if (!id.id) {
+                        id.value = id.value.toUpperCase();
+                        id.type = id.type.toLowerCase();
+                        id.id = (await this.idRepository.save(id).catch(err => {
+                            if (err.constraint) throw new BadRequestException(err.detail)
+                            else throw new InternalServerErrorException(err);
+                        })).id;
+                    }
+                }
+            }
+            if (orig && orig.identifiers) orig.identifiers.forEach(async id => {
+                if (!pub.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
+            })
+
             let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
             if (autPub) {
                 pub.authorPublications = autPub;
@@ -522,7 +539,7 @@ export class PublicationService {
                 break;
             case 'pub_date':
                 if (value) where = "publication.pub_date = '" + value + "'";
-                else where = "publication.pub_date IS NULL"
+                else where = "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL"
                 break;
             default:
                 where = "publication." + key + " = '" + value + "'";

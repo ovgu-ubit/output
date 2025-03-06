@@ -8,6 +8,7 @@ import { InstituteService } from 'src/app/services/entities/institute.service';
 import { Author, Institute } from '../../../../../../output-interfaces/Publication';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { InstituteFormComponent } from '../institute-form/institute-form.component';
+import { map, Observable, of } from 'rxjs';
 
 @Component({
   selector: 'app-author-form',
@@ -57,6 +58,11 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
       gnd_id: ['', Validators.pattern(/^[0-9X-]*$/)]
     });
   }
+
+  override postProcessing: Observable<any> =
+    of(1).pipe(map(data => {
+      this.updateAlias();
+    }))
 
   deleteInst(row) {
     if (this.disabled) return;

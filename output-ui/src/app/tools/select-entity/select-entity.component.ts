@@ -1,13 +1,13 @@
-import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
-import { Entity, Identifiable } from '../../../../../output-interfaces/Publication';
-import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
 import { ComponentType } from '@angular/cdk/portal';
-import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { map, Observable, pipe, startWith } from 'rxjs';
-import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { map, Observable, startWith } from 'rxjs';
+import { EntityService } from 'src/app/interfaces/service';
+import { Entity } from '../../../../../output-interfaces/Publication';
+import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-select-entity',
@@ -99,7 +99,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     }
     if (this.disabled) {
       let dialogRef = this.dialog.open(this.formComponent, {
-        width: "600px",
+        width: "800px",
         data: {
           entity: this.ent
         }
@@ -121,7 +121,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
           this.setValue(entity, event.value)
 
           let dialogRef1 = this.dialog.open(this.formComponent, {
-            width: "600px",
+            width: "800px",
             data: {
               entity
             },
@@ -149,7 +149,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
       });
     } else if (this.formComponent) {
       let dialogRef = this.dialog.open(this.formComponent, {
-        width: "600px",
+        width: "800px",
         data: {
           entity: this.ent
         },

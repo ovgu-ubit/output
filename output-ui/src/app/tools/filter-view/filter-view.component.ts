@@ -98,7 +98,7 @@ export class FilterViewComponent implements OnInit {
     this.publicationService.getFilters().subscribe({
       next: data => {
         this.filters = data;
-        if (this.data.viewConfig?.filter.paths && this.data.viewConfig?.filter.paths.length > 0) {
+        if (this.data.viewConfig?.filter?.paths && this.data.viewConfig?.filter.paths.length > 0) {
           for (let e of this.data.viewConfig?.filter.paths) {
             let idx = this.filters.findIndex(f => f.path === e);
             if (idx >= 0) {

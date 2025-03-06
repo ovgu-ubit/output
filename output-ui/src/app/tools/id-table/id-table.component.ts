@@ -24,6 +24,10 @@ export class IdTableComponent<T extends Identifiable<T>> {
 
   @ViewChild(MatTable) idTable: MatTable<IIdentifier<T>>;
 
+  public isDirty() {
+    return this.idForm.dirty;
+  }
+
   deleteId(elem) {
     if (this.disabled) return;
     this.entity.identifiers = this.entity.identifiers.filter(e => e.id !== elem.id)

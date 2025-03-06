@@ -36,6 +36,30 @@ export class GreaterEntityService {
         });
     }
 
+    public async update(ge:any) {
+        let orig:GreaterEntity = await this.repository.findOne({where: {id:ge.id}, relations: {identifiers:true}})
+        if (ge.identifiers) {
+            for (let id of ge.identifiers) {
+                if (!id.id) {
+                    id.value = id.value.toUpperCase();
+                    id.type = id.type.toLowerCase();
+                    id.id = (await this.idRepository.save(id).catch(err => {
+                        if (err.constraint) throw new BadRequestException(err.detail)
+                        else throw new InternalServerErrorException(err);
+                    })).id;
+                }
+            }
+        }
+        if (orig && orig.identifiers) orig.identifiers.forEach(async id => {
+            if (!ge.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
+        })
+        
+        return await this.repository.save(ge).catch(err => {
+            if (err.constraint) throw new BadRequestException(err.detail)
+            else throw new InternalServerErrorException(err);
+        });
+    }
+
     public get() {
         return this.repository.find({ relations: { identifiers: true } });
     }
@@ -142,7 +166,7 @@ export class GreaterEntityService {
         }
         else {
             query = query
-                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date IS NULL")
+                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
         }
         //console.log(query.getSql());
 
