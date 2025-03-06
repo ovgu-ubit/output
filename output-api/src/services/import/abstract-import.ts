@@ -307,7 +307,7 @@ export abstract class AbstractImportService {
         //construct publication object to save
         let obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
-            title: this.getTitle(item)?.trim(),
+            title: this.getTitle(item)?.trim().replace(/<\/?[\w\s="/.':;#-\/\?]+>/gi, ""),//remove html tags from input
             doi ,
             link: this.getLink(item)?.trim(),
             language,
