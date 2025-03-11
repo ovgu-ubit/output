@@ -1,9 +1,8 @@
-import {Entity, PrimaryGeneratedColumn, Column, ManyToOne, Unique} from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Identifier as IIdentifier } from "../../../output-interfaces/Publication";
 import { GreaterEntity } from "./GreaterEntity";
-import { Identifier as IIdentifier } from "../../../output-interfaces/Publication"
 
 @Entity()
-@Unique(["type","value"])
 export class Identifier implements IIdentifier {
 
     @PrimaryGeneratedColumn()

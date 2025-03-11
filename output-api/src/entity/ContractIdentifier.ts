@@ -1,9 +1,8 @@
-import {Entity, PrimaryGeneratedColumn, Column, ManyToOne, Unique} from "typeorm";
-import { ContractIdentifier as IContractIdentifier } from "../../../output-interfaces/Publication"
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { ContractIdentifier as IContractIdentifier } from "../../../output-interfaces/Publication";
 import { Contract } from "./Contract";
 
 @Entity()
-@Unique(["type","value"])
 export class ContractIdentifier implements IContractIdentifier {
 
     @PrimaryGeneratedColumn()

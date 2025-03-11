@@ -1,5 +1,5 @@
-import {Entity, PrimaryGeneratedColumn, Column, Unique, PrimaryColumn} from "typeorm";
-import { Config as IConfig } from "../../../output-interfaces/Config"
+import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Config as IConfig } from "../../../output-interfaces/Config";
 
 @Entity()
 export class Config implements IConfig {

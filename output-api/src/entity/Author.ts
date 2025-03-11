@@ -20,14 +20,14 @@ export class Author implements IAuthor {
     @Column({ nullable: true })
     title?: string;
 
-    @Column({ nullable: true, unique: true })
+    @Column({ nullable: true })
     gnd_id?: string;
 
     @ManyToMany(() => Institute, (inst) => inst.authors, {cascade: true})
     @JoinTable()
     institutes?: Institute[]
 
-    @Column({ nullable: true, unique: true })
+    @Column({ nullable: true })
     orcid?: string;
 
     @OneToMany(() => AuthorPublication, authorPublication => authorPublication.author, { cascade : true })
