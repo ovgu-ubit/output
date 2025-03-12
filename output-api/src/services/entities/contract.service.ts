@@ -57,7 +57,7 @@ export class ContractService {
                 }
             }
         }
-        if (orig && orig.identifiers) orig.identifiers.forEach(async id => {
+        if (contract.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
             if (!contract.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
         })
 

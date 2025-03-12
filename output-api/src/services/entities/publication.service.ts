@@ -200,7 +200,7 @@ export class PublicationService {
                     }
                 }
             }
-            if (orig && orig.identifiers) orig.identifiers.forEach(async id => {
+            if (pub.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
                 if (!pub.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
             })
 
