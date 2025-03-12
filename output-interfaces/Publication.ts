@@ -140,7 +140,7 @@ export interface IIdentifier<T> extends Entity {
     entity?: T
 }
 
-export interface Identifier extends IIdentifier<GreaterEntity> {
+export interface GEIdentifier extends IIdentifier<GreaterEntity> {
 }
 
 export interface PublicationIdentifier extends IIdentifier<Publication> {

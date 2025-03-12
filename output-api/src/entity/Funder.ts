@@ -12,10 +12,10 @@ export class Funder implements IFunder {
     @Column()
     label: string;
 
-    @Column({ unique: true, nullable: true })
+    @Column({ nullable: true })
     doi?: string;
 
-    @Column({ unique: true, nullable: true })
+    @Column({ nullable: true })
     ror_id?: string;
 
     @Column({ nullable: true })

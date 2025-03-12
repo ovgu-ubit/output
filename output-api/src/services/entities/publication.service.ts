@@ -10,7 +10,7 @@ import { CostItem } from '../../entity/CostItem';
 import { Institute } from '../../entity/Institute';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../entity/Publication';
-import { PublicationIdentifier } from '../../entity/PublicationIdentifier';
+import { PublicationIdentifier } from '../../entity/identifier/PublicationIdentifier';
 import { Role } from '../../entity/Role';
 import { InstitutionService } from './institution.service';
 

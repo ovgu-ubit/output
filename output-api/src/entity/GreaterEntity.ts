@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
 import { GreaterEntity as IGreaterEntity } from "../../../output-interfaces/Publication"
-import { Identifier } from "./Identifier";
+import { GEIdentifier } from "./identifier/GEIdentifier";
 import { Publication } from "./Publication";
 
 @Entity()
@@ -21,8 +21,8 @@ export class GreaterEntity implements IGreaterEntity {
     @Column({ nullable: true, type: 'timestamptz' })
     doaj_until?: Date;
 
-    @OneToMany(() => Identifier, (ide) => ide.entity, {cascade: true})
-    identifiers?: Identifier[];
+    @OneToMany(() => GEIdentifier, (ide) => ide.entity, {cascade: true})
+    identifiers?: GEIdentifier[];
 
     @OneToMany(() => Publication, (p) => p.greater_entity)
     publications?: Publication[]

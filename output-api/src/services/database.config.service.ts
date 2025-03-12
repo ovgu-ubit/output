@@ -18,15 +18,15 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             database: this.configService.get<string>('DATABASE_NAME'),
             username: this.configService.get<string>('DATABASE_USER'),
             password: this.configService.get<string>('DATABASE_PASSWORD'),
-            synchronize: true,
+            synchronize: false,
             logging: false,
             entities: [
                 "dist/output-api/src/entity/**/*.js",
                 "dist/output-api/src/entity/**/*.ts"
             ],
             migrations: [
-                "dist/output-api/src/migration/**/*.js",
-                "dist/output-api/src/migration/**/*.ts"
+                "dist/output-api/src/migrations/**/*.js",
+                "dist/output-api/src/migrations/**/*.ts"
             ],
             subscribers: [
                 "dist/output-api/src/subscriber/**/*.js",

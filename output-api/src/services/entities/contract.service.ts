@@ -6,7 +6,7 @@ import { ILike, In, Repository } from 'typeorm';
 import { Contract } from '../../entity/Contract';
 import { ContractIndex } from '../../../../output-interfaces/PublicationIndex';
 import { PublicationService } from './publication.service';
-import { ContractIdentifier } from '../../entity/ContractIdentifier';
+import { ContractIdentifier } from '../../entity/identifier/ContractIdentifier';
 
 @Injectable()
 export class ContractService {

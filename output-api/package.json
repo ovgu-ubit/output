@@ -7,7 +7,8 @@
       "@types/multer": "^1.4.12",
       "@types/node": "^22.7.5",
       "ts-node": "^10.9.2",
-      "typescript": "^5.6.3"
+      "typescript": "^5.6.3",
+      "rimraf": "^6.0.1"
    },
    "dependencies": {
       "@nestjs/axios": "3.0.3",
@@ -62,6 +63,9 @@
       "test:watch": "jest --watch",
       "test:cov": "jest --coverage",
       "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-      "test:e2e": "jest --config ./test/jest-e2e.json"
+      "test:e2e": "jest --config ./test/jest-e2e.json",
+      "typeorm:dev": "cross-env NODE_ENV=dev typeorm-ts-node-commonjs",
+      "typeorm:test": "cross-env NODE_ENV=test typeorm-ts-node-commonjs",
+      "typeorm:prod": "cross-env NODE_ENV=prod typeorm-ts-node-commonjs"
    }
 }

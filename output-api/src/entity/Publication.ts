@@ -9,7 +9,7 @@ import { PublicationType } from "./PublicationType";
 import { Publisher } from "./Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"
 import { Language } from "./Language";
-import { PublicationIdentifier } from "./PublicationIdentifier";
+import { PublicationIdentifier } from "./identifier/PublicationIdentifier";
 
 @Entity()
 export class Publication implements IPublication {

@@ -5,7 +5,7 @@ import { ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../../output-interfaces/Config';
 import { GreaterEntityIndex } from '../../../../output-interfaces/PublicationIndex';
 import { GreaterEntity } from '../../entity/GreaterEntity';
-import { Identifier } from '../../entity/Identifier';
+import { GEIdentifier } from '../../entity/identifier/GEIdentifier';
 import { Publication } from '../../entity/Publication';
 import { PublicationService } from './publication.service';
 
@@ -13,7 +13,7 @@ import { PublicationService } from './publication.service';
 export class GreaterEntityService {
 
     constructor(@InjectRepository(GreaterEntity) private repository: Repository<GreaterEntity>,
-        @InjectRepository(Identifier) private idRepository: Repository<Identifier>, private publicationService: PublicationService,
+        @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>, private publicationService: PublicationService,
         private configService: ConfigService) { }
 
     public async save(pubs: any[]) {

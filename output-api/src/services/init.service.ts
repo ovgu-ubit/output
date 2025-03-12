@@ -10,7 +10,7 @@ import { CostItem } from "../entity/CostItem";
 import { CostType } from "../entity/CostType";
 import { Funder } from "../entity/Funder";
 import { GreaterEntity } from "../entity/GreaterEntity";
-import { Identifier } from "../entity/Identifier";
+import { GEIdentifier } from "../entity/identifier/GEIdentifier";
 import { Institute } from "../entity/Institute";
 import { Invoice } from "../entity/Invoice";
 import { OA_Category } from "../entity/OA_Category";

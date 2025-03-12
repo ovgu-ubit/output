@@ -6,7 +6,7 @@ import * as Papa from 'papaparse';
 import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../entity/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
-import { Identifier } from '../../entity/Identifier';
+import { GEIdentifier } from '../../entity/identifier/GEIdentifier';
 import { Publication } from '../../entity/Publication';
 import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../entities/author.service';
@@ -222,7 +222,7 @@ export class CSVImportService extends AbstractImportService {
         if (this.importConfig.mapping.authors.startsWith('$')) return this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         return element[this.importConfig.mapping.authors];
     }
-    getGreaterEntityIdentifier(element: any): Identifier[] {
+    getGreaterEntityIdentifier(element: any): GEIdentifier[] {
         if (!this.importConfig.mapping.id_ge) return null;
         if (this.importConfig.mapping.id_ge.startsWith('$')) return [{ type: this.importConfig.id_ge_type, value: this.importConfig.mapping.id_ge.slice(1, this.importConfig.mapping.id_ge.length) }];
         return [{ type: this.importConfig.id_ge_type, value: element[this.importConfig.mapping.id_ge] }];
