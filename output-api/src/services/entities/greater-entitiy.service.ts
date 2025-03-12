@@ -50,7 +50,7 @@ export class GreaterEntityService {
                 }
             }
         }
-        if (orig && orig.identifiers) orig.identifiers.forEach(async id => {
+        if (ge.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
             if (!ge.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
         })
         
