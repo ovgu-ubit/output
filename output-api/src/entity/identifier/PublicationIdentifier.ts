@@ -1,9 +1,8 @@
-import {Entity, PrimaryGeneratedColumn, Column, ManyToOne, Unique} from "typeorm";
-import { PublicationIdentifier as IPublicationIdentifier } from "../../../output-interfaces/Publication"
-import { Publication } from "./Publication";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { PublicationIdentifier as IPublicationIdentifier } from "../../../../output-interfaces/Publication";
+import { Publication } from "../Publication";
 
 @Entity()
-@Unique(["type","value"])
 export class PublicationIdentifier implements IPublicationIdentifier {
 
     @PrimaryGeneratedColumn()

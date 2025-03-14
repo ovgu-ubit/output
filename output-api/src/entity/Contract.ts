@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "ty
 import { Publisher } from "./Publisher";
 import { Contract as IContract} from "../../../output-interfaces/Publication"
 import { Publication } from "./Publication";
-import { ContractIdentifier } from "./ContractIdentifier";
+import { ContractIdentifier } from "./identifier/ContractIdentifier";
 
 @Entity()
 export class Contract implements IContract {

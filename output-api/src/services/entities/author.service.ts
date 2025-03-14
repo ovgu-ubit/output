@@ -1,17 +1,16 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
-import { AuthorIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Author } from '../../entity/Author';
-import { AuthorPublication } from '../../entity/AuthorPublication';
-import { Publication } from '../../entity/Publication';
-import { AppConfigService } from '../app-config.service';
-import { InstitutionService } from './institution.service';
 import { AppError } from '../../../../output-interfaces/Config';
-import { ConfigService } from '@nestjs/config';
+import { AuthorIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AliasAuthorFirstName } from '../../entity/alias/AliasAuthorFirstName';
 import { AliasAuthorLastName } from '../../entity/alias/AliasAuthorLastName';
+import { Author } from '../../entity/Author';
+import { AuthorPublication } from '../../entity/AuthorPublication';
+import { AppConfigService } from '../app-config.service';
+import { InstitutionService } from './institution.service';
 
 @Injectable()
 export class AuthorService {
