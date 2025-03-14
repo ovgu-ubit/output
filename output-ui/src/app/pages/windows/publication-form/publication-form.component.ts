@@ -128,7 +128,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         best_oa_license: [''],
       }),
       finance_info: this.formBuilder.group({
-        cost_approach: ['']
+        cost_approach: [''],
+        grant_number: [''],
+        budget_relevant: ['']
       }),
     }, {
       validators: [this.pubValidator.pubValidator()]

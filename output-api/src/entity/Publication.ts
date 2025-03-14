@@ -148,4 +148,10 @@ export class Publication implements IPublication {
 
     @Column({ nullable: true,  type: "float" })
     cost_approach?: number;
+    
+    @Column({ nullable: true })
+    budget_relevant?: boolean;
+    
+    @Column({ nullable: true })
+    grant_number?: string;
 }
