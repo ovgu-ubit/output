@@ -1,8 +1,7 @@
-import { Component, inject, Input, Output, ViewChild } from '@angular/core';
-import { EventEmitter } from 'stream';
-import { Identifiable, Identifier, IIdentifier } from '../../../../../output-interfaces/Publication';
-import { MatTable, MatTableDataSource } from '@angular/material/table';
+import { Component, inject, Input, ViewChild } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
+import { MatTable, MatTableDataSource } from '@angular/material/table';
+import { Identifiable, IIdentifier } from '../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-id-table',

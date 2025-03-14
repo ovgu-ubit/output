@@ -16,7 +16,8 @@
             </mat-form-field>
             <mat-form-field style="max-width: 200px;">
                 <mat-label>Status</mat-label>
-                <input matInput [type]="'number'" onwheel="return false;" placeholder="Status" formControlName="status" />
+                <input matInput [type]="'number'" onwheel="return false;" placeholder="Status"
+                    formControlName="status" />
                 <mat-hint [matTooltip]="showStatusLabel(true)">{{showStatusLabel(false)}}</mat-hint>
             </mat-form-field>
         </div>
@@ -240,7 +241,8 @@
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
                             <mat-label>Seitenzahl</mat-label>
-                            <input matInput [type]="'number'" onwheel="return false;" placeholder="Seitenzahl" formControlName="page_count" />
+                            <input matInput [type]="'number'" onwheel="return false;" placeholder="Seitenzahl"
+                                formControlName="page_count" />
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Verlagsort</mat-label>
@@ -361,8 +363,7 @@
                             <ng-container matColumnDef="edit">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.addInvoice(element)"
-                                        matTooltip="Rechnung bearbeiten">
+                                        (click)="this.addInvoice(element)" matTooltip="Rechnung bearbeiten">
                                         <mat-icon
                                             *ngIf="this.disabled || this.pub?.locked || this.pub?.locked_finance; else elseInvoice">remove_red_eye</mat-icon>
                                         <ng-template #elseInvoice><mat-icon>edit</mat-icon></ng-template>
@@ -413,7 +414,16 @@
                             </mat-chip>
                         </mat-chip-set>
                     </mat-card-content>
-                </mat-card>
+                </mat-card><br>
+
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>(DFG-)Fördernummer</mat-label>
+                    <input matInput placeholder="(DFG-)Fördernummer"
+                        formControlName="grant_number" />
+                </mat-form-field>
+
+                <mat-checkbox formControlName="budget_relevant">Relevant für Mittelverteilung?</mat-checkbox>
+
             </mat-expansion-panel>
 
             <mat-expansion-panel>
