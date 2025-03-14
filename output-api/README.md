@@ -9,3 +9,9 @@ Steps to run this project:
    1. Run `npm run build`
    2. Load the available configuration (output-server-test.config.js) into pm2 and save 
 
+# Migrations from older versions below 1.2
+
+cf. [TypeORM migrations documentation](https://typeorm.io/migrations#migrations)
+
+1. run `npm run build`
+2. run `npm run typeorm:dev migration:run -- -d ./src/app.data.source.ts` to apply all pending migrations
