@@ -2,7 +2,7 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { GEIdentifier as IIdentifier } from "../../../../output-interfaces/Publication";
 import { GreaterEntity } from "../GreaterEntity";
 
-@Entity()
+@Entity("identifier")
 export class GEIdentifier implements IIdentifier {
 
     @PrimaryGeneratedColumn()
