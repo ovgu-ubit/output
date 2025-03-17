@@ -150,23 +150,24 @@ export class GreaterEntityService {
             .addSelect("a.doaj_since", "doaj_since")
             .addSelect("a.doaj_until", "doaj_until")
             .addSelect("a.identifiers", "identifiers")
-            .addSelect("COUNT(\"publication\")", "pub_count")
+            .addSelect("COUNT(\"publication\")", "pub_count_total")
             .groupBy("a.id")
             .addGroupBy("a.label")
             .addGroupBy("a.rating")
             .addGroupBy("a.doaj_since")
             .addGroupBy("a.doaj_until")
             .addGroupBy("a.identifiers")
+            .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id")
 
         if (reporting_year) {
             let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+                .addSelect("SUM(CASE WHEN publication.pub_date >= '" + beginDate.toISOString() + "' and publication.pub_date <= '" + endDate.toISOString() + "' THEN 1 ELSE 0 END)", "pub_count")
         }
         else {
             query = query
-                .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
+                .addSelect("SUM(CASE WHEN publication.pub_date is null THEN 1 ELSE 0 END)", "pub_count")
         }
         //console.log(query.getSql());
 
