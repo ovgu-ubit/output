@@ -192,6 +192,12 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       filter: null,
       paths: null
     }
+    this.table.viewConfig = {
+      sortState: [],  
+      filterColumn: new Map<string, string>(),
+      page: 0,
+      pageSize: 10
+    };
     this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
       this.table.reporting_year = data;
       if (data) this.name = 'Publikationen des Jahres ' + data;
