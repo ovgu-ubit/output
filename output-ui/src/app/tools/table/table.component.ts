@@ -82,6 +82,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   id;
   public indexOptions: any;
+  viewConfig: ViewConfig;
 
   filterValues: Map<string, string> = new Map();
 
@@ -122,6 +123,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         this.id = params.get('id');
       }
     })))
+
+    if (this.publication_table) ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(take(1), map(data => this.viewConfig = data)));
+
     this.pageForm = this.formBuilder.group({
       pageNumber: ['', [Validators.required, Validators.pattern("^[0-9]*$")]]
     });
@@ -174,9 +178,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           })
       })
       this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
-      if (this.publication_table) {
-        this.store.select(selectViewConfig).pipe(take(1)).subscribe(data => this.setViewConfig(data))
-      }
       if (this.id) {
         this.edit({ id: this.id });
       }
@@ -229,8 +230,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         let result = true
         for (let key of Object.keys(filterJSON)) {
           if (!filterJSON[key]) continue;
-          if (this.headers.find(e => e.colName === key)?.type === 'number') filterJSON[key] = filterJSON[key].replaceAll("\.","");
-          if (this.headers.find(e => e.colName === key)?.type === 'euro') filterJSON[key] = filterJSON[key].replaceAll(" €","");
+          if (this.headers.find(e => e.colName === key)?.type === 'number') filterJSON[key] = filterJSON[key].replaceAll("\.", "");
+          if (this.headers.find(e => e.colName === key)?.type === 'euro') filterJSON[key] = filterJSON[key].replaceAll(" €", "");
           if (filterJSON[key] && !(filterJSON[key].includes("*") || filterJSON[key].includes("?"))) result = result && (data[key]?.toString().toLowerCase().includes(filterJSON[key]))
           else {
             let regex = filterJSON[key].replaceAll("*", ".*").replaceAll("?", ".");
@@ -250,6 +251,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       }
       return 0;
     })
+    if (this.viewConfig) this.setViewConfig(this.viewConfig)
   }
 
   public updateData() {
@@ -531,7 +533,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.dataSource.data = this.dataSource.data.sort((a, b) => {
         for (let i = 0; i < this.sort_state.length; i++) {
           if (this.sort_state[i].key === 'edit') {
-            return (a['locked'] > b['locked']? 1 : -1) * (this.sort_state[i].dir === 'asc' ? 1 : -1);
+            return (a['locked'] > b['locked'] ? 1 : -1) * (this.sort_state[i].dir === 'asc' ? 1 : -1);
           }
           else {
             let type = this.headers.find(e => e.colName === this.sort_state[i].key)?.type
@@ -572,14 +574,20 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   goToPage() {
-    if (this.paginator.length <= this.pageForm.controls.pageNumber.value * this.paginator.pageSize) this.paginator.pageIndex = Math.floor(this.paginator.length / this.paginator.pageSize);
-    else this.paginator.pageIndex = this.pageForm.controls.pageNumber.value; // number of the page you want to jump.
+    let page = null;
+    if (this.paginator.length <= this.pageForm.controls.pageNumber.value * this.paginator.pageSize) page = Math.floor(this.paginator.length / this.paginator.pageSize);
+    else page = this.pageForm.controls.pageNumber.value; // number of the page you want to jump.
+    if (Number.isNaN(page) || !Number.isInteger(Number(page))) {
+      this.pageForm.controls.pageNumber.setValue('')
+      return;
+    }
+    this.paginator.pageIndex = Number(page) - 1;
     this.paginator.page.next({
-      pageIndex: this.pageForm.controls.pageNumber.value,
+      pageIndex: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
       length: this.paginator.length
     });
-    this.pageForm.controls.pageNumber.setValue(this.paginator.pageIndex);
+    this.pageForm.controls.pageNumber.setValue(this.paginator.pageIndex + 1);
   }
 
   alert(type: string, msg: string, details?: string) {
@@ -627,7 +635,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   setViewConfig(viewConfig: ViewConfig) {
-    this.paginator.pageIndex = viewConfig.page ? viewConfig.page : this.paginator.pageIndex;
+    this.paginator.pageIndex = viewConfig.page !== null &&  viewConfig.page !== undefined? viewConfig.page : this.paginator.pageIndex;
     this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize
     this.paginator.page.next({
       pageIndex: this.paginator.pageIndex,
@@ -649,10 +657,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.filterValues = viewConfig.filterColumn;
     if (this.filterValues.get) for (let col of this.headerNames) {
       if (this.filterValues.get(col)) this.filterControls[col].setValue(this.filterValues.get(col))
+      else this.filterControls[col].setValue('');
     }
     this.sort_state = viewConfig.sortState;
 
-    this.update(this.data);
   }
 
   isButtonDisabled(e: TableButton) {
@@ -671,14 +679,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     } else if (!this.paginator.hasPreviousPage()) {
       this.paginator2.firstPage();
     } else {
-      if (this.paginator.pageIndex < this.paginator2.pageIndex) {
-        this.paginator2.previousPage();
-      } else if (this.paginator.pageIndex > this.paginator2.pageIndex) {
-        this.paginator2.nextPage();
-      }
+      this.paginator2.pageIndex = this.paginator.pageIndex;
     }
   }
-
 
   public handlePageBottom(e: any) {
     if (!this.paginator2.hasNextPage()) {
@@ -686,11 +689,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     } else if (!this.paginator2.hasPreviousPage()) {
       this.paginator.firstPage();
     } else {
-      if (this.paginator2.pageIndex < this.paginator.pageIndex) {
-        this.paginator.previousPage();
-      } else if (this.paginator2.pageIndex > this.paginator.pageIndex) {
-        this.paginator.nextPage();
-      }
+      this.paginator.pageIndex = this.paginator2.pageIndex;
     }
   }
 
