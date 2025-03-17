@@ -23,6 +23,7 @@ export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>
     { colName: 'doaj_since', colTitle: 'Im DOAJ seit', type: 'date' },
     { colName: 'doaj_until', colTitle: 'Im DOAJ bis', type: 'date' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 
   constructor(public geService: GreaterEntityService) { }

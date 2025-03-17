@@ -62,6 +62,7 @@ export interface GreaterEntityIndex {
     is_doaj?: boolean;
     identifiers?: string;
 	pub_count: number;
+    pub_count_total: number;
 }
 export interface FunderIndex {
     id?: number;
