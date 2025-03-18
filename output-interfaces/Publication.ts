@@ -71,6 +71,7 @@ export interface Author extends Entity {
 }
 
 export interface AuthorPublication {
+    id?: number;
     author?: Author
     authorId?: number
     publication?: Publication

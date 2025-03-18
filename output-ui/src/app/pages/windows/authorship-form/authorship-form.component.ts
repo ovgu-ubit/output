@@ -93,10 +93,10 @@ export class AuthorshipFormComponent extends AbstractFormComponent<any> implemen
           inst.aliases.push({ elementId: this.entity.institute.id, alias: result[0] });
           this.instService.update(inst).subscribe()
         }
-        this.dialogRef.close({ author: this.entity.author, authorId: this.entity.author.id, institute: this.entity.institute, corresponding: this.form.get('corresponding').value, role: this.entity.role, affiliation: this.form.get('affiliation').value });
+        this.dialogRef.close({ id: this.entity.id, author: this.entity.author, authorId: this.entity.author.id, institute: this.entity.institute, corresponding: this.form.get('corresponding').value, role: this.entity.role, affiliation: this.form.get('affiliation').value });
       });
     }
-    else this.dialogRef.close({ author: this.entity.author, authorId: this.entity.author.id, institute: this.entity.institute, corresponding: this.form.get('corresponding').value, role: this.entity.role, affiliation: this.form.get('affiliation').value });
+    else this.dialogRef.close({ id: this.entity.id, author: this.entity.author, authorId: this.entity.author.id, institute: this.entity.institute, corresponding: this.form.get('corresponding').value, role: this.entity.role, affiliation: this.form.get('affiliation').value });
   }
 
   setAut(event) {

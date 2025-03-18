@@ -614,7 +614,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   formatAuthors(pub) {
     let all_authors = pub.authors_inst?.split('; ')
     let corrs = pub.corr_author?.split('; ')
-    all_authors = all_authors?.filter(e => !corrs || !corrs.includes(e))
+    if (corrs) for (let corr of corrs) {
+      let i = all_authors.indexOf(corr);
+      if (i !== -1) all_authors.splice(i, 1)
+    }
     if (corrs && corrs.length > 0) {
       if (all_authors && all_authors.length > 0) return `<u>${pub.corr_author}</u>; ${all_authors.join('; ')}`;
       else return `<u>${pub.corr_author}</u>`;
@@ -635,7 +638,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   setViewConfig(viewConfig: ViewConfig) {
-    this.paginator.pageIndex = viewConfig.page !== null &&  viewConfig.page !== undefined? viewConfig.page : this.paginator.pageIndex;
+    this.paginator.pageIndex = viewConfig.page !== null && viewConfig.page !== undefined ? viewConfig.page : this.paginator.pageIndex;
     this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize
     this.paginator.page.next({
       pageIndex: this.paginator.pageIndex,

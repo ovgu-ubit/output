@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, PrimaryColumn, JoinColumn, JoinTable } from "typeorm";
+import { Entity, Column, ManyToOne, PrimaryColumn, JoinColumn, JoinTable, PrimaryGeneratedColumn } from "typeorm";
 import { Author } from "./Author";
 import { Publication } from "./Publication";
 import { AuthorPublication as IAuthorPublication} from "../../../output-interfaces/Publication"
@@ -8,7 +8,10 @@ import { Role } from "./Role";
 @Entity()
 export class AuthorPublication implements IAuthorPublication {
 
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn()
+    id?: number;
+
+    @Column()
     authorId:number;
 
     @ManyToOne(() => Author, author => author.authorPublications)
@@ -18,7 +21,7 @@ export class AuthorPublication implements IAuthorPublication {
     })
     author?: Author
 
-    @PrimaryColumn()
+    @Column()
     publicationId:number;
 
     @ManyToOne(() => Publication, pub => pub.authorPublications)
