@@ -477,10 +477,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   deleteAuthorship(elem) {
     if (this.disabled) return;
-    this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== elem.authorId)
+    if (elem.id) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== elem.id)
+    else this.pub.authorPublications = this.pub.authorPublications.filter(e => e !== elem)
   }
   addAuthorship(authorPub?) {
-    if (this.disabled) return;
+    if (this.disabled || (authorPub && !authorPub.id)) return;
     if (!this.pub.authorPublications) this.pub.authorPublications = [];
     let data = {};
     data = { entity: authorPub }
@@ -492,8 +493,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     dialogRef.afterClosed().subscribe({
       next: data => {
         if (data.author) {
-          //if edit mode, delete the original version
-          if (authorPub) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.authorId !== authorPub.authorId)
+          //if edit mode, delete the original version - edit mode only with ID
+          if (authorPub && authorPub.id) {
+            this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== authorPub.id)
+          }
           this.pub.authorPublications = this.pub.authorPublications.concat([data])
           if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
         }
