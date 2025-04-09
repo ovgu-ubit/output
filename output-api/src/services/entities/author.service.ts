@@ -239,10 +239,12 @@ export class AuthorService {
 
     public async delete(auts: Author[]) {
         for (let aut of auts) {
-            let autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true } })
+            let autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
             if (autE.authorPublications) for (let autPub of autE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
+            if (autE.aliases_first_name) await this.aliasFirstNameRepository.remove(autE.aliases_first_name)
+            if (autE.aliases_last_name) await this.aliasLastNameRepository.remove(autE.aliases_last_name)
         }
         return await this.repository.delete(auts.map(p => p.id));
     }
