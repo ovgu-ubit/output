@@ -164,7 +164,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
-              this.ent = data[0];
+              this.ent = Array.isArray(data) ? data[0] : data;
               this.form.get('input').setValue(this.getValue())
               this.selected.next(this.ent)
               this.updateEnts()
