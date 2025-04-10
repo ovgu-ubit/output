@@ -22,14 +22,14 @@ export class AuthorService {
         private configService: ConfigService) { }
 
     public async save(aut: any[]) {
-        let errors = [];
+        let result = [];
         for (let auth of aut) {
             let obj = { ...auth, institutes: undefined }
-            let authEnt = await this.repository.save(obj).catch(err => { errors.push(err) });
-            if (authEnt) await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { errors.push(err) });
+            let authEnt = await this.repository.save(obj).catch(err => { console.log(err) });
+            if (authEnt) await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
+            result.push(authEnt);
         }
-        for (let err of errors) console.log(err.message)
-        return aut.length - errors.length;
+        return result;
     }
 
     public get(id?: number) {

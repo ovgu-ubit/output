@@ -502,7 +502,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data.author) {
+        if (data?.author) {
           //if edit mode, delete the original version - edit mode only with ID
           if (authorPub && authorPub.id) {
             this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== authorPub.id)
