@@ -201,6 +201,13 @@ export class AuthorService {
             .leftJoin((sq) => sq
                 .from(AuthorPublication, "authorPublication")
                 .innerJoin("publication", "publication", "publication.id = authorPublication.publicationId")
+                .select("publication.id", "id")
+                .addSelect("publication.pub_date", "pub_date")
+                .addSelect("publication.pub_date_print", "pub_date_print")
+                .addSelect("publication.pub_date_accepted", "pub_date_accepted")
+                .addSelect("publication.pub_date_submitted", "pub_date_submitted")
+                .addSelect("authorPublication.authorId", "authorId")
+                .addSelect("authorPublication.corresponding", "corresponding")
                 , "b", "b.\"authorId\" = a.id")
             .select("a.id", "id")
             .addSelect("a.orcid", "orcid")
