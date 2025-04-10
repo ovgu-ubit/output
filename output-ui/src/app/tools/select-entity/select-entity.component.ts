@@ -164,7 +164,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
                 panelClass: [`success-snackbar`],
                 verticalPosition: 'top'
               })
-              this.ent = data[0];
+              this.ent = Array.isArray(data) ? data[0] : data;
               this.form.get('input').setValue(this.getValue())
               this.selected.next(this.ent)
               this.updateEnts()
@@ -191,6 +191,12 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     this.ent = this.ents.find(e => this.getValue(e).trim().toLowerCase() === event.option.value.trim().toLowerCase());
     if (!this.resetOnSelect) this.form.get('input').setValue(this.getValue())
     else this.form.get('input').setValue('');
+    this.selected.next(this.ent)
+  }
+
+  clear() {
+    this.form.get('input').setValue('');
+    this.ent = null;
     this.selected.next(this.ent)
   }
 }

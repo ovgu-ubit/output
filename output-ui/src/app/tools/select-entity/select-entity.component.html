@@ -11,6 +11,7 @@
             </ng-container>
             <ng-template #else3><mat-icon>save</mat-icon></ng-template>
         </button>
+        <button *ngIf="!this.disabled" type="button" matSuffix mat-icon-button (click)="this.clear()"><mat-icon>close</mat-icon></button>
         <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectedEnt($event)">
             <mat-option *ngFor="let ent of this.filtered_ents | async" [value]="ent.label">
                 {{ent.label}}

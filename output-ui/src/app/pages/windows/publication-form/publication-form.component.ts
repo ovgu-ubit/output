@@ -412,6 +412,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.pub.locked = !this.pub.locked;
       this.setLock(this.pub.locked)
     }
+    this.form.get('id').disable();
+    this.form.get('oa_info').get('is_oa').disable();
+    this.form.get('oa_info').get('oa_status').disable();
+    this.form.get('oa_info').get('is_journal_oa').disable();
+    this.form.get('oa_info').get('best_oa_host').disable();
   }
 
   setLock(flag: boolean) {
@@ -423,6 +428,11 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       if (!this.pub.locked_finance) this.pub.locked_finance = true;
     } else {
       this.form.enable();
+      this.form.get('id').disable();
+      this.form.get('oa_info').get('is_oa').disable();
+      this.form.get('oa_info').get('oa_status').disable();
+      this.form.get('oa_info').get('is_journal_oa').disable();
+      this.form.get('oa_info').get('best_oa_host').disable();
       if (this.pub.locked_author) this.form.get('author_info').disable();
       if (this.pub.locked_biblio) this.form.get('biblio_info').disable();
       if (this.pub.locked_oa) this.form.get('oa_info').disable();
@@ -492,7 +502,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     });
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data.author) {
+        if (data?.author) {
           //if edit mode, delete the original version - edit mode only with ID
           if (authorPub && authorPub.id) {
             this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== authorPub.id)

@@ -22,14 +22,14 @@ export class AuthorService {
         private configService: ConfigService) { }
 
     public async save(aut: any[]) {
-        let errors = [];
+        let result = [];
         for (let auth of aut) {
             let obj = { ...auth, institutes: undefined }
-            let authEnt = await this.repository.save(obj).catch(err => { errors.push(err) });
-            if (authEnt) await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { errors.push(err) });
+            let authEnt = await this.repository.save(obj).catch(err => { console.log(err) });
+            if (authEnt) await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
+            result.push(authEnt);
         }
-        for (let err of errors) console.log(err.message)
-        return aut.length - errors.length;
+        return result;
     }
 
     public get(id?: number) {
@@ -201,6 +201,13 @@ export class AuthorService {
             .leftJoin((sq) => sq
                 .from(AuthorPublication, "authorPublication")
                 .innerJoin("publication", "publication", "publication.id = authorPublication.publicationId")
+                .select("publication.id", "id")
+                .addSelect("publication.pub_date", "pub_date")
+                .addSelect("publication.pub_date_print", "pub_date_print")
+                .addSelect("publication.pub_date_accepted", "pub_date_accepted")
+                .addSelect("publication.pub_date_submitted", "pub_date_submitted")
+                .addSelect("authorPublication.authorId", "authorId")
+                .addSelect("authorPublication.corresponding", "corresponding")
                 , "b", "b.\"authorId\" = a.id")
             .select("a.id", "id")
             .addSelect("a.orcid", "orcid")
@@ -239,10 +246,12 @@ export class AuthorService {
 
     public async delete(auts: Author[]) {
         for (let aut of auts) {
-            let autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true } })
+            let autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
             if (autE.authorPublications) for (let autPub of autE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
+            if (autE.aliases_first_name) await this.aliasFirstNameRepository.remove(autE.aliases_first_name)
+            if (autE.aliases_last_name) await this.aliasLastNameRepository.remove(autE.aliases_last_name)
         }
         return await this.repository.delete(auts.map(p => p.id));
     }
