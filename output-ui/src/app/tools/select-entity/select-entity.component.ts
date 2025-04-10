@@ -193,4 +193,10 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     else this.form.get('input').setValue('');
     this.selected.next(this.ent)
   }
+
+  clear() {
+    this.form.get('input').setValue('');
+    this.ent = null;
+    this.selected.next(this.ent)
+  }
 }
