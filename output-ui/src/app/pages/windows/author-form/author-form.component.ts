@@ -104,8 +104,8 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
   }
 
   updateAlias() {
-    this.alias_data = this.entity.aliases_first_name.map(e => { return { alias: e.alias, first_name: true } })
-    this.alias_data = this.alias_data.concat(this.entity.aliases_last_name.map(e => { return { alias: e.alias, first_name: false } }));
+    this.alias_data = this.entity.aliases_first_name?.map(e => { return { alias: e.alias, first_name: true } })
+    this.alias_data = this.alias_data.concat(this.entity.aliases_last_name?.map(e => { return { alias: e.alias, first_name: false } }));
     if (this.tableAlias) this.tableAlias.dataSource = new MatTableDataSource<{ alias: string, first_name: boolean }>(this.alias_data);
   }
 }
