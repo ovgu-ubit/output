@@ -343,6 +343,12 @@
                     (selected)="this.setContract($event)"
                     [ent]="this.pub? this.pub.contract : undefined"></app-select-entity>
 
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>Vertragsjahr</mat-label>
+                    <input matInput type="number" onwheel="return false;" placeholder="Vertragsjahr"
+                        formControlName="contract_year" />
+                </mat-form-field>
+
                 <mat-card
                     *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
                     <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
