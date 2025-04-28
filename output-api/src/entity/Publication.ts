@@ -154,4 +154,7 @@ export class Publication implements IPublication {
     
     @Column({ nullable: true })
     grant_number?: string;
+
+    @Column({ nullable: true,  type: "int" })
+    contract_year?: number;
 }
