@@ -23,6 +23,9 @@ export class Institute implements IInstitute {
     @Column({ nullable: true })
     short_label?: string;
 
+    @Column({ nullable: true })
+    opus_id?: string;
+
     @ManyToMany(() => Author, (author) => author.institutes)
     authors?: Author[]
 

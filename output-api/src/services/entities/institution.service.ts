@@ -115,7 +115,7 @@ export class InstitutionService {
             }
             //console.log(query.getSql());
             let res = await query.getRawOne() as any;
-            result.push({ ...res, sub_inst_count: res.sub_inst_count < 0 ? 0 : res.sub_inst_count, id: inst.id, label: inst.label, short_label: inst.short_label, author_count: inst.authors?.length });
+            result.push({ ...res, sub_inst_count: res.sub_inst_count < 0 ? 0 : res.sub_inst_count, id: inst.id, label: inst.label, short_label: inst.short_label, author_count: inst.authors?.length, opus_id: inst.opus_id });
         }
         //console.log('SQL: ' + (new Date().getTime() - time.getTime()) / 1000)
 
