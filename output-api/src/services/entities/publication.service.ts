@@ -490,16 +490,16 @@ export class PublicationService {
                 if (key == 'publisher') this.publisher = true;
                 break;
             case 'author_id':
-                where = '\"authorPublications\".\"authorId\"=' + value;
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"authorId\" = '+value+')'
                 break;
             case 'author_id_corr':
-                where = "\"authorPublications\".\"authorId\"= " + value + " and \"authorPublications\".corresponding";
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"authorId\" = '+value+')'
                 break;
             case 'institute_id':
-                where = '\"authorPublications\".\"instituteId\"=' + value;
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"instituteId\" = '+value+')'
                 break;
             case 'institute_id_corr':
-                where = "\"authorPublications\".\"instituteId\"= " + value + " and \"authorPublications\".corresponding";
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"instituteId\" = '+value+')'
                 break;
             case 'inst_authors':
                 this.author = true;
