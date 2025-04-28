@@ -4,7 +4,7 @@ import { Location } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
@@ -130,6 +130,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       pageNumber: ['', [Validators.required, Validators.pattern("^[0-9]*$")]]
     });
     this.dataSource = new MatTableDataSource<T>(this.data);
+    this.dataSource.paginator = this.paginator;
 
     ob$.pipe(catchError(err => {
       this._snackBar.open(`Unerwarter Fehler (siehe Konsole)`, 'Oh oh!', {
@@ -673,27 +674,16 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     return roles.some(r => this.tokenService.hasRole(r))
   }
 
-  public handlePageTop(e: any) {
-    let { pageSize } = e;
-    this.paginator2.pageSize = pageSize;
+  public handlePage(event: PageEvent) {
+    this.paginator.pageIndex = event.pageIndex;
+    this.paginator2.pageIndex = event.pageIndex;
+    
+    this.paginator.pageSize = event.pageSize;
+    this.paginator2.pageSize = event.pageSize;
 
-    if (!this.paginator.hasNextPage()) {
-      this.paginator2.lastPage();
-    } else if (!this.paginator.hasPreviousPage()) {
-      this.paginator2.firstPage();
-    } else {
-      this.paginator2.pageIndex = this.paginator.pageIndex;
-    }
-  }
-
-  public handlePageBottom(e: any) {
-    if (!this.paginator2.hasNextPage()) {
-      this.paginator.lastPage();
-    } else if (!this.paginator2.hasPreviousPage()) {
-      this.paginator.firstPage();
-    } else {
-      this.paginator.pageIndex = this.paginator2.pageIndex;
-    }
+    // Aktualisiere die Datenquelle
+    this.dataSource.paginator = this.paginator;
+    this.dataSource._updateChangeSubscription();
   }
 
 }
