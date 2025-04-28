@@ -75,7 +75,7 @@
 
       </form>
       <mat-paginator #paginatorTop [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons
-        (page)="handlePageTop($event)">
+        (page)="handlePage($event)">
       </mat-paginator>
     </div>
     <div class="mat-elevation-z8">
@@ -197,7 +197,7 @@
       </table>
     </div>
     <div style="display: flex; justify-content: flex-end;">
-      <mat-paginator #paginatorBottom [pageSize]="10" showFirstLastButtons (page)="handlePageBottom($event)">
+      <mat-paginator #paginatorBottom [pageSize]="10" showFirstLastButtons (page)="handlePage($event)">
       </mat-paginator>
     </div>
   </div>
