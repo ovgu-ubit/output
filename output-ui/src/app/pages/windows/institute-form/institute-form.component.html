@@ -31,6 +31,11 @@
             <input matInput placeholder="Kurzbezeichnung" formControlName="short_label" />
         </mat-form-field>
 
+        <mat-form-field appearance="fill">
+            <mat-label>OPUS-ID</mat-label>
+            <input matInput placeholder="OPUS-ID" formControlName="opus_id" />
+        </mat-form-field>
+
         <app-select-entity name="Übergeordnetes Institut" [disabled]="this.disabled"
                     [serviceClass]="this.service" [formComponent]="this.instForm"
                     (selected)="this.setSuperInst($event)"

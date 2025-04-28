@@ -27,6 +27,7 @@ export class InstituteFormComponent extends AbstractFormComponent<Institute> imp
     { key: 'id', title: 'ID', type: 'number' },
     { key: 'label', title: 'Bezeichung' },
     { key: 'short_label', title: 'Kurzbezeichung' },
+    { key: 'opus_id', title: 'OPUS-ID' },
   ]
 
   constructor(
@@ -37,7 +38,8 @@ export class InstituteFormComponent extends AbstractFormComponent<Institute> imp
       id: [''],
       label: ['', Validators.required],
       short_label: [''],
-      super_inst: ['']
+      super_inst: [''],
+      opus_id: ['']
     });
   }
 

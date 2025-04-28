@@ -19,6 +19,7 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit {
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'short_label', colTitle: 'Kurzbezeichnung' },
+    { colName: 'opus_id', colTitle: 'OPUS-ID' },
     { colName: 'sub_inst_count', colTitle: 'Untergeordnete Institute gesamt', type: 'number' },
     { colName: 'author_count', colTitle: 'Anzahl Personen', type: 'number' },
     { colName: 'author_count_total', colTitle: 'Anzahl Personen gesamt', type: 'number' },
