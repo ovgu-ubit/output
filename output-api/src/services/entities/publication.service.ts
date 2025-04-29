@@ -28,6 +28,7 @@ export class PublicationService {
     oa_cat = false;
     contract = false;
     publisher = false;
+    cost_type = false;
 
     filter_joins: Set<string> = new Set();
 
@@ -435,6 +436,7 @@ export class PublicationService {
         this.oa_cat = false;
         this.contract = false;
         this.publisher = false;
+        this.cost_type = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -488,9 +490,16 @@ export class PublicationService {
         if (this.oa_cat && !this.filter_joins.has("oa_category")) indexQuery = indexQuery.leftJoin('publication.oa_category', 'oa_category')
         if (this.contract && !this.filter_joins.has("contract")) indexQuery = indexQuery.leftJoin('publication.contract', 'contract')
         if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
+        let flag = false;
         if (this.cost_center && !this.filter_joins.has("cost_center")) {
+            flag = true;
             indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
             indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
+        }
+        if (this.cost_type && !this.filter_joins.has("cost_type")) {
+            if (!flag) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
+            indexQuery = indexQuery.leftJoin('invoice.cost_items', 'cost_item')
+            indexQuery = indexQuery.leftJoin('cost_item.cost_type', 'cost_type')
         }
         //console.log(indexQuery.getSql())
         return indexQuery;
@@ -507,6 +516,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
             case 'cost_center':
+            case 'cost_type':
                 where = key + ".label = '" + value + "'";
                 if (key == 'funder') this.funder = true;
                 if (key == 'cost_center') this.cost_center = true;
@@ -514,6 +524,7 @@ export class PublicationService {
                 if (key == 'oa_category') this.oa_cat = true;
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
+                if (key == 'cost_type') this.cost_type = true;
                 break;
             case 'author_id':
                 where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"authorId\" = ' + value + ')'
@@ -563,6 +574,10 @@ export class PublicationService {
                 where = "cost_center.id=" + value;
                 this.cost_center = true;
                 break;
+            case 'cost_type_id':
+                where = "cost_type.id=" + value;
+                this.cost_type = true;
+                break;
             case 'pub_date':
                 if (value) where = "publication.pub_date = '" + value + "'";
                 else where = "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL"
@@ -584,6 +599,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
             case 'cost_center':
+            case 'cost_type':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
                 if (key == 'cost_center') this.cost_center = true;
@@ -591,6 +607,7 @@ export class PublicationService {
                 if (key == 'oa_category') this.oa_cat = true;
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
+                if (key == 'cost_type') this.cost_type = true;
                 where = key + ".label ILIKE '%" + value + "%'";
                 break;
             case 'inst_authors':
@@ -618,6 +635,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
             case 'cost_center':
+            case 'cost_type':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
                 if (key == 'cost_center') this.cost_center = true;
@@ -625,6 +643,7 @@ export class PublicationService {
                 if (key == 'oa_category') this.oa_cat = true;
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
+                if (key == 'cost_type') this.cost_type = true;
                 where = key + ".label ILIKE '" + value + "%'";
                 break;
             case 'inst_authors':
@@ -652,6 +671,7 @@ export class PublicationService {
             case 'funder':
             case 'institute':
             case 'cost_center':
+            case 'cost_type':
                 if (key == 'funder') this.funder = true;
                 if (key == 'pub_type') this.pub_type = true;
                 if (key == 'cost_center') this.cost_center = true;
@@ -659,6 +679,7 @@ export class PublicationService {
                 if (key == 'oa_category') this.oa_cat = true;
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
+                if (key == 'cost_type') this.cost_type = true;
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':

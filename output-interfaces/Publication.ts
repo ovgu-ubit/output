@@ -1,4 +1,4 @@
-import {Aliasable, AliasAuthorFirstName, AliasAuthorLastName, AliasFunder, AliasInstitute, AliasPublisher,AliasPubType} from './Alias'
+import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
 
 export interface Entity {
     id?: number;
