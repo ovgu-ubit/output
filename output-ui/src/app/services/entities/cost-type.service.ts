@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { CostType } from '../../../../../output-interfaces/Publication';
 import { environment } from 'src/environments/environment';
 import { EntityService } from 'src/app/interfaces/service';
+import { CostTypeIndex } from '../../../../../output-interfaces/PublicationIndex';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +16,7 @@ export class CostTypeService implements EntityService<CostType, CostType> {
     return this.http.get<CostType[]>(environment.api + 'invoice/cost_type', { withCredentials: true });
   }
   public index(reporting_year:number) {
-    return this.getAll();
+    return this.http.get<CostTypeIndex[]>(environment.api + 'invoice/cost_type_index?reporting_year='+reporting_year, { withCredentials: true });
   }
   public getOne(id:number) {
     return this.http.get<CostType>(environment.api + 'invoice/cost_type/'+id, { withCredentials: true });

@@ -6,6 +6,7 @@ import { CostType } from "../entity/CostType";
 import { CostCenter } from "../entity/CostCenter";
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
+import { CostTypeIndex } from "../../../output-interfaces/PublicationIndex";
 
 @Controller("invoice")
 @ApiTags("invoice")
@@ -78,6 +79,14 @@ export class InvoiceController {
     })
     async cost_type() : Promise<CostType[]> {
         return await this.invoiceService.getCostTypes();
+    }
+    
+    @Get('cost_type_index')
+    @ApiResponse({
+        type: Invoice
+    })
+    async cost_type_index(@Query('reporting_year') reporting_year: number) : Promise<CostTypeIndex[]> {
+        return await this.invoiceService.getCostTypeIndex(reporting_year);
     }
     
     @Get('cost_type/:id')

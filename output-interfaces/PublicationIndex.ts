@@ -88,3 +88,8 @@ export interface CostCenterIndex {
     label: string;
 	pub_count: number;
 }
+export interface CostTypeIndex {
+    id?: number;
+    label: string;
+	pub_count: number;
+}
