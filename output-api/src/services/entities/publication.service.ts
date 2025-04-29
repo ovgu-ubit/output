@@ -29,6 +29,7 @@ export class PublicationService {
     contract = false;
     publisher = false;
     cost_type = false;
+    invoice = false;
 
     filter_joins: Set<string> = new Set();
 
@@ -437,6 +438,7 @@ export class PublicationService {
         this.contract = false;
         this.publisher = false;
         this.cost_type = false;
+        this.invoice = false;
 
         //let indexQuery = this.indexQuery();
         let first = false;
@@ -490,14 +492,10 @@ export class PublicationService {
         if (this.oa_cat && !this.filter_joins.has("oa_category")) indexQuery = indexQuery.leftJoin('publication.oa_category', 'oa_category')
         if (this.contract && !this.filter_joins.has("contract")) indexQuery = indexQuery.leftJoin('publication.contract', 'contract')
         if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
-        let flag = false;
-        if (this.cost_center && !this.filter_joins.has("cost_center")) {
-            flag = true;
-            indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
-            indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
-        }
+        if (this.invoice && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
+        if (this.cost_center && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
+        
         if (this.cost_type && !this.filter_joins.has("cost_type")) {
-            if (!flag) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
             indexQuery = indexQuery.leftJoin('invoice.cost_items', 'cost_item')
             indexQuery = indexQuery.leftJoin('cost_item.cost_type', 'cost_type')
         }
@@ -573,10 +571,18 @@ export class PublicationService {
             case 'cost_center_id':
                 where = "cost_center.id=" + value;
                 this.cost_center = true;
+                this.invoice = true;
                 break;
             case 'cost_type_id':
                 where = "cost_type.id=" + value;
                 this.cost_type = true;
+                this.invoice = true;
+                break;
+            case 'invoice_year':
+                let beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
+                let endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
+                where = "invoice.date > '" + beginDate.toISOString() + "' and invoice.date < '" + endDate.toISOString() + "'";
+                this.invoice = true;
                 break;
             case 'pub_date':
                 if (value) where = "publication.pub_date = '" + value + "'";
