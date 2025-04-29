@@ -219,6 +219,43 @@
                     [serviceClass]="this.languageService" (selected)="this.setLang($event)"
                     [ent]="this.pub? this.pub.language : undefined"></app-select-entity>
 
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>
+                            Ergänzende Ressourcen
+                        </mat-panel-title>
+                    </mat-expansion-panel-header>
+                    
+                    <table #tableSuppl *ngIf="this.pub?.supplements && this.pub.supplements.length>0" mat-table
+                        [dataSource]="this.pub.supplements">
+                        <ng-container matColumnDef="link">
+                            <th mat-header-cell *matHeaderCellDef> Link </th>
+                            <td mat-cell *matCellDef="let element"> {{element.link}} </td>
+                        </ng-container>
+            
+                        <ng-container matColumnDef="delete">
+                            <th mat-header-cell *matHeaderCellDef> </th>
+                            <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                                    (click)="this.deleteSuppl(element)" matTooltip="Ressource löschen"
+                                    [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                        </ng-container>
+            
+                        <tr mat-header-row *matHeaderRowDef="['link', 'delete']"></tr>
+                        <tr mat-row *matRowDef="let row; columns: ['link', 'delete'];"></tr>
+                    </table>
+
+                    <form [formGroup]="supplForm" style="width: 100%;display: flex;gap:5px;justify-content: space-around;">
+                        <mat-form-field style="width: 80%;">
+                            <mat-label>Link</mat-label>
+                            <input matInput placeholder="Link zur Ressource" formControlName="link" />
+                        </mat-form-field>
+                        <button matSuffix mat-icon-button type="button" (click)="this.addSuppl()"
+                            matTooltip="Ressource hinzufügen"
+                            [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                    </form>
+                    
+                </mat-expansion-panel><br>
+
                 <mat-card
                     *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>

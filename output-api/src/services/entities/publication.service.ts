@@ -13,6 +13,7 @@ import { Publication } from '../../entity/Publication';
 import { PublicationIdentifier } from '../../entity/identifier/PublicationIdentifier';
 import { Role } from '../../entity/Role';
 import { InstitutionService } from './institution.service';
+import { PublicationSupplement } from '../../entity/PublicationSupplement';
 
 @Injectable()
 export class PublicationService {
@@ -35,6 +36,7 @@ export class PublicationService {
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
+        @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         private configService: ConfigService, private instService: InstitutionService) { }
 
     public save(pub: Publication[]) {
@@ -57,13 +59,13 @@ export class PublicationService {
             .leftJoinAndSelect("publication.greater_entity", "greater_entity")
             .leftJoinAndSelect("publication.funders", "funders")
             .leftJoinAndSelect("publication.authorPublications", "authorPublications")
+            .leftJoinAndSelect("publication.supplements", "supplements")
             .leftJoinAndSelect("authorPublications.author", "author")
             .leftJoinAndSelect("authorPublications.institute", "institute")
             .leftJoinAndSelect("publication.invoices", "invoices")
             .leftJoinAndSelect("invoices.cost_items", "cost_items")
             .leftJoinAndSelect("invoices.cost_center", "cost_center")
             .leftJoinAndSelect("cost_items.cost_type", "cost_type")
-
         query = await this.filter(filter, query);
 
         let res = await query.getMany();
@@ -187,7 +189,7 @@ export class PublicationService {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (let pub of pubs) {
-            let orig = await this.pubRepository.findOne({where:{id:pub.id}, relations: {identifiers: true}})
+            let orig = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } })
             if (pub.identifiers) {
                 for (let id of pub.identifiers) {
                     if (!id.id) {
@@ -200,8 +202,21 @@ export class PublicationService {
                     }
                 }
             }
+            if (pub.supplements) {
+                for (let suppl of pub.supplements) {
+                    if (!suppl.id) {
+                        suppl.id = (await this.supplRepository.save(suppl).catch(err => {
+                            if (err.constraint) throw new BadRequestException(err.detail)
+                            else throw new InternalServerErrorException(err);
+                        })).id;
+                    }
+                }
+            }
             if (pub.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
                 if (!pub.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
+            })
+            if (pub.supplements && orig && orig.supplements) orig.supplements.forEach(async suppl => {
+                if (!pub.supplements.find(e => e.id === suppl.id)) await this.supplRepository.delete(suppl.id)
             })
 
             let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
@@ -226,6 +241,9 @@ export class PublicationService {
             }
             if (pubE.identifiers) for (let id of pubE.identifiers) {
                 await this.idRepository.delete(id.id);
+            }
+            if (pubE.supplements) for (let suppl of pubE.supplements) {
+                await this.supplRepository.delete(suppl.id);
             }
         }
         if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
@@ -252,7 +270,8 @@ export class PublicationService {
                 contract: true,
                 funders: true,
                 language: true,
-                identifiers: true
+                identifiers: true,
+                supplements: true
             }, withDeleted: true
         })
         if (writer && !pub.locked_at) {
@@ -349,10 +368,10 @@ export class PublicationService {
     }
 
     async combine(id1: number, ids: number[]) {
-        let aut1 = await this.pubRepository.findOne({ where: { id: id1 }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true } })
-        let authors = []
+        let aut1: Publication = await this.pubRepository.findOne({ where: { id: id1 }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true } })
+        let authors: Publication[] = []
         for (let id of ids) {
-            authors.push(await this.pubRepository.findOne({ where: { id }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true } }))
+            authors.push(await this.pubRepository.findOne({ where: { id }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true } }))
         }
 
         if (!aut1 || aut1.locked || authors.find(e => e === null || e === undefined || e.locked)) return { error: 'find' };
@@ -381,14 +400,21 @@ export class PublicationService {
             if (!res.best_oa_host && aut.best_oa_host) res.best_oa_host = aut.best_oa_host;
             if (!res.best_oa_license && aut.best_oa_license) res.best_oa_license = aut.best_oa_license;
             if (!res.funders) res.funders = [];
-            res.funders.concat(aut.funders)
+            res.funders = res.funders.concat(aut.funders)
             if (!res.invoices) res.invoices = [];
-            res.invoices.concat(aut.invoices)
+            res.invoices = res.invoices.concat(aut.invoices)
+            if (!res.identifiers) res.identifiers = [];
+            res.identifiers = res.identifiers.concat(aut.identifiers)
+            if (!res.supplements) res.supplements = [];
+            res.supplements = res.supplements.concat(aut.supplements)
         }
 
         //update publication 1
         if (await this.pubRepository.save(res)) {
-            if (await this.pubAutRepository.delete({ publicationId: In(authors.map(e => e.id)) }) && await this.invoiceRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) && await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
+            if (await this.pubAutRepository.delete({ publicationId: In(authors.map(e => e.id)) }) &&
+                await this.invoiceRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) &&
+                await this.supplRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) &&
+                await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
             else return { error: 'delete' };
         } else return { error: 'update' };
     }
@@ -490,16 +516,16 @@ export class PublicationService {
                 if (key == 'publisher') this.publisher = true;
                 break;
             case 'author_id':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"authorId\" = '+value+')'
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"authorId\" = ' + value + ')'
                 break;
             case 'author_id_corr':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"authorId\" = '+value+')'
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"authorId\" = ' + value + ')'
                 break;
             case 'institute_id':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"instituteId\" = '+value+')'
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"instituteId\" = ' + value + ')'
                 break;
             case 'institute_id_corr':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"instituteId\" = '+value+')'
+                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"instituteId\" = ' + value + ')'
                 break;
             case 'inst_authors':
                 this.author = true;
