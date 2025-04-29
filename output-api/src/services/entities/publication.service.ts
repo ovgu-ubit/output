@@ -381,9 +381,9 @@ export class PublicationService {
             if (!res.best_oa_host && aut.best_oa_host) res.best_oa_host = aut.best_oa_host;
             if (!res.best_oa_license && aut.best_oa_license) res.best_oa_license = aut.best_oa_license;
             if (!res.funders) res.funders = [];
-            res.funders.concat(aut.funders)
+            res.funders = res.funders.concat(aut.funders)
             if (!res.invoices) res.invoices = [];
-            res.invoices.concat(aut.invoices)
+            res.invoices = res.invoices.concat(aut.invoices)
         }
 
         //update publication 1
