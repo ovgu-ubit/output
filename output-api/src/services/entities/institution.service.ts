@@ -151,9 +151,9 @@ export class InstitutionService {
             if (!res.label && aut.label) res.label = aut.label;
             if (!res.short_label && aut.short_label) res.short_label = aut.short_label;
             if (!res.aliases) res.aliases = [];
-            res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
+            res.aliases = res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
             if (!res.authors) res.authors = [];
-            res.authors.concat(aut.authors.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
+            res.authors = res.authors.concat(aut.authors.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
         }
         //update aliases
         if (alias_strings) {
