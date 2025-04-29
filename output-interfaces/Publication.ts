@@ -11,6 +11,10 @@ export interface Identifiable<T> extends Entity{
     identifiers?: IIdentifier<T>[]
 }
 
+export interface PublicationSupplement extends Entity {
+    link: string;
+}
+
 export interface Publication extends Identifiable<Publication> {
     authorPublications?: AuthorPublication[];
     pub_type?: PublicationType
@@ -55,6 +59,7 @@ export interface Publication extends Identifiable<Publication> {
     first_page?: string;
     last_page?: string;
     cost_approach?: number;
+    supplements?: PublicationSupplement[];
 }
 
 export interface Author extends Entity {

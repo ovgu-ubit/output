@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, Inject, Injectable, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, ValidatorFn } from '@angular/forms';
+import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
@@ -29,6 +29,7 @@ import { OaCategoryFormComponent } from '../oa-category-form/oa-category-form.co
 import { PubTypeFormComponent } from '../pub-type-form/pub-type-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { IdTableComponent } from 'src/app/tools/id-table/id-table.component';
+import { PublicationSupplement } from '../../../../../../output-api/src/entity/PublicationSupplement';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -53,6 +54,7 @@ export class PubValidator {
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   institution: string;
   public form: FormGroup;
+  public supplForm: FormGroup;
   submitted = false;
 
   edit: boolean = false;
@@ -64,12 +66,12 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
-  displayedColumnsId: string[] = ['type', 'value', 'delete'];
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
   @ViewChild(IdTableComponent) idTable: IdTableComponent<Publication>;
+  @ViewChild('tableSuppl') supplTable: MatTable<PublicationSupplement>;
 
   today = new Date();
   disabled = false;
@@ -141,6 +143,10 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.get('oa_info').get('oa_status').disable();
     this.form.get('oa_info').get('is_journal_oa').disable();
     this.form.get('oa_info').get('best_oa_host').disable();
+
+    this.supplForm = this.formBuilder.group({
+      link: ['', Validators.required],
+    })
   }
 
   ngOnInit(): void {
@@ -523,5 +529,21 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       if (value.length > 27) return value.slice(0, 27) + "...";
       else return value;
     }
+  }
+
+
+  deleteSuppl(elem) {
+    if (this.disabled) return;
+    if (elem.id) this.pub.supplements = this.pub.supplements.filter(e => e.id !== elem.id)
+    else this.pub.supplements = this.pub.supplements.filter(e => e.link !== elem.link)
+  }
+  addSuppl() {
+    if (this.disabled || this.supplForm.invalid) return;
+    if (!this.pub.supplements) this.pub.supplements = [];
+    this.pub.supplements.push({
+      link: this.supplForm.get('link').value,
+    })
+    this.supplForm.reset();
+    if (this.supplTable) this.supplTable.dataSource = new MatTableDataSource<PublicationSupplement>(this.pub.supplements);
   }
 }

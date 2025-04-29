@@ -73,6 +73,7 @@ import { ExcelImportService } from "./services/import/excel-import.service";
 import { ReportItemService } from "./services/report-item.service";
 import { StatisticsService } from "./services/statistics.service";
 import { DatabaseType, DataSourceOptions } from "typeorm";
+import { PublicationSupplement } from "./entity/PublicationSupplement";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -98,7 +99,7 @@ const filterz = appConfig().filter_services;
     }),
     TypeOrmModule.forFeature([Author, AuthorPublication, Contract, ContractIdentifier, CostCenter, CostItem, CostType, Funder, GreaterEntity, GEIdentifier,
       Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
-      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status]),
+      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status, PublicationSupplement]),
     ScheduleModule.forRoot()
   ],
   controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,

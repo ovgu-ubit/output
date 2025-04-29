@@ -10,6 +10,7 @@ import { Publisher } from "./Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"
 import { Language } from "./Language";
 import { PublicationIdentifier } from "./identifier/PublicationIdentifier";
+import { PublicationSupplement } from "./PublicationSupplement";
 
 @Entity()
 export class Publication implements IPublication {
@@ -157,4 +158,7 @@ export class Publication implements IPublication {
 
     @Column({ nullable: true,  type: "int" })
     contract_year?: number;
+
+    @OneToMany(() => PublicationSupplement, (ide) => ide.publication, {cascade: true})
+    supplements?: PublicationSupplement[];
 }

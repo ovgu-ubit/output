@@ -204,12 +204,6 @@ export class GreaterEntityService {
             if (await this.idRepository.delete({ entity: { id: In(authors.map(e => e.id)) } }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
             else return { error: 'delete' };
         } else return { error: 'update' };
-        /*
-                let ides = [];
-                if (pub2.identifiers) for (let ide of pub2.identifiers) {
-                    ides.push(ide.id)
-                }
-                if (ides.length>0) await this.idRepository.delete(ides)*/
 
     }
 
