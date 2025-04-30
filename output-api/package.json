@@ -1,6 +1,6 @@
 {
    "name": "output2",
-   "version": "1.1.5",
+   "version": "1.1.6",
    "description": "Publication management for universities.",
    "devDependencies": {
       "@types/cookie-parser": "^1.4.7",
