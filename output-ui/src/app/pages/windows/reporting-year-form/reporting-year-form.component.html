@@ -16,7 +16,7 @@
         <div class="row justify-content-md-center">
             <div class="form-group col-md-12">
                 <mat-checkbox [(ngModel)]="checked" [checked]="checked" name="default"
-                    [disabled]="!this.tokenService.hasRole('writer')">Als Standard übernehmen</mat-checkbox>
+                    [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')">Als Standard übernehmen</mat-checkbox>
             </div>
         </div>
 

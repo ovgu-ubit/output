@@ -18,7 +18,7 @@ export class PublicationService implements EntityService<Publication, Publicatio
 
   public index(yop: number, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[]}) {
     if (options?.soft) return this.http.get<PublicationIndex[]>(environment.api + 'publications/publicationIndex?soft=true', { withCredentials: true });
-    if (options?.filter) return this.http.post<PublicationIndex[]>(environment.api + 'publications/filter', { filter: options.filter, paths: options.paths }, { withCredentials: true });
+    if (options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) return this.http.post<PublicationIndex[]>(environment.api + 'publications/filter', { filter: options.filter, paths: options.paths }, { withCredentials: true });
     return this.http.get<PublicationIndex[]>(environment.api + 'publications/publicationIndex?yop=' + yop, { withCredentials: true });
   }
   public getAll() {
