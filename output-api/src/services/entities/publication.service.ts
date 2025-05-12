@@ -14,6 +14,7 @@ import { PublicationIdentifier } from '../../entity/identifier/PublicationIdenti
 import { Role } from '../../entity/Role';
 import { InstitutionService } from './institution.service';
 import { PublicationSupplement } from '../../entity/PublicationSupplement';
+import { PublicationDuplicate } from '../../entity/PublicationDuplicate';
 
 @Injectable()
 export class PublicationService {
@@ -39,6 +40,7 @@ export class PublicationService {
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
+        @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
         private configService: ConfigService, private instService: InstitutionService) { }
 
     public save(pub: Publication[]) {
@@ -366,7 +368,7 @@ export class PublicationService {
                 , 'year')
             .distinct(true)
             .orderBy('year', 'DESC');
-        return query.getRawMany() as Promise<number[]>;
+        return query.getRawMany() as Promise<any>;
     }
 
     async combine(id1: number, ids: number[]) {
@@ -419,6 +421,23 @@ export class PublicationService {
                 await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
             else return { error: 'delete' };
         } else return { error: 'update' };
+    }
+
+    async getDuplicates(id:number) {
+        let query = this.pubRepository.createQueryBuilder("publication")
+            .leftJoinAndSelect("publication.duplicates", 'duplicates')
+            .select("duplicates.id_second")
+            .addSelect("duplicates.id")
+            .addSelect("duplicates.id_first")
+            .where("publication.id = :id", {id: id})
+
+        return (await query.getRawMany());
+    }
+    saveDuplicate(id_first :number, id_second:number, description?: string) {
+        return this.duplRepository.save({id_first,id_second,description})
+    }
+    deleteDuplicate(id) {
+        return this.duplRepository.softDelete(id);
     }
 
     // retrieves a publication index based on a filter object

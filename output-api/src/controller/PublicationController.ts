@@ -11,6 +11,7 @@ import { Permissions } from "../guards/permission.decorator";
 import { AppConfigService } from "../services/app-config.service";
 import { PublicationService } from "../services/entities/publication.service";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
+import { PublicationDuplicate } from "../entity/PublicationDuplicate";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -214,4 +215,32 @@ export class PublicationController {
         }
         return result;
     }
+
+    @Get('duplicates')
+    duplicates(@Query('id') id: number) {
+        return this.publicationService.getDuplicates(id);
+    }
+
+    @ApiBody({
+        description: '<p>JSON Request:</p>',
+        schema: {
+            example: {
+                duplicate: {
+                    id_first: 14468,
+                    id_second: 14470,
+                    description: 'another test'
+                }
+            }
+        }
+    })
+    @Post('duplicates')
+    duplicate_save(@Body('duplicate') duplicate:PublicationDuplicate) {
+        return this.publicationService.saveDuplicate(duplicate.id_first, duplicate.id_second, duplicate.description);
+    }
+
+    @Delete('duplicate')
+    duplicate_del(@Body('duplicate') duplicate:PublicationDuplicate) {
+        return this.publicationService.deleteDuplicate(duplicate.id)
+    }
+
 }

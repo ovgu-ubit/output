@@ -11,6 +11,7 @@ import { Publication as IPublication } from "../../../output-interfaces/Publicat
 import { Language } from "./Language";
 import { PublicationIdentifier } from "./identifier/PublicationIdentifier";
 import { PublicationSupplement } from "./PublicationSupplement";
+import { PublicationDuplicate } from "./PublicationDuplicate";
 
 @Entity()
 export class Publication implements IPublication {
@@ -161,4 +162,7 @@ export class Publication implements IPublication {
 
     @OneToMany(() => PublicationSupplement, (ide) => ide.publication, {cascade: true})
     supplements?: PublicationSupplement[];
+
+    @OneToMany(() => PublicationDuplicate, (ide) => ide.first, {cascade: true})
+    duplicates?: PublicationDuplicate[];
 }
