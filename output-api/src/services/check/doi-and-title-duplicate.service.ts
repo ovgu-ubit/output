@@ -20,15 +20,19 @@ export class DOIandTitleDuplicateCheck extends AbstractPlausibilityService {
         if (pub.doi) {
             let dupl = this.publications.find((e, i) => i > idx && e.doi == pub.doi)
             if (dupl) {
-                this.reportService.write(this.report, { type: 'info', publication_id: pub.id, timestamp: new Date(), origin: 'doi_duplicate', text: `Possible DOI duplicate with ID ${dupl.id}` })
-                res = true;
+                if (await this.publicationService.saveDuplicate(pub.id, dupl.id, 'Possible DOI duplicate')) {
+                    this.reportService.write(this.report, { type: 'info', publication_id: pub.id, timestamp: new Date(), origin: 'doi_duplicate', text: `Possible DOI duplicate with ID ${dupl.id}` })
+                    res = true;
+                }
             }
         }
         if (pub.title) {
             let dupl = this.publications.find((e, i) => i > idx && (pub.title.toLocaleLowerCase().trim().includes(e.title?.toLocaleLowerCase().trim()) || e.title?.toLocaleLowerCase().trim().includes(pub.title.toLocaleLowerCase().trim())))
             if (dupl && pub.title.length > 9 && dupl.title.length > 9) {
-                this.reportService.write(this.report, { type: 'info', publication_id: pub.id, timestamp: new Date(), origin: 'title_duplicate', text: `Possible title duplicate with ID ${dupl.id}` })
-                res = true;
+                if (await this.publicationService.saveDuplicate(pub.id, dupl.id, 'Possible title duplicate')) {
+                    this.reportService.write(this.report, { type: 'info', publication_id: pub.id, timestamp: new Date(), origin: 'title_duplicate', text: `Possible title duplicate with ID ${dupl.id}` })
+                    res = true;
+                }
             }
         }
         return res;

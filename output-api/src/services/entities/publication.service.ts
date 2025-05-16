@@ -423,6 +423,10 @@ export class PublicationService {
         } else return { error: 'update' };
     }
 
+    getAllDuplicates() {
+        return this.duplRepository.find();
+    }
+
     async getDuplicates(id:number) {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.duplicates", 'duplicates')
@@ -433,9 +437,13 @@ export class PublicationService {
 
         return (await query.getRawMany());
     }
-    saveDuplicate(id_first :number, id_second:number, description?: string) {
-        return this.duplRepository.save({id_first,id_second,description})
+
+    async saveDuplicate(id_first :number, id_second:number, description?: string) {
+        let check = await this.duplRepository.findOne({where: {id_first, id_second}, withDeleted: true})
+        if (!check) return this.duplRepository.save({id_first,id_second,description})
+        else return null;
     }
+
     deleteDuplicate(id) {
         return this.duplRepository.softDelete(id);
     }
