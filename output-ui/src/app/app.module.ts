@@ -89,6 +89,8 @@ import { IdTableComponent } from './tools/id-table/id-table.component';
 import { AliasTableComponent } from './tools/alias-table/alias-table.component';
 import { SelectAuthorComponent } from './tools/select-author/select-author.component';
 import { WindowToolbarComponent } from './tools/window-toolbar/window-toolbar.component';
+import { DuplicatesComponent } from './pages/administration/duplicates/duplicates.component';
+import { DuplicateDialogComponent } from './tools/duplicate-dialog/duplicate-dialog.component';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -147,7 +149,9 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         IdTableComponent,
         AliasTableComponent,
         SelectAuthorComponent,
-        WindowToolbarComponent
+        WindowToolbarComponent,
+        DuplicatesComponent,
+        DuplicateDialogComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatTableModule,

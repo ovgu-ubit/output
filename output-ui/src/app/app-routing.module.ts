@@ -21,6 +21,7 @@ import { CostCenterComponent } from './pages/master-data/cost-center/cost-center
 import { CostTypesComponent } from './pages/master-data/cost-types/cost-types.component';
 import { RolesComponent } from './pages/master-data/roles/roles.component';
 import { StatusesComponent } from './pages/master-data/statuses/statuses.component';
+import { DuplicatesComponent } from './pages/administration/duplicates/duplicates.component';
 
 const routes: Routes = [
   { path: '', component: StartComponent, canActivate: [LoginGuard], data: { roles: null } },
@@ -40,6 +41,7 @@ const routes: Routes = [
   { path: 'master-data/status', component: StatusesComponent, canActivate: [LoginGuard], data: { roles: null } },
   { path: 'administration', component: ExportComponent, canActivate: [LoginGuard], data: { roles: ['reader','writer','admin'] } },
   { path: 'administration/plausibility', component: PlausibilityComponent, canActivate: [LoginGuard], data: { roles: ['writer','admin'] } },
+  { path: 'administration/duplicates', component: DuplicatesComponent, canActivate: [LoginGuard], data: { roles: ['writer','admin'] } },
   { path: 'administration/import', component: ImportComponent, canActivate: [LoginGuard], data: { roles: ['admin'] } },
   { path: 'administration/enrich', component: EnrichComponent, canActivate: [LoginGuard], data: { roles: ['admin'] } },
   { path: 'administration/export', component: ExportComponent, canActivate: [LoginGuard], data: { roles: ['reader','writer','admin'] } },

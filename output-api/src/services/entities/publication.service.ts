@@ -428,14 +428,15 @@ export class PublicationService {
     }
 
     async getDuplicates(id:number) {
-        let query = this.pubRepository.createQueryBuilder("publication")
+        /*let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.duplicates", 'duplicates')
             .select("duplicates.id_second")
             .addSelect("duplicates.id")
             .addSelect("duplicates.id_first")
             .where("publication.id = :id", {id: id})
 
-        return (await query.getRawMany());
+        return (await query.getRawMany());*/
+        return this.duplRepository.findOneBy({id})
     }
 
     async saveDuplicate(id_first :number, id_second:number, description?: string) {

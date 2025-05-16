@@ -47,6 +47,9 @@
         <button mat-menu-item routerLink="/administration/plausibility"
           [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"> Plausibilitätschecks
         </button>
+        <button mat-menu-item routerLink="/administration/duplicates"
+          [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"> Dubletten verwalten
+        </button>
       </mat-menu>
 
       <ng-container *ngIf="!this.user">

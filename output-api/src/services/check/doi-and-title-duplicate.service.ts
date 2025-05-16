@@ -5,9 +5,6 @@ import { ReportItemService } from '../report-item.service';
 import { AbstractPlausibilityService } from './abstract-plausibility.service';
 
 @Injectable()
-/**
- * abstract class for all API imports that are based on pagesize and offsets
- */
 export class DOIandTitleDuplicateCheck extends AbstractPlausibilityService {
 
     constructor(protected publicationService: PublicationService, protected reportService: ReportItemService) {

@@ -1,0 +1,20 @@
+<div class="container-fluid" style="padding: 5px;">
+    <h4 class="center" style="background-color: lightgrey;">
+        Bitte wählen Sie die Entität aus, die beim Zusammenführen priorisiert werden soll.
+    </h4>
+    <table>
+        <tr>
+            <th>Feld</th>
+            <th *ngFor="let ent of this.ents, let idx = index">Entität {{idx+1}}</th>
+        </tr>
+        <tr *ngFor="let attr of this.att_list">
+            <td [style]="this.getStyle(attr)">{{attr}}</td>
+            <td *ngFor="let ent of this.ents, let idx = index">{{ent[attr]}}</td>
+        </tr>
+    </table>
+<br/>
+    <ng-container *ngFor="let ent of this.ents, let idx = index">
+        <button mat-raised-button  class="primary-button"(click)="action(idx)">Entität {{idx+1}}</button>&nbsp;
+</ng-container>
+    <button mat-raised-button class="secondary-button" (click)="abort()">Abbrechen</button>
+</div>
