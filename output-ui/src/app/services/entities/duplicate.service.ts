@@ -33,6 +33,6 @@ export class PublicationDuplicateService implements EntityService<PublicationDup
     return this.http.post<PublicationDuplicate>(environment.api + 'publications/duplicates', ge, { withCredentials: true });
   }
   public delete(ids:number[]) {
-    return this.http.delete<PublicationDuplicate[]>(environment.api + 'publications/duplicates', { withCredentials: true, body: ids.map(e => ({ id: e })) });
+    return this.http.delete<PublicationDuplicate[]>(environment.api + 'publications/duplicates', { withCredentials: true, body: {duplicate: { id: ids[0]}} });
   }
 }

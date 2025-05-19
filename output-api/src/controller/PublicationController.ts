@@ -248,7 +248,7 @@ export class PublicationController {
         return this.publicationService.saveDuplicate(duplicate.id_first, duplicate.id_second, duplicate.description);
     }
 
-    @Delete('duplicate')
+    @Delete('duplicates')
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
