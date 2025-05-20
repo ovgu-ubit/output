@@ -98,7 +98,7 @@ export class ExcelExportService extends AbstractExportService {
         worksheet["!cols"][XLSX.utils.decode_col("E")] = { width: 20 }
         worksheet["!cols"][XLSX.utils.decode_col("AB")] = { width: 20 }
         worksheet["!cols"][XLSX.utils.decode_col("AC")] = { width: 20 }
-        for (let i = 2; i <= rows.length; i++) {
+        for (let i = 2; i <= rows.length + 1; i++) {
             worksheet["T" + i].z = '#,##0.00 "€"'; //cost approach
             worksheet["V" + i].z = '#,##0.00 "€"'; //net costs
             worksheet["W" + i].z = '#,##0.00 "€"'; //paid amount

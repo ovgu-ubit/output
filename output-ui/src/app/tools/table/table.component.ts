@@ -199,7 +199,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
    * @param data the data to be displayed
    */
   private update(data): void {
-    if ((this.parent.indexOptions?.filter && this.parent.indexOptions?.filter.length > 0) || (this.parent.indexOptions?.paths && this.parent.indexOptions?.paths.length > 0)) this.filterName = true;
+    if ((this.parent.indexOptions?.filter && this.parent.indexOptions?.filter.expressions?.length > 0) || (this.parent.indexOptions?.paths && this.parent.indexOptions?.paths.length > 0)) this.filterName = true;
     else this.filterName = false;
     this.data = data;
     this.dataSource = new MatTableDataSource<T>(data);
