@@ -18,6 +18,7 @@ export class DuplicatesComponent implements TableParent<PublicationDuplicate>, O
     { title: 'Nicht bearbeitete Dubletten verwalten', action_function: this.soft.bind(this, false), roles: ['writer', 'admin'] },
   ];
   not_editable = true;
+  not_selectable = true;
 
   indexOptions?: any;
   name: string;
