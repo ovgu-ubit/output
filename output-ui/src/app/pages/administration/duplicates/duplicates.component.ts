@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { PublicationDuplicate } from '../../../../../../output-api/src/entity/PublicationDuplicate';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
 import { DuplicateDialogComponent } from 'src/app/tools/duplicate-dialog/duplicate-dialog.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { TableComponent } from 'src/app/tools/table/table.component';
 
 @Component({
   selector: 'app-duplicates',
@@ -12,7 +14,13 @@ import { DuplicateDialogComponent } from 'src/app/tools/duplicate-dialog/duplica
 })
 export class DuplicatesComponent implements TableParent<PublicationDuplicate>, OnInit {
   buttons: TableButton[] = [
+    { title: 'Nicht zutreffende Dubletten verwalten', action_function: this.soft.bind(this, true), roles: ['writer', 'admin'] },
+    { title: 'Nicht bearbeitete Dubletten verwalten', action_function: this.soft.bind(this, false), roles: ['writer', 'admin'] },
   ];
+  not_editable = true;
+
+  indexOptions?: any;
+  name: string;
 
   formComponent = DuplicateDialogComponent;
 
@@ -23,13 +31,27 @@ export class DuplicatesComponent implements TableParent<PublicationDuplicate>, O
     { colName: 'description', colTitle: 'Beschreibung' }
   ];
 
-  constructor(public duplicateService: PublicationDuplicateService) { }
+  @ViewChild(TableComponent) table: TableComponent<PublicationDuplicate, PublicationDuplicate>;
+
+  constructor(public duplicateService: PublicationDuplicateService, private _snackBar: MatSnackBar) { }
+
+  soft(soft: boolean) {
+    this.name = 'Soft-deleted Publikationen';
+    this._snackBar.open(`Ansicht wurde geändert`, 'Super!', {
+      duration: 5000,
+      panelClass: [`success-snackbar`],
+      verticalPosition: 'top'
+    });
+    this.indexOptions = { soft }
+    this.table.updateData().subscribe()
+  }
 
   ngOnInit(): void {
   }
 
   getName() {
-    return 'Publikationsdubletten';
+    if (!this.indexOptions?.soft) return 'Publikationsdubletten';
+    else return 'Nicht zutreffende Publikationsdubletten';
   }
 
   getLink() {

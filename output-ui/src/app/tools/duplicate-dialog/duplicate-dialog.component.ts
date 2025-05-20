@@ -22,6 +22,8 @@ export class DuplicateDialogComponent implements OnInit {
   ent1: Publication;
   ent2: Publication;
 
+  soft_deleted = false;
+
   att_list: string[] = [
     'id',
     'doi',
@@ -41,6 +43,7 @@ export class DuplicateDialogComponent implements OnInit {
     let ob$ = this.duplicateService.getOne(this.data.entity.id).pipe(concatMap(data => {
       let id1 = data.id_first;
       let id2 = data.id_second;
+      if (data.delete_date) this.soft_deleted = true;
       return this.publicationService.getOne(id1).pipe(concatMap(data => {
         this.ent1 = data;
         return this.publicationService.getOne(id2).pipe(concatMap(data => {
@@ -57,20 +60,27 @@ export class DuplicateDialogComponent implements OnInit {
   }
 
   action(pos: number) {
+    let ob$;
     if (pos === null) { // not a suitable duplicate => soft delete
-      this.duplicateService.delete([this.dupl.id]).subscribe({
-        next: data => {
-          this.abort(); // does not update the table
-        }
-      })
+      ob$ = this.duplicateService.delete([this.dupl.id], true)
     } else if (pos === 0) {
-      this.publicationService.combine(this.ent1.id, [this.ent2.id])
-      //...
+      ob$ = this.publicationService.combine(this.ent1.id, [this.ent2.id])
     } else {
-      this.publicationService.combine(this.ent2.id, [this.ent1.id])
-      
-      //...
+      ob$ = this.publicationService.combine(this.ent2.id, [this.ent1.id])
     }
+    ob$.subscribe({
+      next: data => {
+        this.dialogRef.close({ id: this.dupl.id, updated: true });
+      }
+    })
+  }
+
+  restore() {
+    this.duplicateService.update({id:this.dupl.id, delete_date: null}).subscribe({
+      next: data => {
+        this.dialogRef.close({ id: this.dupl.id, updated: true });
+      }
+    })
   }
 
   abort() {

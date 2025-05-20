@@ -224,9 +224,16 @@ export class PublicationController {
     })
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    duplicates(@Query('id') id: number) {
+    duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
         if (id) return this.publicationService.getDuplicates(id);
-        else return this.publicationService.getAllDuplicates();
+        else return this.publicationService.getAllDuplicates(soft);
+    }
+
+    @Put('duplicates')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    duplicate_update(@Body() duplicate: PublicationDuplicate) {
+        return this.publicationService.updateDuplicate(duplicate);
     }
 
     @Post('duplicates')
@@ -244,7 +251,7 @@ export class PublicationController {
             }
         }
     })
-    duplicate_save(@Body('duplicate') duplicate: PublicationDuplicate) {
+    duplicate_save(@Body() duplicate: PublicationDuplicate) {
         return this.publicationService.saveDuplicate(duplicate.id_first, duplicate.id_second, duplicate.description);
     }
 
@@ -261,8 +268,8 @@ export class PublicationController {
             }
         }
     })
-    duplicate_del(@Body('duplicate') duplicate: PublicationDuplicate) {
-        return this.publicationService.deleteDuplicate(duplicate.id)
+    duplicate_del(@Body('duplicate') duplicate: PublicationDuplicate, @Body('soft') soft?: boolean) {
+        return this.publicationService.deleteDuplicate(duplicate.id, soft);
     }
 
 }

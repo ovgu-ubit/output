@@ -4,6 +4,7 @@ export interface TableParent<T> {
   buttons: TableButton[];
   preProcessing?: (() => Observable<void>),
   indexOptions?:any;
+  not_editable?:boolean;
 }
 
 export interface TableHeader {

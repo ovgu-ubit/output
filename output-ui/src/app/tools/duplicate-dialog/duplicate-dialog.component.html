@@ -16,12 +16,16 @@
     </table>
     <br />
     <div style="display: flex;justify-content: space-between;">
-        <div style="display: flex; gap: 10px">
-        <button mat-raised-button class="accent-button" (click)="action(null)">Als nicht zutreffend kennzeichnen</button>
-        <button mat-raised-button class="primary-button" (click)="action(0)">In Entität 1 zusammenführen</button>
-        <button mat-raised-button class="primary-button" (click)="action(1)">In Entität 2 zusammenführen</button>
-    </div>
+        <div *ngIf="!this.soft_deleted" style="display: flex; gap: 10px">
+            <button mat-raised-button class="accent-button" (click)="action(null)">Als nicht zutreffend
+                kennzeichnen</button>
+            <button mat-raised-button class="primary-button" (click)="action(0)">In Entität 1 zusammenführen</button>
+            <button mat-raised-button class="primary-button" (click)="action(1)">In Entität 2 zusammenführen</button>
+        </div>
+        <div *ngIf="this.soft_deleted" style="display: flex; gap: 10px">
+            <button mat-raised-button class="accent-button" (click)="restore()">Dublette wiederherstellen</button>
+        </div>
         <button mat-raised-button class="secondary-button" (click)="abort()">Abbrechen</button>
-        
+
     </div>
 </div>
