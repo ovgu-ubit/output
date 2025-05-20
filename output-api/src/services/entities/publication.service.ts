@@ -70,6 +70,23 @@ export class PublicationService {
             .leftJoinAndSelect("invoices.cost_items", "cost_items")
             .leftJoinAndSelect("invoices.cost_center", "cost_center")
             .leftJoinAndSelect("cost_items.cost_type", "cost_type")
+
+        this.filter_joins = new Set();
+        this.filter_joins.add("publisher")
+        this.filter_joins.add("oa_category")
+        this.filter_joins.add("publication_type")
+        this.filter_joins.add("contract")
+        this.filter_joins.add("greater_entity")
+        this.filter_joins.add("funders")
+        this.filter_joins.add("authorPublications")
+        this.filter_joins.add("supplements")
+        this.filter_joins.add("author")
+        this.filter_joins.add("institute")
+        this.filter_joins.add("invoice")
+        this.filter_joins.add("cost_item")
+        this.filter_joins.add("cost_center")
+        this.filter_joins.add("cost_type")
+
         query = await this.filter(filter, query);
 
         let res = await query.getMany();
@@ -78,6 +95,7 @@ export class PublicationService {
 
     // base object to select a publication index
     public indexQuery(): SelectQueryBuilder<Publication> {
+        this.filter_joins = new Set();
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.authorPublications", "authorPublications")
             .leftJoin("authorPublications.author", "author")
@@ -532,7 +550,7 @@ export class PublicationService {
         if (this.oa_cat && !this.filter_joins.has("oa_category")) indexQuery = indexQuery.leftJoin('publication.oa_category', 'oa_category')
         if (this.contract && !this.filter_joins.has("contract")) indexQuery = indexQuery.leftJoin('publication.contract', 'contract')
         if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
-        if (this.invoice && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
+        if ((this.invoice || this.cost_type) && !this.filter_joins.has("invoice")) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
         if (this.cost_center && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
         
         if (this.cost_type && !this.filter_joins.has("cost_type")) {
