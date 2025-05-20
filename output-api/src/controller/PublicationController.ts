@@ -11,6 +11,7 @@ import { Permissions } from "../guards/permission.decorator";
 import { AppConfigService } from "../services/app-config.service";
 import { PublicationService } from "../services/entities/publication.service";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
+import { PublicationDuplicate } from "../entity/PublicationDuplicate";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -89,7 +90,7 @@ export class PublicationController {
     })
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
         if ((yop === null || yop === undefined) && !soft) throw new BadRequestException('reporting year or soft has to be given');
-        
+
         if (!soft) {
             if (Number.isNaN(yop)) return await this.publicationService.index(null);
             else return await this.publicationService.index(yop);
@@ -214,4 +215,61 @@ export class PublicationController {
         }
         return result;
     }
+
+    @Get('duplicates')
+    @ApiQuery({
+        name: 'id',
+        type: 'number',
+        required: false
+    })
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
+        if (id) return this.publicationService.getDuplicates(id);
+        else return this.publicationService.getAllDuplicates(soft);
+    }
+
+    @Put('duplicates')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    duplicate_update(@Body() duplicate: PublicationDuplicate) {
+        return this.publicationService.updateDuplicate(duplicate);
+    }
+
+    @Post('duplicates')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @ApiBody({
+        description: '<p>JSON Request:</p>',
+        schema: {
+            example: {
+                duplicate: {
+                    id_first: 14468,
+                    id_second: 14470,
+                    description: 'another test'
+                }
+            }
+        }
+    })
+    duplicate_save(@Body() duplicate: PublicationDuplicate) {
+        return this.publicationService.saveDuplicate(duplicate.id_first, duplicate.id_second, duplicate.description);
+    }
+
+    @Delete('duplicates')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @ApiBody({
+        description: '<p>JSON Request:</p>',
+        schema: {
+            example: {
+                duplicate: {
+                    id: 2
+                }
+            }
+        }
+    })
+    duplicate_del(@Body('duplicate') duplicate: PublicationDuplicate, @Body('soft') soft?: boolean) {
+        return this.publicationService.deleteDuplicate(duplicate.id, soft);
+    }
+
 }

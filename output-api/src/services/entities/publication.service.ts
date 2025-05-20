@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, FindManyOptions, ILike, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, FindManyOptions, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Author } from '../../entity/Author';
@@ -14,6 +14,7 @@ import { PublicationIdentifier } from '../../entity/identifier/PublicationIdenti
 import { Role } from '../../entity/Role';
 import { InstitutionService } from './institution.service';
 import { PublicationSupplement } from '../../entity/PublicationSupplement';
+import { PublicationDuplicate } from '../../entity/PublicationDuplicate';
 
 @Injectable()
 export class PublicationService {
@@ -39,6 +40,7 @@ export class PublicationService {
         @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
+        @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
         private configService: ConfigService, private instService: InstitutionService) { }
 
     public save(pub: Publication[]) {
@@ -366,10 +368,14 @@ export class PublicationService {
                 , 'year')
             .distinct(true)
             .orderBy('year', 'DESC');
-        return query.getRawMany() as Promise<number[]>;
+        return query.getRawMany() as Promise<any>;
     }
 
     async combine(id1: number, ids: number[]) {
+        //identify duplicates for this combination
+        let duplicates = await this.duplRepository.find({where: {id_first: id1, id_second: In(ids)}, withDeleted: true})
+        duplicates = duplicates.concat(await this.duplRepository.find({where: {id_first: In(ids), id_second: id1}, withDeleted: true}))
+
         let aut1: Publication = await this.pubRepository.findOne({ where: { id: id1 }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true } })
         let authors: Publication[] = []
         for (let id of ids) {
@@ -410,15 +416,49 @@ export class PublicationService {
             if (!res.supplements) res.supplements = [];
             res.supplements = res.supplements.concat(aut.supplements)
         }
+        res = {...res, locked_at: null};
 
         //update publication 1
         if (await this.pubRepository.save(res)) {
             if (await this.pubAutRepository.delete({ publicationId: In(authors.map(e => e.id)) }) &&
                 await this.invoiceRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) &&
                 await this.supplRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) &&
+                (duplicates.length > 0 && await this.duplRepository.delete(duplicates.map(d => d.id))) &&
                 await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
             else return { error: 'delete' };
         } else return { error: 'update' };
+    }
+
+    getAllDuplicates(soft?:boolean) {
+        if (!soft) return this.duplRepository.find();
+        else return this.duplRepository.find({where:{delete_date: Not(IsNull())},withDeleted: true})
+    }
+
+    async getDuplicates(id:number) {
+        /*let query = this.pubRepository.createQueryBuilder("publication")
+            .leftJoinAndSelect("publication.duplicates", 'duplicates')
+            .select("duplicates.id_second")
+            .addSelect("duplicates.id")
+            .addSelect("duplicates.id_first")
+            .where("publication.id = :id", {id: id})
+
+        return (await query.getRawMany());*/
+        return this.duplRepository.findOne({where: {id}, withDeleted: true})
+    }
+
+    async saveDuplicate(id_first :number, id_second:number, description?: string) {
+        let check = await this.duplRepository.findOne({where: {id_first, id_second}, withDeleted: true})
+        if (!check) return this.duplRepository.save({id_first,id_second,description})
+        else return null;
+    }
+
+    async updateDuplicate(dupl:PublicationDuplicate) {
+        return this.duplRepository.update(dupl.id, {id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date});
+    }
+
+    deleteDuplicate(id, soft?:boolean) {
+        if (soft) return this.duplRepository.softDelete(id);
+        else return this.duplRepository.delete(id);
     }
 
     // retrieves a publication index based on a filter object

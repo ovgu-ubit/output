@@ -91,24 +91,24 @@ export class CombineDialogComponent<T> implements OnInit {
             this.dialogRef.close(res);
           });
         }
-      );
+        );
+      }
+    } else {
+      this.dialogRef.close(res);
     }
-  } else {
-  this.dialogRef.close(res);
-}
   }
 
-abort() {
-  this.dialogRef.close(null);
-}
-
-getStyle(att: string) {
-  let style = "background:red;";
-  let value = "";
-  for (let ent of this.ents) {
-    if (!value) value = ent[att];
-    else if (ent[att] != value) return style;
+  abort() {
+    this.dialogRef.close(null);
   }
-  return "";
-}
+
+  getStyle(att: string) {
+    let style = "background:red;";
+    let value = "";
+    for (let ent of this.ents) {
+      if (!value) value = ent[att];
+      else if (ent[att] != value) return style;
+    }
+    return "";
+  }
 }

@@ -60,6 +60,15 @@ export interface Publication extends Identifiable<Publication> {
     last_page?: string;
     cost_approach?: number;
     supplements?: PublicationSupplement[];
+    duplicates?: PublicationDuplicate[];
+}
+
+export interface PublicationDuplicate {
+    id?: number;
+    id_first?: number;
+    id_second?: number;
+    description?: string;
+    delete_date?: Date;
 }
 
 export interface Author extends Entity {

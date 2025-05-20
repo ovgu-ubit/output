@@ -37,11 +37,11 @@
                 [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}</button>
             </ng-container>
           </ng-container>
-          <button mat-raised-button (click)="this.add()"
+          <button mat-raised-button (click)="this.add()" *ngIf="!this.parent.not_editable"
             [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
-          <button mat-raised-button (click)="this.delete()"
+          <button mat-raised-button (click)="this.delete()" *ngIf="!this.parent.not_editable"
             [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
-          <button mat-raised-button *ngIf="this.serviceClass.combine" (click)="this.combine()"
+          <button mat-raised-button *ngIf="this.serviceClass.combine && !this.parent.not_editable" (click)="this.combine()"
             [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
         </div>
       </span>

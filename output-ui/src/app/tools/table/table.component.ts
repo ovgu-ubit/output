@@ -160,7 +160,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.headerNames = this.headers.map(x => x.colName);
       //adding the meta columns at the beginning
       this.headerNames.unshift('edit');
-      this.headerNames.unshift('select');
+      if (!this.parent.not_selectable) this.headerNames.unshift('select');
       this.headerNames.map(e => {
         this.filterControls[e] = new FormControl('')
         this.filterControls[e].valueChanges
