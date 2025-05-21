@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import * as Highcharts from 'highcharts';
+import heatmap from 'highcharts/modules/heatmap';
+import treemap from 'highcharts/modules/treemap';
 import exporting from 'highcharts/modules/exporting';
 import { StatisticsService } from 'src/app/services/statistics.service';
 import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
@@ -13,10 +15,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   styleUrls: ['./statistics-year.component.css']
 })
 export class StatisticsYearComponent implements OnInit {
-
   Highcharts: typeof Highcharts = Highcharts; // required
   chartConstructor: string = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
   chartOptions: Highcharts.Options = {
+    colorAxis: {
+      minColor: '#FFFFFF',
+      maxColor: Highcharts.getOptions().colors[0]
+    },
     chart: {
       plotBorderWidth: null,
       plotShadow: false,
@@ -29,6 +34,22 @@ export class StatisticsYearComponent implements OnInit {
       pointFormat: '<b>{point.y:,.0f}</b><br>{point.percentage:.1f} %'
     },
     plotOptions: {
+      treemap: {
+        allowPointSelect: true,
+        cursor: 'pointer',
+        dataLabels: {
+          enabled: true,
+          format: '{point.name}: {point.percentage:.1f} %'
+        },
+        showInLegend: true,
+        point: {
+          events: {
+            legendItemClick: (event) => {
+              this.applyAntiFilter(event.target.series.name, event.target.name)
+            }
+          }
+        }
+      },
       pie: {
         allowPointSelect: true,
         cursor: 'pointer',
@@ -45,12 +66,12 @@ export class StatisticsYearComponent implements OnInit {
           }
         }
       }
-    },navigation: {
+    }, navigation: {
       buttonOptions: {
         theme: {
           fill: window.getComputedStyle(document.body).getPropertyValue("background-color"),
         }
-      }, menuStyle : {
+      }, menuStyle: {
         backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
       }
     }
@@ -116,6 +137,8 @@ export class StatisticsYearComponent implements OnInit {
 
   ngOnInit(): void {
     exporting(Highcharts);
+    heatmap(Highcharts)
+    treemap(Highcharts)
     this.year = parseInt(this.route.snapshot.paramMap.get('year'));
     this.loadData(this.costs)
   }
@@ -144,11 +167,16 @@ export class StatisticsYearComponent implements OnInit {
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push(['gesperrt', parseFloat(e.locked)])
-          chartData.push(['nicht gesperrt', parseFloat(e.value) - parseFloat(e.locked)])
+          //chartData.push(['gesperrt', parseFloat(e.locked)])
+          //chartData.push(['nicht gesperrt', parseFloat(e.value) - parseFloat(e.locked)])
+          chartData.push({ name: 'gesperrt', value: parseFloat(e.locked), colorValue: 1 })
+          chartData.push({ name: 'nicht gesperrt', value: parseFloat(e.value) - parseFloat(e.locked), colorValue: 2 })
         }
         this.chartOptionsLocked.series = [{
-          type: 'pie',
+          //type: 'pie',
+          type: 'treemap',
+          layoutAlgorithm: 'squarified',
+          clip: false,
           name: 'Gesperrt',
           data: chartData,
           events: {
@@ -174,7 +202,7 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag1 = true;
@@ -195,7 +223,7 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag2 = true;
@@ -204,21 +232,28 @@ export class StatisticsYearComponent implements OnInit {
       data => {
         this.publisher = data.map(e => { return { id: e['id'], label: e['publisher'] } });
         let chartData = []
+        let i = 1
         for (let e of data) {
-          chartData.push([e.publisher, parseFloat(e.value)])
+          //chartData.push([e.publisher, parseFloat(e.value)])
+          chartData.push({ name: e.publisher, value: parseFloat(e.value), colorValue: i++ })
         }
-        this.chartOptionsPublisher.series = [{
-          type: 'pie',
-          name: 'Verlag',
-          data: chartData,
-          events: {
-            click:
-              (event) => { this.applyFilter(event.point.series.name, event.point.name) }
+        this.chartOptionsPublisher = {
+          colorAxis: {
+            minColor: '#FFFFFF',
+            maxColor: Highcharts.getOptions().colors[0]
           },
-          tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
-          }
-        }]
+          title: {
+            text: 'Highcharts Treemap'
+          },
+          series: [{
+            type: 'treemap',
+            layoutAlgorithm: 'squarified',
+            clip: false,
+            name: 'Verlag',
+            data: chartData
+          }]
+        }
+        console.log(this.chartOptionsPublisher)
         this.updateFlag3 = true;
       })));
     ob$ = merge(ob$, this.statService.pub_type(this.year, costs, this.filter).pipe(map(
@@ -237,7 +272,7 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag4 = true;
@@ -258,7 +293,7 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
         this.updateFlag5 = true;
@@ -350,7 +385,7 @@ export class StatisticsYearComponent implements OnInit {
     }
     if (series_name === 'Vertrag') {
       let notContractId = this.filter?.notContractId ? this.filter.notContractId : [];
-      if (cat_name === 'Unbekannt') id=null
+      if (cat_name === 'Unbekannt') id = null
       else id = this.constracts.find(e => e.label === cat_name)?.id;
       notContractId.push(id)
       this.filter.notContractId = notContractId;
@@ -359,15 +394,15 @@ export class StatisticsYearComponent implements OnInit {
     if (series_name === 'Publikationsart') {
       let notPubTypeId = this.filter?.notPubTypeId ? this.filter.notPubTypeId : [];
       if (cat_name === 'Unbekannt') id = null
-      else id=this.pub_types.find(e => e.label === cat_name)?.id
+      else id = this.pub_types.find(e => e.label === cat_name)?.id
       notPubTypeId.push(id)
       this.filter.notPubTypeId = notPubTypeId;
       key = 'notPubTypeId'
     }
     if (series_name === 'Verlag') {
       let notPublisherId = this.filter?.notPublisherId ? this.filter.notPublisherId : [];
-      if (cat_name === 'Unbekannt') id=null
-      else id=this.publisher.find(e => e.label === cat_name)?.id
+      if (cat_name === 'Unbekannt') id = null
+      else id = this.publisher.find(e => e.label === cat_name)?.id
       notPublisherId.push(id)
       this.filter.notPublisherId = notPublisherId;
       key = 'notPublisherId'

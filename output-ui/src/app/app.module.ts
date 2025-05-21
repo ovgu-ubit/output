@@ -153,7 +153,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         DuplicatesComponent,
         DuplicateDialogComponent
     ],
-    bootstrap: [AppComponent], imports: [BrowserModule,
+    bootstrap: [AppComponent],
+    imports: [BrowserModule,
         MatTableModule,
         AppRoutingModule,
         BrowserAnimationsModule,
