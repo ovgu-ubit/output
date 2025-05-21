@@ -477,22 +477,22 @@ export abstract class AbstractImportService {
                 pd = this.getPubDate(element);
                 let flag = false;
                 if (pd instanceof Date) {
-                    orig.pub_date = pd;
+                    if (!orig.pub_date || (orig.pub_date.getDate() === 1 && orig.pub_date.getMonth() === 0)) orig.pub_date = pd;
                     flag = true;
                 } else if (pd) {
-                    if (!orig.pub_date) {
+                    if (!orig.pub_date || (orig.pub_date.getDate() === 1 && orig.pub_date.getMonth() === 0)) {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (this.configService.get('optional_fields.pub_date_print') && !orig.pub_date_print) {
+                    if (this.configService.get('optional_fields.pub_date_print') && (!orig.pub_date_print || (orig.pub_date_print.getDate() === 1 && orig.pub_date_print.getMonth() === 0))) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
-                    if (!orig.pub_date_accepted) {
+                    if (!orig.pub_date_accepted || (orig.pub_date_accepted.getDate() === 1 && orig.pub_date_accepted.getMonth() === 0)) {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (this.configService.get('optional_fields.pub_date_submitted') && !orig.pub_date_submitted) {
+                    if (this.configService.get('optional_fields.pub_date_submitted') && (!orig.pub_date_submitted || (orig.pub_date_submitted.getDate() === 1 && orig.pub_date_submitted.getMonth() === 0))) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
