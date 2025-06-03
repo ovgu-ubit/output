@@ -9,14 +9,14 @@ export abstract class AuthorizationService {
 
     /**
      * returns true if the user is allowed to access the resource and enrichs the request object with a user object
-     * containing at least {read:boolean, write:boolean, admin:boolean}
+     * containing at least {read:boolean, write_publication:boolean, write:boolean, admin:boolean}
      * @param context 
      * @returns 
      */
     async verify(context: ExecutionContext) {
         let request = context.switchToHttp().getRequest();
         if (['false', '0'].includes(this.configService.get('AUTH')?.toLowerCase())) {
-            request['user'] = { read: true, write: true, admin: true }
+            request['user'] = { read: true, write_publication: true ,write: true, admin: true }
             return true;
         }
         let permissions = this.reflector.get<PermissionDecoration[]>('permissions', context.getHandler());
