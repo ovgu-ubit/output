@@ -77,7 +77,7 @@ export class PublicationController {
     })
     async one(@Query('id') id: number, @Req() request: Request) {
         if (!id) throw new BadRequestException('id must be given')
-        return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write'] : false);
+        return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write_publication'] : false);
     }
 
     @Get('publicationIndex')
@@ -100,7 +100,7 @@ export class PublicationController {
 
     @Post()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -119,7 +119,7 @@ export class PublicationController {
 
     @Put()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async update(@Body() body: Publication[] | Publication) {
         if (Array.isArray(body)) return this.publicationService.update(body);
         else return this.publicationService.update([body]);
@@ -127,7 +127,7 @@ export class PublicationController {
 
     @Delete()
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async remove(@Body('publications') publications: Publication[], @Body('soft') soft?: boolean) {
         return this.publicationService.delete(publications, soft);
     }
@@ -160,7 +160,7 @@ export class PublicationController {
 
     @Post('combine')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         schema: {
             example: {
@@ -223,7 +223,7 @@ export class PublicationController {
         required: false
     })
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
         if (id) return this.publicationService.getDuplicates(id);
         else return this.publicationService.getAllDuplicates(soft);
@@ -231,14 +231,14 @@ export class PublicationController {
 
     @Put('duplicates')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     duplicate_update(@Body() duplicate: PublicationDuplicate) {
         return this.publicationService.updateDuplicate(duplicate);
     }
 
     @Post('duplicates')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
@@ -257,7 +257,7 @@ export class PublicationController {
 
     @Delete('duplicates')
     @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
