@@ -27,9 +27,9 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
-        ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
+    ) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -49,10 +49,10 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.IGNORE,
-        abstract :UpdateOptions.IGNORE,
-        citation :UpdateOptions.IGNORE,
-        page_count :UpdateOptions.IGNORE,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.IGNORE,
+        citation: UpdateOptions.IGNORE,
+        page_count: UpdateOptions.IGNORE,
+        peer_reviewed: UpdateOptions.IGNORE,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://olap.openapc.net/cube/openapc/facts';
@@ -90,7 +90,7 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         }
     }
     protected getPublisher(element: any): Publisher {
-        return {label: element['publisher']};
+        return { label: element['publisher'] };
     }
     protected getPubDate(element: any): Date {
         return null;
@@ -117,12 +117,7 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getInvoiceInformation(element: any) {
-        return [{
-            cost_items: [{
-                euro_value: element['euro'],
-                cost_type: 'Article processing charges'
-            }]
-        }];
+        return null;
     }
     protected getStatus(element: any): number {
         return 1;
@@ -130,7 +125,7 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
         return null;
     }
     protected getPageCount(element: any): number {
@@ -140,6 +135,6 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getCostApproach(element: any): number {
-        return null;
+        return element['euro'];
     }
 }

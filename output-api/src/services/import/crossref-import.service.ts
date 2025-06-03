@@ -187,7 +187,7 @@ export class CrossrefImportService extends ApiImportOffsetService {
         return null;
     }
     protected getInvoiceInformation(element: any) {
-        return [];
+        return null;
     }
     protected getStatus(element: any): number {
         return 1;

@@ -176,24 +176,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return element['license'];
     }
     protected getInvoiceInformation(element: any) {
-        let elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
-        if (elem) {
-            if (elem['currency'] != 'EUR') {
-                return [{
-                    cost_items: [{
-                        orig_value: element['apc_paid']['value'],
-                        orig_currency: element['apc_paid']['currency'],
-                        cost_type:'Article processing charges'
-                    }]
-                }]
-            } else return [{
-                cost_items: [{
-                    euro_value: element['apc_paid']['value'],
-                    cost_type: 'Article processing charges'
-                }]
-            }]
-        }
-        return [];
+        return null;
     }
     protected getStatus(element: any): number {
         return 1;
@@ -223,6 +206,13 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return null;
     }
     protected getCostApproach(element: any): number {
+        let elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
+        if (elem) {
+            if (elem['currency'] != 'EUR') {
+                //return element['apc_paid']['currency'] + " " + element['apc_paid']['value']
+                return null;
+            } else return Number(element['apc_paid']['value'])
+        }
         return null;
     }
 }
