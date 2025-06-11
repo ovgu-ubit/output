@@ -31,7 +31,7 @@ export class JulichExportService extends AbstractExportService {
         this.report = this.reportService.createReport('Export', this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
-        if (filter) for (let path of filter.paths) {
+        if (filter && filter.paths) for (let path of filter.paths) {
             let so = this.configService.get('filter_services').findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
