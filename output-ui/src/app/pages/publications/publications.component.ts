@@ -84,7 +84,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.includes("publisher")) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
       if (data.includes("contract")) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
       if (data.includes("oa_category")) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
-      if (data.includes("locked_status")) headers.push({ colName: 'locked_status', colTitle: 'Lock-Status' })
+      if (data.includes("locked_status")) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
       if (data.includes("status")) headers.push({ colName: 'status', colTitle: 'Status', type: 'number' })
       if (data.includes("pub_date")) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
       if (data.includes("edit_date")) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
