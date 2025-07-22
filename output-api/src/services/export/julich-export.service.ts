@@ -39,35 +39,54 @@ export class JulichExportService extends AbstractExportService {
 
         let rows = [];
         for (let pub of pubs) {
-            if (!pub.invoices || pub.invoices.length === 0 || !pub.invoices[0].cost_items || pub.invoices[0].cost_items.length === 0) continue;
-            let row = {
+            let row: any = {
                 doi: pub.doi,
                 foerderfaehig: '',
-                bemerkung: pub.invoices[0].cost_items[0].label,
                 name_des_verlags: pub.publisher?.label,
                 publikationsform: pub.pub_type?.label,
                 cc_lizenz: pub.best_oa_license,
-                originalwaehrung: pub.invoices[0].cost_items[0].orig_currency,
-                rechnungsbetrag_in_originalwaehrung: pub.invoices[0].cost_items[0].orig_value,
-                euro_netto: pub.invoices[0].cost_items[0].euro_value,
-                steuersatz: pub.invoices[0].cost_items[0].vat / pub.invoices[0].cost_items[0].euro_value,
-                euro_brutto: pub.invoices[0].cost_items[0].euro_value + pub.invoices[0].cost_items[0].vat,
                 kostensplitting: '',
                 zuschussbetrag_dfg: '',
-                gebuehrenart: pub.invoices[0].cost_items[0].cost_type?.label,
-                zuordnung_zu_mitgliedschaft: pub.invoices[0].cost_items[0].cost_type?.label,
                 zuordnung_zu_transformationsvertrag: pub.contract?.label,
-                rechnungsjahr_lizenzjahr: pub.invoices[0].booking_date?.getFullYear(),
                 publikationsjahr: pub.pub_date ? pub.pub_date.getFullYear() : pub.pub_date_print?.getFullYear(),
                 projektnummer_projektID: pub.grant_number,
                 dfg_wissenschaftsbereich: ''
             }
-
-            rows.push(row);
+            if (pub.invoices && pub.invoices.length > 0 && pub.invoices[0].cost_items && pub.invoices[0].cost_items.length > 0) {
+                row = {
+                    ...row,
+                    bemerkung: pub.invoices[0].cost_items[0].label,
+                    originalwaehrung: pub.invoices[0].cost_items[0].orig_currency,
+                    rechnungsbetrag_in_originalwaehrung: pub.invoices[0].cost_items[0].orig_value,
+                    euro_netto: pub.invoices[0].cost_items[0].euro_value,
+                    steuersatz: pub.invoices[0].cost_items[0].vat / pub.invoices[0].cost_items[0].euro_value,
+                    euro_brutto: pub.invoices[0].cost_items[0].euro_value + pub.invoices[0].cost_items[0].vat,
+                    gebuehrenart: pub.invoices[0].cost_items[0].cost_type?.label,
+                    zuordnung_zu_mitgliedschaft: pub.invoices[0].cost_items[0].cost_type?.label,
+                    rechnungsjahr_lizenzjahr: pub.invoices[0].booking_date?.getFullYear(),
+                }
+                rows.push(row);
+            } else if (pub.contract) {
+                row = {
+                    ...row,
+                    bemerkung: '',
+                    originalwaehrung: '',
+                    rechnungsbetrag_in_originalwaehrung: '',
+                    euro_netto:0,
+                    steuersatz: 0,
+                    euro_brutto: 0,
+                    gebuehrenart: '',
+                    zuordnung_zu_mitgliedschaft: '',
+                    rechnungsjahr_lizenzjahr: '',
+                }
+                rows.push(row)
+            }
         }
 
         let workbook = XLSX.utils.book_new();
-        let worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true })
+        let worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true, header: ['doi','foerderfaehig','bemerkung','name_des_verlags','publikationsform','cc_lizenz',
+            'orignalwaehrung','rechnungsbetrag_in_originalwaehrung','euro_netto','steuersatz','euro_brutto','kostensplitting','zuschussbetrag_dfg','gebuehrenart',
+        'zuordnung_zu_mitgliedschaft','zuordnung_zu_transformationsvertrag','rechnungsjahr_lizenzjahr','publikationsjahr','projektnummer_projektID','dfg_wissenschaftsbereich'] })
         //header names
         XLSX.utils.sheet_add_aoa(worksheet, [["DOI", "förderfähig", "Bemerkung", "Name des Verlags", "Publikationsform", "CC-Lizenz", "Originalwährung",
             "Rechnungsbetrag in Originalwährung", "Euro netto", "Steuersatz", "Euro brutto", "Kostensplittung", "Zuschussbetrag DFG", "Gebührenart",
