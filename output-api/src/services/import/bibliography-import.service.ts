@@ -79,16 +79,19 @@ export class BibliographyImportService extends ApiImportOffsetService {
         return response.data;
     }
     protected importTest(element: any): boolean {
-        return element;
+        return element['local_expansion'].toLowerCase().includes('dissertation') || element['local_expansion'].toLowerCase().includes('habilitation');
     }
     protected getInstAuthors(element: any): {
         first_name: string; last_name: string; orcid?: string; affiliation?: string;
     }[] {
-        return [];
+        let author = element['author'];
+        let split = author.split(', ')
+        if (split && split.length == 2) {
+            return [{first_name: split[1], last_name: split[0]}]
+        } else return [];
     }
     protected getAuthors(element: any): string {
-        let authors = element['co_authors'].length > 0 ? element['author'] + '; ' + element['co_authors'].split('|').join('; ') : element['author'];
-        return authors;
+        return element['author'];
     }
     protected getGreaterEntity(element: any): GreaterEntity {
         let issn = element['greater_entity_issn'];
