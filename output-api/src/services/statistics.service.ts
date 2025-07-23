@@ -5,11 +5,15 @@ import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
 import { Publication } from '../entity/Publication';
 import { InstitutionService } from './entities/institution.service';
+import { OACategoryService } from './entities/oa-category.service';
+import { firstValueFrom } from 'rxjs';
+import { ContractService } from './entities/contract.service';
 
 @Injectable()
 export class StatisticsService {
 
-    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>, private configService: ConfigService, private instService: InstitutionService) { }
+    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>, private configService: ConfigService,
+        private instService: InstitutionService, private oaService: OACategoryService, private contractService: ContractService) { }
 
     async countPubsByYear(filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
         let instIDs = [];
@@ -143,15 +147,29 @@ export class StatisticsService {
     }
 
     async goldOACost(reporting_year, filterOptions?: FilterOptions) {
+        let oa_gold = await firstValueFrom(this.oaService.findOrSave("gold"))
+
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
         let query = this.pubRepository.createQueryBuilder('publication')
-            .where("publication.oa_category = ")
+            .where("publication.oa_category = " + oa_gold.id)
+            .select("'all' as stat")
 
         query = this.addStat(query, true)
         query = this.addFilter(query, false, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
+        //console.log(query.getSql())
+
         return query.getRawMany();
+    }
+
+    async contractCosts(reporting_year, filterOptions?: FilterOptions) {
+        let contracts = await this.contractService.get()
+        let sum = 0;
+        for (let contract of contracts) {
+            if (contract.end_date?.getFullYear() >= reporting_year && contract.start_date?.getFullYear() <= reporting_year) sum += contract.invoice_amount;
+        }
+        return sum;
     }
 
     addReportingYear(query: SelectQueryBuilder<Publication>, reporting_year: number) {
@@ -195,7 +213,7 @@ export class StatisticsService {
             query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
         } else if (filterOptions?.corresponding === false) {
             autPub = true;
-            query = query.andWhere('aut_pub.corresponding = :corr', { corr: false })
+            query = query.andWhere('aut_pub.corresponding = :corr OR aut_pub.corresponding is NULL', { corr: false })
         }
         if (filterOptions?.locked) {
             autPub = true;
@@ -307,9 +325,26 @@ export class StatisticsService {
         let count_pub = obj?.value;
         let count_pub_corr = obj?.corresponding;
 
+        obj = (await this.goldOACost(reporting_year, filterOptions));
+        let gold_oa_net_cost = obj[0]?.value
+
+        let pub_type_corr = (await this.pub_type(reporting_year, false, { corresponding: true }))
+        let pub_type_all = (await this.pub_type(reporting_year, false))
+
         return {
             count_pub,
-            count_pub_corr
+            count_pub_corr,
+            gold_oa_net_cost,
+            contract_costs: await this.contractCosts(reporting_year),
+            publication_types: pub_type_all.map((e, i) => {
+                let corr = Number(pub_type_corr.find(v => v.id === e.id)?.value)
+                if (Number.isNaN(corr)) corr = 0;
+                return {
+                    label: e.pub_type,
+                    corresponding: corr,
+                    all: Number(e.value)
+                };
+            })
         }
     }
 }
