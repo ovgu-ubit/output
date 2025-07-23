@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +5,7 @@ import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
 import { Publication } from '../entity/Publication';
 import { InstitutionService } from './entities/institution.service';
+
 @Injectable()
 export class StatisticsService {
 
@@ -142,28 +142,40 @@ export class StatisticsService {
         return query.getRawMany();
     }
 
+    async goldOACost(reporting_year, filterOptions?: FilterOptions) {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+        let query = this.pubRepository.createQueryBuilder('publication')
+            .where("publication.oa_category = ")
+
+        query = this.addStat(query, true)
+        query = this.addFilter(query, false, filterOptions)
+        query = this.addReportingYear(query, reporting_year);
+
+        return query.getRawMany();
+    }
+
     addReportingYear(query: SelectQueryBuilder<Publication>, reporting_year: number) {
         let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
         let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
         query = query
-        .andWhere(new Brackets(qb => {
-            qb.where(new Brackets(qb => {
-                qb.where('publication.pub_date >= :beginDate', { beginDate })
-                .andWhere('publication.pub_date <= :endDate', { endDate })
+            .andWhere(new Brackets(qb => {
+                qb.where(new Brackets(qb => {
+                    qb.where('publication.pub_date >= :beginDate', { beginDate })
+                        .andWhere('publication.pub_date <= :endDate', { endDate })
+                }))
+                    .orWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date is null')
+                            .andWhere('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
+                    }))
+                    .orWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date is null and publication.pub_date_print is null')
+                            .andWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
+                    }))
+                    .orWhere(new Brackets(qb => {
+                        qb.where('publication.pub_date is null and publication.pub_date_print is null and publication.pub_date_accepted is null')
+                            .andWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
+                    }))
             }))
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null')
-                .andWhere('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
-            }))
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null and publication.pub_date_print is null')
-                .andWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
-            }))
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null and publication.pub_date_print is null and publication.pub_date_accepted is null')
-                .andWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
-            }))
-        }))
         return query;
     }
 
@@ -288,6 +300,17 @@ export class StatisticsService {
         //console.log(query.getSql())
 
         return query;
+    }
+
+    async oaReport(reporting_year, filterOptions?: FilterOptions) {
+        let obj = (await this.corresponding(reporting_year, filterOptions))[0];
+        let count_pub = obj?.value;
+        let count_pub_corr = obj?.corresponding;
+
+        return {
+            count_pub,
+            count_pub_corr
+        }
     }
 }
 
