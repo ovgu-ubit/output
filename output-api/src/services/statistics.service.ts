@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
 import { Publication } from '../entity/Publication';
 import { InstitutionService } from './entities/institution.service';
 import { OACategoryService } from './entities/oa-category.service';
-import { firstValueFrom } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 import { ContractService } from './entities/contract.service';
 
 @Injectable()
@@ -164,12 +164,36 @@ export class StatisticsService {
     }
 
     async contractCosts(reporting_year, filterOptions?: FilterOptions) {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
         let contracts = await this.contractService.get()
         let sum = 0;
         for (let contract of contracts) {
             if (contract.end_date?.getFullYear() >= reporting_year && contract.start_date?.getFullYear() <= reporting_year) sum += contract.invoice_amount;
         }
         return sum;
+    }
+
+    async oa_development(reporting_year, filterOptions?: FilterOptions) {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
+        let years = [reporting_year]
+        years.push(reporting_year - 1)
+        years.push(reporting_year - 2)
+        let query = this.pubRepository.createQueryBuilder('publication')
+            .leftJoin('publication.oa_category', 'oa_category')
+            .select("case when oa_category.label is not null then oa_category.label else 'Unbekannt' end", 'oa_category')
+            .addSelect("extract(year from publication.pub_date) as \"year\"")
+            .groupBy('oa_category')
+            .addGroupBy('year')
+            .where("extract(year from publication.pub_date) in (:...years)", { years })
+
+        query = this.addStat(query, false)
+        query = this.addFilter(query, false, filterOptions)
+        //query = this.addReportingYear(query, reporting_year);
+        query = query.orderBy("oa_category, year")
+
+        //console.log(query.getSql())
+
+        return query.getRawMany();
     }
 
     addReportingYear(query: SelectQueryBuilder<Publication>, reporting_year: number) {
@@ -331,6 +355,18 @@ export class StatisticsService {
         let pub_type_corr = (await this.pub_type(reporting_year, false, { corresponding: true }))
         let pub_type_all = (await this.pub_type(reporting_year, false))
 
+        let oa_dev = await this.oa_development(reporting_year, filterOptions)
+        let oa_category_development = [];
+        let idx = 0;
+        while (idx < oa_dev.length) {
+            obj = {oa_category: oa_dev[idx].oa_category}
+            do {
+                let line = oa_dev[idx];
+                obj[line.year] = line.value
+            } while (++idx < oa_dev.length && obj.oa_category == oa_dev[idx].oa_category )
+            oa_category_development.push(obj)
+        }
+
         return {
             count_pub,
             count_pub_corr,
@@ -344,7 +380,8 @@ export class StatisticsService {
                     corresponding: corr,
                     all: Number(e.value)
                 };
-            })
+            }),
+            oa_category_development
         }
     }
 }
