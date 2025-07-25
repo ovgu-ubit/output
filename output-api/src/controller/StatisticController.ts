@@ -65,6 +65,6 @@ export class StatisticController {
     @Post('oa_report')
     oaReport(@Query('year') year: number, @Body('filterOptions') filterOptions: FilterOptions) {
         //return this.statService.oaReport(year, filterOptions);
-        return this.statService.publication_statistic(2024, STATISTIC.COUNT, [ENTITY.PUB_TYPE], TIMEFRAME.CURRENT_YEAR)
+        return this.statService.publication_statistic(2024, STATISTIC.COUNT, [ENTITY.INSTITUTE, ENTITY.PUBLISHER], TIMEFRAME.THREE_YEAR_REPORT, {corresponding: true})
     }
 }

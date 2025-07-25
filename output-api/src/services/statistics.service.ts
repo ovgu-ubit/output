@@ -50,9 +50,33 @@ export class StatisticsService {
                 .addSelect('pub_type.id', 'id')
                 .addGroupBy('pub_type')
                 .addGroupBy('pub_type.id')
+                .addOrderBy('pub_type.id')
         }
 
-        query = this.addFilter(query, false, filterOptions)
+        if (by_entity.includes(ENTITY.PUBLISHER)) {
+            query = query
+                .leftJoin('publication.publisher', 'publisher')
+                .addSelect("case when publisher.label is not null then publisher.label else 'Unbekannt' end", 'publisher')
+                .addSelect('publisher.id', 'id')
+                .addGroupBy('publisher')
+                .addGroupBy('publisher.id')
+                .addOrderBy('publisher.id')
+        }
+
+        let autPubAlready = false
+        if (by_entity.includes(ENTITY.INSTITUTE)) {
+            autPubAlready = true;
+            query = query
+                .leftJoin('publication.authorPublications', 'aut_pub')
+                .leftJoin('aut_pub.institute', 'institute')
+                .addSelect("case when institute.label is not null then institute.label else 'Unbekannt' end", 'institute')
+                .addSelect('institute.id', 'id')
+                .addGroupBy('institute')
+                .addGroupBy('institute.id')
+                .addOrderBy('institute.id')
+        }
+
+        query = this.addFilter(query, autPubAlready, filterOptions)
         query = this.addStat(query, statistic === STATISTIC.NET_COSTS)
 
         console.log(query.getSql())
@@ -336,7 +360,7 @@ export class StatisticsService {
             clauses += field + " =" + reporting_year + " or ";
         }
         query = query.where(clauses.substring(0, clauses.length - 4))
-
+        query = query.orderBy("pub_year")
         return query;
     }
 
@@ -346,7 +370,7 @@ export class StatisticsService {
             .leftJoin("invoice.cost_items", "cost_item")
             .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
         if (corresponding) query = query.andWhere('aut_pub.corresponding')
-        return query.orderBy('value', 'DESC');
+        return query//.orderBy('value', 'DESC');
     }
 
     addFilter(query: SelectQueryBuilder<Publication>, autPubAlready: boolean, filterOptions: FilterOptions, highlightOptions?: HighlightOptions) {
