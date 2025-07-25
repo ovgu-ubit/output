@@ -230,27 +230,27 @@ export class StatisticsComponent implements OnInit {
   selectedInst(event: MatAutocompleteSelectedEvent): void {
     let id = this.institutes.find(e => e.label === event.option.value).id
     if (!id) id = null;
-    this.filter = { ...this.filter, instituteId: id}
+    this.filter = { ...this.filter, instituteId: [id]}
   }
   selectedPublisher(event: MatAutocompleteSelectedEvent): void {
     let id = this.publishers.find(e => e.label === event.option.value).id
     if (!id) id = null;
-    this.filter = { ...this.filter, publisherId: id }
+    this.filter = { ...this.filter, publisherId: [id] }
   }
   selectedContract(event: MatAutocompleteSelectedEvent): void {
     let id = this.contracts.find(e => e.label === event.option.value).id
     if (!id) id = null;
-    this.filter = { ...this.filter, contractId: id }
+    this.filter = { ...this.filter, contractId: [id] }
   }
   changeOA(event) {
     let id =  this.oa_cats.find(e => e.label === event.value).id 
     if (!id) id = null;
-    this.filter = { ...this.filter, oaCatId: id}
+    this.filter = { ...this.filter, oaCatId: [id]}
   }
   changePubType(event) {
     let id = this.pub_types.find(e => e.label === event.value).id
     if (!id) id = null;
-    this.filter = { ...this.filter, pubTypeId: id }
+    this.filter = { ...this.filter, pubTypeId: [id] }
   }
 
 

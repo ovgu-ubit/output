@@ -297,27 +297,27 @@ export class StatisticsYearComponent implements OnInit {
     }
     if (series_name === 'Institut') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, instituteId: null }
-      else this.filter = { ...this.filter, instituteId: this.institutes.find(e => e.label === cat_name)?.id }
+      else this.filter = { ...this.filter, instituteId: [this.institutes.find(e => e.label === cat_name)?.id] }
       key = 'instituteId'
     }
     if (series_name === 'OA-Kategorie') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, oaCatId: null }
-      else this.filter = { ...this.filter, oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id }
+      else this.filter = { ...this.filter, oaCatId: [this.oa_cats.find(e => e.label === cat_name)?.id] }
       key = 'oaCatId'
     }
     if (series_name === 'Vertrag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, contractId: null }
-      else this.filter = { ...this.filter, contractId: this.constracts.find(e => e.label === cat_name)?.id }
+      else this.filter = { ...this.filter, contractId: [this.constracts.find(e => e.label === cat_name)?.id] }
       key = 'contractId'
     }
     if (series_name === 'Publikationsart') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, pubTypeId: null }
-      else this.filter = { ...this.filter, pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id }
+      else this.filter = { ...this.filter, pubTypeId: [this.pub_types.find(e => e.label === cat_name)?.id] }
       key = 'pubTypeId'
     }
     if (series_name === 'Verlag') {
       if (cat_name === 'Unbekannt') this.filter = { ...this.filter, publisherId: null }
-      else this.filter = { ...this.filter, publisherId: this.publisher.find(e => e.label === cat_name)?.id }
+      else this.filter = { ...this.filter, publisherId: [this.publisher.find(e => e.label === cat_name)?.id] }
       key = 'publisherId'
     }
     this.filterChips.push({ text: series_name + ': ' + cat_name, key })
