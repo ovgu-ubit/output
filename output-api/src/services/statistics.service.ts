@@ -87,6 +87,7 @@ export class StatisticsService {
                 .addSelect("split_part(tmp.institute,'|',1)", 'institute')//first entry
                 .addGroupBy("split_part(tmp.institute,'|',1)")
                 .addOrderBy("split_part(tmp.institute,'|',1)")
+                //TODO: Inst_ID
         }
         if (by_entity.includes(GROUP.CORRESPONDING)) {
             autPubAlready = true;
