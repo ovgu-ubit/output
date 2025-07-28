@@ -2,30 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
-import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
+import { GROUP, FilterOptions, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
 import { Publication } from '../entity/Publication';
 import { InstitutionService } from './entities/institution.service';
 import { OACategoryService } from './entities/oa-category.service';
 import { filter, firstValueFrom } from 'rxjs';
 import { ContractService } from './entities/contract.service';
 import { PublicationTypeService } from './entities/publication-type.service';
-
-export enum ENTITY {
-    INSTITUTE,
-    PUBLISHER,
-    CONTRACT,
-    PUB_TYPE
-}
-
-export enum STATISTIC {
-    COUNT,
-    NET_COSTS
-}
-
-export enum TIMEFRAME {
-    CURRENT_YEAR,
-    THREE_YEAR_REPORT
-}
 
 @Injectable()
 export class StatisticsService {
@@ -34,46 +17,76 @@ export class StatisticsService {
         private instService: InstitutionService, private oaService: OACategoryService, private contractService: ContractService,
         private pubTypeService: PublicationTypeService) { }
 
-    async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: ENTITY[], timeframe: TIMEFRAME, filterOptions?: FilterOptions) {
+    async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions) {
         let query = this.pubRepository.createQueryBuilder('publication')
 
         if (timeframe === TIMEFRAME.CURRENT_YEAR) {
             query = this.addReportingYears(query, [reporting_year]);
         } else if (timeframe === TIMEFRAME.THREE_YEAR_REPORT) {
             query = this.addReportingYears(query, [reporting_year, reporting_year - 1, reporting_year - 2]);
+        } else if (timeframe === TIMEFRAME.ALL_YEARS) {
+            query = this.addReportingYears(query, null);
         } else throw "no valid timeframe given"
 
-        if (by_entity.includes(ENTITY.PUB_TYPE)) {
+        if (by_entity.includes(GROUP.PUB_TYPE)) {
             query = query
                 .leftJoin('publication.pub_type', 'pub_type')
                 .addSelect("case when pub_type.label is not null then pub_type.label else 'Unbekannt' end", 'pub_type')
-                .addSelect('pub_type.id', 'id')
+                .addSelect('pub_type.id', 'pub_type_id')
                 .addGroupBy('pub_type')
                 .addGroupBy('pub_type.id')
                 .addOrderBy('pub_type.id')
         }
 
-        if (by_entity.includes(ENTITY.PUBLISHER)) {
+        if (by_entity.includes(GROUP.PUBLISHER)) {
             query = query
                 .leftJoin('publication.publisher', 'publisher')
                 .addSelect("case when publisher.label is not null then publisher.label else 'Unbekannt' end", 'publisher')
-                .addSelect('publisher.id', 'id')
+                .addSelect('publisher.id', 'publisher_id')
                 .addGroupBy('publisher')
                 .addGroupBy('publisher.id')
                 .addOrderBy('publisher.id')
         }
 
+        if (by_entity.includes(GROUP.CONTRACT)) {
+            query = query
+                .leftJoin('publication.contract', 'contract')
+                .addSelect("case when contract.label is not null then contract.label else 'Unbekannt' end", 'contract')
+                .addSelect('contract.id', 'contract_id')
+                .addGroupBy('contract')
+                .addGroupBy('contract.id')
+                .addOrderBy('contract.id')
+        }
+
+        if (by_entity.includes(GROUP.OA_CATEGORY)) {
+            query = query
+                .leftJoin('publication.oa_category', 'oa_category')
+                .addSelect("case when oa_category.label is not null then oa_category.label else 'Unbekannt' end", 'oa_category')
+                .addSelect('oa_category.id', 'oa_category_id')
+                .addGroupBy('oa_category')
+                .addGroupBy('oa_category.id')
+                .addOrderBy('oa_category.id')
+        }
+
         let autPubAlready = false
-        if (by_entity.includes(ENTITY.INSTITUTE)) {
+        if (by_entity.includes(GROUP.INSTITUTE)) {
             autPubAlready = true;
             query = query
                 .leftJoin('publication.authorPublications', 'aut_pub')
                 .leftJoin('aut_pub.institute', 'institute')
                 .addSelect("case when institute.label is not null then institute.label else 'Unbekannt' end", 'institute')
-                .addSelect('institute.id', 'id')
+                .addSelect('institute.id', 'institute_id')
                 .addGroupBy('institute')
                 .addGroupBy('institute.id')
                 .addOrderBy('institute.id')
+        }
+        if (by_entity.includes(GROUP.CORRESPONDING)) {
+            autPubAlready = true;
+            query = query
+                .leftJoin('publication.authorPublications', 'aut_pub')
+                .addSelect("aut_pub.corresponding", 'corresponding')
+                .addGroupBy('corresponding')
+                .addOrderBy('corresponding')
         }
 
         query = this.addFilter(query, autPubAlready, filterOptions)
@@ -348,18 +361,19 @@ export class StatisticsService {
     }
 
     addReportingYears(query: SelectQueryBuilder<Publication>, reporting_years: number[]) {
-        let field = "CASE WHEN pub_date is not null THEN extract('Year' from pub_date) ELSE " +
-            "(CASE WHEN pub_date_print is not null THEN extract('Year' from pub_date_print) ELSE " +
-            "(CASE WHEN pub_date_accepted is not null THEN extract('Year' from pub_date_accepted) ELSE " +
-            "(CASE WHEN pub_date_submitted is not null THEN extract('Year' from pub_date_submitted) ELSE null END) END) END) END"
-        query = query.select(field, "pub_year")
+        let field = "(CASE WHEN pub_date is not null THEN extract('Year' from pub_date at time zone 'UTC') ELSE " +
+            "(CASE WHEN pub_date_print is not null THEN extract('Year' from pub_date_print at time zone 'UTC') ELSE " +
+            "(CASE WHEN pub_date_accepted is not null THEN extract('Year' from pub_date_accepted at time zone 'UTC') ELSE " +
+            "(CASE WHEN pub_date_submitted is not null THEN extract('Year' from pub_date_submitted at time zone 'UTC') ELSE null END) END) END) END)"
+        query = query.select(field + "::int", "pub_year")
         query = query.groupBy("pub_year")
-
-        let clauses = "";
-        for (let reporting_year of reporting_years) {
-            clauses += field + " =" + reporting_year + " or ";
+        if (reporting_years && reporting_years.length > 0) {
+            let clauses = "(";
+            for (let reporting_year of reporting_years) {
+                clauses += field + " =" + reporting_year + " or ";
+            }
+            query = query.where(clauses.substring(0, clauses.length - 4) + ")")
         }
-        query = query.where(clauses.substring(0, clauses.length - 4))
         query = query.orderBy("pub_year")
         return query;
     }

@@ -1,7 +1,7 @@
-import { Controller, Get, Query, Post, Body } from "@nestjs/common";
+import { Controller, Get, Query, Post, Body, BadRequestException } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
-import { ENTITY, STATISTIC, StatisticsService, TIMEFRAME } from "../services/statistics.service";
-import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
+import { GROUP, FilterOptions, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
+import { StatisticsService } from "../services/statistics.service";
 
 @Controller("statistics")
 @ApiTags("statistics")
@@ -62,9 +62,24 @@ export class StatisticController {
         return this.statService.contract(year, costs, filterOptions);
     }
 
-    @Post('oa_report')
-    oaReport(@Query('year') year: number, @Body('filterOptions') filterOptions: FilterOptions) {
-        //return this.statService.oaReport(year, filterOptions);
-        return this.statService.publication_statistic(2024, STATISTIC.COUNT, [ENTITY.INSTITUTE, ENTITY.PUBLISHER], TIMEFRAME.THREE_YEAR_REPORT, {corresponding: true})
+    @Post('publication_statistic')
+    @ApiBody({
+        description: '<p>JSON Request:</p>',
+        schema: {
+            example: {
+                year: 2024,
+                statistic: 0,
+                group: [5],
+                timeframe: 1,
+                filterOptions: {
+                    corresponding: true
+                }
+            }
+        }
+    })
+    oaReport(@Body('year') year: number, @Body('statistic') statistic: STATISTIC, @Body('group') group: GROUP[], @Body('timeframe') timeframe: TIMEFRAME, @Body('filterOptions') filterOptions: FilterOptions) {
+        if (!year) throw new BadRequestException('year has to be given');
+        if (!group) group = []
+        return this.statService.publication_statistic(year, statistic, group, timeframe, filterOptions)
     }
 }

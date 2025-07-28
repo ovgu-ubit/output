@@ -22,3 +22,23 @@ export interface HighlightOptions {
     pubTypeId?: number,
     oaCatId?: number
 }
+
+export enum GROUP {
+    INSTITUTE,
+    PUBLISHER,
+    CONTRACT,
+    PUB_TYPE,
+    CORRESPONDING,
+    OA_CATEGORY
+}
+
+export enum STATISTIC {
+    COUNT,
+    NET_COSTS
+}
+
+export enum TIMEFRAME {
+    CURRENT_YEAR,
+    THREE_YEAR_REPORT,
+    ALL_YEARS
+}
