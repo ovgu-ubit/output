@@ -73,13 +73,14 @@ export class StatisticController {
                 timeframe: 1,
                 filterOptions: {
                     corresponding: true
-                }
+                },
+                highlightOptions: {}
             }
         }
     })
-    oaReport(@Body('year') year: number, @Body('statistic') statistic: STATISTIC, @Body('group') group: GROUP[], @Body('timeframe') timeframe: TIMEFRAME, @Body('filterOptions') filterOptions: FilterOptions) {
+    oaReport(@Body('year') year: number, @Body('statistic') statistic: STATISTIC, @Body('group') group: GROUP[], @Body('timeframe') timeframe: TIMEFRAME, @Body('filterOptions') filterOptions: FilterOptions, @Body('highlightOptions') highlightOptions: HighlightOptions) {
         if (!year) throw new BadRequestException('year has to be given');
-        if (!group) group = []
-        return this.statService.publication_statistic(year, statistic, group, timeframe, filterOptions)
+        if (!group || (highlightOptions && Object.keys(highlightOptions).length > 0)) group = []
+        return this.statService.publication_statistic(year, statistic, group, timeframe, filterOptions, highlightOptions)
     }
 }

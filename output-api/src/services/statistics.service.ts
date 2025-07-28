@@ -13,12 +13,25 @@ import { PublicationTypeService } from './entities/publication-type.service';
 @Injectable()
 export class StatisticsService {
 
+    autPubSubQuery: (qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any> = sq => {
+        return sq
+            .select("p.id", "p_id")
+            .addSelect("bool_or(aut_pub.corresponding)", "corresponding")
+            .addSelect("string_agg(institute.label, '|')", "institute")
+            .addSelect("array_agg(institute.id)", "institute_id")
+            .from("publication", "p")
+            .innerJoin('p.authorPublications', 'aut_pub')
+            .leftJoin('aut_pub.institute', 'institute')
+            .groupBy("p.id")
+    }
+
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>, private configService: ConfigService,
         private instService: InstitutionService, private oaService: OACategoryService, private contractService: ContractService,
         private pubTypeService: PublicationTypeService) { }
 
-    async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions) {
+    async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
         let query = this.pubRepository.createQueryBuilder('publication')
+        let autPubAlready = false;
 
         if (timeframe === TIMEFRAME.CURRENT_YEAR) {
             query = this.addReportingYears(query, [reporting_year]);
@@ -68,29 +81,23 @@ export class StatisticsService {
                 .addOrderBy('oa_category.id')
         }
 
-        let autPubAlready = false
         if (by_entity.includes(GROUP.INSTITUTE)) {
             autPubAlready = true;
             query = query
-                .leftJoin('publication.authorPublications', 'aut_pub')
-                .leftJoin('aut_pub.institute', 'institute')
-                .addSelect("case when institute.label is not null then institute.label else 'Unbekannt' end", 'institute')
-                .addSelect('institute.id', 'institute_id')
-                .addGroupBy('institute')
-                .addGroupBy('institute.id')
-                .addOrderBy('institute.id')
+                .addSelect("split_part(tmp.institute,'|',1)", 'institute')//first entry
+                .addGroupBy("split_part(tmp.institute,'|',1)")
+                .addOrderBy("split_part(tmp.institute,'|',1)")
         }
         if (by_entity.includes(GROUP.CORRESPONDING)) {
             autPubAlready = true;
             query = query
-                .leftJoin('publication.authorPublications', 'aut_pub')
-                .addSelect("aut_pub.corresponding", 'corresponding')
+                .addSelect("tmp.corresponding", 'corresponding')
                 .addGroupBy('corresponding')
                 .addOrderBy('corresponding')
         }
 
-        query = this.addFilter(query, autPubAlready, filterOptions)
         query = this.addStat(query, statistic === STATISTIC.NET_COSTS)
+        query = this.addFilter(query, autPubAlready, filterOptions, highlightOptions)
 
         console.log(query.getSql())
 
@@ -110,7 +117,7 @@ export class StatisticsService {
             .orderBy('pub_year')
             .where('publication.id > 0')
 
-        query = this.addFilter(query, false, filterOptions, highlightOptions)
+        query = this.addFilter(query, null, filterOptions, highlightOptions)
 
         return query.getRawMany();
     }
@@ -121,7 +128,7 @@ export class StatisticsService {
             .select('count(distinct publication.id)', 'value')
             .addSelect('COUNT(distinct (CASE WHEN publication.locked THEN publication.id ELSE NULL END))', 'locked')
 
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYears(query, [reporting_year]);
 
         return query.getRawMany();
@@ -134,7 +141,7 @@ export class StatisticsService {
             .select('count(distinct publication.id)', 'value')
             .addSelect('COUNT(distinct (CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END))', 'corresponding')
 
-        query = this.addFilter(query, true, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
@@ -151,7 +158,7 @@ export class StatisticsService {
             .addGroupBy('institute.id')
 
         query = this.addStat(query, costs, costs)
-        query = this.addFilter(query, true, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
@@ -167,7 +174,7 @@ export class StatisticsService {
             .addGroupBy('oa_cat.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
@@ -183,7 +190,7 @@ export class StatisticsService {
             .addGroupBy('publisher.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
@@ -199,7 +206,7 @@ export class StatisticsService {
             .addGroupBy('pub_type.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
@@ -215,7 +222,7 @@ export class StatisticsService {
             .addGroupBy('contract.id')
 
         query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
@@ -230,7 +237,7 @@ export class StatisticsService {
             .select("'all' as stat")
 
         query = this.addStat(query, true)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         query = this.addReportingYear(query, reporting_year);
 
         //console.log(query.getSql())
@@ -262,7 +269,7 @@ export class StatisticsService {
             .where("extract(year from publication.pub_date) in (:...years)", { years })
 
         query = this.addStat(query, false)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         //query = this.addReportingYear(query, reporting_year);
         query = query.orderBy("oa_category, year")
 
@@ -287,7 +294,7 @@ export class StatisticsService {
             .where("extract(year from publication.pub_date) in (:...years)", { years })
 
         query = this.addStat(query, false)
-        query = this.addFilter(query, true, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         //query = this.addReportingYear(query, reporting_year);
         query = query.orderBy("institute, year")
 
@@ -326,7 +333,7 @@ export class StatisticsService {
         //.andWhere("publisher.id in (:...publisherIds)", { publisherIds })
 
         query = this.addStat(query, false)
-        query = this.addFilter(query, false, filterOptions)
+        query = this.addFilter(query, null, filterOptions)
         //query = this.addReportingYear(query, reporting_year);
         query = query.orderBy("publisher, year")
 
@@ -379,7 +386,7 @@ export class StatisticsService {
     }
 
     addStat(query: SelectQueryBuilder<Publication>, costs: boolean, corresponding?: boolean) {
-        if (!costs) query = query.addSelect('count(distinct publication.id) as value')
+        if (!costs) query = query.addSelect('count(distinct publication.id)::int as value')
         else query = query.leftJoin("publication.invoices", "invoice")
             .leftJoin("invoice.cost_items", "cost_item")
             .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
@@ -388,21 +395,24 @@ export class StatisticsService {
     }
 
     addFilter(query: SelectQueryBuilder<Publication>, autPubAlready: boolean, filterOptions: FilterOptions, highlightOptions?: HighlightOptions) {
-        let autPub = false;
+        let autPub = autPubAlready;
+        let innerJoin = false;
+
         if (filterOptions?.corresponding) {
+            innerJoin = true;
             autPub = true;
-            query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
+            query = query.andWhere('tmp.corresponding = :corr', { corr: true })
         } else if (filterOptions?.corresponding === false) {
+            innerJoin = true;
             autPub = true;
-            query = query.andWhere('aut_pub.corresponding = :corr OR aut_pub.corresponding is NULL', { corr: false })
+            query = query.andWhere('(tmp.corresponding = :corr OR tmp.corresponding is NULL)', { corr: false })
         }
         if (filterOptions?.locked) {
-            autPub = true;
             query = query.andWhere('publication.locked = :lock', { lock: true })
         } else if (filterOptions?.locked === false) {
-            autPub = true;
             query = query.andWhere('publication.locked = :lock', { lock: false })
         }
+        //TODO: ab hier anpassen
         if (filterOptions?.instituteId !== undefined) {
             autPub = true;
             if (filterOptions.instituteId.findIndex(e => e === null) !== -1) {
@@ -509,9 +519,14 @@ export class StatisticsService {
 
         if (highlight) query = query.addSelect('count(distinct CASE WHEN ' + highlight.slice(0, highlight.length - 5) + ' THEN publication.id ELSE NULL END)', 'highlight')
 
-        if (autPub && !autPubAlready) query = query.leftJoin('publication.authorPublications', 'aut_pub')
+        //if (autPub && !autPubAlready) query = query.leftJoin('publication.authorPublications', 'aut_pub')
 
-        //console.log(query.getSql())
+        if (autPub) {
+            if (!innerJoin) query = query
+                .leftJoin(this.autPubSubQuery, 'tmp', 'tmp.p_id = publication.id')
+            else query = query
+                .innerJoin(this.autPubSubQuery, 'tmp', 'tmp.p_id = publication.id')
+        }
 
         return query;
     }

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { firstValueFrom, interval, concatMap, Observable, map } from 'rxjs';
 import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config'
-import { FilterOptions, HighlightOptions } from '../../../../output-interfaces/Statistics';
+import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from '../../../../output-interfaces/Statistics';
 
 @Injectable({
   providedIn: 'root'
@@ -13,12 +13,29 @@ export class StatisticsService {
   constructor(private http:HttpClient) { }
 
   countPubByYear(filterOptions?:FilterOptions, highlightOptions?: HighlightOptions) {
-    return this.http.post<{pub_year:number, count:number, highlight?:number}[]>(environment.api + 'statistics/count_by_year',{filterOptions,highlightOptions}).pipe(map(e => e.map(e1 => {
-      return {pub_year:Number(e1.pub_year),count:Number(e1.count),highlight:Number(e1.highlight)}})))
+    return this.http.post<{pub_year:number, value:number, highlight?:number}[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year: 1, 
+        statistic: STATISTIC.COUNT,
+        group: [],
+        timeframe: TIMEFRAME.ALL_YEARS,
+        filterOptions,
+        highlightOptions})
+      .pipe(map(e => e.map(e1 => {
+      return {pub_year:Number(e1.pub_year),count:Number(e1.value),highlight:Number(e1.highlight)}})))  
   }
 
-  corresponding(year:number,filterOptions?:FilterOptions) {
-    return this.http.post<{value, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year,{filterOptions})
+  corresponding(year:number, costs?:boolean, filterOptions?:FilterOptions) {
+    return this.http.post<{corresponding: boolean, value:number}[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year, 
+        statistic: STATISTIC.COUNT,
+        group: [GROUP.CORRESPONDING],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return {corresponding: e1.corresponding, value: e1.value}})))  
   }
 
   locked(year:number,filterOptions?:FilterOptions) {

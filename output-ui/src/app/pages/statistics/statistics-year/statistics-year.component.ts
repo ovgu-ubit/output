@@ -122,12 +122,11 @@ export class StatisticsYearComponent implements OnInit {
 
   loadData(costs: boolean) {
     this.costs = costs;
-    let ob$: Observable<any> = this.statService.corresponding(this.year, this.filter).pipe(map(
+    let ob$: Observable<any> = this.statService.corresponding(this.year, costs, this.filter).pipe(map(
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push(['corresponding', parseFloat(e.corresponding)])
-          chartData.push(['sonstige', parseFloat(e.value) - parseFloat(e.corresponding)])
+          chartData.push([e.corresponding === null? "Unbekannt": (e.corresponding? "Corresponding" : "andere"), e.value])
         }
         this.chartOptions.series = [{
           type: 'pie',
