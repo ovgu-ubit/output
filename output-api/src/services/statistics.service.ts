@@ -415,19 +415,20 @@ export class StatisticsService {
         //TODO: ab hier anpassen
         if (filterOptions?.instituteId !== undefined) {
             autPub = true;
+            innerJoin = true;
             if (filterOptions.instituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.instituteId = filterOptions.instituteId.filter(e => e != null);
-                query = query.andWhere('aut_pub.\"instituteId\" IS NULL')
+                query = query.andWhere('true = ANY (select unnest(tmp.institute_id) IS NULL)')
             }
-            if (filterOptions.instituteId.length > 0) query = query.andWhere('aut_pub.\"instituteId\" IN (:...instituteId)', { instituteId: filterOptions.instituteId })
+            if (filterOptions.instituteId.length > 0) query = query.andWhere('tmp.institute_id @> ARRAY[:...instituteId]::integer[]', { instituteId: filterOptions.instituteId })
         }
         if (filterOptions?.notInstituteId !== undefined) {
             autPub = true;
             if (filterOptions.notInstituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.notInstituteId = filterOptions.notInstituteId.filter(e => e != null);
-                query = query.andWhere('aut_pub.\"instituteId\" IS NOT NULL')
+                query = query.andWhere('false = ANY (select unnest(tmp.institute_id) IS NULL)')
             }
-            if (filterOptions.notInstituteId.length > 0) query = query.andWhere('(aut_pub.\"instituteId\" NOT IN (:...notInstituteId) OR aut_pub.\"instituteId\" IS NULL)', { notInstituteId: filterOptions.notInstituteId })
+            if (filterOptions.notInstituteId.length > 0) query = query.andWhere('NOT (tmp.institute_id && ARRAY[:...instituteId]::integer[])', { notInstituteId: filterOptions.notInstituteId })
         }
         if (filterOptions?.publisherId !== undefined) {
             if (filterOptions.publisherId.findIndex(e => e === null) !== -1) {
