@@ -30,7 +30,7 @@ export class StatisticsService {
       {
         year, 
         statistic: STATISTIC.COUNT,
-        group: [GROUP.CORRESPONDING],
+        group: [GROUP.CORRESPONDING_ANY],
         timeframe: TIMEFRAME.CURRENT_YEAR,
         filterOptions
       })

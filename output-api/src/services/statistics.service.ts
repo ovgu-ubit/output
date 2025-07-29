@@ -16,7 +16,7 @@ export class StatisticsService {
     autPubSubQuery: (qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any> = sq => {
         return sq
             .select("p.id", "p_id")
-            .addSelect("bool_or(aut_pub.corresponding)", "corresponding")
+            .addSelect("array_agg(aut_pub.corresponding)", "corresponding")
             .addSelect("string_agg(institute.label, '|')", "institute")
             .addSelect("array_agg(institute.id)", "institute_id")
             .from("publication", "p")
@@ -91,21 +91,20 @@ export class StatisticsService {
         }
 
         if (by_entity.includes(GROUP.INSTITUTE_CORRESPONDING)) {
-            //TODO corr
             autPubAlready = true;
             query = query
-                .addSelect("split_part(tmp.institute,'|',1)", 'institute')//first entry
-                .addGroupBy("split_part(tmp.institute,'|',1)")
-                .addOrderBy("split_part(tmp.institute,'|',1)")
-                //TODO: Inst_ID
+                .addSelect("tmp.institute_id[array_position(tmp.corresponding, true)]", 'institute_corr')//first entry
+                .addGroupBy("institute_corr")
+                .addOrderBy("institute_corr")
+                //TODO: Inst_Name
         }
 
         if (by_entity.includes(GROUP.CORRESPONDING_ANY)) {
             autPubAlready = true;
             query = query
-                .addSelect("tmp.corresponding", 'corresponding')
-                .addGroupBy('corresponding')
-                .addOrderBy('corresponding')
+                .addSelect("array_position(tmp.corresponding, true) is not null", 'corresponding_any')
+                .addGroupBy('corresponding_any')
+                .addOrderBy('corresponding_any')
         }
 
         query = this.addStat(query, statistic === STATISTIC.NET_COSTS)
