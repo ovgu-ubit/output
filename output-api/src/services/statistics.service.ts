@@ -445,12 +445,17 @@ export class StatisticsService {
             }
             if (filterOptions.notInstituteId.length > 0) query = query.andWhere('NOT (tmp.institute_id && ARRAY[:...notInstituteId]::integer[])', { notInstituteId: filterOptions.notInstituteId })
         }
+        let where = "";
         if (filterOptions?.publisherId !== undefined) {
             if (filterOptions.publisherId.findIndex(e => e === null) !== -1) {
                 filterOptions.publisherId = filterOptions.publisherId.filter(e => e != null);
-                query = query.andWhere('publication.\"publisherId\" IS NULL')
+                where='(publication.\"publisherId\" IS NULL';
             }
-            if (filterOptions.publisherId.length > 0) query = query.andWhere('publication.\"publisherId\" IN (:...publisherId)', { publisherId: filterOptions.publisherId })
+            if (filterOptions.publisherId.length > 0) {
+                if (where) where+=" OR publication.\"publisherId\" IN (:...publisherId))"
+                else where = "publication.\"publisherId\" IN (:...publisherId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { publisherId: filterOptions.publisherId })
         }
         if (filterOptions?.notPublisherId !== undefined) {
             if (filterOptions.notPublisherId.findIndex(e => e === null) !== -1) {
@@ -459,12 +464,17 @@ export class StatisticsService {
             }
             if (filterOptions.notPublisherId.length > 0) query = query.andWhere('(publication.\"publisherId\" NOT IN (:...notPublisherId) OR publication.\"publisherId\" IS NULL)', { notPublisherId: filterOptions.notPublisherId })
         }
+        where = "";
         if (filterOptions?.contractId !== undefined) {
             if (filterOptions.contractId.findIndex(e => e === null) !== -1) {
                 filterOptions.contractId = filterOptions.contractId.filter(e => e != null);
-                query = query.andWhere('publication.\"contractId\" IS NULL')
+                where = '(publication.\"contractId\" IS NULL'
             }
-            if (filterOptions.contractId.length > 0) query = query.andWhere('publication.\"contractId\" IN (:...contractId)', { contractId: filterOptions.contractId })
+            if (filterOptions.contractId.length > 0) {
+                if (where) where+=" OR publication.\"contractId\" IN (:...contractId))"
+                else where="publication.\"contractId\" IN (:...contractId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { contractId: filterOptions.contractId })
         }
         if (filterOptions?.notContractId !== undefined) {
             if (filterOptions.notContractId.findIndex(e => e === null) !== -1) {
@@ -473,12 +483,17 @@ export class StatisticsService {
             }
             if (filterOptions.notContractId.length > 0) query = query.andWhere('(publication.\"contractId\" NOT IN (:...notContractId) OR publication.\"contractId\" IS NULL)', { notContractId: filterOptions.notContractId })
         }
+        where = "";
         if (filterOptions?.pubTypeId !== undefined) {
             if (filterOptions.pubTypeId.findIndex(e => e === null) !== -1) {
                 filterOptions.pubTypeId = filterOptions.pubTypeId.filter(e => e != null);
-                query = query.andWhere('publication.\"pubTypeId\" IS NULL')
+                where = '(publication.\"pubTypeId\" IS NULL'
             }
-            if (filterOptions.pubTypeId.length > 0) query = query.andWhere('publication.\"pubTypeId\"  IN (:...pubTypeId)', { pubTypeId: filterOptions.pubTypeId })
+            if (filterOptions.pubTypeId.length > 0) {
+                if (where) where+=" OR publication.\"pubTypeId\" IN (:...pubTypeId))"
+                else where="publication.\"pubTypeId\" IN (:...pubTypeId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { pubTypeId: filterOptions.pubTypeId })
         }
         if (filterOptions?.notPubTypeId !== undefined) {
             if (filterOptions.notPubTypeId.findIndex(e => e === null) !== -1) {
@@ -487,12 +502,17 @@ export class StatisticsService {
             }
             if (filterOptions.notPubTypeId.length > 0) query = query.andWhere('(publication.\"pubTypeId\" NOT IN (:...notPubTypeId) OR publication.\"pubTypeId\" IS NULL)', { notPubTypeId: filterOptions.notPubTypeId })
         }
+        where = "";
         if (filterOptions?.oaCatId !== undefined) {
             if (filterOptions.oaCatId.findIndex(e => e === null) !== -1) {
                 filterOptions.oaCatId = filterOptions.oaCatId.filter(e => e != null);
-                query = query.andWhere('publication.\"oaCategoryId\" IS NULL')
+                where = '(publication.\"oaCategoryId\" IS NULL'
             }
-            if (filterOptions.oaCatId.length > 0) query = query.andWhere('publication.\"oaCategoryId\" IN (:...oaCatId)', { oaCatId: filterOptions.oaCatId })
+            if (filterOptions.oaCatId.length > 0) {
+                if (where) where+=" OR publication.\"oaCategoryId\" IN (:...oaCatId))"
+                else where="publication.\"oaCategoryId\" IN (:...oaCatId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { oaCatId: filterOptions.oaCatId })
         }
         if (filterOptions?.notOaCatId !== undefined) {
             if (filterOptions.notOaCatId.findIndex(e => e === null) !== -1) {
