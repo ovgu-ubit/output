@@ -17,7 +17,7 @@ export class StatisticsService {
         return sq
             .select("p.id", "p_id")
             .addSelect("array_agg(aut_pub.corresponding)", "corresponding")
-            .addSelect("string_agg(institute.label, '|')", "institute")
+            .addSelect("array_agg(institute.label)", "institute")
             .addSelect("array_agg(institute.id)", "institute_id")
             .from("publication", "p")
             .innerJoin('p.authorPublications', 'aut_pub')
@@ -84,19 +84,23 @@ export class StatisticsService {
         if (by_entity.includes(GROUP.INSTITUTE_FIRST)) {
             autPubAlready = true;
             query = query
-                .addSelect("split_part(tmp.institute,'|',1)", 'institute')//first entry
-                .addGroupBy("split_part(tmp.institute,'|',1)")
-                .addOrderBy("split_part(tmp.institute,'|',1)")
-                //TODO: Inst_ID
+                .addSelect("CASE WHEN array_length(array_remove(tmp.institute, NULL),1) is null THEN NULL ELSE (array_remove(tmp.institute, NULL))[1] END", 'institute_first')
+                .addSelect("CASE WHEN array_length(array_remove(tmp.institute_id, NULL),1) is null THEN NULL ELSE (array_remove(tmp.institute_id, NULL))[1] END", 'institute_first_id')
+                .addGroupBy("institute_first")
+                .addGroupBy("institute_first_id")
+                .addOrderBy("institute_first")
+                .addOrderBy("institute_first_id")
         }
 
         if (by_entity.includes(GROUP.INSTITUTE_CORRESPONDING)) {
             autPubAlready = true;
             query = query
-                .addSelect("tmp.institute_id[array_position(tmp.corresponding, true)]", 'institute_corr')//first entry
+                .addSelect("tmp.institute[array_position(tmp.corresponding, true)]", 'institute_corr')
+                .addSelect("tmp.institute_id[array_position(tmp.corresponding, true)]", 'institute_corr_id')
                 .addGroupBy("institute_corr")
+                .addGroupBy("institute_corr_id")
                 .addOrderBy("institute_corr")
-                //TODO: Inst_Name
+                .addOrderBy("institute_corr_id")
         }
 
         if (by_entity.includes(GROUP.CORRESPONDING_ANY)) {
