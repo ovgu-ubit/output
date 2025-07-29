@@ -24,11 +24,12 @@ export interface HighlightOptions {
 }
 
 export enum GROUP {
-    INSTITUTE,
+    INSTITUTE_FIRST,
+    INSTITUTE_CORRESPONDING,
     PUBLISHER,
     CONTRACT,
     PUB_TYPE,
-    CORRESPONDING,
+    CORRESPONDING_ANY,
     OA_CATEGORY
 }
 

@@ -81,7 +81,7 @@ export class StatisticsService {
                 .addOrderBy('oa_category.id')
         }
 
-        if (by_entity.includes(GROUP.INSTITUTE)) {
+        if (by_entity.includes(GROUP.INSTITUTE_FIRST)) {
             autPubAlready = true;
             query = query
                 .addSelect("split_part(tmp.institute,'|',1)", 'institute')//first entry
@@ -89,7 +89,18 @@ export class StatisticsService {
                 .addOrderBy("split_part(tmp.institute,'|',1)")
                 //TODO: Inst_ID
         }
-        if (by_entity.includes(GROUP.CORRESPONDING)) {
+
+        if (by_entity.includes(GROUP.INSTITUTE_CORRESPONDING)) {
+            //TODO corr
+            autPubAlready = true;
+            query = query
+                .addSelect("split_part(tmp.institute,'|',1)", 'institute')//first entry
+                .addGroupBy("split_part(tmp.institute,'|',1)")
+                .addOrderBy("split_part(tmp.institute,'|',1)")
+                //TODO: Inst_ID
+        }
+
+        if (by_entity.includes(GROUP.CORRESPONDING_ANY)) {
             autPubAlready = true;
             query = query
                 .addSelect("tmp.corresponding", 'corresponding')
@@ -419,7 +430,7 @@ export class StatisticsService {
             innerJoin = true;
             if (filterOptions.instituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.instituteId = filterOptions.instituteId.filter(e => e != null);
-                query = query.andWhere('true = ANY (select unnest(tmp.institute_id) IS NULL)')
+                query = query.andWhere('true = ANY (tmp.institute_id IS NULL)')
             }
             if (filterOptions.instituteId.length > 0) query = query.andWhere('tmp.institute_id @> ARRAY[:...instituteId]::integer[]', { instituteId: filterOptions.instituteId })
         }
@@ -427,7 +438,7 @@ export class StatisticsService {
             autPub = true;
             if (filterOptions.notInstituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.notInstituteId = filterOptions.notInstituteId.filter(e => e != null);
-                query = query.andWhere('false = ANY (select unnest(tmp.institute_id) IS NULL)')
+                query = query.andWhere('false = ANY (tmp.institute_id IS NULL)')
             }
             if (filterOptions.notInstituteId.length > 0) query = query.andWhere('NOT (tmp.institute_id && ARRAY[:...instituteId]::integer[])', { notInstituteId: filterOptions.notInstituteId })
         }
