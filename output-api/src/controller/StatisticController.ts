@@ -9,34 +9,6 @@ export class StatisticController {
 
     constructor(private statService: StatisticsService) { }
 
-    @Post('count_by_year')
-    @ApiBody({
-        description: '<p>JSON Request:</p>',
-        schema: {
-            example: {
-                filterOptions: {
-
-                },
-                highlightOptions: {
-
-                }
-            }
-        }
-    })
-    count(@Body('filterOptions') filterOptions: FilterOptions, @Body('highlightOptions') highlightOptions: HighlightOptions) {
-        return this.statService.countPubsByYear(filterOptions, highlightOptions);
-    }
-
-    @Post('corresponding')
-    corresponding(@Query('year') year: number, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.corresponding(year, filterOptions);
-    }
-
-    @Post('locked')
-    locked(@Query('year') year: number, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.locked(year, filterOptions);
-    }
-
     @Post('institute')
     institute(@Query('year') year: number, @Query('costs') costs: boolean, @Body('filterOptions') filterOptions: FilterOptions) {
         return this.statService.institute(year, costs, filterOptions);

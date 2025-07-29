@@ -126,7 +126,7 @@ export class StatisticsYearComponent implements OnInit {
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.corresponding === null? "Unbekannt": (e.corresponding? "Corresponding" : "andere"), e.value])
+          chartData.push([e.corresponding === null? "Unbekannt": (e.corresponding? "Corresponding" : "Keine Person der Einrichtung"), e.value])
         }
         this.chartOptions.series = [{
           type: 'pie',
@@ -143,8 +143,7 @@ export class StatisticsYearComponent implements OnInit {
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push(['gesperrt', parseFloat(e.locked)])
-          chartData.push(['nicht gesperrt', parseFloat(e.value) - parseFloat(e.locked)])
+          chartData.push([e.locked? "Gesperrt": "Nicht gesperrt", e.value])
         }
         this.chartOptionsLocked.series = [{
           type: 'pie',
@@ -159,10 +158,9 @@ export class StatisticsYearComponent implements OnInit {
       })));
     ob$ = merge(ob$, this.statService.institute(this.year, costs, this.filter).pipe(map(
       data => {
-        this.institutes = data.map(e => { return { id: e['id'], label: e['institute'] } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.institute, parseFloat(e.value)])
+          chartData.push([e.institute? e.institute: 'Kein Institut der Einrichtung', e.value])
         }
         this.chartOptionsInstitute.series = [{
           type: 'pie',
@@ -180,10 +178,9 @@ export class StatisticsYearComponent implements OnInit {
       })));
     ob$ = merge(ob$, this.statService.oaCat(this.year, costs, this.filter).pipe(map(
       data => {
-        this.oa_cats = data.map(e => { return { id: e['id'], label: e['oa_cat'] } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.oa_cat, parseFloat(e.value)])
+          chartData.push([e.oa_cat? e.oa_cat : 'Unbekannt', e.value])
         }
         this.chartOptionsOACat.series = [{
           type: 'pie',

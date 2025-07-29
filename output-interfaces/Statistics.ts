@@ -30,7 +30,8 @@ export enum GROUP {
     CONTRACT,
     PUB_TYPE,
     CORRESPONDING_ANY,
-    OA_CATEGORY
+    OA_CATEGORY,
+    LOCK
 }
 
 export enum STATISTIC {

@@ -81,6 +81,13 @@ export class StatisticsService {
                 .addOrderBy('oa_category.id')
         }
 
+        if (by_entity.includes(GROUP.LOCK)) {
+            query = query
+                .addSelect("publication.locked","locked")
+                .addGroupBy('locked')
+                .addOrderBy('locked')
+        }
+
         if (by_entity.includes(GROUP.INSTITUTE_FIRST)) {
             autPubAlready = true;
             query = query
@@ -115,49 +122,6 @@ export class StatisticsService {
         query = this.addFilter(query, autPubAlready, filterOptions, highlightOptions)
 
         console.log(query.getSql())
-
-        return query.getRawMany();
-    }
-
-    async countPubsByYear(filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .select("CASE WHEN publication.pub_date IS NOT NULL THEN extract('Year' from publication.pub_date at time zone 'UTC') " +
-                "WHEN publication.pub_date_print IS NOT NULL THEN extract('Year' from publication.pub_date_print at time zone 'UTC') " +
-                "WHEN publication.pub_date_accepted IS NOT NULL THEN extract('Year' from publication.pub_date_accepted at time zone 'UTC') " +
-                "WHEN publication.pub_date_submitted IS NOT NULL THEN extract('Year' from publication.pub_date_submitted at time zone 'UTC') " +
-                "ELSE NULL END"
-                , 'pub_year')
-            .addSelect("count(distinct publication.id)")
-            .groupBy('pub_year')
-            .orderBy('pub_year')
-            .where('publication.id > 0')
-
-        query = this.addFilter(query, null, filterOptions, highlightOptions)
-
-        return query.getRawMany();
-    }
-
-    async locked(reporting_year, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .select('count(distinct publication.id)', 'value')
-            .addSelect('COUNT(distinct (CASE WHEN publication.locked THEN publication.id ELSE NULL END))', 'locked')
-
-        query = this.addFilter(query, null, filterOptions)
-        query = this.addReportingYears(query, [reporting_year]);
-
-        return query.getRawMany();
-    }
-
-    async corresponding(reporting_year, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.authorPublications', 'aut_pub')
-            .select('count(distinct publication.id)', 'value')
-            .addSelect('COUNT(distinct (CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END))', 'corresponding')
-
-        query = this.addFilter(query, null, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
 
         return query.getRawMany();
     }
@@ -568,7 +532,7 @@ export class StatisticsService {
     }
 
     async oaReport(reporting_year, filterOptions?: FilterOptions) {
-        let journalPubType = await this.pubTypeService.findOrSave("article")
+        /*let journalPubType = await this.pubTypeService.findOrSave("article")
         let oaGold = await firstValueFrom(this.oaService.findOrSave("gold"))
         let oaHybrid = await firstValueFrom(this.oaService.findOrSave("hybrid"))
 
@@ -636,7 +600,7 @@ export class StatisticsService {
             oa_category_development,
             institute_development,
             publisher_top5_development
-        }
+        }*/
     }
 }
 
