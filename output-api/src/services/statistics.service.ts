@@ -416,34 +416,34 @@ export class StatisticsService {
         if (filterOptions?.corresponding) {
             innerJoin = true;
             autPub = true;
-            query = query.andWhere('tmp.corresponding = :corr', { corr: true })
+            query = query.andWhere('array_position(corresponding, true) is not null')
         } else if (filterOptions?.corresponding === false) {
             innerJoin = true;
             autPub = true;
-            query = query.andWhere('(tmp.corresponding = :corr OR tmp.corresponding is NULL)', { corr: false })
+            query = query.andWhere('array_position(corresponding, true) is null')
         }
         if (filterOptions?.locked) {
             query = query.andWhere('publication.locked = :lock', { lock: true })
         } else if (filterOptions?.locked === false) {
             query = query.andWhere('publication.locked = :lock', { lock: false })
         }
-        //TODO: ab hier anpassen
         if (filterOptions?.instituteId !== undefined) {
             autPub = true;
             innerJoin = true;
             if (filterOptions.instituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.instituteId = filterOptions.instituteId.filter(e => e != null);
-                query = query.andWhere('true = ANY (tmp.institute_id IS NULL)')
+                query = query.andWhere('array_length(institute_id, 1) > array_length(array_remove(institute_id, NULL), 1)')
             }
             if (filterOptions.instituteId.length > 0) query = query.andWhere('tmp.institute_id @> ARRAY[:...instituteId]::integer[]', { instituteId: filterOptions.instituteId })
         }
         if (filterOptions?.notInstituteId !== undefined) {
             autPub = true;
+            innerJoin = true;
             if (filterOptions.notInstituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.notInstituteId = filterOptions.notInstituteId.filter(e => e != null);
-                query = query.andWhere('false = ANY (tmp.institute_id IS NULL)')
+                query = query.andWhere('array_length(institute_id, 1) = array_length(array_remove(institute_id, NULL), 1)')
             }
-            if (filterOptions.notInstituteId.length > 0) query = query.andWhere('NOT (tmp.institute_id && ARRAY[:...instituteId]::integer[])', { notInstituteId: filterOptions.notInstituteId })
+            if (filterOptions.notInstituteId.length > 0) query = query.andWhere('NOT (tmp.institute_id && ARRAY[:...notInstituteId]::integer[])', { notInstituteId: filterOptions.notInstituteId })
         }
         if (filterOptions?.publisherId !== undefined) {
             if (filterOptions.publisherId.findIndex(e => e === null) !== -1) {
