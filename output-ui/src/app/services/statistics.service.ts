@@ -3,45 +3,153 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { firstValueFrom, interval, concatMap, Observable, map } from 'rxjs';
 import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config'
-import { FilterOptions, HighlightOptions } from '../../../../output-interfaces/Statistics';
+import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from '../../../../output-interfaces/Statistics';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StatisticsService {
 
-  constructor(private http:HttpClient) { }
+  constructor(private http: HttpClient) { }
 
-  countPubByYear(filterOptions?:FilterOptions, highlightOptions?: HighlightOptions) {
-    return this.http.post<{pub_year:number, count:number, highlight?:number}[]>(environment.api + 'statistics/count_by_year',{filterOptions,highlightOptions}).pipe(map(e => e.map(e1 => {
-      return {pub_year:Number(e1.pub_year),count:Number(e1.count),highlight:Number(e1.highlight)}})))
+  countPubByYear(filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
+    return this.http.post<{ pub_year: number, value: number, highlight?: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year: 1,
+        statistic: STATISTIC.COUNT,
+        group: [],
+        timeframe: TIMEFRAME.ALL_YEARS,
+        filterOptions,
+        highlightOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { pub_year: Number(e1.pub_year), count: Number(e1.value), highlight: Number(e1.highlight) }
+      })))
   }
 
-  corresponding(year:number,filterOptions?:FilterOptions) {
-    return this.http.post<{value, corresponding}[]>(environment.api + 'statistics/corresponding?year='+year,{filterOptions})
+  countPubByYearAndOACat(filterOptions?: FilterOptions) {
+    return this.http.post<{ pub_year: number, value: number, oa_category: string, oa_category_id: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year: 1,
+        statistic: STATISTIC.COUNT,
+        group: [6],
+        timeframe: TIMEFRAME.ALL_YEARS,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { pub_year: e1.pub_year, count: e1.value, oa_category: e1.oa_category }
+      })))
   }
 
-  locked(year:number,filterOptions?:FilterOptions) {
-    return this.http.post<{value, locked}[]>(environment.api + 'statistics/locked?year='+year,{filterOptions})
+  countPubByYearAndPubType(filterOptions?: FilterOptions) {
+    return this.http.post<{ pub_year: number, value: number, pub_type: string, pub_type_id: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year: 1,
+        statistic: STATISTIC.COUNT,
+        group: [4],
+        timeframe: TIMEFRAME.ALL_YEARS,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { pub_year: e1.pub_year, count: e1.value, pub_type: e1.pub_type }
+      })))
   }
 
-  institute(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, institute, value}[]>(environment.api + 'statistics/institute?year='+year+'&costs='+costs,{filterOptions})
+  corresponding(year: number, costs?: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ corresponding_any: boolean, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.CORRESPONDING_ANY],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { corresponding: e1.corresponding_any, value: e1.value }
+      })))
   }
 
-  oaCat(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, oa_cat, value}[]>(environment.api + 'statistics/oa_cat?year='+year+'&costs='+costs,{filterOptions})
+  locked(year: number, filterOptions?: FilterOptions) {
+    return this.http.post<{ locked: boolean, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: STATISTIC.COUNT,
+        group: [GROUP.LOCK],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { locked: e1.locked, value: e1.value }
+      })))
   }
 
-  publisher(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, publisher, value}[]>(environment.api + 'statistics/publisher?year='+year+'&costs='+costs,{filterOptions})
+  institute(year: number, costs: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ institute_corr: string, institute_corr_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.INSTITUTE_CORRESPONDING],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { id: e1.institute_corr_id, institute: e1.institute_corr, value: e1.value }
+      })))
   }
 
-  pub_type(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, pub_type, value}[]>(environment.api + 'statistics/pub_type?year='+year+'&costs='+costs,{filterOptions})
+  oaCat(year: number, costs: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ oa_category: string, oa_category_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.OA_CATEGORY],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { id: e1.oa_category_id, oa_cat: e1.oa_category, value: e1.value }
+      })))
   }
 
-  contract(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, contract, value}[]>(environment.api + 'statistics/contract?year='+year+'&costs='+costs,{filterOptions})
+  publisher(year: number, costs: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ publisher: string, publisher_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.PUBLISHER],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { id: e1.publisher_id, publisher: e1.publisher, value: e1.value }
+      })))
+  }
+
+  pub_type(year: number, costs: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ pub_type: string, pub_type_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.PUB_TYPE],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { id: e1.pub_type_id, pub_type: e1.pub_type, value: e1.value }
+      })))
+  }
+
+  contract(year: number, costs: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ contract: string, contract_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.CONTRACT],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { id: e1.contract_id, contract: e1.contract, value: e1.value }
+      })))
   }
 }

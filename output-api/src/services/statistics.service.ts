@@ -1,213 +1,212 @@
-
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
-import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
+import { firstValueFrom } from 'rxjs';
+import { Repository, SelectQueryBuilder } from 'typeorm';
+import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
 import { Publication } from '../entity/Publication';
-import { InstitutionService } from './entities/institution.service';
+import { ContractService } from './entities/contract.service';
+import { OACategoryService } from './entities/oa-category.service';
+
 @Injectable()
 export class StatisticsService {
 
-    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>, private configService: ConfigService, private instService: InstitutionService) { }
+    autPubSubQuery: (qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any> = sq => {
+        return sq
+            .select("p.id", "p_id")
+            .addSelect("array_agg(aut_pub.corresponding)", "corresponding")
+            .addSelect("array_agg(institute.label)", "institute")
+            .addSelect("array_agg(institute.id)", "institute_id")
+            .from("publication", "p")
+            .leftJoin('p.authorPublications', 'aut_pub')
+            .leftJoin('aut_pub.institute', 'institute')
+            .groupBy("p.id")
+    }
 
-    async countPubsByYear(filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
-        let instIDs = [];
-        if (filterOptions?.instituteId) {
-            instIDs = [filterOptions.instituteId];
-            instIDs = instIDs.concat((await this.instService.findSubInstitutesFlat(filterOptions?.instituteId)).map(e => e.id))
+    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>, private configService: ConfigService,
+        private oaService: OACategoryService, private contractService: ContractService) { }
+
+    async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
+        let query = this.pubRepository.createQueryBuilder('publication')
+        let autPubAlready = false;
+
+        if (timeframe === TIMEFRAME.CURRENT_YEAR) {
+            query = this.addReportingYears(query, [reporting_year]);
+        } else if (timeframe === TIMEFRAME.THREE_YEAR_REPORT) {
+            query = this.addReportingYears(query, [reporting_year, reporting_year - 1, reporting_year - 2]);
+        } else if (timeframe === TIMEFRAME.ALL_YEARS) {
+            query = this.addReportingYears(query, null);
+        } else throw "no valid timeframe given"
+
+        if (by_entity.includes(GROUP.PUB_TYPE)) {
+            query = query
+                .leftJoin('publication.pub_type', 'pub_type')
+                .addSelect("case when pub_type.label is not null then pub_type.label else 'Unbekannt' end", 'pub_type')
+                .addSelect('pub_type.id', 'pub_type_id')
+                .addGroupBy('pub_type')
+                .addGroupBy('pub_type.id')
+                .addOrderBy('pub_type.id')
         }
 
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .select("CASE WHEN publication.pub_date IS NOT NULL THEN extract('Year' from publication.pub_date at time zone 'UTC') " +
-                "WHEN publication.pub_date_print IS NOT NULL THEN extract('Year' from publication.pub_date_print at time zone 'UTC') " +
-                "WHEN publication.pub_date_accepted IS NOT NULL THEN extract('Year' from publication.pub_date_accepted at time zone 'UTC') " +
-                "WHEN publication.pub_date_submitted IS NOT NULL THEN extract('Year' from publication.pub_date_submitted at time zone 'UTC') " +
-                "ELSE NULL END"
-                , 'pub_year')
-            .addSelect("count(distinct publication.id)")
-            .groupBy('pub_year')
-            .orderBy('pub_year')
-            .where('publication.id > 0')
+        if (by_entity.includes(GROUP.PUBLISHER)) {
+            query = query
+                .leftJoin('publication.publisher', 'publisher')
+                .addSelect("case when publisher.label is not null then publisher.label else 'Unbekannt' end", 'publisher')
+                .addSelect('publisher.id', 'publisher_id')
+                .addGroupBy('publisher')
+                .addGroupBy('publisher.id')
+                .addOrderBy('publisher.id')
+        }
 
+        if (by_entity.includes(GROUP.CONTRACT)) {
+            query = query
+                .leftJoin('publication.contract', 'contract')
+                .addSelect("case when contract.label is not null then contract.label else 'Unbekannt' end", 'contract')
+                .addSelect('contract.id', 'contract_id')
+                .addGroupBy('contract')
+                .addGroupBy('contract.id')
+                .addOrderBy('contract.id')
+        }
 
-        query = this.addFilter(query, false, filterOptions, highlightOptions)
+        if (by_entity.includes(GROUP.OA_CATEGORY)) {
+            query = query
+                .leftJoin('publication.oa_category', 'oa_category')
+                .addSelect("case when oa_category.label is not null then oa_category.label else 'Unbekannt' end", 'oa_category')
+                .addSelect('oa_category.id', 'oa_category_id')
+                .addGroupBy('oa_category')
+                .addGroupBy('oa_category.id')
+                .addOrderBy('oa_category.id')
+        }
 
-        return query.getRawMany();
-    }
+        if (by_entity.includes(GROUP.GREATER_ENTITY)) {
+            query = query
+                .leftJoin('publication.greater_entity', 'greater_entity')
+                .addSelect("case when greater_entity.label is not null then greater_entity.label else 'Unbekannt' end", 'greater_entity')
+                .addSelect('greater_entity.id', 'greater_entity_id')
+                .addGroupBy('greater_entity')
+                .addGroupBy('greater_entity.id')
+                .addOrderBy('greater_entity.id')
+        }
 
-    async locked(reporting_year, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .select('count(distinct publication.id)', 'value')
-            .addSelect('COUNT(distinct (CASE WHEN publication.locked THEN publication.id ELSE NULL END))', 'locked')
+        if (by_entity.includes(GROUP.LOCK)) {
+            query = query
+                .addSelect("publication.locked","locked")
+                .addGroupBy('locked')
+                .addOrderBy('locked')
+        }
 
-        query = this.addFilter(query, false, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
+        if (by_entity.includes(GROUP.INSTITUTE_FIRST)) {
+            autPubAlready = true;
+            query = query
+                .addSelect("CASE WHEN array_length(array_remove(tmp.institute, NULL),1) is null THEN NULL ELSE (array_remove(tmp.institute, NULL))[1] END", 'institute_first')
+                .addSelect("CASE WHEN array_length(array_remove(tmp.institute_id, NULL),1) is null THEN NULL ELSE (array_remove(tmp.institute_id, NULL))[1] END", 'institute_first_id')
+                .addGroupBy("institute_first")
+                .addGroupBy("institute_first_id")
+                .addOrderBy("institute_first")
+                .addOrderBy("institute_first_id")
+        }
 
-        return query.getRawMany();
-    }
+        if (by_entity.includes(GROUP.INSTITUTE_CORRESPONDING)) {
+            autPubAlready = true;
+            query = query
+                .addSelect("tmp.institute[array_position(tmp.corresponding, true)]", 'institute_corr')
+                .addSelect("tmp.institute_id[array_position(tmp.corresponding, true)]", 'institute_corr_id')
+                .addGroupBy("institute_corr")
+                .addGroupBy("institute_corr_id")
+                .addOrderBy("institute_corr")
+                .addOrderBy("institute_corr_id")
+        }
 
-    async corresponding(reporting_year, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.authorPublications', 'aut_pub')
-            .select('count(distinct publication.id)', 'value')
-            .addSelect('COUNT(distinct (CASE WHEN aut_pub.corresponding THEN publication.id ELSE NULL END))', 'corresponding')
+        if (by_entity.includes(GROUP.CORRESPONDING_ANY)) {
+            autPubAlready = true;
+            query = query
+                .addSelect("array_position(tmp.corresponding, true) is not null", 'corresponding_any')
+                .addGroupBy('corresponding_any')
+                .addOrderBy('corresponding_any')
+        }
 
-        query = this.addFilter(query, true, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
+        query = this.addStat(query, statistic === STATISTIC.NET_COSTS)
+        query = this.addFilter(query, autPubAlready, filterOptions, highlightOptions)
 
-        return query.getRawMany();
-    }
-
-    async institute(reporting_year, costs: boolean, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.authorPublications', 'aut_pub')
-            .leftJoin('aut_pub.institute', 'institute')
-            .select("case when institute.label is not null then institute.label else 'Unbekannt' end", 'institute')
-            .addSelect('institute.id', 'id')
-            .groupBy('institute')
-            .addGroupBy('institute.id')
-
-        query = this.addStat(query, costs, costs)
-        query = this.addFilter(query, true, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
-
-        return query.getRawMany();
-    }
-
-    async oaCategory(reporting_year, costs: boolean, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin("publication.oa_category", 'oa_cat')
-            .select("case when oa_cat.label is not null then oa_cat.label else 'Unbekannt' end", 'oa_cat')
-            .addSelect('oa_cat.id', 'id')
-            .groupBy('oa_cat')
-            .addGroupBy('oa_cat.id')
-
-        query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
-
-        return query.getRawMany();
-    }
-
-    async publisher(reporting_year, costs: boolean, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.publisher', 'publisher')
-            .select("case when publisher.label is not null then publisher.label else 'Unbekannt' end", 'publisher')
-            .addSelect('publisher.id', 'id')
-            .groupBy('publisher')
-            .addGroupBy('publisher.id')
-
-        query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
+        //console.log(query.getSql())
 
         return query.getRawMany();
     }
 
-    async pub_type(reporting_year, costs: boolean, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.pub_type', 'pub_type')
-            .select("case when pub_type.label is not null then pub_type.label else 'Unbekannt' end", 'pub_type')
-            .addSelect('pub_type.id', 'id')
-            .groupBy('pub_type')
-            .addGroupBy('pub_type.id')
-
-        query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
-
-        return query.getRawMany();
-    }
-
-    async contract(reporting_year, costs: boolean, filterOptions?: FilterOptions) {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let query = this.pubRepository.createQueryBuilder('publication')
-            .leftJoin('publication.contract', 'contract')
-            .select("case when contract.label is not null then contract.label else 'Unbekannt' end", 'contract')
-            .addSelect('contract.id', 'id')
-            .groupBy('contract')
-            .addGroupBy('contract.id')
-
-        query = this.addStat(query, costs)
-        query = this.addFilter(query, false, filterOptions)
-        query = this.addReportingYear(query, reporting_year);
-
-        return query.getRawMany();
-    }
-
-    addReportingYear(query: SelectQueryBuilder<Publication>, reporting_year: number) {
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        query = query
-        .andWhere(new Brackets(qb => {
-            qb.where(new Brackets(qb => {
-                qb.where('publication.pub_date >= :beginDate', { beginDate })
-                .andWhere('publication.pub_date <= :endDate', { endDate })
-            }))
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null')
-                .andWhere('publication.pub_date_print >= :beginDate and publication.pub_date_print <= :endDate', { beginDate, endDate })
-            }))
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null and publication.pub_date_print is null')
-                .andWhere('publication.pub_date_accepted >= :beginDate and publication.pub_date_accepted <= :endDate', { beginDate, endDate })
-            }))
-            .orWhere(new Brackets(qb => {
-                qb.where('publication.pub_date is null and publication.pub_date_print is null and publication.pub_date_accepted is null')
-                .andWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
-            }))
-        }))
+    addReportingYears(query: SelectQueryBuilder<Publication>, reporting_years: number[]) {
+        let field = "(CASE WHEN pub_date is not null THEN extract('Year' from pub_date at time zone 'UTC') ELSE " +
+            "(CASE WHEN pub_date_print is not null THEN extract('Year' from pub_date_print at time zone 'UTC') ELSE " +
+            "(CASE WHEN pub_date_accepted is not null THEN extract('Year' from pub_date_accepted at time zone 'UTC') ELSE " +
+            "(CASE WHEN pub_date_submitted is not null THEN extract('Year' from pub_date_submitted at time zone 'UTC') ELSE null END) END) END) END)"
+        query = query.select(field + "::int", "pub_year")
+        query = query.groupBy("pub_year")
+        if (reporting_years && reporting_years.length > 0) {
+            let clauses = "(";
+            for (let reporting_year of reporting_years) {
+                clauses += field + " =" + reporting_year + " or ";
+            }
+            query = query.where(clauses.substring(0, clauses.length - 4) + ")")
+        }
+        query = query.orderBy("pub_year")
         return query;
     }
 
     addStat(query: SelectQueryBuilder<Publication>, costs: boolean, corresponding?: boolean) {
-        if (!costs) query = query.addSelect('count(distinct publication.id) as value')
+        if (!costs) query = query.addSelect('count(distinct publication.id)::int as value')
         else query = query.leftJoin("publication.invoices", "invoice")
             .leftJoin("invoice.cost_items", "cost_item")
             .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
         if (corresponding) query = query.andWhere('aut_pub.corresponding')
-        return query.orderBy('value', 'DESC');
+        return query//.orderBy('value', 'DESC');
     }
 
     addFilter(query: SelectQueryBuilder<Publication>, autPubAlready: boolean, filterOptions: FilterOptions, highlightOptions?: HighlightOptions) {
-        let autPub = false;
+        let autPub = autPubAlready;
+        let innerJoin = false;
+
         if (filterOptions?.corresponding) {
+            innerJoin = true;
             autPub = true;
-            query = query.andWhere('aut_pub.corresponding = :corr', { corr: true })
+            query = query.andWhere('array_position(corresponding, true) is not null')
         } else if (filterOptions?.corresponding === false) {
+            innerJoin = true;
             autPub = true;
-            query = query.andWhere('aut_pub.corresponding = :corr', { corr: false })
+            query = query.andWhere('array_position(corresponding, true) is null')
         }
         if (filterOptions?.locked) {
-            autPub = true;
             query = query.andWhere('publication.locked = :lock', { lock: true })
         } else if (filterOptions?.locked === false) {
-            autPub = true;
             query = query.andWhere('publication.locked = :lock', { lock: false })
         }
         if (filterOptions?.instituteId !== undefined) {
             autPub = true;
-            if (filterOptions.instituteId) query = query.andWhere('aut_pub.\"instituteId\" = :instituteId', { instituteId: filterOptions.instituteId })
-            else query = query.andWhere('aut_pub.\"instituteId\" IS NULL')
+            innerJoin = true;
+            if (filterOptions.instituteId.findIndex(e => e === null) !== -1) {
+                filterOptions.instituteId = filterOptions.instituteId.filter(e => e != null);
+                query = query.andWhere('(array_length(array_remove(institute_id, NULL), 1) is null or array_length(institute_id, 1) > array_length(array_remove(institute_id, NULL), 1))')
+            }
+            if (filterOptions.instituteId.length > 0) query = query.andWhere('tmp.institute_id::integer[] @> ARRAY[:...instituteId]::integer[]', { instituteId: filterOptions.instituteId })
         }
         if (filterOptions?.notInstituteId !== undefined) {
             autPub = true;
+            //innerJoin = true;
             if (filterOptions.notInstituteId.findIndex(e => e === null) !== -1) {
                 filterOptions.notInstituteId = filterOptions.notInstituteId.filter(e => e != null);
-                query = query.andWhere('aut_pub.\"instituteId\" IS NOT NULL')
+                query = query.andWhere('array_length(institute_id, 1) = array_length(array_remove(institute_id, NULL), 1)')
             }
-            if (filterOptions.notInstituteId.length > 0) query = query.andWhere('(aut_pub.\"instituteId\" NOT IN (:...notInstituteId) OR aut_pub.\"instituteId\" IS NULL)', { notInstituteId: filterOptions.notInstituteId })
+            if (filterOptions.notInstituteId.length > 0) query = query.andWhere('NOT (tmp.institute_id::integer[] && ARRAY[:...notInstituteId]::integer[])', { notInstituteId: filterOptions.notInstituteId })
         }
+        let where = "";
         if (filterOptions?.publisherId !== undefined) {
-            if (filterOptions?.publisherId) query = query.andWhere('publication.\"publisherId\" = :publisherId', { publisherId: filterOptions.publisherId })
-            else query = query.andWhere('publication.\"publisherId\" IS NULL')
+            if (filterOptions.publisherId.findIndex(e => e === null) !== -1) {
+                filterOptions.publisherId = filterOptions.publisherId.filter(e => e != null);
+                where='(publication.\"publisherId\" IS NULL';
+            }
+            if (filterOptions.publisherId.length > 0) {
+                if (where) where+=" OR publication.\"publisherId\" IN (:...publisherId))"
+                else where = "publication.\"publisherId\" IN (:...publisherId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { publisherId: filterOptions.publisherId })
         }
         if (filterOptions?.notPublisherId !== undefined) {
             if (filterOptions.notPublisherId.findIndex(e => e === null) !== -1) {
@@ -216,9 +215,17 @@ export class StatisticsService {
             }
             if (filterOptions.notPublisherId.length > 0) query = query.andWhere('(publication.\"publisherId\" NOT IN (:...notPublisherId) OR publication.\"publisherId\" IS NULL)', { notPublisherId: filterOptions.notPublisherId })
         }
+        where = "";
         if (filterOptions?.contractId !== undefined) {
-            if (filterOptions?.contractId) query = query.andWhere('publication.\"contractId\" = :contractId', { contractId: filterOptions.contractId })
-            else query = query.andWhere('publication.\"contractId\" IS NULL')
+            if (filterOptions.contractId.findIndex(e => e === null) !== -1) {
+                filterOptions.contractId = filterOptions.contractId.filter(e => e != null);
+                where = '(publication.\"contractId\" IS NULL'
+            }
+            if (filterOptions.contractId.length > 0) {
+                if (where) where+=" OR publication.\"contractId\" IN (:...contractId))"
+                else where="publication.\"contractId\" IN (:...contractId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { contractId: filterOptions.contractId })
         }
         if (filterOptions?.notContractId !== undefined) {
             if (filterOptions.notContractId.findIndex(e => e === null) !== -1) {
@@ -227,9 +234,17 @@ export class StatisticsService {
             }
             if (filterOptions.notContractId.length > 0) query = query.andWhere('(publication.\"contractId\" NOT IN (:...notContractId) OR publication.\"contractId\" IS NULL)', { notContractId: filterOptions.notContractId })
         }
+        where = "";
         if (filterOptions?.pubTypeId !== undefined) {
-            if (filterOptions?.pubTypeId) query = query.andWhere('publication.\"pubTypeId\" = :pubTypeId', { pubTypeId: filterOptions.pubTypeId })
-            else query = query.andWhere('publication.\"pubTypeId\" IS NULL')
+            if (filterOptions.pubTypeId.findIndex(e => e === null) !== -1) {
+                filterOptions.pubTypeId = filterOptions.pubTypeId.filter(e => e != null);
+                where = '(publication.\"pubTypeId\" IS NULL'
+            }
+            if (filterOptions.pubTypeId.length > 0) {
+                if (where) where+=" OR publication.\"pubTypeId\" IN (:...pubTypeId))"
+                else where="publication.\"pubTypeId\" IN (:...pubTypeId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { pubTypeId: filterOptions.pubTypeId })
         }
         if (filterOptions?.notPubTypeId !== undefined) {
             if (filterOptions.notPubTypeId.findIndex(e => e === null) !== -1) {
@@ -238,9 +253,17 @@ export class StatisticsService {
             }
             if (filterOptions.notPubTypeId.length > 0) query = query.andWhere('(publication.\"pubTypeId\" NOT IN (:...notPubTypeId) OR publication.\"pubTypeId\" IS NULL)', { notPubTypeId: filterOptions.notPubTypeId })
         }
+        where = "";
         if (filterOptions?.oaCatId !== undefined) {
-            if (filterOptions?.oaCatId) query = query.andWhere('publication.\"oaCategoryId\" = :oaCatId', { oaCatId: filterOptions.oaCatId })
-            else query = query.andWhere('publication.\"oaCategoryId\" IS NULL')
+            if (filterOptions.oaCatId.findIndex(e => e === null) !== -1) {
+                filterOptions.oaCatId = filterOptions.oaCatId.filter(e => e != null);
+                where = '(publication.\"oaCategoryId\" IS NULL'
+            }
+            if (filterOptions.oaCatId.length > 0) {
+                if (where) where+=" OR publication.\"oaCategoryId\" IN (:...oaCatId))"
+                else where="publication.\"oaCategoryId\" IN (:...oaCatId)"
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { oaCatId: filterOptions.oaCatId })
         }
         if (filterOptions?.notOaCatId !== undefined) {
             if (filterOptions.notOaCatId.findIndex(e => e === null) !== -1) {
@@ -283,9 +306,12 @@ export class StatisticsService {
 
         if (highlight) query = query.addSelect('count(distinct CASE WHEN ' + highlight.slice(0, highlight.length - 5) + ' THEN publication.id ELSE NULL END)', 'highlight')
 
-        if (autPub && !autPubAlready) query = query.leftJoin('publication.authorPublications', 'aut_pub')
-
-        //console.log(query.getSql())
+        if (autPub) {
+            if (!innerJoin) query = query
+                .leftJoin(this.autPubSubQuery, 'tmp', 'tmp.p_id = publication.id')
+            else query = query
+                .innerJoin(this.autPubSubQuery, 'tmp', 'tmp.p_id = publication.id')
+        }
 
         return query;
     }
