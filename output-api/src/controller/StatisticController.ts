@@ -9,31 +9,6 @@ export class StatisticController {
 
     constructor(private statService: StatisticsService) { }
 
-    @Post('institute')
-    institute(@Query('year') year: number, @Query('costs') costs: boolean, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.institute(year, costs, filterOptions);
-    }
-
-    @Post('oa_cat')
-    oaCat(@Query('year') year: number, @Query('costs') costs: boolean, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.oaCategory(year, costs, filterOptions);
-    }
-
-    @Post('publisher')
-    publisher(@Query('year') year: number, @Query('costs') costs: boolean, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.publisher(year, costs, filterOptions);
-    }
-
-    @Post('pub_type')
-    pub_tpye(@Query('year') year: number, @Query('costs') costs: boolean, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.pub_type(year, costs, filterOptions);
-    }
-
-    @Post('contract')
-    contract(@Query('year') year: number, @Query('costs') costs: boolean, @Body('filterOptions') filterOptions: FilterOptions) {
-        return this.statService.contract(year, costs, filterOptions);
-    }
-
     @Post('publication_statistic')
     @ApiBody({
         description: '<p>JSON Request:</p>',
@@ -50,7 +25,7 @@ export class StatisticController {
             }
         }
     })
-    oaReport(@Body('year') year: number, @Body('statistic') statistic: STATISTIC, @Body('group') group: GROUP[], @Body('timeframe') timeframe: TIMEFRAME, @Body('filterOptions') filterOptions: FilterOptions, @Body('highlightOptions') highlightOptions: HighlightOptions) {
+    publication_stat(@Body('year') year: number, @Body('statistic') statistic: STATISTIC, @Body('group') group: GROUP[], @Body('timeframe') timeframe: TIMEFRAME, @Body('filterOptions') filterOptions: FilterOptions, @Body('highlightOptions') highlightOptions: HighlightOptions) {
         if (!year) throw new BadRequestException('year has to be given');
         if (!group || (highlightOptions && Object.keys(highlightOptions).length > 0)) group = []
         return this.statService.publication_statistic(year, statistic, group, timeframe, filterOptions, highlightOptions)

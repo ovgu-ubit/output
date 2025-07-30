@@ -52,16 +52,16 @@ export class StatisticsService {
   }
 
   institute(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{institute_first: string, institute_id: number, value:number}[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{institute_corr: string, institute_corr_id: number, value:number}[]>(environment.api + 'statistics/publication_statistic',
       {
         year, 
         statistic: costs? STATISTIC.NET_COSTS : STATISTIC.COUNT,
-        group: [GROUP.INSTITUTE_FIRST],
+        group: [GROUP.INSTITUTE_CORRESPONDING],
         timeframe: TIMEFRAME.CURRENT_YEAR,
         filterOptions
       })
       .pipe(map(e => e.map(e1 => {
-        return {id: e1.institute_id, institute:e1.institute_first, value: e1.value}})))  
+        return {id: e1.institute_corr_id, institute:e1.institute_corr, value: e1.value}})))  
   }
 
   oaCat(year:number, costs:boolean,filterOptions?:FilterOptions) {
@@ -78,14 +78,41 @@ export class StatisticsService {
   }
 
   publisher(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, publisher, value}[]>(environment.api + 'statistics/publisher?year='+year+'&costs='+costs,{filterOptions})
+    return this.http.post<{publisher: string, publisher_id: number, value:number}[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year, 
+        statistic: costs? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.PUBLISHER],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return {id: e1.publisher_id, publisher:e1.publisher, value: e1.value}})))  
   }
 
   pub_type(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, pub_type, value}[]>(environment.api + 'statistics/pub_type?year='+year+'&costs='+costs,{filterOptions})
+    return this.http.post<{pub_type: string, pub_type_id: number, value:number}[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year, 
+        statistic: costs? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.PUB_TYPE],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return {id: e1.pub_type_id, pub_type:e1.pub_type, value: e1.value}})))  
   }
 
   contract(year:number, costs:boolean,filterOptions?:FilterOptions) {
-    return this.http.post<{id, contract, value}[]>(environment.api + 'statistics/contract?year='+year+'&costs='+costs,{filterOptions})
+    return this.http.post<{contract: string, contract_id: number, value:number}[]>(environment.api + 'statistics/publication_statistic',
+      {
+        year, 
+        statistic: costs? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.CONTRACT],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return {id: e1.contract_id, contract:e1.contract, value: e1.value}})))  
   }
 }
