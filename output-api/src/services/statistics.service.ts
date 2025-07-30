@@ -78,6 +78,16 @@ export class StatisticsService {
                 .addOrderBy('oa_category.id')
         }
 
+        if (by_entity.includes(GROUP.GREATER_ENTITY)) {
+            query = query
+                .leftJoin('publication.greater_entity', 'greater_entity')
+                .addSelect("case when greater_entity.label is not null then greater_entity.label else 'Unbekannt' end", 'greater_entity')
+                .addSelect('greater_entity.id', 'greater_entity_id')
+                .addGroupBy('greater_entity')
+                .addGroupBy('greater_entity.id')
+                .addOrderBy('greater_entity.id')
+        }
+
         if (by_entity.includes(GROUP.LOCK)) {
             query = query
                 .addSelect("publication.locked","locked")

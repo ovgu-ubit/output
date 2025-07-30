@@ -31,7 +31,8 @@ export enum GROUP {
     PUB_TYPE,
     CORRESPONDING_ANY,
     OA_CATEGORY,
-    LOCK
+    LOCK,
+    GREATER_ENTITY
 }
 
 export enum STATISTIC {

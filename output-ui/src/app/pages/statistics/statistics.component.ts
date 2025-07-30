@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../output-interfaces/Publication';
-import { Observable, map, merge, startWith } from 'rxjs';
+import { Observable, catchError, concat, map, merge, of, startWith } from 'rxjs';
 import { FilterOptions, HighlightOptions } from "../../../../../output-interfaces/Statistics"
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
@@ -49,8 +49,59 @@ export class StatisticsComponent implements OnInit {
       }
     }
   }; // required
+  chartOptions1: Highcharts.Options = {
+    chart: {
+      type: 'column',
+      plotBorderWidth: null,
+      plotShadow: false,
+      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
+    },
+    title: {
+      text: 'Anteil Publikationen nach Jahr und OA-Kategorie'
+    },
+    xAxis: {
+      title: { text: 'Erscheinungsjahr' }
+    }, yAxis: {
+      title: { text: 'Anzahl' },
+      min: 0,
+      stackLabels: {
+        enabled: true
+      }
+    }, plotOptions: {
+      column: {
+        stacking: 'percent'
+      }
+    }
+  }; // required
+  chartOptions2: Highcharts.Options = {
+    chart: {
+      type: 'column',
+      plotBorderWidth: null,
+      plotShadow: false,
+      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
+    },
+    title: {
+      text: 'Anteil Publikationen nach Jahr und Publikationsart'
+    },
+    xAxis: {
+      title: { text: 'Erscheinungsjahr' }
+    }, yAxis: {
+      title: { text: 'Anzahl' },
+      min: 0,
+      stackLabels: {
+        enabled: true
+      }
+    }, plotOptions: {
+      column: {
+        stacking: 'percent'
+      }
+    }
+  }; // required
+
   chartCallback: Highcharts.ChartCallbackFunction = function (chart) { return null } // function after chart is created
   updateFlag: boolean = false; // set to true if you wish to update the chart
+  updateFlag1: boolean = false; // set to true if you wish to update the chart
+  updateFlag2: boolean = false; // set to true if you wish to update the chart
   oneToOneFlag: boolean = true; // changing number of series
   runOutsideAngular: boolean = false; // optional boolean, defaults to false
 
@@ -98,7 +149,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.instService.getAll().pipe(map(
       data => {
         this.institutes = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.institutes.push({label: 'Unbekannt'})
+        this.institutes.push({ label: 'Unbekannt' })
         this.filtered_institutes = this.form.get('institute').valueChanges.pipe(
           startWith(''),
           map(value => this._filterInst(value || '')),
@@ -112,7 +163,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.publisherService.getAll().pipe(map(
       data => {
         this.publishers = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.publishers.push({label: 'Unbekannt'})
+        this.publishers.push({ label: 'Unbekannt' })
         this.filtered_publishers = this.form.get('publisher').valueChanges.pipe(
           startWith(''),
           map(value => this._filterPublisher(value || '')),
@@ -125,7 +176,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.contractService.getAll().pipe(map(
       data => {
         this.contracts = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.contracts.push({label: 'Unbekannt', publisher: null})
+        this.contracts.push({ label: 'Unbekannt', publisher: null })
         this.filtered_contracts = this.form.get('contract').valueChanges.pipe(
           startWith(''),
           map(value => this._filterContract(value || '')),
@@ -138,12 +189,12 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.oaService.getAll().pipe(map(
       data => {
         this.oa_cats = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.oa_cats.push({label: 'Unbekannt', is_oa: null})
+        this.oa_cats.push({ label: 'Unbekannt', is_oa: null })
       })));
     ob$ = merge(ob$, this.pubTypeService.getAll().pipe(map(
       data => {
         this.pub_types = data.sort((a, b) => a.label.localeCompare(b.label));
-        this.pub_types.push({label: 'Unbekannt', review: null})
+        this.pub_types.push({ label: 'Unbekannt', review: null })
       })));
     ob$.subscribe({
       error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
@@ -154,7 +205,9 @@ export class StatisticsComponent implements OnInit {
   }
 
   updateChart() {
-    return this.statService.countPubByYear(this.filter, this.highlight).pipe(map(
+    this.chartOptions1.series = []
+    this.chartOptions2.series = []
+    let ob$ = this.statService.countPubByYear(this.filter, this.highlight).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
         this.chartOptions.series = [{
@@ -187,6 +240,53 @@ export class StatisticsComponent implements OnInit {
         }
         this.updateFlag = true;
       }))
+    ob$ = merge(ob$, this.statService.countPubByYearAndOACat(this.filter).pipe(map(
+      data => {
+        data = data.filter(e => e.pub_year)
+        let oa_cats = [...new Set(data.map(e => e.oa_category))]
+        for (let oaCat of oa_cats) {
+          let series = {
+            name: oaCat,
+            type: 'column' as 'xrange',
+            events: {
+              click: this.chooseYear.bind(this)
+            },
+            data: data.filter(e => e.oa_category === oaCat).map(e => {
+              return {
+                x: e.pub_year,
+                y: e.count
+              }
+            }
+            )
+          }
+          this.chartOptions1.series.push(series)
+        }
+        this.updateFlag1 = true;
+      })))
+    ob$ = merge(ob$, this.statService.countPubByYearAndPubType(this.filter).pipe(map(
+      data => {
+        data = data.filter(e => e.pub_year)
+        let oa_cats = [...new Set(data.map(e => e.pub_type))]
+        for (let oaCat of oa_cats) {
+          let series = {
+            name: oaCat,
+            type: 'column' as 'xrange',
+            events: {
+              click: this.chooseYear.bind(this)
+            },
+            data: data.filter(e => e.pub_type === oaCat).map(e => {
+              return {
+                x: e.pub_year,
+                y: e.count
+              }
+            }
+            )
+          }
+          this.chartOptions2.series.push(series)
+        }
+        this.updateFlag2 = true;
+      })))
+    return ob$.pipe(catchError((e,c) => {return of(console.log(e.message))})); 
   }
 
   chooseYear(event) {
@@ -230,7 +330,7 @@ export class StatisticsComponent implements OnInit {
   selectedInst(event: MatAutocompleteSelectedEvent): void {
     let id = this.institutes.find(e => e.label === event.option.value).id
     if (!id) id = null;
-    this.filter = { ...this.filter, instituteId: [id]}
+    this.filter = { ...this.filter, instituteId: [id] }
   }
   selectedPublisher(event: MatAutocompleteSelectedEvent): void {
     let id = this.publishers.find(e => e.label === event.option.value).id
@@ -243,9 +343,9 @@ export class StatisticsComponent implements OnInit {
     this.filter = { ...this.filter, contractId: [id] }
   }
   changeOA(event) {
-    let id =  this.oa_cats.find(e => e.label === event.value).id 
+    let id = this.oa_cats.find(e => e.label === event.value).id
     if (!id) id = null;
-    this.filter = { ...this.filter, oaCatId: [id]}
+    this.filter = { ...this.filter, oaCatId: [id] }
   }
   changePubType(event) {
     let id = this.pub_types.find(e => e.label === event.value).id
@@ -260,9 +360,9 @@ export class StatisticsComponent implements OnInit {
     this.highlight = { ...this.highlight, instituteId: id }
   }
   selectedPublisher1(event: MatAutocompleteSelectedEvent): void {
-    let id = this.publishers.find(e => e.label === event.option.value).id 
+    let id = this.publishers.find(e => e.label === event.option.value).id
     if (!id) id = null;
-    this.highlight = { ...this.highlight, publisherId: id}
+    this.highlight = { ...this.highlight, publisherId: id }
   }
   selectedContract1(event: MatAutocompleteSelectedEvent): void {
     let id = this.contracts.find(e => e.label === event.option.value).id
