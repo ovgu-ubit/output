@@ -170,11 +170,12 @@ export class PublicationService {
     //retrieves publication index for a reporting year
     public index(yop: number): Promise<PublicationIndex[]> {
         let indexQuery = this.indexQuery();
+        let query;
         if (yop) {
             let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
             let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
 
-            return indexQuery
+            query = indexQuery
                 .where('publication.pub_date >= :beginDate', { beginDate })
                 .andWhere('publication.pub_date <= :endDate', { endDate })
                 .orWhere(new Brackets(qb => {
@@ -185,15 +186,16 @@ export class PublicationService {
                                 .orWhere('publication.pub_date_submitted >= :beginDate and publication.pub_date_submitted <= :endDate', { beginDate, endDate })
                         }))
                 }))
-                .getRawMany() as Promise<PublicationIndex[]>;
         } else {
-            return indexQuery
+            query = indexQuery
                 .where('publication.pub_date IS NULL')
                 .andWhere('publication.pub_date_print IS NULL')
                 .andWhere('publication.pub_date_accepted IS NULL')
                 .andWhere('publication.pub_date_submitted IS NULL')
-                .getRawMany() as Promise<PublicationIndex[]>;
+                
         }
+        //console.log(query.getSql());
+        return query.getRawMany() as Promise<PublicationIndex[]>;;
     }
 
     //retrieves publication index for soft deleted publications

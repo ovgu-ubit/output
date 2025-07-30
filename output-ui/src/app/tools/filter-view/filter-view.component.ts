@@ -44,6 +44,8 @@ export class FilterViewComponent implements OnInit {
     { key: 'author_id', label: 'ID einer Person der Institution' },
     { key: 'author_id_corr', label: 'ID einer Person der Institution (corr.)' },
     { key: 'institute', label: 'Institute' },
+    { key: 'institute_id', label: 'ID eines Instituts' },
+    { key: 'institute_id_corr', label: 'ID eines Instituts (corr.)' },
     { key: 'pub_date', label: 'Publikationsdatum', type: 'date' },
     { key: 'pub_date_accepted', label: 'Datum der Akzeptanz', type: 'date' },
     { key: 'greater_entity', label: 'Größere Einheit' },
@@ -213,7 +215,7 @@ export class FilterViewComponent implements OnInit {
   display(idx: number, op: { op: CompareOperation, label: string, type?: string[] }): boolean {
     if (!this.getFiltersControls()[idx].get('field').value) return true;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    let type = key.type? key.type : 'string';
+    let type = key && key.type? key.type : 'string';
     if (op.type.find(e => e === type)) return true;
     else return false;
   }
@@ -221,6 +223,6 @@ export class FilterViewComponent implements OnInit {
   date(idx: number) {
     if (!this.getFiltersControls()[idx].get('field').value) return false;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    return (key.type == 'date' || key.type?.includes('date'))
+    return key && (key.type == 'date' || key.type?.includes('date'))
   }
 }

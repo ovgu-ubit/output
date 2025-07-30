@@ -1,15 +1,15 @@
 export interface FilterOptions {
     corresponding?: boolean,
     locked?: boolean,
-    instituteId?: number,
+    instituteId?: number[],
     notInstituteId?: number[],
-    publisherId?: number,
+    publisherId?: number[],
     notPublisherId?: number[],
-    contractId?: number,
+    contractId?: number[],
     notContractId?: number[],
-    pubTypeId?: number,
+    pubTypeId?: number[],
     notPubTypeId?: number[],
-    oaCatId?: number,
+    oaCatId?: number[],
     notOaCatId?: number[]
 }
 
@@ -21,4 +21,27 @@ export interface HighlightOptions {
     contractId?: number,
     pubTypeId?: number,
     oaCatId?: number
+}
+
+export enum GROUP {
+    INSTITUTE_FIRST,
+    INSTITUTE_CORRESPONDING,
+    PUBLISHER,
+    CONTRACT,
+    PUB_TYPE,
+    CORRESPONDING_ANY,
+    OA_CATEGORY,
+    LOCK,
+    GREATER_ENTITY
+}
+
+export enum STATISTIC {
+    COUNT,
+    NET_COSTS
+}
+
+export enum TIMEFRAME {
+    CURRENT_YEAR,
+    THREE_YEAR_REPORT,
+    ALL_YEARS
 }

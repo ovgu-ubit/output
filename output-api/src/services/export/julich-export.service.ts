@@ -62,8 +62,8 @@ export class JulichExportService extends AbstractExportService {
                     steuersatz: pub.invoices[0].cost_items[0].vat / pub.invoices[0].cost_items[0].euro_value,
                     euro_brutto: pub.invoices[0].cost_items[0].euro_value + pub.invoices[0].cost_items[0].vat,
                     gebuehrenart: pub.invoices[0].cost_items[0].cost_type?.label,
-                    zuordnung_zu_mitgliedschaft: pub.invoices[0].cost_items[0].cost_type?.label,
-                    rechnungsjahr_lizenzjahr: pub.invoices[0].booking_date?.getFullYear(),
+                    zuordnung_zu_mitgliedschaft: '',
+                    rechnungsjahr_lizenzjahr: pub.invoices[0].date?.getFullYear(),
                 }
                 rows.push(row);
             } else if (pub.contract) {
@@ -72,21 +72,23 @@ export class JulichExportService extends AbstractExportService {
                     bemerkung: '',
                     originalwaehrung: '',
                     rechnungsbetrag_in_originalwaehrung: '',
-                    euro_netto:0,
+                    euro_netto: 0,
                     steuersatz: 0,
                     euro_brutto: 0,
-                    gebuehrenart: '',
+                    gebuehrenart: pub.oa_category.label.toLocaleLowerCase().includes("gold") ? "gold-oa" : (pub.oa_category.label.toLocaleLowerCase().includes("hybrid") ? "hybrid-oa" : ""),
                     zuordnung_zu_mitgliedschaft: '',
-                    rechnungsjahr_lizenzjahr: '',
+                    rechnungsjahr_lizenzjahr: pub.contract_year,
                 }
                 rows.push(row)
             }
         }
 
         let workbook = XLSX.utils.book_new();
-        let worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true, header: ['doi','foerderfaehig','bemerkung','name_des_verlags','publikationsform','cc_lizenz',
-            'orignalwaehrung','rechnungsbetrag_in_originalwaehrung','euro_netto','steuersatz','euro_brutto','kostensplitting','zuschussbetrag_dfg','gebuehrenart',
-        'zuordnung_zu_mitgliedschaft','zuordnung_zu_transformationsvertrag','rechnungsjahr_lizenzjahr','publikationsjahr','projektnummer_projektID','dfg_wissenschaftsbereich'] })
+        let worksheet = XLSX.utils.json_to_sheet(rows, {
+            cellStyles: true, header: ['doi', 'foerderfaehig', 'bemerkung', 'name_des_verlags', 'publikationsform', 'cc_lizenz',
+                'originalwaehrung', 'rechnungsbetrag_in_originalwaehrung', 'euro_netto', 'steuersatz', 'euro_brutto', 'kostensplitting', 'zuschussbetrag_dfg', 'gebuehrenart',
+                'zuordnung_zu_mitgliedschaft', 'zuordnung_zu_transformationsvertrag', 'rechnungsjahr_lizenzjahr', 'publikationsjahr', 'projektnummer_projektID', 'dfg_wissenschaftsbereich']
+        })
         //header names
         XLSX.utils.sheet_add_aoa(worksheet, [["DOI", "förderfähig", "Bemerkung", "Name des Verlags", "Publikationsform", "CC-Lizenz", "Originalwährung",
             "Rechnungsbetrag in Originalwährung", "Euro netto", "Steuersatz", "Euro brutto", "Kostensplittung", "Zuschussbetrag DFG", "Gebührenart",
@@ -96,9 +98,9 @@ export class JulichExportService extends AbstractExportService {
         if (!worksheet["!cols"]) worksheet["!cols"] = [];
         for (let i = 2; i <= rows.length + 1; i++) {
             worksheet["H" + i].z = '#,##0.00'; //rechnungsbetrag orig
-            worksheet["I" + i].z = '#,##0.00 "€"'; //euro netto
+            worksheet["I" + i].z = '#,##0.00'; //euro netto
             worksheet["J" + i].z = '0.00%'; //vat
-            worksheet["K" + i].z = '#,##0.00 "€"'; //euro brutto
+            worksheet["K" + i].z = '#,##0.00'; //euro brutto
         }
 
         XLSX.utils.book_append_sheet(workbook, worksheet, "Publikationen");

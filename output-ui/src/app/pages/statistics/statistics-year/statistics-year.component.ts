@@ -65,7 +65,7 @@ export class StatisticsYearComponent implements OnInit {
   chartOptionsInstitute = {
     ...this.chartOptions,
     title: {
-      text: 'Anteil Institute'
+      text: 'Anteil Institute (corresponding)'
     }
   }
   chartOptionsOACat = {
@@ -122,12 +122,11 @@ export class StatisticsYearComponent implements OnInit {
 
   loadData(costs: boolean) {
     this.costs = costs;
-    let ob$: Observable<any> = this.statService.corresponding(this.year, this.filter).pipe(map(
+    let ob$: Observable<any> = this.statService.corresponding(this.year, costs, this.filter).pipe(map(
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push(['corresponding', parseFloat(e.corresponding)])
-          chartData.push(['sonstige', parseFloat(e.value) - parseFloat(e.corresponding)])
+          chartData.push([e.corresponding === null? "Unbekannt": (e.corresponding? "Corresponding" : "Keine Person der Einrichtung"), e.value])
         }
         this.chartOptions.series = [{
           type: 'pie',
@@ -144,8 +143,7 @@ export class StatisticsYearComponent implements OnInit {
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push(['gesperrt', parseFloat(e.locked)])
-          chartData.push(['nicht gesperrt', parseFloat(e.value) - parseFloat(e.locked)])
+          chartData.push([e.locked? "Gesperrt": "Nicht gesperrt", e.value])
         }
         this.chartOptionsLocked.series = [{
           type: 'pie',
@@ -160,11 +158,16 @@ export class StatisticsYearComponent implements OnInit {
       })));
     ob$ = merge(ob$, this.statService.institute(this.year, costs, this.filter).pipe(map(
       data => {
-        this.institutes = data.map(e => { return { id: e['id'], label: e['institute'] } });
+        this.institutes = data.map(e => {return {id:e.id, label:e.institute}});
         let chartData = []
         for (let e of data) {
-          chartData.push([e.institute, parseFloat(e.value)])
+          chartData.push([e.institute? e.institute: 'Unbekannt', e.value])
         }
+        chartData = chartData.sort((a,b) => {
+          if (a[0] === "Unbekannt") return 1;
+          else if (b[0] === "Unbekannt") return -1;
+          else return b[1] - a[1]
+        })
         this.chartOptionsInstitute.series = [{
           type: 'pie',
           name: 'Institut',
@@ -184,8 +187,13 @@ export class StatisticsYearComponent implements OnInit {
         this.oa_cats = data.map(e => { return { id: e['id'], label: e['oa_cat'] } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.oa_cat, parseFloat(e.value)])
+          chartData.push([e.oa_cat, e.value])
         }
+        chartData = chartData.sort((a,b) => {
+          if (a[0] === "Unbekannt") return 1;
+          else if (b[0] === "Unbekannt") return -1;
+          else return b[1] - a[1]
+        })
         this.chartOptionsOACat.series = [{
           type: 'pie',
           name: 'OA-Kategorie',
@@ -205,8 +213,13 @@ export class StatisticsYearComponent implements OnInit {
         this.publisher = data.map(e => { return { id: e['id'], label: e['publisher'] } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.publisher, parseFloat(e.value)])
+          chartData.push([e.publisher, e.value])
         }
+        chartData = chartData.sort((a,b) => {
+          if (a[0] === "Unbekannt") return 1;
+          else if (b[0] === "Unbekannt") return -1;
+          else return b[1] - a[1]
+        })
         this.chartOptionsPublisher.series = [{
           type: 'pie',
           name: 'Verlag',
@@ -226,8 +239,13 @@ export class StatisticsYearComponent implements OnInit {
         this.pub_types = data.map(e => { return { id: e['id'], label: e['pub_type'] } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.pub_type, parseFloat(e.value)])
+          chartData.push([e.pub_type, e.value])
         }
+        chartData = chartData.sort((a,b) => {
+          if (a[0] === "Unbekannt") return 1;
+          else if (b[0] === "Unbekannt") return -1;
+          else return b[1] - a[1]
+        })
         this.chartOptionsPubType.series = [{
           type: 'pie',
           name: 'Publikationsart',
@@ -247,8 +265,13 @@ export class StatisticsYearComponent implements OnInit {
         this.constracts = data.map(e => { return { id: e['id'], label: e['contract'] } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.contract, parseFloat(e.value)])
+          chartData.push([e.contract, e.value])
         }
+        chartData = chartData.sort((a,b) => {
+          if (a[0] === "Unbekannt") return 1;
+          else if (b[0] === "Unbekannt") return -1;
+          else return b[1] - a[1]
+        })
         this.chartOptionsContract.series = [{
           type: 'pie',
           name: 'Vertrag',
@@ -287,37 +310,37 @@ export class StatisticsYearComponent implements OnInit {
     if (series_name === 'Art' && cat_name === 'sonstige') return;
     let key = undefined;
     if (series_name === 'Art') {
-      if (cat_name === 'corresponding') this.filter = { ...this.filter, corresponding: true }
+      if (cat_name === 'Corresponding') this.filter = { ...this.filter, corresponding: true }
       key = 'corresponding'
     }
     if (series_name === 'Gesperrt') {
-      if (cat_name === 'gesperrt') this.filter = { ...this.filter, locked: true }
+      if (cat_name === 'Gesperrt') this.filter = { ...this.filter, locked: true }
       else this.filter = { ...this.filter, locked: false }
       key = 'locked'
     }
     if (series_name === 'Institut') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, instituteId: null }
-      else this.filter = { ...this.filter, instituteId: this.institutes.find(e => e.label === cat_name)?.id }
+      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, instituteId: [null] }
+      else this.filter = { ...this.filter, instituteId: [this.institutes.find(e => e.label === cat_name)?.id] }
       key = 'instituteId'
     }
     if (series_name === 'OA-Kategorie') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, oaCatId: null }
-      else this.filter = { ...this.filter, oaCatId: this.oa_cats.find(e => e.label === cat_name)?.id }
+      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, oaCatId: [null] }
+      else this.filter = { ...this.filter, oaCatId: [this.oa_cats.find(e => e.label === cat_name)?.id] }
       key = 'oaCatId'
     }
     if (series_name === 'Vertrag') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, contractId: null }
-      else this.filter = { ...this.filter, contractId: this.constracts.find(e => e.label === cat_name)?.id }
+      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, contractId: [null] }
+      else this.filter = { ...this.filter, contractId: [this.constracts.find(e => e.label === cat_name)?.id] }
       key = 'contractId'
     }
     if (series_name === 'Publikationsart') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, pubTypeId: null }
-      else this.filter = { ...this.filter, pubTypeId: this.pub_types.find(e => e.label === cat_name)?.id }
+      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, pubTypeId: [null] }
+      else this.filter = { ...this.filter, pubTypeId: [this.pub_types.find(e => e.label === cat_name)?.id] }
       key = 'pubTypeId'
     }
     if (series_name === 'Verlag') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, publisherId: null }
-      else this.filter = { ...this.filter, publisherId: this.publisher.find(e => e.label === cat_name)?.id }
+      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, publisherId: [null] }
+      else this.filter = { ...this.filter, publisherId: [this.publisher.find(e => e.label === cat_name)?.id] }
       key = 'publisherId'
     }
     this.filterChips.push({ text: series_name + ': ' + cat_name, key })

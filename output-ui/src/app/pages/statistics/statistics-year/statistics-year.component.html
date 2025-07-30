@@ -1,5 +1,9 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
 <div style="display:flex;flex-flow: column nowrap;gap: 10px">
+  <div>
+    <h1 *ngIf="!this.costs">Anzahl Publikationen</h1>
+    <h1 *ngIf="this.costs">Kosten für Publikationsrechnungen</h1>
+  </div>
 <div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
   <div>
     <button mat-raised-button class="primary-button" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten
