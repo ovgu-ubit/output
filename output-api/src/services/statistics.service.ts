@@ -306,8 +306,6 @@ export class StatisticsService {
 
         if (highlight) query = query.addSelect('count(distinct CASE WHEN ' + highlight.slice(0, highlight.length - 5) + ' THEN publication.id ELSE NULL END)', 'highlight')
 
-        //if (autPub && !autPubAlready) query = query.leftJoin('publication.authorPublications', 'aut_pub')
-
         if (autPub) {
             if (!innerJoin) query = query
                 .leftJoin(this.autPubSubQuery, 'tmp', 'tmp.p_id = publication.id')
@@ -316,78 +314,6 @@ export class StatisticsService {
         }
 
         return query;
-    }
-
-    async oaReport(reporting_year, filterOptions?: FilterOptions) {
-        /*let journalPubType = await this.pubTypeService.findOrSave("article")
-        let oaGold = await firstValueFrom(this.oaService.findOrSave("gold"))
-        let oaHybrid = await firstValueFrom(this.oaService.findOrSave("hybrid"))
-
-        let obj = (await this.corresponding(reporting_year, { locked: true, ...filterOptions }))[0];
-        let count_pub = obj?.value;
-        let count_pub_corr = obj?.corresponding;
-
-        obj = (await this.goldOACost(reporting_year, { locked: true, ...filterOptions }));
-        let gold_oa_net_cost = obj[0]?.value
-
-        let pub_type_corr = (await this.pub_type(reporting_year, false, { locked: true, corresponding: true, ...filterOptions }))
-        let pub_type_all = (await this.pub_type(reporting_year, false, { locked: true, ...filterOptions }))
-
-
-        let oa_dev = await this.oa_development(reporting_year, { locked: true, corresponding: true, pubTypeId: [journalPubType.id], ...filterOptions })
-        let oa_category_development = [];
-        let idx = 0;
-        while (idx < oa_dev.length) {
-            obj = { oa_category: oa_dev[idx].oa_category }
-            do {
-                let line = oa_dev[idx];
-                obj[line.year] = line.value
-            } while (++idx < oa_dev.length && obj.oa_category == oa_dev[idx].oa_category)
-            oa_category_development.push(obj)
-        }
-
-        let inst_dev = await this.inst_development(reporting_year, { locked: true, corresponding: true, pubTypeId: [journalPubType.id], ...filterOptions })
-        let institute_development = [];
-        idx = 0;
-        while (idx < inst_dev.length) {
-            obj = { institute: inst_dev[idx].institute }
-            do {
-                let line = inst_dev[idx];
-                obj[line.year] = line.value
-            } while (++idx < inst_dev.length && obj.institute == inst_dev[idx].institute)
-            institute_development.push(obj)
-        }
-
-        let publ_dev = await this.publ_development(reporting_year, { locked: true, corresponding: true, pubTypeId: [journalPubType.id], oaCatId: [oaGold.id, oaHybrid.id], ...filterOptions })
-        let publisher_top5_development = [];
-        idx = 0;
-        while (idx < publ_dev.length) {
-            obj = { publisher: publ_dev[idx].publisher }
-            do {
-                let line = publ_dev[idx];
-                obj[line.year] = line.value
-            } while (++idx < publ_dev.length && obj.publisher == publ_dev[idx].publisher)
-            publisher_top5_development.push(obj)
-        }
-
-        return {
-            count_pub,
-            count_pub_corr,
-            gold_oa_net_cost,
-            contract_costs: await this.contractCosts(reporting_year, { locked: true, ...filterOptions }),
-            publication_types: pub_type_all.map((e, i) => {
-                let corr = Number(pub_type_corr.find(v => v.id === e.id)?.value)
-                if (Number.isNaN(corr)) corr = 0;
-                return {
-                    label: e.pub_type,
-                    corresponding: corr,
-                    all: Number(e.value)
-                };
-            }),
-            oa_category_development,
-            institute_development,
-            publisher_top5_development
-        }*/
     }
 }
 
