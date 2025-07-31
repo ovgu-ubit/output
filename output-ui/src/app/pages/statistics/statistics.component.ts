@@ -25,19 +25,22 @@ export class StatisticsComponent implements OnInit {
 
   Highcharts: typeof Highcharts = Highcharts; // required
   chartConstructor: string = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
-  chartOptions: Highcharts.Options = {
+  chartOptionsDefault: Highcharts.Options = {
     chart: {
       type: 'column',
       plotBorderWidth: null,
       plotShadow: false,
       backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
-    },
+    },xAxis: {
+      title: { text: 'Erscheinungsjahr' }
+    }
+  }
+  chartOptions: Highcharts.Options = {
+    ...this.chartOptionsDefault,
     title: {
       text: 'Anzahl Publikationen nach Jahr'
     },
-    xAxis: {
-      title: { text: 'Erscheinungsjahr' }
-    }, yAxis: {
+    yAxis: {
       title: { text: 'Anzahl' },
       min: 0,
       stackLabels: {
@@ -50,50 +53,36 @@ export class StatisticsComponent implements OnInit {
     }
   }; // required
   chartOptions1: Highcharts.Options = {
-    chart: {
-      type: 'column',
-      plotBorderWidth: null,
-      plotShadow: false,
-      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
-    },
+    ...this.chartOptionsDefault,
     title: {
       text: 'Anteil Publikationen nach Jahr und OA-Kategorie'
     },
-    xAxis: {
-      title: { text: 'Erscheinungsjahr' }
-    }, yAxis: {
+    yAxis: {
       title: { text: 'Anzahl' },
-      min: 0,
-      stackLabels: {
-        enabled: true
-      }
+      min: 0
     }, plotOptions: {
       column: {
-        stacking: 'percent'
+        stacking: 'percent',
+        dataLabels: {
+          enabled: true
+        }
       }
     }
   }; // required
   chartOptions2: Highcharts.Options = {
-    chart: {
-      type: 'column',
-      plotBorderWidth: null,
-      plotShadow: false,
-      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
-    },
+    ...this.chartOptionsDefault,
     title: {
       text: 'Anteil Publikationen nach Jahr und Publikationsart'
     },
-    xAxis: {
-      title: { text: 'Erscheinungsjahr' }
-    }, yAxis: {
+    yAxis: {
       title: { text: 'Anzahl' },
-      min: 0,
-      stackLabels: {
-        enabled: true
-      }
+      min: 0
     }, plotOptions: {
       column: {
-        stacking: 'percent'
+        stacking: 'percent',
+        dataLabels: {
+          enabled: true
+        }
       }
     }
   }; // required
@@ -286,7 +275,7 @@ export class StatisticsComponent implements OnInit {
         }
         this.updateFlag2 = true;
       })))
-    return ob$.pipe(catchError((e,c) => {return of(console.log(e.message))})); 
+    return ob$.pipe(catchError((e, c) => { return of(console.log(e.message)) }));
   }
 
   chooseYear(event) {
