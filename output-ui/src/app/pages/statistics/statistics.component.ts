@@ -31,7 +31,7 @@ export class StatisticsComponent implements OnInit {
       plotBorderWidth: null,
       plotShadow: false,
       backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
-    },xAxis: {
+    }, xAxis: {
       title: { text: 'Erscheinungsjahr' }
     }
   }
@@ -54,6 +54,10 @@ export class StatisticsComponent implements OnInit {
   }; // required
   chartOptions1: Highcharts.Options = {
     ...this.chartOptionsDefault,
+    tooltip: {
+      shared: false,
+      pointFormat: '<span style="color:{series.color}">\u25CF</span> {series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)<br/>'
+    },
     title: {
       text: 'Anteil Publikationen nach Jahr und OA-Kategorie'
     },
@@ -71,6 +75,10 @@ export class StatisticsComponent implements OnInit {
   }; // required
   chartOptions2: Highcharts.Options = {
     ...this.chartOptionsDefault,
+    tooltip: {
+      shared: false,
+      pointFormat: '<span style="color:{series.color}">\u25CF</span> {series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)<br/>'
+    },
     title: {
       text: 'Anteil Publikationen nach Jahr und Publikationsart'
     },

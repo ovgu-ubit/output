@@ -151,12 +151,11 @@ export class StatisticsService {
         return query;
     }
 
-    addStat(query: SelectQueryBuilder<Publication>, costs: boolean, corresponding?: boolean) {
+    addStat(query: SelectQueryBuilder<Publication>, costs: boolean) {
         if (!costs) query = query.addSelect('count(distinct publication.id)::int as value')
         else query = query.leftJoin("publication.invoices", "invoice")
             .leftJoin("invoice.cost_items", "cost_item")
             .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
-        if (corresponding) query = query.andWhere('aut_pub.corresponding')
         return query//.orderBy('value', 'DESC');
     }
 
@@ -276,7 +275,7 @@ export class StatisticsService {
         let highlight = '';
         if (highlightOptions?.corresponding) {
             autPub = true;
-            highlight += 'aut_pub.corresponding AND '
+            highlight += 'array_position(corresponding, true) is not null and '
         }
         if (highlightOptions?.locked) {
             autPub = true;
@@ -284,8 +283,8 @@ export class StatisticsService {
         }
         if (highlightOptions?.instituteId !== undefined) {
             autPub = true;
-            if (highlightOptions?.instituteId) highlight += 'aut_pub.\"instituteId\" = ' + highlightOptions.instituteId + ' AND '
-            else highlight += 'aut_pub.\"instituteId\" IS NULL AND '
+            if (highlightOptions?.instituteId) highlight += 'tmp.institute_id::integer[] @> ARRAY['+highlightOptions.instituteId+']::integer[] AND '
+            else highlight += '(array_length(array_remove(tmp.institute_id, NULL), 1) is null or array_length(tmp.institute_id, 1) > array_length(array_remove(tmp.institute_id, NULL), 1)) AND '
         }
         if (highlightOptions?.publisherId !== undefined) {
             if (highlightOptions?.publisherId) highlight += 'publication.\"publisherId\" = ' + highlightOptions?.publisherId + ' AND '
