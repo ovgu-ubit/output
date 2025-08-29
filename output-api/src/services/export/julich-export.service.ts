@@ -75,7 +75,7 @@ export class JulichExportService extends AbstractExportService {
                     euro_netto: 0,
                     steuersatz: 0,
                     euro_brutto: 0,
-                    gebuehrenart: pub.oa_category.label.toLocaleLowerCase().includes("gold") ? "gold-oa" : (pub.oa_category.label.toLocaleLowerCase().includes("hybrid") ? "hybrid-oa" : ""),
+                    gebuehrenart: pub.oa_category?.label.toLocaleLowerCase().includes("gold") ? "gold-oa" : (pub.oa_category?.label.toLocaleLowerCase().includes("hybrid") ? "hybrid-oa" : ""),
                     zuordnung_zu_mitgliedschaft: '',
                     rechnungsjahr_lizenzjahr: pub.contract_year,
                 }
