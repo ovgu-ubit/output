@@ -5,11 +5,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
 import { SearchFilter } from "../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
-import { Publication } from "../entity/Publication";
+import { Publication } from "./Publication";
 import { AccessGuard } from "../guards/access.guard";
 import { Permissions } from "../guards/permission.decorator";
 import { AppConfigService } from "../services/app-config.service";
-import { PublicationService } from "../services/entities/publication.service";
+import { PublicationService } from "./publication.service";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
 import { PublicationDuplicate } from "../entity/PublicationDuplicate";
 

@@ -5,7 +5,8 @@ import { JwtModule } from "@nestjs/jwt";
 import { ScheduleModule } from "@nestjs/schedule";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import appConfig from '../config';
-import { AuthorController } from "./controller/AuthorController";
+import { AuthorModule } from './author/author.module';
+import { PublicationModule } from './publication/publication.module';
 import { ConfigController } from "./controller/ConfigController";
 import { ContractController } from "./controller/ContractController";
 import { EnrichController } from "./controller/EnrichController";
@@ -18,7 +19,6 @@ import { InvoiceController } from "./controller/InvoiceController";
 import { LanguageController } from "./controller/LanguageController";
 import { OACategoryController } from "./controller/OACategoryController";
 import { PlausibilityController } from "./controller/PlausibilityController";
-import { PublicationController } from "./controller/PublicationController";
 import { PublicationTypeController } from "./controller/PublicationTypeController";
 import { PublisherController } from "./controller/PublisherController";
 import { RoleController } from "./controller/RoleController";
@@ -30,7 +30,6 @@ import { AliasFunder } from "./entity/alias/AliasFunder";
 import { AliasInstitute } from "./entity/alias/AliasInstitute";
 import { AliasPublisher } from "./entity/alias/AliasPublisher";
 import { AliasPubType } from "./entity/alias/AliasPubType";
-import { Author } from "./entity/Author";
 import { AuthorPublication } from "./entity/AuthorPublication";
 import { Config } from "./entity/Config";
 import { Contract } from "./entity/Contract";
@@ -46,7 +45,6 @@ import { Institute } from "./entity/Institute";
 import { Invoice } from "./entity/Invoice";
 import { Language } from "./entity/Language";
 import { OA_Category } from "./entity/OA_Category";
-import { Publication } from "./entity/Publication";
 import { PublicationType } from "./entity/PublicationType";
 import { Publisher } from "./entity/Publisher";
 import { PublisherDOI } from "./entity/PublisherDOI";
@@ -55,7 +53,6 @@ import { Status } from "./entity/Status";
 import { AuthorizationService } from "./guards/authorization.service";
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
-import { AuthorService } from "./services/entities/author.service";
 import { ContractService } from "./services/entities/contract.service";
 import { FunderService } from "./services/entities/funder.service";
 import { GreaterEntityService } from "./services/entities/greater-entitiy.service";
@@ -64,7 +61,6 @@ import { InvoiceService } from "./services/entities/invoice.service";
 import { LanguageService } from "./services/entities/language.service";
 import { OACategoryService } from "./services/entities/oa-category.service";
 import { PublicationTypeService } from "./services/entities/publication-type.service";
-import { PublicationService } from "./services/entities/publication.service";
 import { PublisherService } from "./services/entities/publisher.service";
 import { RoleService } from "./services/entities/role.service";
 import { StatusService } from "./services/entities/status.service";
@@ -98,16 +94,16 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([Author, AuthorPublication, Contract, ContractIdentifier, CostCenter, CostItem, CostType, Funder, GreaterEntity, GEIdentifier,
-      Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier,
-      AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status, PublicationSupplement, PublicationDuplicate]),
-    ScheduleModule.forRoot()
+    TypeOrmModule.forFeature([AuthorPublication, Contract, ContractIdentifier, CostCenter, CostItem, CostType, Funder, GreaterEntity, GEIdentifier, Institute, Invoice, OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier, AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status, PublicationSupplement, PublicationDuplicate]),
+    ScheduleModule.forRoot(),
+    AuthorModule,
+    PublicationModule
   ],
-  controllers: [AuthorController, PublicationController, StatisticController, ImportController, EnrichController, GreaterEntityController,
+  controllers: [StatisticController, ImportController, EnrichController, GreaterEntityController,
     PublisherController, ContractController, FunderController, InstituteController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
-    PublicationService, GreaterEntityService, PublisherService, PublicationTypeService, AuthorService, InstitutionService, FunderService,
+    GreaterEntityService, PublisherService, PublicationTypeService, InstitutionService, FunderService,
     OACategoryService, ContractService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,

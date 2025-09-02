@@ -1,9 +1,9 @@
 import { Request } from "express";
-import { Author } from "../entity/Author";
+import { Author } from "./Author";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Body, Controller, Delete, Get, InternalServerErrorException, Param, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { AuthorService } from "../services/entities/author.service";
+import { AuthorService } from "./author.service";
 import { Permissions } from "../guards/permission.decorator";
 import { AccessGuard } from "../guards/access.guard";
 
