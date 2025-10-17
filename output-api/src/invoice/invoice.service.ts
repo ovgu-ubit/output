@@ -3,12 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, Repository } from 'typeorm';
-import { Contract } from '../../contract/Contract';
-import { CostType } from '../../entity/CostType';
-import { Invoice } from '../../entity/Invoice';
-import { Publication } from '../../publication/Publication';
-import { CostCenter } from '../../entity/CostCenter';
-import { CostCenterIndex, CostTypeIndex } from '../../../../output-interfaces/PublicationIndex';
+import { Invoice } from './Invoice';
+import { CostType } from './CostType';
+import { CostCenter } from './CostCenter';
+import { Publication } from '../publication/Publication';
+import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
 
 @Injectable()
 export class InvoiceService {

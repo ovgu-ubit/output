@@ -4,10 +4,6 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuthorPublication } from "./publication/AuthorPublication";
 import { Config } from "./entity/Config";
 import { Contract } from "./contract/Contract";
-import { CostCenter } from "./entity/CostCenter";
-import { CostItem } from "./entity/CostItem";
-import { CostType } from "./entity/CostType";
-import { Invoice } from "./entity/Invoice";
 import { OA_Category } from "./entity/OA_Category";
 import { PublicationType } from "./entity/PublicationType";
 import { Publisher } from "./entity/Publisher";
@@ -31,6 +27,10 @@ import { Publication } from "./publication/Publication";
 import { PublicationIdentifier } from "./publication/PublicationIdentifier";
 import { Funder } from "./funder/Funder";
 import { GreaterEntity } from "./greater_entity/GreaterEntity";
+import { CostCenter } from "./invoice/CostCenter";
+import { CostItem } from "./invoice/CostItem";
+import { CostType } from "./invoice/CostType";
+import { Invoice } from "./invoice/Invoice";
 
 //export const init_service = require(config().init_service)
 //export const init_service = import (config().init_service);

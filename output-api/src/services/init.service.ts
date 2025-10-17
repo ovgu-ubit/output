@@ -4,11 +4,6 @@ import { DataSource, Repository } from "typeorm";
 import { AuthorPublication } from "../publication/AuthorPublication";
 import { Config } from "../entity/Config";
 import { Contract } from "../contract/Contract";
-import { CostCenter } from "../entity/CostCenter";
-import { CostItem } from "../entity/CostItem";
-import { CostType } from "../entity/CostType";
-import { GEIdentifier } from "../greater_entity/GEIdentifier";
-import { Invoice } from "../entity/Invoice";
 import { OA_Category } from "../entity/OA_Category";
 import { PublicationType } from "../entity/PublicationType";
 import { Publisher } from "../entity/Publisher";
@@ -24,6 +19,8 @@ import { Publication } from "../publication/Publication";
 import { Author } from "../author/Author";
 import { Funder } from "../funder/Funder";
 import { GreaterEntity } from "../greater_entity/GreaterEntity";
+import { CostType } from "../invoice/CostType";
+import { CostCenter } from "../invoice/CostCenter";
 
 @Injectable()
 export class InitService {

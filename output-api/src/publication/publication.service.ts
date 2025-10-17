@@ -6,8 +6,6 @@ import { CompareOperation, JoinOperation, SearchFilter } from '../../../output-i
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author';
 import { AuthorPublication } from './AuthorPublication';
-import { CostItem } from '../entity/CostItem';
-import { Invoice } from '../entity/Invoice';
 import { Publication } from './Publication';
 import { Role } from '../entity/Role';
 import { Institute } from '../institute/Institute';
@@ -15,6 +13,8 @@ import { INSTITUTES_FIND_SUB_FLAT, InstitutesFindSubFlatPort } from '../ports';
 import { PublicationIdentifier } from './PublicationIdentifier';
 import { PublicationSupplement } from './PublicationSupplement';
 import { PublicationDuplicate } from './PublicationDuplicate';
+import { Invoice } from '../invoice/Invoice';
+import { CostItem } from '../invoice/CostItem';
 
 @Injectable()
 export class PublicationService {

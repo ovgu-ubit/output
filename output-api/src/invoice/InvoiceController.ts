@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { InvoiceService } from "../services/entities/invoice.service";
-import { Invoice } from "../entity/Invoice";
-import { CostType } from "../entity/CostType";
-import { CostCenter } from "../entity/CostCenter";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { CostTypeIndex } from "../../../output-interfaces/PublicationIndex";
+import { InvoiceService } from "./invoice.service";
+import { Invoice } from "./Invoice";
+import { CostType } from "./CostType";
+import { CostCenter } from "./CostCenter";
 
 @Controller("invoice")
 @ApiTags("invoice")

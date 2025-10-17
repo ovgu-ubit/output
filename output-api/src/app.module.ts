@@ -9,7 +9,7 @@ import { ConfigController } from "./controller/ConfigController";
 import { EnrichController } from "./controller/EnrichController";
 import { ExportController } from "./controller/ExportController";
 import { ImportController } from "./controller/ImportController";
-import { InvoiceController } from "./controller/InvoiceController";
+import { InvoiceController } from "./invoice/InvoiceController";
 import { LanguageController } from "./controller/LanguageController";
 import { OACategoryController } from "./controller/OACategoryController";
 import { PlausibilityController } from "./controller/PlausibilityController";
@@ -21,10 +21,6 @@ import { StatusController } from "./controller/StatusController";
 import { AliasPublisher } from "./entity/alias/AliasPublisher";
 import { AliasPubType } from "./entity/alias/AliasPubType";
 import { Config } from "./entity/Config";
-import { CostCenter } from "./entity/CostCenter";
-import { CostItem } from "./entity/CostItem";
-import { CostType } from "./entity/CostType";
-import { Invoice } from "./entity/Invoice";
 import { Language } from "./entity/Language";
 import { OA_Category } from "./entity/OA_Category";
 import { PublicationType } from "./entity/PublicationType";
@@ -37,7 +33,6 @@ import { PublicationModule } from './publication/publication.module';
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
-import { InvoiceService } from "./services/entities/invoice.service";
 import { LanguageService } from "./services/entities/language.service";
 import { OACategoryService } from "./services/entities/oa-category.service";
 import { PublicationTypeService } from "./services/entities/publication-type.service";
@@ -52,6 +47,7 @@ import { AuthorizationModule } from "./authorization/authorization.module";
 import { ContractModule } from "./contract/contract.module";
 import { FunderModule } from "./funder/funder.module";
 import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
+import { InvoiceModule } from "./invoice/invoice.module";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -74,8 +70,7 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([CostCenter, CostItem, CostType, 
-      Invoice, OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
+    TypeOrmModule.forFeature([OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
        AliasPublisher, AliasPubType, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
@@ -84,14 +79,15 @@ const filterz = appConfig().filter_services;
     AuthorizationModule,
     ContractModule,
     FunderModule,
-    GreaterEntityModule
+    GreaterEntityModule,
+    InvoiceModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
     PublisherController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
     GreaterEntityService, PublisherService, PublicationTypeService,
-    OACategoryService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
+    OACategoryService, ReportItemService, LanguageService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,
     ...imports.map(e => e.class),

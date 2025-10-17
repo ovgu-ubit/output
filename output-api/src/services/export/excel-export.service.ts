@@ -6,7 +6,6 @@ import { Publication } from '../../publication/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';
-import { InvoiceService } from '../entities/invoice.service';
 import * as XLSX from 'xlsx';
 import { AuthorService } from '../../author/author.service';
 import { InstitutionService } from '../../institute/institution.service';
@@ -17,6 +16,7 @@ import { FunderService } from '../../funder/funder.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../../publication/publication.service';
+import { InvoiceService } from '../../invoice/invoice.service';
 
 @Injectable()
 /**

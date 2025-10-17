@@ -4,7 +4,6 @@ import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
 import { Role } from '../../entity/Role';
@@ -12,7 +11,7 @@ import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';
-import { InvoiceService } from '../entities/invoice.service';
+import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../entities/language.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
@@ -23,6 +22,7 @@ import { Institute } from '../../institute/Institute';
 import { PublicationService } from '../../publication/publication.service';
 import { Author } from '../../author/Author';
 import { AuthorService } from '../../author/author.service';
+import { Invoice } from '../../invoice/Invoice';
 
 @Injectable()
 /**
