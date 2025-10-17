@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { firstValueFrom } from 'rxjs';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
-import { ContractService } from '../contract/contract.service';
-import { OACategoryService } from './entities/oa-category.service';
 import { Publication } from '../publication/Publication';
 
 @Injectable()
@@ -23,8 +19,7 @@ export class StatisticsService {
             .groupBy("p.id")
     }
 
-    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>, private configService: ConfigService,
-        private oaService: OACategoryService, private contractService: ContractService) { }
+    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>) { }
 
     async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
         let query = this.pubRepository.createQueryBuilder('publication')

@@ -10,7 +10,6 @@ import { GreaterEntityService } from '../../greater_entity/greater-entitiy.servi
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../entities/language.service';
-import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
 import { PublicationService } from '../../publication/publication.service';
 import { PublisherService } from '../entities/publisher.service';
@@ -20,6 +19,7 @@ import { ApiEnrichDOIService } from './api-enrich-doi.service';
 import { FunderService } from '../../funder/funder.service';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
+import { OACategoryService } from '../../oa_category/oa-category.service';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {

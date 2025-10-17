@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMany, JoinTable, UpdateDateColumn, CreateDateColumn, DeleteDateColumn } from "typeorm";
 import { AuthorPublication } from "./AuthorPublication";
 import { Contract } from "../contract/Contract";
-import { OA_Category } from "../entity/OA_Category";
+import { OA_Category } from "../oa_category/OA_Category";
 import { PublicationType } from "../entity/PublicationType";
 import { Publisher } from "../entity/Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"

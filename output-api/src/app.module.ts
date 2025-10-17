@@ -11,7 +11,6 @@ import { ExportController } from "./controller/ExportController";
 import { ImportController } from "./controller/ImportController";
 import { InvoiceController } from "./invoice/InvoiceController";
 import { LanguageController } from "./controller/LanguageController";
-import { OACategoryController } from "./controller/OACategoryController";
 import { PlausibilityController } from "./controller/PlausibilityController";
 import { PublicationTypeController } from "./controller/PublicationTypeController";
 import { PublisherController } from "./controller/PublisherController";
@@ -22,7 +21,6 @@ import { AliasPublisher } from "./entity/alias/AliasPublisher";
 import { AliasPubType } from "./entity/alias/AliasPubType";
 import { Config } from "./entity/Config";
 import { Language } from "./entity/Language";
-import { OA_Category } from "./entity/OA_Category";
 import { PublicationType } from "./entity/PublicationType";
 import { Publisher } from "./entity/Publisher";
 import { PublisherDOI } from "./entity/PublisherDOI";
@@ -34,7 +32,6 @@ import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
 import { LanguageService } from "./services/entities/language.service";
-import { OACategoryService } from "./services/entities/oa-category.service";
 import { PublicationTypeService } from "./services/entities/publication-type.service";
 import { PublisherService } from "./services/entities/publisher.service";
 import { RoleService } from "./services/entities/role.service";
@@ -48,6 +45,7 @@ import { ContractModule } from "./contract/contract.module";
 import { FunderModule } from "./funder/funder.module";
 import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
 import { InvoiceModule } from "./invoice/invoice.module";
+import { OACategoryModule } from "./oa_category/oa-category.module";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -70,7 +68,7 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
+    TypeOrmModule.forFeature([PublicationType, Publisher, PublisherDOI, Config, Language, Role,
        AliasPublisher, AliasPubType, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
@@ -80,14 +78,15 @@ const filterz = appConfig().filter_services;
     ContractModule,
     FunderModule,
     GreaterEntityModule,
-    InvoiceModule
+    InvoiceModule,
+    OACategoryModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
-    PublisherController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
+    PublisherController, PublicationTypeController, LanguageController, InvoiceController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
     GreaterEntityService, PublisherService, PublicationTypeService,
-    OACategoryService, ReportItemService, LanguageService, RoleService, StatusService,
+    ReportItemService, LanguageService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,
     ...imports.map(e => e.class),

@@ -1,19 +1,17 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { OACategoryService } from "../services/entities/oa-category.service";
-import { AppConfigService } from "../services/app-config.service";
-import { PublicationType } from "../entity/PublicationType";
 import { OACategoryIndex } from "../../../output-interfaces/PublicationIndex";
-import { OA_Category } from "../entity/OA_Category";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { PublicationType } from "../entity/PublicationType";
+import { OACategoryService } from "./oa-category.service";
+import { OA_Category } from "./OA_Category";
 
 @Controller("oa_cat")
 @ApiTags("oa_cat")
 export class OACategoryController {
 
-    constructor(private oaService:OACategoryService,
-    private configService:AppConfigService) { }
+    constructor(private oaService:OACategoryService) { }
     
     @Get()
     @ApiResponse({

@@ -4,7 +4,7 @@ import { DataSource, Repository } from "typeorm";
 import { AuthorPublication } from "../publication/AuthorPublication";
 import { Config } from "../entity/Config";
 import { Contract } from "../contract/Contract";
-import { OA_Category } from "../entity/OA_Category";
+import { OA_Category } from "../oa_category/OA_Category";
 import { PublicationType } from "../entity/PublicationType";
 import { Publisher } from "../entity/Publisher";
 import { AliasInstitute } from "../institute/AliasInstitute";

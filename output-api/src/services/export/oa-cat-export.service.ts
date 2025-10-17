@@ -6,7 +6,7 @@ import { PublicationTypeService } from '../entities/publication-type.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ReportItemService } from '../report-item.service';
 import { AbstractExportService } from './abstract-export.service';
-import { OACategoryService } from '../entities/oa-category.service';
+import { OACategoryService } from '../../oa_category/oa-category.service';
 
 @Injectable()
 /**
