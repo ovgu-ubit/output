@@ -14,10 +14,8 @@ import { ImportController } from "./controller/ImportController";
 import { PlausibilityController } from "./controller/PlausibilityController";
 import { RoleController } from "./controller/RoleController";
 import { StatisticController } from "./controller/StatisticController";
-import { StatusController } from "./controller/StatusController";
 import { Config } from "./entity/Config";
 import { Role } from "./entity/Role";
-import { Status } from "./entity/Status";
 import { FunderModule } from "./funder/funder.module";
 import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
 import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
@@ -30,7 +28,6 @@ import { PublisherModule } from "./publisher/publisher.module";
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { RoleService } from "./services/entities/role.service";
-import { StatusService } from "./services/entities/status.service";
 import { CSVImportService } from "./services/import/csv-import.service";
 import { ExcelImportService } from "./services/import/excel-import.service";
 import { ReportItemService } from "./services/report-item.service";
@@ -57,7 +54,7 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([Config, Role, Status]),
+    TypeOrmModule.forFeature([Config, Role]),
     ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
@@ -72,10 +69,10 @@ const filterz = appConfig().filter_services;
     PublisherModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
-    PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
+    PlausibilityController, ExportController, ConfigController, RoleController],
   providers: [
     GreaterEntityService,
-    ReportItemService, RoleService, StatusService,
+    ReportItemService, RoleService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,
     ...imports.map(e => e.class),

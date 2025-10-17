@@ -17,19 +17,22 @@ import { InvoiceModule } from '../invoice/invoice.module';
 import { Language } from './Language';
 import { LanguageController } from './LanguageController';
 import { LanguageService } from './language.service';
+import { Status } from './Status';
+import { StatusController } from './StatusController';
+import { StatusService } from './status.service';
 
 
 const filterz = appConfig().filter_services;
 
 @Module({
   imports: [TypeOrmModule.forFeature([Publication, AuthorPublication, PublicationIdentifier, 
-    PublicationSupplement, PublicationDuplicate, Config, Language]),
+    PublicationSupplement, PublicationDuplicate, Config, Language, Status]),
     AuthorModule,
     InstituteModule,
     InvoiceModule,
     AuthorizationModule],
-  controllers: [PublicationController, LanguageController],
-  providers: [PublicationService, LanguageService, AppConfigService,
+  controllers: [PublicationController, LanguageController, StatusController],
+  providers: [PublicationService, LanguageService, AppConfigService,StatusService,
     ...filterz.map(e => e.class),
     {
       provide: 'Filters',
@@ -39,6 +42,6 @@ const filterz = appConfig().filter_services;
       inject: filterz.map(e => e.class)
     },
   ],
-  exports: [PublicationService, LanguageService, TypeOrmModule]
+  exports: [PublicationService, LanguageService, StatusService, TypeOrmModule]
 })
 export class PublicationModule { }

@@ -15,7 +15,7 @@ import { AliasFunder } from "./funder/AliasFunder";
 import { Language } from "./publication/Language";
 import config from "../config";
 import { Role } from "./entity/Role";
-import { Status } from "./entity/Status";
+import { Status } from "./publication/Status";
 import { Institute } from "./institute/Institute";
 import { AliasAuthorFirstName } from "./author/AliasAuthorFirstName";
 import { AliasAuthorLastName } from "./author/AliasAuthorLastName";
