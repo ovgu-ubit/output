@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GreaterEntityService } from "../services/entities/greater-entitiy.service";
-import { GreaterEntity } from "../entity/GreaterEntity";
 import { GreaterEntityIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { GreaterEntity } from "./GreaterEntity";
 
 @Controller("greater_entity")
 @ApiTags("greater_entity")

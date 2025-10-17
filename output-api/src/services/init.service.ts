@@ -7,8 +7,7 @@ import { Contract } from "../contract/Contract";
 import { CostCenter } from "../entity/CostCenter";
 import { CostItem } from "../entity/CostItem";
 import { CostType } from "../entity/CostType";
-import { GreaterEntity } from "../entity/GreaterEntity";
-import { GEIdentifier } from "../entity/identifier/GEIdentifier";
+import { GEIdentifier } from "../greater_entity/GEIdentifier";
 import { Invoice } from "../entity/Invoice";
 import { OA_Category } from "../entity/OA_Category";
 import { PublicationType } from "../entity/PublicationType";
@@ -24,6 +23,7 @@ import { Institute } from "../institute/Institute";
 import { Publication } from "../publication/Publication";
 import { Author } from "../author/Author";
 import { Funder } from "../funder/Funder";
+import { GreaterEntity } from "../greater_entity/GreaterEntity";
 
 @Injectable()
 export class InitService {

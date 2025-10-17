@@ -8,7 +8,6 @@ import { AuthorModule } from './author/author.module';
 import { ConfigController } from "./controller/ConfigController";
 import { EnrichController } from "./controller/EnrichController";
 import { ExportController } from "./controller/ExportController";
-import { GreaterEntityController } from "./controller/GreaterEntityController";
 import { ImportController } from "./controller/ImportController";
 import { InvoiceController } from "./controller/InvoiceController";
 import { LanguageController } from "./controller/LanguageController";
@@ -25,8 +24,6 @@ import { Config } from "./entity/Config";
 import { CostCenter } from "./entity/CostCenter";
 import { CostItem } from "./entity/CostItem";
 import { CostType } from "./entity/CostType";
-import { GreaterEntity } from "./entity/GreaterEntity";
-import { GEIdentifier } from "./entity/identifier/GEIdentifier";
 import { Invoice } from "./entity/Invoice";
 import { Language } from "./entity/Language";
 import { OA_Category } from "./entity/OA_Category";
@@ -54,6 +51,7 @@ import { StatisticsService } from "./services/statistics.service";
 import { AuthorizationModule } from "./authorization/authorization.module";
 import { ContractModule } from "./contract/contract.module";
 import { FunderModule } from "./funder/funder.module";
+import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -76,8 +74,8 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([CostCenter, CostItem, CostType, GreaterEntity, 
-      GEIdentifier, Invoice, OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
+    TypeOrmModule.forFeature([CostCenter, CostItem, CostType, 
+      Invoice, OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
        AliasPublisher, AliasPubType, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
@@ -85,9 +83,10 @@ const filterz = appConfig().filter_services;
     InstituteModule,
     AuthorizationModule,
     ContractModule,
-    FunderModule
+    FunderModule,
+    GreaterEntityModule
   ],
-  controllers: [StatisticController, ImportController, EnrichController, GreaterEntityController,
+  controllers: [StatisticController, ImportController, EnrichController,
     PublisherController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [

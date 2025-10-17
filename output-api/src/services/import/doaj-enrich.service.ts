@@ -5,7 +5,7 @@ import { Observable, catchError, delay, mergeAll, of, queueScheduler, scheduled 
 import { FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../entity/GreaterEntity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Invoice } from '../../entity/Invoice';
 import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../../author/author.service';

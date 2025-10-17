@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../../output-interfaces/Config';
 import { GreaterEntityIndex } from '../../../../output-interfaces/PublicationIndex';
-import { GreaterEntity } from '../../entity/GreaterEntity';
-import { GEIdentifier } from '../../entity/identifier/GEIdentifier';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity';
+import { GEIdentifier } from '../../greater_entity/GEIdentifier';
 import { Publication } from '../../publication/Publication';
 import { PublicationService } from '../../publication/publication.service';
 

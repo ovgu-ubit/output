@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../entity/GreaterEntity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';

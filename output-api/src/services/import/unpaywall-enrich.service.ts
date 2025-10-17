@@ -2,7 +2,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../../author/author.service';
@@ -20,6 +19,7 @@ import { ReportItemService } from '../report-item.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
 import { FunderService } from '../../funder/funder.service';
 import { Funder } from '../../funder/Funder';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {

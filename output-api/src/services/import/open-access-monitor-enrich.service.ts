@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../entity/GreaterEntity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';

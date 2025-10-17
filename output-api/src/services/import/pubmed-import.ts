@@ -5,7 +5,7 @@ import { EMPTY, Observable, concatMap, concatWith, delay, mergeAll, queueSchedul
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../entity/GreaterEntity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
