@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Observable, concatWith, map, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import { Publication } from '../../publication/Publication';
 import { AuthorService } from '../entities/author.service';
-import { ContractService } from '../entities/contract.service';
+import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';

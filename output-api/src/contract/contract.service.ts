@@ -3,10 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
-import { Contract } from '../../entity/Contract';
-import { ContractIndex } from '../../../../output-interfaces/PublicationIndex';
-import { ContractIdentifier } from '../../entity/identifier/ContractIdentifier';
-import { PublicationService } from '../../publication/publication.service';
+import { Contract } from './Contract';
+import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
+import { PublicationService } from '../publication/publication.service';
+import { ContractIdentifier } from './ContractIdentifier';
 
 @Injectable()
 export class ContractService {

@@ -12,7 +12,7 @@ import { AuthorService } from '../entities/author.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
 import { PublisherService } from '../entities/publisher.service';
-import { ContractService } from '../entities/contract.service';
+import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../entities/funder.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';

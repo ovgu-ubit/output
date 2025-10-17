@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMany, JoinTable, UpdateDateColumn, CreateDateColumn, DeleteDateColumn } from "typeorm";
 import { AuthorPublication } from "./AuthorPublication";
-import { Contract } from "../entity/Contract";
+import { Contract } from "../contract/Contract";
 import { Funder } from "../entity/Funder";
 import { GreaterEntity } from "../entity/GreaterEntity";
 import { Invoice } from "../entity/Invoice";

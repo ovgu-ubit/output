@@ -6,7 +6,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import appConfig from '../config';
 import { AuthorModule } from './author/author.module';
 import { ConfigController } from "./controller/ConfigController";
-import { ContractController } from "./controller/ContractController";
+import { ContractController } from "./contract/ContractController";
 import { EnrichController } from "./controller/EnrichController";
 import { ExportController } from "./controller/ExportController";
 import { FunderController } from "./controller/FunderController";
@@ -25,13 +25,12 @@ import { AliasFunder } from "./entity/alias/AliasFunder";
 import { AliasPublisher } from "./entity/alias/AliasPublisher";
 import { AliasPubType } from "./entity/alias/AliasPubType";
 import { Config } from "./entity/Config";
-import { Contract } from "./entity/Contract";
+import { Contract } from "./contract/Contract";
 import { CostCenter } from "./entity/CostCenter";
 import { CostItem } from "./entity/CostItem";
 import { CostType } from "./entity/CostType";
 import { Funder } from "./entity/Funder";
 import { GreaterEntity } from "./entity/GreaterEntity";
-import { ContractIdentifier } from "./entity/identifier/ContractIdentifier";
 import { GEIdentifier } from "./entity/identifier/GEIdentifier";
 import { Invoice } from "./entity/Invoice";
 import { Language } from "./entity/Language";
@@ -45,7 +44,7 @@ import { InstituteModule } from "./institute/institute.module";
 import { PublicationModule } from './publication/publication.module';
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
-import { ContractService } from "./services/entities/contract.service";
+import { ContractService } from "./contract/contract.service";
 import { FunderService } from "./services/entities/funder.service";
 import { GreaterEntityService } from "./services/entities/greater-entitiy.service";
 import { InvoiceService } from "./services/entities/invoice.service";
@@ -60,6 +59,7 @@ import { ExcelImportService } from "./services/import/excel-import.service";
 import { ReportItemService } from "./services/report-item.service";
 import { StatisticsService } from "./services/statistics.service";
 import { AuthorizationModule } from "./authorization/authorization.module";
+import { ContractModule } from "./contract/contract.module";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -82,21 +82,22 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([Contract, ContractIdentifier, CostCenter, CostItem, CostType, Funder, GreaterEntity, 
+    TypeOrmModule.forFeature([CostCenter, CostItem, CostType, Funder, GreaterEntity, 
       GEIdentifier, Invoice, OA_Category, PublicationType, Publisher, PublisherDOI, Config, Language, Role,
        AliasPublisher, AliasPubType, AliasFunder, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
     InstituteModule,
-    AuthorizationModule
+    AuthorizationModule,
+    ContractModule
   ],
   controllers: [StatisticController, ImportController, EnrichController, GreaterEntityController,
-    PublisherController, ContractController, FunderController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
+    PublisherController, FunderController, PublicationTypeController, OACategoryController, LanguageController, InvoiceController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
     GreaterEntityService, PublisherService, PublicationTypeService, FunderService,
-    OACategoryService, ContractService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
+    OACategoryService, ReportItemService, LanguageService, InvoiceService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,
     ...imports.map(e => e.class),

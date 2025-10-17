@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, Repository } from 'typeorm';
-import { Contract } from '../../entity/Contract';
+import { Contract } from '../../contract/Contract';
 import { CostType } from '../../entity/CostType';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../publication/Publication';

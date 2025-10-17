@@ -8,7 +8,7 @@ import { Publication } from '../../publication/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';
-import { ContractService } from '../entities/contract.service';
+import { ContractService } from '../../contract/contract.service';
 
 @Injectable()
 /**

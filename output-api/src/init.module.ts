@@ -3,7 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuthorPublication } from "./publication/AuthorPublication";
 import { Config } from "./entity/Config";
-import { Contract } from "./entity/Contract";
+import { Contract } from "./contract/Contract";
 import { CostCenter } from "./entity/CostCenter";
 import { CostItem } from "./entity/CostItem";
 import { CostType } from "./entity/CostType";

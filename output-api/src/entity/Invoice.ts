@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, ManyToOne, OneToMany } from "typeorm";
-import { Contract } from "./Contract";
+import { Contract } from "../contract/Contract";
 import { CostCenter } from "./CostCenter";
 import { CostItem } from "./CostItem";
 import { Invoice as IInvoice } from "../../../output-interfaces/Publication"

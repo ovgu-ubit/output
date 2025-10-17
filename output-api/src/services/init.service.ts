@@ -3,7 +3,7 @@ import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, Repository } from "typeorm";
 import { AuthorPublication } from "../publication/AuthorPublication";
 import { Config } from "../entity/Config";
-import { Contract } from "../entity/Contract";
+import { Contract } from "../contract/Contract";
 import { CostCenter } from "../entity/CostCenter";
 import { CostItem } from "../entity/CostItem";
 import { CostType } from "../entity/CostType";

@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
-import { ContractService } from './entities/contract.service';
+import { ContractService } from '../contract/contract.service';
 import { OACategoryService } from './entities/oa-category.service';
 import { Publication } from '../publication/Publication';
 

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../publication/Publication';
-import { ContractService } from '../entities/contract.service';
+import { ContractService } from '../../contract/contract.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ReportItemService } from '../report-item.service';
 import { AbstractExportService } from './abstract-export.service';

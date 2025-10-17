@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ContractService } from "../services/entities/contract.service";
-import { Contract } from "../entity/Contract";
+import { ContractService } from "./contract.service";
+import { Contract } from "./Contract";
 import { ContractIndex } from "../../../output-interfaces/PublicationIndex";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
