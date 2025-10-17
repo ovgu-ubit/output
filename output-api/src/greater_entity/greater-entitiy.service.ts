@@ -2,12 +2,12 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
-import { AppError } from '../../../../output-interfaces/Config';
-import { GreaterEntityIndex } from '../../../../output-interfaces/PublicationIndex';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { GEIdentifier } from '../../greater_entity/GEIdentifier';
-import { Publication } from '../../publication/Publication';
-import { PublicationService } from '../../publication/publication.service';
+import { AppError } from '../../../output-interfaces/Config';
+import { GreaterEntityIndex } from '../../../output-interfaces/PublicationIndex';
+import { GreaterEntity } from './GreaterEntity';
+import { GEIdentifier } from './GEIdentifier';
+import { Publication } from '../publication/Publication';
+import { PublicationService } from '../publication/publication.service';
 
 @Injectable()
 export class GreaterEntityService {

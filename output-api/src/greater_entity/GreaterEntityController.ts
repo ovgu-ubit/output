@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { GreaterEntityService } from "../services/entities/greater-entitiy.service";
+import { GreaterEntityService } from "./greater-entitiy.service";
 import { GreaterEntityIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";

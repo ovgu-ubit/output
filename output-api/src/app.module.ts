@@ -36,7 +36,7 @@ import { InstituteModule } from "./institute/institute.module";
 import { PublicationModule } from './publication/publication.module';
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
-import { GreaterEntityService } from "./services/entities/greater-entitiy.service";
+import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
 import { InvoiceService } from "./services/entities/invoice.service";
 import { LanguageService } from "./services/entities/language.service";
 import { OACategoryService } from "./services/entities/oa-category.service";

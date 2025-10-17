@@ -6,7 +6,7 @@ import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
-import { GreaterEntityService } from '../entities/greater-entitiy.service';
+import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../entities/invoice.service';
 import { LanguageService } from '../entities/language.service';
