@@ -5,14 +5,13 @@ import { AuthorPublication } from "./publication/AuthorPublication";
 import { Config } from "./entity/Config";
 import { Contract } from "./contract/Contract";
 import { OA_Category } from "./oa_category/OA_Category";
-import { PublicationType } from "./entity/PublicationType";
 import { Publisher } from "./entity/Publisher";
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { GEIdentifier } from "./greater_entity/GEIdentifier";
 import { AliasInstitute } from "./institute/AliasInstitute";
 import { AliasPublisher } from "./entity/alias/AliasPublisher";
-import { AliasPubType } from "./entity/alias/AliasPubType";
+import { AliasPubType } from "./pub_type/AliasPubType";
 import { AliasFunder } from "./funder/AliasFunder";
 import { Language } from "./entity/Language";
 import config from "../config";
@@ -31,6 +30,7 @@ import { CostCenter } from "./invoice/CostCenter";
 import { CostItem } from "./invoice/CostItem";
 import { CostType } from "./invoice/CostType";
 import { Invoice } from "./invoice/Invoice";
+import { PublicationType } from "./pub_type/PublicationType";
 
 //export const init_service = require(config().init_service)
 //export const init_service = import (config().init_service);

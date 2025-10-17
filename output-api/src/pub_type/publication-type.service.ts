@@ -1,12 +1,11 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { concatMap, defer, from, iif, Observable, of} from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
-import { PublicationType } from '../../entity/PublicationType';
-import { PublicationTypeIndex } from '../../../../output-interfaces/PublicationIndex';
-import { AliasPubType } from '../../entity/alias/AliasPubType';
-import { PublicationService } from '../../publication/publication.service';
+import { PublicationTypeIndex } from '../../../output-interfaces/PublicationIndex';
+import { AliasPubType } from './AliasPubType';
+import { PublicationService } from '../publication/publication.service';
+import { PublicationType } from './PublicationType';
 
 @Injectable()
 export class PublicationTypeService {

@@ -1,18 +1,16 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { PublicationTypeService } from "../services/entities/publication-type.service";
-import { AppConfigService } from "../services/app-config.service";
-import { PublicationType } from "../entity/PublicationType";
+import { PublicationTypeService } from "./publication-type.service";
 import { PublicationTypeIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { PublicationType } from "./PublicationType";
 
 @Controller("pub_type")
 @ApiTags("pub_type")
 export class PublicationTypeController {
 
-    constructor(private pubTypeService:PublicationTypeService,
-    private configService:AppConfigService) { }
+    constructor(private pubTypeService:PublicationTypeService) { }
     
     @Get()
     @ApiResponse({

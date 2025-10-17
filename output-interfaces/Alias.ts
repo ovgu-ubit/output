@@ -1,4 +1,4 @@
-import { PublicationType } from "../output-api/src/entity/PublicationType";
+import { PublicationType } from "../output-api/src/pub_type/PublicationType";
 import { Author, Entity, Funder, Institute, Publisher } from "./Publication";
 
 export interface Alias<T> {

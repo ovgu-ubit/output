@@ -3,7 +3,6 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { OACategoryIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { PublicationType } from "../entity/PublicationType";
 import { OACategoryService } from "./oa-category.service";
 import { OA_Category } from "./OA_Category";
 
@@ -15,7 +14,7 @@ export class OACategoryController {
     
     @Get()
     @ApiResponse({
-        type: PublicationType,
+        type: OA_Category,
         isArray: true
     })
     async all() : Promise<OA_Category[]> {

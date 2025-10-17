@@ -5,34 +5,36 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import appConfig from '../config';
 import { AuthorModule } from './author/author.module';
+import { AuthorizationModule } from "./authorization/authorization.module";
+import { ContractModule } from "./contract/contract.module";
 import { ConfigController } from "./controller/ConfigController";
 import { EnrichController } from "./controller/EnrichController";
 import { ExportController } from "./controller/ExportController";
 import { ImportController } from "./controller/ImportController";
-import { InvoiceController } from "./invoice/InvoiceController";
 import { LanguageController } from "./controller/LanguageController";
 import { PlausibilityController } from "./controller/PlausibilityController";
-import { PublicationTypeController } from "./controller/PublicationTypeController";
 import { PublisherController } from "./controller/PublisherController";
 import { RoleController } from "./controller/RoleController";
 import { StatisticController } from "./controller/StatisticController";
 import { StatusController } from "./controller/StatusController";
 import { AliasPublisher } from "./entity/alias/AliasPublisher";
-import { AliasPubType } from "./entity/alias/AliasPubType";
 import { Config } from "./entity/Config";
 import { Language } from "./entity/Language";
-import { PublicationType } from "./entity/PublicationType";
 import { Publisher } from "./entity/Publisher";
 import { PublisherDOI } from "./entity/PublisherDOI";
 import { Role } from "./entity/Role";
 import { Status } from "./entity/Status";
+import { FunderModule } from "./funder/funder.module";
+import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
+import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
 import { InstituteModule } from "./institute/institute.module";
+import { InvoiceModule } from "./invoice/invoice.module";
+import { OACategoryModule } from "./oa_category/oa-category.module";
+import { PublicationTypeModule } from "./pub_type/pub-type.module";
 import { PublicationModule } from './publication/publication.module';
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
-import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
 import { LanguageService } from "./services/entities/language.service";
-import { PublicationTypeService } from "./services/entities/publication-type.service";
 import { PublisherService } from "./services/entities/publisher.service";
 import { RoleService } from "./services/entities/role.service";
 import { StatusService } from "./services/entities/status.service";
@@ -40,12 +42,6 @@ import { CSVImportService } from "./services/import/csv-import.service";
 import { ExcelImportService } from "./services/import/excel-import.service";
 import { ReportItemService } from "./services/report-item.service";
 import { StatisticsService } from "./services/statistics.service";
-import { AuthorizationModule } from "./authorization/authorization.module";
-import { ContractModule } from "./contract/contract.module";
-import { FunderModule } from "./funder/funder.module";
-import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
-import { InvoiceModule } from "./invoice/invoice.module";
-import { OACategoryModule } from "./oa_category/oa-category.module";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -68,8 +64,8 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([PublicationType, Publisher, PublisherDOI, Config, Language, Role,
-       AliasPublisher, AliasPubType, Status]),
+    TypeOrmModule.forFeature([Publisher, PublisherDOI, Config, Language, Role,
+       AliasPublisher, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
@@ -79,13 +75,14 @@ const filterz = appConfig().filter_services;
     FunderModule,
     GreaterEntityModule,
     InvoiceModule,
-    OACategoryModule
+    OACategoryModule,
+    PublicationTypeModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
-    PublisherController, PublicationTypeController, LanguageController, InvoiceController,
+    PublisherController, LanguageController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
-    GreaterEntityService, PublisherService, PublicationTypeService,
+    GreaterEntityService, PublisherService,
     ReportItemService, LanguageService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,

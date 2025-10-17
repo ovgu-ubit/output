@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMan
 import { AuthorPublication } from "./AuthorPublication";
 import { Contract } from "../contract/Contract";
 import { OA_Category } from "../oa_category/OA_Category";
-import { PublicationType } from "../entity/PublicationType";
 import { Publisher } from "../entity/Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"
 import { Language } from "../entity/Language";
@@ -12,6 +11,7 @@ import { PublicationDuplicate } from "./PublicationDuplicate";
 import { Funder } from "../funder/Funder";
 import { GreaterEntity } from "../greater_entity/GreaterEntity";
 import { Invoice } from "../invoice/Invoice";
+import { PublicationType } from "../pub_type/PublicationType";
 
 @Entity()
 export class Publication implements IPublication {

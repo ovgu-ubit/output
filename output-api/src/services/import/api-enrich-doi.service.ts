@@ -11,7 +11,7 @@ import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../entities/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
-import { PublicationTypeService } from '../entities/publication-type.service';
+import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/publication.service';
 import { PublisherService } from '../entities/publisher.service';
 import { RoleService } from '../entities/role.service';
