@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMan
 import { AuthorPublication } from "./AuthorPublication";
 import { Contract } from "../contract/Contract";
 import { OA_Category } from "../oa_category/OA_Category";
-import { Publisher } from "../entity/Publisher";
+import { Publisher } from "../publisher/Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"
 import { Language } from "../entity/Language";
 import { PublicationIdentifier } from "./PublicationIdentifier";

@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { PublisherService } from "../services/entities/publisher.service";
-import { Publisher } from "../entity/Publisher";
+import { Publisher } from "./Publisher";
 import { PublisherIndex } from "../../../output-interfaces/PublicationIndex";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
+import { PublisherService } from "./publisher.service";
 
 @Controller("publisher")
 @ApiTags("publisher")

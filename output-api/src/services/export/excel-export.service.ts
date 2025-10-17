@@ -10,7 +10,7 @@ import * as XLSX from 'xlsx';
 import { AuthorService } from '../../author/author.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { PublisherService } from '../entities/publisher.service';
+import { PublisherService } from '../../publisher/publisher.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';

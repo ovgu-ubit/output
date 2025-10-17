@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
-import { Publisher } from "../entity/Publisher";
+import { Publisher } from "../publisher/Publisher";
 import { Contract as IContract} from "../../../output-interfaces/Publication"
 import { Publication } from "../publication/Publication";
 import { ContractIdentifier } from "./ContractIdentifier";

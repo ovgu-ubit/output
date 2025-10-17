@@ -5,13 +5,11 @@ import { AuthorPublication } from "../publication/AuthorPublication";
 import { Config } from "../entity/Config";
 import { Contract } from "../contract/Contract";
 import { OA_Category } from "../oa_category/OA_Category";
-import { Publisher } from "../entity/Publisher";
+import { Publisher } from "../publisher/Publisher";
 import { AliasInstitute } from "../institute/AliasInstitute";
-import { AliasPublisher } from "../entity/alias/AliasPublisher";
 import { AliasPubType } from "../pub_type/AliasPubType";
 import { AliasFunder } from "../funder/AliasFunder";
 import { Language } from "../entity/Language";
-import { PublisherDOI } from "../entity/PublisherDOI";
 import { Role } from "../entity/Role";
 import { Institute } from "../institute/Institute";
 import { Publication } from "../publication/Publication";
@@ -21,6 +19,8 @@ import { GreaterEntity } from "../greater_entity/GreaterEntity";
 import { CostType } from "../invoice/CostType";
 import { CostCenter } from "../invoice/CostCenter";
 import { PublicationType } from "../pub_type/PublicationType";
+import { PublisherDOI } from "../publisher/PublisherDOI";
+import { AliasPublisher } from "../publisher/AliasPublisher";
 
 @Injectable()
 export class InitService {

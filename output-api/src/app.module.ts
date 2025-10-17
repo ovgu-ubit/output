@@ -13,15 +13,11 @@ import { ExportController } from "./controller/ExportController";
 import { ImportController } from "./controller/ImportController";
 import { LanguageController } from "./controller/LanguageController";
 import { PlausibilityController } from "./controller/PlausibilityController";
-import { PublisherController } from "./controller/PublisherController";
 import { RoleController } from "./controller/RoleController";
 import { StatisticController } from "./controller/StatisticController";
 import { StatusController } from "./controller/StatusController";
-import { AliasPublisher } from "./entity/alias/AliasPublisher";
 import { Config } from "./entity/Config";
 import { Language } from "./entity/Language";
-import { Publisher } from "./entity/Publisher";
-import { PublisherDOI } from "./entity/PublisherDOI";
 import { Role } from "./entity/Role";
 import { Status } from "./entity/Status";
 import { FunderModule } from "./funder/funder.module";
@@ -32,10 +28,10 @@ import { InvoiceModule } from "./invoice/invoice.module";
 import { OACategoryModule } from "./oa_category/oa-category.module";
 import { PublicationTypeModule } from "./pub_type/pub-type.module";
 import { PublicationModule } from './publication/publication.module';
+import { PublisherModule } from "./publisher/publisher.module";
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { LanguageService } from "./services/entities/language.service";
-import { PublisherService } from "./services/entities/publisher.service";
 import { RoleService } from "./services/entities/role.service";
 import { StatusService } from "./services/entities/status.service";
 import { CSVImportService } from "./services/import/csv-import.service";
@@ -64,8 +60,7 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([Publisher, PublisherDOI, Config, Language, Role,
-       AliasPublisher, Status]),
+    TypeOrmModule.forFeature([Config, Language, Role, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
@@ -76,13 +71,14 @@ const filterz = appConfig().filter_services;
     GreaterEntityModule,
     InvoiceModule,
     OACategoryModule,
-    PublicationTypeModule
+    PublicationTypeModule,
+    PublisherModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
-    PublisherController, LanguageController,
+    LanguageController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
-    GreaterEntityService, PublisherService,
+    GreaterEntityService,
     ReportItemService, LanguageService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,

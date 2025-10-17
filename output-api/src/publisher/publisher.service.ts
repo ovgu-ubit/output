@@ -2,11 +2,11 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
-import { PublisherIndex } from '../../../../output-interfaces/PublicationIndex';
-import { AliasPublisher } from '../../entity/alias/AliasPublisher';
-import { Publication } from '../../publication/Publication';
-import { Publisher } from '../../entity/Publisher';
-import { PublicationService } from '../../publication/publication.service';
+import { Publisher } from './Publisher';
+import { AliasPublisher } from './AliasPublisher';
+import { PublicationService } from '../publication/publication.service';
+import { PublisherIndex } from '../../../output-interfaces/PublicationIndex';
+import { Publication } from '../publication/Publication';
 
 @Injectable()
 export class PublisherService {
