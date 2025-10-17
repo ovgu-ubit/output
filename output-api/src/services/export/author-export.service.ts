@@ -5,7 +5,7 @@ import { SearchFilter } from '../../../../output-interfaces/Config';
 import { Publication } from '../../publication/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { AuthorService } from '../entities/author.service';
+import { AuthorService } from '../../author/author.service';
 
 @Injectable()
 /**

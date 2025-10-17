@@ -2,11 +2,10 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
-import { Funder } from '../../entity/Funder';
-import { Publisher } from '../../entity/Publisher';
-import { FunderIndex } from '../../../../output-interfaces/PublicationIndex';
-import { AliasFunder } from '../../entity/alias/AliasFunder';
-import { PublicationService } from '../../publication/publication.service';
+import { AliasFunder } from './AliasFunder';
+import { PublicationService } from '../publication/publication.service';
+import { Funder } from './Funder';
+import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 
 @Injectable()
 export class FunderService {

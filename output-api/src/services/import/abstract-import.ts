@@ -2,15 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../entity/Funder';
+import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Invoice } from '../../entity/Invoice';
 import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
 import { Role } from '../../entity/Role';
-import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../../contract/contract.service';
-import { FunderService } from '../entities/funder.service';
+import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../entities/invoice.service';
@@ -23,6 +22,7 @@ import { ReportItemService } from '../report-item.service';
 import { Institute } from '../../institute/Institute';
 import { PublicationService } from '../../publication/publication.service';
 import { Author } from '../../author/Author';
+import { AuthorService } from '../../author/author.service';
 
 @Injectable()
 /**

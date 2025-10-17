@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { FunderService } from "../services/entities/funder.service";
-import { Funder } from "../entity/Funder";
 import { FunderIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { Funder } from "./Funder";
+import { FunderService } from "./funder.service";
 
 @Controller("funder")
 @ApiTags("funder")

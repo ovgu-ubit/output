@@ -2,13 +2,11 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../entity/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
 import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
-import { AuthorService } from '../entities/author.service';
+import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
-import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../entities/invoice.service';
@@ -20,6 +18,8 @@ import { PublisherService } from '../entities/publisher.service';
 import { RoleService } from '../entities/role.service';
 import { ReportItemService } from '../report-item.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { FunderService } from '../../funder/funder.service';
+import { Funder } from '../../funder/Funder';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
@@ -27,7 +27,8 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  
+        protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
         ) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
             this.param_string = 'email='+this.configService.get('api_key_unpaywall');

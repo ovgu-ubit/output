@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
-import { AliasFunder as IAliasFunder} from "../../../../output-interfaces/Alias"
-import { Funder } from "../Funder";
+import { AliasFunder as IAliasFunder} from "../../../output-interfaces/Alias"
+import { Funder } from "./Funder";
 
 @Entity()
 export class AliasFunder implements IAliasFunder {

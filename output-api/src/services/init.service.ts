@@ -7,7 +7,6 @@ import { Contract } from "../contract/Contract";
 import { CostCenter } from "../entity/CostCenter";
 import { CostItem } from "../entity/CostItem";
 import { CostType } from "../entity/CostType";
-import { Funder } from "../entity/Funder";
 import { GreaterEntity } from "../entity/GreaterEntity";
 import { GEIdentifier } from "../entity/identifier/GEIdentifier";
 import { Invoice } from "../entity/Invoice";
@@ -17,13 +16,14 @@ import { Publisher } from "../entity/Publisher";
 import { AliasInstitute } from "../institute/AliasInstitute";
 import { AliasPublisher } from "../entity/alias/AliasPublisher";
 import { AliasPubType } from "../entity/alias/AliasPubType";
-import { AliasFunder } from "../entity/alias/AliasFunder";
+import { AliasFunder } from "../funder/AliasFunder";
 import { Language } from "../entity/Language";
 import { PublisherDOI } from "../entity/PublisherDOI";
 import { Role } from "../entity/Role";
 import { Institute } from "../institute/Institute";
 import { Publication } from "../publication/Publication";
 import { Author } from "../author/Author";
+import { Funder } from "../funder/Funder";
 
 @Injectable()
 export class InitService {

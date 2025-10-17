@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, OneToMany } from "typeorm";
 import { Funder as IFunder} from "../../../output-interfaces/Publication"
-import { AliasFunder } from "./alias/AliasFunder";
 import { Publication } from "../publication/Publication";
+import { AliasFunder } from "./AliasFunder";
 
 @Entity()
 export class Funder implements IFunder {
