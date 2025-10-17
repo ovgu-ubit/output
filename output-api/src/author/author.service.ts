@@ -6,7 +6,7 @@ import { ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
 import { AliasAuthorFirstName } from './AliasAuthorFirstName';
-import { AuthorPublication } from '../publication/AuthorPublication';
+import { AuthorPublication } from '../publication/relations/AuthorPublication';
 import { INSTITUTES_AFFILIATION_PORT, InstitutesAffiliationPort } from '../ports';
 import { Author } from './Author';
 import { AliasAuthorLastName } from './AliasAuthorLastName';

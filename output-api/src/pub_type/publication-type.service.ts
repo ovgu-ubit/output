@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
 import { PublicationTypeIndex } from '../../../output-interfaces/PublicationIndex';
 import { AliasPubType } from './AliasPubType';
-import { PublicationService } from '../publication/publication.service';
+import { PublicationService } from '../publication/core/publication.service';
 import { PublicationType } from './PublicationType';
 
 @Injectable()

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Publication } from '../../publication/Publication';
+import { Publication } from '../../publication/core/Publication';
 import { ReportItemService } from '../report-item.service';
 import { AbstractPlausibilityService } from './abstract-plausibility.service';
-import { PublicationService } from '../../publication/publication.service';
+import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 
 @Injectable()

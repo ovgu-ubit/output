@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AuthorPublication } from "./publication/AuthorPublication";
+import { AuthorPublication } from "./publication/relations/AuthorPublication";
 import { Config } from "./entity/Config";
 import { Contract } from "./contract/Contract";
 import { OA_Category } from "./oa_category/OA_Category";
@@ -12,16 +12,13 @@ import { GEIdentifier } from "./greater_entity/GEIdentifier";
 import { AliasInstitute } from "./institute/AliasInstitute";
 import { AliasPubType } from "./pub_type/AliasPubType";
 import { AliasFunder } from "./funder/AliasFunder";
-import { Language } from "./publication/Language";
 import config from "../config";
-import { Role } from "./publication/Role";
-import { Status } from "./publication/Status";
 import { Institute } from "./institute/Institute";
 import { AliasAuthorFirstName } from "./author/AliasAuthorFirstName";
 import { AliasAuthorLastName } from "./author/AliasAuthorLastName";
 import { Author } from "./author/Author";
-import { Publication } from "./publication/Publication";
-import { PublicationIdentifier } from "./publication/PublicationIdentifier";
+import { Publication } from "./publication/core/Publication";
+import { PublicationIdentifier } from "./publication/core/PublicationIdentifier";
 import { Funder } from "./funder/Funder";
 import { GreaterEntity } from "./greater_entity/GreaterEntity";
 import { CostCenter } from "./invoice/CostCenter";
@@ -31,6 +28,9 @@ import { Invoice } from "./invoice/Invoice";
 import { PublicationType } from "./pub_type/PublicationType";
 import { PublisherDOI } from "./publisher/PublisherDOI";
 import { AliasPublisher } from "./publisher/AliasPublisher";
+import { Role } from "./publication/relations/Role";
+import { Status } from "./publication/lookups/Status";
+import { Language } from "./publication/lookups/Language";
 
 //export const init_service = require(config().init_service)
 //export const init_service = import (config().init_service);

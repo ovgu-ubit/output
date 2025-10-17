@@ -11,12 +11,12 @@ import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../../invoice/invoice.service';
-import { LanguageService } from '../../publication/language.service';
+import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/publication.service';
+import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
-import { RoleService } from '../../publication/role.service';
+import { RoleService } from '../../publication/relations/role.service';
 import { ReportItemService } from '../report-item.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
 

@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Institute } from './Institute';
 import { InstituteController } from './InstituteController';
 import { InstitutionService } from './institution.service';
-import { AuthorPublication } from '../publication/AuthorPublication';
+import { AuthorPublication } from '../publication/relations/AuthorPublication';
 import { AliasInstitute } from './AliasInstitute';
 import { Author } from '../author/Author';
 import { INSTITUTES_AFFILIATION_PORT, INSTITUTES_FIND_SUB_FLAT } from '../ports';

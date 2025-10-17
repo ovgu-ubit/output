@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Publication } from '../../publication/Publication';
+import { Publication } from '../../publication/core/Publication';
 
 @Injectable()
 /**

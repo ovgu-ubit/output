@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne, ManyToMany, JoinTable } from "typeorm";
-import { AuthorPublication } from "../publication/AuthorPublication";
+import { AuthorPublication } from "../publication/relations/AuthorPublication";
 import { Author as IAuthor} from "../../../output-interfaces/Publication"
 import { Institute } from "../institute/Institute";
 import { AliasAuthorFirstName } from "./AliasAuthorFirstName";

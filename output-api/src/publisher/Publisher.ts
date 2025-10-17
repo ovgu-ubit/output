@@ -1,7 +1,7 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany} from "typeorm";
 import { Publisher as IPublisher } from "../../../output-interfaces/Publication"
 import { PublisherDOI } from "./PublisherDOI";
-import { Publication } from "../publication/Publication";
+import { Publication } from "../publication/core/Publication";
 import { AliasPublisher } from "./AliasPublisher";
 
 @Entity()

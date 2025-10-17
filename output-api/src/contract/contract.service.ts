@@ -5,7 +5,7 @@ import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
 import { Contract } from './Contract';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
-import { PublicationService } from '../publication/publication.service';
+import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier';
 
 @Injectable()

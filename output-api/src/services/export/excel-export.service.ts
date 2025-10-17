@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AbstractExportService } from './abstract-export.service';
 import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/Publication';
+import { Publication } from '../../publication/core/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';
@@ -15,7 +15,7 @@ import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/publication.service';
+import { PublicationService } from '../../publication/core/publication.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 
 @Injectable()

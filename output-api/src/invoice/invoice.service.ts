@@ -6,7 +6,7 @@ import { ILike, Repository } from 'typeorm';
 import { Invoice } from './Invoice';
 import { CostType } from './CostType';
 import { CostCenter } from './CostCenter';
-import { Publication } from '../publication/Publication';
+import { Publication } from '../publication/core/Publication';
 import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
 
 @Injectable()

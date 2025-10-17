@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, Repository } from "typeorm";
-import { AuthorPublication } from "../publication/AuthorPublication";
+import { AuthorPublication } from "../publication/relations/AuthorPublication";
 import { Config } from "../entity/Config";
 import { Contract } from "../contract/Contract";
 import { OA_Category } from "../oa_category/OA_Category";
@@ -9,10 +9,8 @@ import { Publisher } from "../publisher/Publisher";
 import { AliasInstitute } from "../institute/AliasInstitute";
 import { AliasPubType } from "../pub_type/AliasPubType";
 import { AliasFunder } from "../funder/AliasFunder";
-import { Language } from "../publication/Language";
-import { Role } from "../publication/Role";
 import { Institute } from "../institute/Institute";
-import { Publication } from "../publication/Publication";
+import { Publication } from "../publication/core/Publication";
 import { Author } from "../author/Author";
 import { Funder } from "../funder/Funder";
 import { GreaterEntity } from "../greater_entity/GreaterEntity";
@@ -21,6 +19,8 @@ import { CostCenter } from "../invoice/CostCenter";
 import { PublicationType } from "../pub_type/PublicationType";
 import { PublisherDOI } from "../publisher/PublisherDOI";
 import { AliasPublisher } from "../publisher/AliasPublisher";
+import { Role } from "../publication/relations/Role";
+import { Language } from "../publication/lookups/Language";
 
 @Injectable()
 export class InitService {

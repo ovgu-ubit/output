@@ -4,7 +4,7 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
 import { EntityManager, ILike, In, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
-import { AuthorPublication } from '../publication/AuthorPublication';
+import { AuthorPublication } from '../publication/relations/AuthorPublication';
 import { AliasInstitute } from './AliasInstitute';
 import { Institute } from './Institute';
 import { InstitutesAffiliationPort } from '../ports';

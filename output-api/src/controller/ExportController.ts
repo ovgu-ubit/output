@@ -10,7 +10,7 @@ import { SearchFilter } from "../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
 import { createReadStream } from "fs";
-import { Publication } from "../publication/Publication";
+import { Publication } from "../publication/core/Publication";
 
 @Controller("export")
 @ApiTags("export")

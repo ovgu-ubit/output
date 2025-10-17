@@ -3,15 +3,15 @@ import { ConfigService } from "@nestjs/config";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
-import { SearchFilter } from "../../../output-interfaces/Config";
-import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
+import { SearchFilter } from "../../../../output-interfaces/Config";
+import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
 import { Publication } from "./Publication";
-import { Permissions } from "../authorization/permission.decorator";
-import { AppConfigService } from "../services/app-config.service";
+import { Permissions } from "../../authorization/permission.decorator";
+import { AppConfigService } from "../../services/app-config.service";
 import { PublicationService } from "./publication.service";
-import { AbstractFilterService } from "../services/filter/abstract-filter.service";
+import { AbstractFilterService } from "../../services/filter/abstract-filter.service";
 import { PublicationDuplicate } from "./PublicationDuplicate";
-import { AccessGuard } from "../authorization/access.guard";
+import { AccessGuard } from "../../authorization/access.guard";
 
 @Controller("publications")
 @ApiTags("publications")

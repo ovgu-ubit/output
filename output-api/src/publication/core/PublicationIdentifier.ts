@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { PublicationIdentifier as IPublicationIdentifier } from "../../../output-interfaces/Publication";
+import { PublicationIdentifier as IPublicationIdentifier } from "../../../../output-interfaces/Publication";
 import { Publication } from "./Publication";
 
 @Entity()

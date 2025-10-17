@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/Publication';
+import { Publication } from '../../publication/core/Publication';
 import { Publisher } from '../../publisher/Publisher';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
@@ -10,7 +10,7 @@ import { GreaterEntityService } from '../../greater_entity/greater-entitiy.servi
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/publication.service';
+import { PublicationService } from '../../publication/core/publication.service';
 import { ReportItemService } from '../report-item.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
 import { FunderService } from '../../funder/funder.service';
@@ -18,8 +18,8 @@ import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublisherService } from '../../publisher/publisher.service';
-import { LanguageService } from '../../publication/language.service';
-import { RoleService } from '../../publication/role.service';
+import { LanguageService } from '../../publication/lookups/language.service';
+import { RoleService } from '../../publication/relations/role.service';
 
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {

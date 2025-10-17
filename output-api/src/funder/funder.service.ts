@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
 import { AliasFunder } from './AliasFunder';
-import { PublicationService } from '../publication/publication.service';
+import { PublicationService } from '../publication/core/publication.service';
 import { Funder } from './Funder';
 import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 

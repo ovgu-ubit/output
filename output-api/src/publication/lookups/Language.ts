@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { Language as ILanguage } from "../../../output-interfaces/Publication";
+import { Language as ILanguage } from "../../../../output-interfaces/Publication";
 
 @Entity()
 export class Language implements ILanguage {

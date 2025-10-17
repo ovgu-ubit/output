@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { AccessGuard } from "../authorization/access.guard";
-import { Permissions } from "../authorization/permission.decorator";
+import { AccessGuard } from "../../authorization/access.guard";
+import { Permissions } from "../../authorization/permission.decorator";
 import { RoleService } from "./role.service";
 import { Role } from "./Role";
 

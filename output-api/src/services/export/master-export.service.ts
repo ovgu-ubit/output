@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { AbstractExportService } from './abstract-export.service';
-import { PublicationService } from '../../publication/publication.service';
+import { PublicationService } from '../../publication/core/publication.service';
 import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/Publication';
+import { Publication } from '../../publication/core/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ConfigService } from '@nestjs/config';

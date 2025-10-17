@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, OneToMany, Tree, TreeChildren, TreeParent } from "typeorm";
 import { Institute as IInstitute } from "../../../output-interfaces/Publication"
-import { AuthorPublication } from "../publication/AuthorPublication";
+import { AuthorPublication } from "../publication/relations/AuthorPublication";
 import { AliasInstitute } from "./AliasInstitute";
 import { Author } from "../author/Author";
 

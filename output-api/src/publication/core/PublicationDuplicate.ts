@@ -1,5 +1,5 @@
 import { Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { PublicationDuplicate as IPublicationDuplicate } from "../../../output-interfaces/Publication";
+import { PublicationDuplicate as IPublicationDuplicate } from "../../../../output-interfaces/Publication";
 import { Publication } from "./Publication";
 
 @Entity()

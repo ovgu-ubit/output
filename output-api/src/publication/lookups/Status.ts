@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
-import { Status as IStatus } from "../../../output-interfaces/Publication";
+import { Status as IStatus } from "../../../../output-interfaces/Publication";
 
 @Entity()
 export class Status implements IStatus {

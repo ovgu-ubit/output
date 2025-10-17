@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Language } from "./Language";
-import { AccessGuard } from "../authorization/access.guard";
-import { Permissions } from "../authorization/permission.decorator";
+import { AccessGuard } from "../../authorization/access.guard";
+import { Permissions } from "../../authorization/permission.decorator";
 import { LanguageService } from "./language.service";
 
 @Controller("language")
