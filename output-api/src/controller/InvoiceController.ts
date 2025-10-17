@@ -4,8 +4,8 @@ import { InvoiceService } from "../services/entities/invoice.service";
 import { Invoice } from "../entity/Invoice";
 import { CostType } from "../entity/CostType";
 import { CostCenter } from "../entity/CostCenter";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 import { CostTypeIndex } from "../../../output-interfaces/PublicationIndex";
 
 @Controller("invoice")

@@ -1,20 +1,20 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../output-interfaces/Config';
+import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author';
-import { AuthorPublication } from '../entity/AuthorPublication';
+import { AuthorPublication } from './AuthorPublication';
 import { CostItem } from '../entity/CostItem';
-import { Institute } from '../entity/Institute';
 import { Invoice } from '../entity/Invoice';
 import { Publication } from './Publication';
-import { PublicationIdentifier } from '../entity/identifier/PublicationIdentifier';
 import { Role } from '../entity/Role';
-import { InstitutionService } from '../services/entities/institution.service';
-import { PublicationSupplement } from '../entity/PublicationSupplement';
-import { PublicationDuplicate } from '../entity/PublicationDuplicate';
+import { Institute } from '../institute/Institute';
+import { INSTITUTES_FIND_SUB_FLAT, InstitutesFindSubFlatPort } from '../ports';
+import { PublicationIdentifier } from './PublicationIdentifier';
+import { PublicationSupplement } from './PublicationSupplement';
+import { PublicationDuplicate } from './PublicationDuplicate';
 
 @Injectable()
 export class PublicationService {
@@ -41,7 +41,8 @@ export class PublicationService {
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
-        private configService: ConfigService, private instService: InstitutionService) { }
+        private configService: ConfigService, 
+        @Inject(INSTITUTES_FIND_SUB_FLAT) private instService: InstitutesFindSubFlatPort) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub).catch(err => {

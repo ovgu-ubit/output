@@ -5,8 +5,8 @@ import { concatMap, defer, from, iif, Observable, of} from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
 import { PublicationType } from '../../entity/PublicationType';
 import { PublicationTypeIndex } from '../../../../output-interfaces/PublicationIndex';
-import { PublicationService } from './publication.service';
 import { AliasPubType } from '../../entity/alias/AliasPubType';
+import { PublicationService } from '../../publication/publication.service';
 
 @Injectable()
 export class PublicationTypeService {

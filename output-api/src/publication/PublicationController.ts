@@ -6,12 +6,12 @@ import { Between } from "typeorm";
 import { SearchFilter } from "../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { Publication } from "./Publication";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../services/app-config.service";
 import { PublicationService } from "./publication.service";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
-import { PublicationDuplicate } from "../entity/PublicationDuplicate";
+import { PublicationDuplicate } from "./PublicationDuplicate";
+import { AccessGuard } from "../authorization/access.guard";
 
 @Controller("publications")
 @ApiTags("publications")

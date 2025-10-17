@@ -1,8 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable, NotImplementedException } from '@nestjs/common';
 import { concatMap, concatWith, map, merge, mergeAll, mergeMap, mergeWith, Observable, of, queueScheduler, scheduled, Subject, takeUntil } from 'rxjs';
-import { Publication } from '../../entity/Publication';
-import { PublicationService } from '../entities/publication.service';
+import { Publication } from '../../publication/Publication';
+import { PublicationService } from '../../publication/publication.service';
 
 @Injectable()
 export abstract class ApiImportCursorService {

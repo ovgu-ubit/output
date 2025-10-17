@@ -6,8 +6,8 @@ import { AppError } from '../../../../output-interfaces/Config';
 import { GreaterEntityIndex } from '../../../../output-interfaces/PublicationIndex';
 import { GreaterEntity } from '../../entity/GreaterEntity';
 import { GEIdentifier } from '../../entity/identifier/GEIdentifier';
-import { Publication } from '../../entity/Publication';
-import { PublicationService } from './publication.service';
+import { Publication } from '../../publication/Publication';
+import { PublicationService } from '../../publication/publication.service';
 
 @Injectable()
 export class GreaterEntityService {

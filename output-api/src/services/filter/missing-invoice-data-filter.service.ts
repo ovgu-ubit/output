@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { AbstractFilterService } from "./abstract-filter.service";
-import { PublicationService } from "../entities/publication.service";
+import { PublicationService } from "../../publication/publication.service";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
-import { Publication } from "../../entity/Publication";
+import { Publication } from "../../publication/Publication";
 
 @Injectable()
 export class MissingInvoiceDataService extends AbstractFilterService<PublicationIndex|Publication>{

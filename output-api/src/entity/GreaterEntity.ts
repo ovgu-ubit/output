@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
 import { GreaterEntity as IGreaterEntity } from "../../../output-interfaces/Publication"
 import { GEIdentifier } from "./identifier/GEIdentifier";
-import { Publication } from "./Publication";
+import { Publication } from "../publication/Publication";
 
 @Entity()
 export class GreaterEntity implements IGreaterEntity {

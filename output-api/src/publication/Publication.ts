@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMany, JoinTable, UpdateDateColumn, CreateDateColumn, DeleteDateColumn } from "typeorm";
-import { AuthorPublication } from "../entity/AuthorPublication";
+import { AuthorPublication } from "./AuthorPublication";
 import { Contract } from "../entity/Contract";
 import { Funder } from "../entity/Funder";
 import { GreaterEntity } from "../entity/GreaterEntity";
@@ -7,11 +7,11 @@ import { Invoice } from "../entity/Invoice";
 import { OA_Category } from "../entity/OA_Category";
 import { PublicationType } from "../entity/PublicationType";
 import { Publisher } from "../entity/Publisher";
-import { Publication as IPublication } from "../../../../output-interfaces/Publication"
+import { Publication as IPublication } from "../../../output-interfaces/Publication"
 import { Language } from "../entity/Language";
-import { PublicationIdentifier } from "../entity/identifier/PublicationIdentifier";
-import { PublicationSupplement } from "../entity/PublicationSupplement";
-import { PublicationDuplicate } from "../entity/PublicationDuplicate";
+import { PublicationIdentifier } from "./PublicationIdentifier";
+import { PublicationSupplement } from "./PublicationSupplement";
+import { PublicationDuplicate } from "./PublicationDuplicate";
 
 @Entity()
 export class Publication implements IPublication {

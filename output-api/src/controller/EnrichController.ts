@@ -6,8 +6,8 @@ import { Response } from "express";
 import { UpdateMapping } from "../../../output-interfaces/Config";
 import { ConfigService } from "@nestjs/config";
 import { ApiEnrichDOIService } from "../services/import/api-enrich-doi.service";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("enrich")
 @ApiTags("enrich")

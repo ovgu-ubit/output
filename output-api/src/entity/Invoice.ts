@@ -2,8 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, ManyToOne, OneToMan
 import { Contract } from "./Contract";
 import { CostCenter } from "./CostCenter";
 import { CostItem } from "./CostItem";
-import { Publication } from "./Publication";
 import { Invoice as IInvoice } from "../../../output-interfaces/Publication"
+import { Publication } from "../publication/Publication";
 
 @Entity()
 export class Invoice implements IInvoice {

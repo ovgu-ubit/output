@@ -3,8 +3,8 @@ import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { FunderService } from "../services/entities/funder.service";
 import { Funder } from "../entity/Funder";
 import { FunderIndex } from "../../../output-interfaces/PublicationIndex";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("funder")
 @ApiTags("funder")

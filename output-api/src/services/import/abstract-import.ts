@@ -2,27 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Author } from '../../entity/Author';
 import { Funder } from '../../entity/Funder';
 import { GreaterEntity } from '../../entity/GreaterEntity';
-import { Institute } from '../../entity/Institute';
 import { Invoice } from '../../entity/Invoice';
-import { Publication } from '../../entity/Publication';
+import { Publication } from '../../publication/Publication';
 import { Publisher } from '../../entity/Publisher';
 import { Role } from '../../entity/Role';
 import { AuthorService } from '../entities/author.service';
 import { ContractService } from '../entities/contract.service';
 import { FunderService } from '../entities/funder.service';
 import { GreaterEntityService } from '../entities/greater-entitiy.service';
-import { InstitutionService } from '../entities/institution.service';
+import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../entities/invoice.service';
 import { LanguageService } from '../entities/language.service';
 import { OACategoryService } from '../entities/oa-category.service';
 import { PublicationTypeService } from '../entities/publication-type.service';
-import { PublicationService } from '../entities/publication.service';
 import { PublisherService } from '../entities/publisher.service';
 import { RoleService } from '../entities/role.service';
 import { ReportItemService } from '../report-item.service';
+import { Institute } from '../../institute/Institute';
+import { PublicationService } from '../../publication/publication.service';
+import { Author } from '../../author/Author';
 
 @Injectable()
 /**

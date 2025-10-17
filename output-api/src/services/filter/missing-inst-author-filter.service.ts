@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import { Publication } from "../../entity/Publication";
 import { AbstractFilterService } from "./abstract-filter.service";
-import { PublicationService } from "../entities/publication.service";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
+import { PublicationService } from "../../publication/publication.service";
+import { Publication } from "../../publication/Publication";
 
 @Injectable()
 export class MissingInstAuthorFilterService extends AbstractFilterService<PublicationIndex|Publication>{

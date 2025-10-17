@@ -6,7 +6,7 @@ import { ILike, Repository } from 'typeorm';
 import { Contract } from '../../entity/Contract';
 import { CostType } from '../../entity/CostType';
 import { Invoice } from '../../entity/Invoice';
-import { Publication } from '../../entity/Publication';
+import { Publication } from '../../publication/Publication';
 import { CostCenter } from '../../entity/CostCenter';
 import { CostCenterIndex, CostTypeIndex } from '../../../../output-interfaces/PublicationIndex';
 

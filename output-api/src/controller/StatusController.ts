@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from 
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Role } from "../entity/Role";
 import { Status } from "../entity/Status";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { Permissions } from "../authorization/permission.decorator";
 import { StatusService } from "../services/entities/status.service";
+import { AccessGuard } from "../authorization/access.guard";
 
 @Controller("status")
 @ApiTags("status")

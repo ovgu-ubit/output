@@ -1,22 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
-import { AppError } from '../../../../output-interfaces/Config';
-import { AuthorIndex } from '../../../../output-interfaces/PublicationIndex';
-import { AliasAuthorFirstName } from '../entity/alias/AliasAuthorFirstName';
-import { AliasAuthorLastName } from '../entity/alias/AliasAuthorLastName';
+import { AppError } from '../../../output-interfaces/Config';
+import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
+import { AliasAuthorFirstName } from './AliasAuthorFirstName';
+import { AuthorPublication } from '../publication/AuthorPublication';
+import { INSTITUTES_AFFILIATION_PORT, InstitutesAffiliationPort } from '../ports';
 import { Author } from './Author';
-import { AuthorPublication } from '../entity/AuthorPublication';
-import { AppConfigService } from '../services/app-config.service';
-import { InstitutionService } from '../services/entities/institution.service';
+import { AliasAuthorLastName } from './AliasAuthorLastName';
 
 @Injectable()
 export class AuthorService {
 
-    constructor(@InjectRepository(Author) private repository: Repository<Author>, private appConfigService: AppConfigService,
-        private instService: InstitutionService, @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
+    constructor(@InjectRepository(Author) private repository: Repository<Author>,
+        @Inject(INSTITUTES_AFFILIATION_PORT) private instService: InstitutesAffiliationPort, 
+        @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(AliasAuthorFirstName) private aliasFirstNameRepository: Repository<AliasAuthorFirstName>,
         @InjectRepository(AliasAuthorLastName) private aliasLastNameRepository: Repository<AliasAuthorLastName>,
         private configService: ConfigService) { }

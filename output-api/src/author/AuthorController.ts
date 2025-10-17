@@ -4,8 +4,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Body, Controller, Delete, Get, InternalServerErrorException, Param, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthorService } from "./author.service";
-import { Permissions } from "../guards/permission.decorator";
-import { AccessGuard } from "../guards/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
 
 @Controller("authors")
 @ApiTags("authors")

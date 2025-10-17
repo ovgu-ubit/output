@@ -5,7 +5,7 @@ import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
 import { OA_Category } from '../../entity/OA_Category';
 import { OACategoryIndex } from '../../../../output-interfaces/PublicationIndex';
-import { PublicationService } from './publication.service';
+import { PublicationService } from '../../publication/publication.service';
 
 @Injectable()
 export class OACategoryService {

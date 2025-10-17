@@ -3,8 +3,8 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PublisherService } from "../services/entities/publisher.service";
 import { Publisher } from "../entity/Publisher";
 import { PublisherIndex } from "../../../output-interfaces/PublicationIndex";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { Permissions } from "../authorization/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
 
 @Controller("publisher")
 @ApiTags("publisher")

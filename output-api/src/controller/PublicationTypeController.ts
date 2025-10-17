@@ -4,8 +4,8 @@ import { PublicationTypeService } from "../services/entities/publication-type.se
 import { AppConfigService } from "../services/app-config.service";
 import { PublicationType } from "../entity/PublicationType";
 import { PublicationTypeIndex } from "../../../output-interfaces/PublicationIndex";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("pub_type")
 @ApiTags("pub_type")

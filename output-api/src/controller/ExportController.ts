@@ -4,13 +4,13 @@ import { ReportItemService } from "../services/report-item.service";
 import { Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { AbstractExportService } from "../services/export/abstract-export.service";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 import { SearchFilter } from "../../../output-interfaces/Config";
-import { Publication } from "../entity/Publication";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AbstractFilterService } from "../services/filter/abstract-filter.service";
 import { createReadStream } from "fs";
+import { Publication } from "../publication/Publication";
 
 @Controller("export")
 @ApiTags("export")

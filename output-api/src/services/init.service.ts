@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, Repository } from "typeorm";
-import { Author } from "../entity/Author";
-import { AuthorPublication } from "../entity/AuthorPublication";
+import { AuthorPublication } from "../publication/AuthorPublication";
 import { Config } from "../entity/Config";
 import { Contract } from "../entity/Contract";
 import { CostCenter } from "../entity/CostCenter";
@@ -11,19 +10,20 @@ import { CostType } from "../entity/CostType";
 import { Funder } from "../entity/Funder";
 import { GreaterEntity } from "../entity/GreaterEntity";
 import { GEIdentifier } from "../entity/identifier/GEIdentifier";
-import { Institute } from "../entity/Institute";
 import { Invoice } from "../entity/Invoice";
 import { OA_Category } from "../entity/OA_Category";
-import { Publication } from "../entity/Publication";
 import { PublicationType } from "../entity/PublicationType";
 import { Publisher } from "../entity/Publisher";
-import { AliasInstitute } from "../entity/alias/AliasInstitute";
+import { AliasInstitute } from "../institute/AliasInstitute";
 import { AliasPublisher } from "../entity/alias/AliasPublisher";
 import { AliasPubType } from "../entity/alias/AliasPubType";
 import { AliasFunder } from "../entity/alias/AliasFunder";
 import { Language } from "../entity/Language";
 import { PublisherDOI } from "../entity/PublisherDOI";
 import { Role } from "../entity/Role";
+import { Institute } from "../institute/Institute";
+import { Publication } from "../publication/Publication";
+import { Author } from "../author/Author";
 
 @Injectable()
 export class InitService {

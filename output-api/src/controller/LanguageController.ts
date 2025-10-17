@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from "@nes
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { LanguageService } from "../services/entities/language.service";
 import { Language } from "../entity/Language";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("language")
 @ApiTags("language")

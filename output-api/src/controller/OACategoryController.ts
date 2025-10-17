@@ -5,8 +5,8 @@ import { AppConfigService } from "../services/app-config.service";
 import { PublicationType } from "../entity/PublicationType";
 import { OACategoryIndex } from "../../../output-interfaces/PublicationIndex";
 import { OA_Category } from "../entity/OA_Category";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("oa_cat")
 @ApiTags("oa_cat")

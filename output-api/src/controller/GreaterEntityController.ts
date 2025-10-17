@@ -3,8 +3,8 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GreaterEntityService } from "../services/entities/greater-entitiy.service";
 import { GreaterEntity } from "../entity/GreaterEntity";
 import { GreaterEntityIndex } from "../../../output-interfaces/PublicationIndex";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("greater_entity")
 @ApiTags("greater_entity")

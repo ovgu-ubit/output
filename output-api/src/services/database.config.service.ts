@@ -11,6 +11,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
 
     createTypeOrmOptions(): TypeOrmModuleOptions {
         return {
+            autoLoadEntities: true,
             dropSchema: ['true', '1'].includes(this.configService.get<string>('DATABASE_DROPSCHEMA').toLowerCase()),
             type: this.configService.get<DatabaseType>('DATABASE_TYPE'),
             host: this.configService.get<string>('DATABASE_HOST'),

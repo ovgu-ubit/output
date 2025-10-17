@@ -7,8 +7,8 @@ import { Response } from "express";
 import { CSVMapping, UpdateMapping } from "../../../output-interfaces/Config";
 import { ConfigService } from "@nestjs/config";
 import { AbstractImportService } from "../services/import/abstract-import";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 import { ExcelImportService } from "../services/import/excel-import.service";
 
 @Controller("import")

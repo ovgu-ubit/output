@@ -3,8 +3,8 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ContractService } from "../services/entities/contract.service";
 import { Contract } from "../entity/Contract";
 import { ContractIndex } from "../../../output-interfaces/PublicationIndex";
-import { AccessGuard } from "../guards/access.guard";
-import { Permissions } from "../guards/permission.decorator";
+import { Permissions } from "../authorization/permission.decorator";
+import { AccessGuard } from "../authorization/access.guard";
 
 @Controller("contract")
 @ApiTags("contract")

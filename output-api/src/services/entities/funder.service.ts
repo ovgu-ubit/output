@@ -5,8 +5,8 @@ import { ILike, In, Repository } from 'typeorm';
 import { Funder } from '../../entity/Funder';
 import { Publisher } from '../../entity/Publisher';
 import { FunderIndex } from '../../../../output-interfaces/PublicationIndex';
-import { PublicationService } from './publication.service';
 import { AliasFunder } from '../../entity/alias/AliasFunder';
+import { PublicationService } from '../../publication/publication.service';
 
 @Injectable()
 export class FunderService {
