@@ -12,7 +12,7 @@ import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
 import { InstitutionService } from '../../institute/institution.service';
 import { InvoiceService } from '../../invoice/invoice.service';
-import { LanguageService } from '../entities/language.service';
+import { LanguageService } from '../../publication/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';

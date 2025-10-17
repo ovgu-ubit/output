@@ -11,13 +11,11 @@ import { ConfigController } from "./controller/ConfigController";
 import { EnrichController } from "./controller/EnrichController";
 import { ExportController } from "./controller/ExportController";
 import { ImportController } from "./controller/ImportController";
-import { LanguageController } from "./controller/LanguageController";
 import { PlausibilityController } from "./controller/PlausibilityController";
 import { RoleController } from "./controller/RoleController";
 import { StatisticController } from "./controller/StatisticController";
 import { StatusController } from "./controller/StatusController";
 import { Config } from "./entity/Config";
-import { Language } from "./entity/Language";
 import { Role } from "./entity/Role";
 import { Status } from "./entity/Status";
 import { FunderModule } from "./funder/funder.module";
@@ -31,7 +29,6 @@ import { PublicationModule } from './publication/publication.module';
 import { PublisherModule } from "./publisher/publisher.module";
 import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
-import { LanguageService } from "./services/entities/language.service";
 import { RoleService } from "./services/entities/role.service";
 import { StatusService } from "./services/entities/status.service";
 import { CSVImportService } from "./services/import/csv-import.service";
@@ -60,7 +57,7 @@ const filterz = appConfig().filter_services;
       useClass: DatabaseConfigService,
       inject: [DatabaseConfigService],
     }),
-    TypeOrmModule.forFeature([Config, Language, Role, Status]),
+    TypeOrmModule.forFeature([Config, Role, Status]),
     ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
@@ -75,11 +72,10 @@ const filterz = appConfig().filter_services;
     PublisherModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
-    LanguageController,
     PlausibilityController, ExportController, ConfigController, RoleController, StatusController],
   providers: [
     GreaterEntityService,
-    ReportItemService, LanguageService, RoleService, StatusService,
+    ReportItemService, RoleService, StatusService,
     AppConfigService, StatisticsService,
     CSVImportService, ExcelImportService,
     ...imports.map(e => e.class),

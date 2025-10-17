@@ -12,7 +12,7 @@ import { GEIdentifier } from "./greater_entity/GEIdentifier";
 import { AliasInstitute } from "./institute/AliasInstitute";
 import { AliasPubType } from "./pub_type/AliasPubType";
 import { AliasFunder } from "./funder/AliasFunder";
-import { Language } from "./entity/Language";
+import { Language } from "./publication/Language";
 import config from "../config";
 import { Role } from "./entity/Role";
 import { Status } from "./entity/Status";

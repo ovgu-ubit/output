@@ -4,7 +4,7 @@ import { Contract } from "../contract/Contract";
 import { OA_Category } from "../oa_category/OA_Category";
 import { Publisher } from "../publisher/Publisher";
 import { Publication as IPublication } from "../../../output-interfaces/Publication"
-import { Language } from "../entity/Language";
+import { Language } from "./Language";
 import { PublicationIdentifier } from "./PublicationIdentifier";
 import { PublicationSupplement } from "./PublicationSupplement";
 import { PublicationDuplicate } from "./PublicationDuplicate";

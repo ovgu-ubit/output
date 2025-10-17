@@ -9,7 +9,7 @@ import { Publisher } from "../publisher/Publisher";
 import { AliasInstitute } from "../institute/AliasInstitute";
 import { AliasPubType } from "../pub_type/AliasPubType";
 import { AliasFunder } from "../funder/AliasFunder";
-import { Language } from "../entity/Language";
+import { Language } from "../publication/Language";
 import { Role } from "../entity/Role";
 import { Institute } from "../institute/Institute";
 import { Publication } from "../publication/Publication";

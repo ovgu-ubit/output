@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
-import { Language } from '../../entity/Language';
+import { Language } from './Language';
 
 @Injectable()
 export class LanguageService {
