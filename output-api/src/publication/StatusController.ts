@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { Role } from "../entity/Role";
+import { Role } from "./Role";
 import { Status } from "./Status";
 import { Permissions } from "../authorization/permission.decorator";
 import { StatusService } from "../publication/status.service";

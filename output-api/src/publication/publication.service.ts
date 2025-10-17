@@ -7,7 +7,7 @@ import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author';
 import { AuthorPublication } from './AuthorPublication';
 import { Publication } from './Publication';
-import { Role } from '../entity/Role';
+import { Role } from './Role';
 import { Institute } from '../institute/Institute';
 import { INSTITUTES_FIND_SUB_FLAT, InstitutesFindSubFlatPort } from '../ports';
 import { PublicationIdentifier } from './PublicationIdentifier';

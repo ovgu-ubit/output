@@ -19,7 +19,7 @@ import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
-import { RoleService } from '../entities/role.service';
+import { RoleService } from '../../publication/role.service';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 

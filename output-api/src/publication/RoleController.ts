@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from 
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { Role } from "../entity/Role";
-import { RoleService } from "../services/entities/role.service";
+import { RoleService } from "./role.service";
+import { Role } from "./Role";
 
 @Controller("role")
 @ApiTags("role")

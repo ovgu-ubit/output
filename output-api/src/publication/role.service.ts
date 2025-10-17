@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
-import { Role } from '../../entity/Role';
 import { ConfigService } from '@nestjs/config';
+import { Role } from './Role';
 
 @Injectable()
 export class RoleService {

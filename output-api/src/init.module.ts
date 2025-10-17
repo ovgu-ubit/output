@@ -14,7 +14,7 @@ import { AliasPubType } from "./pub_type/AliasPubType";
 import { AliasFunder } from "./funder/AliasFunder";
 import { Language } from "./publication/Language";
 import config from "../config";
-import { Role } from "./entity/Role";
+import { Role } from "./publication/Role";
 import { Status } from "./publication/Status";
 import { Institute } from "./institute/Institute";
 import { AliasAuthorFirstName } from "./author/AliasAuthorFirstName";
