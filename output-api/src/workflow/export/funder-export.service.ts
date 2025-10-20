@@ -4,8 +4,8 @@ import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex
 import { Publication } from '../../publication/core/Publication';
 import { FunderService } from '../../funder/funder.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ReportItemService } from '../report-item.service';
 import { AbstractExportService } from './abstract-export.service';
+import { ReportItemService } from '../report-item.service';
 
 @Injectable()
 /**
@@ -26,7 +26,7 @@ export class FunderExportService extends AbstractExportService {
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Export',this.name, by_user);
+        this.report = await this.reportService.createReport('Export',this.name, by_user);
 
         let pubs = await this.service.get();
 

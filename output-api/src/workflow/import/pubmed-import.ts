@@ -1,6 +1,5 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { EMPTY, Observable, concatMap, concatWith, delay, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -12,7 +11,7 @@ import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
@@ -20,8 +19,9 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 /**
@@ -32,15 +32,10 @@ export class PubMedImportService extends AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
+        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
-        let tags = this.configService.get('searchTags');
-        this.searchText = '('
-        for (let tag of tags) {
-            this.searchText += tag + '[affiliation]+or+'
-        }
-        this.searchText = this.searchText.slice(0, this.searchText.length - 4) + ')'
     }
 
     name = 'PubMed';
@@ -49,6 +44,7 @@ export class PubMedImportService extends AbstractImportService {
     max = 1000;
     delay = 250;
     parallelCalls = 1;
+    affiliationTags;
 
     private newPublications: Publication[] = [];
     private publicationsUpdate = [];
@@ -124,9 +120,19 @@ export class PubMedImportService extends AbstractImportService {
      */
     public async import(update: boolean, by_user?: string) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+
+        let tags = await this.configService.get('searchTags');
+        this.searchText = '('
+        for (let tag of tags) {
+            this.searchText += tag + '[affiliation]+or+'
+        }
+        this.searchText = this.searchText.slice(0, this.searchText.length - 4) + ')'
+
+        this.affiliationTags = await this.configService.get('affiliationTags');
+
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Import', this.name, by_user);
+        this.report = await this.reportService.createReport('Import', this.name, by_user);
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -207,14 +213,14 @@ export class PubMedImportService extends AbstractImportService {
         return element['PubmedArticleSet']['PubmedArticle']['MedlineCitation']
     }
 
-    protected importTest(element: any): boolean {
+    protected importTest(element: any) {
         return element && this.authorsInstitution(element['Article']['AuthorList']['Author']);
     }
 
     public authorsInstitution(authors) {
         if (authors && Array.isArray(authors)) {
-            let aut = authors.filter(author =>
-                this.configService.get('affiliationTags').some(e => {
+            let aut = authors.filter(async author =>
+                this.affiliationTags.some(e => {
                     if (Array.isArray(author['AffiliationInfo'])) {
                         return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                     }
@@ -223,7 +229,7 @@ export class PubMedImportService extends AbstractImportService {
                 ));
             return aut.length > 0;
         } else if (authors) {
-            return this.configService.get('affiliationTags').some(e => {
+            return this.affiliationTags.some(e => {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
@@ -250,7 +256,7 @@ export class PubMedImportService extends AbstractImportService {
             let aut = authors.filter(e => this.isInstAuthor(e));
             return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? this.findAffAuthor(e)['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
         } else if (authors) {
-            if (authors['AffiliationInfo'] && this.configService.get('affiliationTags').some(e => {
+            if (authors['AffiliationInfo'] && this.affiliationTags.some(e => {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
@@ -259,7 +265,7 @@ export class PubMedImportService extends AbstractImportService {
         } else return [];
     }
     isInstAuthor(author) {
-        return this.configService.get('affiliationTags').some(e => {
+        return this.affiliationTags.some(e => {
             if (Array.isArray(author['AffiliationInfo'])) {
                 return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
             }
@@ -268,7 +274,7 @@ export class PubMedImportService extends AbstractImportService {
         );
     }
     findAffAuthor(author) {
-        return author['AffiliationInfo'].find(e => this.configService.get('affiliationTags').some(f => {
+        return author['AffiliationInfo'].find(e => this.affiliationTags.some(f => {
             if (Array.isArray(e['Affiliation'])) return e['Affiliation'].some(g => g['_text'].toLowerCase().includes(f))
             else return e['Affiliation']['_text'].toLowerCase().includes(f)
         }));

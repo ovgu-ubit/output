@@ -1,23 +1,23 @@
 import { HttpService } from "@nestjs/axios";
 import { ExecutionContext, Injectable, InternalServerErrorException, Req } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PermissionDecoration } from "./permission.decorator";
 import { AuthorizationService } from "./authorization.service";
+import { AppConfigService } from "../config/app-config.service";
 
 @Injectable()
 export class TokenAuthorizationService extends AuthorizationService {
-    constructor(protected reflector: Reflector, protected configService: ConfigService, private jwtService: JwtService, private httpService: HttpService) { 
+    constructor(protected reflector: Reflector, protected configService: AppConfigService, private jwtService: JwtService, private httpService: HttpService) { 
         super(reflector, configService) 
-        this.AUTH_API = this.configService.get<string>('AUTH_API').replace(/\/?$/, '/') + 'auth/';
     }
 
     private AUTH_API:string;
 
     override async verify(context: ExecutionContext) {
+        this.AUTH_API = (await this.configService.get('AUTH_API')).replace(/\/?$/, '/') + 'auth/';
         let request = context.switchToHttp().getRequest();
-        if (['false', '0'].includes(this.configService.get('AUTH')?.toLowerCase())) { // no authentication required
+        if (['false', '0'].includes((await this.configService.get('AUTH'))?.toLowerCase())) { // no authentication required
             request['user'] = { read: true, write: true }
             return true;
         }

@@ -1,5 +1,4 @@
 import { BadRequestException, Body, Controller, Delete, Get, Inject, InternalServerErrorException, NotFoundException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
@@ -20,7 +19,7 @@ export class PublicationController {
     constructor(@InjectRepository(Publication) private repository,
         private publicationService: PublicationService,
         private appConfigService: AppConfigService,
-        private configService: ConfigService,
+        private configService: AppConfigService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
 
     @Get()
@@ -197,7 +196,7 @@ export class PublicationController {
     async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
         let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (let path of paths) {
-            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
+            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) throw new NotFoundException();
             res = await this.filterServices[so].filter(res)
         }
@@ -205,9 +204,9 @@ export class PublicationController {
     }
 
     @Get('filter')
-    get_filter() {
+    async get_filter() {
         let result = [];
-        for (let i = 0; i < this.configService.get('filter_services').length; i++) {
+        for (let i = 0; i < (await this.configService.get('filter_services')).length; i++) {
             result.push({
                 path: this.configService.get('filter_services')[i].path,
                 label: this.filterServices[i].getName()

@@ -1,19 +1,22 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
-import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class ReportItemService {
 
     path:string;
 
-    constructor(private configService:ConfigService) {
-        this.path = this.configService.get('LOG_PATH')
-     }
+    constructor(private configService:AppConfigService) {}
 
-    createReport(type:'Import'|'Enrich'|'Check'|'Export', label:string,by_user:string): string {
+    async init() {
+        this.path = await this.configService.get('LOG_PATH')
         if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)
+    }
+
+    async createReport(type:'Import'|'Enrich'|'Check'|'Export', label:string,by_user:string) {
+        await this.init();
         let filename = `${type}_${label}_${this.format(new Date(),true)}_by_${by_user}.log`;
         fs.writeFileSync(this.path+filename,'')
         return this.path+filename;
@@ -31,8 +34,8 @@ export class ReportItemService {
         fs.appendFileSync(reportFile, res);
     }
 
-    getReports(type:'Import'|'Enrich'|'Check'|'Export') {
-        if (!fs.existsSync(this.path)) throw new InternalServerErrorException("configured LOG path does not exist, report to admin")
+    async getReports(type:'Import'|'Enrich'|'Check'|'Export') {
+        await this.init();
         let files = fs.readdirSync(this.path).filter(e => e.startsWith(type));
         return files;
     }
@@ -46,8 +49,8 @@ export class ReportItemService {
     }
 
     @Cron('15 55 22 * * *') // 22:55:15 at every day
-    public deleteOldFiles() {
-        if (!fs.existsSync(this.path)) throw new InternalServerErrorException("configured LOG path does not exist, report to admin")
+    public async deleteOldFiles() {
+        await this.init();
         if (!this.path.endsWith("/")) this.path += "/";
         let now = new Date();
         console.log("Delete run at "+now)

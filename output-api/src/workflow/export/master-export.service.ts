@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
 import { AbstractExportService } from './abstract-export.service';
 import { PublicationService } from '../../publication/core/publication.service';
-import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { Publication } from '../../publication/core/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ConfigService } from '@nestjs/config';
 import { InvoiceService } from '../../invoice/invoice.service';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 /**
@@ -20,7 +19,7 @@ export class MasterExportService extends AbstractExportService {
     sep = ';';
     df:Intl.DateTimeFormat;
 
-    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:ConfigService, private invoiceService:InvoiceService) {
+    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:AppConfigService, private invoiceService:InvoiceService) {
         super(); 
         this.df = new Intl.DateTimeFormat('de-DE');
     }
@@ -29,11 +28,11 @@ export class MasterExportService extends AbstractExportService {
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Export',this.name, by_user);
+        this.report = await this.reportService.createReport('Export',this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
         if (filter) for (let path of filter.paths) {
-            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
+            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }

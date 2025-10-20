@@ -7,6 +7,7 @@ import { Status } from './Status';
 import { StatusController } from './StatusController';
 import { LanguageService } from './language.service';
 import { StatusService } from './status.service';
+import { AppConfigModule } from '../../config/app-config.module';
 
 @Module({
   imports: [
@@ -14,7 +15,9 @@ import { StatusService } from './status.service';
           Language,
           Status
         ])
-    , AuthorizationModule],
+    , AuthorizationModule,
+    AppConfigModule
+  ],
   controllers: [LanguageController, StatusController],
   providers: [LanguageService, StatusService],
   exports: [LanguageService, StatusService, TypeOrmModule]

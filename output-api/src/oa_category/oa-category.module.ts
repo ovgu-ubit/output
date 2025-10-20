@@ -5,9 +5,15 @@ import { PublicationModule } from '../publication/publication.module';
 import { OA_Category } from './OA_Category';
 import { OACategoryController } from './OACategoryController';
 import { OACategoryService } from './oa-category.service';
+import { AppConfigModule } from '../config/app-config.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OA_Category]), PublicationModule, AuthorizationModule],
+  imports: [
+    TypeOrmModule.forFeature([OA_Category]), 
+    PublicationModule, 
+    AuthorizationModule,
+    AppConfigModule
+  ],
   controllers: [OACategoryController],
   providers: [OACategoryService],
   exports: [OACategoryService, TypeOrmModule]

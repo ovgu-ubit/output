@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
@@ -9,20 +8,21 @@ import { Publisher } from '../../publisher/Publisher';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { Institute } from '../../institute/Institute';
 import { PublicationService } from '../../publication/core/publication.service';
 import { Author } from '../../author/Author';
 import { AuthorService } from '../../author/author.service';
 import { Invoice } from '../../invoice/Invoice';
 import { Role } from '../../publication/relations/Role';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 /**
@@ -33,8 +33,8 @@ export abstract class AbstractImportService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, protected roleService: RoleService,
-        protected invoiceService: InvoiceService, protected configService: ConfigService) { }
+        protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
+        protected invoiceService: InvoiceService, protected configService: AppConfigService) { }
 
     protected progress = 0;
     protected status_text = 'initialized';

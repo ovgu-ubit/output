@@ -1,6 +1,5 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
@@ -9,7 +8,7 @@ import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
@@ -17,8 +16,9 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class OpenAccessMonitorImportService extends ApiImportOffsetService {
@@ -26,7 +26,8 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService,protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService, protected http: HttpService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstituteService,
+        protected languageService:LanguageService,  protected roleService: RoleService, protected configService: AppConfigService, protected http: HttpService,
         ) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
     }
@@ -68,12 +69,20 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
         this.year = year;
     }
 
+    param_string;
+    ror_id;
+
+    protected async init() {
+        this.param_string = 'token=' + await this.configService.get('api_key_oam');
+        this.ror_id = await this.configService.get('ror_id');
+    }
+
     protected retrieveCountRequest() {
-         return this.http.get(`${this.url}token=${this.configService.get('api_key_oam')}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id":"${this.configService.get('ror_id')}"}}`)
+         return this.http.get(`${this.url}token=${this.param_string}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}}`)
     }
 
     protected request(offset:number) {
-        return this.http.get(`${this.url}token=${this.configService.get('api_key_oam')}&query={find:"Publications", filter:{year:${this.year}, "source_data.organisations._id":"${this.configService.get('ror_id')}"}, limit: ${this.max_res}, skip: ${offset}}`)
+        return this.http.get(`${this.url}token=${this.param_string}&query={find:"Publications", filter:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}, limit: ${this.max_res}, skip: ${offset}}`)
     }
 
     protected importTest(element: any): boolean {

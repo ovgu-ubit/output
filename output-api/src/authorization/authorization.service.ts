@@ -1,11 +1,11 @@
 import { ExecutionContext, Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { PermissionDecoration } from "./permission.decorator";
+import { AppConfigService } from "../config/app-config.service";
 
 @Injectable()
 export abstract class AuthorizationService {
-    constructor(protected reflector: Reflector, protected configService: ConfigService) { }
+    constructor(protected reflector: Reflector, protected configService: AppConfigService) { }
 
     /**
      * returns true if the user is allowed to access the resource and enrichs the request object with a user object
@@ -15,7 +15,7 @@ export abstract class AuthorizationService {
      */
     async verify(context: ExecutionContext) {
         let request = context.switchToHttp().getRequest();
-        if (['false', '0'].includes(this.configService.get('AUTH')?.toLowerCase())) {
+        if (['false', '0'].includes((await this.configService.get('AUTH'))?.toLowerCase())) {
             request['user'] = { read: true, write_publication: true ,write: true, admin: true }
             return true;
         }

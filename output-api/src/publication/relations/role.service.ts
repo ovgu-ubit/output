@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { Role } from './Role';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class RoleService {
 
-    constructor(@InjectRepository(Role) private repository: Repository<Role>, private configService:ConfigService) { }
+    constructor(@InjectRepository(Role) private repository: Repository<Role>, private configService:AppConfigService) { }
 
     public save(pub: any[]) {
         return this.repository.save(pub).catch(err => {
@@ -27,7 +27,7 @@ export class RoleService {
                 id: ct.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: ct.id,
                 locked_at: null

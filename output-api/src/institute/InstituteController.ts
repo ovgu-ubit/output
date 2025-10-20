@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { InstitutionService } from "./institution.service";
+import { InstituteService } from "./institute.service";
 import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
 import { Institute } from "./Institute";
 import { AccessGuard } from "../authorization/access.guard";
@@ -10,7 +10,7 @@ import { Permissions } from "../authorization/permission.decorator";
 @ApiTags("institute")
 export class InstituteController {
 
-    constructor(private instService: InstitutionService) { }
+    constructor(private instService: InstituteService) { }
 
     @Get()
     @ApiResponse({

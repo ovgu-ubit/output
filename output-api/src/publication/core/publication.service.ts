@@ -1,5 +1,4 @@
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
@@ -14,7 +13,8 @@ import { PublicationDuplicate } from './PublicationDuplicate';
 import { Invoice } from '../../invoice/Invoice';
 import { CostItem } from '../../invoice/CostItem';
 import { Role } from '../relations/Role';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class PublicationService {
@@ -41,8 +41,8 @@ export class PublicationService {
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
-        private configService: ConfigService, 
-        private instService: InstitutionService) { }
+        private configService: AppConfigService, 
+        private instService: InstituteService) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub).catch(err => {
@@ -95,7 +95,7 @@ export class PublicationService {
     }
 
     // base object to select a publication index
-    public indexQuery(): SelectQueryBuilder<Publication> {
+    public async indexQuery(): Promise<SelectQueryBuilder<Publication>> {
         this.filter_joins = new Set();
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.authorPublications", "authorPublications")
@@ -105,61 +105,61 @@ export class PublicationService {
             .addSelect("publication.locked", "locked")
             .groupBy("publication.id")
 
-        if (this.configService.get("pub_index_columns").includes("title")) {
+        if ((await this.configService.get("pub_index_columns")).includes("title")) {
             query = query.addSelect("publication.title", "title").addGroupBy("publication.title")
         }
-        if (this.configService.get("pub_index_columns").includes("doi")) {
+        if ((await this.configService.get("pub_index_columns")).includes("doi")) {
             query = query.addSelect("publication.doi", "doi").addGroupBy("publication.doi")
         }
-        if (this.configService.get("pub_index_columns").includes("authors")) {
+        if ((await this.configService.get("pub_index_columns")).includes("authors")) {
             query = query.addSelect("publication.authors", "authors").addGroupBy("publication.authors")
         }
-        if (this.configService.get("pub_index_columns").includes("authors_inst")) {
+        if ((await this.configService.get("pub_index_columns")).includes("authors_inst")) {
             query = query.addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
                 .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
         }
-        if (this.configService.get("pub_index_columns").includes("corr_inst")) {
+        if ((await this.configService.get("pub_index_columns")).includes("corr_inst")) {
             query = query.addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
         }
-        if (this.configService.get("pub_index_columns").includes("greater_entity")) {
+        if ((await this.configService.get("pub_index_columns")).includes("greater_entity")) {
             this.filter_joins.add("greater_entity")
             query = query.leftJoin("publication.greater_entity", "greater_entity").addSelect("greater_entity.label", "greater_entity").addGroupBy("greater_entity.label")
         }
-        if (this.configService.get("pub_index_columns").includes("oa_category")) {
+        if ((await this.configService.get("pub_index_columns")).includes("oa_category")) {
             this.filter_joins.add("oa_category")
             query = query.leftJoin("publication.oa_category", "oa_category").addSelect("oa_category.label", "oa_category").addGroupBy("oa_category.label")
         }
-        if (this.configService.get("pub_index_columns").includes("locked_status")) {
+        if ((await this.configService.get("pub_index_columns")).includes("locked_status")) {
             query = query.addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
         }
-        if (this.configService.get("pub_index_columns").includes("status")) {
+        if ((await this.configService.get("pub_index_columns")).includes("status")) {
             query = query.addSelect("publication.status", "status").addGroupBy("publication.status")
         }
-        if (this.configService.get("pub_index_columns").includes("edit_date")) {
+        if ((await this.configService.get("pub_index_columns")).includes("edit_date")) {
             query = query.addSelect("publication.edit_date", "edit_date")
         }
-        if (this.configService.get("pub_index_columns").includes("import_date")) {
+        if ((await this.configService.get("pub_index_columns")).includes("import_date")) {
             query = query.addSelect("publication.import_date", "import_date")
         }
-        if (this.configService.get("pub_index_columns").includes("pub_type")) {
+        if ((await this.configService.get("pub_index_columns")).includes("pub_type")) {
             this.filter_joins.add("publication_type")
             query = query.leftJoin("publication.pub_type", "publication_type").addSelect("publication_type.label", "pub_type").addGroupBy("publication_type.label")
         }
-        if (this.configService.get("pub_index_columns").includes("contract")) {
+        if ((await this.configService.get("pub_index_columns")).includes("contract")) {
             this.filter_joins.add("contract")
             query = query.leftJoin("publication.contract", "contract").addSelect("contract.label", "contract").addGroupBy("contract.label")
         }
-        if (this.configService.get("pub_index_columns").includes("publisher")) {
+        if ((await this.configService.get("pub_index_columns")).includes("publisher")) {
             this.filter_joins.add("publisher")
             query = query.leftJoin("publication.publisher", "publisher").addSelect("publisher.label", "publisher").addGroupBy("publisher.label")
         }
-        if (this.configService.get("pub_index_columns").includes("pub_date")) {
+        if ((await this.configService.get("pub_index_columns")).includes("pub_date")) {
             query = query.addSelect("publication.pub_date", "pub_date").addGroupBy("publication.pub_date")
         }
-        if (this.configService.get("pub_index_columns").includes("link")) {
+        if ((await this.configService.get("pub_index_columns")).includes("link")) {
             query = query.addSelect("publication.link", "link")
         }
-        if (this.configService.get("pub_index_columns").includes("data_source")) {
+        if ((await this.configService.get("pub_index_columns")).includes("data_source")) {
             query = query.addSelect("publication.dataSource", "data_source")
         }
 
@@ -169,14 +169,14 @@ export class PublicationService {
     }
 
     //retrieves publication index for a reporting year
-    public index(yop: number): Promise<PublicationIndex[]> {
+    public async index(yop: number): Promise<PublicationIndex[]> {
         let indexQuery = this.indexQuery();
         let query;
         if (yop) {
             let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
             let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
 
-            query = indexQuery
+            query = (await indexQuery)
                 .where('publication.pub_date >= :beginDate', { beginDate })
                 .andWhere('publication.pub_date <= :endDate', { endDate })
                 .orWhere(new Brackets(qb => {
@@ -188,7 +188,7 @@ export class PublicationService {
                         }))
                 }))
         } else {
-            query = indexQuery
+            query = (await indexQuery)
                 .where('publication.pub_date IS NULL')
                 .andWhere('publication.pub_date_print IS NULL')
                 .andWhere('publication.pub_date_accepted IS NULL')
@@ -200,8 +200,8 @@ export class PublicationService {
     }
 
     //retrieves publication index for soft deleted publications
-    public softIndex(): Promise<PublicationIndex[]> {
-        let query = this.indexQuery()
+    public async softIndex(): Promise<PublicationIndex[]> {
+        let query = (await this.indexQuery())
             .withDeleted()
             .where("publication.delete_date is not null")
 
@@ -304,7 +304,7 @@ export class PublicationService {
                 id: pub.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - pub.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - pub.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: pub.id,
                 locked_at: null
@@ -484,7 +484,7 @@ export class PublicationService {
 
     // retrieves a publication index based on a filter object
     async filterIndex(filter: SearchFilter) {
-        return (await this.filter(filter, this.indexQuery())).getRawMany();
+        return (await this.filter(filter, await this.indexQuery())).getRawMany();
     }
 
     //processes a filter object and adds where conditions to the index query

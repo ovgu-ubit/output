@@ -26,7 +26,7 @@ export class AuthorExportService extends AbstractExportService {
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Export',this.name, by_user);
+        this.report = await this.reportService.createReport('Export',this.name, by_user);
 
         let pubs = await this.service.get();
 

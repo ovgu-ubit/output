@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, Repository } from 'typeorm';
@@ -8,11 +7,12 @@ import { CostType } from './CostType';
 import { CostCenter } from './CostCenter';
 import { Publication } from '../publication/core/Publication';
 import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class InvoiceService {
 
-    constructor(@InjectRepository(Invoice) private repository: Repository<Invoice>, private configService: ConfigService,
+    constructor(@InjectRepository(Invoice) private repository: Repository<Invoice>, private configService: AppConfigService,
         @InjectRepository(CostType) private ctRepository: Repository<CostType>,
         @InjectRepository(CostCenter) private ccRepository: Repository<CostCenter>) { }
 
@@ -64,7 +64,7 @@ export class InvoiceService {
                 id: ct.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.saveCT([{
                 id: ct.id,
                 locked_at: null
@@ -131,7 +131,7 @@ export class InvoiceService {
                 id: cc.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - cc.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - cc.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.saveCC([{
                 id: cc.id,
                 locked_at: null

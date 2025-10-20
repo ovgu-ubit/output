@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
@@ -8,13 +7,14 @@ import { GreaterEntity } from './GreaterEntity';
 import { GEIdentifier } from './GEIdentifier';
 import { Publication } from '../publication/core/Publication';
 import { PublicationService } from '../publication/core/publication.service';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class GreaterEntityService {
 
     constructor(@InjectRepository(GreaterEntity) private repository: Repository<GreaterEntity>,
         @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>, private publicationService: PublicationService,
-        private configService: ConfigService) { }
+        private configService: AppConfigService) { }
 
     public async save(pubs: any[]) {
         for (let pub of pubs) {
@@ -72,7 +72,7 @@ export class GreaterEntityService {
                 id: ge.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - ge.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - ge.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: ge.id,
                 locked_at: null

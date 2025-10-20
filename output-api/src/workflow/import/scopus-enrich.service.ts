@@ -1,6 +1,5 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
@@ -9,7 +8,7 @@ import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
@@ -17,8 +16,9 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class ScopusEnrichService extends ApiEnrichDOIService {
@@ -26,16 +26,24 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, 
-        protected roleService:RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
+        protected languageService: LanguageService,
+        protected roleService: RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
-        this.configService.get('searchTags').forEach(tag => {
-            this.searchText += tag + " or "
-        })
     }
 
     private searchText = '';
+    private affiliationTags;
+    private apiKey;
+
+    protected async init() {
+        (await this.configService.get('searchTags')).forEach(tag => {
+            this.searchText += tag + " or "
+        })
+        this.affiliationTags = await this.configService.get('affiliationTags');
+        this.apiKey = await this.configService.get('api_key_scopus');
+    }
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -54,10 +62,10 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        abstract :UpdateOptions.REPLACE_IF_EMPTY,
-        citation :UpdateOptions.IGNORE,
-        page_count :UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.REPLACE_IF_EMPTY,
+        citation: UpdateOptions.IGNORE,
+        page_count: UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed: UpdateOptions.IGNORE,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.elsevier.com/content/search/scopus?';
@@ -70,7 +78,7 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     protected parallelCalls = 1;
 
     protected createUrl(doi: string) {
-        return `${this.url}?count=1&view=complete&apiKey=${this.configService.get('api_key_scopus')}&query=DOI(${doi})`;
+        return `${this.url}?count=1&view=complete&apiKey=${this.apiKey}&query=DOI(${doi})`;
     }
     protected importTest(element: any): boolean {
         return element && element.affiliation && this.affiliationIncludesTags(element.affiliation)
@@ -106,8 +114,8 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
         return false;
     }
     private affiliationTagMatch(affiliation: string): boolean {
-        for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
-            if (affiliation.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
+        for (let i = 0; i < this.affiliationTags.length; i++) {
+            if (affiliation.toLowerCase().includes(this.affiliationTags[i])) return true;
         }
         return false;
     }
@@ -175,8 +183,8 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return element['dc:description'];
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
-        let volume, issue,first_page,last_page,article_number;
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
+        let volume, issue, first_page, last_page, article_number;
         volume = element['prism:volume']
         issue = element['prism:issueIdentifier']
         article_number = element['article_number']
@@ -185,8 +193,8 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
             let split = range.split('-');
             first_page = split[0]
             last_page = split[1]
-        } catch (err) {first_page = element['prism:pageRange'];last_page = null;}
-        return {volume, issue, first_page, last_page, article_number};
+        } catch (err) { first_page = element['prism:pageRange']; last_page = null; }
+        return { volume, issue, first_page, last_page, article_number };
     }
     protected getPageCount(element: any): number {
         try {

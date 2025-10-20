@@ -1,5 +1,4 @@
 import { Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { SearchFilter } from "../../../output-interfaces/Config";
@@ -10,12 +9,13 @@ import { Publication } from "../publication/core/Publication";
 import { AbstractExportService } from "./export/abstract-export.service";
 import { AbstractFilterService } from "./filter/abstract-filter.service";
 import { ReportItemService } from "./report-item.service";
+import { AppConfigService } from "../config/app-config.service";
 
 @Controller("export")
 @ApiTags("export")
 export class ExportController {
 
-  constructor(private configService: ConfigService,
+  constructor(private configService: AppConfigService,
     private reportService: ReportItemService,
     @Inject('Exports') private exportServices: AbstractExportService[],
     @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
@@ -23,9 +23,9 @@ export class ExportController {
   @Get()
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  getExports() {
+  async getExports() {
     let result = [];
-    for (let i = 0; i < this.configService.get('export_services').length; i++) {
+    for (let i = 0; i < (await this.configService.get('export_services')).length; i++) {
       result.push({
         path: this.configService.get('export_services')[i].path,
         label: this.exportServices[i].getName()
@@ -78,7 +78,7 @@ export class ExportController {
   @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
   @Body('withMasterData') withMasterData?: boolean) {
     //res.setHeader('Content-type', 'text/plain')
-    let so = this.configService.get('export_services').findIndex(e => e.path === path)
+    let so = (await this.configService.get('export_services')).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
 
     if (this.exportServices[so].isExcelResponse()) {
@@ -92,8 +92,8 @@ export class ExportController {
   @Get(":path")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  exportMasterStatus(@Param('path') path: string) {
-    let so = this.configService.get('export_services').findIndex(e => e.path === path)
+  async exportMasterStatus(@Param('path') path: string) {
+    let so = (await this.configService.get('export_services')).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.exportServices[so].status();
   }

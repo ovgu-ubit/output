@@ -2,25 +2,25 @@ import { Body, Controller, Delete, Get, Post, Query, Res, Inject, NotFoundExcept
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
-import { ConfigService } from "@nestjs/config";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AbstractPlausibilityService } from "./check/abstract-plausibility.service";
+import { AppConfigService } from "../config/app-config.service";
 
 @Controller("check")
 @ApiTags("check")
 export class PlausibilityController {
 
   constructor(private reportService: ReportItemService,
-    private configService: ConfigService,
+    private configService: AppConfigService,
     @Inject('Checks') private checkServices: AbstractPlausibilityService[]) { }
 
   @Get()
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  getImports() {
+  async getImports() {
     let result = [];
-    for (let i=0;i<this.configService.get('check_services').length;i++) {
+    for (let i=0;i<(await this.configService.get('check_services')).length;i++) {
       result.push({
         path: this.configService.get('check_services')[i].path, 
         label:this.checkServices[i].getName()})
@@ -68,16 +68,16 @@ export class PlausibilityController {
   @Post(":path")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  start(@Param('path') path: string) {
-    let so = this.configService.get('check_services').findIndex(e => e.path === path)
+  async start(@Param('path') path: string) {
+    let so = (await this.configService.get('check_services')).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.checkServices[so].check();
   }
   @Get(":path")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-  status(@Param('path') path: string) {
-    let so = this.configService.get('check_services').findIndex(e => e.path === path)
+  async status(@Param('path') path: string) {
+    let so = (await this.configService.get('check_services')).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.checkServices[so].status();
   }

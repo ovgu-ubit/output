@@ -21,7 +21,7 @@ export abstract class AbstractPlausibilityService {
         if (this.progress !== 0) throw new ConflictException('The check is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Check', this.name, by_user);
+        this.report = await this.reportService.createReport('Check', this.name, by_user);
         this.checked = 0;
         this.identified = 0;
 

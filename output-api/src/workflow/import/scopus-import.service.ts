@@ -1,6 +1,5 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
@@ -9,7 +8,7 @@ import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
@@ -17,8 +16,9 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
+import { AppConfigService } from '../../config/app-config.service';
+import { ReportItemService } from '../report-item.service';
 
 @Injectable()
 export class ScopusImportService extends ApiImportOffsetService {
@@ -26,16 +26,22 @@ export class ScopusImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService, 
-        protected roleService:RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, 
+        protected roleService:RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
-        this.configService.get('searchTags').forEach(tag => {
-            this.searchText += tag + " or "
-        })
     }
 
     private searchText = '';
+    private affiliationTags;
+
+    protected async init() {
+        (await this.configService.get('searchTags')).forEach(tag => {
+            this.searchText += tag + " or "
+        })
+        this.affiliationTags = await this.configService.get('affiliationTags');
+        this.params.filter(e => e.key !== 'apiKey').push({ key: 'apiKey', value: await this.configService.get('api_key_scopus') })
+    }
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -76,7 +82,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         this.params = [
             { key: 'query', value: 'AFFIL(' + this.searchText.slice(0, this.searchText.length - 4) + ')+and+PUBYEAR+IS+' + year },
             { key: 'view', value: 'complete' },
-            { key: 'apiKey', value: this.configService.get('api_key_scopus') }]
+            { key: 'apiKey', value: '' }]
     }
     protected importTest(element: any): boolean {
         return element && element.affiliation && this.affiliationIncludesTags(element.affiliation)
@@ -113,7 +119,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         return false;
     }
     private affiliationTagMatch(affiliation: string): boolean {
-        for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
+        for (let i = 0; i < this.affiliationTags.length; i++) {
             if (affiliation.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
         }
         return false;

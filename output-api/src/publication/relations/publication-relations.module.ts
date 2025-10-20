@@ -5,6 +5,7 @@ import { RoleService } from "./role.service";
 import { AuthorizationModule } from "../../authorization/authorization.module";
 import { Role } from "./Role";
 import { AuthorPublication } from "./AuthorPublication";
+import { AppConfigModule } from "../../config/app-config.module";
 
 @Module({
   imports: [
@@ -12,7 +13,9 @@ import { AuthorPublication } from "./AuthorPublication";
           AuthorPublication,
           Role
         ])
-    , AuthorizationModule],
+    , AuthorizationModule,
+    AppConfigModule
+  ],
   controllers: [RoleController],
   providers: [RoleService],
   exports: [RoleService, TypeOrmModule]

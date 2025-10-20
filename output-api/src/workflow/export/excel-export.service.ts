@@ -1,14 +1,12 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AbstractExportService } from './abstract-export.service';
-import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { Publication } from '../../publication/core/Publication';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ConfigService } from '@nestjs/config';
 import * as XLSX from 'xlsx';
 import { AuthorService } from '../../author/author.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { ContractService } from '../../contract/contract.service';
@@ -17,6 +15,8 @@ import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { InvoiceService } from '../../invoice/invoice.service';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 /**
@@ -27,8 +27,8 @@ export class ExcelExportService extends AbstractExportService {
     excel_response = true;
     df: Intl.DateTimeFormat;
 
-    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, 
-        private invoiceService: InvoiceService, private authorService: AuthorService, private instService:InstitutionService,
+    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: AppConfigService, 
+        private invoiceService: InvoiceService, private authorService: AuthorService, private instService:InstituteService,
         private geService: GreaterEntityService, private publService: PublisherService, private contractService:ContractService,
         private funderService: FunderService, private oaService: OACategoryService, private ptService:PublicationTypeService
     ) {
@@ -40,11 +40,11 @@ export class ExcelExportService extends AbstractExportService {
 
     public async export(filter?: { filter: SearchFilter, paths: string[] }, filterServices?: AbstractFilterService<PublicationIndex | Publication>[], by_user?: string, withMasterData?: boolean) {
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Export', this.name, by_user);
+        this.report = await this.reportService.createReport('Export', this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
         if (filter) for (let path of filter.paths) {
-            let so = this.configService.get('filter_services').findIndex(e => e.path === path)
+            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }

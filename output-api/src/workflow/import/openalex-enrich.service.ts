@@ -1,6 +1,5 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
@@ -9,7 +8,7 @@ import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
@@ -17,8 +16,9 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class OpenAlexEnrichService extends ApiEnrichDOIService {
@@ -28,10 +28,15 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstitutionService, protected languageService: LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
-        this.id = this.configService.get('openalex_id')
+
+    }
+
+    protected async init() {
+        this.id = await this.configService.get('openalex_id')
     }
 
     protected updateMapping: UpdateMapping = {
@@ -51,10 +56,10 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.REPLACE_IF_EMPTY,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        abstract :UpdateOptions.IGNORE,
-        citation :UpdateOptions.REPLACE_IF_EMPTY,
-        page_count :UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.IGNORE,
+        citation: UpdateOptions.REPLACE_IF_EMPTY,
+        page_count: UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed: UpdateOptions.IGNORE,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.openalex.org/works/doi:';
@@ -74,7 +79,7 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     protected getDOI(element: any): string {
         let res = element['doi']
         if (res?.includes('doi.org/')) {
-            res = res.slice(res.indexOf('doi.org/')+8)
+            res = res.slice(res.indexOf('doi.org/') + 8)
         }
         return res;
     }
@@ -90,8 +95,8 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
                 res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
                     last_name: name.slice(name.lastIndexOf(' ') + 1),
-                    orcid: aut['author']['orcid']? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1): undefined,
-                    affiliation: aut['raw_affiliation_strings'].reduce((a,v,i) => a+'; '+v),
+                    orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
+                    affiliation: aut['raw_affiliation_strings'].reduce((a, v, i) => a + '; ' + v),
                     corresponding: aut['is_corresponding']
                 })
             }
@@ -108,17 +113,17 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     }
     protected getGreaterEntity(element: any): GreaterEntity {
         return {
-            label: element['primary_location']['source']? element['primary_location']['source']['display_name']: undefined,
-            identifiers: element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal')? element['primary_location']['source']['issn']?.map(e => {
+            label: element['primary_location']['source'] ? element['primary_location']['source']['display_name'] : undefined,
+            identifiers: element['primary_location']['source'] && element['primary_location']['source']['type']?.includes('journal') ? element['primary_location']['source']['issn']?.map(e => {
                 return {
                     type: 'issn',
                     value: e
                 }
-            }):undefined
+            }) : undefined
         }
     }
     protected getPublisher(element: any): Publisher {
-        return element['primary_location']['source']? {label: element['primary_location']['source']['host_organization_name']} : null;
+        return element['primary_location']['source'] ? { label: element['primary_location']['source']['host_organization_name'] } : null;
     }
     protected getPubDate(element: any): Date {
         let data = null;
@@ -139,9 +144,11 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     }
     protected getFunder(element: any): Funder[] {
         if (element['grants']) {
-            return element['grants'].map(e => {return {
-                label: e['funder_display_name']
-            }})
+            return element['grants'].map(e => {
+                return {
+                    label: e['funder_display_name']
+                }
+            })
         }
     }
     protected getPubType(element: any): string {
@@ -171,7 +178,7 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     protected getAbstract(element: any): string {
         return null;
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
         if (element['biblio']) {
             let e = {
                 volume: element['biblio']['volume'],
@@ -184,10 +191,10 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
     }
     protected getPageCount(element: any): number {
         try {
-            let count = Number(element['biblio']['last_page'])-Number(element['biblio']['first_page'])+1;
+            let count = Number(element['biblio']['last_page']) - Number(element['biblio']['first_page']) + 1;
             if (!Number.isNaN(count) && count < 999999) return count;
             else return null;
-        } catch (e) {return null;}
+        } catch (e) { return null; }
     }
     protected getPeerReviewed(element: any): boolean {
         return null;

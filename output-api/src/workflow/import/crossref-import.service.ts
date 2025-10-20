@@ -1,6 +1,5 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
@@ -9,7 +8,7 @@ import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
@@ -17,8 +16,9 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
+import { ReportItemService } from '../report-item.service';
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class CrossrefImportService extends ApiImportOffsetService {
@@ -26,12 +26,11 @@ export class CrossrefImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstitutionService, protected languageService:LanguageService,  protected roleService: RoleService, protected configService: ConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, http);
-        this.configService.get('searchTags').forEach(tag => {
-            this.searchText += tag + "+"
-        })
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
+
     }
 
     private searchText = '';
@@ -53,10 +52,10 @@ export class CrossrefImportService extends ApiImportOffsetService {
         license: UpdateOptions.REPLACE_IF_EMPTY,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        abstract :UpdateOptions.REPLACE_IF_EMPTY,
-        citation :UpdateOptions.IGNORE,
-        page_count :UpdateOptions.REPLACE_IF_EMPTY,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.REPLACE_IF_EMPTY,
+        citation: UpdateOptions.IGNORE,
+        page_count: UpdateOptions.REPLACE_IF_EMPTY,
+        peer_reviewed: UpdateOptions.IGNORE,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
     protected url = 'https://api.crossref.org/works?';
@@ -70,6 +69,12 @@ export class CrossrefImportService extends ApiImportOffsetService {
         { key: 'query.bibliographic', value: '' }];
     protected name = 'Crossref';
     protected parallelCalls = 1;
+
+    protected async init() {
+        (await this.configService.get('searchTags')).forEach(tag => {
+            this.searchText += tag + "+"
+        })
+    }
 
     setReportingYear(year: string) {
         this.params = [
@@ -122,7 +127,7 @@ export class CrossrefImportService extends ApiImportOffsetService {
         }
     }
     protected getPublisher(element: any): Publisher {
-        return {label: element['publisher']};
+        return { label: element['publisher'] };
     }
     protected getPubDate(element: any) {
         let pub_date = null;
@@ -133,15 +138,15 @@ export class CrossrefImportService extends ApiImportOffsetService {
         } else if (element['published']) {
             pub_date = element['published']['date-parts'][0];
         }
-        if (pub_date && pub_date.length === 3) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1, pub_date[2]));
-        else if (pub_date && pub_date.length === 2) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1]-1));
+        if (pub_date && pub_date.length === 3) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1] - 1, pub_date[2]));
+        else if (pub_date && pub_date.length === 2) pub_date = new Date(Date.UTC(pub_date[0], pub_date[1] - 1));
         else if (pub_date) pub_date = new Date(Date.UTC(pub_date[0], 0));
 
         if (element['published-print']) {
             pub_date_print = element['published-print']['date-parts'][0];
-        } 
-        if (pub_date_print && pub_date_print.length === 3) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1, pub_date_print[2]));
-        else if (pub_date_print && pub_date_print.length === 2) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1]-1));
+        }
+        if (pub_date_print && pub_date_print.length === 3) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1] - 1, pub_date_print[2]));
+        else if (pub_date_print && pub_date_print.length === 2) pub_date_print = new Date(Date.UTC(pub_date_print[0], pub_date_print[1] - 1));
         else if (pub_date_print) pub_date_print = new Date(Date.UTC(pub_date_print[0], 0));
 
         if (element['approved']) {
@@ -149,12 +154,12 @@ export class CrossrefImportService extends ApiImportOffsetService {
         } else if (element['accepted']) {
             pub_date_accepted = element['accepted']['date-parts'][0];
         }
-        if (pub_date_accepted && pub_date_accepted.length === 3) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1, pub_date_accepted[2]));
-        else if (pub_date_accepted && pub_date_accepted.length === 2) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1]-1));
+        if (pub_date_accepted && pub_date_accepted.length === 3) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1] - 1, pub_date_accepted[2]));
+        else if (pub_date_accepted && pub_date_accepted.length === 2) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], pub_date_accepted[1] - 1));
         else if (pub_date_accepted) pub_date_accepted = new Date(Date.UTC(pub_date_accepted[0], 0));
 
 
-        return {pub_date, pub_date_print, pub_date_accepted};
+        return { pub_date, pub_date_print, pub_date_accepted };
     }
     protected getLanguage(element: any): string {
         return element['language'];
@@ -203,8 +208,8 @@ export class CrossrefImportService extends ApiImportOffsetService {
         } else return [];
     }
 
-    private affiliationIncludesTags(affiliation): boolean {
-        for (let i = 0; i < this.configService.get('affiliationTags').length; i++) {
+    private async affiliationIncludesTags(affiliation) {
+        for (let i = 0; i < (await this.configService.get('affiliationTags')).length; i++) {
             if (affiliation.name?.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
         }
         return false;
@@ -219,11 +224,11 @@ export class CrossrefImportService extends ApiImportOffsetService {
     protected getAbstract(element: any): string {
         return element['abstract'];
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
         return null;
     }
     protected getPageCount(element: any): number {
-        if (element['page'] && element['page'].split('-').length === 2) return Number(element['page'].split('-')[1])-Number(element['page'].split('-')[0])+1
+        if (element['page'] && element['page'].split('-').length === 2) return Number(element['page'].split('-')[1]) - Number(element['page'].split('-')[0]) + 1
     }
     protected getPeerReviewed(element: any): boolean {
         return null;

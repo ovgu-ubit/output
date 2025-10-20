@@ -1,16 +1,17 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
 import { PublicationService } from '../publication/core/publication.service';
 import { OA_Category } from './OA_Category';
 import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class OACategoryService {
 
-    constructor(@InjectRepository(OA_Category) private repository: Repository<OA_Category>, private configService: ConfigService, private publicationService: PublicationService) { }
+    constructor(@InjectRepository(OA_Category) private repository: Repository<OA_Category>,
+        private configService: AppConfigService, private publicationService: PublicationService) { }
 
     public save(pub: any[]) {
         return this.repository.save(pub).catch(err => {
@@ -31,7 +32,7 @@ export class OACategoryService {
                 id: oa.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - oa.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - oa.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: oa.id,
                 locked_at: null

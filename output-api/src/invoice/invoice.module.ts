@@ -7,11 +7,16 @@ import { CostItem } from './CostItem';
 import { CostType } from './CostType';
 import { InvoiceController } from './InvoiceController';
 import { InvoiceService } from './invoice.service';
+import { AppConfigModule } from '../config/app-config.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Invoice, CostCenter, CostItem, CostType]), AuthorizationModule],
+  imports: [
+    TypeOrmModule.forFeature([Invoice, CostCenter, CostItem, CostType]),
+    AuthorizationModule,
+    AppConfigModule
+  ],
   controllers: [InvoiceController],
   providers: [InvoiceService],
   exports: [InvoiceService, TypeOrmModule]
 })
-export class InvoiceModule {}
+export class InvoiceModule { }

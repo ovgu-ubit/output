@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
@@ -7,11 +6,12 @@ import { Contract } from './Contract';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
 import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class ContractService {
 
-    constructor(@InjectRepository(Contract) private repository: Repository<Contract>, private configService: ConfigService, private publicationService: PublicationService,
+    constructor(@InjectRepository(Contract) private repository: Repository<Contract>, private configService: AppConfigService, private publicationService: PublicationService,
         @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>) { }
 
     public get() {
@@ -26,7 +26,7 @@ export class ContractService {
                 id: contract.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - contract.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - contract.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: contract.id,
                 locked_at: null

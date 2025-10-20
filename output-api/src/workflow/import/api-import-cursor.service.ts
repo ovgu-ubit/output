@@ -74,9 +74,13 @@ export abstract class ApiImportCursorService {
         }
     }
 
-    public async import(update: boolean) {
+    protected async init() {
 
+    }
+
+    public async import(update: boolean) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+        await this.init();
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
 

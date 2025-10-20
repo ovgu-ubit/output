@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
 import { Publisher } from './Publisher';
@@ -7,11 +6,12 @@ import { AliasPublisher } from './AliasPublisher';
 import { PublicationService } from '../publication/core/publication.service';
 import { PublisherIndex } from '../../../output-interfaces/PublicationIndex';
 import { Publication } from '../publication/core/Publication';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class PublisherService {
 
-    constructor(@InjectRepository(Publisher) private repository: Repository<Publisher>, private configService: ConfigService, private publicationService: PublicationService,
+    constructor(@InjectRepository(Publisher) private repository: Repository<Publisher>, private configService: AppConfigService, private publicationService: PublicationService,
         @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>) { }
 
     public save(pub: any[]) {
@@ -32,7 +32,7 @@ export class PublisherService {
                 id: publisher.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - publisher.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - publisher.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: publisher.id,
                 locked_at: null

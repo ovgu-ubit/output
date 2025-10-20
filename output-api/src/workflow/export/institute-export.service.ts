@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../publication/core/Publication';
-import { InstitutionService } from '../../institute/institution.service';
+import { InstituteService } from '../../institute/institute.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ReportItemService } from '../report-item.service';
 import { AbstractExportService } from './abstract-export.service';
+import { ReportItemService } from '../report-item.service';
 
 @Injectable()
 /**
@@ -17,7 +17,7 @@ export class InstituteExportService extends AbstractExportService {
     sep = ';';
     df:Intl.DateTimeFormat;
 
-    constructor(private service:InstitutionService, private reportService:ReportItemService) {
+    constructor(private service:InstituteService, private reportService:ReportItemService) {
         super(); 
         this.df = new Intl.DateTimeFormat('de-DE');
     }
@@ -26,7 +26,7 @@ export class InstituteExportService extends AbstractExportService {
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();
-        this.report = this.reportService.createReport('Export',this.name, by_user);
+        this.report = await this.reportService.createReport('Export',this.name, by_user);
 
         let pubs = await this.service.get();
 

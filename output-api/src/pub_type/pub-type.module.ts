@@ -6,11 +6,17 @@ import { PublicationType } from './PublicationType';
 import { AliasPubType } from './AliasPubType';
 import { PublicationTypeController } from './PublicationTypeController';
 import { PublicationTypeService } from './publication-type.service';
+import { AppConfigModule } from '../config/app-config.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PublicationType, AliasPubType]), PublicationModule, AuthorizationModule],
+  imports: [
+    TypeOrmModule.forFeature([PublicationType, AliasPubType]),
+    PublicationModule,
+    AuthorizationModule,
+    AppConfigModule
+  ],
   controllers: [PublicationTypeController],
   providers: [PublicationTypeService],
   exports: [PublicationTypeService, TypeOrmModule]
 })
-export class PublicationTypeModule {}
+export class PublicationTypeModule { }

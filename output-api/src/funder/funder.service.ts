@@ -1,17 +1,17 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, In, Repository } from 'typeorm';
 import { AliasFunder } from './AliasFunder';
 import { PublicationService } from '../publication/core/publication.service';
 import { Funder } from './Funder';
 import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class FunderService {
 
     constructor(@InjectRepository(Funder) private repository: Repository<Funder>, @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
-    private configService: ConfigService, private publicationService:PublicationService) { }
+    private configService: AppConfigService, private publicationService:PublicationService) { }
 
     public save(pub: any[]) {
         return this.repository.save(pub).catch(err => {
@@ -32,7 +32,7 @@ export class FunderService {
                 id: funder.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - funder.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - funder.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: funder.id,
                 locked_at: null

@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
@@ -9,17 +8,18 @@ import { AliasAuthorFirstName } from './AliasAuthorFirstName';
 import { AuthorPublication } from '../publication/relations/AuthorPublication';
 import { Author } from './Author';
 import { AliasAuthorLastName } from './AliasAuthorLastName';
-import { InstitutionService } from '../institute/institution.service';
+import { InstituteService } from '../institute/institute.service';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class AuthorService {
 
     constructor(@InjectRepository(Author) private repository: Repository<Author>,
-        private instService: InstitutionService, 
+        private instService: InstituteService, 
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(AliasAuthorFirstName) private aliasFirstNameRepository: Repository<AliasAuthorFirstName>,
         @InjectRepository(AliasAuthorLastName) private aliasLastNameRepository: Repository<AliasAuthorLastName>,
-        private configService: ConfigService) { }
+        private configService: AppConfigService) { }
 
     public async save(aut: any[]) {
         let result = [];
@@ -43,7 +43,7 @@ export class AuthorService {
                 id: aut.id,
                 locked_at: new Date()
             }]);
-        } else if (writer && (new Date().getTime() - aut.locked_at.getTime()) > this.configService.get('lock_timeout') * 60 * 1000) {
+        } else if (writer && (new Date().getTime() - aut.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.save([{
                 id: aut.id,
                 locked_at: null
