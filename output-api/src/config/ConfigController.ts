@@ -19,10 +19,10 @@ export class ConfigController {
     }
 
     @Get('institution')
-    getInstitution() {
+    async getInstitution() {
         return {
-            label: this.configService.get('institution_label'),
-            short_label: this.configService.get('institution_short_label')
+            label: await this.configService.get('institution_label'),
+            short_label: await this.configService.get('institution_short_label')
         }
     }
 

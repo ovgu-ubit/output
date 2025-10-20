@@ -1,9 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
-import { Status } from '../../../../../output-interfaces/Publication';
+import { PublicationDuplicate, Status } from '../../../../../output-interfaces/Publication';
 import { EntityService } from 'src/app/interfaces/service';
-import { PublicationDuplicate } from '../../../../../output-api/src/entity/PublicationDuplicate';
 import { Observable } from 'rxjs';
 
 @Injectable({
