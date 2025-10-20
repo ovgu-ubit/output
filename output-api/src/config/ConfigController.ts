@@ -1,14 +1,12 @@
-import { Controller, Get, Query, Post, Body } from "@nestjs/common";
-import { ApiBody, ApiTags } from "@nestjs/swagger";
-import { StatisticsService } from "../services/statistics.service";
-import { FilterOptions, HighlightOptions } from "../../../output-interfaces/Statistics";
-import { ConfigService } from "@nestjs/config";
+import { Controller, Get } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
+import { AppConfigService } from "./app-config.service";
 
 @Controller("config")
 @ApiTags("config")
 export class ConfigController {
 
-    constructor(private configService: ConfigService) { }
+    constructor(private configService: AppConfigService) { }
 
     @Get('optional_fields')
     getOptionalFields() {

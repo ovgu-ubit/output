@@ -7,7 +7,7 @@ import { SearchFilter } from "../../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
 import { Publication } from "./Publication";
 import { Permissions } from "../../authorization/permission.decorator";
-import { AppConfigService } from "../../services/app-config.service";
+import { AppConfigService } from "../../config/app-config.service";
 import { PublicationService } from "./publication.service";
 import { AbstractFilterService } from "../../services/filter/abstract-filter.service";
 import { PublicationDuplicate } from "./PublicationDuplicate";

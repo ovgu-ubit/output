@@ -1,19 +1,17 @@
 import { HttpModule } from "@nestjs/axios";
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import appConfig from '../config';
 import { AuthorModule } from './author/author.module';
 import { AuthorizationModule } from "./authorization/authorization.module";
+import { AppConfigModule } from "./config/app-config.module";
 import { ContractModule } from "./contract/contract.module";
-import { ConfigController } from "./controller/ConfigController";
 import { EnrichController } from "./controller/EnrichController";
 import { ExportController } from "./controller/ExportController";
 import { ImportController } from "./controller/ImportController";
 import { PlausibilityController } from "./controller/PlausibilityController";
 import { StatisticController } from "./controller/StatisticController";
-import { Config } from "./entity/Config";
 import { FunderModule } from "./funder/funder.module";
 import { GreaterEntityService } from "./greater_entity/greater-entitiy.service";
 import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
@@ -23,12 +21,12 @@ import { OACategoryModule } from "./oa_category/oa-category.module";
 import { PublicationTypeModule } from "./pub_type/pub-type.module";
 import { PublicationModule } from './publication/publication.module';
 import { PublisherModule } from "./publisher/publisher.module";
-import { AppConfigService } from "./services/app-config.service";
 import { DatabaseConfigService } from "./services/database.config.service";
 import { CSVImportService } from "./services/import/csv-import.service";
 import { ExcelImportService } from "./services/import/excel-import.service";
 import { ReportItemService } from "./services/report-item.service";
 import { StatisticsService } from "./services/statistics.service";
+import { AppConfigService } from "./config/app-config.service";
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -42,16 +40,9 @@ const filterz = appConfig().filter_services;
       timeout: 50000,
       maxRedirects: 5,
     }),
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
-      load: [appConfig]
-    }),
     TypeOrmModule.forRootAsync({
-      useClass: DatabaseConfigService,
-      inject: [DatabaseConfigService],
+      useClass: DatabaseConfigService
     }),
-    TypeOrmModule.forFeature([Config]),
     ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
@@ -63,14 +54,14 @@ const filterz = appConfig().filter_services;
     InvoiceModule,
     OACategoryModule,
     PublicationTypeModule,
-    PublisherModule
+    PublisherModule,
+    AppConfigModule
   ],
   controllers: [StatisticController, ImportController, EnrichController,
-    PlausibilityController, ExportController, ConfigController],
+    PlausibilityController, ExportController],
   providers: [
     GreaterEntityService,
-    ReportItemService,
-    AppConfigService, StatisticsService,
+    ReportItemService, StatisticsService,
     CSVImportService, ExcelImportService,
     ...imports.map(e => e.class),
     {

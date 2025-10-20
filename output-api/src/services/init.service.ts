@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, Repository } from "typeorm";
 import { AuthorPublication } from "../publication/relations/AuthorPublication";
-import { Config } from "../entity/Config";
+import { Config } from "../config/ConfigEntity";
 import { Contract } from "../contract/Contract";
 import { OA_Category } from "../oa_category/OA_Category";
 import { Publisher } from "../publisher/Publisher";
