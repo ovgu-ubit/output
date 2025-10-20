@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Post, Body, BadRequestException } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { GROUP, FilterOptions, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
-import { StatisticsService } from "../services/statistics.service";
+import { StatisticsService } from "./statistics.service";
 
 @Controller("statistics")
 @ApiTags("statistics")

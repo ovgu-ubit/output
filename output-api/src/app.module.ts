@@ -6,7 +6,7 @@ import { AuthorModule } from './author/author.module';
 import { AuthorizationModule } from "./authorization/authorization.module";
 import { AppConfigModule } from "./config/app-config.module";
 import { ContractModule } from "./contract/contract.module";
-import { StatisticController } from "./controller/StatisticController";
+import { StatisticController } from "./statistics/StatisticController";
 import { FunderModule } from "./funder/funder.module";
 import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
 import { InstituteModule } from "./institute/institute.module";
@@ -16,8 +16,9 @@ import { PublicationTypeModule } from "./pub_type/pub-type.module";
 import { PublicationModule } from './publication/publication.module';
 import { PublisherModule } from "./publisher/publisher.module";
 import { DatabaseConfigService } from "./services/database.config.service";
-import { StatisticsService } from "./services/statistics.service";
+import { StatisticsService } from "./statistics/statistics.service";
 import { WorkflowModule } from "./workflow/workflow.module";
+import { StatisticsModule } from "./statistics/statistics.module";
 
 
 @Module({
@@ -37,12 +38,11 @@ import { WorkflowModule } from "./workflow/workflow.module";
     PublicationTypeModule,
     PublisherModule,
     AppConfigModule,
-    WorkflowModule
+    WorkflowModule,
+    StatisticsModule
   ],
-  controllers: [StatisticController],
-  providers: [
-    StatisticsService,    
-  ]
+  controllers: [],
+  providers: []
 })
 
 export class AppModule { }
