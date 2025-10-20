@@ -1,6 +1,6 @@
 
 import { Type} from '@nestjs/common'
-import { InitService } from "../services/init.service";
+import { InitService } from "../init.service";
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../../output-interfaces/Publication';
 import { AuthorizationService } from '../authorization/authorization.service';

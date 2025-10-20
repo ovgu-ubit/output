@@ -7,7 +7,7 @@ import { Contract } from "./contract/Contract";
 import { OA_Category } from "./oa_category/OA_Category";
 import { Publisher } from "./publisher/Publisher";
 import { AppConfigService } from "./config/app-config.service";
-import { DatabaseConfigService } from "./services/database.config.service";
+import { DatabaseConfigService } from "./config/database.config.service";
 import { GEIdentifier } from "./greater_entity/GEIdentifier";
 import { AliasInstitute } from "./institute/AliasInstitute";
 import { AliasPubType } from "./pub_type/AliasPubType";

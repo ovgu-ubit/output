@@ -5,9 +5,13 @@ import { ConfigController } from './ConfigController';
 import { AppConfigService } from './app-config.service';
 import { ConfigModule } from '@nestjs/config';
 import appConfig from '../../config';
+import { DatabaseConfigService } from './database.config.service';
 
 @Module({
   imports: [
+    TypeOrmModule.forRootAsync({
+      useClass: DatabaseConfigService
+    }),
     TypeOrmModule.forFeature([Config]),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -15,7 +19,7 @@ import appConfig from '../../config';
       load: [appConfig]
     })],
   controllers: [ConfigController],
-  providers: [AppConfigService],
+  providers: [AppConfigService, DatabaseConfigService],
   exports: [AppConfigService]
 })
 export class AppConfigModule { }
