@@ -7,15 +7,15 @@ import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
 import { AliasAuthorFirstName } from './AliasAuthorFirstName';
 import { AuthorPublication } from '../publication/relations/AuthorPublication';
-import { INSTITUTES_AFFILIATION_PORT, InstitutesAffiliationPort } from '../ports';
 import { Author } from './Author';
 import { AliasAuthorLastName } from './AliasAuthorLastName';
+import { InstitutionService } from '../institute/institution.service';
 
 @Injectable()
 export class AuthorService {
 
     constructor(@InjectRepository(Author) private repository: Repository<Author>,
-        @Inject(INSTITUTES_AFFILIATION_PORT) private instService: InstitutesAffiliationPort, 
+        private instService: InstitutionService, 
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(AliasAuthorFirstName) private aliasFirstNameRepository: Repository<AliasAuthorFirstName>,
         @InjectRepository(AliasAuthorLastName) private aliasLastNameRepository: Repository<AliasAuthorLastName>,

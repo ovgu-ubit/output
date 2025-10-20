@@ -6,7 +6,6 @@ import { InstitutionService } from './institution.service';
 import { AuthorPublication } from '../publication/relations/AuthorPublication';
 import { AliasInstitute } from './AliasInstitute';
 import { Author } from '../author/Author';
-import { INSTITUTES_AFFILIATION_PORT, INSTITUTES_FIND_SUB_FLAT } from '../ports';
 import { AuthorizationModule } from '../authorization/authorization.module';
 
 @Module({
@@ -14,10 +13,7 @@ import { AuthorizationModule } from '../authorization/authorization.module';
 AuthorizationModule],
   controllers: [InstituteController],
   providers: 
-  [InstitutionService,
-    { provide: INSTITUTES_AFFILIATION_PORT, useExisting: InstitutionService },
-    { provide: INSTITUTES_FIND_SUB_FLAT, useExisting: InstitutionService }
-  ],
-  exports: [InstitutionService, TypeOrmModule, INSTITUTES_AFFILIATION_PORT, INSTITUTES_FIND_SUB_FLAT]
+  [InstitutionService],
+  exports: [InstitutionService, TypeOrmModule]
 })
 export class InstituteModule { }

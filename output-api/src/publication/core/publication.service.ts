@@ -8,13 +8,13 @@ import { Author } from '../../author/Author';
 import { AuthorPublication } from '../relations/AuthorPublication';
 import { Publication } from './Publication';
 import { Institute } from '../../institute/Institute';
-import { INSTITUTES_FIND_SUB_FLAT, InstitutesFindSubFlatPort } from '../../ports';
 import { PublicationIdentifier } from './PublicationIdentifier';
 import { PublicationSupplement } from './PublicationSupplement';
 import { PublicationDuplicate } from './PublicationDuplicate';
 import { Invoice } from '../../invoice/Invoice';
 import { CostItem } from '../../invoice/CostItem';
 import { Role } from '../relations/Role';
+import { InstitutionService } from '../../institute/institution.service';
 
 @Injectable()
 export class PublicationService {
@@ -42,7 +42,7 @@ export class PublicationService {
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
         private configService: ConfigService, 
-        @Inject(INSTITUTES_FIND_SUB_FLAT) private instService: InstitutesFindSubFlatPort) { }
+        private instService: InstitutionService) { }
 
     public save(pub: Publication[]) {
         return this.pubRepository.save(pub).catch(err => {

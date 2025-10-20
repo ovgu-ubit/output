@@ -7,11 +7,10 @@ import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { AuthorPublication } from '../publication/relations/AuthorPublication';
 import { AliasInstitute } from './AliasInstitute';
 import { Institute } from './Institute';
-import { InstitutesAffiliationPort } from '../ports';
 import { Author } from '../author/Author';
 
 @Injectable()
-export class InstitutionService implements InstitutesAffiliationPort {
+export class InstitutionService {
 
     repository: TreeRepository<Institute>;
 
