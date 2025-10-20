@@ -10,11 +10,12 @@ import { DatabaseConfigService } from './database.config.service';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
       useClass: DatabaseConfigService
     }),
     TypeOrmModule.forFeature([Config]),
     ConfigModule.forRoot({
-      isGlobal: true,
+      isGlobal: false,
       envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
       load: [appConfig]
     })],
