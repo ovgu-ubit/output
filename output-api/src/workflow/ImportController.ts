@@ -28,7 +28,7 @@ export class ImportController {
     let result = [];
     for (let i=0;i<(await this.configService.get('import_services')).length;i++) {
       result.push({
-        path: this.configService.get('import_services')[i].path, 
+        path: (await this.configService.get('import_services'))[i].path, 
         label:this.importServices[i].getName()})
     }
     result.push({path: 'csv', label: this.csvService.getName()})

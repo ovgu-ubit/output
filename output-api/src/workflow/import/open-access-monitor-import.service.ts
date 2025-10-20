@@ -73,7 +73,7 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     ror_id;
 
     protected async init() {
-        this.param_string = 'token=' + await this.configService.get('api_key_oam');
+        this.param_string = await this.configService.get('api_key_oam');
         this.ror_id = await this.configService.get('ror_id');
     }
 

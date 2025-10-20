@@ -40,7 +40,8 @@ export class ScopusImportService extends ApiImportOffsetService {
             this.searchText += tag + " or "
         })
         this.affiliationTags = await this.configService.get('affiliationTags');
-        this.params.filter(e => e.key !== 'apiKey').push({ key: 'apiKey', value: await this.configService.get('api_key_scopus') })
+        this.params = this.params.filter(e => e.key !== 'apiKey');
+        this.params.push({ key: 'apiKey', value: await this.configService.get('api_key_scopus') })
     }
 
     protected updateMapping: UpdateMapping = {

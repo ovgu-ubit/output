@@ -37,6 +37,10 @@ export class OpenAlexImportService extends ApiImportOffsetService {
 
     protected async init() {
         this.id = await this.configService.get('openalex_id')
+        let tmp =  this.params[0].value;
+        tmp = tmp+=`,institutions.id:${this.id}`
+        this.params = [
+            { key: 'filter', value: tmp }]
     }
 
     protected updateMapping: UpdateMapping = {
@@ -75,7 +79,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
 
     setReportingYear(year: string) {
         this.params = [
-            { key: 'filter', value: `publication_year:${year},institutions.id:${this.id}` }]
+            { key: 'filter', value: `publication_year:${year}` }]
     }
     protected getNumber(response: any): number {
         return response.data.meta['count'];

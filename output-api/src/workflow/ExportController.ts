@@ -27,7 +27,7 @@ export class ExportController {
     let result = [];
     for (let i = 0; i < (await this.configService.get('export_services')).length; i++) {
       result.push({
-        path: this.configService.get('export_services')[i].path,
+        path: (await this.configService.get('export_services'))[i].path,
         label: this.exportServices[i].getName()
       })
     }

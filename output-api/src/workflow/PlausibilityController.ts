@@ -22,7 +22,7 @@ export class PlausibilityController {
     let result = [];
     for (let i=0;i<(await this.configService.get('check_services')).length;i++) {
       result.push({
-        path: this.configService.get('check_services')[i].path, 
+        path: (await this.configService.get('check_services'))[i].path, 
         label:this.checkServices[i].getName()})
     }
     return result;

@@ -22,8 +22,8 @@ export class EnrichController {
     let result = [];
     for (let i=0;i<(await this.configService.get('enrich_services')).length;i++) {
       result.push({
-        path: this.configService.get('enrich_services')[i].path, 
-        label:this.enrichServices[i].getName()})
+        path: (await this.configService.get('enrich_services'))[i].path, 
+        label: this.enrichServices[i].getName()})
     }
     return result;
   }
