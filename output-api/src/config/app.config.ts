@@ -1,13 +1,13 @@
 
 import { Type} from '@nestjs/common'
-import { AbstractPlausibilityService } from "../services/check/abstract-plausibility.service";
-import { AbstractExportService } from "../services/export/abstract-export.service";
-import { AbstractImportService } from "../services/import/abstract-import";
 import { InitService } from "../services/init.service";
-import { AbstractFilterService } from '../services/filter/abstract-filter.service';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../../output-interfaces/Publication';
 import { AuthorizationService } from '../authorization/authorization.service';
+import { AbstractExportService } from '../workflow/export/abstract-export.service';
+import { AbstractFilterService } from '../workflow/filter/abstract-filter.service';
+import { AbstractImportService } from '../workflow/import/abstract-import';
+import { AbstractPlausibilityService } from '../workflow/check/abstract-plausibility.service';
 
 export interface AppConfig {
     institution_label: string;

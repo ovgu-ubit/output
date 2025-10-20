@@ -1,16 +1,15 @@
-import { Body, Controller, Delete, Get, Post, Query, Res, Inject, NotFoundException, Param, UseGuards, Req, StreamableFile } from "@nestjs/common";
-import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { ReportItemService } from "../services/report-item.service";
-import { Response } from "express";
+import { Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { AbstractExportService } from "../services/export/abstract-export.service";
-import { AccessGuard } from "../authorization/access.guard";
-import { Permissions } from "../authorization/permission.decorator";
+import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { Response } from "express";
 import { SearchFilter } from "../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
-import { AbstractFilterService } from "../services/filter/abstract-filter.service";
-import { createReadStream } from "fs";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 import { Publication } from "../publication/core/Publication";
+import { AbstractExportService } from "./export/abstract-export.service";
+import { AbstractFilterService } from "./filter/abstract-filter.service";
+import { ReportItemService } from "./report-item.service";
 
 @Controller("export")
 @ApiTags("export")

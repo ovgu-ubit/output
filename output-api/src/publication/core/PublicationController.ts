@@ -9,9 +9,9 @@ import { Publication } from "./Publication";
 import { Permissions } from "../../authorization/permission.decorator";
 import { AppConfigService } from "../../config/app-config.service";
 import { PublicationService } from "./publication.service";
-import { AbstractFilterService } from "../../services/filter/abstract-filter.service";
 import { PublicationDuplicate } from "./PublicationDuplicate";
 import { AccessGuard } from "../../authorization/access.guard";
+import { AbstractFilterService } from "../../workflow/filter/abstract-filter.service";
 
 @Controller("publications")
 @ApiTags("publications")

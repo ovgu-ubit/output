@@ -1,13 +1,13 @@
 import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Res, Inject, Param, NotFoundException, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Between, In } from "typeorm";
-import { ReportItemService } from "../services/report-item.service";
+import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
 import { UpdateMapping } from "../../../output-interfaces/Config";
 import { ConfigService } from "@nestjs/config";
-import { ApiEnrichDOIService } from "../services/import/api-enrich-doi.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { ApiEnrichDOIService } from "./import/api-enrich-doi.service";
 
 @Controller("enrich")
 @ApiTags("enrich")

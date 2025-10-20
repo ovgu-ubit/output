@@ -1,15 +1,15 @@
 import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Res, UploadedFile, UseInterceptors, Param,Inject,NotFoundException, UseGuards } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { CSVImportService } from "../services/import/csv-import.service";
-import { ReportItemService } from "../services/report-item.service";
+import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
 import { CSVMapping, UpdateMapping } from "../../../output-interfaces/Config";
 import { ConfigService } from "@nestjs/config";
-import { AbstractImportService } from "../services/import/abstract-import";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { ExcelImportService } from "../services/import/excel-import.service";
+import { AbstractImportService } from "./import/abstract-import";
+import { CSVImportService } from "./import/csv-import.service";
+import { ExcelImportService } from "./import/excel-import.service";
 
 @Controller("import")
 @ApiTags("import")

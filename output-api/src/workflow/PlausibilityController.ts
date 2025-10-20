@@ -1,11 +1,11 @@
 import { Body, Controller, Delete, Get, Post, Query, Res, Inject, NotFoundException, Param, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { ReportItemService } from "../services/report-item.service";
+import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
 import { ConfigService } from "@nestjs/config";
-import { AbstractPlausibilityService } from "../services/check/abstract-plausibility.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { AbstractPlausibilityService } from "./check/abstract-plausibility.service";
 
 @Controller("check")
 @ApiTags("check")

@@ -21,8 +21,8 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
+import { ReportItemService } from '../report-item.service';
 
 @Injectable()
 /**
