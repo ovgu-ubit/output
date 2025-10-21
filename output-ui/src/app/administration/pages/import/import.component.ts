@@ -4,11 +4,11 @@ import { ReportService } from 'src/app/services/report.service';
 import { Observable, Subject, firstValueFrom, from, map, merge, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
-import { ImportConfigComponent } from '../../../tools/import-config/import-config.component';
+import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
 import { CSVMapping } from '../../../../../../output-interfaces/Config';
-import { CsvFormatComponent } from 'src/app/tools/csv-format/csv-format.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ImportConfigComponent } from '../../components/import-config/import-config.component';
+import { CsvFormatComponent } from '../../components/csv-format/csv-format.component';
 
 @Component({
   selector: 'app-import',

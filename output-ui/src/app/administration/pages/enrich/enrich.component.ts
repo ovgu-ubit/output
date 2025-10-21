@@ -5,8 +5,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subject, catchError, firstValueFrom, from, map, merge, takeUntil } from 'rxjs';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ReportService } from 'src/app/services/report.service';
-import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
-import { ImportConfigComponent } from '../../../tools/import-config/import-config.component';
+import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
+import { ImportConfigComponent } from '../../components/import-config/import-config.component';
 
 @Component({
   selector: 'app-enrich',

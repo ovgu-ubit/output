@@ -7,6 +7,9 @@ import { EnrichComponent } from './pages/enrich/enrich.component';
 import { ExportComponent } from './pages/export/export.component';
 import { ImportComponent } from './pages/import/import.component';
 import { PlausibilityComponent } from './pages/plausibility/plausibility.component';
+import { ImportConfigComponent } from './components/import-config/import-config.component';
+import { CsvFormatComponent } from './components/csv-format/csv-format.component';
+import { LogDialogComponent } from './components/log-dialog/log-dialog.component';
 
 @NgModule({
   declarations: [
@@ -16,7 +19,14 @@ import { PlausibilityComponent } from './pages/plausibility/plausibility.compone
     ExportComponent,
     ImportComponent,
     PlausibilityComponent,
+    ImportConfigComponent,
+    CsvFormatComponent,
+    LogDialogComponent
   ],
-  imports: [SharedModule, AdministrationRoutingModule],
+  imports: [
+    SharedModule,
+    AdministrationRoutingModule,
+
+  ],
 })
 export class AdministrationModule {}

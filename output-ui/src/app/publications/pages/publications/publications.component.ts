@@ -12,12 +12,12 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
-import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from 'output-interfaces/Config';
-import { Publication } from 'output-interfaces/Publication';
-import { PublicationIndex } from 'output-interfaces/PublicationIndex';
 import { FilterViewComponent } from 'src/app/tools/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
+import { PublicationIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import { Publication } from '../../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-publications',

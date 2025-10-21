@@ -48,16 +48,13 @@ import { AliasTableComponent } from '../tools/alias-table/alias-table.component'
 import { BreadcrumpComponent } from '../tools/breadcrump/breadcrump.component';
 import { CombineDialogComponent } from '../tools/combine-dialog/combine-dialog.component';
 import { ConfirmDialogComponent } from '../tools/confirm-dialog/confirm-dialog.component';
-import { CsvFormatComponent } from '../tools/csv-format/csv-format.component';
 import { FilterViewComponent } from '../tools/filter-view/filter-view.component';
 import { IdTableComponent } from '../tools/id-table/id-table.component';
-import { ImportConfigComponent } from '../tools/import-config/import-config.component';
-import { LogDialogComponent } from '../tools/log-dialog/log-dialog.component';
-import { PiechartComponent } from '../tools/piechart/piechart.component';
 import { SelectAuthorComponent } from '../tools/select-author/select-author.component';
 import { SelectEntityComponent } from '../tools/select-entity/select-entity.component';
 import { TableComponent } from '../tools/table/table.component';
 import { WindowToolbarComponent } from '../tools/window-toolbar/window-toolbar.component';
+import { RouterModule } from '@angular/router';
 
 const MATERIAL_MODULES = [
   ClipboardModule,
@@ -108,12 +105,8 @@ const DECLARATIONS = [
   BreadcrumpComponent,
   CombineDialogComponent,
   ConfirmDialogComponent,
-  CsvFormatComponent,
   FilterViewComponent,
   IdTableComponent,
-  ImportConfigComponent,
-  LogDialogComponent,
-  PiechartComponent,
   SelectAuthorComponent,
   SelectEntityComponent,
   TableComponent,
@@ -129,6 +122,7 @@ const DECLARATIONS = [
     ...MATERIAL_MODULES,
     NgbModule,
     HighchartsChartModule,
+    RouterModule
   ],
   exports: [
     CommonModule,
