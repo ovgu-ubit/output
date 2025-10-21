@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ImportService } from 'src/app/administration/services/import.service';
-import { ReportService } from 'src/app/services/report.service';
+import { ReportService } from 'src/app/administration/services/report.service';
 import { Observable, Subject, firstValueFrom, from, map, merge, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';

@@ -10,8 +10,6 @@ import { GreaterEntitiesComponent } from './pages/master-data/greater-entities/g
 import { FundersComponent } from './pages/master-data/funders/funders.component';
 import { PubTypesComponent } from './pages/master-data/pub-types/pub-types.component';
 import { OaCategoriesComponent } from './pages/master-data/oa-categories/oa-categories.component';
-import { StatisticsComponent } from './pages/statistics/statistics.component';
-import { StatisticsYearComponent } from './pages/statistics/statistics-year/statistics-year.component';
 import { CostCenterComponent } from './pages/master-data/cost-center/cost-center.component';
 import { CostTypesComponent } from './pages/master-data/cost-types/cost-types.component';
 import { RolesComponent } from './pages/master-data/roles/roles.component';
@@ -40,8 +38,10 @@ const routes: Routes = [
     path: 'administration',
     loadChildren: () => import('./administration/administration.module').then(m => m.AdministrationModule),
   },
-  { path: 'statistics', component: StatisticsComponent, canActivate: [LoginGuard], data: { roles: null } },
-  { path: 'statistics/:year', component: StatisticsYearComponent, canActivate: [LoginGuard], data: { roles: null } },
+  {
+    path: 'statistics',
+    loadChildren: () => import('./statistics/statistics.module').then(m => m.StatisticsModule),
+  }
 ];
 
 @NgModule({

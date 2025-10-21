@@ -6,7 +6,7 @@ import { Store } from '@ngrx/store';
 import { Observable, concatMap, firstValueFrom, from, map, merge } from 'rxjs';
 import { ExportService } from 'src/app/administration/services/export.service';
 import { selectViewConfig } from 'src/app/services/redux';
-import { ReportService } from 'src/app/services/report.service';
+import { ReportService } from 'src/app/administration/services/report.service';
 import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
 
 @Component({

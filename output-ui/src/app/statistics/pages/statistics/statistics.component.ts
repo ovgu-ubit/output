@@ -1,13 +1,11 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { StatisticsService } from 'src/app/services/statistics.service';
+import { StatisticsService } from 'src/app/statistics/statistics.service';
 import * as Highcharts from 'highcharts';
 import exporting from 'highcharts/modules/exporting';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../output-interfaces/Publication';
 import { Observable, catchError, concat, map, merge, of, startWith } from 'rxjs';
-import { FilterOptions, HighlightOptions } from "../../../../../output-interfaces/Statistics"
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
@@ -15,6 +13,8 @@ import { OACategoryService } from 'src/app/services/entities/oa-category.service
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
+import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
 
 @Component({
   selector: 'app-statistics',

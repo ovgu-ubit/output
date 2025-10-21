@@ -22,8 +22,6 @@ import { OaCategoriesComponent } from './pages/master-data/oa-categories/oa-cate
 import { PubTypesComponent } from './pages/master-data/pub-types/pub-types.component';
 import { PublishersComponent } from './pages/master-data/publishers/publishers.component';
 import { StartComponent } from './pages/start/start.component';
-import { StatisticsYearComponent } from './pages/statistics/statistics-year/statistics-year.component';
-import { StatisticsComponent } from './pages/statistics/statistics.component';
 import { AuthorizationService } from './security/authorization.service';
 import { MatPaginatorDE } from './services/mat-paginator-de';
 import { hydrationMetaReducer, viewConfigReducer } from './services/redux';
@@ -44,8 +42,6 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         FundersComponent,
         PubTypesComponent,
         OaCategoriesComponent,
-        StatisticsComponent,
-        StatisticsYearComponent,
         CostCenterComponent,
         CostTypesComponent,
         RolesComponent,

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import * as Highcharts from 'highcharts';
 import exporting from 'highcharts/modules/exporting';
-import { StatisticsService } from 'src/app/services/statistics.service';
+import { StatisticsService } from 'src/app/statistics/statistics.service';
 import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
 import { Observable, map, merge } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
