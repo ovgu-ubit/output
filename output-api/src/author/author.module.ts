@@ -8,11 +8,13 @@ import { AliasAuthorFirstName } from './AliasAuthorFirstName';
 import { AliasAuthorLastName } from './AliasAuthorLastName';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AppConfigModule } from '../config/app-config.module';
+import { PublicationModule } from '../publication/publication.module';
 
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Author,AliasAuthorFirstName,AliasAuthorLastName]), 
+    PublicationModule,
     InstituteModule,
     AuthorizationModule,
     AppConfigModule
