@@ -12,6 +12,7 @@ import { PublicationIdentifier } from './PublicationIdentifier';
 import { PublicationSupplement } from './PublicationSupplement';
 import { PublicationService } from './publication.service';
 import { AppConfigModule } from '../../config/app-config.module';
+import { PublicationRelationsModule } from '../relations/publication-relations.module';
 
 const filterz = appConfig().filter_services;
 
@@ -23,6 +24,7 @@ const filterz = appConfig().filter_services;
       PublicationSupplement,
       PublicationDuplicate
     ]),
+    PublicationRelationsModule,
     InstituteModule,
     InvoiceModule,
     AuthorizationModule,
