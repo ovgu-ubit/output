@@ -18,18 +18,17 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
+import { AuthorPublication, Invoice, Publication, PublicationSupplement, Status } from '../../../../../../output-interfaces/Publication';
 import { IdTableComponent } from 'src/app/tools/id-table/id-table.component';
-import { AuthorshipFormComponent } from 'src/app/pages/windows/authorship-form/authorship-form.component';
+import { PublisherFormComponent } from 'src/app/pages/windows/publisher-form/publisher-form.component';
 import { ContractFormComponent } from 'src/app/pages/windows/contract-form/contract-form.component';
-import { DoiFormComponent } from 'src/app/pages/windows/doi-form/doi-form.component';
 import { FunderFormComponent } from 'src/app/pages/windows/funder-form/funder-form.component';
 import { GreaterEntityFormComponent } from 'src/app/pages/windows/greater-entity-form/greater-entity-form.component';
-import { InvoiceFormComponent } from 'src/app/pages/windows/invoice-form/invoice-form.component';
 import { OaCategoryFormComponent } from 'src/app/pages/windows/oa-category-form/oa-category-form.component';
 import { PubTypeFormComponent } from 'src/app/pages/windows/pub-type-form/pub-type-form.component';
-import { PublisherFormComponent } from 'src/app/pages/windows/publisher-form/publisher-form.component';
-import { AuthorPublication, Invoice, Publication, Status } from 'output-interfaces/Publication';
-import { PublicationSupplement } from 'output-api/src/entity/PublicationSupplement';
+import { DoiFormComponent } from 'src/app/pages/windows/doi-form/doi-form.component';
+import { InvoiceFormComponent } from 'src/app/pages/windows/invoice-form/invoice-form.component';
+import { AuthorshipFormComponent } from 'src/app/pages/windows/authorship-form/authorship-form.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
