@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject, ViewChild, AfterViewInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CSVMapping } from '../../../../../output-interfaces/Config';
-import { ImportService } from 'src/app/services/import.service';
+import { ImportService } from 'src/app/administration/services/import.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
 import { Subject, takeUntil } from 'rxjs';

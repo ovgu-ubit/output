@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { Observable, concatMap, firstValueFrom, from, map, merge } from 'rxjs';
-import { ExportService } from 'src/app/services/export.service';
+import { ExportService } from 'src/app/administration/services/export.service';
 import { selectViewConfig } from 'src/app/services/redux';
 import { ReportService } from 'src/app/services/report.service';
 import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';

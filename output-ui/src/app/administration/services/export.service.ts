@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { firstValueFrom, interval, concatMap, Observable } from 'rxjs';
-import { CSVMapping, SearchFilter, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config'
+import { CSVMapping, SearchFilter, UpdateMapping, UpdateOptions } from 'output-interfaces/Config';
 
 @Injectable({
   providedIn: 'root'

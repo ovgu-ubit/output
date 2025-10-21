@@ -6,7 +6,7 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfigService } from 'src/app/services/config.service';
-import { EnrichService } from 'src/app/services/enrich.service';
+import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
@@ -18,18 +18,18 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { AuthorPublication, Invoice, Publication, Status } from '../../../../../../output-interfaces/Publication';
-import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
-import { ContractFormComponent } from '../contract-form/contract-form.component';
-import { DoiFormComponent } from '../doi-form/doi-form.component';
-import { FunderFormComponent } from '../funder-form/funder-form.component';
-import { GreaterEntityFormComponent } from '../greater-entity-form/greater-entity-form.component';
-import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
-import { OaCategoryFormComponent } from '../oa-category-form/oa-category-form.component';
-import { PubTypeFormComponent } from '../pub-type-form/pub-type-form.component';
-import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { IdTableComponent } from 'src/app/tools/id-table/id-table.component';
-import { PublicationSupplement } from '../../../../../../output-api/src/entity/PublicationSupplement';
+import { AuthorshipFormComponent } from 'src/app/pages/windows/authorship-form/authorship-form.component';
+import { ContractFormComponent } from 'src/app/pages/windows/contract-form/contract-form.component';
+import { DoiFormComponent } from 'src/app/pages/windows/doi-form/doi-form.component';
+import { FunderFormComponent } from 'src/app/pages/windows/funder-form/funder-form.component';
+import { GreaterEntityFormComponent } from 'src/app/pages/windows/greater-entity-form/greater-entity-form.component';
+import { InvoiceFormComponent } from 'src/app/pages/windows/invoice-form/invoice-form.component';
+import { OaCategoryFormComponent } from 'src/app/pages/windows/oa-category-form/oa-category-form.component';
+import { PubTypeFormComponent } from 'src/app/pages/windows/pub-type-form/pub-type-form.component';
+import { PublisherFormComponent } from 'src/app/pages/windows/publisher-form/publisher-form.component';
+import { AuthorPublication, Invoice, Publication, Status } from 'output-interfaces/Publication';
+import { PublicationSupplement } from 'output-api/src/entity/PublicationSupplement';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {

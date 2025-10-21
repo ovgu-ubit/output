@@ -3,7 +3,7 @@ import { FormBuilder } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subject,firstValueFrom,from,takeUntil,map, merge } from 'rxjs';
-import { PlausibilityService } from 'src/app/services/plausibility.service';
+import { PlausibilityService } from 'src/app/administration/services/plausibility.service';
 import { ReportService } from 'src/app/services/report.service';
 import { LogDialogComponent } from 'src/app/tools/log-dialog/log-dialog.component';
 

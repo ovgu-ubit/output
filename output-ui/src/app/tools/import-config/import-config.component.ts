@@ -1,8 +1,8 @@
 import { Component,OnInit,Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { UpdateMapping, UpdateOptions } from '../../../../../output-interfaces/Config';
-import { ImportService } from 'src/app/services/import.service';
-import { EnrichService } from 'src/app/services/enrich.service';
+import { ImportService } from 'src/app/administration/services/import.service';
+import { EnrichService } from 'src/app/administration/services/enrich.service';
 
 @Component({
   selector: 'app-import-config',
