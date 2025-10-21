@@ -208,7 +208,7 @@ export class PublicationController {
         let result = [];
         for (let i = 0; i < (await this.configService.get('filter_services')).length; i++) {
             result.push({
-                path: this.configService.get('filter_services')[i].path,
+                path: (await this.configService.get('filter_services'))[i].path,
                 label: this.filterServices[i].getName()
             })
         }

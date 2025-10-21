@@ -27,7 +27,7 @@ export class ConfigController {
     }
 
     @Get('doi_import')
-    getDOIImport() {
-        return JSON.stringify(this.configService.get('doi_import_service'))
+    async getDOIImport() {
+        return JSON.stringify(await this.configService.get('doi_import_service'))
     }
 }

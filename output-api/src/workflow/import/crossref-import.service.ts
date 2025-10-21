@@ -210,7 +210,7 @@ export class CrossrefImportService extends ApiImportOffsetService {
 
     private async affiliationIncludesTags(affiliation) {
         for (let i = 0; i < (await this.configService.get('affiliationTags')).length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
+            if (affiliation.name?.toLowerCase().includes((await this.configService.get('affiliationTags'))[i])) return true;
         }
         return false;
     }

@@ -41,7 +41,7 @@ export class OpenAPCExportService extends AbstractExportService {
             let hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
             if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
 
-            res += this.format(this.configService.get("institution_label"));
+            res += this.format(await this.configService.get("institution_label"));
             if (!hybrid) {
                 res += this.format(pub.invoices[0].date?.getFullYear());
                 res += this.format(pub.invoices.reduce<number>((p: number, c) => { return p + c.booking_amount }, 0));

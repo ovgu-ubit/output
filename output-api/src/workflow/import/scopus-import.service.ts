@@ -119,9 +119,9 @@ export class ScopusImportService extends ApiImportOffsetService {
         }
         return false;
     }
-    private affiliationTagMatch(affiliation: string): boolean {
+    private async affiliationTagMatch(affiliation: string) {
         for (let i = 0; i < this.affiliationTags.length; i++) {
-            if (affiliation.toLowerCase().includes(this.configService.get('affiliationTags')[i])) return true;
+            if (affiliation.toLowerCase().includes((await this.configService.get('affiliationTags'))[i])) return true;
         }
         return false;
     }
