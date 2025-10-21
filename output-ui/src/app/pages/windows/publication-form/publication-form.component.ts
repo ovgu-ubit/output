@@ -18,7 +18,7 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
-import { AuthorPublication, Invoice, Publication, Status } from '../../../../../../output-interfaces/Publication';
+import { AuthorPublication, Invoice, Publication, PublicationSupplement, Status } from '../../../../../../output-interfaces/Publication';
 import { AuthorshipFormComponent } from '../authorship-form/authorship-form.component';
 import { ContractFormComponent } from '../contract-form/contract-form.component';
 import { DoiFormComponent } from '../doi-form/doi-form.component';
@@ -29,7 +29,6 @@ import { OaCategoryFormComponent } from '../oa-category-form/oa-category-form.co
 import { PubTypeFormComponent } from '../pub-type-form/pub-type-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { IdTableComponent } from 'src/app/tools/id-table/id-table.component';
-import { PublicationSupplement } from '../../../../../../output-api/src/entity/PublicationSupplement';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {

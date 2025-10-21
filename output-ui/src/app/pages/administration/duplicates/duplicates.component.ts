@@ -1,11 +1,11 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
-import { PublicationDuplicate } from '../../../../../../output-api/src/entity/PublicationDuplicate';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { CombineDialogComponent } from 'src/app/tools/combine-dialog/combine-dialog.component';
 import { DuplicateDialogComponent } from 'src/app/tools/duplicate-dialog/duplicate-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TableComponent } from 'src/app/tools/table/table.component';
+import { PublicationDuplicate } from '../../../../../../output-interfaces/Publication';
 
 @Component({
   selector: 'app-duplicates',
