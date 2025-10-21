@@ -2,7 +2,6 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { NgModule } from '@angular/core';
 import { MAT_MOMENT_DATE_ADAPTER_OPTIONS } from '@angular/material-moment-adapter';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
-import { MatPaginatorIntl } from '@angular/material/paginator';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MetaReducer, StoreModule } from '@ngrx/store';
@@ -23,10 +22,10 @@ import { PubTypesComponent } from './pages/master-data/pub-types/pub-types.compo
 import { PublishersComponent } from './pages/master-data/publishers/publishers.component';
 import { StartComponent } from './pages/start/start.component';
 import { AuthorizationService } from './security/authorization.service';
-import { MatPaginatorDE } from './services/mat-paginator-de';
 import { hydrationMetaReducer, viewConfigReducer } from './services/redux';
 import { RolesComponent } from './pages/master-data/roles/roles.component';
 import { StatusesComponent } from './pages/master-data/statuses/statuses.component';
+import { TableModule } from './table/table.module';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -52,11 +51,11 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         BrowserAnimationsModule,
         SharedModule,
         AppRoutingModule,
+        TableModule,
         StoreModule.forRoot({ viewConfigReducer }, { metaReducers }),
         !environment.production ? StoreDevtoolsModule.instrument({ connectInZone: true }) : []
     ],
     providers: [
-        { provide: MatPaginatorIntl, useClass: MatPaginatorDE },
         { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
         { provide: AuthorizationService, useClass: environment.authorization_service },

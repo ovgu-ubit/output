@@ -10,7 +10,6 @@ import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
-import { TableComponent } from 'src/app/tools/table/table.component';
 import { environment } from 'src/environments/environment';
 import { FilterViewComponent } from 'src/app/tools/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
@@ -18,6 +17,7 @@ import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/re
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../../../../../output-interfaces/Publication';
+import { TableComponent } from 'src/app/table/table-component/table.component';
 
 @Component({
   selector: 'app-publications',

@@ -19,8 +19,8 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
 import { Entity } from '../../../../../output-interfaces/Publication';
-import { CombineDialogComponent } from '../combine-dialog/combine-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
+import { CombineDialogComponent } from '../dialog/combine-dialog/combine-dialog.component';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {

@@ -43,16 +43,13 @@ import { PubTypeFormComponent } from '../pages/windows/pub-type-form/pub-type-fo
 import { PublisherFormComponent } from '../pages/windows/publisher-form/publisher-form.component';
 import { RoleFormComponent } from '../pages/windows/role-form/role-form.component';
 import { StatusFormComponent } from '../pages/windows/status-form/status-form.component';
-import { AliasFormComponent } from '../tools/alias-form/alias-form.component';
 import { AliasTableComponent } from '../tools/alias-table/alias-table.component';
 import { BreadcrumpComponent } from '../tools/breadcrump/breadcrump.component';
-import { CombineDialogComponent } from '../tools/combine-dialog/combine-dialog.component';
 import { ConfirmDialogComponent } from '../tools/confirm-dialog/confirm-dialog.component';
 import { FilterViewComponent } from '../tools/filter-view/filter-view.component';
 import { IdTableComponent } from '../tools/id-table/id-table.component';
 import { SelectAuthorComponent } from '../tools/select-author/select-author.component';
 import { SelectEntityComponent } from '../tools/select-entity/select-entity.component';
-import { TableComponent } from '../tools/table/table.component';
 import { WindowToolbarComponent } from '../tools/window-toolbar/window-toolbar.component';
 import { RouterModule } from '@angular/router';
 
@@ -100,16 +97,13 @@ const DECLARATIONS = [
   PublisherFormComponent,
   RoleFormComponent,
   StatusFormComponent,
-  AliasFormComponent,
   AliasTableComponent,
   BreadcrumpComponent,
-  CombineDialogComponent,
   ConfirmDialogComponent,
   FilterViewComponent,
   IdTableComponent,
   SelectAuthorComponent,
   SelectEntityComponent,
-  TableComponent,
   WindowToolbarComponent,
 ];
 

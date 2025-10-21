@@ -5,7 +5,7 @@ import { map, merge } from 'rxjs';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import { RoleService } from 'src/app/services/entities/role.service';
-import { AliasFormComponent } from 'src/app/tools/alias-form/alias-form.component';
+import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.component';
 import { AuthorPublication, Institute, Role } from '../../../../../../output-interfaces/Publication';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { AuthorFormComponent } from '../author-form/author-form.component';

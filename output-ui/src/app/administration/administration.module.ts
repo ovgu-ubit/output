@@ -10,6 +10,7 @@ import { PlausibilityComponent } from './pages/plausibility/plausibility.compone
 import { ImportConfigComponent } from './components/import-config/import-config.component';
 import { CsvFormatComponent } from './components/csv-format/csv-format.component';
 import { LogDialogComponent } from './components/log-dialog/log-dialog.component';
+import { TableModule } from '../table/table.module';
 
 @NgModule({
   declarations: [
@@ -24,6 +25,7 @@ import { LogDialogComponent } from './components/log-dialog/log-dialog.component
     LogDialogComponent
   ],
   imports: [
+    TableModule,
     SharedModule,
     AdministrationRoutingModule,
 

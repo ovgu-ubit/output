@@ -1,7 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { AliasFormComponent } from '../alias-form/alias-form.component';
-import { Author } from '../../../../../output-interfaces/Publication';
+import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.component';
 
 @Component({
   selector: 'app-combine-dialog',

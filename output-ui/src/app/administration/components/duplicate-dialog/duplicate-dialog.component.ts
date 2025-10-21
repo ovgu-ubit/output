@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { AliasFormComponent } from 'src/app/tools/alias-form/alias-form.component';
+import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.component';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { concatMap, of } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';

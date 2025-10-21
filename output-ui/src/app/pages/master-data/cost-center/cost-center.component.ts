@@ -1,10 +1,10 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
-import { TableComponent } from 'src/app/tools/table/table.component';
 import { CostCenter } from '../../../../../../output-interfaces/Publication';
 import { CostCenterIndex } from '../../../../../../output-interfaces/PublicationIndex';
 import { CostCenterFormComponent } from '../../windows/cost-center-form/cost-center-form.component';
+import { TableComponent } from 'src/app/table/table-component/table.component';
 
 @Component({
   selector: 'app-cost-center',
