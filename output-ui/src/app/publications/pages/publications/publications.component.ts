@@ -5,19 +5,19 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, concatMap, map, merge, take } from 'rxjs';
-import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
+import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { ConfigService } from 'src/app/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { environment } from 'src/environments/environment';
-import { FilterViewComponent } from 'src/app/tools/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../../../output-interfaces/PublicationIndex';
 import { Publication } from '../../../../../../output-interfaces/Publication';
 import { TableComponent } from 'src/app/table/table-component/table.component';
+import { FilterViewComponent } from '../../dialogs/filter-view/filter-view.component';
 
 @Component({
   selector: 'app-publications',

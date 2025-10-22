@@ -5,12 +5,20 @@ import { ReportingYearFormComponent } from './dialogs/reporting-year-form/report
 import { PublicationsRoutingModule } from './publications-routing.module';
 import { PublicationsComponent } from './pages/publications/publications.component';
 import { TableModule } from '../table/table.module';
+import { FormModule } from '../form/form.module';
+import { FilterViewComponent } from './dialogs/filter-view/filter-view.component';
 
 @NgModule({
-  declarations: [PublicationsComponent, PublicationFormComponent, ReportingYearFormComponent],
+  declarations: [
+    PublicationsComponent, 
+    PublicationFormComponent, 
+    ReportingYearFormComponent,
+    FilterViewComponent
+  ],
   imports: [
     SharedModule,
     TableModule,
+    FormModule,
     PublicationsRoutingModule
   ],
 })

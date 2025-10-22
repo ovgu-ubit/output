@@ -11,15 +11,14 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
-import { Alert } from 'src/app/interfaces/alert';
-import { EntityFormComponent, EntityService } from 'src/app/interfaces/service';
-import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
+import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
+import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
 import { Entity } from '../../../../../output-interfaces/Publication';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/tools/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { CombineDialogComponent } from '../dialog/combine-dialog/combine-dialog.component';
 
 export class CustomPaginator extends MatPaginatorIntl {
@@ -76,7 +75,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   headerNamesFilter = [];
   dataSource: MatTableDataSource<T>;
   dataSource2: MatTableDataSource<T>;
-  alerts: Alert[] = [];
 
   destroy$ = new Subject();
 

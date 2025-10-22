@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { TableButton, TableHeader, TableParent } from 'src/app/interfaces/table';
+import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { DuplicateDialogComponent } from '../../components/duplicate-dialog/duplicate-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';

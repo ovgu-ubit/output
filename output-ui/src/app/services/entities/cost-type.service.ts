@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { CostType } from '../../../../../output-interfaces/Publication';
 import { environment } from 'src/environments/environment';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 import { CostTypeIndex } from '../../../../../output-interfaces/PublicationIndex';
 
 @Injectable({

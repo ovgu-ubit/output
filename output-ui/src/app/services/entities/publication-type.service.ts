@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { PublicationType } from '../../../../../output-interfaces/Publication';
 import { PublicationTypeIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 
 @Injectable({
   providedIn: 'root'
