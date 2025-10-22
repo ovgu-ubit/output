@@ -29,14 +29,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         return { publisher: true, identifiers: true, publications: true };
     }
 
-    /*public save(contracts: any[]) {
-        return this.repository.save(contracts).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
-    }*/
-
-    public async update(contract: any) {
+    public override async save(contract: Contract) {
         let orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
         if (contract.identifiers) {
             for (let id of contract.identifiers) {

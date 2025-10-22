@@ -30,28 +30,13 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return { identifiers: true };
     }
 
-    public async save(pubs: any[]) {
-        for (let pub of pubs) {
-            if (!pub.id) pub.id = undefined;
-            if (pub.identifiers) {
-                for (let id of pub.identifiers) {
-                    id.value = id.value.toUpperCase();
-                    id.type = id.type.toLowerCase();
-                    id.id = (await this.idRepository.save(id).catch(err => {
-                        if (err.constraint) throw new BadRequestException(err.detail)
-                        else throw new InternalServerErrorException(err);
-                    })).id;
-                }
-            }
-        }
-        return await this.repository.save(pubs).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    public async save(pub: GreaterEntity) {
+        return this.update(pub);
     }
 
-    public async update(ge:any) {
-        let orig:GreaterEntity = await this.repository.findOne({where: {id:ge.id}, relations: {identifiers:true}})
+    public async update(ge: any) {
+        let orig: GreaterEntity = null;
+        if (ge.id) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
         if (ge.identifiers) {
             for (let id of ge.identifiers) {
                 if (!id.id) {
@@ -67,7 +52,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         if (ge.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
             if (!ge.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
         })
-        
+
         return await this.repository.save(ge).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);

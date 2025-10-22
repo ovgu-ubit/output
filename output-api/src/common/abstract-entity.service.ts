@@ -21,13 +21,17 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         return {};
     }
 
-    public async save(entities: DeepPartial<TEntity>[]) {
-        return this.repository.save(entities).catch(err => {
+    public async save(entity: DeepPartial<TEntity>) {
+        return this.repository.save(entity).catch(err => {
             if (err.constraint) {
                 throw new BadRequestException(err.detail);
             }
             throw new InternalServerErrorException(err);
         });
+    }
+    
+    public async update(entity: DeepPartial<TEntity>) {
+        return this.save(entity)
     }
 
     public get() {
@@ -77,10 +81,10 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
     }
 
     protected async lockEntity(id: number) {
-        await this.save([{ id, locked_at: new Date() } as DeepPartial<TEntity>]);
+        await this.save({ id, locked_at: new Date() } as DeepPartial<TEntity>);
     }
 
     protected async unlockEntity(id: number) {
-        await this.save([{ id, locked_at: null } as DeepPartial<TEntity>]);
+        await this.save({ id, locked_at: null } as DeepPartial<TEntity>);
     }
 }

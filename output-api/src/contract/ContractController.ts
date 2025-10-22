@@ -15,10 +15,6 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
         super(contractService);
     }
 
-    protected override updateEntity(body: Contract) {
-        return this.service.update(body);
-    }
-
     @Get("index")
     async index(@Query('reporting_year') reporting_year:number) : Promise<ContractIndex[]> {
         return await this.service.index(reporting_year);

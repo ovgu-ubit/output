@@ -63,11 +63,11 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     }
 
     protected createEntity(body: TEntity) {
-        return this.service.save([body]);
+        return this.service.save(body);
     }
 
     protected updateEntity(body: TEntity) {
-        return this.service.save([body]);
+        return this.service.update(body);
     }
 
     protected deleteEntities(body: TEntity[]) {
