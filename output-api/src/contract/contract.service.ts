@@ -29,12 +29,12 @@ export class ContractService extends AbstractEntityService<Contract> {
         return { publisher: true, identifiers: true, publications: true };
     }
 
-    public save(contracts: any[]) {
+    /*public save(contracts: any[]) {
         return this.repository.save(contracts).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
-    }
+    }*/
 
     public async update(contract: any) {
         let orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
@@ -100,10 +100,10 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true } });
+        let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true, identifiers: true } });
         let authors = []
         for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publisher: true, publications: true } }))
+            authors.push(await this.repository.findOne({ where: { id }, relations: { publisher: true, publications: true, identifiers: true  } }))
         }
 
         if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
