@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable, NotImplementedException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { concatMap, concatWith, map, merge, mergeAll, mergeMap, mergeWith, Observable, of, queueScheduler, scheduled, Subject, takeUntil } from 'rxjs';
 import { Publication } from '../../publication/core/Publication';
 import { PublicationService } from '../../publication/core/publication.service';
@@ -7,7 +7,11 @@ import { PublicationService } from '../../publication/core/publication.service';
 @Injectable()
 export abstract class ApiImportCursorService {
 
-    constructor(protected http: HttpService, protected publicationService: PublicationService) { }
+    @Inject(HttpService)
+    protected http!: HttpService;
+
+    @Inject(PublicationService)
+    protected publicationService!: PublicationService;
 
     private progress = 0;
     private status_text = 'initialized';

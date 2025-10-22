@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { EMPTY, Observable, concatMap, concatWith, delay, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -7,21 +7,7 @@ import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Publication } from '../../publication/core/Publication';
 import { Publisher } from '../../publisher/Publisher';
-import { AuthorService } from '../../author/author.service';
-import { ContractService } from '../../contract/contract.service';
-import { FunderService } from '../../funder/funder.service';
-import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstituteService } from '../../institute/institute.service';
-import { InvoiceService } from '../../invoice/invoice.service';
-import { LanguageService } from '../../publication/lookups/language.service';
-import { OACategoryService } from '../../oa_category/oa-category.service';
-import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/core/publication.service';
-import { PublisherService } from '../../publisher/publisher.service';
-import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
-import { ReportItemService } from '../report-item.service';
-import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 /**
@@ -29,14 +15,8 @@ import { AppConfigService } from '../../config/app-config.service';
  */
 export class PubMedImportService extends AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
-        protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
-        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService,
-        protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
-    }
+    @Inject(HttpService)
+    protected http!: HttpService;
 
     name = 'PubMed';
     year = '2023';

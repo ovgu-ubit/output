@@ -1,37 +1,12 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Publisher } from '../../publisher/Publisher';
-import { AuthorService } from '../../author/author.service';
-import { ContractService } from '../../contract/contract.service';
-import { FunderService } from '../../funder/funder.service';
-import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstituteService } from '../../institute/institute.service';
-import { InvoiceService } from '../../invoice/invoice.service';
-import { LanguageService } from '../../publication/lookups/language.service';
-import { OACategoryService } from '../../oa_category/oa-category.service';
-import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/core/publication.service';
-import { PublisherService } from '../../publisher/publisher.service';
-import { RoleService } from '../../publication/relations/role.service';
 import { ApiEnrichDOIService } from './api-enrich-doi.service';
-import { ReportItemService } from '../report-item.service';
-import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class ScopusEnrichService extends ApiEnrichDOIService {
-
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
-        protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
-        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
-        protected languageService: LanguageService,
-        protected roleService: RoleService, protected configService: AppConfigService,
-        protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
-    }
 
     private searchText = '';
     private affiliationTags;

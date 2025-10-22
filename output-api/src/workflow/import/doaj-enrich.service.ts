@@ -1,32 +1,21 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { Observable, catchError, delay, mergeAll, of, queueScheduler, scheduled } from 'rxjs';
 import { FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 import { Publisher } from '../../publisher/Publisher';
-import { AuthorService } from '../../author/author.service';
-import { ContractService } from '../../contract/contract.service';
-import { FunderService } from '../../funder/funder.service';
-import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
-import { InstituteService } from '../../institute/institute.service';
-import { InvoiceService } from '../../invoice/invoice.service';
-import { LanguageService } from '../../publication/lookups/language.service';
-import { OACategoryService } from '../../oa_category/oa-category.service';
-import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/core/publication.service';
-import { PublisherService } from '../../publisher/publisher.service';
-import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
-import { ReportItemService } from '../report-item.service';
-import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 /**
  * abstract class for all API enrichs that are based on DOI URL request
  */
 export class DOAJEnrichService extends AbstractImportService {
+
+    @Inject(HttpService)
+    protected http!: HttpService;
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.IGNORE,
@@ -131,14 +120,6 @@ export class DOAJEnrichService extends AbstractImportService {
     }
     protected getCostApproach(element: any): number {
         return null;
-    }
-
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
-        protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
-        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
     }
 
     private publicationsUpdate = [];

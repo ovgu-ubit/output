@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
@@ -30,11 +30,47 @@ import { AppConfigService } from '../../config/app-config.service';
  */
 export abstract class AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
-        protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
-        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
-        protected invoiceService: InvoiceService, protected configService: AppConfigService) { }
+    @Inject(PublicationService)
+    protected publicationService!: PublicationService;
+
+    @Inject(AuthorService)
+    protected authorService!: AuthorService;
+
+    @Inject(GreaterEntityService)
+    protected geService!: GreaterEntityService;
+
+    @Inject(FunderService)
+    protected funderService!: FunderService;
+
+    @Inject(PublicationTypeService)
+    protected publicationTypeService!: PublicationTypeService;
+
+    @Inject(PublisherService)
+    protected publisherService!: PublisherService;
+
+    @Inject(OACategoryService)
+    protected oaService!: OACategoryService;
+
+    @Inject(ContractService)
+    protected contractService!: ContractService;
+
+    @Inject(ReportItemService)
+    protected reportService!: ReportItemService;
+
+    @Inject(InstituteService)
+    protected instService!: InstituteService;
+
+    @Inject(LanguageService)
+    protected languageService!: LanguageService;
+
+    @Inject(RoleService)
+    protected roleService!: RoleService;
+
+    @Inject(InvoiceService)
+    protected invoiceService!: InvoiceService;
+
+    @Inject(AppConfigService)
+    protected configService!: AppConfigService;
 
     protected progress = 0;
     protected status_text = 'initialized';
