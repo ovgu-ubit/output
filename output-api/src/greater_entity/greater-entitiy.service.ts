@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { GreaterEntityIndex } from '../../../output-interfaces/PublicationIndex';
 import { GreaterEntity } from './GreaterEntity';
@@ -8,36 +8,35 @@ import { GEIdentifier } from './GEIdentifier';
 import { Publication } from '../publication/core/Publication';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
+import { AbstractEntityService } from '../common/abstract-entity.service';
 
 @Injectable()
-export class GreaterEntityService {
+export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
 
-    constructor(@InjectRepository(GreaterEntity) private repository: Repository<GreaterEntity>,
-        @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>, private publicationService: PublicationService,
-        private configService: AppConfigService) { }
-
-    public async save(pubs: any[]) {
-        for (let pub of pubs) {
-            if (!pub.id) pub.id = undefined;
-            if (pub.identifiers) {
-                for (let id of pub.identifiers) {
-                    id.value = id.value.toUpperCase();
-                    id.type = id.type.toLowerCase();
-                    id.id = (await this.idRepository.save(id).catch(err => {
-                        if (err.constraint) throw new BadRequestException(err.detail)
-                        else throw new InternalServerErrorException(err);
-                    })).id;
-                }
-            }
-        }
-        return await this.repository.save(pubs).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    constructor(
+        @InjectRepository(GreaterEntity) repository: Repository<GreaterEntity>,
+        @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>,
+        private publicationService: PublicationService,
+        configService: AppConfigService,
+    ) {
+        super(repository, configService);
     }
 
-    public async update(ge:any) {
-        let orig:GreaterEntity = await this.repository.findOne({where: {id:ge.id}, relations: {identifiers:true}})
+    protected override getFindManyOptions(): FindManyOptions<GreaterEntity> {
+        return { relations: { identifiers: true } };
+    }
+
+    protected override getFindOneRelations(): FindOptionsRelations<GreaterEntity> {
+        return { identifiers: true };
+    }
+
+    public async save(pub: GreaterEntity) {
+        return this.update(pub);
+    }
+
+    public async update(ge: any) {
+        let orig: GreaterEntity = null;
+        if (ge.id) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
         if (ge.identifiers) {
             for (let id of ge.identifiers) {
                 if (!id.id) {
@@ -53,33 +52,11 @@ export class GreaterEntityService {
         if (ge.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
             if (!ge.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
         })
-        
+
         return await this.repository.save(ge).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
-    }
-
-    public get() {
-        return this.repository.find({ relations: { identifiers: true } });
-    }
-
-    public async one(id: number, writer: boolean) {
-        let ge = await this.repository.findOne({ where: { id }, relations: { identifiers: true } });
-
-        if (writer && !ge.locked_at) {
-            await this.save([{
-                id: ge.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - ge.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: ge.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-        return ge;
     }
 
     public async findOrSave(ge: GreaterEntity): Promise<GreaterEntity> {

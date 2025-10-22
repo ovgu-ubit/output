@@ -1,45 +1,28 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { Publisher } from './Publisher';
 import { AliasPublisher } from './AliasPublisher';
 import { PublicationService } from '../publication/core/publication.service';
 import { PublisherIndex } from '../../../output-interfaces/PublicationIndex';
 import { Publication } from '../publication/core/Publication';
 import { AppConfigService } from '../config/app-config.service';
+import { AbstractEntityService } from '../common/abstract-entity.service';
 
 @Injectable()
-export class PublisherService {
+export class PublisherService extends AbstractEntityService<Publisher> {
 
-    constructor(@InjectRepository(Publisher) private repository: Repository<Publisher>, private configService: AppConfigService, private publicationService: PublicationService,
-        @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>) { }
-
-    public save(pub: any[]) {
-        return this.repository.save(pub).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    constructor(
+        @InjectRepository(Publisher) repository: Repository<Publisher>,
+        configService: AppConfigService,
+        private publicationService: PublicationService,
+        @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>,
+    ) {
+        super(repository, configService);
     }
 
-    public get() {
-        return this.repository.find();
-    }
-    public async one(id: number, writer: boolean) {
-        let publisher = await this.repository.findOne({ where: { id }, relations: { aliases: true, doi_prefixes: true } });
-
-        if (writer && !publisher.locked_at) {
-            await this.save([{
-                id: publisher.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - publisher.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: publisher.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-        return publisher;
+    protected override getFindOneRelations(): FindOptionsRelations<Publisher> {
+        return { aliases: true, doi_prefixes: true };
     }
 
     public async findOrSave(publisher: Publisher): Promise<Publisher> {

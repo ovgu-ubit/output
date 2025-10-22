@@ -14,4 +14,4 @@ Steps to run this project:
 cf. [TypeORM migrations documentation](https://typeorm.io/migrations#migrations)
 
 1. run `npm run build`
-2. run `npm run typeorm:dev migration:run -- -d ./src/app.data.source.ts` to apply all pending migrations
+2. run `npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts` to apply all pending migrations

@@ -1,49 +1,35 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
-import { ILike, In, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { Contract } from './Contract';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
 import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier';
 import { AppConfigService } from '../config/app-config.service';
+import { AbstractEntityService } from '../common/abstract-entity.service';
 
 @Injectable()
-export class ContractService {
+export class ContractService extends AbstractEntityService<Contract> {
 
-    constructor(@InjectRepository(Contract) private repository: Repository<Contract>, private configService: AppConfigService, private publicationService: PublicationService,
-        @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>) { }
-
-    public get() {
-        return this.repository.find({ relations: { publisher: true } });
+    constructor(
+        @InjectRepository(Contract) repository: Repository<Contract>,
+        configService: AppConfigService,
+        private publicationService: PublicationService,
+        @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>,
+    ) {
+        super(repository, configService);
     }
 
-    public async one(id: number, writer: boolean): Promise<Contract> {
-        let contract = await this.repository.findOne({ where: { id }, relations: { publisher: true, identifiers: true, publications: true } });
-
-        if (writer && !contract.locked_at) {
-            await this.save([{
-                id: contract.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - contract.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: contract.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-        return contract;
+    protected override getFindManyOptions(): FindManyOptions<Contract> {
+        return { relations: { publisher: true } };
     }
 
-    public save(contracts: any[]) {
-        return this.repository.save(contracts).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    protected override getFindOneRelations(): FindOptionsRelations<Contract> {
+        return { publisher: true, identifiers: true, publications: true };
     }
 
-    public async update(contract: any) {
+    public override async save(contract: Contract) {
         let orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
         if (contract.identifiers) {
             for (let id of contract.identifiers) {
@@ -107,10 +93,10 @@ export class ContractService {
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true } });
+        let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true, identifiers: true } });
         let authors = []
         for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publisher: true, publications: true } }))
+            authors.push(await this.repository.findOne({ where: { id }, relations: { publisher: true, publications: true, identifiers: true  } }))
         }
 
         if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
