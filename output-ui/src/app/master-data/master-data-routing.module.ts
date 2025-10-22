@@ -15,7 +15,7 @@ import { StatusesComponent } from './pages/statuses/statuses.component';
 import { AuthorsComponent } from './pages/authors/authors.component';
 
 const routes: Routes = [
-    //{ path: '', component: InstitutionsComponent, canActivate: [LoginGuard], data: { roles: null} },
+    { path: '', component: InstitutionsComponent, canActivate: [LoginGuard], data: { roles: null} },
     { path: 'authors', component: AuthorsComponent, canActivate: [LoginGuard], data: { roles: null } },
     { path: 'institutions', component: InstitutionsComponent, canActivate: [LoginGuard], data: { roles: null } },
     { path: 'contracts', component: ContractsComponent, canActivate: [LoginGuard], data: { roles: null } },
