@@ -1,45 +1,27 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { AliasFunder } from './AliasFunder';
 import { PublicationService } from '../publication/core/publication.service';
 import { Funder } from './Funder';
 import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
+import { AbstractEntityService } from '../common/abstract-entity.service';
 
 @Injectable()
-export class FunderService {
+export class FunderService extends AbstractEntityService<Funder> {
 
-    constructor(@InjectRepository(Funder) private repository: Repository<Funder>, @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
-    private configService: AppConfigService, private publicationService:PublicationService) { }
-
-    public save(pub: any[]) {
-        return this.repository.save(pub).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    constructor(
+        @InjectRepository(Funder) repository: Repository<Funder>,
+        @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
+        configService: AppConfigService,
+        private publicationService:PublicationService,
+    ) {
+        super(repository, configService);
     }
 
-    public get() {
-        return this.repository.find();
-    }
-
-    public async one(id:number, writer:boolean) {
-        let funder = await this.repository.findOne({where:{id}, relations: {aliases:true}});
-        
-        if (writer && !funder.locked_at) {
-            await this.save([{
-                id: funder.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - funder.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: funder.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }        
-        return funder;
+    protected override getFindOneRelations(): FindOptionsRelations<Funder> {
+        return { aliases: true };
     }
 
     public async findOrSave(funder:Funder): Promise<Funder> {

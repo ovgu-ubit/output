@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { GreaterEntityIndex } from '../../../output-interfaces/PublicationIndex';
 import { GreaterEntity } from './GreaterEntity';
@@ -8,13 +8,27 @@ import { GEIdentifier } from './GEIdentifier';
 import { Publication } from '../publication/core/Publication';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
+import { AbstractEntityService } from '../common/abstract-entity.service';
 
 @Injectable()
-export class GreaterEntityService {
+export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
 
-    constructor(@InjectRepository(GreaterEntity) private repository: Repository<GreaterEntity>,
-        @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>, private publicationService: PublicationService,
-        private configService: AppConfigService) { }
+    constructor(
+        @InjectRepository(GreaterEntity) repository: Repository<GreaterEntity>,
+        @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>,
+        private publicationService: PublicationService,
+        configService: AppConfigService,
+    ) {
+        super(repository, configService);
+    }
+
+    protected override getFindManyOptions(): FindManyOptions<GreaterEntity> {
+        return { relations: { identifiers: true } };
+    }
+
+    protected override getFindOneRelations(): FindOptionsRelations<GreaterEntity> {
+        return { identifiers: true };
+    }
 
     public async save(pubs: any[]) {
         for (let pub of pubs) {
@@ -58,28 +72,6 @@ export class GreaterEntityService {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
-    }
-
-    public get() {
-        return this.repository.find({ relations: { identifiers: true } });
-    }
-
-    public async one(id: number, writer: boolean) {
-        let ge = await this.repository.findOne({ where: { id }, relations: { identifiers: true } });
-
-        if (writer && !ge.locked_at) {
-            await this.save([{
-                id: ge.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - ge.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: ge.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-        return ge;
     }
 
     public async findOrSave(ge: GreaterEntity): Promise<GreaterEntity> {

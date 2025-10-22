@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, In, Repository } from 'typeorm';
@@ -6,40 +6,17 @@ import { PublicationService } from '../publication/core/publication.service';
 import { OA_Category } from './OA_Category';
 import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
+import { AbstractEntityService } from '../common/abstract-entity.service';
 
 @Injectable()
-export class OACategoryService {
+export class OACategoryService extends AbstractEntityService<OA_Category> {
 
-    constructor(@InjectRepository(OA_Category) private repository: Repository<OA_Category>,
-        private configService: AppConfigService, private publicationService: PublicationService) { }
-
-    public save(pub: any[]) {
-        return this.repository.save(pub).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
-    }
-
-    public get() {
-        return this.repository.find();
-    }
-
-    public async one(id: number, writer: boolean) {
-        let oa = await this.repository.findOne({ where: { id }, relations: {} });
-
-        if (writer && !oa.locked_at) {
-            await this.save([{
-                id: oa.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - oa.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: oa.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-        return oa;
+    constructor(
+        @InjectRepository(OA_Category) repository: Repository<OA_Category>,
+        configService: AppConfigService,
+        private publicationService: PublicationService,
+    ) {
+        super(repository, configService);
     }
 
     public findOrSave(title: string): Observable<OA_Category> {
