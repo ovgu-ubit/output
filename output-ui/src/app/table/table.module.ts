@@ -1,10 +1,11 @@
 import { NgModule } from '@angular/core';
 import { SharedModule } from '../shared/shared.module';
 import { TableComponent } from './table-component/table.component';
-import { MatPaginatorIntl } from '@angular/material/paginator';
+import { MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { MatPaginatorDE } from './mat-paginator-de';
 import { CombineDialogComponent } from './dialog/combine-dialog/combine-dialog.component';
 import { AliasFormComponent } from './dialog/alias-form/alias-form.component';
+import { MatSortModule } from '@angular/material/sort';
 
 @NgModule({
   declarations: [
@@ -13,7 +14,9 @@ import { AliasFormComponent } from './dialog/alias-form/alias-form.component';
     AliasFormComponent
   ],
   imports: [
-    SharedModule
+    SharedModule,
+    MatPaginatorModule,
+    MatSortModule
   ],
   exports: [
     TableComponent

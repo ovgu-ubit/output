@@ -7,6 +7,7 @@ import { PublicationsComponent } from './pages/publications/publications.compone
 import { TableModule } from '../table/table.module';
 import { FormModule } from '../form/form.module';
 import { FilterViewComponent } from './dialogs/filter-view/filter-view.component';
+import { ClipboardModule } from '@angular/cdk/clipboard';
 
 @NgModule({
   declarations: [
@@ -16,6 +17,7 @@ import { FilterViewComponent } from './dialogs/filter-view/filter-view.component
     FilterViewComponent
   ],
   imports: [
+    ClipboardModule,
     SharedModule,
     TableModule,
     FormModule,

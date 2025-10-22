@@ -11,6 +11,7 @@ import { ImportConfigComponent } from './components/import-config/import-config.
 import { CsvFormatComponent } from './components/csv-format/csv-format.component';
 import { LogDialogComponent } from './components/log-dialog/log-dialog.component';
 import { TableModule } from '../table/table.module';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,7 @@ import { TableModule } from '../table/table.module';
     TableModule,
     SharedModule,
     AdministrationRoutingModule,
-
+    MatProgressBarModule
   ],
 })
-export class AdministrationModule {}
+export class AdministrationModule { }
