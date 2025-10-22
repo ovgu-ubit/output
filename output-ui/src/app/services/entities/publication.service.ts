@@ -7,7 +7,7 @@ import { PublicationIndex } from '../../../../../output-interfaces/PublicationIn
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { selectReportingYear } from '../redux';
 import { SearchFilter } from '../../../../../output-interfaces/Config';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 
 @Injectable({
   providedIn: 'root'

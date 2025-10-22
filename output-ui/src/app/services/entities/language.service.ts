@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { Language } from '../../../../../output-interfaces/Publication';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 
 @Injectable({
   providedIn: 'root'

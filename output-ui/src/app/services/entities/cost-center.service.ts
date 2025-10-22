@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { CostCenter, CostType } from '../../../../../output-interfaces/Publication';
 import { environment } from 'src/environments/environment';
 import { CostCenterIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 
 @Injectable({
   providedIn: 'root'

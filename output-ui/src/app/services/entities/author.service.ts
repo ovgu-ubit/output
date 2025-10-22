@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 import { environment } from 'src/environments/environment';
 import { Author } from '../../../../../output-interfaces/Publication';
 import { AuthorIndex } from '../../../../../output-interfaces/PublicationIndex';

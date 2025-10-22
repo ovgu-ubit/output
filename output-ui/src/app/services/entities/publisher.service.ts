@@ -3,7 +3,7 @@ import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Publisher } from '../../../../../output-interfaces/Publication';
 import { PublisherIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 
 @Injectable({
   providedIn: 'root'

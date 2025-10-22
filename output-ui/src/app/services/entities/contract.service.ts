@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { ContractIndex } from '../../../../../output-interfaces/PublicationIndex';
 import { Contract } from '../../../../../output-interfaces/Publication';
-import { EntityService } from 'src/app/interfaces/service';
+import { EntityService } from 'src/app/services/entities/service.interface';
 
 @Injectable({
   providedIn: 'root'
