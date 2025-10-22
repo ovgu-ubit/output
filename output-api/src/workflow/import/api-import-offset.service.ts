@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { Observable, concatWith, map, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import { Publication } from '../../publication/core/Publication';
 import { AbstractImportService } from './abstract-import';
@@ -10,8 +10,12 @@ import { AbstractImportService } from './abstract-import';
  */
 export abstract class ApiImportOffsetService extends AbstractImportService {
 
-    @Inject(HttpService)
-    protected http!: HttpService;
+    protected constructor(
+        protected readonly http: HttpService,
+        ...dependencies: ConstructorParameters<typeof AbstractImportService>
+    ) {
+        super(...dependencies);
+    }
 
     private newPublications: Publication[] = [];
     private publicationsUpdate = [];

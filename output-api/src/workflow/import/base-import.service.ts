@@ -8,6 +8,12 @@ import { ApiImportOffsetService } from './api-import-offset.service';
 @Injectable()
 export class BASEImportService extends ApiImportOffsetService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiImportOffsetService>
+    ) {
+        super(...dependencies);
+    }
+
     private searchText = '';
 
     protected updateMapping: UpdateMapping = {

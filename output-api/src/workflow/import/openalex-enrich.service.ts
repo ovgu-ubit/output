@@ -8,6 +8,12 @@ import { ApiEnrichDOIService } from './api-enrich-doi.service';
 @Injectable()
 export class OpenAlexEnrichService extends ApiEnrichDOIService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiEnrichDOIService>
+    ) {
+        super(...dependencies);
+    }
+
     id: string;
 
     protected async init() {

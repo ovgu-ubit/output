@@ -16,6 +16,12 @@ import { AbstractImportService } from './abstract-import';
  */
 export class ExcelImportService extends AbstractImportService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof AbstractImportService>
+    ) {
+        super(...dependencies);
+    }
+
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.IGNORE,
         authors: UpdateOptions.REPLACE_IF_EMPTY,

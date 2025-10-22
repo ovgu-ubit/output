@@ -8,6 +8,12 @@ import { ApiImportOffsetService } from './api-import-offset.service';
 @Injectable()
 export class BibliographyImportService extends ApiImportOffsetService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiImportOffsetService>
+    ) {
+        super(...dependencies);
+    }
+
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.IGNORE,
         authors: UpdateOptions.REPLACE_IF_EMPTY,

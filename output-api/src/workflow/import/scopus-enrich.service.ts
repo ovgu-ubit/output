@@ -8,6 +8,12 @@ import { ApiEnrichDOIService } from './api-enrich-doi.service';
 @Injectable()
 export class ScopusEnrichService extends ApiEnrichDOIService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiEnrichDOIService>
+    ) {
+        super(...dependencies);
+    }
+
     private searchText = '';
     private affiliationTags;
     private apiKey;

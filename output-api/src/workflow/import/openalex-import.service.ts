@@ -8,6 +8,12 @@ import { ApiImportOffsetService } from './api-import-offset.service';
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiImportOffsetService>
+    ) {
+        super(...dependencies);
+    }
+
     id: string;
 
     protected async init() {

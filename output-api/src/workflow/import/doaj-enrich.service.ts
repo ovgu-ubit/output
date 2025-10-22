@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { Observable, catchError, delay, mergeAll, of, queueScheduler, scheduled } from 'rxjs';
 import { FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -14,8 +14,12 @@ import { AbstractImportService } from './abstract-import';
  */
 export class DOAJEnrichService extends AbstractImportService {
 
-    @Inject(HttpService)
-    protected http!: HttpService;
+    public constructor(
+        protected readonly http: HttpService,
+        ...dependencies: ConstructorParameters<typeof AbstractImportService>
+    ) {
+        super(...dependencies);
+    }
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.IGNORE,

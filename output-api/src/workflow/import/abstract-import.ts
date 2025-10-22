@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder';
@@ -30,47 +30,22 @@ import { AppConfigService } from '../../config/app-config.service';
  */
 export abstract class AbstractImportService {
 
-    @Inject(PublicationService)
-    protected publicationService!: PublicationService;
-
-    @Inject(AuthorService)
-    protected authorService!: AuthorService;
-
-    @Inject(GreaterEntityService)
-    protected geService!: GreaterEntityService;
-
-    @Inject(FunderService)
-    protected funderService!: FunderService;
-
-    @Inject(PublicationTypeService)
-    protected publicationTypeService!: PublicationTypeService;
-
-    @Inject(PublisherService)
-    protected publisherService!: PublisherService;
-
-    @Inject(OACategoryService)
-    protected oaService!: OACategoryService;
-
-    @Inject(ContractService)
-    protected contractService!: ContractService;
-
-    @Inject(ReportItemService)
-    protected reportService!: ReportItemService;
-
-    @Inject(InstituteService)
-    protected instService!: InstituteService;
-
-    @Inject(LanguageService)
-    protected languageService!: LanguageService;
-
-    @Inject(RoleService)
-    protected roleService!: RoleService;
-
-    @Inject(InvoiceService)
-    protected invoiceService!: InvoiceService;
-
-    @Inject(AppConfigService)
-    protected configService!: AppConfigService;
+    protected constructor(
+        protected readonly publicationService: PublicationService,
+        protected readonly authorService: AuthorService,
+        protected readonly geService: GreaterEntityService,
+        protected readonly funderService: FunderService,
+        protected readonly publicationTypeService: PublicationTypeService,
+        protected readonly publisherService: PublisherService,
+        protected readonly oaService: OACategoryService,
+        protected readonly contractService: ContractService,
+        protected readonly reportService: ReportItemService,
+        protected readonly instService: InstituteService,
+        protected readonly languageService: LanguageService,
+        protected readonly roleService: RoleService,
+        protected readonly invoiceService: InvoiceService,
+        protected readonly configService: AppConfigService,
+    ) { }
 
     protected progress = 0;
     protected status_text = 'initialized';

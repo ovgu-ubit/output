@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { EMPTY, Observable, concatMap, concatWith, delay, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -15,8 +15,12 @@ import { AbstractImportService } from './abstract-import';
  */
 export class PubMedImportService extends AbstractImportService {
 
-    @Inject(HttpService)
-    protected http!: HttpService;
+    public constructor(
+        protected readonly http: HttpService,
+        ...dependencies: ConstructorParameters<typeof AbstractImportService>
+    ) {
+        super(...dependencies);
+    }
 
     name = 'PubMed';
     year = '2023';

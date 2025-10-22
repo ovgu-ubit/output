@@ -9,6 +9,12 @@ import { GreaterEntity } from '../../greater_entity/GreaterEntity';
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiEnrichDOIService>
+    ) {
+        super(...dependencies);
+    }
+
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.IGNORE,
         authors: UpdateOptions.IGNORE,

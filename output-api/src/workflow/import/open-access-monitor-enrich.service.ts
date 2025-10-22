@@ -8,6 +8,12 @@ import { ApiEnrichDOIService } from './api-enrich-doi.service';
 @Injectable()
 export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiEnrichDOIService>
+    ) {
+        super(...dependencies);
+    }
+
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.IGNORE,
         authors: UpdateOptions.IGNORE,

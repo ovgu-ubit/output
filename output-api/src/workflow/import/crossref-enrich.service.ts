@@ -8,6 +8,12 @@ import { ApiEnrichDOIService } from './api-enrich-doi.service';
 @Injectable()
 export class CrossrefEnrichService extends ApiEnrichDOIService {
 
+    public constructor(
+        ...dependencies: ConstructorParameters<typeof ApiEnrichDOIService>
+    ) {
+        super(...dependencies);
+    }
+
     private searchText = '';
 
     protected updateMapping: UpdateMapping = {
