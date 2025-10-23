@@ -17,7 +17,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         @InjectRepository(Funder) repository: Repository<Funder>,
         @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
         configService: AppConfigService,
-        private publicationService:PublicationService,
+        private publicationService: PublicationService,
         private aliasLookupService: AliasLookupService,
     ) {
         super(repository, configService);
@@ -27,7 +27,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         return { aliases: true };
     }
 
-    public async findOrSave(funder:Funder): Promise<Funder> {
+    public async findOrSave(funder: Funder): Promise<Funder> {
         if (!funder.label && !funder.doi) return null;
         const canonicalFunder = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, funder.label);
         const label = canonicalFunder?.label ?? funder.label;
@@ -41,13 +41,13 @@ export class FunderService extends AbstractEntityService<Funder> {
         else return await this.repository.save({ label, doi: funder.doi }).catch(e => { throw { origin: 'funder-service', text: `Funder ${label} with DOI ${funder.doi} could not be inserted` }; });
     }
 
-    public async index(reporting_year:number): Promise<FunderIndex[]> {
+    public async index(reporting_year: number): Promise<FunderIndex[]> {
         let query = this.repository.createQueryBuilder("funder")
-            .select("funder.id","id")
-            .addSelect("funder.label","label")
-            .addSelect("funder.doi","doi")
-            .addSelect("funder.ror_id","ror_id")
-            .addSelect("COUNT(DISTINCT publication.id)","pub_count")
+            .select("funder.id", "id")
+            .addSelect("funder.label", "label")
+            .addSelect("funder.doi", "doi")
+            .addSelect("funder.ror_id", "ror_id")
+            .addSelect("COUNT(DISTINCT publication.id)", "pub_count")
             .groupBy("funder.id")
             .addGroupBy("funder.label")
             .addGroupBy("funder.doi")
@@ -75,10 +75,6 @@ export class FunderService extends AbstractEntityService<Funder> {
             duplicateIds: ids,
             primaryRelations: { aliases: true },
             duplicateRelations: { aliases: true, publications: { funders: true } },
-            initializeAccumulator: (primary) => ({
-                ...primary,
-                aliases: [...(primary.aliases ?? [])],
-            }) as Funder,
             mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
                 const pubs = duplicate.publications?.map(pub => {
                     const funders = (pub.funders ?? []).filter(f => f.id !== duplicate.id);
@@ -92,17 +88,14 @@ export class FunderService extends AbstractEntityService<Funder> {
                     await this.publicationService.save(pubs);
                 }
 
+                if (!accumulator.aliases) accumulator.aliases = [];
+
                 duplicate.aliases?.forEach(alias => {
                     accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
                 });
 
-                if (!accumulator.label && duplicate.label) {
-                    accumulator.label = duplicate.label;
-                }
-
-                if (!accumulator.doi && duplicate.doi) {
-                    accumulator.doi = duplicate.doi;
-                }
+                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
+                if (!accumulator.doi && duplicate.doi) accumulator.doi = duplicate.doi;
             },
             beforeSave: ({ accumulator }) => {
                 if (!alias_strings || alias_strings.length === 0) {
@@ -122,16 +115,16 @@ export class FunderService extends AbstractEntityService<Funder> {
             },
         });
     }
-    
-    public async delete(insts:Funder[]) {
+
+    public async delete(insts: Funder[]) {
         for (let inst of insts) {
-            let conE: Funder = await this.repository.findOne({where:{id:inst.id},relations:{publications:{funders:true}},withDeleted: true});
+            let conE: Funder = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { funders: true } }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
-                pubs.push({id:pub.id, funders: pub.funders.filter(e => e.id !==conE.id)});
+                pubs.push({ id: pub.id, funders: pub.funders.filter(e => e.id !== conE.id) });
             }
-            await this.aliasRepository.delete({elementId: conE.id});
-            
+            await this.aliasRepository.delete({ elementId: conE.id });
+
             await this.publicationService.save(pubs);
         }
         return await this.repository.delete(insts.map(p => p.id));

@@ -405,21 +405,13 @@ export class PublicationService {
             repository: this.pubRepository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+            primaryRelations: { pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
             duplicateRelations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
             validate: ({ primary, duplicates }) => {
                 if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
                     return 'find';
                 }
             },
-            initializeAccumulator: (primary) => ({
-                ...primary,
-                authorPublications: undefined,
-                funders: [...(primary.funders ?? [])],
-                invoices: [...(primary.invoices ?? [])],
-                identifiers: [...(primary.identifiers ?? [])],
-                supplements: [...(primary.supplements ?? [])],
-            }) as Publication,
             mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
                 for (const ap of duplicate.authorPublications ?? []) {
                     await this.pubAutRepository.save({ publicationId: primary.id, authorId: ap.authorId, corresponding: ap.corresponding });
@@ -443,9 +435,13 @@ export class PublicationService {
                 if (!accumulator.best_oa_host && duplicate.best_oa_host) accumulator.best_oa_host = duplicate.best_oa_host;
                 if (!accumulator.best_oa_license && duplicate.best_oa_license) accumulator.best_oa_license = duplicate.best_oa_license;
 
+                if (!accumulator.funders) accumulator.funders = [];
                 accumulator.funders = accumulator.funders.concat(duplicate.funders ?? []);
+                if (!accumulator.invoices) accumulator.invoices = [];
                 accumulator.invoices = accumulator.invoices.concat(duplicate.invoices ?? []);
+                if (!accumulator.identifiers) accumulator.identifiers = [];
                 accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
+                if (!accumulator.supplements) accumulator.supplements = [];
                 accumulator.supplements = accumulator.supplements.concat(duplicate.supplements ?? []);
             },
             beforeSave: ({ accumulator }) => {

@@ -36,7 +36,6 @@ export interface MergeOptions<TEntity extends { id?: number | null }, TAccumulat
     duplicateIds: number[];
     primaryRelations?: FindOptionsRelations<TEntity>;
     duplicateRelations?: FindOptionsRelations<TEntity>;
-    initializeAccumulator?: (primary: TEntity) => Promise<TAccumulator> | TAccumulator;
     mergeDuplicate: (context: MergeDuplicateContext<TEntity, TAccumulator>) => Promise<void> | void;
     beforeSave?: (context: MergeFinalizeContext<TEntity, TAccumulator>) => Promise<void> | void;
     afterSave?: (context: MergeAfterSaveContext<TEntity, TAccumulator>) => Promise<void> | void;
@@ -50,7 +49,6 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         duplicateIds,
         primaryRelations,
         duplicateRelations,
-        initializeAccumulator,
         mergeDuplicate,
         beforeSave,
         afterSave,
@@ -62,15 +60,13 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         return { error: 'find' as MergeError };
     }
 
-    const duplicates = await Promise.all(
+    const presentDuplicates = await Promise.all(
         duplicateIds.map(id => repository.findOne({ where: { id } as FindOptionsWhere<TEntity>, relations: duplicateRelations ?? primaryRelations ?? {} })),
-    );
+    ) as TEntity[];
 
-    if (duplicates.some(duplicate => !duplicate)) {
+    if (presentDuplicates.some(duplicate => !duplicate)) {
         return { error: 'find' as MergeError };
     }
-
-    const presentDuplicates = duplicates as TEntity[];
 
     if (validate) {
         const validationError = await validate({ primary, duplicates: presentDuplicates, duplicateIds });
@@ -79,9 +75,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         }
     }
 
-    const accumulator = initializeAccumulator
-        ? await initializeAccumulator(primary)
-        : ({ ...(primary as unknown as Record<string, unknown>) } as TAccumulator);
+    const accumulator = (structuredClone(primary) as unknown as Record<string, unknown> as TAccumulator);
 
     for (let index = 0; index < presentDuplicates.length; index++) {
         const duplicate = presentDuplicates[index];

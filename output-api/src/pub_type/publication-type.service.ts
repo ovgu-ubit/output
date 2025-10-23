@@ -14,9 +14,9 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
     constructor(
         @InjectRepository(PublicationType) repository: Repository<PublicationType>,
-        @InjectRepository(AliasPubType) private aliasRepository:Repository<AliasPubType>,
-        configService:AppConfigService,
-        private publicationService:PublicationService,
+        @InjectRepository(AliasPubType) private aliasRepository: Repository<AliasPubType>,
+        configService: AppConfigService,
+        private publicationService: PublicationService,
     ) {
         super(repository, configService);
     }
@@ -25,21 +25,21 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         return { aliases: true };
     }
 
-    public async findOrSave(title: string): Promise<PublicationType> {        
+    public async findOrSave(title: string): Promise<PublicationType> {
         if (!title) return null;
         let label = await this.identifyPublicationType(title);
 
         let pubtype = await this.repository.findOne({ where: { label: ILike(label) } });
-        
+
         if (pubtype) return pubtype;
         else return await this.repository.save({ label }).catch(e => { throw { origin: 'pubType-service', text: `PubType ${label} could not be inserted` }; });
     }
 
     public async identifyPublicationType(title: string) {
         let alias = await this.aliasRepository.createQueryBuilder('alias')
-        .leftJoinAndSelect('alias.element', 'element')
-        .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
-        .getMany();
+            .leftJoinAndSelect('alias.element', 'element')
+            .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
+            .getMany();
 
         if (alias && alias.length === 1) return alias[0].element.label;
         else if (alias && alias.length > 1) {
@@ -49,12 +49,12 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         return title;
     }
 
-    public async index(reporting_year:number): Promise<PublicationTypeIndex[]> {
+    public async index(reporting_year: number): Promise<PublicationTypeIndex[]> {
         let query = this.repository.createQueryBuilder("type")
-            .select("type.id","id")
-            .addSelect("type.label","label")
-            .addSelect("type.review","review")
-            .addSelect("COUNT(publication.id)","pub_count")
+            .select("type.id", "id")
+            .addSelect("type.label", "label")
+            .addSelect("type.review", "review")
+            .addSelect("COUNT(publication.id)", "pub_count")
             .groupBy("type.id")
             .addGroupBy("type.label")
             .addGroupBy("type.review")
@@ -74,31 +74,24 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         return query.getRawMany() as Promise<PublicationTypeIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?:string[]) {
+    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
         return mergeEntities<PublicationType>({
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
             primaryRelations: { aliases: true },
             duplicateRelations: { publications: { pub_type: true }, aliases: true },
-            initializeAccumulator: (primary) => ({
-                ...primary,
-                aliases: [...(primary.aliases ?? [])],
-            }) as PublicationType,
             mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
                 const pubs = duplicate.publications?.map(pub => ({ id: pub.id, pub_type: primary })) ?? [];
                 if (pubs.length > 0) {
                     await this.publicationService.save(pubs);
                 }
 
-                if (!accumulator.label && duplicate.label) {
-                    accumulator.label = duplicate.label;
-                }
+                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
 
-                if (accumulator.review === null && duplicate.review !== null) {
-                    accumulator.review = duplicate.review;
-                }
+                if (accumulator.review === null && duplicate.review !== null) accumulator.review = duplicate.review;
 
+                if (!accumulator.aliases) accumulator.aliases = [];
                 duplicate.aliases?.forEach(alias => {
                     accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
                 });
@@ -114,24 +107,24 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    await this.aliasRepository.delete({elementId: In(duplicateIds)});
+                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
                 }
 
                 await defaultDelete();
             },
         });
     }
-    
-    public async delete(insts:PublicationType[]) {
+
+    public async delete(insts: PublicationType[]) {
         for (let inst of insts) {
-            let conE: PublicationType = await this.repository.findOne({where:{id:inst.id},relations:{publications:{pub_type:true}},withDeleted: true});
+            let conE: PublicationType = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { pub_type: true } }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
-                pubs.push({id:pub.id, pub_type: null});
+                pubs.push({ id: pub.id, pub_type: null });
             }
-            
+
             await this.publicationService.save(pubs);
-            await this.aliasRepository.delete({elementId: conE.id});
+            await this.aliasRepository.delete({ elementId: conE.id });
         }
         return await this.repository.delete(insts.map(p => p.id));
     }

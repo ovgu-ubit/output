@@ -90,10 +90,6 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             duplicateIds: ids,
             primaryRelations: { aliases: true },
             duplicateRelations: { publications: true, aliases: true },
-            initializeAccumulator: (primary) => ({
-                ...primary,
-                aliases: [...(primary.aliases ?? [])],
-            }) as Publisher,
             mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
                 const pubs = duplicate.publications?.map(pub => ({ id: pub.id, publisher: primary })) ?? [];
                 if (pubs.length > 0) {
@@ -105,6 +101,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
                 }
 
                 const aliasInserts = duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id })) ?? [];
+                if (!accumulator.aliases) accumulator.aliases = [];
                 accumulator.aliases = accumulator.aliases.concat(aliasInserts);
             },
             beforeSave: ({ accumulator }) => {

@@ -120,13 +120,8 @@ export class InstituteService {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true },
+            primaryRelations: { authors: { institutes: true }, super_institute: true, aliases: true },
             duplicateRelations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true },
-            initializeAccumulator: (primary) => ({
-                ...primary,
-                aliases: [...(primary.aliases ?? [])],
-                authorPublications: undefined,
-            }) as Institute,
             mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
                 for (const ap of duplicate.authorPublications ?? []) {
                     await this.pubAutRepository.save({ publicationId: ap.publicationId, authorId: ap.authorId, corresponding: ap.corresponding, institute: accumulator });
@@ -140,14 +135,10 @@ export class InstituteService {
                     await this.autRepository.save({ id: auth.id, institutes });
                 }
 
-                if (!accumulator.label && duplicate.label) {
-                    accumulator.label = duplicate.label;
-                }
+                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
+                if (!accumulator.short_label && duplicate.short_label) accumulator.short_label = duplicate.short_label;
 
-                if (!accumulator.short_label && duplicate.short_label) {
-                    accumulator.short_label = duplicate.short_label;
-                }
-
+                if (!accumulator.aliases) accumulator.aliases = [];
                 accumulator.aliases = accumulator.aliases.concat(duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id } as AliasInstitute)) ?? []);
             },
             beforeSave: ({ accumulator }) => {

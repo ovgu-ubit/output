@@ -100,10 +100,6 @@ export class ContractService extends AbstractEntityService<Contract> {
             duplicateIds: ids,
             primaryRelations: { publisher: true, identifiers: true },
             duplicateRelations: { publisher: true, publications: true, identifiers: true },
-            initializeAccumulator: (primary) => ({
-                ...primary,
-                identifiers: [...(primary.identifiers ?? [])],
-            }) as Contract,
             mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
                 const pubs = duplicate.publications?.map(pub => ({ id: pub.id, contract: primary })) ?? [];
                 if (pubs.length > 0) {
@@ -121,6 +117,7 @@ export class ContractService extends AbstractEntityService<Contract> {
                 if (!accumulator.verification_method && duplicate.verification_method) accumulator.verification_method = duplicate.verification_method;
                 if (!accumulator.publisher && duplicate.publisher) accumulator.publisher = duplicate.publisher;
 
+                if (!accumulator.identifiers) accumulator.identifiers = [];
                 accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
             },
         });
