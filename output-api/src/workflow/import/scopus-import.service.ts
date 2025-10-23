@@ -35,15 +35,6 @@ export class ScopusImportService extends ApiImportOffsetService {
     private searchText = '';
     private affiliationTags;
 
-    protected async init() {
-        (await this.configService.get('searchTags')).forEach(tag => {
-            this.searchText += tag + " or "
-        })
-        this.affiliationTags = await this.configService.get('affiliationTags');
-        this.params = this.params.filter(e => e.key !== 'apiKey');
-        this.params.push({ key: 'apiKey', value: await this.configService.get('api_key_scopus') })
-    }
-
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
         authors: UpdateOptions.REPLACE_IF_EMPTY,
@@ -79,11 +70,15 @@ export class ScopusImportService extends ApiImportOffsetService {
     protected name = 'Scopus';
     protected parallelCalls = 1;
 
-    setReportingYear(year: string) {
+    async setReportingYear(year: string) {
+        (await this.configService.get('searchTags')).forEach(tag => {
+            this.searchText += tag + " or "
+        })
+        this.affiliationTags = await this.configService.get('affiliationTags');
         this.params = [
             { key: 'query', value: 'AFFIL(' + this.searchText.slice(0, this.searchText.length - 4) + ')+and+PUBYEAR+IS+' + year },
             { key: 'view', value: 'complete' },
-            { key: 'apiKey', value: '' }]
+            { key: 'apiKey', value: await this.configService.get('api_key_scopus') }]
     }
     protected importTest(element: any): boolean {
         return element && element.affiliation && this.affiliationIncludesTags(element.affiliation)

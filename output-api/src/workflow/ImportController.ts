@@ -211,7 +211,7 @@ export class ImportController {
     if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw new BadRequestException('reporting year is mandatory');
     let so = (await this.configService.get('import_services')).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
-    this.importServices[so].setReportingYear(reporting_year);
+    await this.importServices[so].setReportingYear(reporting_year);
     return this.importServices[so].import(update);
   }
 
