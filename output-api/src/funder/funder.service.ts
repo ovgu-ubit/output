@@ -8,6 +8,7 @@ import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class FunderService extends AbstractEntityService<Funder> {
@@ -68,44 +69,58 @@ export class FunderService extends AbstractEntityService<Funder> {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        let funder1 = await this.repository.findOne({where:{id:id1}, relations: {aliases: true}});
-        let funders:Funder[] = []
-        for (let id of ids) {
-            funders.push( await this.repository.findOne({where:{id},relations:{aliases: true, publications:{funders:true}}}))
-        }
-        
-        if (!funder1 || funders.find(e => e === null || e === undefined)) return {error:'find'};
-        
-        let res = {...funder1};
+        return mergeEntities<Funder>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryRelations: { aliases: true },
+            duplicateRelations: { aliases: true, publications: { funders: true } },
+            initializeAccumulator: (primary) => ({
+                ...primary,
+                aliases: [...(primary.aliases ?? [])],
+            }) as Funder,
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                const pubs = duplicate.publications?.map(pub => {
+                    const funders = (pub.funders ?? []).filter(f => f.id !== duplicate.id);
+                    if (!funders.find(f => f.id === primary.id)) {
+                        funders.push(primary);
+                    }
+                    return { id: pub.id, funders };
+                }) ?? [];
 
-        for (let fund of funders) {
-            let pubs = [];
-            for (let pub of fund.publications) {
-                let newF = pub.funders? pub.funders.filter(e => e.id !==fund.id) : [];
-                if (!newF.find(e => e.id === funder1.id)) newF.push(funder1);
-                pubs.push({id:pub.id, funders: newF});
-            }
-            for (let alias of fund.aliases) {
-                //this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias: alias.alias})
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && fund.label) res.label = fund.label;
-            if (!res.doi && fund.doi) res.doi = fund.doi;
-        }
-        //update aliases
-        if (alias_strings) {
-            for (let alias of alias_strings) {
-                //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias});
-            }
-        }
-        
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({elementId: In(funders.map(e => e.id))}) && await this.repository.delete({id: In(funders.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
+                if (pubs.length > 0) {
+                    await this.publicationService.save(pubs);
+                }
+
+                duplicate.aliases?.forEach(alias => {
+                    accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
+                });
+
+                if (!accumulator.label && duplicate.label) {
+                    accumulator.label = duplicate.label;
+                }
+
+                if (!accumulator.doi && duplicate.doi) {
+                    accumulator.doi = duplicate.doi;
+                }
+            },
+            beforeSave: ({ accumulator }) => {
+                if (!alias_strings || alias_strings.length === 0) {
+                    return;
+                }
+
+                alias_strings.forEach(alias => {
+                    accumulator.aliases.push({ elementId: accumulator.id, alias });
+                });
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                }
+
+                await defaultDelete();
+            },
+        });
     }
     
     public async delete(insts:Funder[]) {

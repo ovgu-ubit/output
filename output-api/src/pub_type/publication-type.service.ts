@@ -7,6 +7,7 @@ import { PublicationService } from '../publication/core/publication.service';
 import { PublicationType } from './PublicationType';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class PublicationTypeService extends AbstractEntityService<PublicationType> {
@@ -74,41 +75,51 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
     }
 
     public async combine(id1: number, ids: number[], alias_strings?:string[]) {
-        let aut1 = await this.repository.findOne({where:{id:id1}, relations: {aliases:true}});
-        let authors = []
-        for (let id of ids) {
-            authors.push( await this.repository.findOne({where:{id},relations:{publications:{pub_type:true}, aliases: true}}))
-        }
-        
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return {error:'find'};
-        
-        let res = {...aut1};
+        return mergeEntities<PublicationType>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryRelations: { aliases: true },
+            duplicateRelations: { publications: { pub_type: true }, aliases: true },
+            initializeAccumulator: (primary) => ({
+                ...primary,
+                aliases: [...(primary.aliases ?? [])],
+            }) as PublicationType,
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, pub_type: primary })) ?? [];
+                if (pubs.length > 0) {
+                    await this.publicationService.save(pubs);
+                }
 
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({id:pub.id, pub_type: aut1});
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (res.review === null && aut.review !== null) res.review = aut.review;
-            for (let alias of aut.aliases) {
-                res.aliases.push({elementId: res.id, alias: alias.alias})
-            }
-        }
-        //update aliases
-        if (alias_strings) {
-            for (let alias of alias_strings) {
-                //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias});
-            }
-        }
-        
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({elementId: In(authors.map(e => e.id))}) &&  this.repository.delete({id: In(authors.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
+                if (!accumulator.label && duplicate.label) {
+                    accumulator.label = duplicate.label;
+                }
+
+                if (accumulator.review === null && duplicate.review !== null) {
+                    accumulator.review = duplicate.review;
+                }
+
+                duplicate.aliases?.forEach(alias => {
+                    accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
+                });
+            },
+            beforeSave: ({ accumulator }) => {
+                if (!alias_strings || alias_strings.length === 0) {
+                    return;
+                }
+
+                alias_strings.forEach(alias => {
+                    accumulator.aliases.push({ elementId: accumulator.id, alias });
+                });
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.aliasRepository.delete({elementId: In(duplicateIds)});
+                }
+
+                await defaultDelete();
+            },
+        });
     }
     
     public async delete(insts:PublicationType[]) {

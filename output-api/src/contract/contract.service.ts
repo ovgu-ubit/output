@@ -8,6 +8,7 @@ import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class ContractService extends AbstractEntityService<Contract> {
@@ -93,41 +94,36 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true, identifiers: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publisher: true, publications: true, identifiers: true  } }))
-        }
+        return mergeEntities<Contract>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryRelations: { publisher: true, identifiers: true },
+            duplicateRelations: { publisher: true, publications: true, identifiers: true },
+            initializeAccumulator: (primary) => ({
+                ...primary,
+                identifiers: [...(primary.identifiers ?? [])],
+            }) as Contract,
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, contract: primary })) ?? [];
+                if (pubs.length > 0) {
+                    await this.publicationService.save(pubs);
+                }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
+                if (!accumulator.start_date && duplicate.start_date) accumulator.start_date = duplicate.start_date;
+                if (!accumulator.end_date && duplicate.end_date) accumulator.end_date = duplicate.end_date;
+                if (!accumulator.internal_number && duplicate.internal_number) accumulator.internal_number = duplicate.internal_number;
+                if (!accumulator.invoice_amount && duplicate.invoice_amount) accumulator.invoice_amount = duplicate.invoice_amount;
+                if (!accumulator.invoice_information && duplicate.invoice_information) accumulator.invoice_information = duplicate.invoice_information;
+                if (!accumulator.sec_pub && duplicate.sec_pub) accumulator.sec_pub = duplicate.sec_pub;
+                if (!accumulator.gold_option && duplicate.gold_option) accumulator.gold_option = duplicate.gold_option;
+                if (!accumulator.verification_method && duplicate.verification_method) accumulator.verification_method = duplicate.verification_method;
+                if (!accumulator.publisher && duplicate.publisher) accumulator.publisher = duplicate.publisher;
 
-        let res = { ...aut1 };
-
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, contract: aut1 })
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.start_date && aut.start_date) res.start_date = aut.start_date;
-            if (!res.end_date && aut.end_date) res.end_date = aut.end_date;
-            if (!res.internal_number && aut.internal_number) res.internal_number = aut.internal_number;
-            if (!res.invoice_amount && aut.invoice_amount) res.invoice_amount = aut.invoice_amount;
-            if (!res.invoice_information && aut.invoice_information) res.invoice_information = aut.invoice_information;
-            if (!res.sec_pub && aut.sec_pub) res.sec_pub = aut.sec_pub;
-            if (!res.gold_option && aut.gold_option) res.gold_option = aut.gold_option;
-            if (!res.verification_method && aut.verification_method) res.verification_method = aut.verification_method;
-            if (!res.publisher && aut.publisher) res.publisher = aut.publisher;
-            if (!res.identifiers) res.identifiers = [];
-            res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+                accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
+            },
+        });
     }
 
     public async delete(insts: Contract[]) {

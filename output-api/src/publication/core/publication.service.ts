@@ -15,6 +15,7 @@ import { CostItem } from '../../invoice/CostItem';
 import { Role } from '../relations/Role';
 import { InstituteService } from '../../institute/institute.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { mergeEntities } from '../../common/merge';
 
 @Injectable()
 export class PublicationService {
@@ -392,64 +393,79 @@ export class PublicationService {
         return query.getRawMany() as Promise<any>;
     }
 
+
+
     async combine(id1: number, ids: number[]) {
-        //identify duplicates for this combination
-        let duplicates = await this.duplRepository.find({where: {id_first: id1, id_second: In(ids)}, withDeleted: true})
-        duplicates = duplicates.concat(await this.duplRepository.find({where: {id_first: In(ids), id_second: id1}, withDeleted: true}))
+        const duplicatePairs = await this.duplRepository.find({ where: { id_first: id1, id_second: In(ids) }, withDeleted: true });
+        const reversePairs = await this.duplRepository.find({ where: { id_first: In(ids), id_second: id1 }, withDeleted: true });
+        const duplicateRecords = duplicatePairs.concat(reversePairs);
+        const duplicateRecordIds = duplicateRecords.map(record => record.id);
 
-        let aut1: Publication = await this.pubRepository.findOne({ where: { id: id1 }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true } })
-        let authors: Publication[] = []
-        for (let id of ids) {
-            authors.push(await this.pubRepository.findOne({ where: { id }, relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true } }))
-        }
+        return mergeEntities<Publication>({
+            repository: this.pubRepository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryRelations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+            duplicateRelations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+            validate: ({ primary, duplicates }) => {
+                if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
+                    return 'find';
+                }
+            },
+            initializeAccumulator: (primary) => ({
+                ...primary,
+                authorPublications: undefined,
+                funders: [...(primary.funders ?? [])],
+                invoices: [...(primary.invoices ?? [])],
+                identifiers: [...(primary.identifiers ?? [])],
+                supplements: [...(primary.supplements ?? [])],
+            }) as Publication,
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                for (const ap of duplicate.authorPublications ?? []) {
+                    await this.pubAutRepository.save({ publicationId: primary.id, authorId: ap.authorId, corresponding: ap.corresponding });
+                }
 
-        if (!aut1 || aut1.locked || authors.find(e => e === null || e === undefined || e.locked)) return { error: 'find' };
+                if (!accumulator.pub_type && duplicate.pub_type) accumulator.pub_type = duplicate.pub_type;
+                if (!accumulator.oa_category && duplicate.oa_category) accumulator.oa_category = duplicate.oa_category;
+                if (!accumulator.greater_entity && duplicate.greater_entity) accumulator.greater_entity = duplicate.greater_entity;
+                if (!accumulator.publisher && duplicate.publisher) accumulator.publisher = duplicate.publisher;
+                if (!accumulator.contract && duplicate.contract) accumulator.contract = duplicate.contract;
+                if (!accumulator.authors && duplicate.authors) accumulator.authors = duplicate.authors;
+                if (!accumulator.doi && duplicate.doi) accumulator.doi = duplicate.doi;
+                if (!accumulator.link && duplicate.link) accumulator.link = duplicate.link;
+                if (!accumulator.dataSource && duplicate.dataSource) accumulator.dataSource = duplicate.dataSource;
+                if (!accumulator.language && duplicate.language) accumulator.language = duplicate.language;
+                if (!accumulator.second_pub && duplicate.second_pub) accumulator.second_pub = duplicate.second_pub;
+                if (!accumulator.add_info && duplicate.add_info) accumulator.add_info = duplicate.add_info;
+                if (!accumulator.is_oa && duplicate.is_oa) accumulator.is_oa = duplicate.is_oa;
+                if (!accumulator.oa_status && duplicate.oa_status) accumulator.oa_status = duplicate.oa_status;
+                if (!accumulator.is_journal_oa && duplicate.is_journal_oa) accumulator.is_journal_oa = duplicate.is_journal_oa;
+                if (!accumulator.best_oa_host && duplicate.best_oa_host) accumulator.best_oa_host = duplicate.best_oa_host;
+                if (!accumulator.best_oa_license && duplicate.best_oa_license) accumulator.best_oa_license = duplicate.best_oa_license;
 
-        let res = { ...aut1 };
-        res.authorPublications = undefined;
+                accumulator.funders = accumulator.funders.concat(duplicate.funders ?? []);
+                accumulator.invoices = accumulator.invoices.concat(duplicate.invoices ?? []);
+                accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
+                accumulator.supplements = accumulator.supplements.concat(duplicate.supplements ?? []);
+            },
+            beforeSave: ({ accumulator }) => {
+                accumulator.locked_at = null;
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.pubAutRepository.delete({ publicationId: In(duplicateIds) });
+                    await this.invoiceRepository.delete({ publication: { id: In(duplicateIds) } });
+                    await this.supplRepository.delete({ publication: { id: In(duplicateIds) } });
+                }
 
-        for (let aut of authors) {
-            for (let ap of aut.authorPublications) await this.pubAutRepository.save({ publicationId: res.id, authorId: ap.authorId, corresponding: ap.corresponding })
+                if (duplicateRecordIds.length > 0) {
+                    await this.duplRepository.delete(duplicateRecordIds);
+                }
 
-            if (!res.pub_type && aut.pub_type) res.pub_type = aut.pub_type;
-            if (!res.oa_category && aut.oa_category) res.oa_category = aut.oa_category;
-            if (!res.greater_entity && aut.greater_entity) res.greater_entity = aut.greater_entity;
-            if (!res.publisher && aut.publisher) res.publisher = aut.publisher;
-            if (!res.contract && aut.contract) res.contract = aut.contract;
-            if (!res.authors && aut.authors) res.authors = aut.authors;
-            if (!res.doi && aut.doi) res.doi = aut.doi;
-            if (!res.link && aut.link) res.link = aut.link;
-            if (!res.dataSource && aut.dataSource) res.dataSource = aut.dataSource;
-            if (!res.language && aut.language) res.language = aut.language;
-            if (!res.second_pub && aut.second_pub) res.second_pub = aut.second_pub;
-            if (!res.add_info && aut.add_info) res.add_info = aut.add_info;
-            if (!res.is_oa && aut.is_oa) res.is_oa = aut.is_oa;
-            if (!res.oa_status && aut.oa_status) res.oa_status = aut.oa_status;
-            if (!res.is_journal_oa && aut.is_journal_oa) res.is_journal_oa = aut.is_journal_oa;
-            if (!res.best_oa_host && aut.best_oa_host) res.best_oa_host = aut.best_oa_host;
-            if (!res.best_oa_license && aut.best_oa_license) res.best_oa_license = aut.best_oa_license;
-            if (!res.funders) res.funders = [];
-            res.funders = res.funders.concat(aut.funders)
-            if (!res.invoices) res.invoices = [];
-            res.invoices = res.invoices.concat(aut.invoices)
-            if (!res.identifiers) res.identifiers = [];
-            res.identifiers = res.identifiers.concat(aut.identifiers)
-            if (!res.supplements) res.supplements = [];
-            res.supplements = res.supplements.concat(aut.supplements)
-        }
-        res = {...res, locked_at: null};
-
-        //update publication 1
-        if (await this.pubRepository.save(res)) {
-            if (await this.pubAutRepository.delete({ publicationId: In(authors.map(e => e.id)) }) &&
-                await this.invoiceRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) &&
-                await this.supplRepository.delete({ publication: { id: In(authors.map(e => e.id)) } }) &&
-                (duplicates.length > 0 && await this.duplRepository.delete(duplicates.map(d => d.id))) &&
-                await this.pubRepository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+                await defaultDelete();
+            },
+        });
     }
-
     getAllDuplicates(soft?:boolean) {
         if (!soft) return this.duplRepository.find();
         else return this.duplRepository.find({where:{delete_date: Not(IsNull())},withDeleted: true})

@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
-import { ILike, In, Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { PublicationService } from '../publication/core/publication.service';
 import { OA_Category } from './OA_Category';
 import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class OACategoryService extends AbstractEntityService<OA_Category> {
@@ -52,31 +53,26 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publications: { oa_category: true } } }))
-        }
+        return mergeEntities<OA_Category>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            duplicateRelations: { publications: { oa_category: true } },
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, oa_category: primary })) ?? [];
+                if (pubs.length > 0) {
+                    await this.publicationService.save(pubs);
+                }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+                if (!accumulator.label && duplicate.label) {
+                    accumulator.label = duplicate.label;
+                }
 
-        let res = { ...aut1 };
-
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, oa_category: aut1 });
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (res.is_oa === null && aut.is_oa !== null) res.is_oa = aut.is_oa;
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+                if (accumulator.is_oa === null && duplicate.is_oa !== null) {
+                    accumulator.is_oa = duplicate.is_oa;
+                }
+            },
+        });
     }
 
     public async delete(insts: OA_Category[]) {

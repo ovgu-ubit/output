@@ -9,6 +9,7 @@ import { Publication } from '../publication/core/Publication';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
@@ -152,36 +153,37 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { identifiers: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { identifiers: true, publications: true } }))
-        }
+        return mergeEntities<GreaterEntity>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryRelations: { identifiers: true },
+            duplicateRelations: { identifiers: true, publications: true },
+            initializeAccumulator: (primary) => ({
+                ...primary,
+                identifiers: [...(primary.identifiers ?? [])],
+            }) as GreaterEntity,
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, greater_entity: primary })) ?? [];
+                if (pubs.length > 0) {
+                    await this.publicationService.save(pubs);
+                }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
+                if (!accumulator.rating && duplicate.rating) accumulator.rating = duplicate.rating;
+                if (accumulator.doaj_since === null && duplicate.doaj_since !== null) accumulator.doaj_since = duplicate.doaj_since;
+                if (accumulator.doaj_until === null && duplicate.doaj_until !== null) accumulator.doaj_until = duplicate.doaj_until;
 
-        let res = { ...aut1 };
+                accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                }
 
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, greater_entity: aut1 })
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.rating && aut.rating) res.rating = aut.rating;
-            if (res.doaj_since === null && aut.doaj_since !== null) res.doaj_since = aut.doaj_since;
-            if (res.doaj_until === null && aut.doaj_until !== null) res.doaj_until = aut.doaj_until;
-            if (!res.identifiers) res.identifiers = [];
-            res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.idRepository.delete({ entity: { id: In(authors.map(e => e.id)) } }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
-
+                await defaultDelete();
+            },
+        });
     }
 
     public async delete(insts: GreaterEntity[]) {

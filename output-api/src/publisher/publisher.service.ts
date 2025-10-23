@@ -9,6 +9,7 @@ import { Publication } from '../publication/core/Publication';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {
@@ -83,39 +84,46 @@ export class PublisherService extends AbstractEntityService<Publisher> {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { aliases: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publications: true, aliases: true } }))
-        }
+        return mergeEntities<Publisher>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryRelations: { aliases: true },
+            duplicateRelations: { publications: true, aliases: true },
+            initializeAccumulator: (primary) => ({
+                ...primary,
+                aliases: [...(primary.aliases ?? [])],
+            }) as Publisher,
+            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
+                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, publisher: primary })) ?? [];
+                if (pubs.length > 0) {
+                    await this.publicationService.save(pubs);
+                }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
+                if (!accumulator.label && duplicate.label) {
+                    accumulator.label = duplicate.label;
+                }
 
-        let res = { ...aut1 };
+                const aliasInserts = duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id })) ?? [];
+                accumulator.aliases = accumulator.aliases.concat(aliasInserts);
+            },
+            beforeSave: ({ accumulator }) => {
+                if (!alias_strings || alias_strings.length === 0) {
+                    return;
+                }
 
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, publisher: aut1 });
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.aliases) res.aliases = [];
-            res.aliases = res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } }))
-        }
-        //update aliases
-        if (alias_strings) {
-            for (let alias of alias_strings) {
-                //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({ elementId: res.id, alias });
-            }
-        }
+                alias_strings.forEach(alias => {
+                    accumulator.aliases.push({ elementId: accumulator.id, alias });
+                });
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                }
 
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+                await defaultDelete();
+            },
+        });
     }
 
     public async delete(insts: Publisher[]) {
