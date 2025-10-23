@@ -93,33 +93,25 @@ export class ContractService extends AbstractEntityService<Contract> {
         return query.getRawMany() as Promise<ContractIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[]) {
+    public async combine(id1: number, ids: number[],alias_strings?:string[]) {
         return mergeEntities<Contract>({
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
             primaryRelations: { publisher: true, identifiers: true },
             duplicateRelations: { publisher: true, publications: true, identifiers: true },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, contract: primary })) ?? [];
-                if (pubs.length > 0) {
-                    await this.publicationService.save(pubs);
-                }
-
-                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
-                if (!accumulator.start_date && duplicate.start_date) accumulator.start_date = duplicate.start_date;
-                if (!accumulator.end_date && duplicate.end_date) accumulator.end_date = duplicate.end_date;
-                if (!accumulator.internal_number && duplicate.internal_number) accumulator.internal_number = duplicate.internal_number;
-                if (!accumulator.invoice_amount && duplicate.invoice_amount) accumulator.invoice_amount = duplicate.invoice_amount;
-                if (!accumulator.invoice_information && duplicate.invoice_information) accumulator.invoice_information = duplicate.invoice_information;
-                if (!accumulator.sec_pub && duplicate.sec_pub) accumulator.sec_pub = duplicate.sec_pub;
-                if (!accumulator.gold_option && duplicate.gold_option) accumulator.gold_option = duplicate.gold_option;
-                if (!accumulator.verification_method && duplicate.verification_method) accumulator.verification_method = duplicate.verification_method;
-                if (!accumulator.publisher && duplicate.publisher) accumulator.publisher = duplicate.publisher;
-
-                if (!accumulator.identifiers) accumulator.identifiers = [];
-                accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
+            mergeContext: {
+                field: 'contract',
+                service: this.publicationService,
+                alias_strings
             },
+                afterSave: async ({ duplicateIds, defaultDelete }) => {
+                    if (duplicateIds.length > 0) {
+                        await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                    }
+
+                    await defaultDelete();
+                },
         });
     }
 

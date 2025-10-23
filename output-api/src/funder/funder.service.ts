@@ -75,35 +75,10 @@ export class FunderService extends AbstractEntityService<Funder> {
             duplicateIds: ids,
             primaryRelations: { aliases: true },
             duplicateRelations: { aliases: true, publications: { funders: true } },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                const pubs = duplicate.publications?.map(pub => {
-                    const funders = (pub.funders ?? []).filter(f => f.id !== duplicate.id);
-                    if (!funders.find(f => f.id === primary.id)) {
-                        funders.push(primary);
-                    }
-                    return { id: pub.id, funders };
-                }) ?? [];
-
-                if (pubs.length > 0) {
-                    await this.publicationService.save(pubs);
-                }
-
-                if (!accumulator.aliases) accumulator.aliases = [];
-
-                duplicate.aliases?.forEach(alias => {
-                    accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
-                });
-
-                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
-                if (!accumulator.doi && duplicate.doi) accumulator.doi = duplicate.doi;
-
-                if (!alias_strings || alias_strings.length === 0) {
-                    return;
-                }
-
-                alias_strings.forEach(alias => {
-                    accumulator.aliases.push({ elementId: accumulator.id, alias });
-                });
+            mergeContext: {
+                field: 'funders',
+                service: this.publicationService,
+                alias_strings
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {

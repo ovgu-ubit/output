@@ -10,6 +10,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { mergeEntities } from '../common/merge';
+import { PublisherDOI } from './PublisherDOI';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {
@@ -19,6 +20,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         configService: AppConfigService,
         private publicationService: PublicationService,
         @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>,
+        @InjectRepository(PublisherDOI) private doiRepository: Repository<PublisherDOI>,
         private aliasLookupService: AliasLookupService,
     ) {
         super(repository, configService);
@@ -88,32 +90,19 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { aliases: true },
-            duplicateRelations: { publications: true, aliases: true },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, publisher: primary })) ?? [];
-                if (pubs.length > 0) {
-                    await this.publicationService.save(pubs);
-                }
-
-                if (!accumulator.label && duplicate.label) {
-                    accumulator.label = duplicate.label;
-                }
-
-                const aliasInserts = duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id })) ?? [];
-                if (!accumulator.aliases) accumulator.aliases = [];
-                accumulator.aliases = accumulator.aliases.concat(aliasInserts);
-                if (!alias_strings || alias_strings.length === 0) {
-                    return;
-                }
-
-                alias_strings.forEach(alias => {
-                    accumulator.aliases.push({ elementId: accumulator.id, alias });
-                });
+            primaryRelations: { aliases: true, doi_prefixes: true },
+            duplicateRelations: { publications: true, aliases: true, doi_prefixes: true },
+            mergeContext: {
+                field: 'publisher',
+                service: this.publicationService,
+                alias_strings
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
                     await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                }
+                if (duplicateIds.length > 0) {
+                    await this.doiRepository.delete({ publisherId: In(duplicateIds) });
                 }
 
                 await defaultDelete();
@@ -123,7 +112,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
 
     public async delete(insts: Publisher[]) {
         for (let inst of insts) {
-            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true }, withDeleted: true });
+            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true, doi_prefixes: true }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({ id: pub.id, publisher: null })

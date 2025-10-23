@@ -215,7 +215,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
             if (elem['currency'] != 'EUR') {
                 //return element['apc_paid']['currency'] + " " + element['apc_paid']['value']
                 return null;
-            } else return Number(element['apc_paid']['value'])
+            } else return Number(elem['value'])
         }
         return null;
     }

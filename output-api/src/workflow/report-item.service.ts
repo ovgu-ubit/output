@@ -40,11 +40,13 @@ export class ReportItemService {
         return files;
     }
     
-    getReport(filename:string):string {
+    async getReport(filename:string) {
+        await this.init();
         return fs.readFileSync(this.path+filename).toString();
     }
 
-    deleteReport(filename:string) {
+    async deleteReport(filename:string) {
+        await this.init();
         return fs.rmSync(this.path+filename)
     }
 

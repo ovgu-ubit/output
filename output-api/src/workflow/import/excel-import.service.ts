@@ -417,19 +417,20 @@ export class ExcelImportService extends AbstractImportService {
         }
     }
 
-    getConfigs() {
+    async getConfigs() {
+        this.path = await this.configService.get('CONFIG_PATH');
         return fs.readFileSync(this.path + 'csv-mappings.json').toString();
     }
 
-    addConfig(csv_mapping: CSVMapping) {
-        let configs = JSON.parse(this.getConfigs()) as CSVMapping[];
+    async addConfig(csv_mapping: CSVMapping) {
+        let configs = JSON.parse(await this.getConfigs()) as CSVMapping[];
         if (configs.find(e => e.name === csv_mapping.name)) configs = configs.filter(e => e.name !== csv_mapping.name);
         configs.push(csv_mapping);
         return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
     }
 
-    deleteConfig(name: string) {
-        let configs = JSON.parse(this.getConfigs()) as CSVMapping[];
+    async deleteConfig(name: string) {
+        let configs = JSON.parse(await this.getConfigs()) as CSVMapping[];
         configs = configs.filter(e => e.name !== name);
         return fs.writeFileSync(this.path + 'csv-mappings.json', JSON.stringify(configs))
     }

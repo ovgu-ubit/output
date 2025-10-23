@@ -81,27 +81,10 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             duplicateIds: ids,
             primaryRelations: { aliases: true },
             duplicateRelations: { publications: { pub_type: true }, aliases: true },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, pub_type: primary })) ?? [];
-                if (pubs.length > 0) {
-                    await this.publicationService.save(pubs);
-                }
-
-                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
-
-                if (accumulator.review === null && duplicate.review !== null) accumulator.review = duplicate.review;
-
-                if (!accumulator.aliases) accumulator.aliases = [];
-                duplicate.aliases?.forEach(alias => {
-                    accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
-                });
-                if (!alias_strings || alias_strings.length === 0) {
-                    return;
-                }
-
-                alias_strings.forEach(alias => {
-                    accumulator.aliases.push({ elementId: accumulator.id, alias });
-                });
+            mergeContext: {
+                field: 'pub_type',
+                service: this.publicationService,
+                alias_strings
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {

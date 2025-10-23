@@ -159,18 +159,9 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             duplicateIds: ids,
             primaryRelations: { identifiers: true },
             duplicateRelations: { identifiers: true, publications: true },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, greater_entity: primary })) ?? [];
-                if (pubs.length > 0) {
-                    await this.publicationService.save(pubs);
-                }
-
-                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
-                if (!accumulator.rating && duplicate.rating) accumulator.rating = duplicate.rating;
-                if (accumulator.doaj_since === null && duplicate.doaj_since !== null) accumulator.doaj_since = duplicate.doaj_since;
-                if (accumulator.doaj_until === null && duplicate.doaj_until !== null) accumulator.doaj_until = duplicate.doaj_until;
-                if (!accumulator.identifiers) accumulator.identifiers = [];
-                accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
+            mergeContext: {
+                field: 'greater_entity',
+                service: this.publicationService
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {

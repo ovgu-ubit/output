@@ -122,38 +122,12 @@ export class InstituteService {
             duplicateIds: ids,
             primaryRelations: { authors: { institutes: true }, super_institute: true, aliases: true },
             duplicateRelations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                for (const ap of duplicate.authorPublications ?? []) {
-                    await this.pubAutRepository.save({ publicationId: ap.publicationId, authorId: ap.authorId, corresponding: ap.corresponding, institute: accumulator });
-                }
-
-                for (const auth of duplicate.authors ?? []) {
-                    const institutes = (auth.institutes ?? []).filter(inst => inst.id !== duplicate.id);
-                    if (!institutes.find(inst => inst.id === primary.id)) {
-                        institutes.push(primary);
-                    }
-                    await this.autRepository.save({ id: auth.id, institutes });
-                }
-
-                if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
-                if (!accumulator.short_label && duplicate.short_label) accumulator.short_label = duplicate.short_label;
-
-                if (!accumulator.aliases) accumulator.aliases = [];
-                accumulator.aliases = accumulator.aliases.concat(duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id } as AliasInstitute)) ?? []);
-                if (!alias_strings || alias_strings.length === 0) {
-                    return;
-                }
-
-                alias_strings.forEach(alias => {
-                    accumulator.aliases.push({ elementId: accumulator.id, alias });
-                });
-            },
-            afterSave: async ({ duplicateIds, defaultDelete }) => {
-                if (duplicateIds.length > 0) {
-                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
-                }
-
-                await defaultDelete();
+            mergeContext: {
+                field: 'institute',
+                autField: 'institutes',
+                pubAutrepository: this.pubAutRepository,
+                autRepository: this.autRepository,
+                alias_strings
             },
         });
     }

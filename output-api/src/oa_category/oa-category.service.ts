@@ -58,19 +58,9 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
             primaryId: id1,
             duplicateIds: ids,
             duplicateRelations: { publications: { oa_category: true } },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                const pubs = duplicate.publications?.map(pub => ({ id: pub.id, oa_category: primary })) ?? [];
-                if (pubs.length > 0) {
-                    await this.publicationService.save(pubs);
-                }
-
-                if (!accumulator.label && duplicate.label) {
-                    accumulator.label = duplicate.label;
-                }
-
-                if (accumulator.is_oa === null && duplicate.is_oa !== null) {
-                    accumulator.is_oa = duplicate.is_oa;
-                }
+            mergeContext: {
+                field: 'oa_category',
+                service: this.publicationService
             },
         });
     }

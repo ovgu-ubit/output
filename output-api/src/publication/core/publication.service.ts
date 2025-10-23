@@ -395,7 +395,7 @@ export class PublicationService {
 
 
 
-    async combine(id1: number, ids: number[]) {
+    async combine(id1: number, ids: number[], alias_strings? : string[]) {
         const duplicatePairs = await this.duplRepository.find({ where: { id_first: id1, id_second: In(ids) }, withDeleted: true });
         const reversePairs = await this.duplRepository.find({ where: { id_first: In(ids), id_second: id1 }, withDeleted: true });
         const duplicateRecords = duplicatePairs.concat(reversePairs);
@@ -412,38 +412,10 @@ export class PublicationService {
                     return 'find';
                 }
             },
-            mergeDuplicate: async ({ primary, duplicate, accumulator }) => {
-                for (const ap of duplicate.authorPublications ?? []) {
-                    await this.pubAutRepository.save({ publicationId: primary.id, authorId: ap.authorId, corresponding: ap.corresponding });
-                }
-
-                if (!accumulator.pub_type && duplicate.pub_type) accumulator.pub_type = duplicate.pub_type;
-                if (!accumulator.oa_category && duplicate.oa_category) accumulator.oa_category = duplicate.oa_category;
-                if (!accumulator.greater_entity && duplicate.greater_entity) accumulator.greater_entity = duplicate.greater_entity;
-                if (!accumulator.publisher && duplicate.publisher) accumulator.publisher = duplicate.publisher;
-                if (!accumulator.contract && duplicate.contract) accumulator.contract = duplicate.contract;
-                if (!accumulator.authors && duplicate.authors) accumulator.authors = duplicate.authors;
-                if (!accumulator.doi && duplicate.doi) accumulator.doi = duplicate.doi;
-                if (!accumulator.link && duplicate.link) accumulator.link = duplicate.link;
-                if (!accumulator.dataSource && duplicate.dataSource) accumulator.dataSource = duplicate.dataSource;
-                if (!accumulator.language && duplicate.language) accumulator.language = duplicate.language;
-                if (!accumulator.second_pub && duplicate.second_pub) accumulator.second_pub = duplicate.second_pub;
-                if (!accumulator.add_info && duplicate.add_info) accumulator.add_info = duplicate.add_info;
-                if (!accumulator.is_oa && duplicate.is_oa) accumulator.is_oa = duplicate.is_oa;
-                if (!accumulator.oa_status && duplicate.oa_status) accumulator.oa_status = duplicate.oa_status;
-                if (!accumulator.is_journal_oa && duplicate.is_journal_oa) accumulator.is_journal_oa = duplicate.is_journal_oa;
-                if (!accumulator.best_oa_host && duplicate.best_oa_host) accumulator.best_oa_host = duplicate.best_oa_host;
-                if (!accumulator.best_oa_license && duplicate.best_oa_license) accumulator.best_oa_license = duplicate.best_oa_license;
-
-                if (!accumulator.funders) accumulator.funders = [];
-                accumulator.funders = accumulator.funders.concat(duplicate.funders ?? []);
-                if (!accumulator.invoices) accumulator.invoices = [];
-                accumulator.invoices = accumulator.invoices.concat(duplicate.invoices ?? []);
-                if (!accumulator.identifiers) accumulator.identifiers = [];
-                accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
-                if (!accumulator.supplements) accumulator.supplements = [];
-                accumulator.supplements = accumulator.supplements.concat(duplicate.supplements ?? []);
-                accumulator.locked_at = null;
+            mergeContext: {
+                field: 'publication',
+                pubAutrepository: this.pubAutRepository,
+                alias_strings
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
