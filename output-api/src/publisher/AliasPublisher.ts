@@ -1,22 +1,9 @@
-import { Column, Entity, JoinColumn, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
-import { AliasPublisher as IAliasPublisher} from "../../../output-interfaces/Alias"
+import { Entity } from "typeorm";
+import { AliasPublisher as IAliasPublisher } from "../../../output-interfaces/Alias";
+import { createAliasEntity } from "../common/entities/alias.entity";
 import { Publisher } from "./Publisher";
 
+const AliasPublisherBase = createAliasEntity<Publisher>(() => Publisher);
+
 @Entity()
-export class AliasPublisher implements IAliasPublisher {
-
-    @ManyToOne(() => Publisher, i => i.aliases, {
-        orphanedRowAction: "delete"})
-    @JoinColumn({
-        name: 'elementId',
-        referencedColumnName: 'id'
-    })
-    element?: Publisher
-
-    @PrimaryColumn()
-    elementId:number;
-
-    @Column()
-    @PrimaryColumn()
-    alias: string;
-}
+export class AliasPublisher extends AliasPublisherBase implements IAliasPublisher {}
