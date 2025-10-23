@@ -84,7 +84,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
     for (let index = 0; index < presentDuplicates.length; index++) {
         const duplicate = presentDuplicates[index];
 
-        for (let key of Object.keys(accumulator)) {
+        for (let key of Object.keys(duplicate)) {
             if (key === 'id' || key.startsWith('locked_') || key === 'edit_date' || key === 'delete_date' || key === 'import_date') continue;
             let value = accumulator[key];
             if (key === 'publications') {
