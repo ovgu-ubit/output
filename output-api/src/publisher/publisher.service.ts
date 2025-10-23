@@ -103,8 +103,6 @@ export class PublisherService extends AbstractEntityService<Publisher> {
                 const aliasInserts = duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id })) ?? [];
                 if (!accumulator.aliases) accumulator.aliases = [];
                 accumulator.aliases = accumulator.aliases.concat(aliasInserts);
-            },
-            beforeSave: ({ accumulator }) => {
                 if (!alias_strings || alias_strings.length === 0) {
                     return;
                 }

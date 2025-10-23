@@ -443,8 +443,6 @@ export class PublicationService {
                 accumulator.identifiers = accumulator.identifiers.concat(duplicate.identifiers ?? []);
                 if (!accumulator.supplements) accumulator.supplements = [];
                 accumulator.supplements = accumulator.supplements.concat(duplicate.supplements ?? []);
-            },
-            beforeSave: ({ accumulator }) => {
                 accumulator.locked_at = null;
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {

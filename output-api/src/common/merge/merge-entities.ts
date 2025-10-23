@@ -37,7 +37,6 @@ export interface MergeOptions<TEntity extends { id?: number | null }, TAccumulat
     primaryRelations?: FindOptionsRelations<TEntity>;
     duplicateRelations?: FindOptionsRelations<TEntity>;
     mergeDuplicate: (context: MergeDuplicateContext<TEntity, TAccumulator>) => Promise<void> | void;
-    beforeSave?: (context: MergeFinalizeContext<TEntity, TAccumulator>) => Promise<void> | void;
     afterSave?: (context: MergeAfterSaveContext<TEntity, TAccumulator>) => Promise<void> | void;
     validate?: (context: MergeValidationContext<TEntity>) => Promise<MergeError | void> | MergeError | void;
 }
@@ -50,7 +49,6 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         primaryRelations,
         duplicateRelations,
         mergeDuplicate,
-        beforeSave,
         afterSave,
         validate,
     } = options;
@@ -80,10 +78,6 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
     for (let index = 0; index < presentDuplicates.length; index++) {
         const duplicate = presentDuplicates[index];
         await mergeDuplicate({ primary, duplicate, duplicates: presentDuplicates, accumulator, index });
-    }
-
-    if (beforeSave) {
-        await beforeSave({ primary, duplicates: presentDuplicates, accumulator });
     }
 
     let saved: TEntity;

@@ -141,7 +141,7 @@ export class AuthorService {
                 if (!institutes.find(e => e.id === inst.id)) institutes.push(inst);
             }
             if (!res.orcid && aut.orcid) res.orcid = aut.orcid;
-            if (!res.gnd_id && aut.gnd_id) res.orcid = aut.orcid;
+            if (!res.gnd_id && aut.gnd_id) res.gnd_id = aut.gnd_id;
             if (!res.title && aut.title) res.title = aut.title;
             if (!res.first_name && aut.first_name) res.first_name = aut.first_name;
             if (!res.last_name && aut.last_name) res.last_name = aut.last_name;

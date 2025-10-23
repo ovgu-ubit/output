@@ -140,8 +140,6 @@ export class InstituteService {
 
                 if (!accumulator.aliases) accumulator.aliases = [];
                 accumulator.aliases = accumulator.aliases.concat(duplicate.aliases?.map(alias => ({ alias: alias.alias, elementId: primary.id } as AliasInstitute)) ?? []);
-            },
-            beforeSave: ({ accumulator }) => {
                 if (!alias_strings || alias_strings.length === 0) {
                     return;
                 }

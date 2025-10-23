@@ -96,8 +96,7 @@ export class FunderService extends AbstractEntityService<Funder> {
 
                 if (!accumulator.label && duplicate.label) accumulator.label = duplicate.label;
                 if (!accumulator.doi && duplicate.doi) accumulator.doi = duplicate.doi;
-            },
-            beforeSave: ({ accumulator }) => {
+
                 if (!alias_strings || alias_strings.length === 0) {
                     return;
                 }

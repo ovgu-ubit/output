@@ -95,8 +95,6 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
                 duplicate.aliases?.forEach(alias => {
                     accumulator.aliases.push({ elementId: accumulator.id, alias: alias.alias });
                 });
-            },
-            beforeSave: ({ accumulator }) => {
                 if (!alias_strings || alias_strings.length === 0) {
                     return;
                 }
