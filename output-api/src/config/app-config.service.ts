@@ -16,7 +16,7 @@ export class AppConfigService {
         else {
             res = await this.repository.find({ where: { key } });
             if ((!res || res.length === 0) && key === 'reporting_year') return new Date().getFullYear();
-            else return res[0].value;
+            else return res[0]?.value;
         }
     }
 

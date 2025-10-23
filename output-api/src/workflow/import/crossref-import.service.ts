@@ -34,6 +34,7 @@ export class CrossrefImportService extends ApiImportOffsetService {
     }
 
     private searchText = '';
+    private affiliationTags = [];
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -70,18 +71,17 @@ export class CrossrefImportService extends ApiImportOffsetService {
     protected name = 'Crossref';
     protected parallelCalls = 1;
 
-    protected async init() {
+    async setReportingYear(year: string) {
         (await this.configService.get('searchTags')).forEach(tag => {
             this.searchText += tag + "+"
         })
-    }
-
-    setReportingYear(year: string) {
+        this.affiliationTags = await this.configService.get('affiliationTags')
         this.params = [
             { key: 'query.affiliation', value: this.searchText.slice(0, this.searchText.length - 1) },
             { key: 'query.bibliographic', value: year },
             { key: 'sort', value: 'indexed' }]//sorting avoids redundant publications in pages
     }
+    
     protected importTest(element: any): boolean {
         return element && !(element['type'].includes('posted-content') || element['type'].includes('peer-review')) && this.authorsInstitution(element.author).length > 0;
     }
@@ -209,8 +209,8 @@ export class CrossrefImportService extends ApiImportOffsetService {
     }
 
     private async affiliationIncludesTags(affiliation) {
-        for (let i = 0; i < (await this.configService.get('affiliationTags')).length; i++) {
-            if (affiliation.name?.toLowerCase().includes((await this.configService.get('affiliationTags'))[i])) return true;
+        for (let i = 0; i < this.affiliationTags.length; i++) {
+            if (affiliation.name?.toLowerCase().includes(this.affiliationTags[i])) return true;
         }
         return false;
     }

@@ -65,17 +65,14 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     protected name = 'Open-Access-Monitor';
     protected parallelCalls = 1;
 
-    setReportingYear(year: string) {
+    async setReportingYear(year: string) {
+        this.param_string = await this.configService.get('api_key_oam');
+        this.ror_id = await this.configService.get('ror_id');
         this.year = year;
     }
 
     param_string;
     ror_id;
-
-    protected async init() {
-        this.param_string = await this.configService.get('api_key_oam');
-        this.ror_id = await this.configService.get('ror_id');
-    }
 
     protected retrieveCountRequest() {
          return this.http.get(`${this.url}token=${this.param_string}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}}`)
