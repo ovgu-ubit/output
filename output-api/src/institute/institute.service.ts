@@ -8,6 +8,7 @@ import { AliasInstitute } from './AliasInstitute';
 import { Institute } from './Institute';
 import { Author } from '../author/Author';
 import { AppConfigService } from '../config/app-config.service';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 @Injectable()
 export class InstituteService {
@@ -17,7 +18,8 @@ export class InstituteService {
     constructor(@InjectEntityManager() private manager: EntityManager, private configService: AppConfigService,
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Author) private autRepository: Repository<Author>,
-        @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>) {
+        @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>,
+        private aliasLookupService: AliasLookupService) {
         this.repository = this.manager.getTreeRepository(Institute);
     }
 
@@ -67,19 +69,10 @@ export class InstituteService {
 
     public findOrSave(affiliation: string): Observable<Institute> {
         if (!affiliation) return of(null);
-        return from(this.identifyInstitution(affiliation)).pipe(concatMap(data => {
-            return from(this.repository.findOne({ where: { label: ILike(data) } }));
+        return from(this.aliasLookupService.findCanonicalElement(this.aliasRepository, affiliation)).pipe(concatMap(match => {
+            const label = match?.label ?? affiliation;
+            return from(this.repository.findOne({ where: { label: ILike(label) } }));
         }));
-    }
-
-    public async identifyInstitution(affiliation: string) {
-        let alias = await this.aliasRepository.createQueryBuilder('alias')
-            .leftJoinAndSelect('alias.element', 'element')
-            .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: affiliation })
-            .getOne();
-
-        if (alias) return alias.element.label;
-        return affiliation;
     }
 
     public async index(reporting_year: number): Promise<InstituteIndex[]> {

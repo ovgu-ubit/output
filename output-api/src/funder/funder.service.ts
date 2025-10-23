@@ -7,6 +7,7 @@ import { Funder } from './Funder';
 import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 @Injectable()
 export class FunderService extends AbstractEntityService<Funder> {
@@ -16,6 +17,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
         configService: AppConfigService,
         private publicationService:PublicationService,
+        private aliasLookupService: AliasLookupService,
     ) {
         super(repository, configService);
     }
@@ -26,7 +28,8 @@ export class FunderService extends AbstractEntityService<Funder> {
 
     public async findOrSave(funder:Funder): Promise<Funder> {
         if (!funder.label && !funder.doi) return null;
-        let label = await this.identifyFunder(funder.label);
+        const canonicalFunder = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, funder.label);
+        const label = canonicalFunder?.label ?? funder.label;
         let funder_ent: Funder;
         if (funder.doi) funder_ent = await this.repository.findOne({ where: { doi: ILike(funder.doi) } });
         if (!funder_ent) {
@@ -37,16 +40,6 @@ export class FunderService extends AbstractEntityService<Funder> {
         else return await this.repository.save({ label, doi: funder.doi }).catch(e => { throw { origin: 'funder-service', text: `Funder ${label} with DOI ${funder.doi} could not be inserted` }; });
     }
 
-    public async identifyFunder(title: string) {
-        let alias = await this.aliasRepository.createQueryBuilder('alias')
-        .leftJoinAndSelect('alias.element', 'element')
-        .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
-        .getOne();
-
-        if (alias) return alias.element.label;
-        return title;
-    }
-    
     public async index(reporting_year:number): Promise<FunderIndex[]> {
         let query = this.repository.createQueryBuilder("funder")
             .select("funder.id","id")

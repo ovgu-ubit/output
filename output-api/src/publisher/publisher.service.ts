@@ -8,6 +8,7 @@ import { PublisherIndex } from '../../../output-interfaces/PublicationIndex';
 import { Publication } from '../publication/core/Publication';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {
@@ -17,6 +18,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         configService: AppConfigService,
         private publicationService: PublicationService,
         @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>,
+        private aliasLookupService: AliasLookupService,
     ) {
         super(repository, configService);
     }
@@ -27,7 +29,8 @@ export class PublisherService extends AbstractEntityService<Publisher> {
 
     public async findOrSave(publisher: Publisher): Promise<Publisher> {
         if (!publisher.label) return null;
-        let label = await this.identifyPublisher(publisher.label);
+        const canonicalPublisher = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, publisher.label);
+        const label = canonicalPublisher?.label ?? publisher.label;
         let publisher_ent: Publisher;
         publisher_ent = await this.repository.findOne({ where: { label: ILike(label) } })
         if (!publisher_ent && publisher.doi_prefixes) {
@@ -35,16 +38,6 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         }
         if (publisher_ent) return publisher_ent;
         else return this.repository.save({ label, doi_prefixes: publisher.doi_prefixes });
-    }
-
-    public async identifyPublisher(title: string) {
-        let alias = await this.aliasRepository.createQueryBuilder('alias')
-            .leftJoinAndSelect('alias.element', 'element')
-            .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
-            .getOne();
-
-        if (alias) return alias.element.label;
-        return title;
     }
 
     public async findByDOI(doi: string) {

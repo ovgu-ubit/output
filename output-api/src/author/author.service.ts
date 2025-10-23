@@ -10,6 +10,7 @@ import { Author } from './Author';
 import { AliasAuthorLastName } from './AliasAuthorLastName';
 import { InstituteService } from '../institute/institute.service';
 import { AppConfigService } from '../config/app-config.service';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 @Injectable()
 export class AuthorService {
@@ -19,7 +20,8 @@ export class AuthorService {
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(AliasAuthorFirstName) private aliasFirstNameRepository: Repository<AliasAuthorFirstName>,
         @InjectRepository(AliasAuthorLastName) private aliasLastNameRepository: Repository<AliasAuthorLastName>,
-        private configService: AppConfigService) { }
+        private configService: AppConfigService,
+        private aliasLookupService: AliasLookupService) { }
 
     public async save(aut: any[]) {
         let result = [];
@@ -54,15 +56,8 @@ export class AuthorService {
     }
 
     public async identifyAuthor(last_name: string, first_name: string): Promise<Author> {
-        let aliasL = await this.aliasLastNameRepository.createQueryBuilder('alias')
-            .leftJoinAndSelect('alias.element', 'element')
-            .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: last_name })
-            .getMany();
-
-        let aliasF = await this.aliasFirstNameRepository.createQueryBuilder('alias')
-            .leftJoinAndSelect('alias.element', 'element')
-            .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: first_name })
-            .getMany();
+        const aliasL = await this.aliasLookupService.findAliases(this.aliasLastNameRepository, last_name);
+        const aliasF = await this.aliasLookupService.findAliases(this.aliasFirstNameRepository, first_name);
 
         if (aliasL && aliasL.length > 0 && aliasF && aliasF.length > 0) {
             //both alias in the same entity

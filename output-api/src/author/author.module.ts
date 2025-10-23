@@ -9,6 +9,7 @@ import { AliasAuthorLastName } from './AliasAuthorLastName';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AppConfigModule } from '../config/app-config.module';
 import { PublicationModule } from '../publication/publication.module';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 
 @Module({
@@ -20,7 +21,7 @@ import { PublicationModule } from '../publication/publication.module';
     AppConfigModule
   ],
   controllers: [AuthorController],
-  providers: [AuthorService],
+  providers: [AuthorService, AliasLookupService],
   exports: [AuthorService, TypeOrmModule]
 })
 export class AuthorModule {}

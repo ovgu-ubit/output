@@ -7,6 +7,7 @@ import { FunderController } from './FunderController';
 import { FunderService } from './funder.service';
 import { PublicationModule } from '../publication/publication.module';
 import { AppConfigModule } from '../config/app-config.module';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { AppConfigModule } from '../config/app-config.module';
     AppConfigModule
   ],
   controllers: [FunderController],
-  providers: [FunderService],
+  providers: [FunderService, AliasLookupService],
   exports: [FunderService, TypeOrmModule]
 })
 export class FunderModule { }
