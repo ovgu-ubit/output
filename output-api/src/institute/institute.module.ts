@@ -8,6 +8,7 @@ import { AliasInstitute } from './AliasInstitute';
 import { Author } from '../author/Author';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AppConfigModule } from '../config/app-config.module';
+import { AliasLookupService } from '../common/alias-lookup.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { AppConfigModule } from '../config/app-config.module';
   ],
   controllers: [InstituteController],
   providers:
-    [InstituteService],
+    [InstituteService, AliasLookupService],
   exports: [InstituteService, TypeOrmModule]
 })
 export class InstituteModule { }
