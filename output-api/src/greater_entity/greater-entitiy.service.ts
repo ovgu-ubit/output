@@ -157,8 +157,8 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { identifiers: true },
-            duplicateRelations: { identifiers: true, publications: true },
+            primaryOptions: {relations: { identifiers: true }},
+            duplicateOptions: {relations: { identifiers: true, publications: true }},
             mergeContext: {
                 field: 'greater_entity',
                 service: this.publicationService

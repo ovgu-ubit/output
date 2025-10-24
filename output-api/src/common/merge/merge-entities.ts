@@ -1,9 +1,7 @@
-import { DeepPartial, FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
-import { AbstractEntityService } from '../abstract-entity.service';
-import { Publication } from '../../publication/core/Publication';
-import { AuthorPublication } from '../../publication/relations/AuthorPublication';
+import { DeepPartial, FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Author } from '../../author/Author';
 import { PublicationService } from '../../publication/core/publication.service';
+import { AuthorPublication } from '../../publication/relations/AuthorPublication';
 
 export type MergeError = 'find' | 'update' | 'delete';
 
@@ -19,7 +17,9 @@ export interface MergeDuplicateContext<TEntity extends { id?: number | null }, T
     alias_strings?: string[];
     service?: PublicationService;
     pubAutrepository?: Repository<AuthorPublication>;
-    autRepository?: Repository<Author>
+    autRepository?: Repository<Author>;
+    aliases_first_name?: string[];
+    aliases_last_name?: string[];
 }
 
 export interface MergeFinalizeContext<TEntity extends { id?: number | null }, TAccumulator> {
@@ -40,8 +40,8 @@ export interface MergeOptions<TEntity extends { id?: number | null }, TAccumulat
     repository: Repository<TEntity>;
     primaryId: number;
     duplicateIds: number[];
-    primaryRelations?: FindOptionsRelations<TEntity>;
-    duplicateRelations?: FindOptionsRelations<TEntity>;
+    primaryOptions?: FindOneOptions<TEntity>;
+    duplicateOptions?: FindOneOptions<TEntity>;
     mergeContext: MergeDuplicateContext<TEntity, TAccumulator>;
     afterSave?: (context: MergeAfterSaveContext<TEntity, TAccumulator>) => Promise<void> | void;
     validate?: (context: MergeValidationContext<TEntity>) => Promise<MergeError | void> | MergeError | void;
@@ -52,20 +52,26 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         repository,
         primaryId,
         duplicateIds,
-        primaryRelations,
-        duplicateRelations,
+        primaryOptions,
+        duplicateOptions,
         mergeContext,
         afterSave,
         validate,
     } = options;
 
-    const primary = await repository.findOne({ where: { id: primaryId } as FindOptionsWhere<TEntity>, relations: primaryRelations });
+    let primaryFindOptions = {...primaryOptions, where: { id: primaryId } as FindOptionsWhere<TEntity>}
+    const primary = await repository.findOne(primaryFindOptions);
     if (!primary) {
         return { error: 'find' as MergeError };
     }
 
     const presentDuplicates = await Promise.all(
-        duplicateIds.map(id => repository.findOne({ where: { id } as FindOptionsWhere<TEntity>, relations: duplicateRelations ?? primaryRelations ?? {} })),
+        duplicateIds.map(id => {
+            let duplicateFindOptions = {...duplicateOptions};
+            if (!duplicateFindOptions.relations) duplicateFindOptions = {relations: primaryOptions.relations}
+            duplicateFindOptions.where = { id } as FindOptionsWhere<TEntity>;
+            return repository.findOne(duplicateFindOptions);
+        }),
     ) as TEntity[];
 
     if (presentDuplicates.some(duplicate => !duplicate)) {
@@ -126,6 +132,14 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
                 if (Array.isArray(duplicate[key])) accumulator[key] = value.concat(duplicate[key])
                 if (key === 'aliases' && mergeContext.alias_strings) {
                     mergeContext.alias_strings.forEach(alias => {
+                        accumulator[key].push({ elementId: accumulator['id'], alias });
+                    })
+                } else if (key === 'aliases_first_name' && mergeContext.aliases_first_name) {
+                    mergeContext.aliases_first_name.forEach(alias => {
+                        accumulator[key].push({ elementId: accumulator['id'], alias });
+                    })
+                } else if (key === 'aliases_last_name' && mergeContext.aliases_last_name) {
+                    mergeContext.aliases_last_name.forEach(alias => {
                         accumulator[key].push({ elementId: accumulator['id'], alias });
                     })
                 }

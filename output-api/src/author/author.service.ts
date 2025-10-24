@@ -11,6 +11,7 @@ import { AliasAuthorLastName } from './AliasAuthorLastName';
 import { InstituteService } from '../institute/institute.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class AuthorService {
@@ -124,56 +125,27 @@ export class AuthorService {
     }
 
     public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
-        let aut1: Author = await this.repository.findOne({ where: { id: id1 }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } }))
-        }
+            return mergeEntities<Author>({
+                repository: this.repository,
+                primaryId: id1,
+                duplicateIds: ids,
+                primaryOptions: {relations: { institutes: true, aliases_first_name: true, aliases_last_name: true }},
+                duplicateOptions: { relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } },
+                mergeContext: {
+                    field: 'author',
+                    pubAutrepository: this.pubAutRepository,
+                    aliases_first_name,
+                    aliases_last_name
+                },
+                    afterSave: async ({ duplicateIds, defaultDelete }) => {
+                        await this.aliasFirstNameRepository.delete({ elementId: In(duplicateIds) }) && await this.aliasLastNameRepository.delete({ elementId: In(duplicateIds) }) 
+                        await this.pubAutRepository.delete({ authorId: In(duplicateIds) })
+    
+                        await defaultDelete();
+                    },
+            });
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
-
-        let institutes = aut1.institutes;
-        let res = { ...aut1 };
-
-        for (let aut of authors) {
-            for (let ap of aut.authorPublications) await this.pubAutRepository.save({ publicationId: ap.publicationId, authorId: aut1.id, corresponding: ap.corresponding, institute: ap.institute })
-            for (let inst of aut.institutes) {
-                if (!institutes.find(e => e.id === inst.id)) institutes.push(inst);
-            }
-            if (!res.orcid && aut.orcid) res.orcid = aut.orcid;
-            if (!res.gnd_id && aut.gnd_id) res.gnd_id = aut.gnd_id;
-            if (!res.title && aut.title) res.title = aut.title;
-            if (!res.first_name && aut.first_name) res.first_name = aut.first_name;
-            if (!res.last_name && aut.last_name) res.last_name = aut.last_name;
-            if (aut.aliases_first_name) for (let alias of aut.aliases_first_name) {
-                res.aliases_first_name.push({ elementId: res.id, alias: alias.alias })
-            }
-            if (aut.aliases_last_name) for (let alias of aut.aliases_last_name) {
-                res.aliases_last_name.push({ elementId: res.id, alias: alias.alias })
-            }
-        }
-        res.institutes = institutes;
-        res.authorPublications = undefined;
-
-        //update aliases
-        if (aliases_first_name) {
-            for (let alias of aliases_first_name) {
-                res.aliases_first_name.push({ elementId: res.id, alias });
-            }
-        }
-        if (aliases_last_name) {
-            for (let alias of aliases_last_name) {
-                res.aliases_last_name.push({ elementId: res.id, alias });
-            }
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasFirstNameRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.aliasLastNameRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.pubAutRepository.delete({ authorId: In(authors.map(e => e.id)) })) {
-                if (await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            }
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+        
     }
 
     public async index(reporting_year: number): Promise<AuthorIndex[]> {

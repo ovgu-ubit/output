@@ -73,8 +73,8 @@ export class FunderService extends AbstractEntityService<Funder> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { aliases: true },
-            duplicateRelations: { aliases: true, publications: { funders: true } },
+            primaryOptions: {relations: { aliases: true }},
+            duplicateOptions: {relations: { aliases: true, publications: { funders: true } }},
             mergeContext: {
                 field: 'funders',
                 service: this.publicationService,

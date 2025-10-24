@@ -79,8 +79,8 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { aliases: true },
-            duplicateRelations: { publications: { pub_type: true }, aliases: true },
+            primaryOptions: {relations: { aliases: true }},
+            duplicateOptions: {relations: { publications: { pub_type: true }, aliases: true }},
             mergeContext: {
                 field: 'pub_type',
                 service: this.publicationService,

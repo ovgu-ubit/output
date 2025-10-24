@@ -120,8 +120,8 @@ export class InstituteService {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { authors: { institutes: true }, super_institute: true, aliases: true },
-            duplicateRelations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true },
+            primaryOptions: {relations: { authors: { institutes: true }, super_institute: true, aliases: true }},
+            duplicateOptions: {relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true }},
             mergeContext: {
                 field: 'institute',
                 autField: 'institutes',

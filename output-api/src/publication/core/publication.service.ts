@@ -405,8 +405,14 @@ export class PublicationService {
             repository: this.pubRepository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
-            duplicateRelations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+            primaryOptions: {
+                relations: { pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+                withDeleted: true
+            },
+            duplicateOptions: {
+                relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+                withDeleted: true
+            },
             validate: ({ primary, duplicates }) => {
                 if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
                     return 'find';

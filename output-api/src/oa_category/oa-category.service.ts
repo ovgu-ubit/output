@@ -57,7 +57,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            duplicateRelations: { publications: { oa_category: true } },
+            duplicateOptions: {relations: { publications: { oa_category: true } }},
             mergeContext: {
                 field: 'oa_category',
                 service: this.publicationService

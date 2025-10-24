@@ -98,8 +98,8 @@ export class ContractService extends AbstractEntityService<Contract> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { publisher: true, identifiers: true },
-            duplicateRelations: { publisher: true, publications: true, identifiers: true },
+            primaryOptions: {relations: { publisher: true, identifiers: true }},
+            duplicateOptions: {relations: { publisher: true, publications: true, identifiers: true }},
             mergeContext: {
                 field: 'contract',
                 service: this.publicationService,

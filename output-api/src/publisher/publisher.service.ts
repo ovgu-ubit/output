@@ -90,8 +90,8 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryRelations: { aliases: true, doi_prefixes: true },
-            duplicateRelations: { publications: true, aliases: true, doi_prefixes: true },
+            primaryOptions: {relations: { aliases: true, doi_prefixes: true }},
+            duplicateOptions: {relations: { publications: true, aliases: true, doi_prefixes: true }},
             mergeContext: {
                 field: 'publisher',
                 service: this.publicationService,
