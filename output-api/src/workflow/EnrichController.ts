@@ -44,9 +44,9 @@ export class EnrichController {
   @Get("report")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  report(@Query('filename') filename: string, @Res() res: Response) {
+  async report(@Query('filename') filename: string, @Res() res: Response) {
     res.setHeader('Content-type', 'text/plain')
-    res.send(this.reportService.getReport(filename))
+    res.send(await this.reportService.getReport(filename))
     return this.reportService.getReport(filename);
   }
 

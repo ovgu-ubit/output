@@ -8,6 +8,7 @@ import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class FunderService extends AbstractEntityService<Funder> {
@@ -16,7 +17,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         @InjectRepository(Funder) repository: Repository<Funder>,
         @InjectRepository(AliasFunder) private aliasRepository: Repository<AliasFunder>,
         configService: AppConfigService,
-        private publicationService:PublicationService,
+        private publicationService: PublicationService,
         private aliasLookupService: AliasLookupService,
     ) {
         super(repository, configService);
@@ -26,7 +27,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         return { aliases: true };
     }
 
-    public async findOrSave(funder:Funder): Promise<Funder> {
+    public async findOrSave(funder: Funder): Promise<Funder> {
         if (!funder.label && !funder.doi) return null;
         const canonicalFunder = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, funder.label);
         const label = canonicalFunder?.label ?? funder.label;
@@ -40,13 +41,13 @@ export class FunderService extends AbstractEntityService<Funder> {
         else return await this.repository.save({ label, doi: funder.doi }).catch(e => { throw { origin: 'funder-service', text: `Funder ${label} with DOI ${funder.doi} could not be inserted` }; });
     }
 
-    public async index(reporting_year:number): Promise<FunderIndex[]> {
+    public async index(reporting_year: number): Promise<FunderIndex[]> {
         let query = this.repository.createQueryBuilder("funder")
-            .select("funder.id","id")
-            .addSelect("funder.label","label")
-            .addSelect("funder.doi","doi")
-            .addSelect("funder.ror_id","ror_id")
-            .addSelect("COUNT(DISTINCT publication.id)","pub_count")
+            .select("funder.id", "id")
+            .addSelect("funder.label", "label")
+            .addSelect("funder.doi", "doi")
+            .addSelect("funder.ror_id", "ror_id")
+            .addSelect("COUNT(DISTINCT publication.id)", "pub_count")
             .groupBy("funder.id")
             .addGroupBy("funder.label")
             .addGroupBy("funder.doi")
@@ -68,55 +69,36 @@ export class FunderService extends AbstractEntityService<Funder> {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        let funder1 = await this.repository.findOne({where:{id:id1}, relations: {aliases: true}});
-        let funders:Funder[] = []
-        for (let id of ids) {
-            funders.push( await this.repository.findOne({where:{id},relations:{aliases: true, publications:{funders:true}}}))
-        }
-        
-        if (!funder1 || funders.find(e => e === null || e === undefined)) return {error:'find'};
-        
-        let res = {...funder1};
+        return mergeEntities<Funder>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryOptions: {relations: { aliases: true }},
+            duplicateOptions: {relations: { aliases: true, publications: { funders: true } }},
+            mergeContext: {
+                field: 'funders',
+                service: this.publicationService,
+                alias_strings
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                }
 
-        for (let fund of funders) {
-            let pubs = [];
-            for (let pub of fund.publications) {
-                let newF = pub.funders? pub.funders.filter(e => e.id !==fund.id) : [];
-                if (!newF.find(e => e.id === funder1.id)) newF.push(funder1);
-                pubs.push({id:pub.id, funders: newF});
-            }
-            for (let alias of fund.aliases) {
-                //this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias: alias.alias})
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && fund.label) res.label = fund.label;
-            if (!res.doi && fund.doi) res.doi = fund.doi;
-        }
-        //update aliases
-        if (alias_strings) {
-            for (let alias of alias_strings) {
-                //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({elementId: res.id, alias});
-            }
-        }
-        
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({elementId: In(funders.map(e => e.id))}) && await this.repository.delete({id: In(funders.map(e => e.id))})) return res;
-            else return {error:'delete'};
-        } else return {error:'update'};
+                await defaultDelete();
+            },
+        });
     }
-    
-    public async delete(insts:Funder[]) {
+
+    public async delete(insts: Funder[]) {
         for (let inst of insts) {
-            let conE: Funder = await this.repository.findOne({where:{id:inst.id},relations:{publications:{funders:true}},withDeleted: true});
+            let conE: Funder = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { funders: true } }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
-                pubs.push({id:pub.id, funders: pub.funders.filter(e => e.id !==conE.id)});
+                pubs.push({ id: pub.id, funders: pub.funders.filter(e => e.id !== conE.id) });
             }
-            await this.aliasRepository.delete({elementId: conE.id});
-            
+            await this.aliasRepository.delete({ elementId: conE.id });
+
             await this.publicationService.save(pubs);
         }
         return await this.repository.delete(insts.map(p => p.id));

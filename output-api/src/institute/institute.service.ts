@@ -9,6 +9,7 @@ import { Institute } from './Institute';
 import { Author } from '../author/Author';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class InstituteService {
@@ -115,50 +116,20 @@ export class InstituteService {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } }))
-        }
-
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
-
-        let res = { ...aut1 };
-        res.authorPublications = undefined;
-
-        for (let aut of authors) {
-            for (let ap of aut.authorPublications) await this.pubAutRepository.save({ publicationId: ap.publicationId, authorId: ap.authorId, corresponding: ap.corresponding, institute: res })
-
-            for (let auth of aut.authors) {
-                let newInst = auth.institutes?.filter(e => e.id !== aut.id);
-                if (!newInst.find(e => e.id === aut.id)) newInst.push(res);
-                await this.autRepository.save({ id: auth.id, institutes: newInst })
-            }
-
-            for (let alias of aut.aliases) {
-                res.aliases.push({ elementId: res.id, alias: alias.alias })
-            }
-
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.short_label && aut.short_label) res.short_label = aut.short_label;
-            if (!res.aliases) res.aliases = [];
-            res.aliases = res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
-            if (!res.authors) res.authors = [];
-            res.authors = res.authors.concat(aut.authors.map(e => { return { alias: e.alias, elementId: aut1.id } as AliasInstitute }))
-        }
-        //update aliases
-        if (alias_strings) {
-            for (let alias of alias_strings) {
-                //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({ elementId: res.id, alias });
-            }
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+        return mergeEntities<Institute>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryOptions: {relations: { authors: { institutes: true }, super_institute: true, aliases: true }},
+            duplicateOptions: {relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true }},
+            mergeContext: {
+                field: 'institute',
+                autField: 'institutes',
+                pubAutrepository: this.pubAutRepository,
+                autRepository: this.autRepository,
+                alias_strings
+            },
+        });
     }
 
     async findSuperInstitute(id: number) {

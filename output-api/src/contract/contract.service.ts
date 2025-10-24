@@ -8,6 +8,7 @@ import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class ContractService extends AbstractEntityService<Contract> {
@@ -92,42 +93,26 @@ export class ContractService extends AbstractEntityService<Contract> {
         return query.getRawMany() as Promise<ContractIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        let aut1: Contract = await this.repository.findOne({ where: { id: id1 }, relations: { publisher: true, identifiers: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publisher: true, publications: true, identifiers: true  } }))
-        }
+    public async combine(id1: number, ids: number[],alias_strings?:string[]) {
+        return mergeEntities<Contract>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryOptions: {relations: { publisher: true, identifiers: true }},
+            duplicateOptions: {relations: { publisher: true, publications: true, identifiers: true }},
+            mergeContext: {
+                field: 'contract',
+                service: this.publicationService,
+                alias_strings
+            },
+                afterSave: async ({ duplicateIds, defaultDelete }) => {
+                    if (duplicateIds.length > 0) {
+                        await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                    }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
-
-        let res = { ...aut1 };
-
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, contract: aut1 })
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.start_date && aut.start_date) res.start_date = aut.start_date;
-            if (!res.end_date && aut.end_date) res.end_date = aut.end_date;
-            if (!res.internal_number && aut.internal_number) res.internal_number = aut.internal_number;
-            if (!res.invoice_amount && aut.invoice_amount) res.invoice_amount = aut.invoice_amount;
-            if (!res.invoice_information && aut.invoice_information) res.invoice_information = aut.invoice_information;
-            if (!res.sec_pub && aut.sec_pub) res.sec_pub = aut.sec_pub;
-            if (!res.gold_option && aut.gold_option) res.gold_option = aut.gold_option;
-            if (!res.verification_method && aut.verification_method) res.verification_method = aut.verification_method;
-            if (!res.publisher && aut.publisher) res.publisher = aut.publisher;
-            if (!res.identifiers) res.identifiers = [];
-            res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+                    await defaultDelete();
+                },
+        });
     }
 
     public async delete(insts: Contract[]) {

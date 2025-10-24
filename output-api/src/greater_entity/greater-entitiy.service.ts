@@ -9,6 +9,7 @@ import { Publication } from '../publication/core/Publication';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { mergeEntities } from '../common/merge';
 
 @Injectable()
 export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
@@ -152,36 +153,24 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async combine(id1: number, ids: number[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { identifiers: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { identifiers: true, publications: true } }))
-        }
+        return mergeEntities<GreaterEntity>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryOptions: {relations: { identifiers: true }},
+            duplicateOptions: {relations: { identifiers: true, publications: true }},
+            mergeContext: {
+                field: 'greater_entity',
+                service: this.publicationService
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
-
-        let res = { ...aut1 };
-
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, greater_entity: aut1 })
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.rating && aut.rating) res.rating = aut.rating;
-            if (res.doaj_since === null && aut.doaj_since !== null) res.doaj_since = aut.doaj_since;
-            if (res.doaj_until === null && aut.doaj_until !== null) res.doaj_until = aut.doaj_until;
-            if (!res.identifiers) res.identifiers = [];
-            res.identifiers = res.identifiers.concat(aut.identifiers/*.map(e => {return {...e,entity:aut1}})*/)
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.idRepository.delete({ entity: { id: In(authors.map(e => e.id)) } }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
-
+                await defaultDelete();
+            },
+        });
     }
 
     public async delete(insts: GreaterEntity[]) {

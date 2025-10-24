@@ -9,6 +9,8 @@ import { Publication } from '../publication/core/Publication';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
+import { PublisherDOI } from './PublisherDOI';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {
@@ -18,6 +20,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         configService: AppConfigService,
         private publicationService: PublicationService,
         @InjectRepository(AliasPublisher) private aliasRepository: Repository<AliasPublisher>,
+        @InjectRepository(PublisherDOI) private doiRepository: Repository<PublisherDOI>,
         private aliasLookupService: AliasLookupService,
     ) {
         super(repository, configService);
@@ -83,44 +86,33 @@ export class PublisherService extends AbstractEntityService<Publisher> {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        let aut1 = await this.repository.findOne({ where: { id: id1 }, relations: { aliases: true } });
-        let authors = []
-        for (let id of ids) {
-            authors.push(await this.repository.findOne({ where: { id }, relations: { publications: true, aliases: true } }))
-        }
+        return mergeEntities<Publisher>({
+            repository: this.repository,
+            primaryId: id1,
+            duplicateIds: ids,
+            primaryOptions: {relations: { aliases: true, doi_prefixes: true }},
+            duplicateOptions: {relations: { publications: true, aliases: true, doi_prefixes: true }},
+            mergeContext: {
+                field: 'publisher',
+                service: this.publicationService,
+                alias_strings
+            },
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                }
+                if (duplicateIds.length > 0) {
+                    await this.doiRepository.delete({ publisherId: In(duplicateIds) });
+                }
 
-        if (!aut1 || authors.find(e => e === null || e === undefined)) return { error: 'find' };
-
-        let res = { ...aut1 };
-
-        for (let aut of authors) {
-            let pubs = [];
-            for (let pub of aut.publications) {
-                pubs.push({ id: pub.id, publisher: aut1 });
-            }
-            await this.publicationService.save(pubs)
-            if (!res.label && aut.label) res.label = aut.label;
-            if (!res.aliases) res.aliases = [];
-            res.aliases = res.aliases.concat(aut.aliases.map(e => { return { alias: e.alias, elementId: aut1.id } }))
-        }
-        //update aliases
-        if (alias_strings) {
-            for (let alias of alias_strings) {
-                //await this.aliasRepository.save({elementId: res.id, alias})
-                res.aliases.push({ elementId: res.id, alias });
-            }
-        }
-
-        //update publication 1
-        if (await this.repository.save(res)) {
-            if (await this.aliasRepository.delete({ elementId: In(authors.map(e => e.id)) }) && await this.repository.delete({ id: In(authors.map(e => e.id)) })) return res;
-            else return { error: 'delete' };
-        } else return { error: 'update' };
+                await defaultDelete();
+            },
+        });
     }
 
     public async delete(insts: Publisher[]) {
         for (let inst of insts) {
-            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true }, withDeleted: true });
+            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true, doi_prefixes: true }, withDeleted: true });
             let pubs = [];
             if (conE.publications) for (let pub of conE.publications) {
                 pubs.push({ id: pub.id, publisher: null })
