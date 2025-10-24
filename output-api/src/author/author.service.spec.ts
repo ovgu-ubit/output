@@ -77,13 +77,13 @@ describe('AuthorService', () => {
         jest.clearAllMocks();
     });
 
-    it('saves authors while stripping and restoring institutes', async () => {
+    it('saves authors with two repository calls for institute mapping', async () => {
         const authorData = [{ id: 1, first_name: 'Alice', institutes: [{ id: 5 }] } as unknown as Author];
         const savedAuthor = { ...authorData[0], institutes: undefined } as Author;
 
         repository.save
             .mockResolvedValueOnce(savedAuthor)
-            .mockResolvedValueOnce(savedAuthor);
+            .mockResolvedValueOnce(authorData[0]);
 
         const result = await service.save(authorData);
 
@@ -96,7 +96,7 @@ describe('AuthorService', () => {
             id: 1,
             institutes: authorData[0].institutes,
         });
-        expect(result).toEqual([savedAuthor]);
+        expect(result).toEqual(authorData);
     });
 
     it('identifies authors via aliases', async () => {
@@ -159,6 +159,8 @@ describe('AuthorService', () => {
             }
             return { id: options.primaryId } as Author;
         });
+
+        aliasFirstNameRepository.delete.mockResolvedValue({affected: 1, raw: 1});
 
         const result = await service.combineAuthors(1, [2, 3], ['Al'], ['La']);
 

@@ -29,7 +29,7 @@ export class AuthorService {
         for (let auth of aut) {
             let obj = { ...auth, institutes: undefined }
             let authEnt = await this.repository.save(obj).catch(err => { console.log(err) });
-            if (authEnt) await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
+            if (authEnt) authEnt = await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
             result.push(authEnt);
         }
         return result;
