@@ -144,6 +144,75 @@ describe('AuthorService', () => {
         expect(result).toEqual({ author: enrichedAuthor, error: null });
     });
 
+    it('merges duplicate author attributes when combining records', async () => {
+        const { mergeEntities: actualMergeEntities } = jest.requireActual('../common/merge');
+        mergeEntitiesMock.mockImplementation((options) => actualMergeEntities(options));
+
+        const primaryAuthor = {
+            id: 1,
+            first_name: 'Alice',
+            last_name: 'Smith',
+            orcid: '0000-1111',
+            gnd_id: null,
+            institutes: [{ id: 11 }],
+            aliases_first_name: [{ elementId: 1, alias: 'Ally' }],
+            aliases_last_name: [],
+        } as unknown as Author;
+
+        const duplicateAuthor = {
+            id: 2,
+            first_name: 'Alice',
+            last_name: 'Smith',
+            orcid: null,
+            gnd_id: 'gnd-2',
+            institutes: [{ id: 22 }],
+            aliases_first_name: [{ elementId: 2, alias: 'Alicia' }],
+            aliases_last_name: [{ elementId: 2, alias: 'Smyth' }],
+        } as unknown as Author;
+
+        repository.findOne.mockImplementation(async (options: any) => {
+            const id = options?.where?.id;
+            if (id === primaryAuthor.id) {
+                return JSON.parse(JSON.stringify(primaryAuthor));
+            }
+            if (id === duplicateAuthor.id) {
+                return JSON.parse(JSON.stringify(duplicateAuthor));
+            }
+            return null;
+        });
+
+        let savedAuthor: Author = null;
+        repository.save.mockImplementation(async (entity: Author) => {
+            savedAuthor = entity;
+            return savedAuthor;
+        });
+
+        aliasFirstNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasLastNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        pubAutRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        repository.delete.mockResolvedValue({ affected: 2 } as any);
+
+        const result = await service.combineAuthors(1, [2], ['MergedFirst'], ['MergedLast']);
+
+        expect(savedAuthor).not.toBeNull();
+        expect(savedAuthor.gnd_id).toBe('gnd-2');
+        expect(savedAuthor.orcid).toBe('0000-1111');
+        expect(savedAuthor.institutes).toEqual([
+            expect.objectContaining({ id: 11 }),
+            expect.objectContaining({ id: 22 }),
+        ]);
+        expect(savedAuthor.aliases_first_name).toEqual(expect.arrayContaining([
+            expect.objectContaining({ elementId: 1, alias: 'Ally' }),
+            expect.objectContaining({ elementId: 2, alias: 'Alicia' }),
+            expect.objectContaining({ elementId: 1, alias: 'MergedFirst' }),
+        ]));
+        expect(savedAuthor.aliases_last_name).toEqual(expect.arrayContaining([
+            expect.objectContaining({ elementId: 2, alias: 'Smyth' }),
+            expect.objectContaining({ elementId: 1, alias: 'MergedLast' }),
+        ]));
+        expect(result).toBe(savedAuthor);
+    });
+
     it('combines authors and removes duplicates from repositories', async () => {
         mergeEntitiesMock.mockImplementation(async (options) => {
             if (options.afterSave) {
