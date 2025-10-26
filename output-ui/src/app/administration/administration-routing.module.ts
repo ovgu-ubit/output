@@ -6,9 +6,11 @@ import { EnrichComponent } from './pages/enrich/enrich.component';
 import { ExportComponent } from './pages/export/export.component';
 import { ImportComponent } from './pages/import/import.component';
 import { PlausibilityComponent } from './pages/plausibility/plausibility.component';
+import { ConfigComponent } from './pages/config/config.component';
 
 const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'export', },
+  { path: 'config', component: ConfigComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },
   { path: 'plausibility', component: PlausibilityComponent, canActivate: [LoginGuard], data: { roles: ['writer', 'admin'] }, },
   { path: 'duplicates', component: DuplicatesComponent, canActivate: [LoginGuard], data: { roles: ['writer', 'admin'] }, },
   { path: 'import', component: ImportComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },

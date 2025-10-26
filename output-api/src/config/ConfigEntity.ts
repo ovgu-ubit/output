@@ -8,5 +8,5 @@ export class Config implements IConfig {
     key: string;
 
     @Column({nullable: true})
-    value: string;
+    value: string | null;
 }
