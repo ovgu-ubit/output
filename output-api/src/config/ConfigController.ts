@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Body, Controller, Get, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 
@@ -7,6 +7,16 @@ import { AppConfigService } from "./app-config.service";
 export class ConfigController {
 
     constructor(private configService: AppConfigService) { }
+
+    @Get()
+    async list() {
+        return this.configService.listDatabaseConfig();
+    }
+
+    @Post()
+    async set(@Body('key') key: string, @Body('value') value: string | null) {
+        return this.configService.setDatabaseConfig(key, value ?? null);
+    }
 
     @Get('optional_fields')
     getOptionalFields() {

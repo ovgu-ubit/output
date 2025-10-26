@@ -23,5 +23,14 @@ export class AppConfigService {
     setDefaultReportingYear(value: number) {
         this.repository.save({ key: 'reporting_year', value: value as any as string })
     }
+
+    public listDatabaseConfig() {
+        return this.repository.find();
+    }
+
+    public async setDatabaseConfig(key: string, value: string | null) {
+        const entry: Config = { key, value: value ?? null };
+        return this.repository.save(entry);
+    }
 }
 
