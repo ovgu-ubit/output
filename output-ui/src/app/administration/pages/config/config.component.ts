@@ -1,19 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Config, GroupedConfig } from '../../../../../../output-interfaces/Config';
+import { Config, ConfigColumnType, GroupedConfig } from '../../../../../../output-interfaces/Config';
 import { ConfigService } from '../../services/config.service';
 import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
-import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 
 interface EditableConfig extends GroupedConfig {
   editedValue: string[];
 }
 
 @Component({
-    selector: 'app-config',
-    templateUrl: './config.component.html',
-    styleUrls: ['./config.component.css'],
-    standalone: false
+  selector: 'app-config',
+  templateUrl: './config.component.html',
+  styleUrls: ['./config.component.css'],
+  standalone: false
 })
 export class ConfigComponent implements OnInit {
 
@@ -58,6 +58,19 @@ export class ConfigComponent implements OnInit {
     if (!this.isDirty(config) || this.busy) {
       return;
     }
+    if (config.type == ConfigColumnType.NUMBER) {
+      if (config.editedValue.some(e => Number.isNaN(Number(e)))) {
+        this.snackBar.open('Falsches Format für Konfigurationsparameter', 'Oh Oh!', {
+          duration: 5000,
+          panelClass: ['danger-snackbar'],
+          verticalPosition: 'top'
+        });
+        this.reload()
+        return;
+      }
+    }
+
+
     this.busy = true;
     const payload = config.editedValue;
     this.configService.set(config.key, payload).subscribe({
@@ -97,14 +110,14 @@ export class ConfigComponent implements OnInit {
     event.chipInput!.clear();
   }
 
-  remove(config: EditableConfig, value:string): void {
+  remove(config: EditableConfig, value: string): void {
     config.editedValue = config.editedValue.filter(e => e !== value)
   }
 
-  edit(config: EditableConfig, origValue:string, event: MatChipEditedEvent) {
+  edit(config: EditableConfig, origValue: string, event: MatChipEditedEvent) {
     const value = event.value.trim();
     if (!value) return this.remove(config, origValue);
-    config.editedValue = config.editedValue.map(e => e === origValue? value : e)
+    config.editedValue = config.editedValue.map(e => e === origValue ? value : e)
   }
 
   reset(config: EditableConfig) {

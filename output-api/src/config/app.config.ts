@@ -10,7 +10,6 @@ import { AbstractImportService } from '../workflow/import/abstract-import';
 import { AbstractPlausibilityService } from '../workflow/check/abstract-plausibility.service';
 
 export interface AppConfig {
-    lock_timeout: number; 
     searchTags: string[];
     affiliationTags: string[];
     ror_id? : string;

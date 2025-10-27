@@ -33,7 +33,7 @@ export class AppConfigService {
             acc[c.key].push(c.value)
             return acc;
         }, {})
-        return Object.entries(res).map(([key, values]) => ({ key, values }));
+        return Object.entries(res).map(([key, values]) => ({ key, values, type: db.find(e => e.key === key).type }));
     }
 
     public async setDatabaseConfig(key: string, values: (string | null)[]) {
