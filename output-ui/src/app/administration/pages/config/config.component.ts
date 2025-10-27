@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Config, GroupedConfig } from '../../../../../../output-interfaces/Config';
 import { ConfigService } from '../../services/config.service';
+import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
+import {COMMA, ENTER} from '@angular/cdk/keycodes';
 
 interface EditableConfig extends GroupedConfig {
   editedValue: string[];
@@ -18,6 +20,7 @@ export class ConfigComponent implements OnInit {
   configs: EditableConfig[] = [];
   loading = false;
   busy = false;
+  separatorKeys = [ENTER, COMMA]
 
   constructor(private configService: ConfigService, private snackBar: MatSnackBar) { }
 
@@ -76,6 +79,31 @@ export class ConfigComponent implements OnInit {
         });
       }
     });
+  }
+
+  isArray(config: EditableConfig) {
+    return ["test"].some(e => config.key === e)
+  }
+
+  add(config: EditableConfig, event: MatChipInputEvent): void {
+    const value = (event.value || '').trim();
+
+    // Add our fruit
+    if (value) {
+      config.editedValue.push(value)
+    }
+    // Clear the input value
+    event.chipInput!.clear();
+  }
+
+  remove(config: EditableConfig, value:string): void {
+    config.editedValue = config.editedValue.filter(e => e !== value)
+  }
+
+  edit(config: EditableConfig, origValue:string, event: MatChipEditedEvent) {
+    const value = event.value.trim();
+    if (!value) return this.remove(config, origValue);
+    config.editedValue = config.editedValue.map(e => e === origValue? value : e)
   }
 
   reset(config: EditableConfig) {

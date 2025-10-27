@@ -20,8 +20,26 @@
       <th mat-header-cell *matHeaderCellDef> Wert </th>
       <td mat-cell *matCellDef="let element">
         <mat-form-field appearance="outline" class="value-field">
-          <textarea matInput rows="2" [(ngModel)]="element.editedValue" [disabled]="element.busy || loading"></textarea>
+          <textarea *ngIf="!this.isArray(element)" matInput rows="2" [(ngModel)]="element.editedValue"
+            [disabled]="element.busy || loading"></textarea>
+          <mat-chip-grid *ngIf="this.isArray(element)" #chipGrid>
+            @for (value of element.editedValue; track value) {
+            <mat-chip-row (removed)="remove(element, value)" [editable]="true" (edited)="edit(element, value, $event)">
+              <button matChipEdit>
+                <mat-icon>edit</mat-icon>
+              </button>
+              {{value}}
+              <button matChipRemove>
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+            }
+            <input placeholder="Wert hinzufügen" [matChipInputFor]="chipGrid"
+              [matChipInputSeparatorKeyCodes]="this.separatorKeys" [matChipInputAddOnBlur]="true"
+              (matChipInputTokenEnd)="add(element, $event)" />
+          </mat-chip-grid>
         </mat-form-field>
+
       </td>
     </ng-container>
 
@@ -32,7 +50,8 @@
           [disabled]="!isDirty(element) || element.busy || loading">
           Speichern
         </button>
-        <button mat-button color="warn" (click)="reset(element)" [disabled]="!isDirty(element) || element.busy || loading">
+        <button mat-button color="warn" (click)="reset(element)"
+          [disabled]="!isDirty(element) || element.busy || loading">
           Zurücksetzen
         </button>
       </td>
