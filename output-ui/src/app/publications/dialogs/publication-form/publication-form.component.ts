@@ -6,6 +6,7 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfigService } from 'src/app/services/config.service';
+import { ConfigService as ConfigService2} from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
@@ -90,6 +91,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     private dialog: MatDialog, public pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar,
     public oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
     public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
+    private configService2: ConfigService2,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
@@ -154,8 +156,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.optional_fields = data;
     }
     ));
-    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
-      this.institution = data.short_label;
+    ob$ = merge(ob$, this.configService2.get("institution_short_label").pipe(map(data => {
+      this.institution = data[0].values[0];
     }
     )));
     ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {

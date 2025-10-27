@@ -74,7 +74,9 @@ export class InitService {
         ]
 
         let config: Config[] = [
-            { key: 'reporting_year', value: '2022' }
+            { key: 'reporting_year', value: '2025' },
+            { key: 'institution', value: 'Output Development Version' },
+            { key: 'institution_short_label', value: 'Dev' },
         ]
 
         let langs: Language[] = [

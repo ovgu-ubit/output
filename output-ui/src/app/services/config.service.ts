@@ -15,9 +15,6 @@ export class ConfigService {
   public getOptionalFields() {
     return this.http.get<{abstract: boolean,citation: boolean,page_count: boolean,pub_date_submitted: boolean,pub_date_print: boolean,peer_reviewed: boolean}>(environment.api + 'config/optional_fields', { withCredentials: true });
   }
-  public getInstition() {
-    return this.http.get<{ label: string, short_label: string }>(environment.api + 'config/institution', { withCredentials: true });
-  }
   public getIndexColumns() {
     return this.http.get<string[]>(environment.api + 'config/pub_index_columns', { withCredentials: true });
   }

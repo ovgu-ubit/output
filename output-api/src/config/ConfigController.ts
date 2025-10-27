@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
@@ -13,8 +13,8 @@ export class ConfigController {
     @Get()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'admin', app: 'output' }])
-    async list() {
-        return await this.configService.listDatabaseConfig();
+    async list(@Query("key") key?:string) {
+        return await this.configService.listDatabaseConfig(key);
     }
 
     @Post()
@@ -32,14 +32,6 @@ export class ConfigController {
     @Get('pub_index_columns')
     getPubIndexColumns() {
         return this.configService.get('pub_index_columns');
-    }
-
-    @Get('institution')
-    async getInstitution() {
-        return {
-            label: await this.configService.get('institution_label'),
-            short_label: await this.configService.get('institution_short_label')
-        }
     }
 
     @Get('doi_import')

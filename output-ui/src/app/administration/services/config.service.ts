@@ -14,6 +14,10 @@ export class ConfigService {
     return this.http.get<GroupedConfig[]>(environment.api + 'config');
   }
 
+  get(key:string) {
+    return this.http.get<GroupedConfig>(environment.api + 'config?key='+key);
+  }
+
   set(key: string, values: (string | null)[]) {
     return this.http.post<GroupedConfig>(environment.api + 'config', { key, values });
   }

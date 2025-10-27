@@ -7,6 +7,7 @@ import { Store } from '@ngrx/store';
 import { Observable, concatMap, map, merge } from 'rxjs';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ConfigService } from 'src/app/services/config.service';
+import { ConfigService as ConfigService2} from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
@@ -28,7 +29,7 @@ import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/re
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard, private configService: ConfigService) { }
+    private clipboard: Clipboard, private configService: ConfigService, private configService2:ConfigService2) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
@@ -92,8 +93,8 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
-      return this.configService.getInstition().pipe(map(data => {
-        this.institution = data.short_label;
+      return this.configService2.get("institution_short_label").pipe(map(data => {
+        this.institution = data[0].values[0];
         let header = this.headers.find(e => e.colName === 'authors_inst')
         if (header) header.colTitle = 'Personen ' + this.institution;
       }))

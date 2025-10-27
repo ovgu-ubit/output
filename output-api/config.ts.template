@@ -35,8 +35,6 @@ import { MissingInvoiceDataService } from "./src/workflow/filter/missing-invoice
 import { InitService } from "./src/services/init.service";
 
 export default() : AppConfig => ({
-    institution_label: "Otto-von-Guericke-Universität Magdeburg",
-    institution_short_label: "OVGU",
     lock_timeout: 10, //in minutes
     searchTags: [
         "magdeburg",
