@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import appConfig from '../../config';
 import { AuthorizationService } from './authorization.service';
 import { JwtModule } from '@nestjs/jwt';
@@ -13,7 +13,7 @@ import { AppConfigModule } from '../config/app-config.module';
       timeout: 50000,
       maxRedirects: 5,
     }),
-    AppConfigModule
+    forwardRef(() => AppConfigModule)
   ],
   controllers: [],
   providers: [{ provide: AuthorizationService, useClass: appConfig().authorization_service },],
