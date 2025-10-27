@@ -1,6 +1,6 @@
 import {Entity, PrimaryGeneratedColumn, Column, ManyToOne} from "typeorm";
 import { CostCenter as ICostCenter} from "../../../output-interfaces/Publication"
-import { Invoice } from "./Invoice";
+import { Invoice } from "./Invoice.entity";
 
 @Entity()
 export class CostCenter implements ICostCenter {

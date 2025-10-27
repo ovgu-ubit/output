@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Config } from './ConfigEntity';
+import { Config } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -24,8 +24,14 @@ export class AppConfigService {
         this.repository.save({ key: 'reporting_year', value: value as any as string })
     }
 
-    public listDatabaseConfig() {
-        return this.repository.find();
+    public async listDatabaseConfig() {
+        let db = await this.repository.find();
+        let res = db.reduce((acc, c) => {
+            if (!acc[c.key]) acc[c.key] = [];
+            acc[c.key].push(c.value)
+            return acc;
+        }, {})
+         return Object.entries(res).map(([key, values]) => ({ key, values }));
     }
 
     public async setDatabaseConfig(key: string, value: string | null) {

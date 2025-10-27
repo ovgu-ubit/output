@@ -1,8 +1,8 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany} from "typeorm";
 import { Publisher as IPublisher } from "../../../output-interfaces/Publication"
-import { PublisherDOI } from "./PublisherDOI";
-import { Publication } from "../publication/core/Publication";
-import { AliasPublisher } from "./AliasPublisher";
+import { PublisherDOI } from "./PublisherDOI.entity";
+import { Publication } from "../publication/core/Publication.entity";
+import { AliasPublisher } from "./AliasPublisher.entity";
 
 @Entity()
 export class Publisher implements IPublisher {

@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { PublicationTypeService } from './publication-type.service';
-import { PublicationType } from './PublicationType';
-import { AliasPubType } from './AliasPubType';
+import { PublicationType } from './PublicationType.entity';
+import { AliasPubType } from './AliasPubType.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('PublicationTypeService', () => {

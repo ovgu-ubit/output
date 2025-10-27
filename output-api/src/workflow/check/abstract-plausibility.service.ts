@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { ReportItemService } from '../report-item.service';
 import { PublicationService } from '../../publication/core/publication.service';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 
 @Injectable()
 export abstract class AbstractPlausibilityService {

@@ -1,17 +1,17 @@
 import { Column, Entity, JoinColumn, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
-import { AliasAuthorFirstName as IAliasAuthorFirstName} from "../../../output-interfaces/Alias"
-import { Author } from "./Author";
+import { AliasPubType as IAliasPubType} from "../../../output-interfaces/Alias"
+import { PublicationType } from "./PublicationType.entity";
 
 @Entity()
-export class AliasAuthorFirstName implements IAliasAuthorFirstName {
+export class AliasPubType implements IAliasPubType {
 
-    @ManyToOne(() => Author, i => i.aliases_first_name, {
+    @ManyToOne(() => PublicationType, i => i.aliases, {
         orphanedRowAction: "delete"})
     @JoinColumn({
         name: 'elementId',
         referencedColumnName: 'id'
     })
-    element?: Author
+    element?: PublicationType
 
     @PrimaryColumn()
     elementId:number;

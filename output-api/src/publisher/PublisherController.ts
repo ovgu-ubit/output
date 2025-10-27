@@ -1,6 +1,6 @@
 import { Body, Controller, Get, InternalServerErrorException, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
-import { Publisher } from "./Publisher";
+import { Publisher } from "./Publisher.entity";
 import { PublisherIndex } from "../../../output-interfaces/PublicationIndex";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";

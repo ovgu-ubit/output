@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, ManyToOne, OneToMany } from "typeorm";
-import { Contract } from "../contract/Contract";
-import { CostCenter } from "./CostCenter";
-import { CostItem } from "./CostItem";
+import { Contract } from "../contract/Contract.entity";
+import { CostCenter } from "./CostCenter.entity";
+import { CostItem } from "./CostItem.entity";
 import { Invoice as IInvoice } from "../../../output-interfaces/Publication"
-import { Publication } from "../publication/core/Publication";
+import { Publication } from "../publication/core/Publication.entity";
 
 @Entity()
 export class Invoice implements IInvoice {

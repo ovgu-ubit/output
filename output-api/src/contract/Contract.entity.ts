@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
-import { Publisher } from "../publisher/Publisher";
+import { Publisher } from "../publisher/Publisher.entity";
 import { Contract as IContract} from "../../../output-interfaces/Publication"
-import { Publication } from "../publication/core/Publication";
-import { ContractIdentifier } from "./ContractIdentifier";
+import { Publication } from "../publication/core/Publication.entity";
+import { ContractIdentifier } from "./ContractIdentifier.entity";
 
 @Entity()
 export class Contract implements IContract {

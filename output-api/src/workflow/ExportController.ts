@@ -5,7 +5,7 @@ import { SearchFilter } from "../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { Publication } from "../publication/core/Publication";
+import { Publication } from "../publication/core/Publication.entity";
 import { AbstractExportService } from "./export/abstract-export.service";
 import { AbstractFilterService } from "./filter/abstract-filter.service";
 import { ReportItemService } from "./report-item.service";

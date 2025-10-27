@@ -20,8 +20,8 @@ export const AppDataSource = new DataSource(<DataSourceOptions>{
     synchronize: ['true', '1'].includes(process.env.DATABASE_SYNCHRONIZE?.toLowerCase()),
     logging: false,
     entities: [
-        "dist/output-api/src/entity/**/*.js",
-        "dist/output-api/src/entity/**/*.ts"
+        "dist/output-api/src/**/*.entity.js",
+        "dist/output-api/src/**/*.entity.ts"
     ],
     migrations: [
         "dist/output-api/src/migrations/**/*.js",

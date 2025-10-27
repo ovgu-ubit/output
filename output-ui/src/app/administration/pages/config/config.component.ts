@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Config } from '../../../../../../output-interfaces/Config';
+import { Config, GroupedConfig } from '../../../../../../output-interfaces/Config';
 import { ConfigService } from '../../services/config.service';
 
-interface EditableConfig extends Config {
-  editedValue: string;
-  busy?: boolean;
+interface EditableConfig extends GroupedConfig {
+  editedValue: string[];
 }
 
 @Component({
@@ -15,9 +14,10 @@ interface EditableConfig extends Config {
 })
 export class ConfigComponent implements OnInit {
 
-  displayedColumns = ['key', 'value', 'actions'];
+  displayedColumns = ['key', 'value'];
   configs: EditableConfig[] = [];
   loading = false;
+  busy = false;
 
   constructor(private configService: ConfigService, private snackBar: MatSnackBar) { }
 
@@ -31,7 +31,7 @@ export class ConfigComponent implements OnInit {
       next: (configs) => {
         this.configs = configs.map(config => ({
           ...config,
-          editedValue: config.value ?? ''
+          editedValue: config.values ?? []
         }));
         this.loading = false;
       },
@@ -47,20 +47,20 @@ export class ConfigComponent implements OnInit {
   }
 
   isDirty(config: EditableConfig) {
-    return (config.value ?? '') !== config.editedValue;
+    return (config.values ?? []) !== config.editedValue;
   }
 
   save(config: EditableConfig) {
-    if (!this.isDirty(config) || config.busy) {
+    if (!this.isDirty(config) || this.busy) {
       return;
     }
-    config.busy = true;
-    const payload = config.editedValue === '' ? null : config.editedValue;
+    this.busy = true;
+    const payload = config.editedValue;
     this.configService.set(config.key, payload).subscribe({
       next: (updated) => {
-        config.value = updated.value ?? null;
-        config.editedValue = updated.value ?? '';
-        config.busy = false;
+        config.values = updated.values ?? null;
+        config.editedValue = updated.values ?? [];
+        this.busy = false;
         this.snackBar.open('Konfiguration gespeichert.', 'Schließen', {
           duration: 3000,
           panelClass: ['success-snackbar'],
@@ -68,7 +68,7 @@ export class ConfigComponent implements OnInit {
         });
       },
       error: () => {
-        config.busy = false;
+        this.busy = false;
         this.snackBar.open('Konfiguration konnte nicht gespeichert werden.', 'Schließen', {
           duration: 5000,
           panelClass: ['error-snackbar'],
@@ -79,7 +79,7 @@ export class ConfigComponent implements OnInit {
   }
 
   reset(config: EditableConfig) {
-    config.editedValue = config.value ?? '';
+    config.editedValue = config.values ?? [];
   }
 
   getLink() {

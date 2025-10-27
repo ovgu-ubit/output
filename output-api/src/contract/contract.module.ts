@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Contract } from './Contract';
-import { ContractIdentifier } from './ContractIdentifier';
+import { Contract } from './Contract.entity';
+import { ContractIdentifier } from './ContractIdentifier.entity';
 import { PublicationModule } from '../publication/publication.module';
 import { ContractController } from './ContractController';
 import { ContractService } from './contract.service';

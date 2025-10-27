@@ -1,7 +1,7 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany} from "typeorm";
 import { PublicationType as IPublicationType } from "../../../output-interfaces/Publication"
-import { Publication } from "../publication/core/Publication";
-import { AliasPubType } from "./AliasPubType";
+import { Publication } from "../publication/core/Publication.entity";
+import { AliasPubType } from "./AliasPubType.entity";
 
 @Entity()
 export class PublicationType implements IPublicationType {

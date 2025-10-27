@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthorizationModule } from '../../authorization/authorization.module';
-import { Language } from './Language';
+import { Language } from './Language.entity';
 import { LanguageController } from './LanguageController';
-import { Status } from './Status';
+import { Status } from './Status.entity';
 import { StatusController } from './StatusController';
 import { LanguageService } from './language.service';
 import { StatusService } from './status.service';

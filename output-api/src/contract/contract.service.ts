@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
-import { Contract } from './Contract';
+import { Contract } from './Contract.entity';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
 import { PublicationService } from '../publication/core/publication.service';
-import { ContractIdentifier } from './ContractIdentifier';
+import { ContractIdentifier } from './ContractIdentifier.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { mergeEntities } from '../common/merge';

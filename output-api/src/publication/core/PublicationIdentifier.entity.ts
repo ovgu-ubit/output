@@ -1,6 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { PublicationIdentifier as IPublicationIdentifier } from "../../../../output-interfaces/Publication";
-import { Publication } from "./Publication";
+import { Publication } from "./Publication.entity";
 
 @Entity()
 export class PublicationIdentifier implements IPublicationIdentifier {

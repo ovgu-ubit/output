@@ -1,9 +1,9 @@
 import { Entity, Column, ManyToOne, PrimaryColumn, JoinColumn, JoinTable, PrimaryGeneratedColumn } from "typeorm";
 import { AuthorPublication as IAuthorPublication} from "../../../../output-interfaces/Publication"
-import { Role } from "./Role";
-import { Institute } from "../../institute/Institute";
-import { Author } from "../../author/Author";
-import { Publication } from "../core/Publication";
+import { Role } from "./Role.entity";
+import { Institute } from "../../institute/Institute.entity";
+import { Author } from "../../author/Author.entity";
+import { Publication } from "../core/Publication.entity";
 
 @Entity()
 export class AuthorPublication implements IAuthorPublication {

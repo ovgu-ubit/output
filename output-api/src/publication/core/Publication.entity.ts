@@ -1,17 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, ManyToMany, JoinTable, UpdateDateColumn, CreateDateColumn, DeleteDateColumn } from "typeorm";
-import { AuthorPublication } from "../relations/AuthorPublication";
-import { Contract } from "../../contract/Contract";
-import { OA_Category } from "../../oa_category/OA_Category";
-import { Publisher } from "../../publisher/Publisher";
+import { AuthorPublication } from "../relations/AuthorPublication.entity";
+import { Contract } from "../../contract/Contract.entity";
+import { OA_Category } from "../../oa_category/OA_Category.entity";
+import { Publisher } from "../../publisher/Publisher.entity";
 import { Publication as IPublication } from "../../../../output-interfaces/Publication"
-import { PublicationIdentifier } from "./PublicationIdentifier";
-import { PublicationSupplement } from "./PublicationSupplement";
-import { PublicationDuplicate } from "./PublicationDuplicate";
-import { Funder } from "../../funder/Funder";
-import { GreaterEntity } from "../../greater_entity/GreaterEntity";
-import { Invoice } from "../../invoice/Invoice";
-import { PublicationType } from "../../pub_type/PublicationType";
-import { Language } from "../lookups/Language";
+import { PublicationIdentifier } from "./PublicationIdentifier.entity";
+import { PublicationSupplement } from "./PublicationSupplement.entity";
+import { PublicationDuplicate } from "./PublicationDuplicate.entity";
+import { Funder } from "../../funder/Funder.entity";
+import { GreaterEntity } from "../../greater_entity/GreaterEntity.entity";
+import { Invoice } from "../../invoice/Invoice.entity";
+import { PublicationType } from "../../pub_type/PublicationType.entity";
+import { Language } from "../lookups/Language.entity";
 
 @Entity()
 export class Publication implements IPublication {

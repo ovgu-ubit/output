@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, Repository } from 'typeorm';
-import { Invoice } from './Invoice';
-import { CostType } from './CostType';
-import { CostCenter } from './CostCenter';
-import { Publication } from '../publication/core/Publication';
+import { Invoice } from './Invoice.entity';
+import { CostType } from './CostType.entity';
+import { CostCenter } from './CostCenter.entity';
+import { Publication } from '../publication/core/Publication.entity';
 import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
-import { AliasFunder } from './AliasFunder';
+import { AliasFunder } from './AliasFunder.entity';
 import { PublicationService } from '../publication/core/publication.service';
-import { Funder } from './Funder';
+import { Funder } from './Funder.entity';
 import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';

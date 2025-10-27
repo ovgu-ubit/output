@@ -4,11 +4,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
 import { SearchFilter } from "../../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
-import { Publication } from "./Publication";
+import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { AppConfigService } from "../../config/app-config.service";
 import { PublicationService } from "./publication.service";
-import { PublicationDuplicate } from "./PublicationDuplicate";
+import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { AbstractFilterService } from "../../workflow/filter/abstract-filter.service";
 

@@ -1,6 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Config } from './ConfigEntity';
+import { Config } from './Config.entity';
 import { ConfigController } from './ConfigController';
 import { AppConfigService } from './app-config.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';

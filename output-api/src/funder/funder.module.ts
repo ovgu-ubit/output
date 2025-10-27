@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthorizationModule } from '../authorization/authorization.module';
-import { Funder } from './Funder';
-import { AliasFunder } from './AliasFunder';
+import { Funder } from './Funder.entity';
+import { AliasFunder } from './AliasFunder.entity';
 import { FunderController } from './FunderController';
 import { FunderService } from './funder.service';
 import { PublicationModule } from '../publication/publication.module';

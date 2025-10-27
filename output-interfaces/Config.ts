@@ -3,6 +3,11 @@ export interface Config {
     value: string | null;
 }
 
+export interface GroupedConfig {
+    key: string;
+    values: (string | null)[];
+}
+
 export class AppError {
     origin: string;
     text: string;
