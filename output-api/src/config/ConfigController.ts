@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
+import { AccessGuard } from "../authorization/access.guard";
+import { Permissions } from "../authorization/permission.decorator";
 
 @Controller("config")
 @ApiTags("config")
@@ -9,11 +11,15 @@ export class ConfigController {
     constructor(private configService: AppConfigService) { }
 
     @Get()
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'admin', app: 'output' }])
     async list() {
         return this.configService.listDatabaseConfig();
     }
 
     @Post()
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'admin', app: 'output' }])
     async set(@Body('key') key: string, @Body('value') value: string | null) {
         return this.configService.setDatabaseConfig(key, value ?? null);
     }
