@@ -24,19 +24,28 @@ export class AppConfigService {
         this.repository.save({ key: 'reporting_year', value: value as any as string })
     }
 
-    public async listDatabaseConfig() {
-        let db = await this.repository.find();
+    public async listDatabaseConfig(key?: string) {
+        let db;
+        if (!key) db = await this.repository.find();
+        else db = await this.repository.findBy({ key })
         let res = db.reduce((acc, c) => {
             if (!acc[c.key]) acc[c.key] = [];
             acc[c.key].push(c.value)
             return acc;
         }, {})
-         return Object.entries(res).map(([key, values]) => ({ key, values }));
+        return Object.entries(res).map(([key, values]) => ({ key, values }));
     }
 
-    public async setDatabaseConfig(key: string, value: string | null) {
-        const entry: Config = { key, value: value ?? null };
-        return this.repository.save(entry);
+    public async setDatabaseConfig(key: string, values: (string | null)[]) {
+        await this.repository.delete({ key })
+        if (["test"].some(e => e === key)) {
+            for (let v of values) {
+                await this.repository.save({ key, value: v })
+            }
+        } else {
+            await this.repository.save({ key, value: values[0] })
+        }
+        return this.listDatabaseConfig(key)
     }
 }
 

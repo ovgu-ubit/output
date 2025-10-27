@@ -35,7 +35,7 @@ export class ConfigComponent implements OnInit {
       next: (configs) => {
         this.configs = configs.map(config => ({
           ...config,
-          editedValue: config.values ?? []
+          editedValue: [...config.values]
         }));
         this.loading = false;
       },
@@ -62,10 +62,10 @@ export class ConfigComponent implements OnInit {
     const payload = config.editedValue;
     this.configService.set(config.key, payload).subscribe({
       next: (updated) => {
-        config.values = updated.values ?? null;
-        config.editedValue = updated.values ?? [];
+        config.values = [...updated[0].values];
+        config.editedValue = [...updated[0].values];
         this.busy = false;
-        this.snackBar.open('Konfiguration gespeichert.', 'Schließen', {
+        this.snackBar.open('Konfiguration gespeichert.', 'Super!', {
           duration: 3000,
           panelClass: ['success-snackbar'],
           verticalPosition: 'top'
@@ -73,9 +73,9 @@ export class ConfigComponent implements OnInit {
       },
       error: () => {
         this.busy = false;
-        this.snackBar.open('Konfiguration konnte nicht gespeichert werden.', 'Schließen', {
+        this.snackBar.open('Konfiguration konnte nicht gespeichert werden.', 'Oh Oh!', {
           duration: 5000,
-          panelClass: ['error-snackbar'],
+          panelClass: ['danger-snackbar'],
           verticalPosition: 'top'
         });
       }
