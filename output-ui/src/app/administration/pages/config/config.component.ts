@@ -17,7 +17,7 @@ interface EditableConfig extends GroupedConfig {
 })
 export class ConfigComponent implements OnInit {
 
-  displayedColumns = ['key', 'value'];
+  displayedColumns = ['key', 'value', 'actions'];
   configs: EditableConfig[] = [];
   loading = false;
   busy = false;
@@ -51,7 +51,7 @@ export class ConfigComponent implements OnInit {
   }
 
   isDirty(config: EditableConfig) {
-    return (config.values ?? []) !== config.editedValue;
+    return (config.values ?? []).toString() !== config.editedValue.toString();
   }
 
   save(config: EditableConfig) {
