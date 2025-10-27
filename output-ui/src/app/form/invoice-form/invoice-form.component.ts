@@ -8,9 +8,10 @@ import { CostCenterFormComponent } from '../cost-center-form/cost-center-form.co
 import { CostItemFormComponent } from '../cost-item-form/cost-item-form.component';
 
 @Component({
-  selector: 'app-invoice-form',
-  templateUrl: './invoice-form.component.html',
-  styleUrls: ['./invoice-form.component.css']
+    selector: 'app-invoice-form',
+    templateUrl: './invoice-form.component.html',
+    styleUrls: ['./invoice-form.component.css'],
+    standalone: false
 })
 export class InvoiceFormComponent extends AbstractFormComponent<Invoice> implements OnInit, AfterViewInit {
 

@@ -9,9 +9,10 @@ import { ConfigService } from 'src/app/services/config.service';
 import { CSVMapping } from '../../../../../../output-interfaces/Config';
 
 @Component({
-  selector: 'app-csv-format',
-  templateUrl: './csv-format.component.html',
-  styleUrls: ['./csv-format.component.css']
+    selector: 'app-csv-format',
+    templateUrl: './csv-format.component.html',
+    styleUrls: ['./csv-format.component.css'],
+    standalone: false
 })
 export class CsvFormatComponent implements OnInit, AfterViewInit {
 

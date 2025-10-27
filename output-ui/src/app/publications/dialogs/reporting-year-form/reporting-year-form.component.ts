@@ -4,9 +4,10 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 
 @Component({
-  selector: 'app-reporting-year-form',
-  templateUrl: './reporting-year-form.component.html',
-  styleUrls: ['./reporting-year-form.component.css']
+    selector: 'app-reporting-year-form',
+    templateUrl: './reporting-year-form.component.html',
+    styleUrls: ['./reporting-year-form.component.css'],
+    standalone: false
 })
 export class ReportingYearFormComponent implements OnInit{
   submitted = false;

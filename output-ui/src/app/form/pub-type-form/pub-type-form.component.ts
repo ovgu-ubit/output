@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 
 @Component({
-  selector: 'app-pub-type-form',
-  templateUrl: './pub-type-form.component.html',
-  styleUrls: ['./pub-type-form.component.css']
+    selector: 'app-pub-type-form',
+    templateUrl: './pub-type-form.component.html',
+    styleUrls: ['./pub-type-form.component.css'],
+    standalone: false
 })
 export class PubTypeFormComponent implements OnInit {
 

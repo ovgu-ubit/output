@@ -46,9 +46,10 @@ export class PubValidator {
 }
 
 @Component({
-  selector: 'app-publication-form',
-  templateUrl: './publication-form.component.html',
-  styleUrls: ['./publication-form.component.css']
+    selector: 'app-publication-form',
+    templateUrl: './publication-form.component.html',
+    styleUrls: ['./publication-form.component.css'],
+    standalone: false
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   institution: string;

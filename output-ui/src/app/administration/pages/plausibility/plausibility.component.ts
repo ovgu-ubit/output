@@ -8,9 +8,10 @@ import { ReportService } from 'src/app/administration/services/report.service';
 import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
 
 @Component({
-  selector: 'app-plausibility',
-  templateUrl: './plausibility.component.html',
-  styleUrls: ['./plausibility.component.css']
+    selector: 'app-plausibility',
+    templateUrl: './plausibility.component.html',
+    styleUrls: ['./plausibility.component.css'],
+    standalone: false
 })
 export class PlausibilityComponent implements OnInit {
 

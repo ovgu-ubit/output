@@ -6,9 +6,10 @@ import { CostTypeFormComponent } from '../../../form/cost-type-form/cost-type-fo
 import { CostTypeIndex } from '../../../../../../output-interfaces/PublicationIndex';
 
 @Component({
-  selector: 'app-cost-types',
-  templateUrl: './cost-types.component.html',
-  styleUrls: ['./cost-types.component.css']
+    selector: 'app-cost-types',
+    templateUrl: './cost-types.component.html',
+    styleUrls: ['./cost-types.component.css'],
+    standalone: false
 })
 export class CostTypesComponent implements TableParent<CostTypeIndex>, OnInit {
   buttons: TableButton[] = [

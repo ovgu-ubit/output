@@ -17,9 +17,10 @@ import { Contract, Institute, OA_Category, PublicationType, Publisher } from '..
 import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
 
 @Component({
-  selector: 'app-statistics',
-  templateUrl: './statistics.component.html',
-  styleUrls: ['./statistics.component.css']
+    selector: 'app-statistics',
+    templateUrl: './statistics.component.html',
+    styleUrls: ['./statistics.component.css'],
+    standalone: false
 })
 export class StatisticsComponent implements OnInit {
 

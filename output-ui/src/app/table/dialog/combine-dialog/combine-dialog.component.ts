@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.component';
 
 @Component({
-  selector: 'app-combine-dialog',
-  templateUrl: './combine-dialog.component.html',
-  styleUrls: ['./combine-dialog.component.css']
+    selector: 'app-combine-dialog',
+    templateUrl: './combine-dialog.component.html',
+    styleUrls: ['./combine-dialog.component.css'],
+    standalone: false
 })
 export class CombineDialogComponent<T> implements OnInit {
   constructor(public dialogRef: MatDialogRef<CombineDialogComponent<T>>, @Inject(MAT_DIALOG_DATA) public data: any,

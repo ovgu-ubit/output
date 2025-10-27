@@ -10,9 +10,10 @@ import { ReportService } from 'src/app/administration/services/report.service';
 import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
 
 @Component({
-  selector: 'app-export',
-  templateUrl: './export.component.html',
-  styleUrls: ['./export.component.css']
+    selector: 'app-export',
+    templateUrl: './export.component.html',
+    styleUrls: ['./export.component.css'],
+    standalone: false
 })
 export class ExportComponent implements OnInit {
 

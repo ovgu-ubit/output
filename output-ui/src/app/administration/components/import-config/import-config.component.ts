@@ -5,9 +5,10 @@ import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { UpdateMapping, UpdateOptions } from '../../../../../../output-interfaces/Config';
 
 @Component({
-  selector: 'app-import-config',
-  templateUrl: './import-config.component.html',
-  styleUrls: ['./import-config.component.css']
+    selector: 'app-import-config',
+    templateUrl: './import-config.component.html',
+    styleUrls: ['./import-config.component.css'],
+    standalone: false
 })
 export class ImportConfigComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<ImportConfigComponent>,

@@ -7,9 +7,10 @@ import { ConfigService } from 'src/app/services/config.service';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
 
 @Component({
-  selector: 'app-filter-view',
-  templateUrl: './filter-view.component.html',
-  styleUrls: ['./filter-view.component.css']
+    selector: 'app-filter-view',
+    templateUrl: './filter-view.component.html',
+    styleUrls: ['./filter-view.component.css'],
+    standalone: false
 })
 export class FilterViewComponent implements OnInit {
 

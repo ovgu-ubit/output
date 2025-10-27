@@ -3,9 +3,10 @@ import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-alias-form',
-  templateUrl: './alias-form.component.html',
-  styleUrls: ['./alias-form.component.css']
+    selector: 'app-alias-form',
+    templateUrl: './alias-form.component.html',
+    styleUrls: ['./alias-form.component.css'],
+    standalone: false
 })
 export class AliasFormComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<AliasFormComponent>, @Inject(MAT_DIALOG_DATA) public data: {aliases: string[]},

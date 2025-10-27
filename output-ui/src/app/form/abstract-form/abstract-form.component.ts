@@ -16,9 +16,10 @@ import { AliasTableComponent } from 'src/app/shared/alias-table/alias-table.comp
 import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
 
 @Component({
-  selector: 'app-abstract-form',
-  templateUrl: './abstract-form.component.html',
-  styleUrl: './abstract-form.component.css'
+    selector: 'app-abstract-form',
+    templateUrl: './abstract-form.component.html',
+    styleUrl: './abstract-form.component.css',
+    standalone: false
 })
 export class AbstractFormComponent<T extends Entity> implements OnInit, AfterViewInit {
 

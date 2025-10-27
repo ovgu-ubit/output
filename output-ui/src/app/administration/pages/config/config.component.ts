@@ -10,9 +10,10 @@ interface EditableConfig extends GroupedConfig {
 }
 
 @Component({
-  selector: 'app-config',
-  templateUrl: './config.component.html',
-  styleUrls: ['./config.component.css']
+    selector: 'app-config',
+    templateUrl: './config.component.html',
+    styleUrls: ['./config.component.css'],
+    standalone: false
 })
 export class ConfigComponent implements OnInit {
 

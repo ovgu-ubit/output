@@ -5,9 +5,10 @@ import { ContractIndex } from '../../../../../../output-interfaces/PublicationIn
 import { ContractFormComponent } from '../../../form/contract-form/contract-form.component';
 
 @Component({
-  selector: 'app-contracts',
-  templateUrl: './contracts.component.html',
-  styleUrls: ['./contracts.component.css']
+    selector: 'app-contracts',
+    templateUrl: './contracts.component.html',
+    styleUrls: ['./contracts.component.css'],
+    standalone: false
 })
 export class ContractsComponent implements TableParent<ContractIndex>, OnInit {
   buttons: TableButton[] = [

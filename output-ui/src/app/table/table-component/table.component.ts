@@ -36,9 +36,10 @@ export class CustomPaginator extends MatPaginatorIntl {
  * component using material tables to show table and header toolbar with customizable buttons
  */
 @Component({
-  selector: 'appTable',
-  templateUrl: './table.component.html',
-  styleUrls: ['./table.component.scss']
+    selector: 'appTable',
+    templateUrl: './table.component.html',
+    styleUrls: ['./table.component.scss'],
+    standalone: false
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
 

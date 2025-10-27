@@ -20,9 +20,10 @@ import { PublicationFormComponent } from '../../dialogs/publication-form/publica
 import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
 
 @Component({
-  selector: 'app-publications',
-  templateUrl: './publications.component.html',
-  styleUrls: ['./publications.component.css']
+    selector: 'app-publications',
+    templateUrl: './publications.component.html',
+    styleUrls: ['./publications.component.css'],
+    standalone: false
 })
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
