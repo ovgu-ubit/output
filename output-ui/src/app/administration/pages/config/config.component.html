@@ -20,9 +20,10 @@
       <th mat-header-cell *matHeaderCellDef> Wert </th>
       <td mat-cell *matCellDef="let element">
         <mat-form-field appearance="outline" class="value-field">
-          <textarea *ngIf="!this.isArray(element)" matInput rows="2" [(ngModel)]="element.editedValue[0]"
+          <textarea *ngIf="!this.getType(element)" matInput rows="2" [(ngModel)]="element.editedValue"
             [disabled]="element.busy || loading"></textarea>
-          <mat-chip-grid *ngIf="this.isArray(element)" #chipGrid>
+          <input matInput *ngIf="this.getType(element) === 'number'" type="number" [disabled]="element.busy || loading" [(ngModel)]="element.editedValue"> 
+          <mat-chip-grid *ngIf="this.getType(element) === 'array'" #chipGrid>
             @for (value of element.editedValue; track value) {
             <mat-chip-row (removed)="remove(element, value)" [editable]="true" (edited)="edit(element, value, $event)">
               <button matChipEdit>

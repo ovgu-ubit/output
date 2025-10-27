@@ -29,7 +29,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.security = environment.security;
     this.configService.get("institution_short_label").subscribe({
       next: data => {
-        this.title = 'Output2.' + data[0].values[0]
+        this.title = 'Output2.' + data.value
       }
     })
 

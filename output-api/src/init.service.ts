@@ -21,7 +21,6 @@ import { PublisherDOI } from "./publisher/PublisherDOI.entity";
 import { AliasPublisher } from "./publisher/AliasPublisher.entity";
 import { Role } from "./publication/relations/Role.entity";
 import { Language } from "./publication/lookups/Language.entity";
-import { ConfigColumnType } from "../../output-interfaces/Config";
 
 @Injectable()
 export class InitService {
@@ -75,10 +74,10 @@ export class InitService {
         ]
 
         let config: Config[] = [
-            { key: 'reporting_year', value: '2025', type: ConfigColumnType.NUMBER},
+            { key: 'reporting_year', value: 2025},
             { key: 'institution', value: 'Output Development Version' },
             { key: 'institution_short_label', value: 'Dev' },
-            { key: 'lock_timeout', value: '5', type: ConfigColumnType.NUMBER },
+            { key: 'lock_timeout', value: 5 },
         ]
 
         let langs: Language[] = [

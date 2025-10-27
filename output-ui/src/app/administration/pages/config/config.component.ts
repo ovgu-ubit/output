@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Config, ConfigColumnType, GroupedConfig } from '../../../../../../output-interfaces/Config';
+import { Config } from '../../../../../../output-interfaces/Config';
 import { ConfigService } from '../../services/config.service';
 import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 
-interface EditableConfig extends GroupedConfig {
+interface EditableConfig extends Config {
   editedValue: string[];
 }
 
@@ -35,7 +35,7 @@ export class ConfigComponent implements OnInit {
       next: (configs) => {
         this.configs = configs.map(config => ({
           ...config,
-          editedValue: [...config.values]
+          editedValue: JSON.parse(JSON.stringify(config.value))
         }));
         this.loading = false;
       },
@@ -51,32 +51,20 @@ export class ConfigComponent implements OnInit {
   }
 
   isDirty(config: EditableConfig) {
-    return (config.values ?? []).toString() !== config.editedValue.toString();
+    console.log(config.editedValue.toString())
+    return (config.value ?? '').toString() !== config.editedValue.toString();
   }
 
   save(config: EditableConfig) {
     if (!this.isDirty(config) || this.busy) {
       return;
     }
-    if (config.type == ConfigColumnType.NUMBER) {
-      if (config.editedValue.some(e => Number.isNaN(Number(e)))) {
-        this.snackBar.open('Falsches Format für Konfigurationsparameter', 'Oh Oh!', {
-          duration: 5000,
-          panelClass: ['danger-snackbar'],
-          verticalPosition: 'top'
-        });
-        this.reload()
-        return;
-      }
-    }
-
-
     this.busy = true;
     const payload = config.editedValue;
     this.configService.set(config.key, payload).subscribe({
       next: (updated) => {
-        config.values = [...updated[0].values];
-        config.editedValue = [...updated[0].values];
+        config.value = updated.value;
+        config.editedValue = updated.value;
         this.busy = false;
         this.snackBar.open('Konfiguration gespeichert.', 'Super!', {
           duration: 3000,
@@ -95,8 +83,10 @@ export class ConfigComponent implements OnInit {
     });
   }
 
-  isArray(config: EditableConfig) {
-    return ["test"].some(e => config.key === e)
+  getType(config: EditableConfig) {
+    if (Array.isArray(config.value)) return 'array'
+    if (!Number.isNaN(Number(config.value))) return 'number'
+    else return '';
   }
 
   add(config: EditableConfig, event: MatChipInputEvent): void {
@@ -121,7 +111,7 @@ export class ConfigComponent implements OnInit {
   }
 
   reset(config: EditableConfig) {
-    config.editedValue = config.values ?? [];
+    config.editedValue = config.value ?? '';
   }
 
   getLink() {

@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
-import { ConfigColumnType, Config as IConfig } from "../../../output-interfaces/Config";
+import { Config as IConfig } from "../../../output-interfaces/Config";
 
 @Entity()
 export class Config implements IConfig {
@@ -9,9 +9,6 @@ export class Config implements IConfig {
     @Column()
     key: string;
 
-    @Column({nullable: true})
-    value: string | null;
-
-    @Column({default:0})
-    type?: ConfigColumnType;
+    @Column({nullable: true, type: 'simple-json'})
+    value: any;
 }

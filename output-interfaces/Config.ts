@@ -1,19 +1,6 @@
 export interface Config {
     key: string;
-    value: string | null;
-    type?: ConfigColumnType;
-}
-
-export interface GroupedConfig {
-    key: string;
-    values: (string | null)[];
-    type?: ConfigColumnType;
-}
-
-export enum ConfigColumnType {
-    STRING,
-    NUMBER,
-    SECRET
+    value: any;
 }
 
 export class AppError {

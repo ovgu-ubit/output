@@ -20,8 +20,12 @@ export class ConfigController {
     @Post()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'admin', app: 'output' }])
-    async set(@Body('key') key: string, @Body('values') values: (string | null)[]) {
-        return await this.configService.setDatabaseConfig(key, values);
+    async set(@Body('key') key: string, @Body('value') value: any) {
+        let save;
+        if (typeof value === 'string') save = value;
+        else if (Array.isArray(value)) save = value;
+        else save = JSON.parse(value)
+        return await this.configService.setDatabaseConfig(key, save);
     }
 
     @Get('optional_fields')
