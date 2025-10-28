@@ -44,7 +44,7 @@ export class PubMedImportService extends AbstractImportService {
     max = 1000;
     delay = 250;
     parallelCalls = 1;
-    affiliationTags;
+    affiliation_tags;
 
     private newPublications: Publication[] = [];
     private publicationsUpdate = [];
@@ -121,14 +121,14 @@ export class PubMedImportService extends AbstractImportService {
     public async import(update: boolean, by_user?: string) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
 
-        let tags = await this.configService.get('searchTags');
+        let tags = await this.configService.get('search_tags');
         this.searchText = '('
         for (let tag of tags) {
             this.searchText += tag + '[affiliation]+or+'
         }
         this.searchText = this.searchText.slice(0, this.searchText.length - 4) + ')'
 
-        this.affiliationTags = await this.configService.get('affiliationTags');
+        this.affiliation_tags = await this.configService.get('affiliation_tags');
 
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -220,7 +220,7 @@ export class PubMedImportService extends AbstractImportService {
     public authorsInstitution(authors) {
         if (authors && Array.isArray(authors)) {
             let aut = authors.filter(async author =>
-                this.affiliationTags.some(e => {
+                this.affiliation_tags.some(e => {
                     if (Array.isArray(author['AffiliationInfo'])) {
                         return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                     }
@@ -229,7 +229,7 @@ export class PubMedImportService extends AbstractImportService {
                 ));
             return aut.length > 0;
         } else if (authors) {
-            return this.affiliationTags.some(e => {
+            return this.affiliation_tags.some(e => {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
@@ -256,7 +256,7 @@ export class PubMedImportService extends AbstractImportService {
             let aut = authors.filter(e => this.isInstAuthor(e));
             return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? this.findAffAuthor(e)['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
         } else if (authors) {
-            if (authors['AffiliationInfo'] && this.affiliationTags.some(e => {
+            if (authors['AffiliationInfo'] && this.affiliation_tags.some(e => {
                 if (Array.isArray(authors['AffiliationInfo'])) {
                     return authors['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
                 }
@@ -265,7 +265,7 @@ export class PubMedImportService extends AbstractImportService {
         } else return [];
     }
     isInstAuthor(author) {
-        return this.affiliationTags.some(e => {
+        return this.affiliation_tags.some(e => {
             if (Array.isArray(author['AffiliationInfo'])) {
                 return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
             }
@@ -274,7 +274,7 @@ export class PubMedImportService extends AbstractImportService {
         );
     }
     findAffAuthor(author) {
-        return author['AffiliationInfo'].find(e => this.affiliationTags.some(f => {
+        return author['AffiliationInfo'].find(e => this.affiliation_tags.some(f => {
             if (Array.isArray(e['Affiliation'])) return e['Affiliation'].some(g => g['_text'].toLowerCase().includes(f))
             else return e['Affiliation']['_text'].toLowerCase().includes(f)
         }));

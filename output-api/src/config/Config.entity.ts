@@ -6,7 +6,7 @@ export class Config implements IConfig {
     @PrimaryGeneratedColumn()
     id?: number
 
-    @Column()
+    @Column({unique: true})
     key: string;
 
     @Column({nullable: true, type: 'simple-json'})

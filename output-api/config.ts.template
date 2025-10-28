@@ -36,12 +36,12 @@ import { InitService } from "./src/services/init.service";
 
 export default() : AppConfig => ({
     lock_timeout: 10, //in minutes
-    searchTags: [
+    search_tags: [
         "magdeburg",
         "ovgu",
         "guericke"
     ],
-    affiliationTags: [
+    affiliation_tags: [
         "ovgu",
         "guericke",
         "universität magdeburg",

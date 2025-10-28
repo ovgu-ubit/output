@@ -30,7 +30,7 @@ export class AppConfigService {
     }
 
     public async setDatabaseConfig(key: string, value: any) {
-        if (!value) return null;
+        if (!key) return null;
         let row = await this.repository.findOneBy({ key });
         if (!row) return this.repository.save({key, value})
         else {

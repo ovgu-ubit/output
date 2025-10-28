@@ -51,8 +51,7 @@ export class ConfigComponent implements OnInit {
   }
 
   isDirty(config: EditableConfig) {
-    console.log(config.editedValue.toString())
-    return (config.value ?? '').toString() !== config.editedValue.toString();
+    return (config.value ?? '').toString() !== config.editedValue?.toString();
   }
 
   save(config: EditableConfig) {

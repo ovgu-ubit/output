@@ -33,7 +33,7 @@ export class ScopusImportService extends ApiImportOffsetService {
     }
 
     private searchText = '';
-    private affiliationTags;
+    private affiliation_tags;
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -71,10 +71,10 @@ export class ScopusImportService extends ApiImportOffsetService {
     protected parallelCalls = 1;
 
     async setReportingYear(year: string) {
-        (await this.configService.get('searchTags')).forEach(tag => {
+        (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + " or "
         })
-        this.affiliationTags = await this.configService.get('affiliationTags');
+        this.affiliation_tags = await this.configService.get('affiliation_tags');
         this.params = [
             { key: 'query', value: 'AFFIL(' + this.searchText.slice(0, this.searchText.length - 4) + ')+and+PUBYEAR+IS+' + year },
             { key: 'view', value: 'complete' },
@@ -115,8 +115,8 @@ export class ScopusImportService extends ApiImportOffsetService {
         return false;
     }
     private async affiliationTagMatch(affiliation: string) {
-        for (let i = 0; i < this.affiliationTags.length; i++) {
-            if (affiliation.toLowerCase().includes((await this.configService.get('affiliationTags'))[i])) return true;
+        for (let i = 0; i < this.affiliation_tags.length; i++) {
+            if (affiliation.toLowerCase().includes((await this.configService.get('affiliation_tags'))[i])) return true;
         }
         return false;
     }

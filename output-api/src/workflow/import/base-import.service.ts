@@ -73,7 +73,7 @@ export class BASEImportService extends ApiImportOffsetService {
     protected parallelCalls = 1;
 
     async setReportingYear(year: string) {
-        (await this.configService.get('searchTags')).forEach(tag => {
+        (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + "+OR+"
         })
         this.params = [

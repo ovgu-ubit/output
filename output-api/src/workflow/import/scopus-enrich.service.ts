@@ -34,14 +34,14 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
     }
 
     private searchText = '';
-    private affiliationTags;
+    private affiliation_tags;
     private apiKey;
 
     protected async init() {
-        (await this.configService.get('searchTags')).forEach(tag => {
+        (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + " or "
         })
-        this.affiliationTags = await this.configService.get('affiliationTags');
+        this.affiliation_tags = await this.configService.get('affiliation_tags');
         this.apiKey = await this.configService.get('api_key_scopus');
     }
 
@@ -114,8 +114,8 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
         return false;
     }
     private affiliationTagMatch(affiliation: string): boolean {
-        for (let i = 0; i < this.affiliationTags.length; i++) {
-            if (affiliation.toLowerCase().includes(this.affiliationTags[i])) return true;
+        for (let i = 0; i < this.affiliation_tags.length; i++) {
+            if (affiliation.toLowerCase().includes(this.affiliation_tags[i])) return true;
         }
         return false;
     }

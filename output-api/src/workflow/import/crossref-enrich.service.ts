@@ -34,7 +34,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     }
 
     private searchText = '';
-    private affiliationTags = [];
+    private affiliation_tags = [];
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -65,10 +65,10 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     protected parallelCalls = 10;
 
     protected async init() {
-        (await this.configService.get('searchTags')).forEach(tag => {
+        (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + "+"
         })
-        this.affiliationTags = await this.configService.get('affiliationTags')
+        this.affiliation_tags = await this.configService.get('affiliation_tags')
     }
 
     protected importTest(element: any): boolean {
@@ -198,8 +198,8 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     }
 
     private async affiliationIncludesTags(affiliation) {
-        for (let i = 0; i < this.affiliationTags.length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.affiliationTags[i])) return true;
+        for (let i = 0; i < this.affiliation_tags.length; i++) {
+            if (affiliation.name?.toLowerCase().includes(this.affiliation_tags[i])) return true;
         }
         return false;
     }
