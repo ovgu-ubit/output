@@ -3,6 +3,8 @@ import { Reflector } from "@nestjs/core";
 import { PermissionDecoration } from "./permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
 
+export const AUTH_SERVICE = Symbol('AUTH_SERVICE');
+
 @Injectable()
 export abstract class AuthorizationService {
     constructor(protected reflector: Reflector, protected configService: AppConfigService) { }

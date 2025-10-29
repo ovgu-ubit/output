@@ -33,7 +33,7 @@ import { EnvSchemas } from './environment.schema';
         return result.data;
       }
     }),
-    forwardRef(() => AuthorizationModule)
+    forwardRef(() => AuthorizationModule.forRootAsync())
   ],
   controllers: [ConfigController],
   providers: [AppConfigService, DatabaseConfigService],
