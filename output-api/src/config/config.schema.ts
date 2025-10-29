@@ -15,7 +15,7 @@ export type ScopeName = keyof typeof ConfigSchemas;
 export function validateConfigValue(key: string, value: unknown) {
   const schema = ConfigSchemas;
   if (!schema) return; // unbekannter Key → dito
-  const res = (schema[key]).safeParse(value);
+  const res = (schema.shape[key]).safeParse(value);
   if (!res.success) {
     // aussagekräftige Fehlermeldung zurückgeben
     throw new Error(res.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; '));
