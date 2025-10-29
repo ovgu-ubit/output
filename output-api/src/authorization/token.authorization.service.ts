@@ -8,7 +8,7 @@ import { AppConfigService } from "../config/app-config.service";
 
 @Injectable()
 export class TokenAuthorizationService extends AuthorizationService {
-    constructor(protected reflector: Reflector,@Inject(AppConfigService) protected configService: AppConfigService, private jwtService: JwtService, private httpService: HttpService) { 
+    constructor(protected reflector: Reflector, protected configService: AppConfigService, private jwtService: JwtService, private httpService: HttpService) { 
         super(reflector, configService) 
     }
 

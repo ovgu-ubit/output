@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import appConfig from '../../config';
 import { AuthorModule } from '../author/author.module';
-import { AuthorizationModule } from '../authorization/authorization.module';
 import { AppConfigModule } from '../config/app-config.module';
 import { ContractModule } from '../contract/contract.module';
 import { FunderModule } from '../funder/funder.module';
@@ -45,7 +44,6 @@ const filterz = appConfig().filter_services;
       timeout: 50000,
       maxRedirects: 5,
     }),
-    AuthorizationModule,
     ScheduleModule.forRoot()
   ],
   controllers: [

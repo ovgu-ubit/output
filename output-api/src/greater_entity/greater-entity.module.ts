@@ -1,18 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthorizationModule } from '../authorization/authorization.module';
+import { AppConfigModule } from '../config/app-config.module';
 import { PublicationModule } from '../publication/publication.module';
-import { GreaterEntity } from './GreaterEntity.entity';
 import { GEIdentifier } from './GEIdentifier.entity';
+import { GreaterEntity } from './GreaterEntity.entity';
 import { GreaterEntityController } from './GreaterEntityController';
 import { GreaterEntityService } from './greater-entitiy.service';
-import { AppConfigModule } from '../config/app-config.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([GreaterEntity, GEIdentifier]), 
     PublicationModule, 
-    AuthorizationModule,
     AppConfigModule
   ],
   controllers: [GreaterEntityController],

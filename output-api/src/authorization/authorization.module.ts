@@ -23,7 +23,7 @@ export class AuthorizationModule {
           timeout: 50000,
           maxRedirects: 5,
         }),
-        forwardRef(() => AppConfigModule)
+        AppConfigModule
       ],
       controllers: [],
       providers: [

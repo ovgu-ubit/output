@@ -1,14 +1,12 @@
-import { forwardRef, Module, OnModuleInit } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import appConfig from '../../config';
 import { Config } from './Config.entity';
 import { ConfigController } from './ConfigController';
 import { AppConfigService } from './app-config.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import appConfig from '../../config';
-import { DatabaseConfigService } from './database.config.service';
-import { AuthorizationModule } from '../authorization/authorization.module';
 import { CONFIG_DEFAULTS } from './config.defaults';
-import { z } from 'zod';
+import { DatabaseConfigService } from './database.config.service';
 import { EnvSchemas } from './environment.schema';
 
 @Module({
@@ -32,8 +30,7 @@ import { EnvSchemas } from './environment.schema';
         }
         return result.data;
       }
-    }),
-    forwardRef(() => AuthorizationModule.forRootAsync())
+    })
   ],
   controllers: [ConfigController],
   providers: [AppConfigService, DatabaseConfigService],

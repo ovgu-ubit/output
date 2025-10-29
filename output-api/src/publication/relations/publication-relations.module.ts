@@ -1,19 +1,17 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { AppConfigModule } from "../../config/app-config.module";
+import { AuthorPublication } from "./AuthorPublication.entity";
+import { Role } from "./Role.entity";
 import { RoleController } from "./RoleController";
 import { RoleService } from "./role.service";
-import { AuthorizationModule } from "../../authorization/authorization.module";
-import { Role } from "./Role.entity";
-import { AuthorPublication } from "./AuthorPublication.entity";
-import { AppConfigModule } from "../../config/app-config.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
           AuthorPublication,
           Role
-        ])
-    , AuthorizationModule,
+        ]),
     AppConfigModule
   ],
   controllers: [RoleController],
