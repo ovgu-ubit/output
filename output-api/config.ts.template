@@ -35,26 +35,6 @@ import { MissingInvoiceDataService } from "./src/workflow/filter/missing-invoice
 import { InitService } from "./src/services/init.service";
 
 export default() : AppConfig => ({
-    lock_timeout: 10, //in minutes
-    search_tags: [
-        "magdeburg",
-        "ovgu",
-        "guericke"
-    ],
-    affiliation_tags: [
-        "ovgu",
-        "guericke",
-        "universität magdeburg",
-        "university magdeburg",
-        "university of magdeburg",
-        "universitätsklinikum magdeburg",
-        "universitätsklinik magdeburg",
-        "universitätsfrauenklinik magdeburg",
-        "university hospital magdeburg",
-        "universitätsmedizin magdeburg"
-    ],
-    ror_id: 'https://ror.org/xxxxx',
-    openalex_id: 'xxxxx',
     api_key_unpaywall: 'xxx@xxx.de',
     api_key_oam: 'xxxx',
     api_key_scopus: 'xxxx',
@@ -102,7 +82,6 @@ export default() : AppConfig => ({
         {path: 'no_inst', class: MissingInstFilterService},
         {path: 'no_invoice', class: MissingInvoiceDataService},
     ],
-    authorization_service: TokenAuthorizationService,
     optional_fields: {
         abstract: true,
         citation: true,
