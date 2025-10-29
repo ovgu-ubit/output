@@ -1,10 +1,10 @@
 import { DynamicModule, forwardRef, Global, Module } from '@nestjs/common';
 import { AUTH_SERVICE, AuthorizationService } from './authorization.service';
-import { JwtModule } from '@nestjs/jwt';
-import { HttpModule } from '@nestjs/axios';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { HttpModule, HttpService } from '@nestjs/axios';
 import { AppConfigModule } from '../config/app-config.module';
 import { ConfigService } from '@nestjs/config';
-import { ModuleRef } from '@nestjs/core';
+import { ModuleRef, Reflector } from '@nestjs/core';
 import path = require('path');
 import * as fs from 'fs';
 import { pathToFileURL } from 'url';
@@ -42,10 +42,6 @@ export class AuthorizationModule {
 
           await ensureTsSupportIfNeeded(abs);
           
-
-          // dynamisch importieren (ESM-kompatibel)
-          //const modUrl = pathToFileURL(abs).toString();
-          //const mod = await import(modUrl);
           const mod = require(abs)
 
           const Impl = mod?.[exported];
@@ -54,8 +50,14 @@ export class AuthorizationModule {
             throw new Error(`Export ${exported} in ${abs} ist keine Klasse/Funktion.`);
           }
 
+          const [reflector, configSvc, jwt, http] = await Promise.all([
+          ref.resolve(Reflector, undefined, { strict: false }),
+          ref.resolve(AppConfigService, undefined, { strict: false }),
+          ref.resolve(JwtService, undefined, { strict: false }),
+          ref.resolve(HttpService, undefined, { strict: false }),
+]);
           // Wenn die Klasse @Injectable-abhängigkeiten hat, löst ModuleRef.create() diese auf:
-          const instance = await ref.create(Impl as any);
+          const instance = new Impl(reflector, configSvc, jwt, http)//await ref.create(Impl as any);
 
           // Sanity-Check auf das erwartete API
           if (typeof (instance as any)?.verify !== 'function') {
