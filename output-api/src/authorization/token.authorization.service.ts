@@ -1,5 +1,5 @@
 import { HttpService } from "@nestjs/axios";
-import { ExecutionContext, Injectable, InternalServerErrorException, Req } from "@nestjs/common";
+import { ExecutionContext, forwardRef, Inject, Injectable, InternalServerErrorException, Req } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PermissionDecoration } from "./permission.decorator";
@@ -8,7 +8,7 @@ import { AppConfigService } from "../config/app-config.service";
 
 @Injectable()
 export class TokenAuthorizationService extends AuthorizationService {
-    constructor(protected reflector: Reflector, protected configService: AppConfigService, private jwtService: JwtService, private httpService: HttpService) { 
+    constructor(protected reflector: Reflector,@Inject(AppConfigService) protected configService: AppConfigService, private jwtService: JwtService, private httpService: HttpService) { 
         super(reflector, configService) 
     }
 

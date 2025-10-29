@@ -9,6 +9,7 @@ import path = require('path');
 import * as fs from 'fs';
 import { pathToFileURL } from 'url';
 import { AppConfigService } from '../config/app-config.service';
+import { AccessGuard } from './access.guard';
 
 @Global()
 @Module({})
@@ -26,12 +27,12 @@ export class AuthorizationModule {
       ],
       controllers: [],
       providers: [{
-        provide: AuthorizationService,
+        provide: AUTH_SERVICE,
         inject: [AppConfigService, ModuleRef],
 
-        useFactory: async (cfg: ConfigService, ref: ModuleRef) => {
-          const rel = await cfg.get<string>('authorization_service')!;
-          const exported = await cfg.get<string>('authorization_export')!;
+        useFactory: async (cfg: AppConfigService, ref: ModuleRef) => {
+          const rel = await cfg.get('authorization_service')!;
+          const exported = await cfg.get('authorization_export')!;
           const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), rel);
           if (!fs.existsSync(abs)) {
             throw new Error(`authorization_service not found: ${abs}`);
@@ -56,12 +57,12 @@ export class AuthorizationModule {
 
           // Sanity-Check auf das erwartete API
           if (typeof (instance as any)?.verify !== 'function') {
-            throw new Error(`AuthorizationService in ${abs} hat keine Methode "validate(credentials)"`);
+            throw new Error(`AuthorizationService in ${abs} hat keine Methode "verify(credentials)"`);
           }
           return instance;
         }
       },],
-      exports: [AuthorizationService]
+      exports: [AUTH_SERVICE]
     }
 
   }
