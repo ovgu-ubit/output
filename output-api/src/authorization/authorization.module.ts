@@ -26,7 +26,9 @@ export class AuthorizationModule {
         forwardRef(() => AppConfigModule)
       ],
       controllers: [],
-      providers: [{
+      providers: [
+        AccessGuard,
+        {
         provide: AUTH_SERVICE,
         inject: [AppConfigService, ModuleRef],
 
@@ -62,7 +64,7 @@ export class AuthorizationModule {
           return instance;
         }
       },],
-      exports: [AUTH_SERVICE]
+      exports: [AccessGuard, AUTH_SERVICE]
     }
 
   }
