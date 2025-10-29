@@ -8,6 +8,8 @@ import appConfig from '../../config';
 import { DatabaseConfigService } from './database.config.service';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { CONFIG_DEFAULTS } from './config.defaults';
+import { z } from 'zod';
+import { EnvSchemas } from './environment.schema';
 
 @Module({
   imports: [
@@ -19,7 +21,17 @@ import { CONFIG_DEFAULTS } from './config.defaults';
     ConfigModule.forRoot({
       isGlobal: false,
       envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
-      load: [appConfig]
+      load: [appConfig],
+      validate: (env) => {
+        const schema = EnvSchemas
+          .passthrough();
+
+        const result = schema.safeParse(env);
+        if (!result.success) {
+          throw new Error(`Invalid environment configuration: ${result.error}`);
+        }
+        return result.data;
+      }
     }),
     forwardRef(() => AuthorizationModule)
   ],

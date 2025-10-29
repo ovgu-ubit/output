@@ -63,7 +63,7 @@ export class AppConfigService {
             {return { key, value }}
         );
 
-        if (missing.length) {
+        if (missing1.length) {
             await this.repository.save(missing1);
             // optional: Events/Metrics
         }
