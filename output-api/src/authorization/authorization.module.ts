@@ -31,6 +31,7 @@ export class AuthorizationModule {
 
         useFactory: async (cfg: ConfigService, ref: ModuleRef) => {
           const rel = await cfg.get<string>('authorization_service')!;
+          const exported = await cfg.get<string>('authorization_export')!;
           const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), rel);
           if (!fs.existsSync(abs)) {
             throw new Error(`authorization_service not found: ${abs}`);
@@ -40,19 +41,21 @@ export class AuthorizationModule {
           
 
           // dynamisch importieren (ESM-kompatibel)
-          const modUrl = pathToFileURL(abs).toString();
-          const mod = await import(modUrl);
+          //const modUrl = pathToFileURL(abs).toString();
+          //const mod = await import(modUrl);
+          const mod = require(abs)
 
-          const Impl = mod?.["verify"];
+          const Impl = mod?.[exported];
+
           if (typeof Impl !== 'function') {
-            throw new Error(`Export "verify" in ${abs} ist keine Klasse/Funktion.`);
+            throw new Error(`Export ${exported} in ${abs} ist keine Klasse/Funktion.`);
           }
 
           // Wenn die Klasse @Injectable-abhängigkeiten hat, löst ModuleRef.create() diese auf:
           const instance = await ref.create(Impl as any);
 
           // Sanity-Check auf das erwartete API
-          if (typeof (instance as any)?.validate !== 'function') {
+          if (typeof (instance as any)?.verify !== 'function') {
             throw new Error(`AuthorizationService in ${abs} hat keine Methode "validate(credentials)"`);
           }
           return instance;
