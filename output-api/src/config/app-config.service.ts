@@ -26,16 +26,46 @@ export class AppConfigService {
 
     public listDatabaseConfig(key?: string) {
         if (!key) return this.repository.find();
-        else return this.repository.findOneBy({key})
+        else return this.repository.findOneBy({ key })
     }
 
     public async setDatabaseConfig(key: string, value: any) {
         if (!key) return null;
         let row = await this.repository.findOneBy({ key });
-        if (!row) return this.repository.save({key, value})
+        if (!row) return this.repository.save({ key, value })
         else {
             row.value = value
             return this.repository.save(row)
+        }
+    }
+
+    async reconcileDefaults(defaults: Record<string, unknown>) {
+        const wanted = Object.keys(defaults);
+        let where = [];
+        for (let key of wanted) {
+            where.push({ key })
+        }
+
+        // schon vorhandene holen
+        const existing = await this.repository.find({
+            where,
+            select: ['key'],
+        });
+        const have = existing.map((r) => `${r.key}`);
+
+        // fehlende bilden
+        let missing = Object.entries(defaults).filter(([key, value]) => {
+            return !have.find(e => 
+                e == key)
+        })
+        
+        let missing1 = missing.map(([key, value]) =>
+            {return { key, value }}
+        );
+
+        if (missing.length) {
+            await this.repository.save(missing1);
+            // optional: Events/Metrics
         }
     }
 }

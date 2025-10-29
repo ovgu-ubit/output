@@ -1,13 +1,15 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { CONFIG_DEFAULTS } from './config.defaults';
 
 export const ConfigSchemas = z.object({
     reporting_year: z.number().int().min(1850).default(CONFIG_DEFAULTS.reporting_year),
     institution: z.string().default(CONFIG_DEFAULTS.institution),
     institution_short_label: z.string().max(10).default(CONFIG_DEFAULTS.institution_short_label),
-    search_tags: z.array(z.string()),
-    affiliation_tags: z.array(z.string()),
-  // weitere Scopes ...
+    search_tags: z.array(z.string()).default(CONFIG_DEFAULTS.search_tags),
+    affiliation_tags: z.array(z.string()).default(CONFIG_DEFAULTS.affiliation_tags),
+    ror_id: z.string().regex(/^https:\/\/ror\.org\/.*/).default(CONFIG_DEFAULTS.ror_id),
+    openalex_id: z.string(),
+    
 });
 
 export type ScopeName = keyof typeof ConfigSchemas;

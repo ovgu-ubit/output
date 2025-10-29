@@ -10,8 +10,6 @@ import { AbstractImportService } from '../workflow/import/abstract-import';
 import { AbstractPlausibilityService } from '../workflow/check/abstract-plausibility.service';
 
 export interface AppConfig {
-    ror_id? : string;
-    openalex_id? : string;
     api_key_unpaywall? : string;
     api_key_oam? : string;
     api_key_scopus?: string;

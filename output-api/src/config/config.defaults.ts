@@ -22,5 +22,7 @@ export const CONFIG_DEFAULTS = {
         "unifrauenklinik magdeburg",
         "university hospital magdeburg",
         "universitätsmedizin magdeburg"
-    ]
+    ],
+    ror_id: "https://ror.org/xxxxx",
+    openalex_id: "xxxxx"
 };

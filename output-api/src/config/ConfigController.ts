@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query, UseGuards, UsePipes } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
@@ -14,7 +14,7 @@ export class ConfigController {
     @Get()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'admin', app: 'output' }])
-    async list(@Query("key") key?:string) {
+    async list(@Query("key") key?: string) {
         return await this.configService.listDatabaseConfig(key);
     }
 
@@ -22,15 +22,23 @@ export class ConfigController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'admin', app: 'output' }])
     @UsePipes(
-    new ConfigValueValidationPipe(),
-  )
-    async set(@Body('key') key: string, @Body('value') value: any) {
+        new ConfigValueValidationPipe(),
+    )
+    @ApiBody({
+        schema: {
+            example: {
+                key: 'reporting_year',
+                value: 2025
+            }
+        }
+    })
+    async set(@Body() value: any) {
         /*let save;
         if (typeof value === 'string') save = value;
         else if (Array.isArray(value)) save = value;
         else save = JSON.parse(value)
         return await this.configService.setDatabaseConfig(key, save);*/
-        return await this.configService.setDatabaseConfig(key, value);
+        return await this.configService.setDatabaseConfig(value.key, value.value);
     }
 
     @Get('optional_fields')

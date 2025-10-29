@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Config } from './Config.entity';
 import { ConfigController } from './ConfigController';
@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import appConfig from '../../config';
 import { DatabaseConfigService } from './database.config.service';
 import { AuthorizationModule } from '../authorization/authorization.module';
+import { CONFIG_DEFAULTS } from './config.defaults';
 
 @Module({
   imports: [
@@ -26,4 +27,11 @@ import { AuthorizationModule } from '../authorization/authorization.module';
   providers: [AppConfigService, DatabaseConfigService],
   exports: [AppConfigService]
 })
-export class AppConfigModule { }
+export class AppConfigModule implements OnModuleInit {
+  constructor(private readonly cfg: AppConfigService) { }
+
+  async onModuleInit() {
+    await this.cfg.reconcileDefaults(CONFIG_DEFAULTS); // legt fehlende Keys an
+  }
+
+}
