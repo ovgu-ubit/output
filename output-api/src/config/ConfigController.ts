@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards, UsePipes } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { ConfigValueValidationPipe } from "./config-value-validation.pipe";
 
 @Controller("config")
 @ApiTags("config")
@@ -20,6 +21,9 @@ export class ConfigController {
     @Post()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'admin', app: 'output' }])
+    @UsePipes(
+    new ConfigValueValidationPipe(),
+  )
     async set(@Body('key') key: string, @Body('value') value: any) {
         /*let save;
         if (typeof value === 'string') save = value;
