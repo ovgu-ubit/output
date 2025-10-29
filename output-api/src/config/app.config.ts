@@ -20,7 +20,6 @@ export interface AppConfig {
     check_services: {path: string, class: Type<AbstractPlausibilityService>}[];
     export_services: {path: string, class: Type<AbstractExportService>}[];
     filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex|Publication>>}[];
-    authorization_service: Type<AuthorizationService>;
     optional_fields: {
         abstract: boolean;
         citation: boolean;

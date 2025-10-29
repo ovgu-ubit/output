@@ -1,4 +1,4 @@
-import { DynamicModule, forwardRef, Module } from '@nestjs/common';
+import { DynamicModule, forwardRef, Global, Module } from '@nestjs/common';
 import { AUTH_SERVICE, AuthorizationService } from './authorization.service';
 import { JwtModule } from '@nestjs/jwt';
 import { HttpModule } from '@nestjs/axios';
@@ -8,12 +8,14 @@ import { ModuleRef } from '@nestjs/core';
 import path = require('path');
 import * as fs from 'fs';
 import { pathToFileURL } from 'url';
+import { AppConfigService } from '../config/app-config.service';
 
+@Global()
 @Module({})
 export class AuthorizationModule {
   static forRootAsync(): DynamicModule {
     return {
-      module: class {},
+      module: AuthorizationModule,
       imports: [
         JwtModule.register({}),
         HttpModule.register({
@@ -25,21 +27,22 @@ export class AuthorizationModule {
       controllers: [],
       providers: [{
         provide: AuthorizationService,
-        inject: [ConfigService, ModuleRef],
+        inject: [AppConfigService, ModuleRef],
 
         useFactory: async (cfg: ConfigService, ref: ModuleRef) => {
-          const rel = cfg.get<string>('authorization_service')!;
-
+          const rel = await cfg.get<string>('authorization_service')!;
           const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), rel);
           if (!fs.existsSync(abs)) {
             throw new Error(`authorization_service not found: ${abs}`);
           }
 
           await ensureTsSupportIfNeeded(abs);
+          
 
           // dynamisch importieren (ESM-kompatibel)
           const modUrl = pathToFileURL(abs).toString();
           const mod = await import(modUrl);
+
           const Impl = mod?.["verify"];
           if (typeof Impl !== 'function') {
             throw new Error(`Export "verify" in ${abs} ist keine Klasse/Funktion.`);
