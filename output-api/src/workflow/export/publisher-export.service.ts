@@ -4,13 +4,11 @@ import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex
 import { Publication } from '../../publication/core/Publication.entity';
 import { PublisherService } from '../../publisher/publisher.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { ReportItemService } from '../report-item.service';
 
+@ExportService({path: 'publisher'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class PublisherExportService extends AbstractExportService {
 
     quote = '"';

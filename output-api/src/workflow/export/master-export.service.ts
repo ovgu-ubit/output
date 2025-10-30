@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { Publication } from '../../publication/core/Publication.entity';
@@ -9,10 +9,8 @@ import { InvoiceService } from '../../invoice/invoice.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@ExportService({path: 'master'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class MasterExportService extends AbstractExportService {
 
     quote = '"';
@@ -24,7 +22,7 @@ export class MasterExportService extends AbstractExportService {
         this.df = new Intl.DateTimeFormat('de-DE');
     }
 
-    protected name = 'Master-Export';
+    protected name = 'Publikationen-Export';
 
     public async export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string) {
         this.status_text = 'Started on ' + new Date();

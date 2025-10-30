@@ -10,7 +10,7 @@ import { AppConfigService } from "../../config/app-config.service";
 import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
-import { AbstractFilterService } from "../../workflow/filter/abstract-filter.service";
+import { AbstractFilterService, getFilterServiceMeta } from "../../workflow/filter/abstract-filter.service";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -21,6 +21,13 @@ export class PublicationController {
         private appConfigService: AppConfigService,
         private configService: AppConfigService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
+
+      list() {
+        return this.filterServices.map(i => {
+          const meta = getFilterServiceMeta(i.constructor as Function)!;
+          return { path: meta.path };
+        });
+      }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -196,7 +203,7 @@ export class PublicationController {
     async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
         let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (let path of paths) {
-            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+            let so = this.list().findIndex(e => e.path === path)
             if (so === -1) throw new NotFoundException();
             res = await this.filterServices[so].filter(res)
         }
@@ -206,9 +213,9 @@ export class PublicationController {
     @Get('filter')
     async get_filter() {
         let result = [];
-        for (let i = 0; i < (await this.configService.get('filter_services')).length; i++) {
+        for (let i = 0; i < this.list().length; i++) {
             result.push({
-                path: (await this.configService.get('filter_services'))[i].path,
+                path: this.list()[i].path,
                 label: this.filterServices[i].getName()
             })
         }

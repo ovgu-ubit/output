@@ -14,10 +14,5 @@ export interface AppConfig {
     api_key_oam? : string;
     api_key_scopus?: string;
     init_service: Type<InitService>;
-    import_services: {path: string, class: Type<AbstractImportService>}[];
     doi_import_service: string;
-    enrich_services: {path: string, class: Type<AbstractImportService>}[];
-    check_services: {path: string, class: Type<AbstractPlausibilityService>}[];
-    export_services: {path: string, class: Type<AbstractExportService>}[];
-    filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex|Publication>>}[];
 }

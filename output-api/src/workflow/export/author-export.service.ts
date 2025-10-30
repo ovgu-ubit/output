@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { Publication } from '../../publication/core/Publication.entity';
@@ -7,10 +7,8 @@ import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { AuthorService } from '../../author/author.service';
 
+@ExportService({path: 'author'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class AuthorExportService extends AbstractExportService {
 
     quote = '"';

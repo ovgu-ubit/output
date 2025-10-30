@@ -6,7 +6,7 @@ import { PublicationIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { Publication } from "../publication/core/Publication.entity";
-import { AbstractExportService } from "./export/abstract-export.service";
+import { AbstractExportService, getExportServiceMeta } from "./export/abstract-export.service";
 import { AbstractFilterService } from "./filter/abstract-filter.service";
 import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
@@ -20,14 +20,21 @@ export class ExportController {
     @Inject('Exports') private exportServices: AbstractExportService[],
     @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
 
+   list() {
+      return this.exportServices.map(i => {
+        const meta = getExportServiceMeta(i.constructor as Function)!;
+        return { path: meta.path };
+      });
+    }
+
   @Get()
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async getExports() {
     let result = [];
-    for (let i = 0; i < (await this.configService.get('export_services')).length; i++) {
+    for (let i = 0; i < this.list().length; i++) {
       result.push({
-        path: (await this.configService.get('export_services'))[i].path,
+        path: this.list()[i].path,
         label: this.exportServices[i].getName()
       })
     }
@@ -78,7 +85,7 @@ export class ExportController {
   @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
   @Body('withMasterData') withMasterData?: boolean) {
     //res.setHeader('Content-type', 'text/plain')
-    let so = (await this.configService.get('export_services')).findIndex(e => e.path === path)
+    let so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
 
     if (this.exportServices[so].isExcelResponse()) {
@@ -93,7 +100,7 @@ export class ExportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async exportMasterStatus(@Param('path') path: string) {
-    let so = (await this.configService.get('export_services')).findIndex(e => e.path === path)
+    let so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.exportServices[so].status();
   }

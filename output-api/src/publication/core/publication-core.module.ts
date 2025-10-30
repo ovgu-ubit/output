@@ -11,8 +11,12 @@ import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
 import { PublicationService } from './publication.service';
+import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
+import { AbstractFilterService, getFilterServiceMeta } from '../../workflow/filter/abstract-filter.service';
+import { MissingInvoiceDataService } from '../../workflow/filter/missing-invoice-data-filter.service';
+import { MissingInstFilterService } from '../../workflow/filter/missing-inst-filter.service';
+import { MissingInstAuthorFilterService } from '../../workflow/filter/missing-inst-author-filter.service';
 
-const filterz = appConfig().filter_services;
 
 @Module({
   imports: [
@@ -25,18 +29,28 @@ const filterz = appConfig().filter_services;
     PublicationRelationsModule,
     InstituteModule,
     InvoiceModule,
-    AppConfigModule],
+    AppConfigModule,
+    DiscoveryModule
+  ],
   controllers: [PublicationController],
-  providers: [PublicationService,
-    ...filterz.map(e => e.class),
+  providers: [PublicationService, MissingInstAuthorFilterService, MissingInstFilterService, MissingInvoiceDataService,
     {
       provide: 'Filters',
-      useFactory: (...filterz) => {
-        return filterz
-      },
-      inject: filterz.map(e => e.class)
-    },
+      inject: [DiscoveryService, ModuleRef],
+      useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
+        let providers = discovery.getProviders();
+        let candidates = providers
+          .map(p => p.metatype as Function | undefined)
+          .filter(Boolean)
+          .filter((t) => !!getFilterServiceMeta(t!)) as Function[];
+
+        let instances = await Promise.all(
+          candidates.map(async (t) => ref.create(t as any)),
+        );
+        return instances as AbstractFilterService<any>[];
+      }
+    }
   ],
-  exports: [PublicationService, TypeOrmModule]
+  exports: [PublicationService, TypeOrmModule, 'Filters']
 })
 export class PublicationCoreModule { }
