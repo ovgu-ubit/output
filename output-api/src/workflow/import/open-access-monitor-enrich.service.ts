@@ -20,7 +20,7 @@ import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
-@EnrichService({path: 'oam'})
+@EnrichService({path: 'open_access_monitor'})
 @Injectable()
 export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
 

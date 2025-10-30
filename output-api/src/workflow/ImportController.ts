@@ -22,11 +22,13 @@ export class ImportController {
     private csvService: CSVImportService, private excelService: ExcelImportService) { }
 
 
-  list() {
-    return this.importServices.map(i => {
+  async list() {
+    let allowed = await this.configService.get("import_services")
+    let res = this.importServices.map(i => {
       const meta = getImportServiceMeta(i.constructor as Function)!;
-      return { path: meta.path };
-    });
+      return { path: meta.path, allowed: allowed[meta.path] };
+    })
+    return res;
   }
 
   @Get()
@@ -35,8 +37,8 @@ export class ImportController {
   async getImports() {
     let result = [];
     for (let i = 0; i < this.importServices.length; i++) {
-      result.push({
-        path: this.list()[i].path,
+      if ((await this.list())[i].allowed) result.push({
+        path: (await this.list())[i].path,
         label: this.importServices[i].getName()
       })
     }
@@ -216,7 +218,7 @@ export class ImportController {
   })
   async importStart(@Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean) {
     if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw new BadRequestException('reporting year is mandatory');
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     await this.importServices[so].setReportingYear(reporting_year);
     return this.importServices[so].import(update);
@@ -226,7 +228,7 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importStatus(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.importServices[so].status();
   }
@@ -235,7 +237,7 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importConfig(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.importServices[so].getUpdateMapping();
   }
@@ -243,7 +245,7 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.importServices[so].setUpdateMapping(mapping);
   }

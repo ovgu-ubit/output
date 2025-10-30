@@ -35,9 +35,25 @@ export const ConfigSchemas = z.object({
         import_date: z.boolean(),
         data_source: z.boolean(),
     }).default(CONFIG_DEFAULTS.pub_index_columns),
+    import_services: z.object({
+        base: z.boolean(),
+        bibliography_md: z.boolean(),
+        crossref: z.boolean(),
+        open_access_monitor: z.boolean(),
+        openalex: z.boolean(),
+        pubmed: z.boolean(),
+        scopus: z.boolean()
+    }).default(CONFIG_DEFAULTS.import_services),
+    enrich_services: z.object({
+        crossref: z.boolean(),
+        doaj: z.boolean(),
+        open_access_monitor: z.boolean(),
+        openalex: z.boolean(),
+        openapc: z.boolean(),
+        scopus: z.boolean(),
+        unpaywall: z.boolean()
+    }).default(CONFIG_DEFAULTS.enrich_services)
 });
-
-export type ScopeName = keyof typeof ConfigSchemas;
 
 export function validateConfigValue(key: string, value: unknown) {
   const schema = ConfigSchemas;

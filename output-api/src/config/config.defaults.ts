@@ -31,7 +31,6 @@ export const CONFIG_DEFAULTS = {
     optional_fields_pub_date_submitted: false,
     optional_fields_pub_date_print: false,
     optional_fields_peer_reviewed: false,
-    
     pub_index_columns: {
         title: true,
         doi: true,
@@ -50,5 +49,23 @@ export const CONFIG_DEFAULTS = {
         edit_date: true,
         import_date: false,
         data_source: false,
+    },
+    import_services: {
+        base: true,
+        bibliography_md: false,
+        crossref: true,
+        open_access_monitor: true,
+        openalex: true,
+        pubmed: true,
+        scopus: true
+    },
+    enrich_services: {
+        crossref: true,
+        doaj: true,
+        open_access_monitor: true,
+        openalex: true,
+        openapc: true,
+        scopus: true,
+        unpaywall: true
     }
 };

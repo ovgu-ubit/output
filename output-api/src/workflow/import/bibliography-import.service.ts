@@ -21,7 +21,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
 import { ImportService } from './abstract-import';
 
-@ImportService({path: 'bibliography-md'})
+@ImportService({path: 'bibliography_md'})
 @Injectable()
 export class BibliographyImportService extends ApiImportOffsetService {
 

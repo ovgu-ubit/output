@@ -17,19 +17,20 @@ export class EnrichController {
     private configService: AppConfigService,
     @Inject('Enrichs') private enrichServices: ApiEnrichDOIService[]) { }
 
-  list() {
+  async list() {
+    let allowed = await this.configService.get("enrich_services")
     return this.enrichServices.map(i => {
       const meta = getEnrichServiceMeta(i.constructor as Function)!;
-      return { path: meta.path };
+      return { path: meta.path, allowed: allowed[meta.path] };
     });
   }
 
   @Get()
   async getImports() {
     let result = [];
-    for (let i = 0; i < this.list().length; i++) {
-      result.push({
-        path: this.list()[i].path,
+    for (let i = 0; i < (await this.list()).length; i++) {
+      if ((await this.list())[i].allowed) result.push({
+        path: (await this.list())[i].path,
         label: this.enrichServices[i].getName()
       })
     }
@@ -86,7 +87,7 @@ export class EnrichController {
   })
   async enrichUnpaywall(@Param('path') path: string, @Body('reporting_year') reporting_year: number, @Body('ids') ids: number[]) {
     if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw new BadRequestException('reporting year or array of IDs is mandatory');
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     if (ids && ids.length >= 0) {
       this.enrichServices[so].setWhereClause({ where: { id: In(ids) } });
@@ -102,7 +103,7 @@ export class EnrichController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async enrichUnpaywallStatus(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].status();
   }
@@ -110,7 +111,7 @@ export class EnrichController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importUnpaywallConfig(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].getUpdateMapping();
   }
@@ -118,7 +119,7 @@ export class EnrichController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importUnpaywallConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
-    let so = this.list().findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].setUpdateMapping(mapping);
   }

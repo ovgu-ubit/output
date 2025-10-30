@@ -31,11 +31,6 @@ export class ConfigController {
         }
     })
     async set(@Body() value: any) {
-        /*let save;
-        if (typeof value === 'string') save = value;
-        else if (Array.isArray(value)) save = value;
-        else save = JSON.parse(value)
-        return await this.configService.setDatabaseConfig(key, save);*/
         return await this.configService.setDatabaseConfig(value.key, value.value);
     }
 

@@ -21,7 +21,7 @@ import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ImportService } from './abstract-import';
 
-@ImportService({path: 'oam'})
+@ImportService({path: 'open_access_monitor'})
 @Injectable()
 export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 
