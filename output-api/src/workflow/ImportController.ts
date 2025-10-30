@@ -9,6 +9,7 @@ import { AbstractImportService, getImportServiceMeta } from "./import/abstract-i
 import { CSVImportService } from "./import/csv-import.service";
 import { ExcelImportService } from "./import/excel-import.service";
 import { ReportItemService } from "./report-item.service";
+import { AppConfigService } from "../config/app-config.service";
 
 @Controller("import")
 @ApiTags("import")
@@ -16,6 +17,7 @@ export class ImportController {
 
   constructor(
     private reportService: ReportItemService,
+    private configService: AppConfigService, 
     @Inject('Imports') private importServices: AbstractImportService[],
     private csvService: CSVImportService, private excelService: ExcelImportService) { }
 

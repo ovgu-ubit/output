@@ -21,7 +21,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { EnrichService } from './api-enrich-doi.service';
 
+@EnrichService({path: 'doaj'})
 @Injectable()
 /**
  * abstract class for all API enrichs that are based on DOI URL request

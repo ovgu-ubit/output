@@ -22,8 +22,22 @@ import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
 import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
 import { AbstractImportService, getImportServiceMeta } from './import/abstract-import';
+import { ApiEnrichDOIService, getEnrichServiceMeta } from './import/api-enrich-doi.service';
+import { BASEImportService } from './import/base-import.service';
+import { BibliographyImportService } from './import/bibliography-import.service';
+import { CrossrefImportService } from './import/crossref-import.service';
+import { OpenAccessMonitorImportService } from './import/open-access-monitor-import.service';
+import { OpenAlexImportService } from './import/openalex-import.service';
+import { PubMedImportService } from './import/pubmed-import';
+import { ScopusImportService } from './import/scopus-import.service';
+import { CrossrefEnrichService } from './import/crossref-enrich.service';
+import { DOAJEnrichService } from './import/doaj-enrich.service';
+import { OpenAccessMonitorEnrichService } from './import/open-access-monitor-enrich.service';
+import { OpenAlexEnrichService } from './import/openalex-enrich.service';
+import { OpenAPCEnrichService } from './import/openapc-enrich.service';
+import { ScopusEnrichService } from './import/scopus-enrich.service';
+import { UnpaywallEnrichService } from './import/unpaywall-enrich.service';
 
-const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
 const checks = appConfig().check_services;
 const exportz = appConfig().export_services;
@@ -57,15 +71,11 @@ const filterz = appConfig().filter_services;
   ],
   providers: [
     ReportItemService,
-    CSVImportService, ExcelImportService,
+    CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,BibliographyImportService,
+    CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DiscoveryService,
-    ...imports.map(e => e.class),
     {
       provide: 'Imports',
-      /*useFactory: (...imports) => {
-        return imports
-      },
-      inject: imports.map(e => e.class)*/
       inject: [DiscoveryService, ModuleRef],
       useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
         let providers = discovery.getProviders();
@@ -80,13 +90,21 @@ const filterz = appConfig().filter_services;
         return instances as AbstractImportService[];
       }
     },
-    ...enrichs.map(e => e.class),
     {
       provide: 'Enrichs',
-      useFactory: (...enrichs) => {
-        return enrichs
-      },
-      inject: enrichs.map(e => e.class)
+      inject: [DiscoveryService, ModuleRef],
+      useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
+        let providers = discovery.getProviders();
+        let candidates = providers
+          .map(p => p.metatype as Function | undefined)
+          .filter(Boolean)
+          .filter((t) => !!getEnrichServiceMeta(t!)) as Function[];
+
+        let instances = await Promise.all(
+          candidates.map(async (t) => ref.create(t as any)),
+        );
+        return instances as ApiEnrichDOIService[];
+      }
     },
     ...checks.map(e => e.class),
     {
@@ -112,6 +130,6 @@ const filterz = appConfig().filter_services;
       },
       inject: filterz.map(e => e.class)
     },],
-  exports: []
+  exports: ['Imports', 'Enrichs']
 })
 export class WorkflowModule { }

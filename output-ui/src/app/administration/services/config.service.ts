@@ -11,14 +11,14 @@ export class ConfigService {
   constructor(private http: HttpClient) { }
 
   list() {
-    return this.http.get<Config[]>(environment.api + 'config');
+    return this.http.get<Config[]>(environment.api + 'config', { withCredentials: true });
   }
 
-  get(key:string) {
-    return this.http.get<Config>(environment.api + 'config?key='+key);
+  get(key: string) {
+    return this.http.get<Config>(environment.api + 'config?key=' + key, { withCredentials: true });
   }
 
   set(key: string, value: any) {
-    return this.http.post<Config>(environment.api + 'config', { key, value });
+    return this.http.post<Config>(environment.api + 'config', { key, value }, { withCredentials: true });
   }
 }

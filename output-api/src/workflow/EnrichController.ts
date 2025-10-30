@@ -1,12 +1,12 @@
-import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Res, Inject, Param, NotFoundException, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { Between, In } from "typeorm";
-import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
+import { Between, In } from "typeorm";
 import { UpdateMapping } from "../../../output-interfaces/Config";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { ApiEnrichDOIService } from "./import/api-enrich-doi.service";
+import { ApiEnrichDOIService, getEnrichServiceMeta } from "./import/api-enrich-doi.service";
+import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
 
 @Controller("enrich")
@@ -17,13 +17,21 @@ export class EnrichController {
     private configService: AppConfigService,
     @Inject('Enrichs') private enrichServices: ApiEnrichDOIService[]) { }
 
+  list() {
+    return this.enrichServices.map(i => {
+      const meta = getEnrichServiceMeta(i.constructor as Function)!;
+      return { path: meta.path };
+    });
+  }
+
   @Get()
   async getImports() {
     let result = [];
-    for (let i=0;i<(await this.configService.get('enrich_services')).length;i++) {
+    for (let i = 0; i < this.list().length; i++) {
       result.push({
-        path: (await this.configService.get('enrich_services'))[i].path, 
-        label: this.enrichServices[i].getName()})
+        path: this.list()[i].path,
+        label: this.enrichServices[i].getName()
+      })
     }
     return result;
   }
@@ -78,7 +86,7 @@ export class EnrichController {
   })
   async enrichUnpaywall(@Param('path') path: string, @Body('reporting_year') reporting_year: number, @Body('ids') ids: number[]) {
     if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw new BadRequestException('reporting year or array of IDs is mandatory');
-    let so = (await this.configService.get('enrich_services')).findIndex(e => e.path === path)
+    let so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     if (ids && ids.length >= 0) {
       this.enrichServices[so].setWhereClause({ where: { id: In(ids) } });
@@ -94,7 +102,7 @@ export class EnrichController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async enrichUnpaywallStatus(@Param('path') path: string) {
-    let so = (await this.configService.get('enrich_services')).findIndex(e => e.path === path)
+    let so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].status();
   }
@@ -102,7 +110,7 @@ export class EnrichController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importUnpaywallConfig(@Param('path') path: string) {
-    let so = (await this.configService.get('enrich_services')).findIndex(e => e.path === path)
+    let so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].getUpdateMapping();
   }
@@ -110,7 +118,7 @@ export class EnrichController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async importUnpaywallConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
-    let so = (await this.configService.get('enrich_services')).findIndex(e => e.path === path)
+    let so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.enrichServices[so].setUpdateMapping(mapping);
   }

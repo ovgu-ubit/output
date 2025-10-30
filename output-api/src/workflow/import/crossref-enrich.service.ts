@@ -16,10 +16,11 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@EnrichService({path: 'crossref'})
 @Injectable()
 export class CrossrefEnrichService extends ApiEnrichDOIService {
 
