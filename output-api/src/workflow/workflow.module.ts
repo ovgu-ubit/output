@@ -37,6 +37,9 @@ import { OpenAlexEnrichService } from './import/openalex-enrich.service';
 import { OpenAPCEnrichService } from './import/openapc-enrich.service';
 import { ScopusEnrichService } from './import/scopus-enrich.service';
 import { UnpaywallEnrichService } from './import/unpaywall-enrich.service';
+import { DOIandTitleDuplicateCheck } from './check/doi-and-title-duplicate.service';
+import { PublisherDOIPrefixService } from './check/publisher_doi_prefix.service';
+import { AbstractPlausibilityService, getPlausibilityServiceMeta } from './check/abstract-plausibility.service';
 
 const enrichs = appConfig().enrich_services;
 const checks = appConfig().check_services;
@@ -73,6 +76,7 @@ const filterz = appConfig().filter_services;
     ReportItemService,
     CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,BibliographyImportService,
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
+    DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     DiscoveryService,
     {
       provide: 'Imports',
@@ -105,14 +109,21 @@ const filterz = appConfig().filter_services;
         );
         return instances as ApiEnrichDOIService[];
       }
-    },
-    ...checks.map(e => e.class),
-    {
+    },{
       provide: 'Checks',
-      useFactory: (...checks) => {
-        return checks
-      },
-      inject: checks.map(e => e.class)
+      inject: [DiscoveryService, ModuleRef],
+      useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
+        let providers = discovery.getProviders();
+        let candidates = providers
+          .map(p => p.metatype as Function | undefined)
+          .filter(Boolean)
+          .filter((t) => !!getPlausibilityServiceMeta(t!)) as Function[];
+
+        let instances = await Promise.all(
+          candidates.map(async (t) => ref.create(t as any)),
+        );
+        return instances as AbstractPlausibilityService[];
+      }
     },
     ...exportz.map(e => e.class),
     {

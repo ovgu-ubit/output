@@ -3,6 +3,13 @@ import { ReportItemService } from '../report-item.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { Publication } from '../../publication/core/Publication.entity';
 
+export function PlausibilityService(meta: {path: string}): ClassDecorator {
+  return (target) => Reflect.defineMetadata("check_service", meta, target);
+}
+export function getPlausibilityServiceMeta(target: Function): {path: string} | undefined {
+  return Reflect.getMetadata("check_service", target);
+}
+
 @Injectable()
 export abstract class AbstractPlausibilityService {
 
