@@ -84,8 +84,7 @@ export class ConfigComponent implements OnInit {
 
   getType(config: EditableConfig) {
     if (Array.isArray(config.value)) return 'array'
-    if (!Number.isNaN(Number(config.value))) return 'number'
-    else return '';
+    else return typeof config.value;
   }
 
   add(config: EditableConfig, event: MatChipInputEvent): void {

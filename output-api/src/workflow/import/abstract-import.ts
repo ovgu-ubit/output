@@ -320,9 +320,9 @@ export abstract class AbstractImportService {
             funders: funder_ents,
             best_oa_license: this.getLicense(item)?.trim(),
             invoices,
-            abstract: await this.configService.get('optional_fields.abstract') ? this.getAbstract(item)?.trim() : undefined,
-            page_count: await this.configService.get('optional_fields.page_count') ? this.getPageCount(item) : undefined,
-            peer_reviewed: await this.configService.get('optional_fields.peer_reviewed') ? this.getPeerReviewed(item) : undefined,
+            abstract: await this.configService.get('optional_fields_abstract') ? this.getAbstract(item)?.trim() : undefined,
+            page_count: await this.configService.get('optional_fields_page_count') ? this.getPageCount(item) : undefined,
+            peer_reviewed: await this.configService.get('optional_fields_peer_reviewed') ? this.getPeerReviewed(item) : undefined,
             status,
             add_info: remark,
             cost_approach,
@@ -335,9 +335,9 @@ export abstract class AbstractImportService {
         if (pub_date instanceof Date) obj.pub_date = pub_date? pub_date : undefined;
         else {
             if (pub_date.pub_date && !isNaN(pub_date.pub_date as any)) obj.pub_date = pub_date.pub_date;
-            if (await this.configService.get('optional_fields.pub_date_print') && pub_date.pub_date_print && !isNaN(pub_date.pub_date_print as any)) obj.pub_date_print = pub_date.pub_date_print;
+            if (await this.configService.get('optional_fields_pub_date_print') && pub_date.pub_date_print && !isNaN(pub_date.pub_date_print as any)) obj.pub_date_print = pub_date.pub_date_print;
             if (pub_date.pub_date_accepted && !isNaN(pub_date.pub_date_accepted as any)) obj.pub_date_accepted = pub_date.pub_date_accepted;
-            if (await this.configService.get('optional_fields.pub_date_submitted') && pub_date.pub_date_submitted && !isNaN(pub_date.pub_date_submitted as any)) obj.pub_date_submitted = pub_date.pub_date_submitted;
+            if (await this.configService.get('optional_fields_pub_date_submitted') && pub_date.pub_date_submitted && !isNaN(pub_date.pub_date_submitted as any)) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
         //process citation information
         let cit = this.getCitation(item);
@@ -484,7 +484,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields.pub_date_print') && (!orig.pub_date_print || (orig.pub_date_print.getDate() === 1 && orig.pub_date_print.getMonth() === 0))) {
+                    if (await this.configService.get('optional_fields_pub_date_print') && (!orig.pub_date_print || (orig.pub_date_print.getDate() === 1 && orig.pub_date_print.getMonth() === 0))) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -492,7 +492,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields.pub_date_submitted') && (!orig.pub_date_submitted || (orig.pub_date_submitted.getDate() === 1 && orig.pub_date_submitted.getMonth() === 0))) {
+                    if (await this.configService.get('optional_fields_pub_date_submitted') && (!orig.pub_date_submitted || (orig.pub_date_submitted.getDate() === 1 && orig.pub_date_submitted.getMonth() === 0))) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
@@ -509,7 +509,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields.pub_date_print') && pd.pub_date_print) {
+                    if (await this.configService.get('optional_fields_pub_date_print') && pd.pub_date_print) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -517,7 +517,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields.pub_date_submitted') && pd.pub_date_submitted) {
+                    if (await this.configService.get('optional_fields_pub_date_submitted') && pd.pub_date_submitted) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
@@ -742,7 +742,7 @@ export abstract class AbstractImportService {
                 else orig.status = 0;
                 break;
         }
-        if (await this.configService.get('optional_fields.abstract') && !orig.locked_biblio) {
+        if (await this.configService.get('optional_fields_abstract') && !orig.locked_biblio) {
             switch (this.updateMapping.abstract) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -759,7 +759,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (await this.configService.get('optional_fields.citation') && !orig.locked_biblio) {
+        if (await this.configService.get('optional_fields_citation') && !orig.locked_biblio) {
             switch (this.updateMapping.citation) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -784,7 +784,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (await this.configService.get('optional_fields.page_count') && !orig.locked_biblio) {
+        if (await this.configService.get('optional_fields_page_count') && !orig.locked_biblio) {
             switch (this.updateMapping.page_count) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -801,7 +801,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (await this.configService.get('optional_fields.peer_reviewed') && !orig.locked_biblio) {
+        if (await this.configService.get('optional_fields_peer_reviewed') && !orig.locked_biblio) {
             switch (this.updateMapping.peer_reviewed) {
                 case UpdateOptions.IGNORE:
                     break;

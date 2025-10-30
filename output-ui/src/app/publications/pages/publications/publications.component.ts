@@ -94,7 +94,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
       return this.configService2.get("institution_short_label").pipe(map(data => {
-        this.institution = data[0].values[0];
+        this.institution = data.value
         let header = this.headers.find(e => e.colName === 'authors_inst')
         if (header) header.colTitle = 'Personen ' + this.institution;
       }))

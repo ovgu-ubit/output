@@ -3,14 +3,15 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { MatChipListbox } from '@angular/material/chips';
-import { ConfigService } from 'src/app/services/config.service';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
+import { ConfigService } from 'src/app/administration/services/config.service';
+import { map, merge } from 'rxjs';
 
 @Component({
-    selector: 'app-filter-view',
-    templateUrl: './filter-view.component.html',
-    styleUrls: ['./filter-view.component.css'],
-    standalone: false
+  selector: 'app-filter-view',
+  templateUrl: './filter-view.component.html',
+  styleUrls: ['./filter-view.component.css'],
+  standalone: false
 })
 export class FilterViewComponent implements OnInit {
 
@@ -65,16 +66,25 @@ export class FilterViewComponent implements OnInit {
     { key: 'contract_id', label: 'ID eines Vertrags' },
     { key: 'funder', label: 'Förderer' },
     { key: 'funder_id', label: 'ID eines Förderer' },
-    { key: 'cost_center', label: 'Kostenstelle'  },
-    { key: 'cost_center_id', label: 'ID einer Kostenstelle', type: 'number'  },
-    { key: 'cost_type', label: 'Kostenart'  },
-    { key: 'cost_type_id', label: 'ID einer Kostenart', type: 'number'  },
-    { key: 'invoice_year', label: 'Rechnungsjahr', type: 'number'  },
+    { key: 'cost_center', label: 'Kostenstelle' },
+    { key: 'cost_center_id', label: 'ID einer Kostenstelle', type: 'number' },
+    { key: 'cost_type', label: 'Kostenart' },
+    { key: 'cost_type_id', label: 'ID einer Kostenart', type: 'number' },
+    { key: 'invoice_year', label: 'Rechnungsjahr', type: 'number' },
     { key: 'edit_date', label: 'Letzte Bearbeitung', type: 'date' },
     { key: 'import_date', label: 'Importdatum', type: 'date' },
   ]
 
-  constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService, private configService:ConfigService,
+  optional_fields: {
+    abstract?: boolean,
+    citation?: boolean,
+    page_count?: boolean,
+    pub_date_submitted?: boolean,
+    pub_date_print?: boolean,
+    peer_reviewed?: boolean
+  } = {};
+
+  constructor(private formBuilder: FormBuilder, public dialogRef: MatDialogRef<FilterViewComponent>, private publicationService: PublicationService, private configService: ConfigService,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
 
   ngOnInit(): void {
@@ -82,20 +92,39 @@ export class FilterViewComponent implements OnInit {
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
-    this.configService.getOptionalFields().subscribe({
+
+    let ob$ = this.configService.get("optional_fields_abstract").pipe(map(data => {
+      this.optional_fields.abstract = data.value;
+    }));
+    ob$ = merge(ob$, this.configService.get("optional_fields_citation").pipe(map(data => {
+      this.optional_fields.citation = data.value;
+    })));
+    ob$ = merge(ob$, this.configService.get("optional_fields_page_count").pipe(map(data => {
+      this.optional_fields.page_count = data.value;
+    })));
+    ob$ = merge(ob$, this.configService.get("optional_fields_pub_date_submitted").pipe(map(data => {
+      this.optional_fields.pub_date_submitted = data.value;
+    })));
+    ob$ = merge(ob$, this.configService.get("optional_fields_pub_date_print").pipe(map(data => {
+      this.optional_fields.pub_date_print = data.value;
+    })));
+    ob$ = merge(ob$, this.configService.get("optional_fields_peer_reviewed").pipe(map(data => {
+      this.optional_fields.peer_reviewed = data.value;
+    })));
+    ob$.subscribe({
       next: data => {
-        if (data['editors']) this.keys.push({ key: 'editors', label: 'Herausgeber*innen' })
-        if (data['abstract']) this.keys.push({ key: 'abstract', label: 'Abstract' })
-        if (data['citation']) {
+        if (this.optional_fields['editors']) this.keys.push({ key: 'editors', label: 'Herausgeber*innen' })
+        if (this.optional_fields['abstract']) this.keys.push({ key: 'abstract', label: 'Abstract' })
+        if (this.optional_fields['citation']) {
           this.keys.push({ key: 'volume', label: 'Volume', type: 'number' })
           this.keys.push({ key: 'issue', label: 'Issue', type: 'number' })
           this.keys.push({ key: 'first_page', label: 'Erste Seite', type: 'number' })
           this.keys.push({ key: 'last_page', label: 'Letzte Seite', type: 'number' })
         }
-        if (data['page_count']) this.keys.push({ key: 'page_count', label: 'Seitenzahl', type: 'number' })
-        if (data['peer_reviewed']) this.keys.push({ key: 'peer_reviewed', label: 'Peer-Reviewed', type: 'boolean' })
-        if (data['pub_date_print']) this.keys.push({ key: 'pub_date_print', label: 'Publikationsdatum (print)', type: 'date' })
-        if (data['pub_date_submitted']) this.keys.push({ key: 'pub_date_submitted', label: 'Datum der Einreichung', type: 'date' })
+        if (this.optional_fields['page_count']) this.keys.push({ key: 'page_count', label: 'Seitenzahl', type: 'number' })
+        if (this.optional_fields['peer_reviewed']) this.keys.push({ key: 'peer_reviewed', label: 'Peer-Reviewed', type: 'boolean' })
+        if (this.optional_fields['pub_date_print']) this.keys.push({ key: 'pub_date_print', label: 'Publikationsdatum (print)', type: 'date' })
+        if (this.optional_fields['pub_date_submitted']) this.keys.push({ key: 'pub_date_submitted', label: 'Datum der Einreichung', type: 'date' })
       }
     })
 
@@ -214,7 +243,7 @@ export class FilterViewComponent implements OnInit {
   display(idx: number, op: { op: CompareOperation, label: string, type?: string[] }): boolean {
     if (!this.getFiltersControls()[idx].get('field').value) return true;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    let type = key && key.type? key.type : 'string';
+    let type = key && key.type ? key.type : 'string';
     if (op.type.find(e => e === type)) return true;
     else return false;
   }

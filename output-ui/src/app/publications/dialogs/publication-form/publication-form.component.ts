@@ -6,7 +6,7 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ConfigService } from 'src/app/services/config.service';
-import { ConfigService as ConfigService2} from 'src/app/administration/services/config.service';
+import { ConfigService as ConfigService2 } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
@@ -47,10 +47,10 @@ export class PubValidator {
 }
 
 @Component({
-    selector: 'app-publication-form',
-    templateUrl: './publication-form.component.html',
-    styleUrls: ['./publication-form.component.css'],
-    standalone: false
+  selector: 'app-publication-form',
+  templateUrl: './publication-form.component.html',
+  styleUrls: ['./publication-form.component.css'],
+  standalone: false
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   institution: string;
@@ -77,7 +77,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   today = new Date();
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
-  optional_fields;
+  optional_fields: {
+    abstract?: boolean,
+    citation?: boolean,
+    page_count?: boolean,
+    pub_date_submitted?: boolean,
+    pub_date_print?: boolean,
+    peer_reviewed?: boolean
+  } = {};
 
   publisherForm = PublisherFormComponent;
   contractForm = ContractFormComponent;
@@ -152,12 +159,28 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    let ob$ = this.configService.getOptionalFields().pipe(map(data => {
-      this.optional_fields = data;
-    }
-    ));
+    let ob$ = this.configService2.get("optional_fields_abstract").pipe(map(data => {
+      this.optional_fields.abstract = data.value;
+    }));
+    ob$ = merge(ob$, this.configService2.get("optional_fields_citation").pipe(map(data => {
+      this.optional_fields.citation = data.value;
+    })));
+    ob$ = merge(ob$, this.configService2.get("optional_fields_page_count").pipe(map(data => {
+      this.optional_fields.page_count = data.value;
+    })));
+    ob$ = merge(ob$, this.configService2.get("optional_fields_pub_date_submitted").pipe(map(data => {
+      this.optional_fields.pub_date_submitted = data.value;
+    })));
+    ob$ = merge(ob$, this.configService2.get("optional_fields_pub_date_print").pipe(map(data => {
+      this.optional_fields.pub_date_print = data.value;
+    })));
+    ob$ = merge(ob$, this.configService2.get("optional_fields_peer_reviewed").pipe(map(data => {
+      this.optional_fields.peer_reviewed = data.value;
+    })));
+
+
     ob$ = merge(ob$, this.configService2.get("institution_short_label").pipe(map(data => {
-      this.institution = data[0].values[0];
+      this.institution = data.value;
     }
     )));
     ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {

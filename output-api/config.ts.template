@@ -82,14 +82,6 @@ export default() : AppConfig => ({
         {path: 'no_inst', class: MissingInstFilterService},
         {path: 'no_invoice', class: MissingInvoiceDataService},
     ],
-    optional_fields: {
-        abstract: true,
-        citation: true,
-        page_count: true,
-        pub_date_submitted: true,
-        pub_date_print: true,
-        peer_reviewed: true
-    },
     pub_index_columns: [
         "title",
         "doi",

@@ -10,7 +10,12 @@ export const ConfigSchemas = z.object({
     affiliation_tags: z.array(z.string()).default(CONFIG_DEFAULTS.affiliation_tags),
     ror_id: z.string().regex(/^https:\/\/ror\.org\/.*/).default(CONFIG_DEFAULTS.ror_id),
     openalex_id: z.string(),
-    
+    optional_fields_abstract: z.boolean().default(CONFIG_DEFAULTS.optional_fields_abstract),
+    optional_fields_citation: z.boolean().default(CONFIG_DEFAULTS.optional_fields_citation),
+    optional_fields_page_count: z.boolean().default(CONFIG_DEFAULTS.optional_fields_page_count),
+    optional_fields_pub_date_submitted: z.boolean().default(CONFIG_DEFAULTS.optional_fields_pub_date_submitted),
+    optional_fields_pub_date_print: z.boolean().default(CONFIG_DEFAULTS.optional_fields_pub_date_print),
+    optional_fields_peer_reviewed: z.boolean().default(CONFIG_DEFAULTS.optional_fields_peer_reviewed),
 });
 
 export type ScopeName = keyof typeof ConfigSchemas;

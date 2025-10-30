@@ -41,11 +41,6 @@ export class ConfigController {
         return await this.configService.setDatabaseConfig(value.key, value.value);
     }
 
-    @Get('optional_fields')
-    getOptionalFields() {
-        return this.configService.get('optional_fields');
-    }
-
     @Get('pub_index_columns')
     getPubIndexColumns() {
         return this.configService.get('pub_index_columns');
