@@ -19,7 +19,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
+import { ImportService } from './abstract-import';
 
+@ImportService({path: 'bibliography-md'})
 @Injectable()
 export class BibliographyImportService extends ApiImportOffsetService {
 
@@ -61,7 +63,7 @@ export class BibliographyImportService extends ApiImportOffsetService {
     protected offset_count = 0;
     protected offset_start = 1;
     protected params: { key: string, value: string }[] = [{ key: 'year', value: '2022' }];//TODO year from DB?
-    protected name = 'Bibliography';
+    protected name = 'Bibliographie Magdeburg';
     protected parallelCalls = 1;
 
     setReportingYear(year: string) {

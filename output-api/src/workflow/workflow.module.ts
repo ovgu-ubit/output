@@ -20,6 +20,8 @@ import { ExcelImportService } from './import/excel-import.service';
 import { ImportController } from './ImportController';
 import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
+import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
+import { AbstractImportService, getImportServiceMeta } from './import/abstract-import';
 
 const imports = appConfig().import_services;
 const enrichs = appConfig().enrich_services;
@@ -44,7 +46,8 @@ const filterz = appConfig().filter_services;
       timeout: 50000,
       maxRedirects: 5,
     }),
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    DiscoveryModule
   ],
   controllers: [
     ImportController,
@@ -55,46 +58,60 @@ const filterz = appConfig().filter_services;
   providers: [
     ReportItemService,
     CSVImportService, ExcelImportService,
+    DiscoveryService,
     ...imports.map(e => e.class),
-  {
-    provide: 'Imports',
-    useFactory: (...imports) => {
-      return imports
+    {
+      provide: 'Imports',
+      /*useFactory: (...imports) => {
+        return imports
+      },
+      inject: imports.map(e => e.class)*/
+      inject: [DiscoveryService, ModuleRef],
+      useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
+        let providers = discovery.getProviders();
+        let candidates = providers
+          .map(p => p.metatype as Function | undefined)
+          .filter(Boolean)
+          .filter((t) => !!getImportServiceMeta(t!)) as Function[];
+
+        let instances = await Promise.all(
+          candidates.map(async (t) => ref.create(t as any)),
+        );
+        return instances as AbstractImportService[];
+      }
     },
-    inject: imports.map(e => e.class)
-  },
-  ...enrichs.map(e => e.class),
-  {
-    provide: 'Enrichs',
-    useFactory: (...enrichs) => {
-      return enrichs
+    ...enrichs.map(e => e.class),
+    {
+      provide: 'Enrichs',
+      useFactory: (...enrichs) => {
+        return enrichs
+      },
+      inject: enrichs.map(e => e.class)
     },
-    inject: enrichs.map(e => e.class)
-  },
-  ...checks.map(e => e.class),
-  {
-    provide: 'Checks',
-    useFactory: (...checks) => {
-      return checks
+    ...checks.map(e => e.class),
+    {
+      provide: 'Checks',
+      useFactory: (...checks) => {
+        return checks
+      },
+      inject: checks.map(e => e.class)
     },
-    inject: checks.map(e => e.class)
-  },
-  ...exportz.map(e => e.class),
-  {
-    provide: 'Exports',
-    useFactory: (...exportz) => {
-      return exportz
+    ...exportz.map(e => e.class),
+    {
+      provide: 'Exports',
+      useFactory: (...exportz) => {
+        return exportz
+      },
+      inject: exportz.map(e => e.class)
     },
-    inject: exportz.map(e => e.class)
-  },
-  ...filterz.map(e => e.class),
-  {
-    provide: 'Filters',
-    useFactory: (...filterz) => {
-      return filterz
-    },
-    inject: filterz.map(e => e.class)
-  },],
+    ...filterz.map(e => e.class),
+    {
+      provide: 'Filters',
+      useFactory: (...filterz) => {
+        return filterz
+      },
+      inject: filterz.map(e => e.class)
+    },],
   exports: []
 })
 export class WorkflowModule { }

@@ -19,7 +19,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { ImportService } from './abstract-import';
 
+@ImportService({path: 'oam'})
 @Injectable()
 export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 

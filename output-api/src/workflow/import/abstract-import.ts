@@ -24,6 +24,13 @@ import { Role } from '../../publication/relations/Role.entity';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+export function ImportService(meta: {path: string}): ClassDecorator {
+  return (target) => Reflect.defineMetadata("import_service", meta, target);
+}
+export function getImportServiceMeta(target: Function): {path: string} | undefined {
+  return Reflect.getMetadata("import_service", target);
+}
+
 @Injectable()
 /**
  * abstract class for all imports

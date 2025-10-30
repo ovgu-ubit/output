@@ -19,14 +19,12 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { AbstractImportService } from './abstract-import';
+import { AbstractImportService, ImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@ImportService({path: 'pubmed'})
 @Injectable()
-/**
- * abstract class for all API imports that are based on pagesize and offsets
- */
 export class PubMedImportService extends AbstractImportService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
