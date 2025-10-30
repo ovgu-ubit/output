@@ -16,6 +16,25 @@ export const ConfigSchemas = z.object({
     optional_fields_pub_date_submitted: z.boolean().default(CONFIG_DEFAULTS.optional_fields_pub_date_submitted),
     optional_fields_pub_date_print: z.boolean().default(CONFIG_DEFAULTS.optional_fields_pub_date_print),
     optional_fields_peer_reviewed: z.boolean().default(CONFIG_DEFAULTS.optional_fields_peer_reviewed),
+    pub_index_columns: z.object({
+        title: z.boolean(),
+        doi: z.boolean(),
+        link: z.boolean(),
+        authors: z.boolean(),
+        authors_inst: z.boolean(),
+        corr_inst: z.boolean(),
+        greater_entity: z.boolean(),
+        oa_category: z.boolean(),
+        pub_type: z.boolean(),
+        contract: z.boolean(),
+        publisher: z.boolean(),
+        locked_status: z.boolean(),
+        status: z.boolean(),
+        pub_date: z.boolean(),
+        edit_date: z.boolean(),
+        import_date: z.boolean(),
+        data_source: z.boolean(),
+    }).default(CONFIG_DEFAULTS.pub_index_columns),
 });
 
 export type ScopeName = keyof typeof ConfigSchemas;

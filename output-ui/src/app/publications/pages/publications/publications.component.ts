@@ -73,25 +73,25 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       })
     }))
 
-    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(concatMap(data => {
+    ob$ = merge(ob$, this.configService2.get("pub_index_columns").pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
-      if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
-      if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
-      if (data.includes("link")) headers.push({ colName: 'link', colTitle: 'Link', type: 'link' })
-      if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Personen' })
-      if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Personen ' + this.institution, type: 'authors' })
-      if (data.includes("corr_inst")) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
-      if (data.includes("pub_type")) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
-      if (data.includes("greater_entity")) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
-      if (data.includes("publisher")) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
-      if (data.includes("contract")) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
-      if (data.includes("oa_category")) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
-      if (data.includes("locked_status")) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
-      if (data.includes("status")) headers.push({ colName: 'status', colTitle: 'Status', type: 'number' })
-      if (data.includes("pub_date")) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
-      if (data.includes("edit_date")) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
-      if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
-      if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
+      if (data.value["title"]) headers.push({ colName: 'title', colTitle: 'Titel' })
+      if (data.value["doi"]) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
+      if (data.value["link"]) headers.push({ colName: 'link', colTitle: 'Link', type: 'link' })
+      if (data.value["authors"]) headers.push({ colName: 'authors', colTitle: 'Personen' })
+      if (data.value["authors_inst"]) headers.push({ colName: 'authors_inst', colTitle: 'Personen ' + this.institution, type: 'authors' })
+      if (data.value["corr_inst"]) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
+      if (data.value["pub_type"]) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
+      if (data.value["greater_entity"]) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
+      if (data.value["publisher"]) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
+      if (data.value["contract"]) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
+      if (data.value["oa_category"]) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
+      if (data.value["locked_status"]) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
+      if (data.value["status"]) headers.push({ colName: 'status', colTitle: 'Status', type: 'number' })
+      if (data.value["pub_date"]) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
+      if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
+      if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
+      if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
       return this.configService2.get("institution_short_label").pipe(map(data => {
         this.institution = data.value

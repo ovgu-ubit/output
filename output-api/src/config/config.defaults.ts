@@ -31,4 +31,24 @@ export const CONFIG_DEFAULTS = {
     optional_fields_pub_date_submitted: false,
     optional_fields_pub_date_print: false,
     optional_fields_peer_reviewed: false,
+    
+    pub_index_columns: {
+        title: true,
+        doi: true,
+        link: false,
+        authors: true,
+        authors_inst: true,
+        corr_inst: true,
+        greater_entity: true,
+        oa_category: true,
+        pub_type: true,
+        contract: true,
+        publisher: true,
+        locked_status: false,
+        status: true,
+        pub_date: true,
+        edit_date: true,
+        import_date: false,
+        data_source: false,
+    }
 };

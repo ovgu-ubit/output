@@ -46,6 +46,12 @@
               (matChipInputTokenEnd)="add(element, $event)" />
           </mat-chip-grid>
         </mat-form-field>
+        }  @else if (this.getType(element) === 'object') {
+            <mat-chip-listbox multiple="true">
+              @for (key of this.getKeys(element.editedValue); track key) {
+                <mat-chip-option [selected]="element.editedValue[key]" (selectionChange)="this.flipKey($event, element, key)">{{key}}</mat-chip-option>
+              }
+            </mat-chip-listbox>
         } @else {
         <mat-form-field appearance="outline" class="value-field">
           <textarea matInput rows="2" [(ngModel)]="element.editedValue" [disabled]="element.busy || loading"></textarea>

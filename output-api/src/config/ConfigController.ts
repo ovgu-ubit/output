@@ -12,8 +12,6 @@ export class ConfigController {
     constructor(private configService: AppConfigService) { }
 
     @Get()
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'admin', app: 'output' }])
     async list(@Query("key") key?: string) {
         return await this.configService.listDatabaseConfig(key);
     }
@@ -39,11 +37,6 @@ export class ConfigController {
         else save = JSON.parse(value)
         return await this.configService.setDatabaseConfig(key, save);*/
         return await this.configService.setDatabaseConfig(value.key, value.value);
-    }
-
-    @Get('pub_index_columns')
-    getPubIndexColumns() {
-        return this.configService.get('pub_index_columns');
     }
 
     @Get('doi_import')

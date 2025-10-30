@@ -51,7 +51,7 @@ export class ConfigComponent implements OnInit {
   }
 
   isDirty(config: EditableConfig) {
-    return (config.value ?? '').toString() !== config.editedValue?.toString();
+    return JSON.stringify(config.value ?? '') !== JSON.stringify(config.editedValue);
   }
 
   save(config: EditableConfig) {
@@ -85,6 +85,14 @@ export class ConfigComponent implements OnInit {
   getType(config: EditableConfig) {
     if (Array.isArray(config.value)) return 'array'
     else return typeof config.value;
+  }
+
+  getKeys(obj:any) {
+    return Object.keys(obj);
+  }
+
+  flipKey(event, config: EditableConfig, key: string) {
+    config.editedValue[key] = event.selected;
   }
 
   add(config: EditableConfig, event: MatChipInputEvent): void {

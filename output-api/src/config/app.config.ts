@@ -20,5 +20,4 @@ export interface AppConfig {
     check_services: {path: string, class: Type<AbstractPlausibilityService>}[];
     export_services: {path: string, class: Type<AbstractExportService>}[];
     filter_services: {path: string, class: Type<AbstractFilterService<PublicationIndex|Publication>>}[];
-    pub_index_columns: string[];
 }
