@@ -4,9 +4,10 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { Identifiable, IIdentifier } from '../../../../../output-interfaces/Publication';
 
 @Component({
-  selector: 'app-id-table',
-  templateUrl: './id-table.component.html',
-  styleUrl: './id-table.component.css'
+    selector: 'app-id-table',
+    templateUrl: './id-table.component.html',
+    styleUrl: './id-table.component.css',
+    standalone: false
 })
 export class IdTableComponent<T extends Identifiable<T>> {
 

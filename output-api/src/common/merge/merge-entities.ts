@@ -1,7 +1,7 @@
 import { DeepPartial, FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
-import { Author } from '../../author/Author';
+import { Author } from '../../author/Author.entity';
 import { PublicationService } from '../../publication/core/publication.service';
-import { AuthorPublication } from '../../publication/relations/AuthorPublication';
+import { AuthorPublication } from '../../publication/relations/AuthorPublication.entity';
 
 export type MergeError = 'find' | 'update' | 'delete';
 

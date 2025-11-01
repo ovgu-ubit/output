@@ -12,6 +12,7 @@ import { CsvFormatComponent } from './components/csv-format/csv-format.component
 import { LogDialogComponent } from './components/log-dialog/log-dialog.component';
 import { TableModule } from '../table/table.module';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ConfigComponent } from './pages/config/config.component';
 
 @NgModule({
   declarations: [
@@ -23,7 +24,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     PlausibilityComponent,
     ImportConfigComponent,
     CsvFormatComponent,
-    LogDialogComponent
+    LogDialogComponent,
+    ConfigComponent
   ],
   imports: [
     TableModule,

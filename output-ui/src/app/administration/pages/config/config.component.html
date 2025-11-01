@@ -1,0 +1,80 @@
+<app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+
+<div class="config-wrapper">
+  <div class="config-toolbar">
+    <button mat-stroked-button class="secondary-button" (click)="reload()" [disabled]="loading">
+      <mat-icon>refresh</mat-icon>
+      Aktualisieren
+    </button>
+  </div>
+
+  <mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+  <table mat-table [dataSource]="configs" class="mat-elevation-z1" *ngIf="configs.length">
+    <ng-container matColumnDef="key">
+      <th mat-header-cell *matHeaderCellDef> Schlüssel </th>
+      <td mat-cell *matCellDef="let element"> {{element.key}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="value">
+      <th mat-header-cell *matHeaderCellDef> Wert </th>
+      <td mat-cell *matCellDef="let element">
+        @if (this.getType(element) === 'number') {
+        <mat-form-field appearance="outline" class="value-field">
+          <input matInput type="number" [disabled]="element.busy || loading" [(ngModel)]="element.editedValue">
+        </mat-form-field>
+        }
+        @else if (this.getType(element) === 'boolean') {
+        <mat-checkbox [(ngModel)]="element.editedValue">
+        </mat-checkbox>
+        } @else if (this.getType(element) === 'array') {
+        <mat-form-field appearance="outline" class="value-field">
+          <mat-chip-grid #chipGrid>
+            @for (value of element.editedValue; track value) {
+            <mat-chip-row (removed)="remove(element, value)" [editable]="true" (edited)="edit(element, value, $event)">
+              <button matChipEdit>
+                <mat-icon>edit</mat-icon>
+              </button>
+              {{value}}
+              <button matChipRemove>
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+            }
+            <input placeholder="Wert hinzufügen" [matChipInputFor]="chipGrid"
+              [matChipInputSeparatorKeyCodes]="this.separatorKeys" [matChipInputAddOnBlur]="true"
+              (matChipInputTokenEnd)="add(element, $event)" />
+          </mat-chip-grid>
+        </mat-form-field>
+        }  @else if (this.getType(element) === 'object') {
+            <mat-chip-listbox multiple="true">
+              @for (key of this.getKeys(element.editedValue); track key) {
+                <mat-chip-option [selected]="element.editedValue[key]" (selectionChange)="this.flipKey($event, element, key)">{{key}}</mat-chip-option>
+              }
+            </mat-chip-listbox>
+        } @else {
+        <mat-form-field appearance="outline" class="value-field">
+          <textarea matInput rows="2" [(ngModel)]="element.editedValue" [disabled]="element.busy || loading"></textarea>
+        </mat-form-field>
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef> Aktionen </th>
+      <td mat-cell *matCellDef="let element">
+        <button mat-stroked-button class="primary-button" (click)="save(element)"
+          [hidden]="!isDirty(element) || element.busy || loading">
+          Speichern
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+  <div class="empty-state" *ngIf="!loading && !configs.length">
+    Keine Konfiguration gefunden.
+  </div>
+</div>

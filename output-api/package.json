@@ -46,7 +46,8 @@
       "swagger-ui-express": "^5.0.1",
       "typeorm": "^0.3.20",
       "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-      "xml-js": "^1.6.11"
+      "xml-js": "^1.6.11",
+      "zod": "^4.1.12"
    },
    "scripts": {
       "prebuild": "rimraf dist",

@@ -4,7 +4,7 @@ Web application for managing and analyzing publications of universities
 
 ## Installation
 ### Requirements
-- Node.JS 20
+- Node.JS 22
 - Installed DBMS such as Postgres with an existing given database with owner rights for the given user
 
 ### File actions

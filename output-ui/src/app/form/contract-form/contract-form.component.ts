@@ -4,9 +4,10 @@ import { ContractService } from 'src/app/services/entities/contract.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 
 @Component({
-  selector: 'app-contract-form',
-  templateUrl: './contract-form.component.html',
-  styleUrls: ['./contract-form.component.css']
+    selector: 'app-contract-form',
+    templateUrl: './contract-form.component.html',
+    styleUrls: ['./contract-form.component.css'],
+    standalone: false
 })
 export class ContractFormComponent implements OnInit {
 

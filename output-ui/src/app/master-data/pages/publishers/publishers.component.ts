@@ -5,9 +5,10 @@ import { PublisherIndex } from '../../../../../../output-interfaces/PublicationI
 import { PublisherFormComponent } from '../../../form/publisher-form/publisher-form.component';
 
 @Component({
-  selector: 'app-publishers',
-  templateUrl: './publishers.component.html',
-  styleUrls: ['./publishers.component.css']
+    selector: 'app-publishers',
+    templateUrl: './publishers.component.html',
+    styleUrls: ['./publishers.component.css'],
+    standalone: false
 })
 export class PublishersComponent implements TableParent<PublisherIndex>, OnInit {
   buttons: TableButton[] = [

@@ -3,7 +3,7 @@ import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { FunderIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { Funder } from "./Funder";
+import { Funder } from "./Funder.entity";
 import { FunderService } from "./funder.service";
 import { AbstractCrudController } from "../common/abstract-crud.controller";
 

@@ -5,9 +5,10 @@ import { GreaterEntityIndex } from '../../../../../../output-interfaces/Publicat
 import { GreaterEntityFormComponent } from '../../../form/greater-entity-form/greater-entity-form.component';
 
 @Component({
-  selector: 'app-greater-entities',
-  templateUrl: './greater-entities.component.html',
-  styleUrls: ['./greater-entities.component.css']
+    selector: 'app-greater-entities',
+    templateUrl: './greater-entities.component.html',
+    styleUrls: ['./greater-entities.component.css'],
+    standalone: false
 })
 export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>, OnInit {
   buttons: TableButton[] = [

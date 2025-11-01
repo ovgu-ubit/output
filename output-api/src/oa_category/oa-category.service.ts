@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, Repository } from 'typeorm';
 import { PublicationService } from '../publication/core/publication.service';
-import { OA_Category } from './OA_Category';
+import { OA_Category } from './OA_Category.entity';
 import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';

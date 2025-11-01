@@ -3,7 +3,7 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AccessGuard } from "../../authorization/access.guard";
 import { Permissions } from "../../authorization/permission.decorator";
 import { RoleService } from "./role.service";
-import { Role } from "./Role";
+import { Role } from "./Role.entity";
 
 @Controller("role")
 @ApiTags("role")

@@ -3,9 +3,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { PublisherService } from './publisher.service';
-import { Publisher } from './Publisher';
-import { AliasPublisher } from './AliasPublisher';
-import { PublisherDOI } from './PublisherDOI';
+import { Publisher } from './Publisher.entity';
+import { AliasPublisher } from './AliasPublisher.entity';
+import { PublisherDOI } from './PublisherDOI.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';

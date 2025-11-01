@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { FunderService } from 'src/app/services/entities/funder.service';
 
 @Component({
-  selector: 'app-funder-form',
-  templateUrl: './funder-form.component.html',
-  styleUrls: ['./funder-form.component.css']
+    selector: 'app-funder-form',
+    templateUrl: './funder-form.component.html',
+    styleUrls: ['./funder-form.component.css'],
+    standalone: false
 })
 export class FunderFormComponent implements OnInit {
 

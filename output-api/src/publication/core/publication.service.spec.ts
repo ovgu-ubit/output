@@ -3,13 +3,13 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { PublicationService } from './publication.service';
-import { Publication } from './Publication';
-import { AuthorPublication } from '../relations/AuthorPublication';
-import { Invoice } from '../../invoice/Invoice';
-import { CostItem } from '../../invoice/CostItem';
-import { PublicationIdentifier } from './PublicationIdentifier';
-import { PublicationSupplement } from './PublicationSupplement';
-import { PublicationDuplicate } from './PublicationDuplicate';
+import { Publication } from './Publication.entity';
+import { AuthorPublication } from '../relations/AuthorPublication.entity';
+import { Invoice } from '../../invoice/Invoice.entity';
+import { CostItem } from '../../invoice/CostItem.entity';
+import { PublicationIdentifier } from './PublicationIdentifier.entity';
+import { PublicationSupplement } from './PublicationSupplement.entity';
+import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
 describe('PublicationService combine', () => {

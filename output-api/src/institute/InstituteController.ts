@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put,
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InstituteService } from "./institute.service";
 import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
-import { Institute } from "./Institute";
+import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 

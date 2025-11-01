@@ -395,7 +395,7 @@
                             mat-table [dataSource]="this.pub?.invoices">
                             <ng-container matColumnDef="date">
                                 <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
-                                <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.YYYY'}} </td>
+                                <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
                             </ng-container>
 
                             <ng-container matColumnDef="costs">
@@ -486,17 +486,17 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Hinzugefügt am</mat-label>
-                    <input matInput [value]="form.get('import_date').value | date: 'dd.MM.YYYY HH:mm:ss'" readonly />
+                    <input matInput [value]="form.get('import_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Geändert am</mat-label>
-                    <input matInput [value]="form.get('edit_date').value | date: 'dd.MM.YYYY HH:mm:ss'" readonly />
+                    <input matInput [value]="form.get('edit_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
                 </mat-form-field>
 
                 <mat-form-field [hidden]="!this.pub?.delete_date" appearance="fill" style="width: 100%;">
                     <mat-label>Soft-deleted am</mat-label>
-                    <input matInput [value]="form.get('delete_date').value | date: 'dd.MM.YYYY HH:mm:ss'" readonly />
+                    <input matInput [value]="form.get('delete_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
                     <button type="button" matSuffix mat-icon-button (click)="restore()"
                         matTooltip="Publikation wiederherstellen" [matTooltipShowDelay]="800">
                         <mat-icon>recycling</mat-icon>

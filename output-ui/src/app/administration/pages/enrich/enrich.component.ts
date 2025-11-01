@@ -9,9 +9,10 @@ import { LogDialogComponent } from 'src/app/administration/components/log-dialog
 import { ImportConfigComponent } from '../../components/import-config/import-config.component';
 
 @Component({
-  selector: 'app-enrich',
-  templateUrl: './enrich.component.html',
-  styleUrls: ['./enrich.component.css']
+    selector: 'app-enrich',
+    templateUrl: './enrich.component.html',
+    styleUrls: ['./enrich.component.css'],
+    standalone: false
 })
 export class EnrichComponent implements OnInit {
 

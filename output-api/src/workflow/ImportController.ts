@@ -1,14 +1,14 @@
-import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Res, UploadedFile, UseInterceptors, Param,Inject,NotFoundException, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
 import { CSVMapping, UpdateMapping } from "../../../output-interfaces/Config";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { AbstractImportService } from "./import/abstract-import";
+import { AbstractImportService, getImportServiceMeta } from "./import/abstract-import";
 import { CSVImportService } from "./import/csv-import.service";
 import { ExcelImportService } from "./import/excel-import.service";
+import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
 
 @Controller("import")
@@ -17,22 +17,33 @@ export class ImportController {
 
   constructor(
     private reportService: ReportItemService,
-    private configService: AppConfigService,
+    private configService: AppConfigService, 
     @Inject('Imports') private importServices: AbstractImportService[],
-    private csvService:CSVImportService, private excelService:ExcelImportService) { }
+    private csvService: CSVImportService, private excelService: ExcelImportService) { }
+
+
+  async list() {
+    let allowed = await this.configService.get("import_services")
+    let res = this.importServices.map(i => {
+      const meta = getImportServiceMeta(i.constructor as Function)!;
+      return { path: meta.path, allowed: allowed[meta.path] };
+    })
+    return res;
+  }
 
   @Get()
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async getImports() {
     let result = [];
-    for (let i=0;i<(await this.configService.get('import_services')).length;i++) {
-      result.push({
-        path: (await this.configService.get('import_services'))[i].path, 
-        label:this.importServices[i].getName()})
+    for (let i = 0; i < this.importServices.length; i++) {
+      if ((await this.list())[i].allowed) result.push({
+        path: (await this.list())[i].path,
+        label: this.importServices[i].getName()
+      })
     }
-    result.push({path: 'csv', label: this.csvService.getName()})
-    result.push({path: 'xls', label: this.excelService.getName()})
+    result.push({ path: 'csv', label: this.csvService.getName() })
+    result.push({ path: 'xls', label: this.excelService.getName() })
     return result;
   }
 
@@ -52,12 +63,12 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   @Get("report")
-  async report(@Query('filename') filename:string, @Res() res:Response) {
-    res.setHeader('Content-type','text/plain')
+  async report(@Query('filename') filename: string, @Res() res: Response) {
+    res.setHeader('Content-type', 'text/plain')
     res.send(await this.reportService.getReport(filename))
     return this.reportService.getReport(filename);
   }
-  
+
   @ApiBody({
     description: "<p>JSON Request:</p><pre>{<br />  \"filename\" : \"string\"<br />}</pre>",
     schema: {
@@ -69,7 +80,7 @@ export class ImportController {
   @Delete("report")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  delete_report(@Body('filename') filename:string) {
+  delete_report(@Body('filename') filename: string) {
     return this.reportService.deleteReport(filename);
   }
 
@@ -112,7 +123,7 @@ export class ImportController {
   @Post("csv/config")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  importCSVConfigSet(@Body('mapping') mapping:UpdateMapping) {
+  importCSVConfigSet(@Body('mapping') mapping: UpdateMapping) {
     return this.csvService.setUpdateMapping(mapping);
   }
 
@@ -129,7 +140,7 @@ export class ImportController {
   @ApiBody({
     type: CSVMapping
   })
-  importCSVMappingSet(@Body() mapping:CSVMapping) {
+  importCSVMappingSet(@Body() mapping: CSVMapping) {
     return this.csvService.addConfig(mapping);
   }
 
@@ -143,11 +154,9 @@ export class ImportController {
       }
     },
   })
-  importCSVConfigDelete(@Body('name') name:string) {
+  importCSVConfigDelete(@Body('name') name: string) {
     return this.csvService.deleteConfig(name);
   }
-
-
 
   @Post("xls")
   @UseGuards(AccessGuard)
@@ -191,7 +200,7 @@ export class ImportController {
   @Post("xls/config")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  importExcelConfigSet(@Body('mapping') mapping:UpdateMapping) {
+  importExcelConfigSet(@Body('mapping') mapping: UpdateMapping) {
     return this.excelService.setUpdateMapping(mapping);
   }
 
@@ -207,9 +216,9 @@ export class ImportController {
       }
     },
   })
-  async importStart(@Param('path') path:string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean) {
+  async importStart(@Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean) {
     if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw new BadRequestException('reporting year is mandatory');
-    let so = (await this.configService.get('import_services')).findIndex(e => e.path === path)
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     await this.importServices[so].setReportingYear(reporting_year);
     return this.importServices[so].import(update);
@@ -218,8 +227,8 @@ export class ImportController {
   @Get(':path')
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async importStatus(@Param('path') path:string) {
-    let so = (await this.configService.get('import_services')).findIndex(e => e.path === path)
+  async importStatus(@Param('path') path: string) {
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.importServices[so].status();
   }
@@ -227,16 +236,16 @@ export class ImportController {
   @Get(":path/config")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async importConfig(@Param('path') path:string) {
-    let so = (await this.configService.get('import_services')).findIndex(e => e.path === path)
+  async importConfig(@Param('path') path: string) {
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.importServices[so].getUpdateMapping();
   }
   @Post(":path/config")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async importConfigSet(@Param('path') path:string, @Body('mapping') mapping:UpdateMapping) {
-    let so = (await this.configService.get('import_services')).findIndex(e => e.path === path)
+  async importConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
+    let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.importServices[so].setUpdateMapping(mapping);
   }

@@ -5,9 +5,10 @@ import { OACategoryIndex } from '../../../../../../output-interfaces/Publication
 import { OaCategoryFormComponent } from '../../../form/oa-category-form/oa-category-form.component';
 
 @Component({
-  selector: 'app-oa-categories',
-  templateUrl: './oa-categories.component.html',
-  styleUrls: ['./oa-categories.component.css']
+    selector: 'app-oa-categories',
+    templateUrl: './oa-categories.component.html',
+    styleUrls: ['./oa-categories.component.css'],
+    standalone: false
 })
 export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnInit {
   buttons: TableButton[] = [

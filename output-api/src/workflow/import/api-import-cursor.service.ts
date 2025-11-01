@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable, NotImplementedException } from '@nestjs/common';
 import { concatMap, concatWith, map, merge, mergeAll, mergeMap, mergeWith, Observable, of, queueScheduler, scheduled, Subject, takeUntil } from 'rxjs';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
 
 @Injectable()

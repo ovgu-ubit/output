@@ -5,9 +5,10 @@ import { Institute } from '../../../../../../output-interfaces/Publication';
 import { InstituteFormComponent } from '../../../form/institute-form/institute-form.component';
 
 @Component({
-  selector: 'app-institutions',
-  templateUrl: './institutions.component.html',
-  styleUrls: ['./institutions.component.css']
+    selector: 'app-institutions',
+    templateUrl: './institutions.component.html',
+    styleUrls: ['./institutions.component.css'],
+    standalone: false
 })
 export class InstitutionsComponent implements TableParent<Institute>, OnInit {
   buttons: TableButton[] = [

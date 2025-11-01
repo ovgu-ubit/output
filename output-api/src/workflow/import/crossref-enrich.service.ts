@@ -1,9 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -16,10 +16,11 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@EnrichService({path: 'crossref'})
 @Injectable()
 export class CrossrefEnrichService extends ApiEnrichDOIService {
 
@@ -34,7 +35,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     }
 
     private searchText = '';
-    private affiliationTags = [];
+    private affiliation_tags = [];
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -65,10 +66,10 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     protected parallelCalls = 10;
 
     protected async init() {
-        (await this.configService.get('searchTags')).forEach(tag => {
+        (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + "+"
         })
-        this.affiliationTags = await this.configService.get('affiliationTags')
+        this.affiliation_tags = await this.configService.get('affiliation_tags')
     }
 
     protected importTest(element: any): boolean {
@@ -198,8 +199,8 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     }
 
     private async affiliationIncludesTags(affiliation) {
-        for (let i = 0; i < this.affiliationTags.length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.affiliationTags[i])) return true;
+        for (let i = 0; i < this.affiliation_tags.length; i++) {
+            if (affiliation.name?.toLowerCase().includes(this.affiliation_tags[i])) return true;
         }
         return false;
     }

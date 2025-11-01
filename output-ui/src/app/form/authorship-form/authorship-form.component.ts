@@ -13,9 +13,10 @@ import { InstituteFormComponent } from '../institute-form/institute-form.compone
 import { RoleFormComponent } from '../role-form/role-form.component';
 
 @Component({
-  selector: 'app-authorship-form',
-  templateUrl: './authorship-form.component.html',
-  styleUrls: ['./authorship-form.component.css']
+    selector: 'app-authorship-form',
+    templateUrl: './authorship-form.component.html',
+    styleUrls: ['./authorship-form.component.css'],
+    standalone: false
 })
 export class AuthorshipFormComponent extends AbstractFormComponent<any> implements OnInit, AfterViewInit {
 

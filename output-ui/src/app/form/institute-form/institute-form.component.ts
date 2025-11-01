@@ -8,9 +8,10 @@ import { Institute } from '../../../../../output-interfaces/Publication';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 @Component({
-  selector: 'app-institute-form',
-  templateUrl: './institute-form.component.html',
-  styleUrls: ['./institute-form.component.css']
+    selector: 'app-institute-form',
+    templateUrl: './institute-form.component.html',
+    styleUrls: ['./institute-form.component.css'],
+    standalone: false
 })
 export class InstituteFormComponent extends AbstractFormComponent<Institute> implements OnInit, AfterViewInit {
   override name = "Institut"

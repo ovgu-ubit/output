@@ -4,7 +4,7 @@ import { GreaterEntityService } from "./greater-entitiy.service";
 import { GreaterEntityIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { GreaterEntity } from "./GreaterEntity";
+import { GreaterEntity } from "./GreaterEntity.entity";
 import { AbstractCrudController } from "../common/abstract-crud.controller";
 
 @Controller("greater_entity")

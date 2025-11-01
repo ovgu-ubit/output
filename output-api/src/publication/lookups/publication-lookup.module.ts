@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthorizationModule } from '../../authorization/authorization.module';
-import { Language } from './Language';
+import { AppConfigModule } from '../../config/app-config.module';
+import { Language } from './Language.entity';
 import { LanguageController } from './LanguageController';
-import { Status } from './Status';
+import { Status } from './Status.entity';
 import { StatusController } from './StatusController';
 import { LanguageService } from './language.service';
 import { StatusService } from './status.service';
-import { AppConfigModule } from '../../config/app-config.module';
 
 @Module({
   imports: [
@@ -15,7 +14,7 @@ import { AppConfigModule } from '../../config/app-config.module';
           Language,
           Status
         ])
-    , AuthorizationModule,
+    ,
     AppConfigModule
   ],
   controllers: [LanguageController, StatusController],

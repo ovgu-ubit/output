@@ -11,9 +11,10 @@ import { InstituteFormComponent } from '../institute-form/institute-form.compone
 import { map, Observable, of } from 'rxjs';
 
 @Component({
-  selector: 'app-author-form',
-  templateUrl: './author-form.component.html',
-  styleUrls: ['./author-form.component.css']
+    selector: 'app-author-form',
+    templateUrl: './author-form.component.html',
+    styleUrls: ['./author-form.component.css'],
+    standalone: false
 })
 export class AuthorFormComponent extends AbstractFormComponent<Author> implements OnInit, AfterViewInit, EntityFormComponent<Author> {
 

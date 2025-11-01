@@ -1,9 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -19,7 +19,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
+import { ImportService } from './abstract-import';
 
+@ImportService({path: 'bibliography_md'})
 @Injectable()
 export class BibliographyImportService extends ApiImportOffsetService {
 
@@ -61,7 +63,7 @@ export class BibliographyImportService extends ApiImportOffsetService {
     protected offset_count = 0;
     protected offset_start = 1;
     protected params: { key: string, value: string }[] = [{ key: 'year', value: '2022' }];//TODO year from DB?
-    protected name = 'Bibliography';
+    protected name = 'Bibliographie Magdeburg';
     protected parallelCalls = 1;
 
     setReportingYear(year: string) {

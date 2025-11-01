@@ -5,9 +5,10 @@ import { Status } from '../../../../../../output-interfaces/Publication';
 import { StatusFormComponent } from '../../../form/status-form/status-form.component';
 
 @Component({
-  selector: 'app-statuses',
-  templateUrl: './statuses.component.html',
-  styleUrl: './statuses.component.css'
+    selector: 'app-statuses',
+    templateUrl: './statuses.component.html',
+    styleUrl: './statuses.component.css',
+    standalone: false
 })
 export class StatusesComponent implements TableParent<Status>, OnInit {
   buttons: TableButton[] = [

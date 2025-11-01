@@ -20,9 +20,10 @@ export function createUniqueValidator(statuses: Status[]): ValidatorFn {
 }
 
 @Component({
-  selector: 'app-status-form',
-  templateUrl: './status-form.component.html',
-  styleUrl: './status-form.component.css'
+    selector: 'app-status-form',
+    templateUrl: './status-form.component.html',
+    styleUrl: './status-form.component.css',
+    standalone: false
 })
 export class StatusFormComponent implements OnInit {
   name = "Status"

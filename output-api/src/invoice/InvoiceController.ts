@@ -4,9 +4,9 @@ import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { CostTypeIndex } from "../../../output-interfaces/PublicationIndex";
 import { InvoiceService } from "./invoice.service";
-import { Invoice } from "./Invoice";
-import { CostType } from "./CostType";
-import { CostCenter } from "./CostCenter";
+import { Invoice } from "./Invoice.entity";
+import { CostType } from "./CostType.entity";
+import { CostCenter } from "./CostCenter.entity";
 
 @Controller("invoice")
 @ApiTags("invoice")

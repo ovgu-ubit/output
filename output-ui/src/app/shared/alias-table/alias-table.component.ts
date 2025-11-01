@@ -4,9 +4,10 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 
 @Component({
-  selector: 'app-alias-table',
-  templateUrl: './alias-table.component.html',
-  styleUrl: './alias-table.component.css'
+    selector: 'app-alias-table',
+    templateUrl: './alias-table.component.html',
+    styleUrl: './alias-table.component.css',
+    standalone: false
 })
 export class AliasTableComponent<T extends Aliasable<T>> {
 

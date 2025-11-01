@@ -4,7 +4,7 @@ import { OACategoryIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { OACategoryService } from "./oa-category.service";
-import { OA_Category } from "./OA_Category";
+import { OA_Category } from "./OA_Category.entity";
 import { AbstractCrudController } from "../common/abstract-crud.controller";
 
 @Controller("oa_cat")

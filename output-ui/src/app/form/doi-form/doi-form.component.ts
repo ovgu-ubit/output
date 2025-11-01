@@ -3,9 +3,10 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-doi-form',
-  templateUrl: './doi-form.component.html',
-  styleUrls: ['./doi-form.component.css']
+    selector: 'app-doi-form',
+    templateUrl: './doi-form.component.html',
+    styleUrls: ['./doi-form.component.css'],
+    standalone: false
 })
 export class DoiFormComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<DoiFormComponent>,

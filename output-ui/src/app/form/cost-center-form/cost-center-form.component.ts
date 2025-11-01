@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
 
 @Component({
-  selector: 'app-cost-center-form',
-  templateUrl: './cost-center-form.component.html',
-  styleUrls: ['./cost-center-form.component.css']
+    selector: 'app-cost-center-form',
+    templateUrl: './cost-center-form.component.html',
+    styleUrls: ['./cost-center-form.component.css'],
+    standalone: false
 })
 export class CostCenterFormComponent implements OnInit {
 

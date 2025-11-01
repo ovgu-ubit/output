@@ -8,9 +8,10 @@ import { Observable, map, merge } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
-  selector: 'app-statistics-year',
-  templateUrl: './statistics-year.component.html',
-  styleUrls: ['./statistics-year.component.css']
+    selector: 'app-statistics-year',
+    templateUrl: './statistics-year.component.html',
+    styleUrls: ['./statistics-year.component.css'],
+    standalone: false
 })
 export class StatisticsYearComponent implements OnInit {
 

@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 
 @Component({
-  selector: 'app-publisher-form',
-  templateUrl: './publisher-form.component.html',
-  styleUrls: ['./publisher-form.component.css']
+    selector: 'app-publisher-form',
+    templateUrl: './publisher-form.component.html',
+    styleUrls: ['./publisher-form.component.css'],
+    standalone: false
 })
 export class PublisherFormComponent implements OnInit{
 

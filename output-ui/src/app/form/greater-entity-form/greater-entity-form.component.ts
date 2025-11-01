@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
 
 @Component({
-  selector: 'app-greater-entity-form',
-  templateUrl: './greater-entity-form.component.html',
-  styleUrls: ['./greater-entity-form.component.css']
+    selector: 'app-greater-entity-form',
+    templateUrl: './greater-entity-form.component.html',
+    styleUrls: ['./greater-entity-form.component.css'],
+    standalone: false
 })
 export class GreaterEntityFormComponent implements OnInit {
 

@@ -1,26 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, Repository } from "typeorm";
-import { AuthorPublication } from "./publication/relations/AuthorPublication";
-import { Config } from "./config/ConfigEntity";
-import { Contract } from "./contract/Contract";
-import { OA_Category } from "./oa_category/OA_Category";
-import { Publisher } from "./publisher/Publisher";
-import { AliasInstitute } from "./institute/AliasInstitute";
-import { AliasPubType } from "./pub_type/AliasPubType";
-import { AliasFunder } from "./funder/AliasFunder";
-import { Institute } from "./institute/Institute";
-import { Publication } from "./publication/core/Publication";
-import { Author } from "./author/Author";
-import { Funder } from "./funder/Funder";
-import { GreaterEntity } from "./greater_entity/GreaterEntity";
-import { CostType } from "./invoice/CostType";
-import { CostCenter } from "./invoice/CostCenter";
-import { PublicationType } from "./pub_type/PublicationType";
-import { PublisherDOI } from "./publisher/PublisherDOI";
-import { AliasPublisher } from "./publisher/AliasPublisher";
-import { Role } from "./publication/relations/Role";
-import { Language } from "./publication/lookups/Language";
+import { AuthorPublication } from "./publication/relations/AuthorPublication.entity";
+import { Config } from "./config/Config.entity";
+import { Contract } from "./contract/Contract.entity";
+import { OA_Category } from "./oa_category/OA_Category.entity";
+import { Publisher } from "./publisher/Publisher.entity";
+import { AliasInstitute } from "./institute/AliasInstitute.entity";
+import { AliasPubType } from "./pub_type/AliasPubType.entity";
+import { AliasFunder } from "./funder/AliasFunder.entity";
+import { Institute } from "./institute/Institute.entity";
+import { Publication } from "./publication/core/Publication.entity";
+import { Author } from "./author/Author.entity";
+import { Funder } from "./funder/Funder.entity";
+import { GreaterEntity } from "./greater_entity/GreaterEntity.entity";
+import { CostType } from "./invoice/CostType.entity";
+import { CostCenter } from "./invoice/CostCenter.entity";
+import { PublicationType } from "./pub_type/PublicationType.entity";
+import { PublisherDOI } from "./publisher/PublisherDOI.entity";
+import { AliasPublisher } from "./publisher/AliasPublisher.entity";
+import { Role } from "./publication/relations/Role.entity";
+import { Language } from "./publication/lookups/Language.entity";
 
 @Injectable()
 export class InitService {
@@ -74,7 +74,10 @@ export class InitService {
         ]
 
         let config: Config[] = [
-            { key: 'reporting_year', value: '2022' }
+            { key: 'reporting_year', value: 2025},
+            { key: 'institution', value: 'Output Development Version' },
+            { key: 'institution_short_label', value: 'Dev' },
+            { key: 'lock_timeout', value: 5 },
         ]
 
         let langs: Language[] = [

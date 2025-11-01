@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ReportItemService } from '../report-item.service';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 
+@ExportService({path: 'cost_center'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class CostCenterExportService extends AbstractExportService {
 
     quote = '"';

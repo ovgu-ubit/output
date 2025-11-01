@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { ContractService } from './contract.service';
-import { Contract } from './Contract';
-import { ContractIdentifier } from './ContractIdentifier';
+import { Contract } from './Contract.entity';
+import { ContractIdentifier } from './ContractIdentifier.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('ContractService', () => {

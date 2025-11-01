@@ -2,13 +2,14 @@ import { Injectable } from '@nestjs/common';
 import * as XLSX from 'xlsx';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@ExportService({path: 'juelich'})
 @Injectable()
 /**
  * abstract class for all exports

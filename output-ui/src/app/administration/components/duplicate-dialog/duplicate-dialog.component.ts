@@ -7,9 +7,10 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { Publication, PublicationDuplicate } from '../../../../../../output-interfaces/Publication';
 
 @Component({
-  selector: 'app-duplicate-dialog',
-  templateUrl: './duplicate-dialog.component.html',
-  styleUrl: './duplicate-dialog.component.css'
+    selector: 'app-duplicate-dialog',
+    templateUrl: './duplicate-dialog.component.html',
+    styleUrl: './duplicate-dialog.component.css',
+    standalone: false
 })
 export class DuplicateDialogComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<DuplicateDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: any,

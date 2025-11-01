@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
+import { AbstractFilterService } from '../filter/abstract-filter.service';
+
+export function ExportService(meta: {path: string}): ClassDecorator {
+  return (target) => Reflect.defineMetadata("export_service", meta, target);
+}
+export function getExportServiceMeta(target: Function): {path: string} | undefined {
+  return Reflect.getMetadata("export_service", target);
+}
 
 @Injectable()
 /**

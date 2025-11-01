@@ -50,6 +50,8 @@
         <button mat-menu-item routerLink="/administration/duplicates"
           [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"> Dubletten verwalten
         </button>
+        <button mat-menu-item routerLink="/administration/config"
+          [disabled]="!this.tokenService.hasRole('admin')"> Konfiguration </button>
       </mat-menu>
 
       <ng-container *ngIf="!this.user">
