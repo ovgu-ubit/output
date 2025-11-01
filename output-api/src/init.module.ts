@@ -12,7 +12,6 @@ import { GEIdentifier } from "./greater_entity/GEIdentifier.entity";
 import { AliasInstitute } from "./institute/AliasInstitute.entity";
 import { AliasPubType } from "./pub_type/AliasPubType.entity";
 import { AliasFunder } from "./funder/AliasFunder.entity";
-import config from "../config";
 import { Institute } from "./institute/Institute.entity";
 import { AliasAuthorFirstName } from "./author/AliasAuthorFirstName.entity";
 import { AliasAuthorLastName } from "./author/AliasAuthorLastName.entity";
@@ -31,16 +30,13 @@ import { AliasPublisher } from "./publisher/AliasPublisher.entity";
 import { Role } from "./publication/relations/Role.entity";
 import { Status } from "./publication/lookups/Status.entity";
 import { Language } from "./publication/lookups/Language.entity";
-
-//export const init_service = require(config().init_service)
-//export const init_service = import (config().init_service);
+import { InitService } from "./init.service";
 
 @Module({
     imports: [
       ConfigModule.forRoot({
         isGlobal: true,
         envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
-        load: [config]
       }),
       TypeOrmModule.forRootAsync({
         useClass: DatabaseConfigService,
@@ -53,7 +49,7 @@ import { Language } from "./publication/lookups/Language.entity";
     providers: [
       DatabaseConfigService, 
       AppConfigService, 
-      config().init_service
+      InitService
       ]
   })
   

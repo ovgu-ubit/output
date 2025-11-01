@@ -1,7 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import appConfig from '../../config';
 import { Config } from './Config.entity';
 import { ConfigController } from './ConfigController';
 import { AppConfigService } from './app-config.service';
@@ -19,7 +18,6 @@ import { EnvSchemas } from './environment.schema';
     ConfigModule.forRoot({
       isGlobal: false,
       envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
-      load: [appConfig],
       validate: (env) => {
         const schema = EnvSchemas
           .passthrough();

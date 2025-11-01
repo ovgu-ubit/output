@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import appConfig from '../../../config';
 import { AppConfigModule } from '../../config/app-config.module';
 import { InstituteModule } from '../../institute/institute.module';
 import { InvoiceModule } from '../../invoice/invoice.module';

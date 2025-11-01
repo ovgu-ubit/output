@@ -25,6 +25,7 @@ export const CONFIG_DEFAULTS = {
     ],
     ror_id: "https://ror.org/xxxxx",
     openalex_id: "xxxxx",
+    doi_import_service: 'openalex',
     optional_fields_abstract: false,
     optional_fields_citation: false,
     optional_fields_page_count: false,
