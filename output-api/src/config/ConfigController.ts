@@ -33,9 +33,4 @@ export class ConfigController {
     async set(@Body() value: any) {
         return await this.configService.setDatabaseConfig(value.key, value.value);
     }
-
-    @Get('doi_import')
-    async getDOIImport() {
-        return JSON.stringify(await this.configService.get('doi_import_service'))
-    }
 }

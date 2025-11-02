@@ -39,12 +39,6 @@ export class PublicationService implements EntityService<Publication, Publicatio
   public delete(ids: number[], soft?:boolean) {
     return this.http.delete<Publication[]>(environment.api + 'publications', { withCredentials: true, body: { publications: ids.map(e => ({ id: e })), soft } });
   }
-  public getDefaultReportingYear() {
-    return this.http.get<number>(environment.api + 'publications/reporting_year?default=true', { withCredentials: true });
-  }
-  public setDefaultReportingYear(value: number) {
-    return this.http.post<number>(environment.api + 'publications/reporting_year', { year: value }, { withCredentials: true });
-  }
   public getReportingYears() {
     return this.http.get<number[]>(environment.api + 'publications/reporting_year', { withCredentials: true });
   }

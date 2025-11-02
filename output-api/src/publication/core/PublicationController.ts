@@ -139,29 +139,8 @@ export class PublicationController {
     }
 
     @Get('reporting_year')
-    @ApiQuery({
-        name: 'default',
-        type: 'boolean',
-        required: false
-    })
-    getReportingYear(@Query('default') standard: boolean) {
-        if (standard) return this.appConfigService.get('reporting_year');
-        else return this.publicationService.getReportingYears();
-    }
-
-    @Post('reporting_year')
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    @ApiBody({
-        description: '<p>JSON Request:</p>',
-        schema: {
-            example: {
-                year: 2023
-            }
-        }
-    })
-    setReportingYear(@Body('year') year: number) {
-        return this.appConfigService.setDefaultReportingYear(year);
+    getReportingYear() {
+        return this.publicationService.getReportingYears();
     }
 
     @Post('combine')

@@ -20,10 +20,6 @@ export class AppConfigService {
         }
     }
 
-    setDefaultReportingYear(value: number) {
-        this.repository.save({ key: 'reporting_year', value: value as any as string })
-    }
-
     public listDatabaseConfig(key?: string) {
         if (!key) return this.repository.find();
         else return this.repository.findOneBy({ key })

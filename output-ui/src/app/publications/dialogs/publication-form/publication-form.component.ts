@@ -5,8 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { ConfigService } from 'src/app/services/config.service';
-import { ConfigService as ConfigService2 } from 'src/app/administration/services/config.service';
+import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
@@ -97,8 +96,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, public pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar,
     public oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
-    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
-    private configService2: ConfigService2,
+    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService,
+    private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
@@ -159,32 +158,32 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    let ob$ = this.configService2.get("optional_fields_abstract").pipe(map(data => {
+    let ob$ = this.configService.get("optional_fields_abstract").pipe(map(data => {
       this.optional_fields.abstract = data.value;
     }));
-    ob$ = merge(ob$, this.configService2.get("optional_fields_citation").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get("optional_fields_citation").pipe(map(data => {
       this.optional_fields.citation = data.value;
     })));
-    ob$ = merge(ob$, this.configService2.get("optional_fields_page_count").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get("optional_fields_page_count").pipe(map(data => {
       this.optional_fields.page_count = data.value;
     })));
-    ob$ = merge(ob$, this.configService2.get("optional_fields_pub_date_submitted").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get("optional_fields_pub_date_submitted").pipe(map(data => {
       this.optional_fields.pub_date_submitted = data.value;
     })));
-    ob$ = merge(ob$, this.configService2.get("optional_fields_pub_date_print").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get("optional_fields_pub_date_print").pipe(map(data => {
       this.optional_fields.pub_date_print = data.value;
     })));
-    ob$ = merge(ob$, this.configService2.get("optional_fields_peer_reviewed").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get("optional_fields_peer_reviewed").pipe(map(data => {
       this.optional_fields.peer_reviewed = data.value;
     })));
 
 
-    ob$ = merge(ob$, this.configService2.get("institution_short_label").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get("institution_short_label").pipe(map(data => {
       this.institution = data.value;
     }
     )));
-    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
-      this.doi_import_service = data;
+    ob$ = merge(ob$, this.configService.get("doi_import_service").pipe(map(data => {
+      this.doi_import_service = data?.value;
     })))
     if (this.data.entity?.id) {
       this.edit = true;

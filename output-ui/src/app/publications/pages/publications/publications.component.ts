@@ -6,8 +6,7 @@ import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, concatMap, map, merge } from 'rxjs';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
-import { ConfigService } from 'src/app/services/config.service';
-import { ConfigService as ConfigService2} from 'src/app/administration/services/config.service';
+import { ConfigService} from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
@@ -29,7 +28,7 @@ import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/re
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard, private configService: ConfigService, private configService2:ConfigService2) { }
+    private clipboard: Clipboard, private configService:ConfigService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
@@ -73,7 +72,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       })
     }))
 
-    ob$ = merge(ob$, this.configService2.get("pub_index_columns").pipe(concatMap(data => {
+    ob$ = merge(ob$, this.configService.get("pub_index_columns").pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
       if (data.value["title"]) headers.push({ colName: 'title', colTitle: 'Titel' })
       if (data.value["doi"]) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
@@ -93,7 +92,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
-      return this.configService2.get("institution_short_label").pipe(map(data => {
+      return this.configService.get("institution_short_label").pipe(map(data => {
         this.institution = data.value
         let header = this.headers.find(e => e.colName === 'authors_inst')
         if (header) header.colTitle = 'Personen ' + this.institution;
@@ -200,9 +199,9 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       page: 0,
       pageSize: 10
     };
-    this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
-      this.table.reporting_year = data;
-      if (data) this.name = 'Publikationen des Jahres ' + data;
+    this.configService.get("reporting_year").pipe(concatMap(data => {
+      this.table.reporting_year = data?.value;
+      if (data) this.name = 'Publikationen des Jahres ' + data.value;
       else this.name = 'Publikationen ohne Datumsangabe'
       return this.table.updateData();
     })).subscribe();
