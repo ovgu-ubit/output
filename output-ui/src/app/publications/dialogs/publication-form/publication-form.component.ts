@@ -158,26 +158,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    let ob$ = this.configService.get("optional_fields_abstract").pipe(map(data => {
-      this.optional_fields.abstract = data.value;
+    let ob$ = this.configService.get("optional_fields").pipe(map(data => {
+      this.optional_fields = data.value;
     }));
-    ob$ = merge(ob$, this.configService.get("optional_fields_citation").pipe(map(data => {
-      this.optional_fields.citation = data.value;
-    })));
-    ob$ = merge(ob$, this.configService.get("optional_fields_page_count").pipe(map(data => {
-      this.optional_fields.page_count = data.value;
-    })));
-    ob$ = merge(ob$, this.configService.get("optional_fields_pub_date_submitted").pipe(map(data => {
-      this.optional_fields.pub_date_submitted = data.value;
-    })));
-    ob$ = merge(ob$, this.configService.get("optional_fields_pub_date_print").pipe(map(data => {
-      this.optional_fields.pub_date_print = data.value;
-    })));
-    ob$ = merge(ob$, this.configService.get("optional_fields_peer_reviewed").pipe(map(data => {
-      this.optional_fields.peer_reviewed = data.value;
-    })));
-
-
     ob$ = merge(ob$, this.configService.get("institution_short_label").pipe(map(data => {
       this.institution = data.value;
     }
