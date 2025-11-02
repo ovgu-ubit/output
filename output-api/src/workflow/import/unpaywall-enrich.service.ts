@@ -63,7 +63,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     protected parallelCalls = 10;
 
     protected async init() {
-        this.param_string = 'email=' + await this.configService.get('api_key_unpaywall');
+        this.param_string = 'email=' + await this.configService.get('SECRET_UNPAYWALL');
     }
 
     protected importTest(element: any): boolean {

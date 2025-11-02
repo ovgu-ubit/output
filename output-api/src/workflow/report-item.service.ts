@@ -11,7 +11,7 @@ export class ReportItemService {
     constructor(private configService:AppConfigService) {}
 
     async init() {
-        this.path = await this.configService.get('LOG_PATH')
+        this.path = await this.configService.get('APP_LOG_PATH')
         if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)
     }
 

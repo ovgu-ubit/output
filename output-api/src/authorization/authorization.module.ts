@@ -33,11 +33,11 @@ export class AuthorizationModule {
         inject: [AppConfigService, ModuleRef],
 
         useFactory: async (cfg: AppConfigService, ref: ModuleRef) => {
-          const rel = await cfg.get('authorization_service')!;
-          const exported = await cfg.get('authorization_export')!;
+          const rel = await cfg.get('AUTH_SERVICE_PATH')!;
+          const exported = await cfg.get('AUTH_SERVICE_EXPORT')!;
           const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), rel);
           if (!fs.existsSync(abs)) {
-            throw new Error(`authorization_service not found: ${abs}`);
+            throw new Error(`AUTH_SERVICE_PATH not found: ${abs}`);
           }
 
           await ensureTsSupportIfNeeded(abs);

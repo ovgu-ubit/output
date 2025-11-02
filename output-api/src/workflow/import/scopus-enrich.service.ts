@@ -43,7 +43,7 @@ export class ScopusEnrichService extends ApiEnrichDOIService {
             this.searchText += tag + " or "
         })
         this.affiliation_tags = await this.configService.get('affiliation_tags');
-        this.apiKey = await this.configService.get('api_key_scopus');
+        this.apiKey = await this.configService.get('SECRET_SCOPUS');
     }
 
     protected updateMapping: UpdateMapping = {

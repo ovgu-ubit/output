@@ -80,7 +80,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         this.params = [
             { key: 'query', value: 'AFFIL(' + this.searchText.slice(0, this.searchText.length - 4) + ')+and+PUBYEAR+IS+' + year },
             { key: 'view', value: 'complete' },
-            { key: 'apiKey', value: await this.configService.get('api_key_scopus') }]
+            { key: 'apiKey', value: await this.configService.get('SECRET_SCOPUS') }]
     }
     protected importTest(element: any): boolean {
         return element && element.affiliation && this.affiliationIncludesTags(element.affiliation)
