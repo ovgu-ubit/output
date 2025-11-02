@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Config } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 
@@ -36,15 +36,8 @@ export class AppConfigService {
     }
 
     async reconcileDefaults(defaults: Record<string, unknown>) {
-        const wanted = Object.keys(defaults);
-        let where = [];
-        for (let key of wanted) {
-            where.push({ key })
-        }
-
         // schon vorhandene holen
         const existing = await this.repository.find({
-            where,
             select: ['key'],
         });
         const have = existing.map((r) => `${r.key}`);
@@ -61,8 +54,10 @@ export class AppConfigService {
 
         if (missing1.length) {
             await this.repository.save(missing1);
-            // optional: Events/Metrics
         }
+
+        let over = have.filter(key => !Object.keys(defaults).find(e => e === key))
+        if (over.length) await this.repository.delete({key:In(over)});
     }
 }
 

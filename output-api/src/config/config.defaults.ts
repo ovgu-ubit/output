@@ -26,12 +26,14 @@ export const CONFIG_DEFAULTS = {
     ror_id: "https://ror.org/xxxxx",
     openalex_id: "xxxxx",
     doi_import_service: 'openalex',
-    optional_fields_abstract: false,
-    optional_fields_citation: false,
-    optional_fields_page_count: false,
-    optional_fields_pub_date_submitted: false,
-    optional_fields_pub_date_print: false,
-    optional_fields_peer_reviewed: false,
+    optional_fields: {
+      abstract: false,
+      citation: false,
+      page_count: false,
+      pub_date_submitted: false,
+      pub_date_print: false,
+      peer_reviewed: false
+    },
     pub_index_columns: {
         title: true,
         doi: true,
