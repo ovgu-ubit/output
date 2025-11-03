@@ -68,3 +68,11 @@ Copy these distributables to your web server and configure it for an angular web
 
 ## Configuration
 After the UI has been started, go with an admin role to Verwaltung/Konfiguration and adapt runtime configuration parameters to your needs.
+
+## Updating
+1. Fetch new codebase from GitHub
+2. Build and deploy frontend distributables like in installation
+3. Build backend and run pending migrations for DB schema:
+
+> npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
