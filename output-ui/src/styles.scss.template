@@ -142,49 +142,49 @@ html {
 }
 
 .display-large {
-  font: var(--sys-display-large)!important;
+  font: var(--mat-sys-display-large)!important;
 }
 .display-medium {
-  font: var(--sys-display-medium)!important;
+  font: var(--mat-sys-display-medium)!important;
 }
 .display-small {
-  font: var(--sys-display-small)!important;
+  font: var(--mat-sys-display-small)!important;
 }
 .headline-large {
-  font: var(--sys-headline-large)!important;
+  font: var(--mat-sys-headline-large)!important;
 }
 .headline-medium {
-  font: var(--sys-headline-medium)!important;
+  font: var(--mat-sys-headline-medium)!important;
 }
 .headline-small {
-  font: var(--sys-headline-small)!important;
+  font: var(--mat-sys-headline-small)!important;
 }
 .title-large {
-  font: var(--sys-title-large)!important;
+  font: var(--mat-sys-title-large)!important;
 }
 .title-medium {
-  font: var(--sys-title-medium)!important;
+  font: var(--mat-sys-title-medium)!important;
 }
 .title-small {
-  font: var(--sys-title-small)!important;
+  font: var(--mat-sys-title-small)!important;
 }
 .body-large {
-  font: var(--sys-body-large)!important;
+  font: var(--mat-sys-body-large)!important;
 }
 .body-medium {
-  font: var(--sys-body-medium)!important;
+  font: var(--mat-sys-body-medium)!important;
 }
 .body-small {
-  font: var(--sys-body-small)!important;
+  font: var(--mat-sys-body-small)!important;
 }
 .label-large {
-  font: var(--sys-label-large)!important;
+  font: var(--mat-sys-label-large)!important;
 }
 .label-medium {
-  font: var(--sys-label-medium)!important;
+  font: var(--mat-sys-label-medium)!important;
 }
 .label-small{
-  font: var(--sys-label-small)!important;
+  font: var(--mat-sys-label-small)!important;
 }
 .mat-mdc-snack-bar-container.success-snackbar {
   --mat-snack-bar-button-color: rgb(138, 138, 139);
