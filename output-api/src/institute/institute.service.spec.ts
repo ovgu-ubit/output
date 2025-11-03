@@ -3,10 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
 import { InstituteService } from './institute.service';
-import { Institute } from './Institute';
-import { AuthorPublication } from '../publication/relations/AuthorPublication';
-import { Author } from '../author/Author';
-import { AliasInstitute } from './AliasInstitute';
+import { Institute } from './Institute.entity';
+import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
+import { Author } from '../author/Author.entity';
+import { AliasInstitute } from './AliasInstitute.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 describe('InstituteService', () => {

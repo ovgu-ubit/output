@@ -1,8 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/core/Publication';
-import { Publisher } from '../../publisher/Publisher';
+import { Publication } from '../../publication/core/Publication.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
@@ -10,10 +10,10 @@ import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
-import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { FunderService } from '../../funder/funder.service';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { LanguageService } from '../../publication/lookups/language.service';
@@ -21,6 +21,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@EnrichService({path: 'unpaywall'})
 @Injectable()
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
 
@@ -62,7 +63,7 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
     protected parallelCalls = 10;
 
     protected async init() {
-        this.param_string = 'email=' + await this.configService.get('api_key_unpaywall');
+        this.param_string = 'email=' + await this.configService.get('SECRET_UNPAYWALL');
     }
 
     protected importTest(element: any): boolean {

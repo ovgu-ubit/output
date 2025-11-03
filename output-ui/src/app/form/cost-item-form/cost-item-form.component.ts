@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CostItem } from '../../../../../output-interfaces/Publication';
 
 @Component({
-  selector: 'app-cost-item-form',
-  templateUrl: './cost-item-form.component.html',
-  styleUrls: ['./cost-item-form.component.css']
+    selector: 'app-cost-item-form',
+    templateUrl: './cost-item-form.component.html',
+    styleUrls: ['./cost-item-form.component.css'],
+    standalone: false
 })
 export class CostItemFormComponent {
 

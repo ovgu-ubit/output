@@ -4,7 +4,7 @@ import { PublicationTypeService } from "./publication-type.service";
 import { PublicationTypeIndex } from "../../../output-interfaces/PublicationIndex";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { PublicationType } from "./PublicationType";
+import { PublicationType } from "./PublicationType.entity";
 import { AbstractCrudController } from "../common/abstract-crud.controller";
 
 @Controller("pub_type")

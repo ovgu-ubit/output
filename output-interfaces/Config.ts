@@ -1,6 +1,6 @@
 export interface Config {
-    key:string;
-	value:string;
+    key: string;
+    value: any;
 }
 
 export class AppError {

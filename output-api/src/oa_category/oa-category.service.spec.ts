@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { OACategoryService } from './oa-category.service';
-import { OA_Category } from './OA_Category';
+import { OA_Category } from './OA_Category.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('OACategoryService', () => {

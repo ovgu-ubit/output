@@ -5,9 +5,10 @@ import { PublicationTypeIndex } from '../../../../../../output-interfaces/Public
 import { PubTypeFormComponent } from '../../../form/pub-type-form/pub-type-form.component';
 
 @Component({
-  selector: 'app-pub-types',
-  templateUrl: './pub-types.component.html',
-  styleUrls: ['./pub-types.component.css']
+    selector: 'app-pub-types',
+    templateUrl: './pub-types.component.html',
+    styleUrls: ['./pub-types.component.css'],
+    standalone: false
 })
 export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnInit {
   buttons: TableButton[] = [

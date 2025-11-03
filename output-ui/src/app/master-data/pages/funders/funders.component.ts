@@ -5,9 +5,10 @@ import { FunderIndex } from '../../../../../../output-interfaces/PublicationInde
 import { FunderFormComponent } from '../../../form/funder-form/funder-form.component';
 
 @Component({
-  selector: 'app-funders',
-  templateUrl: './funders.component.html',
-  styleUrls: ['./funders.component.css']
+    selector: 'app-funders',
+    templateUrl: './funders.component.html',
+    styleUrls: ['./funders.component.css'],
+    standalone: false
 })
 export class FundersComponent implements TableParent<FunderIndex>, OnInit {
   buttons: TableButton[] = [

@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
 
 @Component({
-  selector: 'app-oa-category-form',
-  templateUrl: './oa-category-form.component.html',
-  styleUrls: ['./oa-category-form.component.css']
+    selector: 'app-oa-category-form',
+    templateUrl: './oa-category-form.component.html',
+    styleUrls: ['./oa-category-form.component.css'],
+    standalone: false
 })
 export class OaCategoryFormComponent implements OnInit {
   name = "Open-Access-Kategorie"

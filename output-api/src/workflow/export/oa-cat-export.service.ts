@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { ReportItemService } from '../report-item.service';
 
+@ExportService({path: 'oa-category'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class OACatExportService extends AbstractExportService {
 
     quote = '"';

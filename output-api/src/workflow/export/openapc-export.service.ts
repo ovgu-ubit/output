@@ -1,19 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ContractService } from '../../contract/contract.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@ExportService({path: 'openapc'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class OpenAPCExportService extends AbstractExportService {
 
     quote = '"';

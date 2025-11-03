@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { RoleService } from 'src/app/services/entities/role.service';
 
 @Component({
-  selector: 'app-role-form',
-  templateUrl: './role-form.component.html',
-  styleUrls: ['./role-form.component.css']
+    selector: 'app-role-form',
+    templateUrl: './role-form.component.html',
+    styleUrls: ['./role-form.component.css'],
+    standalone: false
 })
 export class RoleFormComponent implements OnInit {
 

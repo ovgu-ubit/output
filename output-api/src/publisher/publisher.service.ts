@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
-import { Publisher } from './Publisher';
-import { AliasPublisher } from './AliasPublisher';
+import { Publisher } from './Publisher.entity';
+import { AliasPublisher } from './AliasPublisher.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { PublisherIndex } from '../../../output-interfaces/PublicationIndex';
-import { Publication } from '../publication/core/Publication';
+import { Publication } from '../publication/core/Publication.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { mergeEntities } from '../common/merge';
-import { PublisherDOI } from './PublisherDOI';
+import { PublisherDOI } from './PublisherDOI.entity';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {

@@ -1,9 +1,10 @@
 import { Component, OnInit, Input } from '@angular/core';
 
 @Component({
-  selector: 'app-breadcrump',
-  templateUrl: './breadcrump.component.html',
-  styleUrls: ['./breadcrump.component.css']
+    selector: 'app-breadcrump',
+    templateUrl: './breadcrump.component.html',
+    styleUrls: ['./breadcrump.component.css'],
+    standalone: false
 })
 
 export class BreadcrumpComponent implements OnInit {

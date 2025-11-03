@@ -10,9 +10,10 @@ import { Entity } from '../../../../../output-interfaces/Publication';
 import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 
 @Component({
-  selector: 'app-select-entity',
-  templateUrl: './select-entity.component.html',
-  styleUrl: './select-entity.component.css'
+    selector: 'app-select-entity',
+    templateUrl: './select-entity.component.html',
+    styleUrl: './select-entity.component.css',
+    standalone: false
 })
 export class SelectEntityComponent<T extends Entity> implements OnInit, OnChanges {
   ents: T[];

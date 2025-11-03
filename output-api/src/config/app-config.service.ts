@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Config } from './ConfigEntity';
+import { In, Repository } from 'typeorm';
+import { Config } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -20,8 +20,44 @@ export class AppConfigService {
         }
     }
 
-    setDefaultReportingYear(value: number) {
-        this.repository.save({ key: 'reporting_year', value: value as any as string })
+    public listDatabaseConfig(key?: string) {
+        if (!key) return this.repository.find();
+        else return this.repository.findOneBy({ key })
+    }
+
+    public async setDatabaseConfig(key: string, value: any) {
+        if (!key) return null;
+        let row = await this.repository.findOneBy({ key });
+        if (!row) return this.repository.save({ key, value })
+        else {
+            row.value = value
+            return this.repository.save(row)
+        }
+    }
+
+    async reconcileDefaults(defaults: Record<string, unknown>) {
+        // schon vorhandene holen
+        const existing = await this.repository.find({
+            select: ['key'],
+        });
+        const have = existing.map((r) => `${r.key}`);
+
+        // fehlende bilden
+        let missing = Object.entries(defaults).filter(([key, value]) => {
+            return !have.find(e => 
+                e == key)
+        })
+        
+        let missing1 = missing.map(([key, value]) =>
+            {return { key, value }}
+        );
+
+        if (missing1.length) {
+            await this.repository.save(missing1);
+        }
+
+        let over = have.filter(key => !Object.keys(defaults).find(e => e === key))
+        if (over.length) await this.repository.delete({key:In(over)});
     }
 }
 

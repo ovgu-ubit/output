@@ -7,9 +7,10 @@ import { CostCenterFormComponent } from '../../../form/cost-center-form/cost-cen
 import { TableComponent } from 'src/app/table/table-component/table.component';
 
 @Component({
-  selector: 'app-cost-center',
-  templateUrl: './cost-center.component.html',
-  styleUrls: ['./cost-center.component.css']
+    selector: 'app-cost-center',
+    templateUrl: './cost-center.component.html',
+    styleUrls: ['./cost-center.component.css'],
+    standalone: false
 })
 export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit {
   buttons: TableButton[] = [

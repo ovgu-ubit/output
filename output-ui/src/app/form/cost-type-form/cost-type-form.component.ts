@@ -3,9 +3,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 
 @Component({
-  selector: 'app-cost-type-form',
-  templateUrl: './cost-type-form.component.html',
-  styleUrls: ['./cost-type-form.component.css']
+    selector: 'app-cost-type-form',
+    templateUrl: './cost-type-form.component.html',
+    styleUrls: ['./cost-type-form.component.css'],
+    standalone: false
 })
 export class CostTypeFormComponent implements OnInit {
   name = "Kostenart"

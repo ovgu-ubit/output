@@ -3,9 +3,10 @@ import { Author } from '../../../../../output-interfaces/Publication';
 import { SelectEntityComponent } from '../../shared/select-entity/select-entity.component';
 
 @Component({
-  selector: 'app-select-author',
-  templateUrl: './select-author.component.html',
-  styleUrl: './select-author.component.css'
+    selector: 'app-select-author',
+    templateUrl: './select-author.component.html',
+    styleUrl: './select-author.component.css',
+    standalone: false
 })
 export class SelectAuthorComponent extends SelectEntityComponent<Author> {
 

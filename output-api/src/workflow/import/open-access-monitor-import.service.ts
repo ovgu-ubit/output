@@ -1,9 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -19,7 +19,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { ImportService } from './abstract-import';
 
+@ImportService({path: 'open_access_monitor'})
 @Injectable()
 export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 
@@ -66,7 +68,7 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     protected parallelCalls = 1;
 
     async setReportingYear(year: string) {
-        this.param_string = await this.configService.get('api_key_oam');
+        this.param_string = await this.configService.get('SECRET_OAM');
         this.ror_id = await this.configService.get('ror_id');
         this.year = year;
     }

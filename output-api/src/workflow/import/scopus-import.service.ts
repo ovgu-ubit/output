@@ -1,9 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -19,7 +19,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
+import { ImportService } from './abstract-import';
 
+@ImportService({path: 'scopus'})
 @Injectable()
 export class ScopusImportService extends ApiImportOffsetService {
 
@@ -33,7 +35,7 @@ export class ScopusImportService extends ApiImportOffsetService {
     }
 
     private searchText = '';
-    private affiliationTags;
+    private affiliation_tags;
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -71,14 +73,14 @@ export class ScopusImportService extends ApiImportOffsetService {
     protected parallelCalls = 1;
 
     async setReportingYear(year: string) {
-        (await this.configService.get('searchTags')).forEach(tag => {
+        (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + " or "
         })
-        this.affiliationTags = await this.configService.get('affiliationTags');
+        this.affiliation_tags = await this.configService.get('affiliation_tags');
         this.params = [
             { key: 'query', value: 'AFFIL(' + this.searchText.slice(0, this.searchText.length - 4) + ')+and+PUBYEAR+IS+' + year },
             { key: 'view', value: 'complete' },
-            { key: 'apiKey', value: await this.configService.get('api_key_scopus') }]
+            { key: 'apiKey', value: await this.configService.get('SECRET_SCOPUS') }]
     }
     protected importTest(element: any): boolean {
         return element && element.affiliation && this.affiliationIncludesTags(element.affiliation)
@@ -115,8 +117,8 @@ export class ScopusImportService extends ApiImportOffsetService {
         return false;
     }
     private async affiliationTagMatch(affiliation: string) {
-        for (let i = 0; i < this.affiliationTags.length; i++) {
-            if (affiliation.toLowerCase().includes((await this.configService.get('affiliationTags'))[i])) return true;
+        for (let i = 0; i < this.affiliation_tags.length; i++) {
+            if (affiliation.toLowerCase().includes((await this.configService.get('affiliation_tags'))[i])) return true;
         }
         return false;
     }

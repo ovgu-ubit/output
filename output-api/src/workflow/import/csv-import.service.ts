@@ -3,11 +3,11 @@ import * as fs from 'fs';
 import * as moment from 'moment';
 import * as Papa from 'papaparse';
 import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { GEIdentifier } from '../../greater_entity/GEIdentifier';
-import { Publication } from '../../publication/core/Publication';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { GEIdentifier } from '../../greater_entity/GEIdentifier.entity';
+import { Publication } from '../../publication/core/Publication.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -74,7 +74,7 @@ export class CSVImportService extends AbstractImportService {
     private path: string;
 
     public async setUp(file: Express.Multer.File, importConfig: CSVMapping, updateMapping?: UpdateMapping) {
-        this.path = await this.configService.get('CONFIG_PATH')
+        this.path = await this.configService.get('APP_CONFIG_PATH')
         this.file = file;
         if (typeof importConfig == 'string') this.importConfig = JSON.parse(importConfig + '');
         else this.importConfig = importConfig;
@@ -439,7 +439,7 @@ export class CSVImportService extends AbstractImportService {
     }
 
     async getConfigs() {
-        this.path = await this.configService.get('CONFIG_PATH')
+        this.path = await this.configService.get('APP_CONFIG_PATH')
         return fs.readFileSync(this.path + 'csv-mappings.json').toString();
     }
 

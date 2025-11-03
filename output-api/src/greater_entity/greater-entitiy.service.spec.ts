@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { GreaterEntityService } from './greater-entitiy.service';
-import { GreaterEntity } from './GreaterEntity';
-import { GEIdentifier } from './GEIdentifier';
+import { GreaterEntity } from './GreaterEntity.entity';
+import { GEIdentifier } from './GEIdentifier.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('GreaterEntityService', () => {

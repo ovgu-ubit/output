@@ -3,15 +3,15 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
-import { Subject, takeUntil } from 'rxjs';
-import { PublicationService } from 'src/app/services/entities/publication.service';
-import { ConfigService } from 'src/app/services/config.service';
+import { map, merge, Subject, takeUntil } from 'rxjs';
 import { CSVMapping } from '../../../../../../output-interfaces/Config';
+import { ConfigService } from '../../services/config.service';
 
 @Component({
   selector: 'app-csv-format',
   templateUrl: './csv-format.component.html',
-  styleUrls: ['./csv-format.component.css']
+  styleUrls: ['./csv-format.component.css'],
+  standalone: false
 })
 export class CsvFormatComponent implements OnInit, AfterViewInit {
 
@@ -22,7 +22,7 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
   format: CSVMapping;
   available_formats: CSVMapping[];
 
-  newFormat:CSVMapping = {
+  newFormat: CSVMapping = {
     name: 'Neues Format anlegen',
     encoding: '',
     delimiter: '',
@@ -72,16 +72,23 @@ export class CsvFormatComponent implements OnInit, AfterViewInit {
 
   @ViewChild(MatSelect) select: MatSelect;
 
-  optional_fields;
+  optional_fields: {
+    abstract?: boolean,
+    citation?: boolean,
+    page_count?: boolean,
+    pub_date_submitted?: boolean,
+    pub_date_print?: boolean,
+    peer_reviewed?: boolean
+  } = {};
 
   constructor(public dialogRef: MatDialogRef<CsvFormatComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService,private configService:ConfigService,
+    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService, private configService: ConfigService,
     private formBuilder: FormBuilder) { }
 
   ngOnInit(): void {
-    this.configService.getOptionalFields().subscribe(data => {
-      this.optional_fields = data;
-    });
+    this.configService.get("optional_fields").pipe(map(data => {
+      this.optional_fields = data.value;
+    })).subscribe();
     this.format = this.data.csvFormat;
     this.csv = this.data.path.includes("csv")
     if (!this.format) this.format = this.newFormat;

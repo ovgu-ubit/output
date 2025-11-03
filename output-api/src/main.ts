@@ -4,12 +4,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import * as express from 'express'
+import express from 'express'
 import * as bodyParser from 'body-parser';
 import * as fs from 'fs'
 import * as http from 'http'
 import * as https from 'https'
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
     const server = express();

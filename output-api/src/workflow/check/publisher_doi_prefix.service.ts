@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { ReportItemService } from '../report-item.service';
-import { AbstractPlausibilityService } from './abstract-plausibility.service';
+import { AbstractPlausibilityService, PlausibilityService } from './abstract-plausibility.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 
+@PlausibilityService({path: 'publisher_doi'})
 @Injectable()
 /**
  * abstract class for all API imports that are based on pagesize and offsets
@@ -15,7 +16,6 @@ export class PublisherDOIPrefixService extends AbstractPlausibilityService {
         super(publicationService, reportService)
     }
     name = 'Publisher DOI Prefix Check'
-
 
     async checkPub(pub: Publication, idx: number) {
         let res = false;

@@ -3,16 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { Author } from '../../author/Author';
-import { AuthorPublication } from '../relations/AuthorPublication';
-import { Publication } from './Publication';
-import { Institute } from '../../institute/Institute';
-import { PublicationIdentifier } from './PublicationIdentifier';
-import { PublicationSupplement } from './PublicationSupplement';
-import { PublicationDuplicate } from './PublicationDuplicate';
-import { Invoice } from '../../invoice/Invoice';
-import { CostItem } from '../../invoice/CostItem';
-import { Role } from '../relations/Role';
+import { Author } from '../../author/Author.entity';
+import { AuthorPublication } from '../relations/AuthorPublication.entity';
+import { Publication } from './Publication.entity';
+import { Institute } from '../../institute/Institute.entity';
+import { PublicationIdentifier } from './PublicationIdentifier.entity';
+import { PublicationSupplement } from './PublicationSupplement.entity';
+import { PublicationDuplicate } from './PublicationDuplicate.entity';
+import { Invoice } from '../../invoice/Invoice.entity';
+import { CostItem } from '../../invoice/CostItem.entity';
+import { Role } from '../relations/Role.entity';
 import { InstituteService } from '../../institute/institute.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { mergeEntities } from '../../common/merge';
@@ -106,61 +106,61 @@ export class PublicationService {
             .addSelect("publication.locked", "locked")
             .groupBy("publication.id")
 
-        if ((await this.configService.get("pub_index_columns")).includes("title")) {
+        if ((await this.configService.get("pub_index_columns"))["title"]) {
             query = query.addSelect("publication.title", "title").addGroupBy("publication.title")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("doi")) {
+        if ((await this.configService.get("pub_index_columns"))["doi"]) {
             query = query.addSelect("publication.doi", "doi").addGroupBy("publication.doi")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("authors")) {
+        if ((await this.configService.get("pub_index_columns"))["authors"]) {
             query = query.addSelect("publication.authors", "authors").addGroupBy("publication.authors")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("authors_inst")) {
+        if ((await this.configService.get("pub_index_columns"))["authors_inst"]) {
             query = query.addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
                 .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("corr_inst")) {
+        if ((await this.configService.get("pub_index_columns"))["corr_inst"]) {
             query = query.addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("greater_entity")) {
+        if ((await this.configService.get("pub_index_columns"))["greater_entity"]) {
             this.filter_joins.add("greater_entity")
             query = query.leftJoin("publication.greater_entity", "greater_entity").addSelect("greater_entity.label", "greater_entity").addGroupBy("greater_entity.label")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("oa_category")) {
+        if ((await this.configService.get("pub_index_columns"))["oa_category"]) {
             this.filter_joins.add("oa_category")
             query = query.leftJoin("publication.oa_category", "oa_category").addSelect("oa_category.label", "oa_category").addGroupBy("oa_category.label")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("locked_status")) {
+        if ((await this.configService.get("pub_index_columns"))["locked_status"]) {
             query = query.addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("status")) {
+        if ((await this.configService.get("pub_index_columns"))["status"]) {
             query = query.addSelect("publication.status", "status").addGroupBy("publication.status")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("edit_date")) {
+        if ((await this.configService.get("pub_index_columns"))["edit_date"]) {
             query = query.addSelect("publication.edit_date", "edit_date")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("import_date")) {
+        if ((await this.configService.get("pub_index_columns"))["import_date"]) {
             query = query.addSelect("publication.import_date", "import_date")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("pub_type")) {
+        if ((await this.configService.get("pub_index_columns"))["pub_type"]) {
             this.filter_joins.add("publication_type")
             query = query.leftJoin("publication.pub_type", "publication_type").addSelect("publication_type.label", "pub_type").addGroupBy("publication_type.label")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("contract")) {
+        if ((await this.configService.get("pub_index_columns"))["contract"]) {
             this.filter_joins.add("contract")
             query = query.leftJoin("publication.contract", "contract").addSelect("contract.label", "contract").addGroupBy("contract.label")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("publisher")) {
+        if ((await this.configService.get("pub_index_columns"))["publisher"]) {
             this.filter_joins.add("publisher")
             query = query.leftJoin("publication.publisher", "publisher").addSelect("publisher.label", "publisher").addGroupBy("publisher.label")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("pub_date")) {
+        if ((await this.configService.get("pub_index_columns"))["pub_date"]) {
             query = query.addSelect("publication.pub_date", "pub_date").addGroupBy("publication.pub_date")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("link")) {
+        if ((await this.configService.get("pub_index_columns"))["link"]) {
             query = query.addSelect("publication.link", "link")
         }
-        if ((await this.configService.get("pub_index_columns")).includes("data_source")) {
+        if ((await this.configService.get("pub_index_columns"))["data_source"]) {
             query = query.addSelect("publication.dataSource", "data_source")
         }
 

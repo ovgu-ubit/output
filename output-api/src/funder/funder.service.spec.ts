@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { FunderService } from './funder.service';
-import { Funder } from './Funder';
-import { AliasFunder } from './AliasFunder';
+import { Funder } from './Funder.entity';
+import { AliasFunder } from './AliasFunder.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { AppConfigService } from '../config/app-config.service';

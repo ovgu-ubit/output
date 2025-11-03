@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import * as XLSX from 'xlsx';
@@ -18,10 +18,8 @@ import { InvoiceService } from '../../invoice/invoice.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@ExportService({path: 'excel'})
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class ExcelExportService extends AbstractExportService {
 
     excel_response = true;

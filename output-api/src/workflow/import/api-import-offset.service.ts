@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { ConflictException, Injectable } from '@nestjs/common';
 import { Observable, concatWith, map, mergeAll, queueScheduler, scheduled } from 'rxjs';
-import { Publication } from '../../publication/core/Publication';
+import { Publication } from '../../publication/core/Publication.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';

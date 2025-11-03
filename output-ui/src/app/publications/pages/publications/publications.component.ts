@@ -6,7 +6,7 @@ import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, concatMap, map, merge } from 'rxjs';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
-import { ConfigService } from 'src/app/services/config.service';
+import { ConfigService} from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
@@ -20,14 +20,15 @@ import { PublicationFormComponent } from '../../dialogs/publication-form/publica
 import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
 
 @Component({
-  selector: 'app-publications',
-  templateUrl: './publications.component.html',
-  styleUrls: ['./publications.component.css']
+    selector: 'app-publications',
+    templateUrl: './publications.component.html',
+    styleUrls: ['./publications.component.css'],
+    standalone: false
 })
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard, private configService: ConfigService) { }
+    private clipboard: Clipboard, private configService:ConfigService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
@@ -71,28 +72,28 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       })
     }))
 
-    ob$ = merge(ob$, this.configService.getIndexColumns().pipe(concatMap(data => {
+    ob$ = merge(ob$, this.configService.get("pub_index_columns").pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
-      if (data.includes("title")) headers.push({ colName: 'title', colTitle: 'Titel' })
-      if (data.includes("doi")) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
-      if (data.includes("link")) headers.push({ colName: 'link', colTitle: 'Link', type: 'link' })
-      if (data.includes("authors")) headers.push({ colName: 'authors', colTitle: 'Personen' })
-      if (data.includes("authors_inst")) headers.push({ colName: 'authors_inst', colTitle: 'Personen ' + this.institution, type: 'authors' })
-      if (data.includes("corr_inst")) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
-      if (data.includes("pub_type")) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
-      if (data.includes("greater_entity")) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
-      if (data.includes("publisher")) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
-      if (data.includes("contract")) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
-      if (data.includes("oa_category")) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
-      if (data.includes("locked_status")) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
-      if (data.includes("status")) headers.push({ colName: 'status', colTitle: 'Status', type: 'number' })
-      if (data.includes("pub_date")) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
-      if (data.includes("edit_date")) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
-      if (data.includes("import_date")) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
-      if (data.includes("data_source")) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
+      if (data.value["title"]) headers.push({ colName: 'title', colTitle: 'Titel' })
+      if (data.value["doi"]) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
+      if (data.value["link"]) headers.push({ colName: 'link', colTitle: 'Link', type: 'link' })
+      if (data.value["authors"]) headers.push({ colName: 'authors', colTitle: 'Personen' })
+      if (data.value["authors_inst"]) headers.push({ colName: 'authors_inst', colTitle: 'Personen ' + this.institution, type: 'authors' })
+      if (data.value["corr_inst"]) headers.push({ colName: 'corr_inst', colTitle: 'Corr. Institut' })
+      if (data.value["pub_type"]) headers.push({ colName: 'pub_type', colTitle: 'Publikationsart' })
+      if (data.value["greater_entity"]) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
+      if (data.value["publisher"]) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
+      if (data.value["contract"]) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
+      if (data.value["oa_category"]) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
+      if (data.value["locked_status"]) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
+      if (data.value["status"]) headers.push({ colName: 'status', colTitle: 'Status', type: 'number' })
+      if (data.value["pub_date"]) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
+      if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
+      if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
+      if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
       this.headers = headers;
-      return this.configService.getInstition().pipe(map(data => {
-        this.institution = data.short_label;
+      return this.configService.get("institution_short_label").pipe(map(data => {
+        this.institution = data.value
         let header = this.headers.find(e => e.colName === 'authors_inst')
         if (header) header.colTitle = 'Personen ' + this.institution;
       }))
@@ -198,9 +199,9 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       page: 0,
       pageSize: 10
     };
-    this.publicationService.getDefaultReportingYear().pipe(concatMap(data => {
-      this.table.reporting_year = data;
-      if (data) this.name = 'Publikationen des Jahres ' + data;
+    this.configService.get("reporting_year").pipe(concatMap(data => {
+      this.table.reporting_year = data?.value;
+      if (data) this.name = 'Publikationen des Jahres ' + data.value;
       else this.name = 'Publikationen ohne Datumsangabe'
       return this.table.updateData();
     })).subscribe();

@@ -20,7 +20,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     AuthorModule,
     PublicationModule,
     InstituteModule,
-    AuthorizationModule,
+    AuthorizationModule.forRootAsync(),
     ContractModule,
     FunderModule,
     GreaterEntityModule,

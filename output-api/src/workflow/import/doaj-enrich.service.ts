@@ -3,9 +3,9 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { Observable, catchError, delay, mergeAll, of, queueScheduler, scheduled } from 'rxjs';
 import { FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -21,7 +21,9 @@ import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { EnrichService } from './api-enrich-doi.service';
 
+@EnrichService({path: 'doaj'})
 @Injectable()
 /**
  * abstract class for all API enrichs that are based on DOI URL request

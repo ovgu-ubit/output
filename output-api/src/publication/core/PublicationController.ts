@@ -4,13 +4,13 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
 import { SearchFilter } from "../../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
-import { Publication } from "./Publication";
+import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { AppConfigService } from "../../config/app-config.service";
 import { PublicationService } from "./publication.service";
-import { PublicationDuplicate } from "./PublicationDuplicate";
+import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
-import { AbstractFilterService } from "../../workflow/filter/abstract-filter.service";
+import { AbstractFilterService, getFilterServiceMeta } from "../../workflow/filter/abstract-filter.service";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -21,6 +21,13 @@ export class PublicationController {
         private appConfigService: AppConfigService,
         private configService: AppConfigService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
+
+      list() {
+        return this.filterServices.map(i => {
+          const meta = getFilterServiceMeta(i.constructor as Function)!;
+          return { path: meta.path };
+        });
+      }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -132,29 +139,8 @@ export class PublicationController {
     }
 
     @Get('reporting_year')
-    @ApiQuery({
-        name: 'default',
-        type: 'boolean',
-        required: false
-    })
-    getReportingYear(@Query('default') standard: boolean) {
-        if (standard) return this.appConfigService.get('reporting_year');
-        else return this.publicationService.getReportingYears();
-    }
-
-    @Post('reporting_year')
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    @ApiBody({
-        description: '<p>JSON Request:</p>',
-        schema: {
-            example: {
-                year: 2023
-            }
-        }
-    })
-    setReportingYear(@Body('year') year: number) {
-        return this.appConfigService.setDefaultReportingYear(year);
+    getReportingYear() {
+        return this.publicationService.getReportingYears();
     }
 
     @Post('combine')
@@ -196,7 +182,7 @@ export class PublicationController {
     async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
         let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (let path of paths) {
-            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+            let so = this.list().findIndex(e => e.path === path)
             if (so === -1) throw new NotFoundException();
             res = await this.filterServices[so].filter(res)
         }
@@ -206,9 +192,9 @@ export class PublicationController {
     @Get('filter')
     async get_filter() {
         let result = [];
-        for (let i = 0; i < (await this.configService.get('filter_services')).length; i++) {
+        for (let i = 0; i < this.list().length; i++) {
             result.push({
-                path: (await this.configService.get('filter_services'))[i].path,
+                path: this.list()[i].path,
                 label: this.filterServices[i].getName()
             })
         }

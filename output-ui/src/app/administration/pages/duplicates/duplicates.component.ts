@@ -7,9 +7,10 @@ import { PublicationDuplicate } from '../../../../../../output-interfaces/Public
 import { TableComponent } from 'src/app/table/table-component/table.component';
 
 @Component({
-  selector: 'app-duplicates',
-  templateUrl: './duplicates.component.html',
-  styleUrl: './duplicates.component.css'
+    selector: 'app-duplicates',
+    templateUrl: './duplicates.component.html',
+    styleUrl: './duplicates.component.css',
+    standalone: false
 })
 export class DuplicatesComponent implements TableParent<PublicationDuplicate>, OnInit {
   buttons: TableButton[] = [

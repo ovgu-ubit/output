@@ -11,9 +11,10 @@ import { ImportConfigComponent } from '../../components/import-config/import-con
 import { CsvFormatComponent } from '../../components/csv-format/csv-format.component';
 
 @Component({
-  selector: 'app-import',
-  templateUrl: './import.component.html',
-  styleUrls: ['./import.component.css']
+    selector: 'app-import',
+    templateUrl: './import.component.html',
+    styleUrls: ['./import.component.css'],
+    standalone: false
 })
 export class ImportComponent implements OnInit {
 

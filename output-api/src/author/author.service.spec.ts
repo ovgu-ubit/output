@@ -4,10 +4,10 @@ import { of } from 'rxjs';
 import { Repository, FindOperator } from 'typeorm';
 
 import { AuthorService } from './author.service';
-import { Author } from './Author';
-import { AuthorPublication } from '../publication/relations/AuthorPublication';
-import { AliasAuthorFirstName } from './AliasAuthorFirstName';
-import { AliasAuthorLastName } from './AliasAuthorLastName';
+import { Author } from './Author.entity';
+import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
+import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
+import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
 import { InstituteService } from '../institute/institute.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';

@@ -5,9 +5,10 @@ import { AuthorIndex } from '../../../../../../output-interfaces/PublicationInde
 import { AuthorFormComponent } from 'src/app/form/author-form/author-form.component';
 
 @Component({
-  selector: 'app-authors',
-  templateUrl: './authors.component.html',
-  styleUrls: ['./authors.component.css']
+    selector: 'app-authors',
+    templateUrl: './authors.component.html',
+    styleUrls: ['./authors.component.css'],
+    standalone: false
 })
 export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
   buttons: TableButton[] = [

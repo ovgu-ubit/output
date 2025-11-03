@@ -18,6 +18,13 @@ import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 import { AppConfigService } from '../../config/app-config.service';
 
+export function EnrichService(meta: {path: string}): ClassDecorator {
+  return (target) => Reflect.defineMetadata("enrich_service", meta, target);
+}
+export function getEnrichServiceMeta(target: Function): {path: string} | undefined {
+  return Reflect.getMetadata("enrich_service", target);
+}
+
 @Injectable()
 /**
  * abstract class for all API enrichs that are based on DOI URL request

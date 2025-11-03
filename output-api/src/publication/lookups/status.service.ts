@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Status } from './Status';
+import { Status } from './Status.entity';
 import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()

@@ -5,7 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { ConfigService } from 'src/app/services/config.service';
+import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
@@ -48,7 +48,8 @@ export class PubValidator {
 @Component({
   selector: 'app-publication-form',
   templateUrl: './publication-form.component.html',
-  styleUrls: ['./publication-form.component.css']
+  styleUrls: ['./publication-form.component.css'],
+  standalone: false
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {
   institution: string;
@@ -75,7 +76,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   today = new Date();
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
-  optional_fields;
+  optional_fields: {
+    abstract?: boolean,
+    citation?: boolean,
+    page_count?: boolean,
+    pub_date_submitted?: boolean,
+    pub_date_print?: boolean,
+    peer_reviewed?: boolean
+  } = {};
 
   publisherForm = PublisherFormComponent;
   contractForm = ContractFormComponent;
@@ -88,7 +96,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
     private dialog: MatDialog, public pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar,
     public oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
-    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService, private configService: ConfigService,
+    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService,
+    private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
     this.form = this.formBuilder.group({
       id: [''],
@@ -149,16 +158,15 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    let ob$ = this.configService.getOptionalFields().pipe(map(data => {
-      this.optional_fields = data;
-    }
-    ));
-    ob$ = merge(ob$, this.configService.getInstition().pipe(map(data => {
-      this.institution = data.short_label;
+    let ob$ = this.configService.get("optional_fields").pipe(map(data => {
+      this.optional_fields = data.value;
+    }));
+    ob$ = merge(ob$, this.configService.get("institution_short_label").pipe(map(data => {
+      this.institution = data.value;
     }
     )));
-    ob$ = merge(ob$, this.configService.getImportService().pipe(map(data => {
-      this.doi_import_service = data;
+    ob$ = merge(ob$, this.configService.get("doi_import_service").pipe(map(data => {
+      this.doi_import_service = data?.value;
     })))
     if (this.data.entity?.id) {
       this.edit = true;

@@ -5,9 +5,10 @@ import { Role } from '../../../../../../output-interfaces/Publication';
 import { RoleFormComponent } from '../../../form/role-form/role-form.component';
 
 @Component({
-  selector: 'app-roles',
-  templateUrl: './roles.component.html',
-  styleUrls: ['./roles.component.css']
+    selector: 'app-roles',
+    templateUrl: './roles.component.html',
+    styleUrls: ['./roles.component.css'],
+    standalone: false
 })
 export class RolesComponent implements TableParent<Role>, OnInit {
   buttons: TableButton[] = [

@@ -1,9 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity';
-import { Publisher } from '../../publisher/Publisher';
+import { Funder } from '../../funder/Funder.entity';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
+import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
 import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
@@ -16,10 +16,11 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { ApiEnrichDOIService } from './api-enrich-doi.service';
+import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
+@EnrichService({path: 'open_access_monitor'})
 @Injectable()
 export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
 
@@ -60,7 +61,7 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
     protected parallelCalls = 1;
 
     protected async init() {
-        this.param_string = 'token=' + await this.configService.get('api_key_oam');
+        this.param_string = 'token=' + await this.configService.get('SECRET_OAM');
     }
 
     protected createUrl(doi: string) {

@@ -20,6 +20,7 @@ import { CompareOperation, JoinOperation } from '../../../../../output-interface
 import { Entity } from '../../../../../output-interfaces/Publication';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { CombineDialogComponent } from '../dialog/combine-dialog/combine-dialog.component';
+import { ConfigService } from 'src/app/administration/services/config.service';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {
@@ -36,9 +37,10 @@ export class CustomPaginator extends MatPaginatorIntl {
  * component using material tables to show table and header toolbar with customizable buttons
  */
 @Component({
-  selector: 'appTable',
-  templateUrl: './table.component.html',
-  styleUrls: ['./table.component.scss']
+    selector: 'appTable',
+    templateUrl: './table.component.html',
+    styleUrls: ['./table.component.scss'],
+    standalone: false
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
 
@@ -90,7 +92,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
     public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
-    private publicationService: PublicationService, private store: Store) { }
+    private configService:ConfigService, private store: Store) { }
 
   public ngOnInit(): void {
     this.loading = true;
@@ -101,7 +103,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         if (data !== undefined) {
           return of(data)
         } else {
-          return this.publicationService.getDefaultReportingYear();
+          return this.configService.get("reporting_year").pipe(map(e => e?.value));
         }
       }), map(data => {
         this.reporting_year = data;
