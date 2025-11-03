@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Config } from './Config.entity';
 import { ConfigController } from './ConfigController';
 import { AppConfigService } from './app-config.service';
-import { CONFIG_DEFAULTS } from './config.defaults';
+import { CONFIG_DEFAULTS, CONFIG_DESCRIPTIONS } from './config.defaults';
 import { DatabaseConfigService } from './database.config.service';
 import { EnvSchemas } from './environment.schema';
 
@@ -38,7 +38,7 @@ export class AppConfigModule implements OnModuleInit {
   constructor(private readonly cfg: AppConfigService) { }
 
   async onModuleInit() {
-    await this.cfg.reconcileDefaults(CONFIG_DEFAULTS); // legt fehlende Keys an
+    await this.cfg.reconcileDefaults(CONFIG_DEFAULTS, CONFIG_DESCRIPTIONS); // legt fehlende Keys an
   }
 
 }

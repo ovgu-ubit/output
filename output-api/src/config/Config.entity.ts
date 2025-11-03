@@ -11,4 +11,7 @@ export class Config implements IConfig {
 
     @Column({nullable: true, type: 'simple-json'})
     value: any;
+    
+    @Column({nullable: true})
+    description?: string;
 }
