@@ -84,9 +84,9 @@ On a conceptual level, the application distinguishes five levels of access permi
 | ------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **0. Authenticated User** | May read all non-financial data but cannot modify any records.                                        |
 | **1. Reader**             | Additionally allowed to access financial data and trigger exports.                                    |
-| **2. Publication Writer** | Can modify publication-related data, but not master data.                                             |
-| **3. Writer**             | Can modify master data and execute validation checks.                                                 |
-| **4. Admin**              | Full access: may initiate imports and enrichment processes, as well as modify configuration settings. |
+| **2. Publication Writer** | Can additonally modify publication-related data, but not master data.                                             |
+| **3. Writer**             | Can additonally modify master data and execute validation checks.                                                 |
+| **4. Admin**              | Full access: may additonally initiate imports and enrichment processes, as well as modify configuration settings. |
 
 These roles define the overall security boundaries within the system and determine which operations are permitted for a given authenticated request.
 
@@ -151,6 +151,7 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 3. Build backend and run pending migrations for DB schema:
 
 > npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 
