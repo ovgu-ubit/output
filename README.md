@@ -2,7 +2,12 @@
 
 Web application for managing and analyzing publications of universities
 
-## Installation
+1. [Installation](#installation)
+2. [Configuration](#configuration)
+3. [Security Concept](#security)
+4. [Updating](#updating)
+
+## Installation <a name="installation"></a>
 ### Requirements
 - Node.JS 22
 - Installed DBMS such as Postgres with an existing given database with owner rights for the given user
@@ -66,14 +71,17 @@ Copy these distributables to your web server and configure it for an angular web
 >        </Location>
 
 
-## Configuration
+## Configuration <a name="configuration"></a>
 After the UI has been started, go with an admin role to Verwaltung/Konfiguration and adapt runtime configuration parameters to your needs.
 
-## Updating
+## Security Concept <a name="security"></a>
+
+## Updating <a name="updating"></a>
 1. Fetch new codebase from GitHub
 2. Build and deploy frontend distributables like in installation
 3. Build backend and run pending migrations for DB schema:
 
 > npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
