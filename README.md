@@ -50,7 +50,7 @@ Copy these distributables to your web server and configure it for an angular web
 >                Require all granted
 >                <IfModule mod_rewrite.c>
 >                        RewriteEngine On
->                        RewriteBase /output2/
+>                        RewriteBase /output/
 >                        RewriteRule ^index\.html$ - [L]
 >                        RewriteCond %{REQUEST_FILENAME} !-f
 >                        RewriteCond %{REQUEST_FILENAME} !-d
@@ -60,8 +60,8 @@ Copy these distributables to your web server and configure it for an angular web
 >        <Location /output/api/>
 >                <IfModule mod_proxy.c>
 >                        ProxyPreserveHost       On
->                        ProxyPass               https://server.de/your-output2-api/
->                        ProxyPassReverse        https://server.de/your-output2-api/
+>                        ProxyPass               https://server.de/your-output-api/
+>                        ProxyPassReverse        https://server.de/your-output-api/
 >                </IfModule>
 >        </Location>
 
@@ -75,4 +75,5 @@ After the UI has been started, go with an admin role to Verwaltung/Konfiguration
 3. Build backend and run pending migrations for DB schema:
 
 > npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
