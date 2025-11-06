@@ -18,7 +18,7 @@ export class CostItemFormComponent {
     { key: 'euro_value', title: 'Nettobetrag in EUR', type: 'number' },
     { key: 'vat', title: 'Mehrwertsteuer in EUR', type: 'number' },
     { key: 'normal_price', title: 'Normaler Nettopreis', type: 'number' },
-    { key: 'orig_value', title: 'Nettobetrag in Originalwährung<', type: 'number' },
+    { key: 'orig_value', title: 'Nettobetrag in Originalwährung', type: 'number' },
     { key: 'orig_currency', title: 'Originalwährung', type: 'select', select: ['USD', 'GBP', 'CHF'] },
   ]
 
