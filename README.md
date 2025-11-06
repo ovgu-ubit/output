@@ -157,10 +157,15 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 
 ## Updating <a name="updating"></a>
 1. Fetch new codebase from GitHub
-2. Build and deploy frontend distributables like in installation
-3. Build backend and run pending migrations for DB schema:
+2. Update dependencies in both output-api/ and output-ui/ with
 
-> npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+> $ npm i --force
+   
+3. Build and deploy frontend distributables like in installation
+4. Build backend and run pending migrations for DB schema:
+
+> $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 
