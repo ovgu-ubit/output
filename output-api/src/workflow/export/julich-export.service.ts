@@ -37,7 +37,7 @@ export class JulichExportService extends AbstractExportService {
 
         let rows = [];
         for (let pub of pubs) {
-            let row: any = {
+            let rowMaster: any = {
                 doi: pub.doi,
                 foerderfaehig: '',
                 name_des_verlags: pub.publisher?.label,
@@ -53,8 +53,8 @@ export class JulichExportService extends AbstractExportService {
             if (pub.invoices && pub.invoices.length > 0) {
                 for (let inv of pub.invoices) {
                     if (inv.cost_items && inv.cost_items.length > 0) {
-                        row = {
-                            ...row,
+                        let row = {
+                            ...rowMaster,
                             bemerkung: inv.cost_items[0].label,
                             originalwaehrung: inv.cost_items[0].orig_currency,
                             rechnungsbetrag_in_originalwaehrung: inv.cost_items[0].orig_value,
@@ -69,8 +69,8 @@ export class JulichExportService extends AbstractExportService {
                     }
                 }
             } else if (pub.contract) {
-                row = {
-                    ...row,
+                let row = {
+                    ...rowMaster,
                     bemerkung: '',
                     originalwaehrung: '',
                     rechnungsbetrag_in_originalwaehrung: '',
