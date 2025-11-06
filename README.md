@@ -26,18 +26,28 @@ For some services, abstract superclasses are defined. These can be extended by u
 - `output-api/src/services/check/abstract-plausibility.service.ts` defining plausibility checks
 - `output-api/src/services/export/abstract-export.service.ts` defining exports
 
-### Run backend api locally
+### Init Database
+The init service creates the DB schema and fills it with some basic master data such as open access categories. You may extend this service to initialize other master data of your institution.
+
 > $ npm run i
+>
+> $ npm run start:init
 > 
+
+### Run backend api locally
 > $ npm run start:dev
 > 
 ### Run backend productively
-We recommend running the backend api on a Linux server using pm2, adapt output-api/output-server-prod.config.js for this case and register it with pm2, running this command to update your application:
+We recommend running the backend api on a Linux server using pm2, adapt `output-api/output-server-prod.config.js'  for this case and register it with pm2, running this command to update your application:
 > $ npm run i
->
+> 
 > $ npm run build
 
-Alternatively, you can also use `npm run start:{test|prod}` after building the software.
+Before running the system the first time, use
+> $ npm run start:init_{test|prod}
+>
+
+Alternatively to pm2, you can also use `npm run start:{test|prod}` after building the software.
 
 ### run frontend locally
 > $ npm i
@@ -151,6 +161,7 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 3. Build backend and run pending migrations for DB schema:
 
 > npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 
