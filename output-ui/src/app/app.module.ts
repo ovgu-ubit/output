@@ -39,7 +39,16 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
         { provide: AuthorizationService, useClass: environment.authorization_service },
         provideHttpClient(withInterceptorsFromDi()),
-        provideHighcharts()
+        provideHighcharts({
+            modules: () => {
+                return [
+                    import('highcharts/esm/modules/accessibility'),
+                    import('highcharts/esm/modules/exporting'),
+                    //import('highcharts/esm/themes/brand-light'),
+                    import('highcharts/esm/themes/grid-light'),
+                    //import('highcharts/esm/themes/high-contrast-light'),
+                ];
+            }})
     ],
     bootstrap: [AppComponent]
 })
