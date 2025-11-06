@@ -112,7 +112,7 @@ export class CSVImportService extends AbstractImportService {
             skipEmptyLines: true,
             complete: async (result, file) => {
                 this.numberOfPublications = result.data.length;
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
+                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
                 this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
                 if (this.checkFormat(result.data, this.importConfig)) {
                     try {

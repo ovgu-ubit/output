@@ -223,7 +223,7 @@ export class DOAJEnrichService extends AbstractImportService {
         }
 
         for (let pub of this.uniqueGE) obs$.push(this.request(pub.greater_entity.identifiers.find(e => e.type === 'issn').value));
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${this.whereClause.toString()}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {

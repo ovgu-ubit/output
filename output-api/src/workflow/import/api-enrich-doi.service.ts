@@ -125,7 +125,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         }
         for (let pub of publications) obs$.push(this.request(pub.doi));
         //console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${this.whereClause.toString()}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting enrich with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "")  })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {

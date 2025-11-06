@@ -23,15 +23,15 @@ import { AbstractImportService, ImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
-@ImportService({path: 'pubmed'})
+@ImportService({ path: 'pubmed' })
 @Injectable()
 export class PubMedImportService extends AbstractImportService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
     }
@@ -71,10 +71,10 @@ export class PubMedImportService extends AbstractImportService {
         license: UpdateOptions.IGNORE,
         invoice: UpdateOptions.IGNORE,
         status: UpdateOptions.REPLACE_IF_EMPTY,
-        abstract :UpdateOptions.REPLACE_IF_EMPTY,
-        citation :UpdateOptions.IGNORE,
-        page_count :UpdateOptions.IGNORE,
-        peer_reviewed :UpdateOptions.IGNORE,
+        abstract: UpdateOptions.REPLACE_IF_EMPTY,
+        citation: UpdateOptions.IGNORE,
+        page_count: UpdateOptions.IGNORE,
+        peer_reviewed: UpdateOptions.IGNORE,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
@@ -137,7 +137,7 @@ export class PubMedImportService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with year ${this.year}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with year ${this.year} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
 
         this.obs$ = [];
         this.search().pipe(concatWith(scheduled(this.obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
@@ -294,9 +294,9 @@ export class PubMedImportService extends AbstractImportService {
         return res.slice(0, res.length - 2);
     }
     protected getGreaterEntity(element: any): GreaterEntity {
-        return  {
-            label: element['Article']['Journal'] && element['Article']['Journal']['Title']? element['Article']['Journal']['Title']['_text']: '',
-            identifiers: element['Article']['Journal'] && element['Article']['Journal']['ISSN']? !Array.isArray(element['Article']['Journal']['ISSN'])? [{
+        return {
+            label: element['Article']['Journal'] && element['Article']['Journal']['Title'] ? element['Article']['Journal']['Title']['_text'] : '',
+            identifiers: element['Article']['Journal'] && element['Article']['Journal']['ISSN'] ? !Array.isArray(element['Article']['Journal']['ISSN']) ? [{
                 type: 'issn',
                 value: element['Article']['Journal']['ISSN']['_text']
             }] : element['Article']['Journal']['ISSN'].map(e => { return { type: 'issn', value: e['_text'] } }) : undefined
@@ -381,9 +381,9 @@ export class PubMedImportService extends AbstractImportService {
                 for (let e of pt) res += e + ";"
                 return res.slice(0, res.length - 1)
             } else return pt;
-        } catch (e) {return null};
+        } catch (e) { return null };
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
         return null;
     }
     protected getPageCount(element: any): number {
