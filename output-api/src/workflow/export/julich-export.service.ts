@@ -9,11 +9,8 @@ import { PublicationService } from '../../publication/core/publication.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
-@ExportService({path: 'juelich'})
+@ExportService({ path: 'juelich' })
 @Injectable()
-/**
- * abstract class for all exports
- */
 export class JulichExportService extends AbstractExportService {
 
     excel_response = true;
@@ -53,20 +50,24 @@ export class JulichExportService extends AbstractExportService {
                 projektnummer_projektID: pub.grant_number,
                 dfg_wissenschaftsbereich: ''
             }
-            if (pub.invoices && pub.invoices.length > 0 && pub.invoices[0].cost_items && pub.invoices[0].cost_items.length > 0) {
-                row = {
-                    ...row,
-                    bemerkung: pub.invoices[0].cost_items[0].label,
-                    originalwaehrung: pub.invoices[0].cost_items[0].orig_currency,
-                    rechnungsbetrag_in_originalwaehrung: pub.invoices[0].cost_items[0].orig_value,
-                    euro_netto: pub.invoices[0].cost_items[0].euro_value,
-                    steuersatz: pub.invoices[0].cost_items[0].vat / pub.invoices[0].cost_items[0].euro_value,
-                    euro_brutto: pub.invoices[0].cost_items[0].euro_value + pub.invoices[0].cost_items[0].vat,
-                    gebuehrenart: pub.invoices[0].cost_items[0].cost_type?.label,
-                    zuordnung_zu_mitgliedschaft: '',
-                    rechnungsjahr_lizenzjahr: pub.invoices[0].date?.getFullYear(),
+            if (pub.invoices && pub.invoices.length > 0) {
+                for (let inv of pub.invoices) {
+                    if (inv.cost_items && inv.cost_items.length > 0) {
+                        row = {
+                            ...row,
+                            bemerkung: inv.cost_items[0].label,
+                            originalwaehrung: inv.cost_items[0].orig_currency,
+                            rechnungsbetrag_in_originalwaehrung: inv.cost_items[0].orig_value,
+                            euro_netto: inv.cost_items[0].euro_value,
+                            steuersatz: inv.cost_items[0].vat / inv.cost_items[0].euro_value,
+                            euro_brutto: inv.cost_items[0].euro_value + inv.cost_items[0].vat,
+                            gebuehrenart: inv.cost_items[0].cost_type?.label,
+                            zuordnung_zu_mitgliedschaft: '',
+                            rechnungsjahr_lizenzjahr: inv.date?.getFullYear(),
+                        }
+                        rows.push(row);
+                    }
                 }
-                rows.push(row);
             } else if (pub.contract) {
                 row = {
                     ...row,
