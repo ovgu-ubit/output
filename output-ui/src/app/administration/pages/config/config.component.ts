@@ -17,7 +17,7 @@ interface EditableConfig extends Config {
 })
 export class ConfigComponent implements OnInit {
 
-  displayedColumns = ['key', 'value', 'actions'];
+  displayedColumns = ['key', 'description', 'value', 'actions'];
   configs: EditableConfig[] = [];
   loading = false;
   busy = false;

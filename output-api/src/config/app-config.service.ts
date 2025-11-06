@@ -21,7 +21,7 @@ export class AppConfigService {
     }
 
     public listDatabaseConfig(key?: string) {
-        if (!key) return this.repository.find();
+        if (!key) return this.repository.find({order: {key: 'ASC'}});
         else return this.repository.findOneBy({ key })
     }
 
