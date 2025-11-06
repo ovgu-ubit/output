@@ -60,7 +60,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         });
     }
 
-    public async findOrSave(ge: GreaterEntity): Promise<GreaterEntity> {
+    public async findOrSave(ge: GreaterEntity, dryRun = false): Promise<GreaterEntity> {
         if (!ge.label && !ge.identifiers) return null;
         let result = null;
         let ids2save = [];
@@ -90,17 +90,17 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             let flag = false;
             if (ge.doaj_since && !result.doaj_since) { result.doaj_since = ge.doaj_since; flag = true; }
             if (ge.doaj_until && result.doaj_since && !result.doaj_until) { result.doaj_until = ge.doaj_until; flag = true; }
-            if (flag) await this.repository.save(result)
+            if (flag && !dryRun) await this.repository.save(result)
 
             //find associated ids
             let ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
             if (ge.identifiers && ge.identifiers.length > 0) {
                 ids2save = ge.identifiers.filter(i => !ids.find(e => e.value === i.value));
             }
-            if (ids2save.length > 0) await this.idRepository.save(ids2save.map(e => { return { ...e, entity: result } }));
+            if (ids2save.length > 0 && !dryRun) await this.idRepository.save(ids2save.map(e => { return { ...e, entity: result } }));
             return result;
         } else { //3. if not found, save
-            result = await this.repository.save({ label: ge.label });
+            result = dryRun? null : await this.repository.save({ label: ge.label });
             if (result && ge.identifiers) await this.idRepository.save(ge.identifiers.map(e => { return { ...e, entity: result } }));
             return result;
         }

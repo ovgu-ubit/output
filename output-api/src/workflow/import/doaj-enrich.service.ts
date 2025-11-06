@@ -191,8 +191,9 @@ export class DOAJEnrichService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
-    public async import(update: boolean, by_user?: string) {
+    public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Enrich', this.name, by_user);
@@ -222,7 +223,7 @@ export class DOAJEnrichService extends AbstractImportService {
         }
 
         for (let pub of this.uniqueGE) obs$.push(this.request(pub.greater_entity.identifiers.find(e => e.type === 'issn').value));
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${this.whereClause.toString()}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {

@@ -11,10 +11,10 @@ import { ImportConfigComponent } from '../../components/import-config/import-con
 import { CsvFormatComponent } from '../../components/csv-format/csv-format.component';
 
 @Component({
-    selector: 'app-import',
-    templateUrl: './import.component.html',
-    styleUrls: ['./import.component.css'],
-    standalone: false
+  selector: 'app-import',
+  templateUrl: './import.component.html',
+  styleUrls: ['./import.component.css'],
+  standalone: false
 })
 export class ImportComponent implements OnInit {
 
@@ -38,7 +38,7 @@ export class ImportComponent implements OnInit {
     private _snackBar: MatSnackBar) { }
 
   async ngOnInit() {
-    let ob$:Observable<any> = this.reportService.getReports('Import').pipe(map(
+    let ob$: Observable<any> = this.reportService.getReports('Import').pipe(map(
       data => {
         this.reportFiles = data.sort((a, b) => b.localeCompare(a));
       }));
@@ -63,11 +63,11 @@ export class ImportComponent implements OnInit {
     ob$.subscribe({
       error: err => {
         this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-      console.log(err)
-    }
+          panelClass: [`danger-snackbar`],
+          verticalPosition: 'top'
+        })
+        console.log(err)
+      }
     })
     this.imports = await firstValueFrom(this.importService.getImports());
     for (let im of this.imports) {
@@ -75,6 +75,7 @@ export class ImportComponent implements OnInit {
       this.forms[im.label] = this.formBuilder.group({
         reporting_year: ['', Validators.required],
         update: [''],
+        dry_run: [false],
       });
     }
   }
@@ -94,7 +95,7 @@ export class ImportComponent implements OnInit {
     if (importO.path !== 'csv' && importO.path !== 'xls') {
       if (this.forms[importO.label].invalid) return;
       this.forms[importO.label].disable();
-      this.importService.start(importO.path, this.forms[importO.label].get('update').value, this.forms[importO.label].get('reporting_year').value).subscribe({
+      this.importService.start(importO.path, this.forms[importO.label].get('update').value, this.forms[importO.label].get('reporting_year').value, this.forms[importO.label].get('dry_run').value).subscribe({
         next: data => {
           this.runningImports.push(importO)
           this.obs$[importO.label] = this.importService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
@@ -128,9 +129,10 @@ export class ImportComponent implements OnInit {
       } else {
         this.forms[importO.label].disable();
         let formData = new FormData();
-        formData.append("file",this.file)
-        formData.append("update",this.forms[importO.label].get('update').value)
-        formData.append("format",JSON.stringify(this.csv_format))
+        formData.append("file", this.file)
+        formData.append("update", this.forms[importO.label].get('update').value ? 'true' : 'false')
+        formData.append("dry_run", this.forms[importO.label].get('dry_run').value ? 'true' : 'false')
+        formData.append("format", JSON.stringify(this.csv_format))
         this.importService.startCSV(formData).subscribe({
           next: data => {
             this.runningImports.push(importO)
@@ -166,9 +168,10 @@ export class ImportComponent implements OnInit {
       } else {
         this.forms[importO.label].disable();
         let formData = new FormData();
-        formData.append("file",this.file)
-        formData.append("update",this.forms[importO.label].get('update').value)
-        formData.append("format",JSON.stringify(this.csv_format))
+        formData.append("file", this.file)
+        formData.append("update", this.forms[importO.label].get('update').value ? 'true' : 'false')
+        formData.append("dry_run", this.forms[importO.label].get('dry_run').value ? 'true' : 'false')
+        formData.append("format", JSON.stringify(this.csv_format))
         this.importService.startExcel(formData).subscribe({
           next: data => {
             this.runningImports.push(importO)
@@ -198,7 +201,7 @@ export class ImportComponent implements OnInit {
   }
 
   openLog(rep) {
-    this.reportService.getReport('Import',rep).subscribe({
+    this.reportService.getReport('Import', rep).subscribe({
       next: data => {
         let dialogRef = this.dialog.open(LogDialogComponent, {
           data: {
@@ -213,7 +216,7 @@ export class ImportComponent implements OnInit {
   }
 
   delete(rep) {
-    this.reportService.deleteReport('Import',rep).subscribe({
+    this.reportService.deleteReport('Import', rep).subscribe({
       next: data => {
         this.reportService.getReports('Import').subscribe({
           next: data => {
@@ -237,7 +240,7 @@ export class ImportComponent implements OnInit {
     });
   }
 
-  csvFormat(path:string) {
+  csvFormat(path: string) {
     let dialogRef = this.dialog.open(CsvFormatComponent, {
       width: '800px',
       maxHeight: '800px',

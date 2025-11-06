@@ -89,8 +89,9 @@ export class CSVImportService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
-    public async import(update: boolean, by_user?: string) {
+    public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+        this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', 'CSV-Import', by_user);
@@ -111,7 +112,7 @@ export class CSVImportService extends AbstractImportService {
             skipEmptyLines: true,
             complete: async (result, file) => {
                 this.numberOfPublications = result.data.length;
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
+                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
                 this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
                 if (this.checkFormat(result.data, this.importConfig)) {
                     try {

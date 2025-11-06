@@ -25,13 +25,13 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         return { aliases: true };
     }
 
-    public async findOrSave(title: string): Promise<PublicationType> {
+    public async findOrSave(title: string, dryRun = false): Promise<PublicationType> {
         if (!title) return null;
         let label = await this.identifyPublicationType(title);
 
         let pubtype = await this.repository.findOne({ where: { label: ILike(label) } });
 
-        if (pubtype) return pubtype;
+        if (pubtype || dryRun) return pubtype;
         else return await this.repository.save({ label }).catch(e => { throw { origin: 'pubType-service', text: `PubType ${label} could not be inserted` }; });
     }
 

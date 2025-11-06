@@ -104,8 +104,9 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
-    public async import(update: boolean, by_user?: string) {
+    public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        this.dryRun = dryRun;
         await this.init();
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -124,7 +125,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         }
         for (let pub of publications) obs$.push(this.request(pub.doi));
         //console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${this.whereClause.toString()}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting enrich with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "")  })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {

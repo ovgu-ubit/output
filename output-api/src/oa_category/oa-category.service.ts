@@ -20,10 +20,10 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         super(repository, configService);
     }
 
-    public findOrSave(title: string): Observable<OA_Category> {
+    public findOrSave(title: string, dryRun = false): Observable<OA_Category> {
         if (!title) return of(null);
         return from(this.repository.findOne({ where: { label: ILike(title) } })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(this.repository.save({ label: title }))));
+            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? of(null) : this.repository.save({ label: title }))));
         }));
     }
 
@@ -57,7 +57,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            duplicateOptions: {relations: { publications: { oa_category: true } }},
+            duplicateOptions: { relations: { publications: { oa_category: true } } },
             mergeContext: {
                 field: 'oa_category',
                 service: this.publicationService

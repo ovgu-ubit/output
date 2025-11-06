@@ -42,6 +42,7 @@ export class TokenAuthorizationService extends AuthorizationService {
                             let payload = this.jwtService.verify(token, { publicKey: key, algorithms: ['RS256'] });
                             // enrich the request object with user info for further processing
                             req['user'] = payload;
+                            req['user']['username'] = payload.id
                             req['user']['read'] = payload.permissions.find(e => (e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'reader' || e.rolename === 'admin' || e.rolename === 'publication_writer')) || (e.appname === null && e.rolename === 'admin'))
                             req['user']['write_publication'] = payload.permissions.find(e => ((e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'admin' || e.rolename === 'publication_writer')) || (e.appname === null && e.rolename === 'admin')))
                             req['user']['write'] = payload.permissions.find(e => ((e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'admin')) || (e.appname === null && e.rolename === 'admin')))
