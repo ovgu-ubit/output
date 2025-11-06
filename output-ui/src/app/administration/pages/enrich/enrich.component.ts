@@ -64,7 +64,8 @@ export class EnrichComponent implements OnInit {
     for (let im of this.enrichs) {
       this.subjects[im.label] = new Subject<any>();
       this.forms[im.label] = this.formBuilder.group({
-        reporting_year: ['', Validators.required]
+        reporting_year: ['', Validators.required],
+        dry_run: [false],
       });
     }
   }
@@ -83,7 +84,7 @@ export class EnrichComponent implements OnInit {
   startImport(importO) {
     if (this.forms[importO.label].invalid) return;
     this.forms[importO.label].disable();
-    this.enrichService.startYear(importO.path, this.forms[importO.label].get('reporting_year').value).subscribe({
+    this.enrichService.startYear(importO.path, this.forms[importO.label].get('reporting_year').value, this.forms[importO.label].get('dry_run').value).subscribe({
       next: data => {
         this.runningEnrichs.push(importO)
         this.obs$[importO.label] = this.enrichService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {

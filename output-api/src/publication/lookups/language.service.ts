@@ -23,12 +23,12 @@ export class LanguageService {
         return this.repository.findOne({where:{id}});
     }
 
-    public async findOrSave(title: string): Promise<Language> {
+    public async findOrSave(title: string, dryRun = false): Promise<Language> {
         if (!title) return null;
         let label = await this.identifyLanguage(title);
         let funder: Language;
         funder = await this.repository.findOne({ where: { label: ILike(label) } });
-        if (funder) return funder;
+        if (funder || dryRun) return funder;
         else return await this.repository.save({ label }).catch(e => { throw { origin: 'language-service', text: `Language ${label} could not be inserted` }; });
     }
     

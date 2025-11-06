@@ -30,7 +30,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         return { aliases: true, doi_prefixes: true };
     }
 
-    public async findOrSave(publisher: Publisher): Promise<Publisher> {
+    public async findOrSave(publisher: Publisher, dryRun = false): Promise<Publisher> {
         if (!publisher.label) return null;
         const canonicalPublisher = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, publisher.label);
         const label = canonicalPublisher?.label ?? publisher.label;
@@ -39,7 +39,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         if (!publisher_ent && publisher.doi_prefixes) {
             publisher_ent = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(publisher.doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
         }
-        if (publisher_ent) return publisher_ent;
+        if (publisher_ent || dryRun) return publisher_ent;
         else return this.repository.save({ label, doi_prefixes: publisher.doi_prefixes });
     }
 

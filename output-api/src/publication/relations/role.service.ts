@@ -37,11 +37,11 @@ export class RoleService {
         return ct;
     }
 
-    public async findOrSave(label: string): Promise<Role> {
+    public async findOrSave(label: string, dryRun = false): Promise<Role> {
         if (!label) return null;
         let funder: Role;
         funder = await this.repository.findOne({ where: { label: ILike('%'+label+'%') } });
-        if (funder) return funder;
+        if (funder || dryRun) return funder;
         else return await this.repository.save({ label }).catch(e => { throw { origin: 'role-service', text: `Role ${label} could not be inserted` }; });
     }
 

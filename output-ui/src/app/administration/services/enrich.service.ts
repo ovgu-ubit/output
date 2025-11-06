@@ -43,11 +43,11 @@ export class EnrichService {
     }))
   }
 
-  startYear(import_path:string, reporting_year:number) {
-    return this.http.post(environment.api + 'enrich/'+import_path, {reporting_year})
+  startYear(import_path:string, reporting_year:number, dryRun:boolean) {
+    return this.http.post(environment.api + 'enrich/'+import_path, {reporting_year, dry_run: dryRun})
   }
-  startID(import_path:string, ids:number[]) {
-    return this.http.post(environment.api + 'enrich/'+import_path, {ids})
+  startID(import_path:string, ids:number[], dryRun:boolean) {
+    return this.http.post(environment.api + 'enrich/'+import_path, {ids, dry_run: dryRun})
   }
 
   getConfig(import_path:string) {

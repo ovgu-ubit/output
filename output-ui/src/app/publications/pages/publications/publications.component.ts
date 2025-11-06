@@ -166,7 +166,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     for (let pub of this.table.selection.selected) {
       if (!pub.locked) save.push(pub.id);
     }
-    this.enrichService.startID(name, save).subscribe({
+    this.enrichService.startID(name, save, false).subscribe({
       next: data => {
         this._snackBar.open(`Anreichern wurde gestartet`, 'Super!', {
           duration: 5000,

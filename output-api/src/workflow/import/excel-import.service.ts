@@ -71,7 +71,7 @@ export class ExcelImportService extends AbstractImportService {
 
     protected name = 'Excel-Import'
 
-    private path:string;
+    private path: string;
 
     public async setUp(file: Express.Multer.File, importConfig: CSVMapping, updateMapping?: UpdateMapping) {
         this.path = await this.configService.get('APP_CONFIG_PATH');
@@ -89,8 +89,9 @@ export class ExcelImportService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
-    public async import(update: boolean, by_user?: string) {
-        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+    public async import(update: boolean, by_user?: string, dryRun = false) {
+        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', 'Excel-Import', by_user);
@@ -105,7 +106,7 @@ export class ExcelImportService extends AbstractImportService {
         let data = XLSX.utils.sheet_to_json(worksheet);
 
         this.numberOfPublications = data.length;
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name}` })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
 
         try {
@@ -172,7 +173,7 @@ export class ExcelImportService extends AbstractImportService {
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
-        let split = this.importConfig.split_authors? this.importConfig.split_authors : undefined;
+        let split = this.importConfig.split_authors ? this.importConfig.split_authors : undefined;
         let authors = string.split(split)
         let res = [];
         for (let author of authors) {
