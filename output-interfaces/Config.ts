@@ -1,6 +1,6 @@
 export interface Config {
     key: string;
-    description: string;
+    description?: string;
     value: any;
 }
 
