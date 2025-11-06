@@ -10,7 +10,7 @@ Web application for managing and analyzing publications of universities
 ## Installation <a name="installation"></a>
 ### Requirements
 - Node.JS 22
-- Installed DBMS such as Postgres with an existing given database with owner rights for the given user
+- Installed Postgres DBMS with an existing given database with owner rights for the given user
 
 ### File actions
 Copy the following files from their templates and put your info in it:
@@ -161,6 +161,7 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 3. Build backend and run pending migrations for DB schema:
 
 > npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 
