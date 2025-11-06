@@ -138,7 +138,7 @@ html {
 }
 
 :export {
-  background-color: var(--sys-background);
+  background-color: var(--mat-sys-background);
 }
 
 .display-large {
@@ -234,7 +234,7 @@ html {
 }
 
 mat-expansion-panel > * {
-  font-size: var(--sys-body-medium-size)!important;
+  font-size: var(--mat-sys-body-medium-size)!important;
 }
 
 mat-panel-description {

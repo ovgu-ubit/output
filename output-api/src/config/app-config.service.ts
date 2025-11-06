@@ -21,7 +21,7 @@ export class AppConfigService {
     }
 
     public listDatabaseConfig(key?: string) {
-        if (!key) return this.repository.find();
+        if (!key) return this.repository.find({order: {key: 'ASC'}});
         else return this.repository.findOneBy({ key })
     }
 
@@ -35,10 +35,10 @@ export class AppConfigService {
         }
     }
 
-    async reconcileDefaults(defaults: Record<string, unknown>) {
+    async reconcileDefaults(defaults: Record<string, unknown>, descriptions: Record<string,string>) {
         // schon vorhandene holen
         const existing = await this.repository.find({
-            select: ['key'],
+            select: ['id', 'key'],
         });
         const have = existing.map((r) => `${r.key}`);
 
@@ -49,13 +49,19 @@ export class AppConfigService {
         })
         
         let missing1 = missing.map(([key, value]) =>
-            {return { key, value }}
+            {return { key, value, description: descriptions[key] }}
         );
 
         if (missing1.length) {
             await this.repository.save(missing1);
         }
+        
+        // add missing or changed descriptions
+        existing.map(async ({id, key}) => {
+            await this.repository.save({id, description: descriptions[key]})
+        })
 
+        // delete old or wrong keys
         let over = have.filter(key => !Object.keys(defaults).find(e => e === key))
         if (over.length) await this.repository.delete({key:In(over)});
     }

@@ -7,7 +7,7 @@ import { DatabaseType } from "typeorm/driver/types/DatabaseType";
 @Injectable()
 export class DatabaseConfigService implements TypeOrmOptionsFactory {
 
-    constructor(private configService: ConfigService) { }
+    constructor(private configService: ConfigService) {}
 
     createTypeOrmOptions(): TypeOrmModuleOptions {
         return {
@@ -19,7 +19,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             database: this.configService.get<string>('DATABASE_NAME'),
             username: this.configService.get<string>('DATABASE_USER'),
             password: this.configService.get<string>('DATABASE_PASSWORD'),
-            synchronize: false,
+            synchronize: this.configService.get<boolean>('init'),
             logging: false,
             entities: [
                 "dist/output-api/src/entity/**/*.js",

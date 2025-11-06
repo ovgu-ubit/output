@@ -72,3 +72,19 @@ export const CONFIG_DEFAULTS = {
         unpaywall: true
     }
 };
+
+export const CONFIG_DESCRIPTIONS = {
+    reporting_year: "Standard-Berichtsjahr",
+    institution: "Vollständiger Name der Einrichtung",
+    institution_short_label: "Kurzer Anzeigename der Einrichtung",
+    search_tags: "Suchbegriffe, die bei API-Zugriff verwendet werden für das Affiliationsfeld",
+    lock_timeout: "Ganze Anzahl an Minuten, für die ein geöffneter Datensatz für die Bearbeitung durch andere Nutzer:innen gesperrt wird",
+    affiliation_tags: "Begriffe, von denen in der Affiliation einer Person mindestens einer vorkommen muss, damit sie der Einrichtung zugeordnet wird",
+    ror_id: "ROR-ID der Einrichtung als Webadresse",
+    openalex_id: "OpenAlex ID der Einrichtung",
+    doi_import_service: 'Pfad des verwendeten Anreicherungsdienst für DOI-importierte Publikationen',
+    optional_fields: "Welche der optionalen Zitationsangaben sollen importiert, angereichert und angezeigt werden?",
+    pub_index_columns: "Welche der möglichen Spalten sollen in der Publikationsübersicht angezeigt werden?",
+    import_services: "Welche der verfügbaren Importdienste soll angeboten werden?",
+    enrich_services: "Welche der verfügbaren Anreicherungsdienste soll angeboten werden?",
+};

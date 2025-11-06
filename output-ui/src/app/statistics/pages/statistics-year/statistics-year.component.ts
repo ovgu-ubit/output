@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import * as Highcharts from 'highcharts';
-import exporting from 'highcharts/modules/exporting';
 import { StatisticsService } from 'src/app/statistics/statistics.service';
 import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
 import { Observable, map, merge } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ChartConstructorType } from 'highcharts-angular';
 
 @Component({
     selector: 'app-statistics-year',
@@ -15,8 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class StatisticsYearComponent implements OnInit {
 
-  Highcharts: typeof Highcharts = Highcharts; // required
-  chartConstructor: string = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
+  chartConstructor: ChartConstructorType = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
   chartOptions: Highcharts.Options = {
     chart: {
       plotBorderWidth: null,
@@ -116,7 +114,6 @@ export class StatisticsYearComponent implements OnInit {
   constructor(private route: ActivatedRoute, private statService: StatisticsService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
-    exporting(Highcharts);
     this.year = parseInt(this.route.snapshot.paramMap.get('year'));
     this.loadData(this.costs)
   }

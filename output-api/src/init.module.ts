@@ -31,27 +31,42 @@ import { Role } from "./publication/relations/Role.entity";
 import { Status } from "./publication/lookups/Status.entity";
 import { Language } from "./publication/lookups/Language.entity";
 import { InitService } from "./init.service";
+import { ContractIdentifier } from "./contract/ContractIdentifier.entity";
+import { PublicationDuplicate } from "./publication/core/PublicationDuplicate.entity";
+import { PublicationSupplement } from "./publication/core/PublicationSupplement.entity";
 
 @Module({
-    imports: [
-      ConfigModule.forRoot({
-        isGlobal: true,
-        envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
-      }),
-      TypeOrmModule.forRootAsync({
-        useClass: DatabaseConfigService,
-        inject: [DatabaseConfigService],
-      }),
-      TypeOrmModule.forFeature([Author, AuthorPublication, Contract, CostCenter, CostItem, CostType, Funder, GreaterEntity, GEIdentifier, 
-        Institute, Invoice, OA_Category, Publication, PublicationType, Publisher, PublisherDOI, Config, Language, Role, PublicationIdentifier, 
-        AliasInstitute, AliasPublisher, AliasPubType, AliasFunder, AliasAuthorFirstName, AliasAuthorLastName, Status])
-    ],
-    providers: [
-      DatabaseConfigService, 
-      AppConfigService, 
-      InitService
-      ]
-  })
-  
-  export class InitModule { }
-  
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
+      load: [() => ({
+        init: true
+      })]
+    }),
+    TypeOrmModule.forRootAsync({
+      useClass: DatabaseConfigService,
+      inject: [DatabaseConfigService],
+    }),
+    TypeOrmModule.forFeature([
+      Author, AliasAuthorFirstName, AliasAuthorLastName,
+      Config,
+      Contract, ContractIdentifier,
+      Funder, AliasFunder,
+      GreaterEntity, GEIdentifier,
+      Institute, AliasInstitute,
+      CostCenter, CostItem, CostType, Invoice,
+      OA_Category,
+      PublicationType, AliasPubType,
+      Publication, PublicationIdentifier, AuthorPublication, Language, Role, Status, PublicationDuplicate, PublicationSupplement,
+      Publisher, PublisherDOI, AliasPublisher,
+    ])
+  ],
+  providers: [
+    DatabaseConfigService,
+    AppConfigService,
+    InitService
+  ]
+})
+
+export class InitModule { }

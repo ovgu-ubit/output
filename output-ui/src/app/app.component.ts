@@ -12,7 +12,7 @@ import { ConfigService } from './administration/services/config.service';
     standalone: false
 })
 export class AppComponent implements OnInit, OnDestroy {
-  public title: string = 'Output2';
+  public title: string = 'Output';
   public version = '2.0.0-beta';
   public user: string | null;
   public institution: string = '';
@@ -29,7 +29,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.security = environment.security;
     this.configService.get("institution_short_label").subscribe({
       next: data => {
-        this.title = 'Output2.' + data.value
+        this.title = 'Output.' + data.value
       }
     })
 
