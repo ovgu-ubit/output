@@ -862,7 +862,7 @@ export abstract class AbstractImportService {
             pub_ent = (await this.publicationService.save([orig]))[0];
             return { pub: pub_ent, fields };
             } else return { pub: orig, fields }
-        }
+        } else return {pub: orig, fields}
     }
 
     /**
