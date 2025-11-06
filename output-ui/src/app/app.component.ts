@@ -12,8 +12,8 @@ import { ConfigService } from './administration/services/config.service';
     standalone: false
 })
 export class AppComponent implements OnInit, OnDestroy {
-  public title: string = 'Output2';
-  public version = '1.0.0-beta';
+  public title: string = 'Output';
+  public version = 'dev';
   public user: string | null;
   public institution: string = '';
   public isLoading: boolean = true;
@@ -29,7 +29,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.security = environment.security;
     this.configService.get("institution_short_label").subscribe({
       next: data => {
-        this.title = 'Output2.' + data.value
+        this.title = 'Output.' + data.value
       }
     })
 

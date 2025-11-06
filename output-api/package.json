@@ -1,6 +1,6 @@
 {
    "name": "output",
-   "version": "1.0.0-beta",
+   "version": "dev",
    "description": "Publication management for universities.",
    "devDependencies": {
       "@nestjs/testing": "^11.1.8",
