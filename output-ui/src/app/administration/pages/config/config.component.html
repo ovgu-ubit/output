@@ -15,6 +15,11 @@
       <th mat-header-cell *matHeaderCellDef> Schlüssel </th>
       <td mat-cell *matCellDef="let element"> {{element.key}} </td>
     </ng-container>
+    
+    <ng-container matColumnDef="description">
+      <th mat-header-cell *matHeaderCellDef> Beschreibung </th>
+      <td mat-cell *matCellDef="let element"> {{element.description}} </td>
+    </ng-container>
 
     <ng-container matColumnDef="value">
       <th mat-header-cell *matHeaderCellDef> Wert </th>
