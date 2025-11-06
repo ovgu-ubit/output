@@ -1,18 +1,17 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { StatisticsService } from 'src/app/statistics/statistics.service';
-import * as Highcharts from 'highcharts';
-import exporting from 'highcharts/modules/exporting';
-import { Router } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { Observable, catchError, concat, map, merge, of, startWith } from 'rxjs';
-import { InstituteService } from 'src/app/services/entities/institute.service';
-import { PublisherService } from 'src/app/services/entities/publisher.service';
-import { ContractService } from 'src/app/services/entities/contract.service';
-import { OACategoryService } from 'src/app/services/entities/oa-category.service';
-import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
+import { ChartConstructorType } from 'highcharts-angular';
+import { Observable, catchError, map, merge, of, startWith } from 'rxjs';
+import { ContractService } from 'src/app/services/entities/contract.service';
+import { InstituteService } from 'src/app/services/entities/institute.service';
+import { OACategoryService } from 'src/app/services/entities/oa-category.service';
+import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
+import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { StatisticsService } from 'src/app/statistics/statistics.service';
 import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
 import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
 
@@ -23,9 +22,7 @@ import { FilterOptions, HighlightOptions } from '../../../../../../output-interf
     standalone: false
 })
 export class StatisticsComponent implements OnInit {
-
-  Highcharts: typeof Highcharts = Highcharts; // required
-  chartConstructor: string = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
+  chartConstructor: ChartConstructorType = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
   chartOptionsDefault: Highcharts.Options = {
     chart: {
       type: 'column',
@@ -142,7 +139,6 @@ export class StatisticsComponent implements OnInit {
     private oaService: OACategoryService, private pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
-    exporting(Highcharts);
     let ob$: Observable<any> = this.updateChart();
     ob$ = merge(ob$, this.instService.getAll().pipe(map(
       data => {

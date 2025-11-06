@@ -3,17 +3,19 @@ import { SharedModule } from '../shared/shared.module';
 import { StatisticsRoutingModule } from './statistics-routing.module';
 import { StatisticsComponent } from './pages/statistics/statistics.component';
 import { StatisticsYearComponent } from './pages/statistics-year/statistics-year.component';
-import { HighchartsChartModule } from 'highcharts-angular';
+import { HighchartsChartComponent, provideHighcharts } from 'highcharts-angular';
 
 @NgModule({
   declarations: [
     StatisticsComponent,
-    StatisticsYearComponent
+    StatisticsYearComponent,
+  ],
+  providers: [
   ],
   imports: [
     SharedModule,
     StatisticsRoutingModule,
-    HighchartsChartModule
+    HighchartsChartComponent
   ],
 })
 export class StatisticsModule {}

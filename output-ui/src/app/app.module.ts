@@ -15,6 +15,7 @@ import { hydrationMetaReducer, viewConfigReducer } from './services/redux';
 import { SharedModule } from './shared/shared.module';
 import { TableModule } from './table/table.module';
 import { FormModule } from './form/form.module';
+import { provideHighcharts } from 'highcharts-angular';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 
@@ -37,7 +38,17 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
         { provide: AuthorizationService, useClass: environment.authorization_service },
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHighcharts({
+            modules: () => {
+                return [
+                    import('highcharts/esm/modules/accessibility'),
+                    import('highcharts/esm/modules/exporting'),
+                    //import('highcharts/esm/themes/brand-light'),
+                    import('highcharts/esm/themes/grid-light'),
+                    //import('highcharts/esm/themes/high-contrast-light'),
+                ];
+            }})
     ],
     bootstrap: [AppComponent]
 })

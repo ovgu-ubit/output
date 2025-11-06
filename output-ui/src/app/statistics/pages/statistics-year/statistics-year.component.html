@@ -32,28 +32,28 @@
   
 </div>
 <div style="display: flex;flex-flow: row wrap;">
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsLocked"
-    [callbackFunction]="chartCallback" [(update)]="updateFlagLocked" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptions"
-    [callbackFunction]="chartCallback" [(update)]="updateFlag" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsLocked"
+     [(update)]="updateFlagLocked" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions"
+     [(update)]="updateFlag" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
 
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsInstitute"
-    [callbackFunction]="chartCallback" [(update)]="updateFlag1" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsOACat"
-    [callbackFunction]="chartCallback" [(update)]="updateFlag2" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsPublisher"
-    [callbackFunction]="chartCallback" [(update)]="updateFlag3" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsPubType"
-    [callbackFunction]="chartCallback" [(update)]="updateFlag4" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
-  <highcharts-chart [Highcharts]="Highcharts" [constructorType]="chartConstructor" [options]="chartOptionsContract"
-    [callbackFunction]="chartCallback" [(update)]="updateFlag5" [oneToOne]="oneToOneFlag"
-    [runOutsideAngular]="runOutsideAngular" class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsInstitute"
+     [(update)]="updateFlag1" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsOACat"
+     [(update)]="updateFlag2" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPublisher"
+     [(update)]="updateFlag3" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPubType"
+     [(update)]="updateFlag4" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
+  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsContract"
+     [(update)]="updateFlag5" [oneToOne]="oneToOneFlag"
+     class="chart"></highcharts-chart>
 
 </div>
 </div>
