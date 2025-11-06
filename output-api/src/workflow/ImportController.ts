@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
@@ -17,7 +17,7 @@ export class ImportController {
 
   constructor(
     private reportService: ReportItemService,
-    private configService: AppConfigService, 
+    private configService: AppConfigService,
     @Inject('Imports') private importServices: AbstractImportService[],
     private csvService: CSVImportService, private excelService: ExcelImportService) { }
 
@@ -98,15 +98,18 @@ export class ImportController {
         },
         update: {
           type: 'boolean'
+        },
+        dry_run: {
+          type: 'boolean'
         }
       },
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  importCSV(@Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping) {
+  importCSV(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
     if (!file || !file.originalname.endsWith('.csv')) throw new BadRequestException('valid csv file required');
     this.csvService.setUp(file, format);
-    return this.csvService.import(update);
+    return this.csvService.import(update, request["user"]["username"], dryRun);
   }
   @Get("csv")
   @UseGuards(AccessGuard)
@@ -175,15 +178,18 @@ export class ImportController {
         },
         format: {
           type: "CSVMapping"
+        },
+        dry_run: {
+          type: 'boolean'
         }
       },
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  importExcel(@Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping) {
+  importExcel(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
     if (!file || !file.originalname.endsWith('.xlsx')) throw new BadRequestException('valid excel file required');
     this.excelService.setUp(file, format);
-    return this.excelService.import(update);
+    return this.excelService.import(update, request["user"]["username"], dryRun);
   }
   @Get("xls")
   @UseGuards(AccessGuard)
@@ -208,20 +214,21 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
-    description: "<p>JSON Request:</p><pre>{<br />  \"reporting_year\" : \"number\"<br />}</pre>",
+    description: "<p>JSON Request:</p><pre>{<br />  \"reporting_year\" : \"number\",<br />  \"dry_run\": \"boolean\"<br />}</pre>",
     schema: {
       example: {
         reporting_year: '2022',
-        update: true
+        update: true,
+        dry_run: false
       }
     },
   })
-  async importStart(@Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean) {
+  async importStart(@Req() request, @Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean, @Body('dry_run') dryRun: boolean) {
     if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw new BadRequestException('reporting year is mandatory');
     let so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     await this.importServices[so].setReportingYear(reporting_year);
-    return this.importServices[so].import(update);
+    return this.importServices[so].import(update, request["user"]["username"], dryRun);
   }
 
   @Get(':path')

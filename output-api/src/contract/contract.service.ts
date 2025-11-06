@@ -54,11 +54,11 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
     }
 
-    public findOrSave(title: string): Observable<Contract> {
+    public findOrSave(title: string, dryRun = false): Observable<Contract> {
         if (!title) return of(null);
         let label = title;
         return from(this.repository.findOne({ where: { label: ILike(label) } })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(this.repository.save({ label: label }))));
+            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? null : this.repository.save({ label: label }))));
         }));
     }
 
@@ -93,25 +93,25 @@ export class ContractService extends AbstractEntityService<Contract> {
         return query.getRawMany() as Promise<ContractIndex[]>;
     }
 
-    public async combine(id1: number, ids: number[],alias_strings?:string[]) {
+    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
         return mergeEntities<Contract>({
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
-            primaryOptions: {relations: { publisher: true, identifiers: true }},
-            duplicateOptions: {relations: { publisher: true, publications: true, identifiers: true }},
+            primaryOptions: { relations: { publisher: true, identifiers: true } },
+            duplicateOptions: { relations: { publisher: true, publications: true, identifiers: true } },
             mergeContext: {
                 field: 'contract',
                 service: this.publicationService,
                 alias_strings
             },
-                afterSave: async ({ duplicateIds, defaultDelete }) => {
-                    if (duplicateIds.length > 0) {
-                        await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
-                    }
+            afterSave: async ({ duplicateIds, defaultDelete }) => {
+                if (duplicateIds.length > 0) {
+                    await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                }
 
-                    await defaultDelete();
-                },
+                await defaultDelete();
+            },
         });
     }
 

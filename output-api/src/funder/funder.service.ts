@@ -27,7 +27,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         return { aliases: true };
     }
 
-    public async findOrSave(funder: Funder): Promise<Funder> {
+    public async findOrSave(funder: Funder, dryRun = false): Promise<Funder> {
         if (!funder.label && !funder.doi) return null;
         const canonicalFunder = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, funder.label);
         const label = canonicalFunder?.label ?? funder.label;
@@ -35,9 +35,9 @@ export class FunderService extends AbstractEntityService<Funder> {
         if (funder.doi) funder_ent = await this.repository.findOne({ where: { doi: ILike(funder.doi) } });
         if (!funder_ent) {
             funder_ent = await this.repository.findOne({ where: { label: ILike(label) } });
-            if (funder_ent && !funder_ent.doi && funder.doi) funder_ent = await this.repository.save({ id: funder_ent.id, doi: funder.doi });
+            if (funder_ent && !funder_ent.doi && funder.doi && !dryRun) funder_ent = await this.repository.save({ id: funder_ent.id, doi: funder.doi });
         }
-        if (funder_ent) return funder_ent;
+        if (funder_ent || dryRun) return funder_ent;
         else return await this.repository.save({ label, doi: funder.doi }).catch(e => { throw { origin: 'funder-service', text: `Funder ${label} with DOI ${funder.doi} could not be inserted` }; });
     }
 

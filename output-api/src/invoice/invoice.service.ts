@@ -85,17 +85,17 @@ export class InvoiceService {
         return this.ctRepository.delete(cts.map(p => p.id));
     }
 
-    public findOrSaveCT(title: string): Observable<CostType> {
+    public findOrSaveCT(title: string, dryRun = false): Observable<CostType> {
         if (!title) return of(null);
         return from(this.ctRepository.findOne({ where: { label: ILike(title) } })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(this.ctRepository.save({ label: title }))));
+            return iif(() => !!ge, of(ge), defer(() => from(dryRun? null: this.ctRepository.save({ label: title }))));
         }));
     }
 
-    public findOrSaveCC(title: string): Observable<CostCenter> {
+    public findOrSaveCC(title: string, dryRun = false): Observable<CostCenter> {
         if (!title) return of(null);
         return from(this.ccRepository.findOne({ where: [{ label: ILike(title) }, { number: ILike(title) }] })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(this.ccRepository.save({ label: title }))));
+            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? null : this.ccRepository.save({ label: title }))));
         }));
     }
 

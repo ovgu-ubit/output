@@ -104,8 +104,9 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
-    public async import(update: boolean, by_user?: string) {
+    public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        this.dryRun = dryRun;
         await this.init();
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();

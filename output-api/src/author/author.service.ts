@@ -80,7 +80,7 @@ export class AuthorService {
         return null;
     }
 
-    public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string): Promise<{ author: Author, error: AppError }> {
+    public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string, dryRun = false): Promise<{ author: Author, error: AppError }> {
         if (!orcid && (!last_name || !first_name)) throw { origin: 'authorService', text: `weder ORCID, noch Vor- und Nachname sind gegeben` } as AppError;
         let error: AppError = null;
         //1. find an existing entity
@@ -105,7 +105,7 @@ export class AuthorService {
         }
         //2. if found, possibly enrich
         //find an affiliation institute
-        let inst = affiliation ? await firstValueFrom(this.instService.findOrSave(affiliation)) : null;
+        let inst = affiliation ? await firstValueFrom(this.instService.findOrSave(affiliation, dryRun)) : null;
         if (author) {
             let flag = false;
             if (orcid && !author.orcid) {
@@ -118,9 +118,10 @@ export class AuthorService {
                 flag = true;
             }
 
-            if (flag) return { author: await this.repository.save(author), error };
+            if (flag && !dryRun) return { author: await this.repository.save(author), error };
             else return { author, error };
-        } else return { author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }), error };
+        } else if (!dryRun) return { author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }), error };
+        else return {author, error}
         //3. if not found, save
     }
 

@@ -206,7 +206,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
               }
             }*/
             this.loading = true;
-            return this.enrichService.startID(this.doi_import_service, [this.pub.id]).pipe(delay(2000))//wait for 2 seconds to complete enrich
+            return this.enrichService.startID(this.doi_import_service, [this.pub.id], false).pipe(delay(2000))//wait for 2 seconds to complete enrich
           })).pipe(concatMap(data => {
             this.edit = true;
             return this.loadPub(this.pub.id);

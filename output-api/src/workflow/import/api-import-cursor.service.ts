@@ -3,14 +3,32 @@ import { ConflictException, Injectable, NotImplementedException } from '@nestjs/
 import { concatMap, concatWith, map, merge, mergeAll, mergeMap, mergeWith, Observable, of, queueScheduler, scheduled, Subject, takeUntil } from 'rxjs';
 import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
+import { AbstractImportService } from './abstract-import';
+import { AuthorService } from '../../author/author.service';
+import { FunderService } from '../../funder/funder.service';
+import { OACategoryService } from '../../oa_category/oa-category.service';
+import { InstituteService } from '../../institute/institute.service';
+import { AppConfigService } from '../../config/app-config.service';
+import { InvoiceService } from '../../invoice/invoice.service';
+import { ReportItemService } from '../report-item.service';
+import { PublisherService } from '../../publisher/publisher.service';
+import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
+import { PublicationTypeService } from '../../pub_type/publication-type.service';
+import { ContractService } from '../../contract/contract.service';
+import { LanguageService } from '../../publication/lookups/language.service';
+import { RoleService } from '../../publication/relations/role.service';
 
 @Injectable()
-export abstract class ApiImportCursorService {
+export abstract class ApiImportCursorService extends AbstractImportService {
 
-    constructor(protected http: HttpService, protected publicationService: PublicationService) { }
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+        protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
+        protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
+        protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
+        protected invoiceService: InvoiceService, protected configService: AppConfigService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+    }
 
-    private progress = 0;
-    private status_text = 'initialized';
     private newPublications: Publication[] = [];
     private publicationsUpdate = [];
     private numberOfPublications: number;
@@ -30,8 +48,6 @@ export abstract class ApiImportCursorService {
     protected abstract getData(response: any): any[];
     protected abstract getDOI(element: any): string;
     protected abstract getTitle(element: any): string;
-    protected abstract mapNew(element: any): Promise<Publication>;
-    protected abstract mapUpdate(element: any, orig: Publication): Promise<Publication>;
 
     private request(cursor: string): Observable<any> {
         const url = this.completeURL + `${this.cursor_name}=` + cursor;
@@ -78,8 +94,9 @@ export abstract class ApiImportCursorService {
 
     }
 
-    public async import(update: boolean) {
-        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+    public async import(update: boolean, by_user?: string, dryRun = false) {
+        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        this.dryRun = dryRun;
         await this.init();
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
