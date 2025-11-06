@@ -58,7 +58,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         if (!title) return of(null);
         let label = title;
         return from(this.repository.findOne({ where: { label: ILike(label) } })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? null : this.repository.save({ label: label }))));
+            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? of(null) : this.repository.save({ label: label }))));
         }));
     }
 

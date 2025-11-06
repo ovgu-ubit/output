@@ -23,7 +23,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
     public findOrSave(title: string, dryRun = false): Observable<OA_Category> {
         if (!title) return of(null);
         return from(this.repository.findOne({ where: { label: ILike(title) } })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? null : this.repository.save({ label: title }))));
+            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? of(null) : this.repository.save({ label: title }))));
         }));
     }
 
