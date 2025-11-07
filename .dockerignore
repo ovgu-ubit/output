@@ -1,0 +1,10 @@
+output-api/node_modules
+output-api/dist
+output-api/log
+output-api/.vscode
+output-ui/node_modules
+output-ui/dist
+output-ui/.angular
+output-ui/.vscode
+*.md
+.git
