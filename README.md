@@ -1,6 +1,7 @@
 # Output
 
-Web application for managing and analyzing publications of universities
+Web application for managing and analyzing publications of universities.
+General information can be found in the [Wiki](https://github.com/ovgu-ubit/output/wiki).
 
 1. [Installation](#installation)
 2. [Configuration](#configuration)
@@ -165,6 +166,7 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 4. Build backend and run pending migrations for DB schema:
 
 > $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 
