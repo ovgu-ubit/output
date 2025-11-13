@@ -14,6 +14,7 @@ export class AuthorController {
     constructor(@InjectRepository(Author) private userRepository, private authorService: AuthorService) { }
 
     @Get()
+    @UseGuards(AccessGuard)
     @ApiResponse({ status: 200, description: 'Author objects are returned.' })
     async all() {
         return this.authorService.get();
