@@ -1,7 +1,8 @@
-import { Controller, Get, Query, Post, Body, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Query, Post, Body, BadRequestException, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { GROUP, FilterOptions, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
 import { StatisticsService } from "./statistics.service";
+import { AccessGuard } from "../authorization/access.guard";
 
 @Controller("statistics")
 @ApiTags("statistics")
@@ -10,6 +11,7 @@ export class StatisticController {
     constructor(private statService: StatisticsService) { }
 
     @Post('publication_statistic')
+    @UseGuards(AccessGuard)
     @ApiBody({
         description: '<p>JSON Request:</p>',
         schema: {
