@@ -32,9 +32,15 @@ import { join } from "path";
     AppConfigModule,
     WorkflowModule,
     StatisticsModule,
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'ui-dist', "browser"),
-      exclude: ['/api/{*splat}'],
+    ServeStaticModule.forRootAsync({
+      useFactory: () => {
+        if (process.env.APP_DOCKER_MODE === 'true') {
+          return [{
+            rootPath: join(__dirname, '..', '..', 'ui-dist', 'output-ui', 'browser'),
+            exclude: ['/api/{*splat}'],
+          }]
+        } else return [];
+      }
     }),
   ],
   controllers: [],

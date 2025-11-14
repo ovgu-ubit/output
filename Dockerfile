@@ -26,6 +26,11 @@ RUN npm prune --omit=dev
 WORKDIR /usr/src/app/output-ui
 RUN npm i
 RUN npm audit fix
+
+RUN sed -i "s|api( )?:( )?'.*/?',|api: 'api/',|g" src/environments/environment.ts
+
+RUN cat src/environments/environment.ts
+
 RUN npm run build
 
 # ------------ Runtime Image -------------
@@ -46,11 +51,11 @@ COPY output-api/env.dev .
 # link any localhost refences to internal docker host
 RUN sed -i 's/localhost/host.docker.internal/g' env.dev
 # replace TS paths with JS pendants
-RUN sed -i 's/output-api\/src\/.*\/*\.ts/dist\/output-api\/src\/.*\/*\.ts/g' env.dev
+# RUN sed -i 's|output-api/src/.*/*\.ts|dist/output-api/src/.*/*\.js|g' env.dev
 
 # ---- Frontend ----
-COPY --from=build /usr/src/app/output-ui/dist ./ui-dist
-COPY output-ui/src/assets ./ui-dist/browser/assets
+COPY --from=build /usr/src/app/output-ui/dist ./dist/ui-dist
+#COPY output-ui/src/assets ./dist/ui-dist/output-ui/browser/assets
 
 # create unprivileged user 
 # ALPINE
