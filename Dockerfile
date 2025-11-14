@@ -13,6 +13,7 @@ WORKDIR /usr/src/app/output-api
 
 # Install the application dependencies
 RUN npm i
+RUN npm audit fix
 RUN npm upgrade jwa
 
 # Build application
@@ -21,11 +22,17 @@ RUN npm run build
 # Prod-Only Deps prunen
 RUN npm prune --omit=dev
 
+# ---- Frontend ----
+WORKDIR /usr/src/app/output-ui
+RUN npm i
+RUN npm audit fix
+RUN npm run build
+
 # ------------ Runtime Image -------------
 # Use the official Node.js image as the base image
 FROM node:22 AS runtime
 
-# Set the working directory inside the container
+# ---- Backend ----
 WORKDIR /usr/src/app/output-api
 
 # Copy distributables from build container
@@ -41,6 +48,10 @@ RUN sed -i 's/localhost/host.docker.internal/g' env.dev
 # replace TS paths with JS pendants
 RUN sed -i 's/output-api\/src\/.*\/*\.ts/dist\/output-api\/src\/.*\/*\.ts/g' env.dev
 
+# ---- Frontend ----
+COPY --from=build /usr/src/app/output-ui/dist ./ui-dist
+COPY output-ui/src/assets ./ui-dist/browser/assets
+
 # create unprivileged user 
 # ALPINE
 # RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs 
@@ -52,7 +63,7 @@ USER nodeuser
 EXPOSE ${PORT}
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
-    CMD wget -qO- http://127.0.0.1:${PORT}/config/health || exit 1
+    CMD wget -qO- http://127.0.0.1:${PORT}/api/config/health || exit 1
 
 # Command to run the application
 CMD ["node", "dist/output-api/src/main.js"]

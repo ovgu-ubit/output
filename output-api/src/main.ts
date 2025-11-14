@@ -1,7 +1,7 @@
 import { SwaggerModule, DocumentBuilder, SwaggerDocumentOptions } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import express from 'express'
@@ -16,14 +16,25 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
     // Read parameters from environment file:
-    const port: number = Number(process.env.PORT) || app.get(ConfigService).get<number>('APP_PORT');
-    const ssl: boolean = ['true', '1'].includes(app.get(ConfigService).get<string>('APP_SSL')?.toLowerCase());
-    const cert_key: string = app.get(ConfigService).get<string>('APP_SSL_KEY').toLowerCase();
-    const cert_pub: string = app.get(ConfigService).get<string>('APP_SSL_PUB').toLowerCase();
-    const cert_chain: string = app.get(ConfigService).get<string>('APP_SSL_CHAIN').toLowerCase();
-    const cert_passphrase: string = app.get(ConfigService).get<string>('APP_SSL_PASSPHRASE');
-    const cors_origins: string[] = app.get(ConfigService).get<string>('APP_CORS_ORIGINS').split(',');
-    const base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
+    let port: number = Number(process.env.PORT) || app.get(ConfigService).get<number>('APP_PORT');
+    let ssl: boolean = ['true', '1'].includes(app.get(ConfigService).get<string>('APP_SSL')?.toLowerCase());
+    let cert_key: string = app.get(ConfigService).get<string>('APP_SSL_KEY').toLowerCase();
+    let cert_pub: string = app.get(ConfigService).get<string>('APP_SSL_PUB').toLowerCase();
+    let cert_chain: string = app.get(ConfigService).get<string>('APP_SSL_CHAIN').toLowerCase();
+    let cert_passphrase: string = app.get(ConfigService).get<string>('APP_SSL_PASSPHRASE');
+    let cors_origins: string[] = app.get(ConfigService).get<string>('APP_CORS_ORIGINS').split(',');
+    let base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
+    let docker_mode: boolean = app.get(ConfigService).get<boolean>('APP_DOCKER_MODE');
+
+    let swagger_path = "swagger";
+
+    if (docker_mode) {
+        cors_origins = ["localhost"];
+        ssl = false;
+        base_path = ""
+        swagger_path = "api/swagger"
+        app.setGlobalPrefix('api');
+    }
 
     let processedCORS = [];
     for (let cors_or of cors_origins) {
@@ -46,7 +57,7 @@ async function bootstrap() {
         ) => methodKey
     };
     const document = SwaggerModule.createDocument(app, config, options);
-    SwaggerModule.setup('swagger', app, document);
+    SwaggerModule.setup(swagger_path, app, document);
 
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
     app.enableCors({

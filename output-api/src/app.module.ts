@@ -13,7 +13,8 @@ import { PublicationModule } from './publication/publication.module';
 import { PublisherModule } from "./publisher/publisher.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { WorkflowModule } from "./workflow/workflow.module";
-
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from "path";
 
 @Module({
   imports: [
@@ -30,7 +31,11 @@ import { WorkflowModule } from "./workflow/workflow.module";
     PublisherModule,
     AppConfigModule,
     WorkflowModule,
-    StatisticsModule
+    StatisticsModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'ui-dist', "browser"),
+      exclude: ['/api/{*splat}'],
+    }),
   ],
   controllers: [],
   providers: []

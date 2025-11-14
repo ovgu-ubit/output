@@ -6,6 +6,7 @@ export const EnvSchemas = z
     AUTH_API: z.string().optional(),
     AUTH_SERVICE_PATH: z.string(),
     AUTH_SERVICE_EXPORT: z.string(),
+    APP_DOCKER_MODE: z.coerce.boolean(),
     APP_PORT: z.coerce.number().int().positive(),
     APP_SSL: z.string().optional(),
     APP_SSL_KEY: z.string().optional(),
