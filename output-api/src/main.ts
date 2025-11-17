@@ -32,8 +32,6 @@ async function bootstrap() {
         cors_origins = ["localhost"];
         ssl = false;
         base_path = ""
-        swagger_path = "api/swagger"
-        app.setGlobalPrefix('api');
     }
 
     let processedCORS = [];

@@ -13,8 +13,6 @@ import { PublicationModule } from './publication/publication.module';
 import { PublisherModule } from "./publisher/publisher.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { WorkflowModule } from "./workflow/workflow.module";
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from "path";
 
 @Module({
   imports: [
@@ -32,16 +30,6 @@ import { join } from "path";
     AppConfigModule,
     WorkflowModule,
     StatisticsModule,
-    ServeStaticModule.forRootAsync({
-      useFactory: () => {
-        if (process.env.APP_DOCKER_MODE === 'true') {
-          return [{
-            rootPath: join(__dirname, '..', '..', 'ui-dist', 'output-ui', 'browser'),
-            exclude: ['/api/{*splat}'],
-          }]
-        } else return [];
-      }
-    }),
   ],
   controllers: [],
   providers: []
