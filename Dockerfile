@@ -48,6 +48,7 @@ COPY --from=build /usr/src/app/output-api/dist ./dist
 ENV NODE_ENV=dev PORT=3000
 # TODO take env file from parameter
 COPY output-api/env.dev .
+COPY output-api/package.json .
 # link any localhost refences to internal docker host
 RUN sed -i 's/localhost/host.docker.internal/g' env.dev
 # replace TS paths with JS pendants

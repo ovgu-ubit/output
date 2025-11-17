@@ -2,6 +2,8 @@
 set -e
 
 cd /usr/src/app/output-api
+# run pending migrations
+npm run typeorm:dev migration:run -- -d /usr/src/app/output-api/dist/output-api/src/config/app.data.source.js
 # start backend in background
 su -s /bin/sh -c "node /usr/src/app/output-api/dist/output-api/src/main.js" nodeuser &
 
