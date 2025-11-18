@@ -20,7 +20,9 @@ export class AppComponent implements OnInit, OnDestroy {
   public security: boolean;
 
   constructor(public tokenService: AuthorizationService,
-    private router: Router, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService) { }
+    private router: Router, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService) { 
+      this.runtimeConfigService.applyThemeFromConfig();
+    }
 
   private destroy$ = new Subject();
 

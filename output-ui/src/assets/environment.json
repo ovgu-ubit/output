@@ -4,5 +4,6 @@
     "auth_ui": "",
     "auth_api": "",
     "security": false,
-    "self": "127.0.0.1:4200/"
+    "self": "127.0.0.1:4200/",
+    "theme": "azure"
 }

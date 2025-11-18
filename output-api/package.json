@@ -46,7 +46,7 @@
       "rxjs": "^7.8.2",
       "swagger-ui-express": "^5.0.1",
       "typeorm": "^0.3.27",
-      "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+      "xlsx": "npm:@e965/xlsx@0.20.3",
       "xml-js": "^1.6.11",
       "zod": "^4.1.12"
    },
