@@ -29,8 +29,6 @@ RUN npm audit fix 2>&1 > /deploy/deploy.log || echo "Errors while performing aud
 
 RUN sed -i "s|api( )?:( )?'.*/?',|api: 'api/',|g" src/environments/environment.ts
 
-RUN cat src/environments/environment.ts
-
 RUN npm run build
 
 # ------------ Runtime Image -------------

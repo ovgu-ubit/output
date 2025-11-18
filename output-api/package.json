@@ -72,6 +72,9 @@
       "test:e2e": "jest --config ./test/jest-e2e.json",
       "typeorm:dev": "cross-env NODE_ENV=dev typeorm-ts-node-commonjs",
       "typeorm:test": "cross-env NODE_ENV=test typeorm-ts-node-commonjs",
-      "typeorm:prod": "cross-env NODE_ENV=prod typeorm-ts-node-commonjs"
+      "typeorm:prod": "cross-env NODE_ENV=prod typeorm-ts-node-commonjs",
+      "typeorm-js:dev": "cross-env NODE_ENV=dev typeorm",
+      "typeorm-js:test": "cross-env NODE_ENV=test typeorm",
+      "typeorm-js:prod": "cross-env NODE_ENV=prod typeorm"
    }
 }
