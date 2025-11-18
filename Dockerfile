@@ -43,14 +43,9 @@ COPY --from=build /usr/src/app/output-api/node_modules ./node_modules
 COPY --from=build /usr/src/app/output-api/dist ./dist
 
 # Copy environment file
-ENV NODE_ENV=dev PORT=3000
-# TODO take env file from parameter
-COPY output-api/env.dev .
+ENV APP_DOCKER_MODE=true
+COPY output-api/env.template .
 COPY output-api/package.json .
-# link any localhost refences to internal docker host
-RUN sed -i 's/localhost/host.docker.internal/g' env.dev
-# replace TS paths with JS pendants
-# RUN sed -i 's|output-api/src/.*/*\.ts|dist/output-api/src/.*/*\.js|g' env.dev
 
 # ---- Frontend ----
 WORKDIR /usr/src/app/

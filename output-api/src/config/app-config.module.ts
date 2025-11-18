@@ -7,6 +7,9 @@ import { AppConfigService } from './app-config.service';
 import { CONFIG_DEFAULTS, CONFIG_DESCRIPTIONS } from './config.defaults';
 import { DatabaseConfigService } from './database.config.service';
 import { EnvSchemas } from './environment.schema';
+import path from 'path';
+
+const configDir = process.env.CONFIG_DIR || process.cwd();
 
 @Module({
   imports: [
@@ -17,7 +20,7 @@ import { EnvSchemas } from './environment.schema';
     TypeOrmModule.forFeature([Config]),
     ConfigModule.forRoot({
       isGlobal: false,
-      envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
+      envFilePath: [(process.env.NODE_ENV) ? path.resolve(configDir, `env.${process.env.NODE_ENV}`) : path.resolve(configDir, 'env.template')],
       validate: (env) => {
         const schema = EnvSchemas
           .passthrough();

@@ -29,6 +29,7 @@ async function bootstrap() {
     let swagger_path = "swagger";
 
     if (docker_mode) {
+        port = 3000;
         cors_origins = ["localhost"];
         ssl = false;
         base_path = ""
