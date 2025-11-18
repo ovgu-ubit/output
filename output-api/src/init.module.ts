@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuthorPublication } from "./publication/relations/AuthorPublication.entity";
 import { Config } from "./config/Config.entity";
@@ -34,19 +34,34 @@ import { InitService } from "./init.service";
 import { ContractIdentifier } from "./contract/ContractIdentifier.entity";
 import { PublicationDuplicate } from "./publication/core/PublicationDuplicate.entity";
 import { PublicationSupplement } from "./publication/core/PublicationSupplement.entity";
+import path from "path";
+import { EnvSchemas } from "./config/environment.schema";
+
+
+const configDir = process.env.CONFIG_DIR || process.cwd();
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: [(process.env.NODE_ENV) ? `env.${process.env.NODE_ENV}` : 'env.template'],
+      isGlobal: false,
+      envFilePath: [(process.env.NODE_ENV) ? path.resolve(configDir, `env.${process.env.NODE_ENV}`) : path.resolve(configDir, 'env.template')],
       load: [() => ({
         init: true
-      })]
+      })],
+      validate: (env) => {
+        const schema = EnvSchemas
+          .passthrough();
+
+        const result = schema.safeParse(env);
+        if (!result.success) {
+          throw new Error(`Invalid environment configuration: ${result.error}`);
+        }
+        return result.data;
+      }
     }),
     TypeOrmModule.forRootAsync({
       useClass: DatabaseConfigService,
-      inject: [DatabaseConfigService],
+      imports: [ConfigModule],
     }),
     TypeOrmModule.forFeature([
       Author, AliasAuthorFirstName, AliasAuthorLastName,
