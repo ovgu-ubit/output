@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { CookieService } from 'ngx-cookie-service';
-import { environment } from '../../environments/environment';
 import { AuthorizationService } from './authorization.service';
 import { Router } from '@angular/router';
+import { RuntimeConfigService } from '../services/runtime-config.service';
 const COOKIE_DETAILS = 'auth-details';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CookieTokenService extends AuthorizationService {
-  constructor(private cookieService: CookieService, private router:Router) { super(); }
+  constructor(private cookieService: CookieService, private router:Router, private runtimeConfigService:RuntimeConfigService) { super(); }
 
   public override isValid(): boolean {
     return this.cookieService.check(COOKIE_DETAILS);
@@ -30,20 +30,20 @@ export class CookieTokenService extends AuthorizationService {
   }
 
   public override hasRole(rolename: string) {
-    if (!environment.security) return true;
+    if (!this.runtimeConfigService.getValue('security')) return true;
     else return this.getUser() && this.getPermissions()?.some((v, i, a) => (v['appname'] === 'output' && v['rolename'] === rolename) || (v['appname'] === null && v['rolename'] === 'admin'));
   }
 
   public override login(state) {
-    window.location.href = environment.auth_ui + '/login?redirectURL=' + environment.self + state?.url;
+    window.location.href = this.runtimeConfigService.getValue('auth_ui') + '/login?redirectURL=' + this.runtimeConfigService.getValue('self') + state?.url;
   }
 
   public override logout() {
-    window.location.href = environment.auth_api + 'auth/logout';
+    window.location.href = this.runtimeConfigService.getValue('auth_api') + 'auth/logout';
   }
 
   public override details() {
-    window.location.href = environment.auth_ui + '/profile?redirectURL=' + environment.self + this.router.url;
+    window.location.href = this.runtimeConfigService.getValue('auth_ui') + '/profile?redirectURL=' + this.runtimeConfigService.getValue('self') + this.router.url;
   }
 
 }

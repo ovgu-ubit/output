@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { MAT_MOMENT_DATE_ADAPTER_OPTIONS } from '@angular/material-moment-adapter';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { BrowserModule } from '@angular/platform-browser';
@@ -16,8 +16,12 @@ import { SharedModule } from './shared/shared.module';
 import { TableModule } from './table/table.module';
 import { FormModule } from './form/form.module';
 import { provideHighcharts } from 'highcharts-angular';
+import { RuntimeConfigService } from './services/runtime-config.service';
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
+export function initRuntimeConfig(rc: RuntimeConfigService) {
+  return () => rc.load();
+}
 
 @NgModule({
     declarations: [
@@ -35,6 +39,12 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
         !environment.production ? StoreDevtoolsModule.instrument({ connectInZone: true }) : []
     ],
     providers: [
+        {
+            provide: APP_INITIALIZER,
+            useFactory: initRuntimeConfig,
+            deps: [RuntimeConfigService],
+            multi: true,
+        },
         { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
         { provide: AuthorizationService, useClass: environment.authorization_service },
@@ -48,7 +58,8 @@ export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
                     import('highcharts/esm/themes/grid-light'),
                     //import('highcharts/esm/themes/high-contrast-light'),
                 ];
-            }})
+            }
+        })
     ],
     bootstrap: [AppComponent]
 })

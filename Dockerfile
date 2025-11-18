@@ -27,7 +27,7 @@ WORKDIR /usr/src/app/output-ui
 RUN npm i
 RUN npm audit fix 2>&1 > /deploy/deploy.log || echo "Errors while performing audit fix for ui"
 
-RUN sed -i "s|api( )?:( )?'.*/?',|api: 'api/',|g" src/environments/environment.ts
+#RUN sed -i "s|api( )?:( )?'.*/?',|api: 'api/',|g" src/environments/environment.ts
 
 RUN npm run build
 
@@ -55,7 +55,6 @@ RUN mkdir -p /var/log/nginx /run/nginx
 
 # copy distributables
 ENV DIST_PATH=/var/www/html/
-#ENV DIST_PATH=/var/www/html/
 RUN rm -rf ${DIST_PATH}*
 COPY --from=build /usr/src/app/output-ui/dist/output-ui/browser/ ${DIST_PATH}
 

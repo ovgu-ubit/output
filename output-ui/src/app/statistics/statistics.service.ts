@@ -1,19 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
-import { firstValueFrom, interval, concatMap, Observable, map } from 'rxjs';
-import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config'
+import { map } from 'rxjs';
 import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from '../../../../output-interfaces/Statistics';
+import { RuntimeConfigService } from '../services/runtime-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StatisticsService {
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
   countPubByYear(filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
-    return this.http.post<{ pub_year: number, value: number, highlight?: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ pub_year: number, value: number, highlight?: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year: 1,
         statistic: STATISTIC.COUNT,
@@ -28,7 +27,7 @@ export class StatisticsService {
   }
 
   countPubByYearAndOACat(filterOptions?: FilterOptions) {
-    return this.http.post<{ pub_year: number, value: number, oa_category: string, oa_category_id: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ pub_year: number, value: number, oa_category: string, oa_category_id: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year: 1,
         statistic: STATISTIC.COUNT,
@@ -42,7 +41,7 @@ export class StatisticsService {
   }
 
   countPubByYearAndPubType(filterOptions?: FilterOptions) {
-    return this.http.post<{ pub_year: number, value: number, pub_type: string, pub_type_id: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ pub_year: number, value: number, pub_type: string, pub_type_id: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year: 1,
         statistic: STATISTIC.COUNT,
@@ -56,7 +55,7 @@ export class StatisticsService {
   }
 
   corresponding(year: number, costs?: boolean, filterOptions?: FilterOptions) {
-    return this.http.post<{ corresponding_any: boolean, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ corresponding_any: boolean, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
@@ -70,7 +69,7 @@ export class StatisticsService {
   }
 
   locked(year: number, filterOptions?: FilterOptions) {
-    return this.http.post<{ locked: boolean, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ locked: boolean, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: STATISTIC.COUNT,
@@ -84,7 +83,7 @@ export class StatisticsService {
   }
 
   institute(year: number, costs: boolean, filterOptions?: FilterOptions) {
-    return this.http.post<{ institute_corr: string, institute_corr_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ institute_corr: string, institute_corr_id: number, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
@@ -98,7 +97,7 @@ export class StatisticsService {
   }
 
   oaCat(year: number, costs: boolean, filterOptions?: FilterOptions) {
-    return this.http.post<{ oa_category: string, oa_category_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ oa_category: string, oa_category_id: number, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
@@ -112,7 +111,7 @@ export class StatisticsService {
   }
 
   publisher(year: number, costs: boolean, filterOptions?: FilterOptions) {
-    return this.http.post<{ publisher: string, publisher_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ publisher: string, publisher_id: number, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
@@ -126,7 +125,7 @@ export class StatisticsService {
   }
 
   pub_type(year: number, costs: boolean, filterOptions?: FilterOptions) {
-    return this.http.post<{ pub_type: string, pub_type_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ pub_type: string, pub_type_id: number, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
@@ -140,7 +139,7 @@ export class StatisticsService {
   }
 
   contract(year: number, costs: boolean, filterOptions?: FilterOptions) {
-    return this.http.post<{ contract: string, contract_id: number, value: number }[]>(environment.api + 'statistics/publication_statistic',
+    return this.http.post<{ contract: string, contract_id: number, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
         statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
