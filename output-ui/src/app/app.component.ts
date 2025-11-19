@@ -28,7 +28,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.user = this.tokenService.getUser();
-    this.security = ["true", "1"].includes(this.runtimeConfigService.getValue("security"));
+    this.security = this.runtimeConfigService.getValue<boolean>("security");
     this.configService.get("institution_short_label").subscribe({
       next: data => {
         this.title = 'Output.' + data.value

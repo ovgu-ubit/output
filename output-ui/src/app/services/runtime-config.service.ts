@@ -20,15 +20,15 @@ export class RuntimeConfigService {
             });
     }
 
-    getValue(key: string): string {
+    getValue<T>(key: string): T {
         if (!this.config) {
             throw new Error('RuntimeConfig not loaded yet');
         }
-        return this.config[key];
+        return this.config[key] as T;
     }
 
     applyThemeFromConfig() {
-        const theme = this.getValue("theme"); // "ovgu" | "azure" | "red"
+        const theme = this.getValue<string>("theme"); // "ovgu" | "azure" | "red"
         const classMap: Record<string, string> = {
             ovgu: 'theme-ovgu',
             red: 'theme-red',
