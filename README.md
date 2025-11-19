@@ -26,10 +26,8 @@ And for running the container:
 
 
 ### File actions
-Copy the following files from their templates and put your info in it:
-- `output-api/env.template` => `env.{dev|test|prod}` for DB, App and SSL configuration as well as secrets
-- `output-ui/src/environments/environment.ts.template` => `environment.{ts|test.ts|prod.ts}`
-- `output-ui/src/styles.scss.template` => `styles.scss`
+- Copy `output-api/env.template` to `env.$NODE_ENV` and put your info in it
+- Edit `output-ui/src/assets/environment.json` and put your info in it
 
 For some services, abstract superclasses are defined. These can be extended by user-specific services which have to be added to the corresponding module definition:
 - `output-api/src/guards/authorization.service.ts` for handling authorization with one example implementation `token.authorization.service.ts` using JWT token
@@ -38,6 +36,8 @@ For some services, abstract superclasses are defined. These can be extended by u
 - `output-api/src/services/import/api-enrich-doi.service.ts` defining enrichs 
 - `output-api/src/services/check/abstract-plausibility.service.ts` defining plausibility checks
 - `output-api/src/services/export/abstract-export.service.ts` defining exports
+- `output-ui/src/environments/environment.ts` => `environment.*.ts` creating own Angular environments for building
+- `output-ui/src/styles.scss` can be edited to include custom SASS
 
 ### Init Database
 The init service creates the DB schema and fills it with some basic master data such as open access categories. You may extend this service to initialize other master data of your institution.
