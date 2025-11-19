@@ -81,14 +81,14 @@ async function bootstrap() {
             console.log(`SSL server is running on port ${port}.`);
         }).on('error', (err) => {
             console.log(`Failed to start SSL server on port ${port}!\n${err}`);
-            process.exit();
+            process.exit(1);
         });
     } else {
         http.createServer(server).listen(port, () => {
             console.log(`Server is running on port ${port}.`);
         }).on('error', (err) => {
             console.log(`Failed to start server on port ${port}!\n${err}`);
-            process.exit();
+            process.exit(1);
         });
     }
 }

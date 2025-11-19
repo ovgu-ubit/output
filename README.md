@@ -12,6 +12,12 @@ Web application for managing and analyzing publications of universities
 - Node.JS 22
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
+### Docker 
+A simple way to set up the application is to user our docker image. 
+Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
+
+> $ docker run --rm -e NODE_ENV=dev -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+
 ### File actions
 Copy the following files from their templates and put your info in it:
 - `output-api/env.template` => `env.{dev|test|prod}` for DB, App and SSL configuration as well as secrets

@@ -57,6 +57,7 @@ RUN mkdir -p /var/log/nginx /run/nginx
 ENV DIST_PATH=/var/www/html/
 RUN rm -rf ${DIST_PATH}*
 COPY --from=build /usr/src/app/output-ui/dist/output-ui/browser/ ${DIST_PATH}
+RUN chown -R www-data:www-data ${DIST_PATH}
 
 # copy config
 RUN rm -f /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*
@@ -64,7 +65,8 @@ COPY ./output-api/deploy/nginx.conf /etc/nginx/nginx.conf
 
 # copy run script
 COPY ./output-api/deploy/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY ./output-api/deploy/init-entrypoint.sh /init-entrypoint.sh
+RUN chmod +x /*entrypoint.sh
 
 # create unprivileged user 
 # ALPINE
@@ -73,7 +75,7 @@ RUN chmod +x /entrypoint.sh
 RUN groupadd -r nodejs && useradd -r -g nodejs nodeuser 
 #USER nodeuser
 
-EXPOSE 80
+EXPOSE 1080
 
 ENTRYPOINT ["/entrypoint.sh"]
 
