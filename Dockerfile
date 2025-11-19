@@ -77,13 +77,7 @@ RUN groupadd -r nodejs && useradd -r -g nodejs nodeuser
 
 EXPOSE 1080
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://localhost:1080/api/config/health || exit 1
+
 ENTRYPOINT ["/entrypoint.sh"]
-
-# Expose the application port
-#EXPOSE ${PORT}
-
-#HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
-#    CMD wget -qO- http://127.0.0.1:${PORT}/api/config/health || exit 1
-
-# Command to run the application
-#CMD ["node", "dist/output-api/src/main.js"]
