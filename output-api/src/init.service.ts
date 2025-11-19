@@ -45,12 +45,13 @@ export class InitService {
         @InjectRepository(AliasPubType) protected aliasPubType: Repository<AliasPubType>,
         @InjectRepository(AliasFunder) protected aliasFunder: Repository<AliasFunder>,
         @InjectRepository(Language) protected langRepository: Repository<Language>,
-        @InjectRepository(Role) protected roleRepository: Repository<Role>) { this.init(); }
+        @InjectRepository(Role) protected roleRepository: Repository<Role>) { }
 
     public async init() {
         // Drop database schema:
+        console.log("sync new schema")
         await this.dataSource.synchronize(true);
-
+        console.log("...creating sample data")
         // Init values:   
 
         let oas: OA_Category[] = [
@@ -101,6 +102,8 @@ export class InitService {
         await this.configRepository.save(config);
         await this.langRepository.save(langs);
         await this.roleRepository.save(roles);
+
+        console.log("finished")
     }
 
     async addFunder() {

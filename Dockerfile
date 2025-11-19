@@ -41,6 +41,7 @@ WORKDIR /usr/src/app/output-api
 # Copy distributables from build container
 COPY --from=build /usr/src/app/output-api/node_modules ./node_modules
 COPY --from=build /usr/src/app/output-api/dist ./dist
+COPY --from=build /usr/src/app/output-api/config ./config
 
 # Copy environment file
 ENV APP_DOCKER_MODE=true
@@ -73,7 +74,7 @@ RUN chmod +x /*entrypoint.sh
 # RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs 
 # DEBIAN
 RUN groupadd -r nodejs && useradd -r -g nodejs nodeuser 
-#USER nodeuser
+RUN chown nodeuser:nodejs /usr/src/app/output-api/
 
 EXPOSE 1080
 

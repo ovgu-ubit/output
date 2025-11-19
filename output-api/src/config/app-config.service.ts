@@ -12,6 +12,8 @@ export class AppConfigService {
         private configService: ConfigService, @InjectDataSource() private readonly dataSource: DataSource) { }
 
     public async get(key: string) {
+        if (key === 'APP_CONFIG_PATH' && ["true","1"].includes(this.configService.get('APP_DOCKER_MODE'))) return "./config/"
+        if (key === 'APP_LOG_PATH' && ["true","1"].includes(this.configService.get('APP_DOCKER_MODE'))) return "./log/"
         let res = this.configService.get(key);
         if (res) return res;
         else {

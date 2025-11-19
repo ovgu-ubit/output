@@ -45,9 +45,6 @@ const configDir = process.env.CONFIG_DIR || process.cwd();
     ConfigModule.forRoot({
       isGlobal: false,
       envFilePath: [(process.env.NODE_ENV) ? path.resolve(configDir, `env.${process.env.NODE_ENV}`) : path.resolve(configDir, 'env.template')],
-      load: [() => ({
-        init: true
-      })],
       validate: (env) => {
         const schema = EnvSchemas
           .passthrough();

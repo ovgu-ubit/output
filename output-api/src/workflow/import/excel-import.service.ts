@@ -75,6 +75,7 @@ export class ExcelImportService extends AbstractImportService {
 
     public async setUp(file: Express.Multer.File, importConfig: CSVMapping, updateMapping?: UpdateMapping) {
         this.path = await this.configService.get('APP_CONFIG_PATH');
+        if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)
         this.file = file;
         if (typeof importConfig == 'string') this.importConfig = JSON.parse(importConfig + '');
         else this.importConfig = importConfig;
@@ -420,6 +421,8 @@ export class ExcelImportService extends AbstractImportService {
 
     async getConfigs() {
         this.path = await this.configService.get('APP_CONFIG_PATH');
+        if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)
+        if (!fs.existsSync(this.path + 'csv-mappings.json')) fs.writeFileSync(this.path + 'csv-mappings.json', '[]')
         return fs.readFileSync(this.path + 'csv-mappings.json').toString();
     }
 
