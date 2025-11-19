@@ -16,7 +16,14 @@ Web application for managing and analyzing publications of universities
 A simple way to set up the application is to user our docker image. 
 Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
 
-> $ docker run --rm -e NODE_ENV=dev -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+> $ docker run --rm -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+> 
+
+And for running the container:
+
+> docker run -p $OUTER_PORT:1080 --rm -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" output-app
+> 
+
 
 ### File actions
 Copy the following files from their templates and put your info in it:
