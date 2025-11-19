@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - 430-dockerization
     tags:
       - 'v*'       # z.B. v1.2.0
 
