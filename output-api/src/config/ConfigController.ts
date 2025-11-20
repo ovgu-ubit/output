@@ -1,9 +1,10 @@
 import { Body, Controller, Get, Post, Query, UseGuards, UsePipes } from "@nestjs/common";
-import { ApiBody, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { ConfigValueValidationPipe } from "./config-value-validation.pipe";
+import { HealthState } from "../../../output-interfaces/Config";
 
 @Controller("config")
 @ApiTags("config")
@@ -32,5 +33,12 @@ export class ConfigController {
     })
     async set(@Body() value: any) {
         return await this.configService.setDatabaseConfig(value.key, value.value);
+    }
+
+    @Get("health")
+    @ApiOkResponse({ description: "System is healthy" })
+    @ApiServiceUnavailableResponse({ description: "System is unhealthy" })
+    async getHealth(): Promise<HealthState> {
+        return this.configService.checkHealth();
     }
 }

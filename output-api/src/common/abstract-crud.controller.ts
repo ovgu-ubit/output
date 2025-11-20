@@ -9,6 +9,7 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     protected constructor(protected readonly service: TService) { }
 
     @Get()
+    @UseGuards(AccessGuard)
     @ApiResponse({ type: Object, isArray: true })
     async all(): Promise<TEntity[]> {
         return this.getAllEntities();

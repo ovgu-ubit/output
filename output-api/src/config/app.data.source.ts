@@ -3,9 +3,10 @@ import { DatabaseType } from "typeorm/driver/types/DatabaseType";
 import { config as config } from "dotenv";
 import path = require("path");
 
-console.log("# environment is: ", process.env.NODE_ENV);
+const configDir = process.env.CONFIG_DIR || process.cwd();
+
 config({
-    path: path.resolve(__dirname, `../../env.${process.env.NODE_ENV}`)
+    path: path.resolve(configDir, `env.${process.env.NODE_ENV}`)
 });
 
 // AppDataSource is necessary for migrations

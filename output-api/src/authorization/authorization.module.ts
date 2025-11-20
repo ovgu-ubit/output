@@ -35,7 +35,7 @@ export class AuthorizationModule {
         useFactory: async (cfg: AppConfigService, ref: ModuleRef) => {
           const rel = await cfg.get('AUTH_SERVICE_PATH')!;
           const exported = await cfg.get('AUTH_SERVICE_EXPORT')!;
-          const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), rel);
+          const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), "dist/output-api/src/"+rel+".js");
           if (!fs.existsSync(abs)) {
             throw new Error(`AUTH_SERVICE_PATH not found: ${abs}`);
           }

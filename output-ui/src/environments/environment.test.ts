@@ -6,12 +6,8 @@ import { CookieTokenService } from "src/app/security/cookie.token.service";
 
 export const environment = {
   authorization_service: CookieTokenService, // service extending AuthorizationService to determine if a user has write privileges
-  production: false, // angular intern for debugging
-  api: 'api/', //server address of the backend api (with slash at the end)
-  security: false, //if the login guard is activated or not
-  self: 'localhost:4200/', //the server address of the output frontend, for redirecting [only required using CookieTokenService] (with slash at the end)
-  auth_ui: '', //server address of the authentication service frontend for login [only required using CookieTokenService] (with slash at the end)
-  auth_api: '', //server address of the authentication service backend for logout [only required using CookieTokenService] (with slash at the end)
+  production: true, 
+  runtimeConfig: '/assets/environment.json'
 };
 
 /*

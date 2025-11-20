@@ -1,16 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Config } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
+import { HealthState } from '../../../output-interfaces/Config';
 
 @Injectable()
 export class AppConfigService {
 
     constructor(@InjectRepository(Config) private repository: Repository<Config>,
-        private configService: ConfigService) { }
+        private configService: ConfigService, @InjectDataSource() private readonly dataSource: DataSource) { }
 
     public async get(key: string) {
+        if (key === 'APP_CONFIG_PATH' && ["true","1"].includes(this.configService.get('APP_DOCKER_MODE'))) return "./config/"
+        if (key === 'APP_LOG_PATH' && ["true","1"].includes(this.configService.get('APP_DOCKER_MODE'))) return "./log/"
         let res = this.configService.get(key);
         if (res) return res;
         else {
@@ -21,7 +24,7 @@ export class AppConfigService {
     }
 
     public listDatabaseConfig(key?: string) {
-        if (!key) return this.repository.find({order: {key: 'ASC'}});
+        if (!key) return this.repository.find({ order: { key: 'ASC' } });
         else return this.repository.findOneBy({ key })
     }
 
@@ -35,7 +38,7 @@ export class AppConfigService {
         }
     }
 
-    async reconcileDefaults(defaults: Record<string, unknown>, descriptions: Record<string,string>) {
+    async reconcileDefaults(defaults: Record<string, unknown>, descriptions: Record<string, string>) {
         // schon vorhandene holen
         const existing = await this.repository.find({
             select: ['id', 'key'],
@@ -44,26 +47,57 @@ export class AppConfigService {
 
         // fehlende bilden
         let missing = Object.entries(defaults).filter(([key, value]) => {
-            return !have.find(e => 
+            return !have.find(e =>
                 e == key)
         })
-        
-        let missing1 = missing.map(([key, value]) =>
-            {return { key, value, description: descriptions[key] }}
+
+        let missing1 = missing.map(([key, value]) => { return { key, value, description: descriptions[key] } }
         );
 
         if (missing1.length) {
             await this.repository.save(missing1);
         }
-        
+
         // add missing or changed descriptions
-        existing.map(async ({id, key}) => {
-            await this.repository.save({id, description: descriptions[key]})
+        existing.map(async ({ id, key }) => {
+            await this.repository.save({ id, description: descriptions[key] })
         })
 
         // delete old or wrong keys
         let over = have.filter(key => !Object.keys(defaults).find(e => e === key))
-        if (over.length) await this.repository.delete({key:In(over)});
+        if (over.length) await this.repository.delete({ key: In(over) });
+    }
+
+    async checkHealth() {
+        let state: HealthState = {
+            status: "ok",
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            checks: {
+                database: "up"
+            }
+        };
+        try {
+            if (!this.dataSource.isInitialized) {
+                await this.dataSource.initialize();
+            }
+            await this.dataSource.query("SELECT 1");
+            return state;
+        } catch (error) {
+            state.status = "error";
+            state.checks.database = "down";
+            let trace: string;
+            if (error instanceof Error) trace = error.stack ?? error.message;
+            else {
+                try {
+                    trace = JSON.stringify(error);
+                } catch (stringifyError) {
+                    trace = String(error ?? stringifyError);
+                }
+            }
+            console.error("Database health check failed", trace);
+            throw new ServiceUnavailableException(state);
+        }
     }
 }
 

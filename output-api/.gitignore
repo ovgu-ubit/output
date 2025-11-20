@@ -10,3 +10,4 @@ env.*
 config.ts
 !config.ts.template
 package-lock.json
+deploy/config

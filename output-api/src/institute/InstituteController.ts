@@ -13,6 +13,7 @@ export class InstituteController {
     constructor(private instService: InstituteService) { }
 
     @Get()
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Institute,
         isArray: true
@@ -91,6 +92,7 @@ export class InstituteController {
     }
 
     @Get('subs/:id')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Number,
         isArray: true

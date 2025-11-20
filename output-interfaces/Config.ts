@@ -9,6 +9,15 @@ export class AppError {
     text: string;
 }
 
+export interface HealthState {
+  status: "ok" | "error";
+  timestamp: string;
+  uptime: number;
+  checks: {
+    database: "up" | "down";
+  };
+}
+
 export class UpdateMapping {
     author_inst: UpdateOptions = UpdateOptions.APPEND;
     authors: UpdateOptions = UpdateOptions.REPLACE_IF_EMPTY;

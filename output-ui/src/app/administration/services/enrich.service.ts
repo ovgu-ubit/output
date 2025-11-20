@@ -1,25 +1,25 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
 import { firstValueFrom, interval, concatMap, Observable } from 'rxjs';
 import { UpdateMapping } from '../../../../../output-interfaces/Config';
+import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EnrichService {
 
-  constructor(private http:HttpClient) { }
+  constructor(private http:HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
   getEnrichs() {
-    return this.http.get<{path:string, label:string}[]>(environment.api + 'enrich')
+    return this.http.get<{path:string, label:string}[]>(this.runtimeConfigService.getValue("api") + 'enrich')
   }
 
   async isRunning() {
     let res = [];
     let imports = await firstValueFrom(this.getEnrichs());
     for (let im of imports) {
-      let response = await firstValueFrom(this.http.get<{progress:number, status:string}>(environment.api + 'enrich/'+im.path))
+      let response = await firstValueFrom(this.http.get<{progress:number, status:string}>(this.runtimeConfigService.getValue("api") + 'enrich/'+im.path))
       if (response?.progress != 0) res.push(im);
     }
     return res;
@@ -29,7 +29,7 @@ export class EnrichService {
     let res = [];
     let imports = await firstValueFrom(this.getEnrichs());
     for (let im of imports) {
-      let response = await firstValueFrom(this.http.get<{progress:number, status:string}>(environment.api + 'enrich/'+im.path))
+      let response = await firstValueFrom(this.http.get<{progress:number, status:string}>(this.runtimeConfigService.getValue("api") + 'enrich/'+im.path))
       res.push(response.status);
     }
     return res;
@@ -39,21 +39,21 @@ export class EnrichService {
     let timer = interval(500);
     return timer.pipe(concatMap(data => {
       //console.log(new Date())
-      return this.http.get<{progress:number, status:string}>(environment.api + 'enrich/'+import_path)
+      return this.http.get<{progress:number, status:string}>(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path)
     }))
   }
 
   startYear(import_path:string, reporting_year:number, dryRun:boolean) {
-    return this.http.post(environment.api + 'enrich/'+import_path, {reporting_year, dry_run: dryRun})
+    return this.http.post(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path, {reporting_year, dry_run: dryRun})
   }
   startID(import_path:string, ids:number[], dryRun:boolean) {
-    return this.http.post(environment.api + 'enrich/'+import_path, {ids, dry_run: dryRun})
+    return this.http.post(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path, {ids, dry_run: dryRun})
   }
 
   getConfig(import_path:string) {
-    return this.http.get<UpdateMapping>(environment.api + 'enrich/'+import_path+'/config')
+    return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path+'/config')
   }
   setConfig(import_path:string, mapping:UpdateMapping) {
-    return this.http.post<UpdateMapping>(environment.api + 'enrich/'+import_path+'/config', {mapping})
+    return this.http.post<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path+'/config', {mapping})
   }
 }

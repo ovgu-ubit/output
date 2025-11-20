@@ -1,14 +1,14 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { RuntimeConfigService } from '../services/runtime-config.service';
 import { AuthorizationService } from './authorization.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class LoginGuard  {
-    constructor(public tokenService: AuthorizationService) { }
+    constructor(public tokenService: AuthorizationService, private runtimeConfigService:RuntimeConfigService) { }
 
     canActivate(
         route: ActivatedRouteSnapshot,
@@ -17,7 +17,7 @@ export class LoginGuard  {
     }
 
     check(roles: string[], state) {
-        if (!environment.security) return true;
+        if (!this.runtimeConfigService.getValue('security')) return true;
         if (!roles) return true;
         if (this.tokenService.isValid()) {
             //activate route only if permissions exist for user

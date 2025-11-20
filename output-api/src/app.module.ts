@@ -14,7 +14,6 @@ import { PublisherModule } from "./publisher/publisher.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { WorkflowModule } from "./workflow/workflow.module";
 
-
 @Module({
   imports: [
     AuthorModule,
@@ -30,7 +29,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     PublisherModule,
     AppConfigModule,
     WorkflowModule,
-    StatisticsModule
+    StatisticsModule,
   ],
   controllers: [],
   providers: []
