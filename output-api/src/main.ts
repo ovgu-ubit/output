@@ -30,7 +30,7 @@ async function bootstrap() {
 
     if (docker_mode) {
         port = 3000;
-        cors_origins = ["localhost"];
+        cors_origins = ["http://localhost:1080"];
         ssl = false;
         base_path = ""
     }
