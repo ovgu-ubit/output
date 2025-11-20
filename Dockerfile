@@ -29,7 +29,7 @@ RUN npm audit fix 2>&1 > /deploy/deploy.log || echo "Errors while performing aud
 
 #RUN sed -i "s|api( )?:( )?'.*/?',|api: 'api/',|g" src/environments/environment.ts
 
-RUN npm run build --configuration production
+RUN npm run build:prod
 
 # ------------ Runtime Image -------------
 # Use the official Node.js image as the base image
