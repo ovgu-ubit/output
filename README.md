@@ -14,7 +14,11 @@ General information can be found in the [Wiki](https://github.com/ovgu-ubit/outp
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
 ### Docker 
-A simple way to set up the application is to user our docker image. 
+A simple way to set up the application is to user our docker image. Pull the image:
+
+> $ docker pull ghcr.io/ovgu-ubit/output:latest
+>
+
 Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
 
 > $ docker run --rm -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
@@ -179,6 +183,7 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 4. Build backend and run pending migrations for DB schema:
 
 > $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 
