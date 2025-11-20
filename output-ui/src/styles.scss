@@ -1,0 +1,498 @@
+@use '@angular/material' as mat;
+@use 'sass:map';
+
+@include mat.elevation-classes();
+@include mat.app-background();
+
+@function _patch-error-palette($palette) {
+  @return map.merge($palette,
+    (error: (0: #000000,
+        10: #410002,
+        20: #690005,
+        25: #7e0007,
+        30: #93000a,
+        35: #a80710,
+        40: #ba1a1a,
+        50: #de3730,
+        60: #ff5449,
+        70: #ff897d,
+        80: #ffb4ab,
+        90: #ffdad6,
+        95: #ffedea,
+        98: #fff8f7,
+        99: #fffbff,
+        100: #ffffff,
+      ),
+    ));
+}
+
+$ovgu-primary-map: _patch-error-palette((0: #000000,
+      10: #3E001D,
+      20: #7a003f,
+      25: #79003E,
+      30: #89124A,
+      35: #992156,
+      40: #A92E62,
+      50: #C9487B,
+      60: #E96195,
+      70: #FF84AF,
+      80: #FFB1C8,
+      90: #FFD9E2,
+      95: #FFECF0,
+      98: #FFF8F8,
+      99: #FFFBFF,
+      100: #ffffff,
+      secondary: (0: #000000,
+        10: #1B1C1C,
+        20: #303030,
+        25: #3B3B3B,
+        30: #474747,
+        35: #535252,
+        40: #5F5E5E,
+        50: #787777,
+        60: #919090,
+        70: #ACABAA,
+        80: #C8C6C6,
+        90: #E4E2E1,
+        95: #F3F0F0,
+        98: #FBF9F8,
+        99: #FEFCFB,
+        100: #ffffff,
+      ),
+      neutral: (0: #000000,
+        10: #201a1b,
+        20: #352f30,
+        25: #413a3b,
+        30: #4c4546,
+        35: #585052,
+        40: #655c5e,
+        50: #7e7576,
+        60: #988e90,
+        70: #b3a9aa,
+        80: #cfc4c5,
+        90: #ece0e1,
+        95: #faeeef,
+        98: #fff8f8,
+        99: #fffbff,
+        100: #ffffff,
+        4: #120d0e,
+        6: #171213,
+        12: #241e1f,
+        17: #2f2829,
+        22: #3a3334,
+        24: #3e3738,
+        87: #e3d7d8,
+        92: #f1e5e6,
+        94: #f7ebec,
+        96: #fdf1f2,
+      ),
+      neutral-variant: (0: #000000,
+        10: #24191b,
+        20: #3a2d30,
+        25: #45383b,
+        30: #514346,
+        35: #5d4f52,
+        40: #6a5a5e,
+        50: #847376,
+        60: #9e8c90,
+        70: #baa7aa,
+        80: #d6c2c5,
+        90: #f3dde1,
+        95: #ffecef,
+        98: #fff8f8,
+        99: #fffbff,
+        100: #ffffff,
+      ),
+    ));
+
+$ovgu-theme: mat.define-theme((color: (theme-type: light,
+        primary: $ovgu-primary-map,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$red-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$red-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$green-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$green-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$blue-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$blue-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$yellow-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$yellow-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$cyan-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$cyan-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$magenta-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$magenta-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$orange-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$orange-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$chartreuse-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$chartreuse-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$spring_green-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$spring-green-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$azure-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$azure-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+      
+
+$violet-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$violet-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$rose-theme: mat.define-theme((color: (theme-type: light,
+        primary: mat.$rose-palette,
+        tertiary: mat.$violet-palette ),
+      typography: (brand-family: 'Roboto',
+        bold-weight: 900),
+      density: (scale: -1)));
+
+$themes: (
+  ovgu: $ovgu-theme,
+  red: $red-theme,
+  green: $green-theme,
+  blue: $blue-theme,
+  yellow: $yellow-theme,
+  cyan: $cyan-theme,
+  magenta: $magenta-theme,
+  orange: $orange-theme,
+  chartreuse: $chartreuse-theme,
+  spring_green: $spring_green-theme,
+  azure: $azure-theme,
+  violet: $violet-theme,
+  rose: $rose-theme,
+);
+
+.display-large {
+  font: var(--mat-sys-display-large) !important;
+}
+
+.display-medium {
+  font: var(--mat-sys-display-medium) !important;
+}
+
+.display-small {
+  font: var(--mat-sys-display-small) !important;
+}
+
+.headline-large {
+  font: var(--mat-sys-headline-large) !important;
+}
+
+.headline-medium {
+  font: var(--mat-sys-headline-medium) !important;
+}
+
+.headline-small {
+  font: var(--mat-sys-headline-small) !important;
+}
+
+.title-large {
+  font: var(--mat-sys-title-large) !important;
+}
+
+.title-medium {
+  font: var(--mat-sys-title-medium) !important;
+}
+
+.title-small {
+  font: var(--mat-sys-title-small) !important;
+}
+
+.body-large {
+  font: var(--mat-sys-body-large) !important;
+}
+
+.body-medium {
+  font: var(--mat-sys-body-medium) !important;
+}
+
+.body-small {
+  font: var(--mat-sys-body-small) !important;
+}
+
+.label-large {
+  font: var(--mat-sys-label-large) !important;
+}
+
+.label-medium {
+  font: var(--mat-sys-label-medium) !important;
+}
+
+.label-small {
+  font: var(--mat-sys-label-small) !important;
+}
+
+.mat-mdc-snack-bar-container.success-snackbar {
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-container-color: #d4edda;
+  --mat-snack-bar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+
+.mat-mdc-snack-bar-container.danger-snackbar {
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-container-color: #f8d7da;
+  --mat-snack-bar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+
+.mat-mdc-snack-bar-container.warning-snackbar {
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-container-color: #fff3cd;
+  --mat-snack-bar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+
+.mat-mdc-snack-bar-container.info-snackbar {
+  --mat-snack-bar-button-color: rgb(138, 138, 139);
+  --mat-snack-bar-container-color: #cce5ff;
+  --mat-snack-bar-supporting-text-color: rgba(0, 0, 0, 0.87);
+}
+
+@mixin primary-toolbar-theme($theme) {
+  background-color: mat.get-theme-color($theme, primary, 20) !important;
+  color: mat.get-theme-color($theme, neutral, 90) !important;
+
+  .mat-mdc-button {
+    color: mat.get-theme-color($theme, neutral, 90) !important;
+  }
+
+  .mat-mdc-button-disabled {
+    color: mat.get-theme-color($theme, neutral, 50) !important;
+  }
+
+  .mat-mdc-icon-button {
+    color: mat.get-theme-color($theme, neutral, 90) !important;
+  }
+}
+
+.mat-toolbar.primary-toolbar {
+  @include primary-toolbar-theme($ovgu-theme);
+}
+
+
+@mixin secondary-toolbar-theme($theme) {
+  background-color: mat.get-theme-color($theme, secondary, 80) !important;
+  color: mat.get-theme-color($theme, neutral, 0) !important;
+
+  .mat-mdc-raised-button {
+    color: mat.get-theme-color($theme, neutral, 0) !important;
+  }
+}
+
+.mat-toolbar.secondary-toolbar {
+  @include secondary-toolbar-theme($ovgu-theme);
+}
+
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+  max-width: 100% !important;
+}
+
+mat-expansion-panel>* {
+  font-size: var(--mat-sys-body-medium-size) !important;
+}
+
+mat-panel-description {
+  font-weight: 300;
+}
+
+@mixin primary-button-theme($theme) {
+  background-color: mat.get-theme-color($theme, primary, 20) !important;
+  color: mat.get-theme-color($theme, neutral, 90) !important;
+}
+
+.primary-button {
+  @include primary-button-theme($ovgu-theme);
+}
+
+@mixin secondary-button-theme($theme) {
+  background-color: mat.get-theme-color($theme, secondary, 60) !important;
+  color: mat.get-theme-color($theme, neutral, 0) !important;
+}
+
+.secondary-button {
+  @include secondary-button-theme($ovgu-theme);
+}
+
+@mixin mat-mdc-text-field-wrapper-theme($theme) {
+  background-color: mat.get-theme-color($theme, secondary, 90) !important;
+}
+
+.mat-mdc-text-field-wrapper {
+  @include mat-mdc-text-field-wrapper-theme($ovgu-theme);
+}
+
+.mat-sort-header-arrow {
+  display: none !important;
+}
+
+
+@mixin mdc($theme) {
+  border-bottom: 1px solid mat.get-theme-color($theme, secondary, 90);
+  border-top: 1px solid mat.get-theme-color($theme, secondary, 90);
+}
+
+.mat-mdc-row .mat-mdc-cell {
+  @include mdc($ovgu-theme);
+}
+
+@mixin mdc_odd($theme) {
+  background-color: mat.get-theme-color($theme, secondary, 100);
+}
+
+.mat-mdc-row:nth-child(odd)>td.mat-mdc-cell {
+  @include mdc_odd($ovgu-theme);
+}
+
+@mixin mdc_even($theme) {
+  background-color: mat.get-theme-color($theme, secondary, 98);
+}
+
+.mat-mdc-row:nth-child(even)>td.mat-mdc-cell {
+  @include mdc_even($ovgu-theme);
+}
+
+@mixin mdc_hover($theme) {
+  background-color: mat.get-theme-color($theme, primary, 90) !important;
+}
+
+.mat-mdc-row>td.mat-mdc-cell:hover {
+  @include mdc_hover($ovgu-theme);
+}
+
+tr:hover td {
+  @include mdc_hover($ovgu-theme);
+}
+
+@mixin mdc_header($theme) {
+  background-color: mat.get-theme-color($theme, primary, 20) !important;
+  color: mat.get-theme-color($theme, neutral, 100);
+}
+
+th.mat-mdc-header-cell {
+  @include mdc_header($ovgu-theme);
+}
+
+@mixin mdc_table_header($theme) {
+  background-color: mat.get-theme-color($theme, secondary, 60) !important;
+}
+
+.table_header {
+  @include mdc_table_header($ovgu-theme);
+}
+
+
+:root {
+  @include mat.all-component-themes($ovgu-theme);
+  @include mat.typography-hierarchy($ovgu-theme);
+  @include mat.system-level-colors($ovgu-theme);
+  @include mat.system-level-typography($ovgu-theme);
+  // alternativ (neuer API-Stil):
+  // @include mat.theme($ovgu-theme);
+}
+
+@each $name, $t in $themes {
+  :root.theme-#{""+$name} {
+    @include mat.all-component-colors($t);
+
+    .primary-button {
+      @include primary-button-theme($t);
+    }
+
+    .secondary-button {
+      @include secondary-button-theme($t);
+    }
+
+    .mat-mdc-text-field-wrapper {
+      @include mat-mdc-text-field-wrapper-theme($t);
+    }
+
+    .mat-toolbar.primary-toolbar {
+      @include primary-toolbar-theme($t);
+    }
+
+    .mat-toolbar.secondary-toolbar {
+      @include secondary-toolbar-theme($t);
+    }
+
+    .mat-mdc-row .mat-mdc-cell {
+      @include mdc($t);
+    }
+
+    th.mat-mdc-header-cell {
+      @include mdc_header($t);
+    }
+
+    .mat-mdc-row:nth-child(odd)>td.mat-mdc-cell {
+      @include mdc_odd($t);
+    }
+
+    .mat-mdc-row:nth-child(even)>td.mat-mdc-cell {
+      @include mdc_even($t);
+    }
+
+    tr:hover td {
+      @include mdc_hover($t);
+    }
+
+    th.mat-mdc-header-cell {
+      @include mdc_header($t);
+    }
+
+    .table_header {
+      @include mdc_table_header($t);
+    }
+  }
+}
+
+:export {
+  background-color: var(--mat-sys-background);
+}

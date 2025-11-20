@@ -1,0 +1,12 @@
+output-api/node_modules
+output-api/dist
+output-api/log
+output-api/.vscode
+output-api/package-lock.json
+output-ui/node_modules
+output-ui/dist
+output-ui/.angular
+output-ui/.vscode
+output-ui/package-lock.json
+*.md
+.git

@@ -1,6 +1,7 @@
 # Output
 
-Web application for managing and analyzing publications of universities
+Web application for managing and analyzing publications of universities.
+General information can be found in the [Wiki](https://github.com/ovgu-ubit/output/wiki).
 
 1. [Installation](#installation)
 2. [Configuration](#configuration)
@@ -12,11 +13,26 @@ Web application for managing and analyzing publications of universities
 - Node.JS 22
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
+### Docker 
+A simple way to set up the application is to user our docker image. Pull the image:
+
+> $ docker pull ghcr.io/ovgu-ubit/output:latest
+>
+
+Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
+
+> $ docker run --rm -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+> 
+
+And for running the container:
+
+> docker run -p $OUTER_PORT:1080 --rm -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" output-app
+> 
+
+
 ### File actions
-Copy the following files from their templates and put your info in it:
-- `output-api/env.template` => `env.{dev|test|prod}` for DB, App and SSL configuration as well as secrets
-- `output-ui/src/environments/environment.ts.template` => `environment.{ts|test.ts|prod.ts}`
-- `output-ui/src/styles.scss.template` => `styles.scss`
+- Copy `output-api/env.template` to `env.$NODE_ENV` and put your info in it
+- Edit `output-ui/src/assets/environment.json` and put your info in it
 
 For some services, abstract superclasses are defined. These can be extended by user-specific services which have to be added to the corresponding module definition:
 - `output-api/src/guards/authorization.service.ts` for handling authorization with one example implementation `token.authorization.service.ts` using JWT token
@@ -25,6 +41,8 @@ For some services, abstract superclasses are defined. These can be extended by u
 - `output-api/src/services/import/api-enrich-doi.service.ts` defining enrichs 
 - `output-api/src/services/check/abstract-plausibility.service.ts` defining plausibility checks
 - `output-api/src/services/export/abstract-export.service.ts` defining exports
+- `output-ui/src/environments/environment.ts` => `environment.*.ts` creating own Angular environments for building
+- `output-ui/src/styles.scss` can be edited to include custom SASS
 
 ### Init Database
 The init service creates the DB schema and fills it with some basic master data such as open access categories. You may extend this service to initialize other master data of your institution.
@@ -157,10 +175,17 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 
 ## Updating <a name="updating"></a>
 1. Fetch new codebase from GitHub
-2. Build and deploy frontend distributables like in installation
-3. Build backend and run pending migrations for DB schema:
+2. Update dependencies in both output-api/ and output-ui/ with
 
-> npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+> $ npm i --force
+   
+3. Build and deploy frontend distributables like in installation
+4. Build backend and run pending migrations for DB schema:
+
+> $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
+
+
 
 
 

@@ -11,13 +11,13 @@ import { PublicationService } from 'src/app/services/entities/publication.servic
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import { environment } from 'src/environments/environment';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
 import { Publication } from '../../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../../output-interfaces/PublicationIndex';
 import { FilterViewComponent } from '../../dialogs/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
 import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
+import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Component({
     selector: 'app-publications',
@@ -28,7 +28,7 @@ import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/re
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard, private configService:ConfigService) { }
+    private clipboard: Clipboard, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
@@ -253,7 +253,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.store.dispatch(setViewConfig({
       viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
     }))
-    let link = environment.self + 'publications' + this.filterToQuery()
+    let link = this.runtimeConfigService.getValue('self') + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
       this._snackBar.open(`Link wurde in die Zwischenablage kopiert`, 'Super!', {
         duration: 5000,

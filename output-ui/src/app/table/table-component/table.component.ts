@@ -11,16 +11,15 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
-import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
-import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
+import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { PublicationService } from 'src/app/services/entities/publication.service';
+import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
+import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
 import { Entity } from '../../../../../output-interfaces/Publication';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { CombineDialogComponent } from '../dialog/combine-dialog/combine-dialog.component';
-import { ConfigService } from 'src/app/administration/services/config.service';
 
 export class CustomPaginator extends MatPaginatorIntl {
   constructor() {
@@ -39,7 +38,7 @@ export class CustomPaginator extends MatPaginatorIntl {
 @Component({
     selector: 'appTable',
     templateUrl: './table.component.html',
-    styleUrls: ['./table.component.scss'],
+    styleUrls: ['./table.component.css'],
     standalone: false
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
