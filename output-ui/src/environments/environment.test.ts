@@ -7,7 +7,7 @@ import { CookieTokenService } from "src/app/security/cookie.token.service";
 export const environment = {
   authorization_service: CookieTokenService, // service extending AuthorizationService to determine if a user has write privileges
   production: true, 
-  runtimeConfig: '/assets/environment.json'
+  runtimeConfig: 'assets/environment.json'
 };
 
 /*
