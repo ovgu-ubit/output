@@ -1,19 +1,20 @@
 import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { Location } from '@angular/common';
 
 @Injectable({ providedIn: 'root' })
 export class RuntimeConfigService {
     private config?: any;
     private renderer: Renderer2;
 
-    constructor(private http: HttpClient, private rendererFactory: RendererFactory2) {
+    constructor(private http: HttpClient, private rendererFactory: RendererFactory2, private location: Location) {
         this.renderer = this.rendererFactory.createRenderer(null, null);
     }
 
     load(): Promise<void> {
         return this.http
-            .get(environment.runtimeConfig)
+            .get(this.location.prepareExternalUrl(environment.runtimeConfig))
             .toPromise()
             .then(cfg => {
                 this.config = cfg;
