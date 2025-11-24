@@ -29,7 +29,7 @@ export class FunderService extends AbstractEntityService<Funder> {
 
     public async findOrSave(funder: Funder, dryRun = false): Promise<Funder> {
         if (!funder.label && !funder.doi) return null;
-        const canonicalFunder = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, funder.label);
+        const canonicalFunder = await this.aliasLookupService.findCanonicalElement<AliasFunder,Funder>(this.aliasRepository, funder.label);
         const label = canonicalFunder?.label ?? funder.label;
         let funder_ent: Funder;
         if (funder.doi) funder_ent = await this.repository.findOne({ where: { doi: ILike(funder.doi) } });

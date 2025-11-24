@@ -71,8 +71,8 @@ export class InstituteService {
 
     public findOrSave(affiliation: string, _dry_run = false): Observable<Institute> {
         if (!affiliation) return of(null);
-        return from(this.aliasLookupService.findCanonicalElement(this.aliasRepository, affiliation)).pipe(concatMap(match => {
-            const label = match['label'] ?? affiliation;
+        return from(this.aliasLookupService.findCanonicalElement<AliasInstitute, Institute>(this.aliasRepository, affiliation)).pipe(concatMap(match => {
+            const label = match?.label ?? affiliation;
             return from(this.repository.findOne({ where: { label: ILike(label) } }));
         }));
     }

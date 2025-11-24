@@ -32,7 +32,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
 
     public async findOrSave(publisher: Publisher, dryRun = false): Promise<Publisher> {
         if (!publisher.label) return null;
-        const canonicalPublisher = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, publisher.label);
+        const canonicalPublisher = await this.aliasLookupService.findCanonicalElement<AliasPublisher, Publisher>(this.aliasRepository, publisher.label);
         const label = canonicalPublisher?.label ?? publisher.label;
         let publisher_ent: Publisher;
         publisher_ent = await this.repository.findOne({ where: { label: ILike(label) } })
