@@ -26,7 +26,7 @@ export class PlausibilityController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async getImports() {
-    let result = [];
+    const result = [];
     for (let i = 0; i < this.list().length; i++) {
       result.push({
         path: this.list()[i].path,
@@ -77,7 +77,7 @@ export class PlausibilityController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async start(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    const so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.checkServices[so].check();
   }
@@ -85,7 +85,7 @@ export class PlausibilityController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async status(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    const so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.checkServices[so].status();
   }

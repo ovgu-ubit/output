@@ -38,8 +38,8 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
             .addGroupBy("oacat.is_oa")
 
         if (reporting_year) {
-            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .leftJoin("oacat.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
         }
@@ -66,10 +66,10 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
     }
 
     public async delete(insts: OA_Category[]) {
-        for (let inst of insts) {
-            let conE: OA_Category = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { oa_category: true } }, withDeleted: true });
-            let pubs = [];
-            if (conE.publications) for (let pub of conE.publications) {
+        for (const inst of insts) {
+            const conE: OA_Category = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { oa_category: true } }, withDeleted: true });
+            const pubs = [];
+            if (conE.publications) for (const pub of conE.publications) {
                 pubs.push({ id: pub.id, oa_category: null });
             }
 

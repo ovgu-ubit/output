@@ -27,16 +27,16 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
     public async findOrSave(title: string, dryRun = false): Promise<PublicationType> {
         if (!title) return null;
-        let label = await this.identifyPublicationType(title);
+        const label = await this.identifyPublicationType(title);
 
-        let pubtype = await this.repository.findOne({ where: { label: ILike(label) } });
+        const pubtype = await this.repository.findOne({ where: { label: ILike(label) } });
 
         if (pubtype || dryRun) return pubtype;
         else return await this.repository.save({ label }).catch(e => { throw { origin: 'pubType-service', text: `PubType ${label} could not be inserted` }; });
     }
 
     public async identifyPublicationType(title: string) {
-        let alias = await this.aliasRepository.createQueryBuilder('alias')
+        const alias = await this.aliasRepository.createQueryBuilder('alias')
             .leftJoinAndSelect('alias.element', 'element')
             .where(':label ILIKE CONCAT(\'%\',alias.alias,\'%\')', { label: title })
             .getMany();
@@ -60,8 +60,8 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             .addGroupBy("type.review")
 
         if (reporting_year) {
-            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .leftJoin("type.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
         }
@@ -97,10 +97,10 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
     }
 
     public async delete(insts: PublicationType[]) {
-        for (let inst of insts) {
-            let conE: PublicationType = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { pub_type: true } }, withDeleted: true });
-            let pubs = [];
-            if (conE.publications) for (let pub of conE.publications) {
+        for (const inst of insts) {
+            const conE: PublicationType = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { pub_type: true } }, withDeleted: true });
+            const pubs = [];
+            if (conE.publications) for (const pub of conE.publications) {
                 pubs.push({ id: pub.id, pub_type: null });
             }
 

@@ -32,7 +32,7 @@ export class PublisherController extends AbstractCrudController<Publisher, Publi
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
-        let res = await this.service.combine(id1,ids,aliases);
+        const res = await this.service.combine(id1,ids,aliases);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publisher')
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publisher')
         else return res;

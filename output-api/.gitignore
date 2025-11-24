@@ -9,5 +9,4 @@ env.*
 !env.template
 config.ts
 !config.ts.template
-package-lock.json
 deploy/config

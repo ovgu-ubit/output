@@ -18,15 +18,15 @@ async function bootstrap() {
     // Read parameters from environment file:
     let port: number = Number(process.env.PORT) || app.get(ConfigService).get<number>('APP_PORT');
     let ssl: boolean = ['true', '1'].includes(app.get(ConfigService).get<string>('APP_SSL')?.toLowerCase());
-    let cert_key: string = app.get(ConfigService).get<string>('APP_SSL_KEY').toLowerCase();
-    let cert_pub: string = app.get(ConfigService).get<string>('APP_SSL_PUB').toLowerCase();
-    let cert_chain: string = app.get(ConfigService).get<string>('APP_SSL_CHAIN').toLowerCase();
-    let cert_passphrase: string = app.get(ConfigService).get<string>('APP_SSL_PASSPHRASE');
+    const cert_key: string = app.get(ConfigService).get<string>('APP_SSL_KEY').toLowerCase();
+    const cert_pub: string = app.get(ConfigService).get<string>('APP_SSL_PUB').toLowerCase();
+    const cert_chain: string = app.get(ConfigService).get<string>('APP_SSL_CHAIN').toLowerCase();
+    const cert_passphrase: string = app.get(ConfigService).get<string>('APP_SSL_PASSPHRASE');
     let cors_origins: string[] = app.get(ConfigService).get<string>('APP_CORS_ORIGINS').split(',');
     let base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
-    let docker_mode: boolean = app.get(ConfigService).get<boolean>('APP_DOCKER_MODE');
+    const docker_mode: boolean = app.get(ConfigService).get<boolean>('APP_DOCKER_MODE');
 
-    let swagger_path = "swagger";
+    const swagger_path = "swagger";
 
     if (docker_mode) {
         port = 3000;
@@ -35,8 +35,8 @@ async function bootstrap() {
         base_path = ""
     }
 
-    let processedCORS = [];
-    for (let cors_or of cors_origins) {
+    const processedCORS = [];
+    for (const cors_or of cors_origins) {
         let obj;
         if (cors_or.endsWith('/')) obj = cors_or.substring(0, cors_or.length - 1)
         else obj = cors_or;

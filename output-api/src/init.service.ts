@@ -54,7 +54,7 @@ export class InitService {
         console.log("...creating sample data")
         // Init values:   
 
-        let oas: OA_Category[] = [
+        const oas: OA_Category[] = [
             { label: 'Diamond', is_oa: true },
             { label: 'Gold', is_oa: true },
             { label: 'Hybrid', is_oa: true },
@@ -67,21 +67,21 @@ export class InitService {
         await this.addFunder();
         await this.addInst();
 
-        let apc: CostType[] = [
+        const apc: CostType[] = [
             { label: 'Article Processing Charges' },
             { label: 'Book Processing Charges' },
             { label: 'Colour Charges' },
             { label: 'Extra Page Charges' },
         ]
 
-        let config: Config[] = [
+        const config: Config[] = [
             { key: 'reporting_year', value: 2025},
             { key: 'institution', value: 'Output Development Version' },
             { key: 'institution_short_label', value: 'Dev' },
             { key: 'lock_timeout', value: 5 },
         ]
 
-        let langs: Language[] = [
+        const langs: Language[] = [
             { label: 'de' },
             { label: 'en' },
             { label: 'es' },
@@ -90,7 +90,7 @@ export class InitService {
             { label: 'Sonstige' },
         ]
 
-        let roles: Role[] = [
+        const roles: Role[] = [
             {label: 'Autor*in'},
             {label: 'Herausgeber*in'},
             {label: 'Gutachter*in'}
@@ -111,7 +111,7 @@ export class InitService {
             label: 'DFG'
         }
         funder = await this.funderRepository.save(funder);
-        let alias = ["dfg", "deutsche forschungsgemeinschaft", "german research foundation"];
+        const alias = ["dfg", "deutsche forschungsgemeinschaft", "german research foundation"];
         await this.aliasFunder.save(alias.map(a => { return { element: funder, alias: a } }))
     }
 
@@ -161,7 +161,7 @@ export class InitService {
         alias = ["preprint","manuscript"];
         await this.aliasPubType.save(alias.map(a => { return { element: pt, alias: a } }))
 
-        let article: PublicationType[] = [
+        const article: PublicationType[] = [
             { label: 'Buch Sammelband', review: false },
             { label: 'Buch Konferenzband', review: false },
             { label: 'Konferenzbeitrag: Poster', review: true },

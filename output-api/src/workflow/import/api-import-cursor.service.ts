@@ -58,19 +58,19 @@ export abstract class ApiImportCursorService extends AbstractImportService {
     private calls = new Subject<any>();
 
     private async processResponse(resp: any, update: boolean) {
-        let data = this.getData(resp);
+        const data = this.getData(resp);
         this.numberOfPublications = this.getNumber(resp);
-        for (let [idx, pub] of data.entries()) {
-            let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
-            let flag2 = this.newPublications.find(e => e.doi.trim().toLocaleLowerCase() === this.getDOI(pub).trim().toLocaleLowerCase());
+        for (const [idx, pub] of data.entries()) {
+            const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+            const flag2 = this.newPublications.find(e => e.doi.trim().toLocaleLowerCase() === this.getDOI(pub).trim().toLocaleLowerCase());
             if (flag2) console.log(`Redundant publication with DOI ${this.getDOI(pub)} at position ${idx} of request ${data['config']?.url}`)
             if (!flag && !flag2) {
-                let pubNew = await this.mapNew(pub);
+                const pubNew = await this.mapNew(pub);
                 if (pubNew) this.newPublications.push(pubNew);
             } else if (update) {
-                let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                 if (orig.locked || orig.delete_date) continue;
-                let pubUpd = await this.mapUpdate(pub, orig);
+                const pubUpd = await this.mapUpdate(pub, orig);
                 if (pubUpd) this.publicationsUpdate.push(pubUpd);
             }
         }

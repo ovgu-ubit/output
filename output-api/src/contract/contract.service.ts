@@ -31,9 +31,9 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public override async save(contract: Contract) {
-        let orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
+        const orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
         if (contract.identifiers) {
-            for (let id of contract.identifiers) {
+            for (const id of contract.identifiers) {
                 if (!id.id) {
                     id.value = id.value.toUpperCase();
                     id.type = id.type.toLowerCase();
@@ -56,7 +56,7 @@ export class ContractService extends AbstractEntityService<Contract> {
 
     public findOrSave(title: string, dryRun = false): Observable<Contract> {
         if (!title) return of(null);
-        let label = title;
+        const label = title;
         return from(this.repository.findOne({ where: { label: ILike(label) } })).pipe(concatMap(ge => {
             return iif(() => !!ge, of(ge), defer(() => from(dryRun ? of(null) : this.repository.save({ label: label }))));
         }));
@@ -79,8 +79,8 @@ export class ContractService extends AbstractEntityService<Contract> {
             .addGroupBy("publisher.label")
 
         if (reporting_year) {
-            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .leftJoin("contract.publications", "publication", "publication.\"contractId\" = contract.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
         }
@@ -116,10 +116,10 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async delete(insts: Contract[]) {
-        for (let inst of insts) {
-            let conE: Contract = await this.repository.findOne({ where: { id: inst.id }, relations: { publisher: true, publications: true }, withDeleted: true });
-            let pubs = [];
-            if (conE.publications) for (let pub of conE.publications) {
+        for (const inst of insts) {
+            const conE: Contract = await this.repository.findOne({ where: { id: inst.id }, relations: { publisher: true, publications: true }, withDeleted: true });
+            const pubs = [];
+            if (conE.publications) for (const pub of conE.publications) {
                 pubs.push({ id: pub.id, contract: null })
             }
 

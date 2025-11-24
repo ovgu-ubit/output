@@ -79,18 +79,18 @@ export class PubMedImportService extends AbstractImportService {
     };
 
     request(id: number): Observable<any> {
-        let url = this.url_fetch + `?db=pubmed&id=${id}`;
+        const url = this.url_fetch + `?db=pubmed&id=${id}`;
         return this.http.get(url, { responseType: 'document' }).pipe(delay(this.delay));
     }
     search(offset?: number): Observable<any> {
         let url = this.url_search + `?db=pubmed&term=${this.year}:${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
         if (offset) url += '&retstart=' + offset
         return this.http.get(url, { responseType: 'document' }).pipe(concatMap(resp => {
-            let data = JSON.parse(xmljs.xml2json(resp.data, { compact: true }));
+            const data = JSON.parse(xmljs.xml2json(resp.data, { compact: true }));
             //if (data['eSearchResult']['Count']['_text'] <= this.max) {
             this.numberOfPublications = Number(data['eSearchResult']['Count']['_text']);
-            let ids = data['eSearchResult']['IdList']['Id'].map(e => e['_text'])
-            for (let id of ids) {
+            const ids = data['eSearchResult']['IdList']['Id'].map(e => e['_text'])
+            for (const id of ids) {
                 this.obs$.push(this.request(id))
             }
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
@@ -119,9 +119,9 @@ export class PubMedImportService extends AbstractImportService {
     public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
-        let tags = await this.configService.get('search_tags');
+        const tags = await this.configService.get('search_tags');
         this.searchText = '('
-        for (let tag of tags) {
+        for (const tag of tags) {
             this.searchText += tag + '[affiliation]+or+'
         }
         this.searchText = this.searchText.slice(0, this.searchText.length - 4) + ')'
@@ -154,9 +154,9 @@ export class PubMedImportService extends AbstractImportService {
                         this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.' })
                         return;
                     }
-                    let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                    const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                     if (!flag) {
-                        let pubNew = await this.mapNew(pub).catch(e => {
+                        const pubNew = await this.mapNew(pub).catch(e => {
                             this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message })
                             //console.log('Error while mapping publication ' + this.getDOI(pub) + ' with title ' + this.getTitle(pub) + ': ' + e.message + ' with stack ' + e.stack)
                         });
@@ -165,9 +165,9 @@ export class PubMedImportService extends AbstractImportService {
                             this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                         }
                     } else if (update) {
-                        let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                        const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                         if (orig.locked || orig.delete_date) return;
-                        let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                        const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                             this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                             return null;
                         })
@@ -217,7 +217,7 @@ export class PubMedImportService extends AbstractImportService {
 
     public authorsInstitution(authors) {
         if (authors && Array.isArray(authors)) {
-            let aut = authors.filter(async author =>
+            const aut = authors.filter(async author =>
                 this.affiliation_tags.some(e => {
                     if (Array.isArray(author['AffiliationInfo'])) {
                         return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
@@ -244,14 +244,14 @@ export class PubMedImportService extends AbstractImportService {
         } else return element['Article']['ELocationID']['_attributes']['EIdType'] == 'doi' ? element['Article']['ELocationID']['_text'] : '';
     }
     protected getTitle(element: any): string {
-        let e = element['Article']['ArticleTitle']['_text'];
+        const e = element['Article']['ArticleTitle']['_text'];
         if (Array.isArray(e)) return element['Article']['ArticleTitle']['_text'].reduce((acc, v, i) => acc + v, '')
         else return element['Article']['ArticleTitle']['_text']
     }
     protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; corresponding?: boolean; }[] {
-        let authors = element['Article']['AuthorList']['Author'];
+        const authors = element['Article']['AuthorList']['Author'];
         if (authors && Array.isArray(authors)) {
-            let aut = authors.filter(e => this.isInstAuthor(e));
+            const aut = authors.filter(e => this.isInstAuthor(e));
             return aut.map(e => { return { first_name: e['ForeName']['_text'], last_name: e['LastName']['_text'], affiliation: Array.isArray(e['AffiliationInfo']) ? this.findAffAuthor(e)['Affiliation']['_text'] : e['AffiliationInfo']['Affiliation']['_text'] } })
         } else if (authors) {
             if (authors['AffiliationInfo'] && this.affiliation_tags.some(e => {
@@ -285,7 +285,7 @@ export class PubMedImportService extends AbstractImportService {
     }
     constructAuthorsString(element: any[]): string {
         let res = '';
-        for (let aut of element) {
+        for (const aut of element) {
             if (aut['LastName']) res += aut['LastName']['_text']
             if (aut['ForeName']) res += ", " + aut['ForeName']['_text']
             if (res) res += "; ";
@@ -308,7 +308,7 @@ export class PubMedImportService extends AbstractImportService {
     protected getPubDate(element: any): Date {
         if (element['Article']['ArticleDate']) {
             if (Array.isArray(element['Article']['ArticleDate'])) {
-                let e = element['Article']['ArticleDate'].find(e => e['_attributes']['DateType'].includes('elec'));
+                const e = element['Article']['ArticleDate'].find(e => e['_attributes']['DateType'].includes('elec'));
                 if (e) return new Date(Date.UTC(e['Year']['_text'], Number(e['Month']['_text']) - 1, e['Day']['_text']))
             } else {
                 return new Date(Date.UTC(element['Article']['ArticleDate']['Year']['_text'], Number(element['Article']['ArticleDate']['Month']['_text']) - 1, element['Article']['ArticleDate']['Day']['_text']))
@@ -351,10 +351,10 @@ export class PubMedImportService extends AbstractImportService {
         return undefined;
     }
     protected getPubType(element: any): string {
-        let pt = element['Article']['PublicationTypeList']['PublicationType'];
+        const pt = element['Article']['PublicationTypeList']['PublicationType'];
         if (Array.isArray(pt)) {
             let res = '';
-            for (let e of pt) res += e['_text'] + ";"
+            for (const e of pt) res += e['_text'] + ";"
             return res.slice(0, res.length - 1)
         } else return pt['_text'];
     }
@@ -375,10 +375,10 @@ export class PubMedImportService extends AbstractImportService {
     }
     protected getAbstract(element: any): string {
         try {
-            let pt = element['Article']['Abstract']['AbstractText']['_text'];
+            const pt = element['Article']['Abstract']['AbstractText']['_text'];
             if (Array.isArray(pt)) {
                 let res = '';
-                for (let e of pt) res += e + ";"
+                for (const e of pt) res += e + ";"
                 return res.slice(0, res.length - 1)
             } else return pt;
         } catch (e) { return null };

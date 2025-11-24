@@ -129,7 +129,7 @@ export class StatisticsService {
     }
 
     addReportingYears(query: SelectQueryBuilder<Publication>, reporting_years: number[]) {
-        let field = "(CASE WHEN pub_date is not null THEN extract('Year' from pub_date at time zone 'UTC') ELSE " +
+        const field = "(CASE WHEN pub_date is not null THEN extract('Year' from pub_date at time zone 'UTC') ELSE " +
             "(CASE WHEN pub_date_print is not null THEN extract('Year' from pub_date_print at time zone 'UTC') ELSE " +
             "(CASE WHEN pub_date_accepted is not null THEN extract('Year' from pub_date_accepted at time zone 'UTC') ELSE " +
             "(CASE WHEN pub_date_submitted is not null THEN extract('Year' from pub_date_submitted at time zone 'UTC') ELSE null END) END) END) END)"
@@ -137,7 +137,7 @@ export class StatisticsService {
         query = query.groupBy("pub_year")
         if (reporting_years && reporting_years.length > 0) {
             let clauses = "(";
-            for (let reporting_year of reporting_years) {
+            for (const reporting_year of reporting_years) {
                 clauses += field + " =" + reporting_year + " or ";
             }
             query = query.where(clauses.substring(0, clauses.length - 4) + ")")

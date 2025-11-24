@@ -102,9 +102,9 @@ export class ExcelImportService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        let workbook = XLSX.read(this.file.buffer, { type: 'buffer' })
-        let worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        let data = XLSX.utils.sheet_to_json(worksheet);
+        const workbook = XLSX.read(this.file.buffer, { type: 'buffer' })
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(worksheet);
 
         this.numberOfPublications = data.length;
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
@@ -112,18 +112,18 @@ export class ExcelImportService extends AbstractImportService {
 
         try {
             if (!data) return;
-            for (let pub of data) {
-                let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+            for (const pub of data) {
+                const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                 if (!flag) {
-                    let pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                    const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
                     if (pubNew) {
                         this.newPublications.push(pubNew);
                         this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                     }
                 } else if (update) {
-                    let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                     if (orig.locked) continue;
-                    let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                    const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                         this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                         return null;
                     })
@@ -174,13 +174,13 @@ export class ExcelImportService extends AbstractImportService {
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
-        let split = this.importConfig.split_authors ? this.importConfig.split_authors : undefined;
-        let authors = string.split(split)
-        let res = [];
-        for (let author of authors) {
+        const split = this.importConfig.split_authors ? this.importConfig.split_authors : undefined;
+        const authors = string.split(split)
+        const res = [];
+        for (const author of authors) {
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
             else {
-                let split = author.split(' ');
+                const split = author.split(' ');
                 if (split.length === 2) res.push({ first_name: split[0], last_name: split[1] });
                 else if (split.length > 2) {
                     continue;
@@ -412,7 +412,7 @@ export class ExcelImportService extends AbstractImportService {
         try {
             if (!this.importConfig.mapping.cost_approach) return null;
             if (this.importConfig.mapping.cost_approach.startsWith('$')) return Number(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
-            let e = element[this.importConfig.mapping.cost_approach];
+            const e = element[this.importConfig.mapping.cost_approach];
             return Number(e);
         } catch (err) {
             return null;

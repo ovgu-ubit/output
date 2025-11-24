@@ -135,7 +135,7 @@ describe('AuthorService', () => {
             where: { last_name: expect.anything(), first_name: expect.anything() },
             relations: { institutes: true },
         });
-        expect(instService.findOrSave).toHaveBeenCalledWith('Institute');
+        expect(instService.findOrSave).toHaveBeenCalledWith('Institute', false);
         expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
             id: 7,
             orcid: '0000-0001',

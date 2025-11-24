@@ -21,7 +21,7 @@ export class RoleService {
     }
 
     public async one(id:number, writer:boolean) {
-        let ct = await this.repository.findOne({where:{id}});
+        const ct = await this.repository.findOne({where:{id}});
         if (writer && !ct.locked_at) {
             await this.save([{
                 id: ct.id,

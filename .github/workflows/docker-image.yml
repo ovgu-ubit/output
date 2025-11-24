@@ -2,8 +2,6 @@ name: Build and publish Docker image
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'       # z.B. v1.2.0
 

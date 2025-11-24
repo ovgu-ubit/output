@@ -86,7 +86,7 @@ export class AuthorController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
-        let res = await this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
+        const res = await this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author')
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting other authors')
         else return res;

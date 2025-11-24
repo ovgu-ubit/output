@@ -41,16 +41,16 @@ export class ExcelExportService extends AbstractExportService {
         this.report = await this.reportService.createReport('Export', this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
-        if (filter) for (let path of filter.paths) {
-            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+        if (filter) for (const path of filter.paths) {
+            const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
-        let cost_types = await this.invoiceService.getCostTypes();
+        const cost_types = await this.invoiceService.getCostTypes();
 
         let rows = [];
-        for (let pub of pubs) {
-            let row = {
+        for (const pub of pubs) {
+            const row = {
                 id: pub.id,
                 locked: pub.locked,
                 status: pub.status,
@@ -81,15 +81,15 @@ export class ExcelExportService extends AbstractExportService {
                 import_date: pub.import_date,
                 edit_date: pub.edit_date
             }
-            if (pub.invoices.length > 0) for (let ct of cost_types) {
+            if (pub.invoices.length > 0) for (const ct of cost_types) {
                 row[ct.label] = pub.invoices?.map(e => e.cost_items.filter(e => e.cost_type && e.cost_type.id === ct.id).map(e => e.euro_value + e.vat).reduce((v, e) => v + e, 0)).reduce((v, e) => v + e, 0)
             }
 
             rows.push(row);
         }
 
-        let workbook = XLSX.utils.book_new();
-        let worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true })
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true })
         //formatting
         if (!worksheet["!cols"]) worksheet["!cols"] = [];
         worksheet["!cols"][XLSX.utils.decode_col("D")] = { width: 30 }
@@ -102,7 +102,7 @@ export class ExcelExportService extends AbstractExportService {
             worksheet["W" + i].z = '#,##0.00 "€"'; //paid amount
             worksheet["AB" + i].z = "DD.MM.YYYY HH:MM:SS"; //import date
             worksheet["AC" + i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
-            let columns = ["AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT"]
+            const columns = ["AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT"]
             if (cost_types.length > columns.length) throw new InternalServerErrorException('too many cost types, please report to developer')
             for (let j = 0; j < cost_types.length; j++) {
                 if (worksheet[columns[j] + "" + i]) worksheet[columns[j] + "" + i].z = '#,##0.00 "€"';
@@ -113,9 +113,9 @@ export class ExcelExportService extends AbstractExportService {
         if (withMasterData) {
             //authors
             rows = [];
-            let authors = await this.authorService.get();
-            for (let author of authors) {
-                let row = {
+            const authors = await this.authorService.get();
+            for (const author of authors) {
+                const row = {
                     id: author.id,
                     title: author.title,
                     first_name: author.first_name,
@@ -126,14 +126,14 @@ export class ExcelExportService extends AbstractExportService {
                 }
                 rows.push(row);
             }
-            let worksheet_authors = XLSX.utils.json_to_sheet(rows)
+            const worksheet_authors = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_authors, "Personen");
             
             //institutes
-            let insts = await this.instService.get();
+            const insts = await this.instService.get();
             rows = [];
-            for (let inst of insts) {
-                let row = {
+            for (const inst of insts) {
+                const row = {
                     id: inst.id,
                     label: inst.label,
                     short_label: inst.short_label,
@@ -141,14 +141,14 @@ export class ExcelExportService extends AbstractExportService {
                 }
                 rows.push(row);
             }
-            let worksheet_inst = XLSX.utils.json_to_sheet(rows)
+            const worksheet_inst = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_inst, "Institute");
 
             //greater entities
-            let ges = await this.geService.get();
+            const ges = await this.geService.get();
             rows = [];
-            for (let ge of ges) {
-                let row = {
+            for (const ge of ges) {
+                const row = {
                     id: ge.id,
                     label: ge.label,
                     doaj_since: ge.doaj_since,
@@ -157,28 +157,28 @@ export class ExcelExportService extends AbstractExportService {
                 }
                 rows.push(row);
             }
-            let worksheet_ge = XLSX.utils.json_to_sheet(rows)
+            const worksheet_ge = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_ge, "Größere Einheiten");
 
             //publishers
-            let publs = await this.publService.get();
+            const publs = await this.publService.get();
             rows = [];
-            for (let publ of publs) {
-                let row = {
+            for (const publ of publs) {
+                const row = {
                     id: publ.id,
                     label: publ.label,
                     doi_prefixes: publ.doi_prefixes?.map(x => x.doi_prefix).join(' | ')
                 }
                 rows.push(row);
             }
-            let worksheet_publ = XLSX.utils.json_to_sheet(rows)
+            const worksheet_publ = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_publ, "Verlage");
 
             //contracts
-            let cons = await this.contractService.get();
+            const cons = await this.contractService.get();
             rows = [];
-            for (let con of cons) {
-                let row = {
+            for (const con of cons) {
+                const row = {
                     id: con.id,
                     label: con.label,
                     publisher: con.publisher?.label,
@@ -192,14 +192,14 @@ export class ExcelExportService extends AbstractExportService {
                 }
                 rows.push(row);
             }
-            let worksheet_con = XLSX.utils.json_to_sheet(rows)
+            const worksheet_con = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_con, "Verträge");
 
             //funder
-            let funs = await this.funderService.get();
+            const funs = await this.funderService.get();
             rows = [];
-            for (let fun of funs) {
-                let row = {
+            for (const fun of funs) {
+                const row = {
                     id: fun.id,
                     label: fun.label,
                     doi: fun.doi,
@@ -207,62 +207,62 @@ export class ExcelExportService extends AbstractExportService {
                 }
                 rows.push(row);
             }
-            let worksheet_fun = XLSX.utils.json_to_sheet(rows)
+            const worksheet_fun = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_fun, "Förderer");
 
             //oa cats
-            let oas = await this.oaService.get();
+            const oas = await this.oaService.get();
             rows = [];
-            for (let oa of oas) {
-                let row = {
+            for (const oa of oas) {
+                const row = {
                     id: oa.id,
                     label: oa.label,
                     is_oa: oa.is_oa
                 }
                 rows.push(row);
             }
-            let worksheet_oa = XLSX.utils.json_to_sheet(rows)
+            const worksheet_oa = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_oa, "OA-Kategorien");
 
             //pub types
-            let pts = await this.ptService.get();
+            const pts = await this.ptService.get();
             rows = [];
-            for (let pt of pts) {
-                let row = {
+            for (const pt of pts) {
+                const row = {
                     id: pt.id,
                     label: pt.label,
                     review: pt.review
                 }
                 rows.push(row);
             }
-            let worksheet_pt = XLSX.utils.json_to_sheet(rows)
+            const worksheet_pt = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_pt, "Publikationsarten");
 
             //cost center
-            let ccs = await this.invoiceService.getCostCenters();
+            const ccs = await this.invoiceService.getCostCenters();
             rows = [];
-            for (let cc of ccs) {
-                let row = {
+            for (const cc of ccs) {
+                const row = {
                     id: cc.id,
                     label: cc.label,
                     number: cc.number
                 }
                 rows.push(row);
             }
-            let worksheet_cc = XLSX.utils.json_to_sheet(rows)
+            const worksheet_cc = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_cc, "Kostenstellen");
 
             //cost types
-            let cts = await this.invoiceService.getCostTypes();
+            const cts = await this.invoiceService.getCostTypes();
             rows = [];
-            for (let ct of cts) {
-                let row = {
+            for (const ct of cts) {
+                const row = {
                     id: ct.id,
                     label: ct.label
                 }
                 rows.push(row);
             }
-            let worksheet_ct = XLSX.utils.json_to_sheet(rows)
+            const worksheet_ct = XLSX.utils.json_to_sheet(rows)
             XLSX.utils.book_append_sheet(workbook, worksheet_ct, "Kostenarten");
         }
         //finalize

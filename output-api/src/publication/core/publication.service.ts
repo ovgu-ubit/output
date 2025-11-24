@@ -91,7 +91,7 @@ export class PublicationService {
 
         query = await this.filter(filter, query);
 
-        let res = await query.getMany();
+        const res = await query.getMany();
         return res;
     }
 
@@ -171,11 +171,11 @@ export class PublicationService {
 
     //retrieves publication index for a reporting year
     public async index(yop: number): Promise<PublicationIndex[]> {
-        let indexQuery = this.indexQuery();
+        const indexQuery = this.indexQuery();
         let query;
         if (yop) {
-            let beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(yop, 11, 31, 23, 59, 59, 999));
 
             query = (await indexQuery)
                 .where('publication.pub_date >= :beginDate', { beginDate })
@@ -202,7 +202,7 @@ export class PublicationService {
 
     //retrieves publication index for soft deleted publications
     public async softIndex(): Promise<PublicationIndex[]> {
-        let query = (await this.indexQuery())
+        const query = (await this.indexQuery())
             .withDeleted()
             .where("publication.delete_date is not null")
 
@@ -214,10 +214,10 @@ export class PublicationService {
     public async update(pubs: Publication[]) {
         //return this.pubRepository.save(pubs);
         let i = 0;
-        for (let pub of pubs) {
-            let orig = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } })
+        for (const pub of pubs) {
+            const orig = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } })
             if (pub.identifiers) {
-                for (let id of pub.identifiers) {
+                for (const id of pub.identifiers) {
                     if (!id.id) {
                         id.value = id.value.toUpperCase();
                         id.type = id.type.toLowerCase();
@@ -229,7 +229,7 @@ export class PublicationService {
                 }
             }
             if (pub.supplements) {
-                for (let suppl of pub.supplements) {
+                for (const suppl of pub.supplements) {
                     if (!suppl.id) {
                         suppl.id = (await this.supplRepository.save(suppl).catch(err => {
                             if (err.constraint) throw new BadRequestException(err.detail)
@@ -245,7 +245,7 @@ export class PublicationService {
                 if (!pub.supplements.find(e => e.id === suppl.id)) await this.supplRepository.delete(suppl.id)
             })
 
-            let autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
+            const autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
             if (autPub) {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
@@ -256,19 +256,19 @@ export class PublicationService {
     }
 
     public async delete(pubs: Publication[], soft?: boolean) {
-        for (let pub of pubs) {
-            let pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
-            for (let autPub of pubE.authorPublications) {
+        for (const pub of pubs) {
+            const pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
+            for (const autPub of pubE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
-            if (pubE.invoices) for (let inv of pubE.invoices) {
-                if (inv.cost_items) for (let ci of inv.cost_items) await this.costItemRepository.delete(ci.id);
+            if (pubE.invoices) for (const inv of pubE.invoices) {
+                if (inv.cost_items) for (const ci of inv.cost_items) await this.costItemRepository.delete(ci.id);
                 await this.invoiceRepository.delete(inv.id);
             }
-            if (pubE.identifiers) for (let id of pubE.identifiers) {
+            if (pubE.identifiers) for (const id of pubE.identifiers) {
                 await this.idRepository.delete(id.id);
             }
-            if (pubE.supplements) for (let suppl of pubE.supplements) {
+            if (pubE.supplements) for (const suppl of pubE.supplements) {
                 await this.supplRepository.delete(suppl.id);
             }
         }
@@ -279,7 +279,7 @@ export class PublicationService {
     public async getPublication(id: number, reader: boolean, writer: boolean) {
         let invoice: any = false;
         if (reader) invoice = { cost_items: { cost_type: true }, cost_center: true };
-        let pub = await this.pubRepository.findOne({
+        const pub = await this.pubRepository.findOne({
             where: { id }, relations: {
                 oa_category: true,
                 invoices: invoice,
@@ -324,7 +324,7 @@ export class PublicationService {
     }
 
     public async resetAuthorPublication(pub: Publication) {
-        let pub_aut = await this.pubAutRepository.findBy({ publicationId: pub.id });
+        const pub_aut = await this.pubAutRepository.findBy({ publicationId: pub.id });
         return await this.pubAutRepository.remove(pub_aut);
     }
 
@@ -357,7 +357,7 @@ export class PublicationService {
     public async getPubwithDOIorTitle(doi: string, title: string): Promise<Publication> {
         if (!doi) doi = 'empty';
         if (!title) title = 'empty';
-        let pub = await this.pubRepository.findOne({
+        const pub = await this.pubRepository.findOne({
             where: [
                 { doi: ILike(doi.trim() + '%') },
                 { title: ILike(title.trim() + '%') }],
@@ -381,7 +381,7 @@ export class PublicationService {
     }
 
     getReportingYears() {
-        let query = this.pubRepository.createQueryBuilder("publication")
+        const query = this.pubRepository.createQueryBuilder("publication")
             .select("CASE WHEN publication.pub_date IS NOT NULL THEN extract('Year' from publication.pub_date at time zone 'UTC') " +
                 "WHEN publication.pub_date_print IS NOT NULL THEN extract('Year' from publication.pub_date_print at time zone 'UTC') " +
                 "WHEN publication.pub_date_accepted IS NOT NULL THEN extract('Year' from publication.pub_date_accepted at time zone 'UTC') " +
@@ -456,7 +456,7 @@ export class PublicationService {
     }
 
     async saveDuplicate(id_first :number, id_second:number, description?: string) {
-        let check = await this.duplRepository.findOne({where: {id_first, id_second}, withDeleted: true})
+        const check = await this.duplRepository.findOne({where: {id_first, id_second}, withDeleted: true})
         if (!check) return this.duplRepository.save({id_first,id_second,description})
         else return null;
     }
@@ -490,11 +490,11 @@ export class PublicationService {
         this.invoice = false;
 
         //let indexQuery = this.indexQuery();
-        let first = false;
-        if (filter) for (let expr of filter.expressions) {
+        const first = false;
+        if (filter) for (const expr of filter.expressions) {
             if (expr.key.includes("institute_id")) {
                 expr.comp = CompareOperation.IN;
-                let ids = [expr.value].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
+                const ids = [expr.value].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
                 expr.value = '(' + ids.join(',') + ')';
             }
 
@@ -628,8 +628,8 @@ export class PublicationService {
                 this.invoice = true;
                 break;
             case 'invoice_year':
-                let beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
-                let endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
+                const beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
+                const endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
                 where = "invoice.date > '" + beginDate.toISOString() + "' and invoice.date < '" + endDate.toISOString() + "'";
                 this.invoice = true;
                 break;

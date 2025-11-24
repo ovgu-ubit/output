@@ -173,7 +173,7 @@ export class DOAJEnrichService extends AbstractImportService {
     }
 
     private request(issn: string): Observable<any> {
-        let url = this.createUrl(issn);
+        const url = this.createUrl(issn);
         return this.http.get(url).pipe(delay(100),catchError((error, caught) => {
             if (error.response?.status === 404) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + issn })
@@ -201,13 +201,13 @@ export class DOAJEnrichService extends AbstractImportService {
         this.processedPublications = 0;
         this.publicationsUpdate = [];
         this.errors = 0;
-        let obs$ = [];
-        let publications = (await this.publicationService.get({...this.whereClause, relations: {greater_entity:{identifiers:true}}})).filter(pub => pub.greater_entity && !pub.locked && !pub.delete_date);
+        const obs$ = [];
+        const publications = (await this.publicationService.get({...this.whereClause, relations: {greater_entity:{identifiers:true}}})).filter(pub => pub.greater_entity && !pub.locked && !pub.delete_date);
         this.uniqueGE = [];
-        for (let pub of publications) {
+        for (const pub of publications) {
             if (!pub.greater_entity.identifiers || !pub.greater_entity.identifiers.find(e => e.type === 'issn')) continue;
             let flag = false;
-            for (let pub2 of this.uniqueGE) {
+            for (const pub2 of this.uniqueGE) {
                 if (pub2.greater_entity.id === pub.greater_entity.id) {
                     flag = true;
                     break;
@@ -222,23 +222,23 @@ export class DOAJEnrichService extends AbstractImportService {
             return;
         }
 
-        for (let pub of this.uniqueGE) obs$.push(this.request(pub.greater_entity.identifiers.find(e => e.type === 'issn').value));
+        for (const pub of this.uniqueGE) obs$.push(this.request(pub.greater_entity.identifiers.find(e => e.type === 'issn').value));
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {
                 if (data) {
-                    let item = this.getData(data);
+                    const item = this.getData(data);
                     //console.log(item['query'].split(':')[1])
                     if (item) {
-                        let orig = this.uniqueGE.find(e => {
+                        const orig = this.uniqueGE.find(e => {
                             if (e.greater_entity.identifiers) return e.greater_entity.identifiers.find(e => e.type === 'issn').value === item['query'].split(':')[1]
                         })
                         if (!orig) {
                             this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: 'no publication to update could be found' })
                             return null;
                         }
-                        let pubUpd = await this.mapUpdate(item, orig).catch(e => {
+                        const pubUpd = await this.mapUpdate(item, orig).catch(e => {
                             this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                             //console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
                             return null;
