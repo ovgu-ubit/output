@@ -34,6 +34,7 @@ export interface InstituteIndex {
 	id: number;
 	label: string;
 	short_label?: string;
+    opus_id?: string;
 	author_count: number;
 	author_count_total: number;
 	pub_count: number;

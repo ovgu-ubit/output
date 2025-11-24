@@ -3,34 +3,34 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 
 @Injectable()
 export class AliasLookupService {
-    public async findCanonicalLabel<TAlias extends { element?: TElement }, TElement extends { label?: string } = any>(
+    public async findCanonicalLabel<TAlias extends { element?: TElement }, TElement extends { label?: string }>(
         repository: Repository<TAlias>,
         searchLabels: string | string[],
     ): Promise<string | null> {
         const alias = await this.findAlias(repository, searchLabels);
-        const element = alias ? (alias as any).element as TElement | undefined : undefined;
+        const element = alias ? (alias as TAlias).element as TElement | undefined : undefined;
         return element?.label ?? null;
     }
 
-    public async findCanonicalElement<TAlias extends { element?: TElement }, TElement = any>(
+    public async findCanonicalElement<TAlias extends { element?: TElement }, TElement>(
         repository: Repository<TAlias>,
         searchLabels: string | string[],
     ): Promise<TElement | null> {
         const alias = await this.findAlias(repository, searchLabels);
-        return alias ? ((alias as any).element as TElement | undefined ?? null) : null;
+        return alias ? ((alias as TAlias).element as TElement | undefined ?? null) : null;
     }
 
-    public async findCanonicalElementId<TAlias extends { elementId?: number }>(
+    public async findCanonicalElementId<TAlias extends { elementId?: number, element?: TElement }, TElement>(
         repository: Repository<TAlias>,
         searchLabels: string | string[],
     ): Promise<number | null> {
         const alias = await this.findAlias(repository, searchLabels);
         if (!alias) return null;
-        const elementId = (alias as any).elementId as number | undefined;
+        const elementId = (alias as TAlias).elementId as number | undefined;
         if (typeof elementId === 'number') {
             return elementId;
         }
-        const element = (alias as any).element as { id?: number } | undefined;
+        const element = (alias as TAlias).element as { id?: number } | undefined;
         return element?.id ?? null;
     }
 

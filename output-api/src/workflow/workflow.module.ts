@@ -92,13 +92,13 @@ import { ReportItemService } from './report-item.service';
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],
       useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
-        let providers = discovery.getProviders();
-        let candidates = providers
+        const providers = discovery.getProviders();
+        const candidates = providers
           .map(p => p.metatype as Function | undefined)
           .filter(Boolean)
           .filter((t) => !!getImportServiceMeta(t!)) as Function[];
 
-        let instances = await Promise.all(
+        const instances = await Promise.all(
           candidates.map(async (t) => ref.create(t as any)),
         );
         return instances as AbstractImportService[];
@@ -108,13 +108,13 @@ import { ReportItemService } from './report-item.service';
       provide: 'Enrichs',
       inject: [DiscoveryService, ModuleRef],
       useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
-        let providers = discovery.getProviders();
-        let candidates = providers
+        const providers = discovery.getProviders();
+        const candidates = providers
           .map(p => p.metatype as Function | undefined)
           .filter(Boolean)
           .filter((t) => !!getEnrichServiceMeta(t!)) as Function[];
 
-        let instances = await Promise.all(
+        const instances = await Promise.all(
           candidates.map(async (t) => ref.create(t as any)),
         );
         return instances as ApiEnrichDOIService[];
@@ -123,13 +123,13 @@ import { ReportItemService } from './report-item.service';
       provide: 'Checks',
       inject: [DiscoveryService, ModuleRef],
       useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
-        let providers = discovery.getProviders();
-        let candidates = providers
+        const providers = discovery.getProviders();
+        const candidates = providers
           .map(p => p.metatype as Function | undefined)
           .filter(Boolean)
           .filter((t) => !!getPlausibilityServiceMeta(t!)) as Function[];
 
-        let instances = await Promise.all(
+        const instances = await Promise.all(
           candidates.map(async (t) => ref.create(t as any)),
         );
         return instances as AbstractPlausibilityService[];
@@ -138,13 +138,13 @@ import { ReportItemService } from './report-item.service';
       provide: 'Exports',
       inject: [DiscoveryService, ModuleRef],
       useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
-        let providers = discovery.getProviders();
-        let candidates = providers
+        const providers = discovery.getProviders();
+        const candidates = providers
           .map(p => p.metatype as Function | undefined)
           .filter(Boolean)
           .filter((t) => !!getExportServiceMeta(t!)) as Function[];
 
-        let instances = await Promise.all(
+        const instances = await Promise.all(
           candidates.map(async (t) => ref.create(t as any)),
         );
         return instances as AbstractExportService[];

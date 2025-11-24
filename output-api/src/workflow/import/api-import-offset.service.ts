@@ -88,7 +88,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
      * @returns an observable http request
      */
     protected request(offset: number): Observable<any> {
-        let url = this.completeURL + `&${this.offset_name}=` + offset;
+        const url = this.completeURL + `&${this.offset_name}=` + offset;
         return this.http.get(url);
     }
 
@@ -127,7 +127,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        let obs$ = [];
+        const obs$ = [];
         this.retrieveCountRequest().pipe(map(resp => {
             this.numberOfPublications = this.getNumber(resp);
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with parameters ${this.params.map(e => e.key + ': ' + e.value).join('; ')} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
@@ -153,7 +153,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
             next: async (data: any) => {
                 if (!data) return;
                 try {
-                    for (let [idx, pub] of this.getData(data).entries()) {
+                    for (const [idx, pub] of this.getData(data).entries()) {
                         if (!this.getDOI(pub) && !this.getTitle(pub)) {
                             this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
                             continue;
@@ -162,9 +162,9 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                             this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.' })
                             continue;
                         }
-                        let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                        const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                         if (!flag) {
-                            let pubNew = await this.mapNew(pub).catch(e => {
+                            const pubNew = await this.mapNew(pub).catch(e => {
                                 this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message })
                                 //console.log('Error while mapping publication ' + this.getDOI(pub) + ' with title ' + this.getTitle(pub) + ': ' + e.message + ' with stack ' + e.stack)
                             });
@@ -173,9 +173,9 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                                 this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                             }
                         } else if (update) {
-                            let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                            const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                             if (orig.locked || orig.delete_date) continue;
-                            let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                            const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                                 this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                                 return null;
                             })

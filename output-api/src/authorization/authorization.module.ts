@@ -77,7 +77,7 @@ async function ensureTsSupportIfNeeded(absPath: string) {
     // Nur im Dev nötig: ts-node registrieren, wenn noch nicht aktiv
     // (funktioniert für CJS; für ESM-Projekte ggf. "tsx" nutzen)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       require('ts-node/register/transpile-only');
     } catch {
       // falls ts-node nicht installiert ist, klarer Fehler:

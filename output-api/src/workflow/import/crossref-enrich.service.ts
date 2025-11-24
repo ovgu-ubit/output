@@ -89,9 +89,9 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         return response.data.message;
     }
     protected getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string }[] {
-        let authors_inst = this.authorsInstitution(element.author);
-        let res = [];
-        for (let item of authors_inst) res.push({ last_name: item['family'], first_name: item['given'], orcid: item['ORCID']?.slice(item['ORCID'].lastIndexOf('/') + 1), affiliation: item['affiliation'][0].name })
+        const authors_inst = this.authorsInstitution(element.author);
+        const res = [];
+        for (const item of authors_inst) res.push({ last_name: item['family'], first_name: item['given'], orcid: item['ORCID']?.slice(item['ORCID'].lastIndexOf('/') + 1), affiliation: item['affiliation'][0].name })
         return res;
     }
     protected getAuthors(element: any): string {
@@ -110,7 +110,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
         return result;
     }
     protected getGreaterEntity(element: any): GreaterEntity {
-        let label = element['container-title'] && element['container-title'].length > 0 ? element['container-title'][0] : null;
+        const label = element['container-title'] && element['container-title'].length > 0 ? element['container-title'][0] : null;
         return {
             label,
             identifiers: element['ISSN']?.filter((v, i, s) => { return s.indexOf(v) === i; }).map(e => { return { type: 'issn', value: e }; })
@@ -171,7 +171,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     }
     protected getLicense(element: any): string {
         if (!element['license']) return null;
-        for (let item of element['license']) {
+        for (const item of element['license']) {
             if (item['content-version'] === 'vor') { //version of record
                 if (item['URL'].includes('creativecommons.org/licenses/by/')) return 'cc-by'
                 else if (item['URL'].includes('creativecommons.org/licenses/by-nc/')) return 'cc-by-nc'
@@ -190,7 +190,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
 
     public authorsInstitution(authors) {
         if (authors) {
-            let aut = authors.filter(author => {
+            const aut = authors.filter(author => {
                 author.affiliation = author.affiliation.filter(affiliation => this.affiliationIncludesTags(affiliation));
                 return author.affiliation.length !== 0;
             });
@@ -208,7 +208,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
     public publicationContainsInstitutionAuthor(publication): boolean {
         let authors = publication.author;
         if (!authors || authors.length === 0) authors = publication.editor;
-        let res = this.authorsInstitution(authors).length !== 0;
+        const res = this.authorsInstitution(authors).length !== 0;
         return res;
     }
     protected getAbstract(element: any): string {

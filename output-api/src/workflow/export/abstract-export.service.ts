@@ -4,11 +4,11 @@ import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex
 import { Publication } from '../../publication/core/Publication.entity';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 
-export function ExportService(meta: {path: string}): ClassDecorator {
-  return (target) => Reflect.defineMetadata("export_service", meta, target);
+export function ExportService(meta: { path: string }): ClassDecorator {
+    return (target) => Reflect.defineMetadata("export_service", meta, target);
 }
-export function getExportServiceMeta(target: Function): {path: string} | undefined {
-  return Reflect.getMetadata("export_service", target);
+export function getExportServiceMeta(target: Function): { path: string } | undefined {
+    return Reflect.getMetadata("export_service", target);
 }
 
 @Injectable()
@@ -33,20 +33,20 @@ export abstract class AbstractExportService {
      */
     protected excel_response = false;
 
-    public isExcelResponse() {
+    public isExcelResponse(): boolean {
         return this.excel_response;
     }
 
     /**
      * main method for exports, should return 
      */
-    public abstract export(filter?:{filter:SearchFilter, paths:string[]}, filterServices?:AbstractFilterService<PublicationIndex|Publication>[], by_user?: string, withMasterData?:boolean);
+    public abstract export(filter?: { filter: SearchFilter, paths: string[] }, filterServices?: AbstractFilterService<PublicationIndex | Publication>[], by_user?: string, withMasterData?: boolean);
 
-    public getName() {
+    public getName(): string {
         return this.name;
     }
 
-    public status() {
+    public status(): { progress: number, status: string } {
         return {
             progress: this.progress,
             status: this.status_text

@@ -11,9 +11,9 @@ export class MissingInstAuthorFilterService extends AbstractFilterService<Public
     constructor(private pubService: PublicationService) {super()}
 
     async filter(pubs:PublicationIndex[]|Publication[], options?:any):Promise<PublicationIndex[]|Publication[]> {
-        let res = [];
-        for (let pub of pubs) {
-            let pub_ent = (await this.pubService.get({where: {id: pub.id}, relations: {authorPublications: true}}))[0];
+        const res = [];
+        for (const pub of pubs) {
+            const pub_ent = (await this.pubService.get({where: {id: pub.id}, relations: {authorPublications: true}}))[0];
             if (!pub_ent.authorPublications || pub_ent.authorPublications.length == 0) res.push(pub);
         }
         return res;

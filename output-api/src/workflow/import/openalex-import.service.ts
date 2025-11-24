@@ -99,11 +99,11 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return element['title'];
     }
     protected getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string, corresponding?: boolean }[] {
-        let res = [];
-        let authors = element['authorships'];
-        for (let aut of authors) {
+        const res = [];
+        const authors = element['authorships'];
+        for (const aut of authors) {
             if (aut['institutions'].find(e => e['id']?.includes(this.id))) {
-                let name = aut['author']['display_name']
+                const name = aut['author']['display_name']
                 res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
                     last_name: name.slice(name.lastIndexOf(' ') + 1),
@@ -117,8 +117,8 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getAuthors(element: any): string {
         let res = '';
-        let authors = element['authorships'];
-        for (let aut of authors) {
+        const authors = element['authorships'];
+        for (const aut of authors) {
             res += aut['author']['display_name'] + '; '
         }
         return res.slice(0, res.length - 2);
@@ -144,7 +144,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         } else if (element['publication_year']) {
             data = element['publication_year'] + '-01-01';
         }
-        let pubdate = data.split('-');
+        const pubdate = data.split('-');
         if (pubdate.length === 3) return new Date(Date.UTC(pubdate[0], pubdate[1] - 1, pubdate[2]));
         else return new Date(Date.UTC(pubdate[0], 0));
     }
@@ -164,14 +164,14 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         }
     }
     protected getPubType(element: any): string {
-        let type = element['type'];
+        const type = element['type'];
         if (type === 'article') {
             if (element['primary_location']['source'] && element['primary_location']['source']['type'] === 'conference') return 'conference proceedings'
         }
         return type;
     }
     protected getOACategory(element: any): string {
-        let status = element['open_access']['oa_status']
+        const status = element['open_access']['oa_status']
         if (status === 'gold' && element['apc_list'] && element['apc_list']['value'] === 0) return 'diamond';
         return status;
     }
@@ -192,7 +192,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
         if (element['biblio']) {
-            let e = {
+            const e = {
                 volume: element['biblio']['volume'],
                 issue: element['biblio']['issue'],
                 first_page: element['biblio']['first_page'],
@@ -203,7 +203,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     }
     protected getPageCount(element: any): number {
         try {
-            let count = Number(element['biblio']['last_page']) - Number(element['biblio']['first_page']) + 1;
+            const count = Number(element['biblio']['last_page']) - Number(element['biblio']['first_page']) + 1;
             if (!Number.isNaN(count) && count < 999999) return count;
             else return null;
         } catch (e) { return null; }
@@ -212,7 +212,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         return null;
     }
     protected getCostApproach(element: any): number {
-        let elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
+        const elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
         if (elem) {
             if (elem['currency'] != 'EUR') {
                 //return element['apc_paid']['currency'] + " " + element['apc_paid']['value']

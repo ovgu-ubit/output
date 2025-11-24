@@ -100,18 +100,18 @@ export class ScopusImportService extends ApiImportOffsetService {
     }
     protected getInstAuthors(element: any): { first_name: string, last_name: string, orcid?: string, affiliation?: string }[] {
         if (!element.author || element.author.length === 0) return null;
-        let aut_inst = [];
+        const aut_inst = [];
         for (let i = 0; i < element.author.length; i++) {
-            let aff = element.affiliation.filter(e => element.author[i].afid?.find(f => f['$'] === e.afid))
+            const aff = element.affiliation.filter(e => element.author[i].afid?.find(f => f['$'] === e.afid))
             if (!aff || !Array.isArray(aff)) continue;
             if (this.affiliationIncludesTags(aff)) aut_inst.push(element.author[i])
         }
-        let res = [];
-        for (let item of aut_inst) res.push({ last_name: item['surname'], first_name: item['given-name'] })
+        const res = [];
+        for (const item of aut_inst) res.push({ last_name: item['surname'], first_name: item['given-name'] })
         return res;
     }
     private affiliationIncludesTags(affiliation: any[]): boolean {
-        for (let aff of affiliation) {
+        for (const aff of affiliation) {
             if (this.affiliationTagMatch(aff.affilname)) return true;
         }
         return false;
@@ -123,7 +123,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         return false;
     }
     protected getAuthors(element: any): string {
-        let authors = element.author;
+        const authors = element.author;
         if (!authors || authors.length === 0) return null;
         let result = '';
         authors.forEach(author => {
@@ -150,7 +150,7 @@ export class ScopusImportService extends ApiImportOffsetService {
         return null;
     }
     protected getPubDate(element: any) {
-        let split = element['prism:coverDate'].split('-');
+        const split = element['prism:coverDate'].split('-');
         return new Date(Date.UTC(split[0], split[1] - 1, split[2]));
     }
     protected getLanguage(element: any): string {
@@ -189,8 +189,8 @@ export class ScopusImportService extends ApiImportOffsetService {
         issue = element['prism:issueIdentifier']
         article_number = element['article_number']
         try {
-            let range = element['prism:pageRange']
-            let split = range.split('-');
+            const range = element['prism:pageRange']
+            const split = range.split('-');
             first_page = split[0]
             last_page = split[1]
         } catch (err) {first_page = element['prism:pageRange'];last_page = null;}
@@ -198,9 +198,9 @@ export class ScopusImportService extends ApiImportOffsetService {
     }
     protected getPageCount(element: any): number {
         try {
-            let range = element['prism:pageRange']
-            let split = range.split('-');
-            let res = Number(split[1]) - Number(split[0]) + 1;
+            const range = element['prism:pageRange']
+            const split = range.split('-');
+            const res = Number(split[1]) - Number(split[0]) + 1;
             if (!Number.isNaN(res) && res <= 2147483647) return res; else return null;//max int
         } catch (err) {
             return null;

@@ -37,13 +37,13 @@ import { MissingInstAuthorFilterService } from '../../workflow/filter/missing-in
       provide: 'Filters',
       inject: [DiscoveryService, ModuleRef],
       useFactory: async (discovery: DiscoveryService, ref: ModuleRef) => {
-        let providers = discovery.getProviders();
-        let candidates = providers
+        const providers = discovery.getProviders();
+        const candidates = providers
           .map(p => p.metatype as Function | undefined)
           .filter(Boolean)
           .filter((t) => !!getFilterServiceMeta(t!)) as Function[];
 
-        let instances = await Promise.all(
+        const instances = await Promise.all(
           candidates.map(async (t) => ref.create(t as any)),
         );
         return instances as AbstractFilterService<any>[];

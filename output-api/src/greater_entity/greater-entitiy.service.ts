@@ -39,7 +39,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         let orig: GreaterEntity = null;
         if (ge.id) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
         if (ge.identifiers) {
-            for (let id of ge.identifiers) {
+            for (const id of ge.identifiers) {
                 if (!id.id) {
                     id.value = id.value.toUpperCase();
                     id.type = id.type.toLowerCase();
@@ -67,8 +67,8 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         //1. find an existing entity
         //find via identifier
         if (ge.identifiers && ge.identifiers.length > 0) {
-            for (let { type, value } of ge.identifiers) {
-                let id = await this.idRepository.findOne({
+            for (const { type, value } of ge.identifiers) {
+                const id = await this.idRepository.findOne({
                     where: { value: ILike(value) },
                     relations: { entity: { identifiers: true } }
                 });
@@ -80,7 +80,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         }
         if (!result && ge.label) {
             //find via title
-            let results = await this.repository.find({ where: { label: ILike(ge.label) } });
+            const results = await this.repository.find({ where: { label: ILike(ge.label) } });
             if (results.length > 1) throw { origin: 'GE-Service', text: 'amibiguous GE title ' + ge.label } as AppError;
             else if (results.length === 1) result = results[0];
         }
@@ -93,7 +93,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             if (flag && !dryRun) await this.repository.save(result)
 
             //find associated ids
-            let ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
+            const ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
             if (ge.identifiers && ge.identifiers.length > 0) {
                 ids2save = ge.identifiers.filter(i => !ids.find(e => e.value === i.value));
             }
@@ -138,8 +138,8 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             .leftJoin(Publication, "publication", "publication.\"greaterEntityId\" = a.id")
 
         if (reporting_year) {
-            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .addSelect("SUM(CASE WHEN publication.pub_date >= '" + beginDate.toISOString() + "' and publication.pub_date <= '" + endDate.toISOString() + "' THEN 1 ELSE 0 END)", "pub_count")
         }
@@ -174,16 +174,16 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async delete(insts: GreaterEntity[]) {
-        for (let inst of insts) {
-            let conE: GreaterEntity = await this.repository.findOne({ where: { id: inst.id }, relations: { identifiers: true, publications: true }, withDeleted: true });
-            let pubs = [];
-            if (conE.publications) for (let pub of conE.publications) {
+        for (const inst of insts) {
+            const conE: GreaterEntity = await this.repository.findOne({ where: { id: inst.id }, relations: { identifiers: true, publications: true }, withDeleted: true });
+            const pubs = [];
+            if (conE.publications) for (const pub of conE.publications) {
                 pubs.push({ id: pub.id, greater_entity: null })
             }
             if (pubs.length > 0) await this.publicationService.save(pubs);
 
-            let ides = [];
-            if (conE.identifiers) for (let ide of conE.identifiers) {
+            const ides = [];
+            if (conE.identifiers) for (const ide of conE.identifiers) {
                 ides.push(ide.id)
             }
             if (ides.length > 0) await this.idRepository.delete(ides)

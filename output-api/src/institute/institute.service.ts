@@ -1,15 +1,16 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
-import { EntityManager, ILike, In, Repository, TreeRepository } from 'typeorm';
+import { EntityManager, ILike, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
+import { Author } from '../author/Author.entity';
+import { AliasLookupService } from '../common/alias-lookup.service';
+import { mergeEntities } from '../common/merge';
+import { AppConfigService } from '../config/app-config.service';
 import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
 import { AliasInstitute } from './AliasInstitute.entity';
 import { Institute } from './Institute.entity';
-import { Author } from '../author/Author.entity';
-import { AppConfigService } from '../config/app-config.service';
-import { AliasLookupService } from '../common/alias-lookup.service';
-import { mergeEntities } from '../common/merge';
+import { LockableEntity } from '../common/abstract-entity.service';
 
 @Injectable()
 export class InstituteService {
@@ -24,7 +25,7 @@ export class InstituteService {
         this.repository = this.manager.getTreeRepository(Institute);
     }
 
-    public save(inst: any[]) {
+    public save(inst: Institute[] | LockableEntity[]) {
         return this.repository.save(inst).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
@@ -35,7 +36,7 @@ export class InstituteService {
         return this.repository.find({ relations: { aliases: true, super_institute: true, sub_institutes: true } });
     }
     public async one(id: number, writer: boolean) {
-        let inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
+        const inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
 
         if (writer && !inst.locked_at) {
             await this.save([{
@@ -54,12 +55,12 @@ export class InstituteService {
     }
 
     public async delete(insts: Institute[]) {
-        for (let inst of insts) {
-            let instE = await this.repository.findOne({ where: { id: inst.id }, relations: { authorPublications: { institute: true }, authors: { institutes: true } } });
-            if (instE.authorPublications) for (let autPub of instE.authorPublications) {
+        for (const inst of insts) {
+            const instE = await this.repository.findOne({ where: { id: inst.id }, relations: { authorPublications: { institute: true }, authors: { institutes: true } } });
+            if (instE.authorPublications) for (const autPub of instE.authorPublications) {
                 await this.pubAutRepository.save({ authorId: autPub.authorId, publicationId: autPub.publicationId, institute: null });
             }
-            if (instE.authors) for (let aut of instE.authors) {
+            if (instE.authors) for (const aut of instE.authors) {
                 aut.institutes = aut.institutes.filter(e => e.id !== inst.id);
                 this.autRepository.save([aut])
             }
@@ -68,22 +69,19 @@ export class InstituteService {
         return await this.repository.delete(insts.map(p => p.id));
     }
 
-    public findOrSave(affiliation: string, dry_run = false): Observable<Institute> {
+    public findOrSave(affiliation: string, _dry_run = false): Observable<Institute> {
         if (!affiliation) return of(null);
         return from(this.aliasLookupService.findCanonicalElement(this.aliasRepository, affiliation)).pipe(concatMap(match => {
-            const label = match?.label ?? affiliation;
+            const label = match['label'] ?? affiliation;
             return from(this.repository.findOne({ where: { label: ILike(label) } }));
         }));
     }
 
     public async index(reporting_year: number): Promise<InstituteIndex[]> {
-        let time;
-        let result;
+        const result:InstituteIndex[] = [];
 
-        time = new Date();
-        let instIDs = (await this.repository.find({ relations: { authors: true } }))
-        result = [];
-        for (let inst of instIDs) {
+        const instIDs = (await this.repository.find({ relations: { authors: true } }))
+        for (const inst of instIDs) {
             let query = this.repository.createQueryBuilder("institute")
                 .innerJoin("institute_closure", "ic", "ic.id_descendant = institute.id",)
                 .leftJoin("author_publication", "aut_pub", "aut_pub.\"instituteId\" = institute.id")
@@ -96,8 +94,8 @@ export class InstituteService {
                 .where("ic.id_ancestor = :id", { id: inst.id })
 
             if (reporting_year) {
-                let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-                let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+                const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+                const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
                 query = query
                     .andWhere('(pub is NULL or pub_date between :beginDate and :endDate)', { beginDate, endDate })
             }
@@ -106,11 +104,9 @@ export class InstituteService {
                     .andWhere('(pub is NULL or (pub_date IS NULL and pub_date_print IS NULL and pub_date_accepted IS NULL and pub_date_submitted IS NULL))')
             }
             //console.log(query.getSql());
-            let res = await query.getRawOne() as any;
+            const res = await query.getRawOne() as InstituteIndex;
             result.push({ ...res, sub_inst_count: res.sub_inst_count < 0 ? 0 : res.sub_inst_count, id: inst.id, label: inst.label, short_label: inst.short_label, author_count: inst.authors?.length, opus_id: inst.opus_id });
         }
-        //console.log('SQL: ' + (new Date().getTime() - time.getTime()) / 1000)
-
 
         return result;
     }
@@ -133,8 +129,8 @@ export class InstituteService {
     }
 
     async findSuperInstitute(id: number) {
-        let insts = await this.repository.find({ relations: { super_institute: true } })
-        let inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true } })
+        const insts = await this.repository.find({ relations: { super_institute: true } })
+        const inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true } })
         let result = insts.find(e => e.id === inst.super_institute?.id);
         let tmp = result;
         while (tmp) {
@@ -145,15 +141,15 @@ export class InstituteService {
     }
 
     async findSubInstitutesFlat(id: number) {
-        let insts = await this.repository.find({ relations: { sub_institutes: true } })
-        let inst = await this.repository.findOne({ where: { id }, relations: { sub_institutes: true } })
+        const insts = await this.repository.find({ relations: { sub_institutes: true } })
+        const inst = await this.repository.findOne({ where: { id }, relations: { sub_institutes: true } })
         let result = inst.sub_institutes;
         let flag = inst.sub_institutes && inst.sub_institutes.length > 0;
         while (flag) {
             flag = false;
             let newSubs = [];
-            for (let sub of result) {
-                let subI = insts.find(e => e.id === sub.id)
+            for (const sub of result) {
+                const subI = insts.find(e => e.id === sub.id)
                 if (subI.sub_institutes && subI.sub_institutes.length > 0) {
                     newSubs = newSubs.concat(subI.sub_institutes);
                     subI.sub_institutes = [];

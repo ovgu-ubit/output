@@ -30,7 +30,7 @@ export class AppConfigService {
 
     public async setDatabaseConfig(key: string, value: any) {
         if (!key) return null;
-        let row = await this.repository.findOneBy({ key });
+        const row = await this.repository.findOneBy({ key });
         if (!row) return this.repository.save({ key, value })
         else {
             row.value = value
@@ -46,12 +46,12 @@ export class AppConfigService {
         const have = existing.map((r) => `${r.key}`);
 
         // fehlende bilden
-        let missing = Object.entries(defaults).filter(([key, value]) => {
+        const missing = Object.entries(defaults).filter(([key, _value]) => {
             return !have.find(e =>
                 e == key)
         })
 
-        let missing1 = missing.map(([key, value]) => { return { key, value, description: descriptions[key] } }
+        const missing1 = missing.map(([key, value]) => { return { key, value, description: descriptions[key] } }
         );
 
         if (missing1.length) {
@@ -64,12 +64,12 @@ export class AppConfigService {
         })
 
         // delete old or wrong keys
-        let over = have.filter(key => !Object.keys(defaults).find(e => e === key))
+        const over = have.filter(key => !Object.keys(defaults).find(e => e === key))
         if (over.length) await this.repository.delete({ key: In(over) });
     }
 
     async checkHealth() {
-        let state: HealthState = {
+        const state: HealthState = {
             status: "ok",
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),

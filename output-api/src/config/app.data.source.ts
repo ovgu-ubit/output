@@ -1,7 +1,7 @@
 import { DataSource, DataSourceOptions } from "typeorm";
 import { DatabaseType } from "typeorm/driver/types/DatabaseType";
 import { config as config } from "dotenv";
-import path = require("path");
+import path from "node:path";
 
 const configDir = process.env.CONFIG_DIR || process.cwd();
 

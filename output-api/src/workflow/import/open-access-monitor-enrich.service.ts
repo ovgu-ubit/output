@@ -99,9 +99,9 @@ export class OpenAccessMonitorEnrichService extends ApiEnrichDOIService {
         return { label: element['publisher']['name'] };
     }
     protected getPubDate(element: any): Date {
-        let string = element['published_date'];
+        const string = element['published_date'];
         try {
-            let dates = string.split('-');
+            const dates = string.split('-');
             return new Date(Date.UTC(dates[0], dates[1] - 1, dates[2]));
         } catch (err) {
             return null;

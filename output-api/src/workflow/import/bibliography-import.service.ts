@@ -87,8 +87,8 @@ export class BibliographyImportService extends ApiImportOffsetService {
     protected getInstAuthors(element: any): {
         first_name: string; last_name: string; orcid?: string; affiliation?: string;
     }[] {
-        let author = element['author'];
-        let split = author.split(', ')
+        const author = element['author'];
+        const split = author.split(', ')
         if (split && split.length == 2) {
             return [{first_name: split[1], last_name: split[0]}]
         } else return [];
@@ -97,7 +97,7 @@ export class BibliographyImportService extends ApiImportOffsetService {
         return element['author'];
     }
     protected getGreaterEntity(element: any): GreaterEntity {
-        let issn = element['greater_entity_issn'];
+        const issn = element['greater_entity_issn'];
         return {
             label: element['greater_entity'],
             identifiers: issn ? [{ type: 'issn', value: issn }] : undefined

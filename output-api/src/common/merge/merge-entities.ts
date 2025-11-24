@@ -59,7 +59,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         validate,
     } = options;
 
-    let primaryFindOptions = {...primaryOptions, where: { id: primaryId } as FindOptionsWhere<TEntity>}
+    const primaryFindOptions = {...primaryOptions, where: { id: primaryId } as FindOptionsWhere<TEntity>}
     const primary = await repository.findOne(primaryFindOptions);
     if (!primary) {
         return { error: 'find' as MergeError };
@@ -90,12 +90,12 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
     for (let index = 0; index < presentDuplicates.length; index++) {
         const duplicate = presentDuplicates[index];
 
-        for (let key of Object.keys(duplicate)) {
+        for (const key of Object.keys(duplicate)) {
             if (key === 'id' || key.startsWith('locked_') || key === 'edit_date' || key === 'delete_date' || key === 'import_date') continue;
-            let value = accumulator[key];
+            const value = accumulator[key];
             if (key === 'publications') {
                 const pubs = duplicate[key]?.map(pub => {
-                    let obj = { id: pub.id }
+                    const obj = { id: pub.id }
                     if (mergeContext.field === 'funders') { //n to m relation
                         const funders = (pub[mergeContext.field] ?? []).filter(f => f.id !== duplicate.id);
                         if (!funders.find(f => f.id === primary.id)) {
@@ -111,13 +111,13 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
                 }
             } else if (key === 'authorPublications') {
                 for (const ap of duplicate[key] ?? []) {
-                    let obj = { id: ap['id'] };
+                    const obj = { id: ap['id'] };
                     obj[mergeContext.field] = accumulator;
                     await mergeContext.pubAutrepository.save(obj);
                 }
             } else if (key === 'authors' && mergeContext.autField === 'institutes') {
                 for (const auth of duplicate[key] ?? []) {
-                    let obj = { id: auth['id'] };
+                    const obj = { id: auth['id'] };
                     const institutes = (auth[mergeContext.autField] ?? []).filter(inst => inst.id !== duplicate.id);
                     if (!institutes.find(inst => inst.id === primary.id)) {
                         institutes.push(primary);
