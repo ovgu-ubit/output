@@ -46,6 +46,8 @@ describe('PublicationService combine', () => {
         duplRepository = {
             find: jest.fn(),
             delete: jest.fn(),
+            findOne: jest.fn(),
+            save: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -161,5 +163,65 @@ describe('PublicationService combine', () => {
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
         expect(duplRepository.delete).toHaveBeenCalledWith([501, 502]);
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
+    });
+
+    it('checks DOI or title existence using case-insensitive matching', async () => {
+        pubRepository.findOne.mockResolvedValue({ id: 42 } as Publication);
+
+        const exists = await service.checkDOIorTitleAlreadyExists('10.1234/doi', 'Some Title');
+
+        expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.arrayContaining([
+                expect.objectContaining({ doi: expect.anything() }),
+                expect.objectContaining({ title: expect.anything() }),
+            ]),
+            withDeleted: true,
+        }));
+        expect(exists).toBe(true);
+    });
+
+    it('returns matched publication with relations when searching by DOI or title', async () => {
+        const matchedPub = { id: 11, title: 'Trimmed Title', doi: '10.5678/abc' } as Publication;
+        pubRepository.findOne.mockResolvedValue(matchedPub);
+
+        const result = await service.getPubwithDOIorTitle(' 10.5678/abc ', ' Trimmed Title ');
+
+        expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+            withDeleted: true,
+            relations: expect.objectContaining({
+                pub_type: true,
+                greater_entity: true,
+                publisher: true,
+                oa_category: true,
+                contract: true,
+                funders: true,
+                invoices: expect.objectContaining({ cost_items: expect.objectContaining({ cost_type: true }) }),
+            }),
+        }));
+        expect(result).toBe(matchedPub);
+    });
+
+    describe('saveDuplicate', () => {
+        it('saves a new duplicate pair when none exists', async () => {
+            duplRepository.findOne!.mockResolvedValue(null);
+            const saved = { id: 77, id_first: 1, id_second: 2 } as PublicationDuplicate;
+            duplRepository.save!.mockResolvedValue(saved);
+
+            const result = await service.saveDuplicate(1, 2, 'test');
+
+            expect(duplRepository.findOne).toHaveBeenCalledWith({ where: { id_first: 1, id_second: 2 }, withDeleted: true });
+            expect(duplRepository.save).toHaveBeenCalledWith({ id_first: 1, id_second: 2, description: 'test' });
+            expect(result).toEqual(saved);
+        });
+
+        it('returns null without saving when duplicate pair already exists', async () => {
+            duplRepository.findOne!.mockResolvedValue({ id: 88 } as PublicationDuplicate);
+
+            const result = await service.saveDuplicate(3, 4);
+
+            expect(duplRepository.findOne).toHaveBeenCalledWith({ where: { id_first: 3, id_second: 4 }, withDeleted: true });
+            expect(duplRepository.save).not.toHaveBeenCalled();
+            expect(result).toBeNull();
+        });
     });
 });
