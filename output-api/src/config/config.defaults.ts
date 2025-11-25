@@ -1,3 +1,5 @@
+import { ConfigScope } from './Config.entity';
+
 export const CONFIG_DEFAULTS = {
     reporting_year: 2025,
     institution: "Otto-von-Guericke-Universität Magdeburg",
@@ -71,6 +73,22 @@ export const CONFIG_DEFAULTS = {
         scopus: true,
         unpaywall: true
     }
+};
+
+export const CONFIG_SCOPES: Record<keyof typeof CONFIG_DEFAULTS, ConfigScope> = {
+    reporting_year: 'public',
+    institution: 'public',
+    institution_short_label: 'public',
+    search_tags: 'user',
+    lock_timeout: 'user',
+    affiliation_tags: 'user',
+    ror_id: 'user',
+    openalex_id: 'user',
+    doi_import_service: 'user',
+    optional_fields: 'public',
+    pub_index_columns: 'public',
+    import_services: 'admin',
+    enrich_services: 'admin'
 };
 
 export const CONFIG_DESCRIPTIONS = {

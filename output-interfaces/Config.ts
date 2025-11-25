@@ -2,6 +2,7 @@ export interface Config {
     key: string;
     description?: string;
     value: any;
+    scope?: 'public' | 'user' | 'admin';
 }
 
 export class AppError {
