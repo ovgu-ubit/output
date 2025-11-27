@@ -18,7 +18,7 @@ export class TokenAuthorizationService extends AuthorizationService {
         this.AUTH_API = (await this.configService.get('AUTH_API')).replace(/\/?$/, '/') + 'auth/';
         const request = context.switchToHttp().getRequest();
         if (['false', '0'].includes((await this.configService.get('AUTH'))?.toLowerCase())) { // no authentication required
-            request['user'] = { read: true, write: true }
+            request['user'] = { username: "unknown", read: true, write_publication: true, write: true, admin: true }
             return true;
         }
         const permissions = this.reflector.get<PermissionDecoration[]>('permissions', context.getHandler());
