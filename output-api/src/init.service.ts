@@ -74,13 +74,6 @@ export class InitService {
             { label: 'Extra Page Charges' },
         ]
 
-        const config: Config[] = [
-            { key: 'reporting_year', value: 2025},
-            { key: 'institution', value: 'Output Development Version' },
-            { key: 'institution_short_label', value: 'Dev' },
-            { key: 'lock_timeout', value: 5 },
-        ]
-
         const langs: Language[] = [
             { label: 'de' },
             { label: 'en' },
@@ -99,7 +92,6 @@ export class InitService {
         // Save entities to database
         await this.oaCategoryRepository.save(oas);
         await this.costTypeRepository.save(apc);
-        await this.configRepository.save(config);
         await this.langRepository.save(langs);
         await this.roleRepository.save(roles);
 

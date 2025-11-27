@@ -1,6 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 import { HealthState } from '../../../output-interfaces/Config';
@@ -43,9 +43,19 @@ export class AppConfigService {
     async reconcileDefaults(defaults: Record<string, unknown>, descriptions: Record<string, string>, scopes: Record<string, ConfigScope> = {}) {
         // schon vorhandene holen
         const existing = await this.repository.find({
-            select: ['id', 'key', 'scope'],
+            select: ['id', 'key', 'scope']
         });
         const have = existing.map((r) => `${r.key}`);
+
+        let existingNull = await this.repository.find({
+            select: ['id', 'key', 'scope'],
+            where: {value: IsNull()}
+        });
+        //reconcile defaults for null values
+        let defaultNull = existingNull.map(e => {return {...e, value: defaults[e.key]}})
+        if (defaultNull.length) {
+            await this.repository.save(defaultNull)
+        }
 
         // fehlende bilden
         const missing = Object.entries(defaults).filter(([key, _value]) => {
