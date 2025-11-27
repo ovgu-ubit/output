@@ -39,7 +39,7 @@ describe("TokenAuthorizationService", () => {
         const result = await service.verify(context);
 
         expect(result).toBe(true);
-        expect(request.user).toEqual({ read: true, write: true });
+        expect(request.user).toEqual({ username: "unknown", read: true, write_publication: true, write: true, admin: true });
         expect(httpService.get).not.toHaveBeenCalled();
         expect(jwtService.verify).not.toHaveBeenCalled();
     });
