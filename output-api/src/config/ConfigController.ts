@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards, UsePipes } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards, UsePipes } from "@nestjs/common";
 import { ApiBody, ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { ConfigValueValidationPipe } from "./config-value-validation.pipe";
 import { HealthState } from "../../../output-interfaces/Config";
+import { Request } from "express";
+import { ConfigScope } from "./Config.entity";
 
 @Controller("config")
 @ApiTags("config")
@@ -13,8 +15,10 @@ export class ConfigController {
     constructor(private configService: AppConfigService) { }
 
     @Get()
-    async list(@Query("key") key?: string) {
-        return await this.configService.listDatabaseConfig(key);
+    @UseGuards(AccessGuard)
+    async list(@Req() req: Request, @Query("key") key?: string) {
+        const userScope: ConfigScope = req?.['user']?.admin ? 'admin' : req?.['user']?.read ? 'user' : 'public';
+        return await this.configService.listDatabaseConfig(key, userScope);
     }
 
     @Post()

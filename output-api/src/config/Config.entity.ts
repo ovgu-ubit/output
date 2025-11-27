@@ -1,5 +1,7 @@
-import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { Config as IConfig } from "../../../output-interfaces/Config";
+
+export type ConfigScope = 'public' | 'user' | 'admin';
 
 @Entity()
 export class Config implements IConfig {
@@ -11,7 +13,10 @@ export class Config implements IConfig {
 
     @Column({nullable: true, type: 'simple-json'})
     value: any;
-    
+
     @Column({nullable: true})
     description?: string;
+
+    @Column({ type: 'varchar', default: 'admin' })
+    scope: ConfigScope;
 }

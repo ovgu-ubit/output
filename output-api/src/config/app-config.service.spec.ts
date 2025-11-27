@@ -17,6 +17,7 @@ describe('AppConfigService', () => {
     beforeEach(async () => {
         repository = {
             find: jest.fn(),
+            findOne: jest.fn(),
             findOneBy: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
@@ -73,14 +74,18 @@ describe('AppConfigService', () => {
         expect(repository.find).toHaveBeenNthCalledWith(2, { where: { key: 'another_key' } });
     });
 
-    it('lists database config with ordering or by specific key', async () => {
-        repository.find.mockResolvedValueOnce([{ key: 'a' }] as any);
-        repository.findOneBy.mockResolvedValueOnce({ key: 'b' } as any);
+    it('lists database config with ordering or by specific key and filters by scope', async () => {
+        repository.find.mockResolvedValueOnce([{ key: 'a', scope: 'public' }] as any);
+        repository.findOne.mockResolvedValueOnce({ key: 'b', scope: 'user' } as any);
 
-        await expect(service.listDatabaseConfig()).resolves.toEqual([{ key: 'a' }]);
-        await expect(service.listDatabaseConfig('b')).resolves.toEqual({ key: 'b' });
-        expect(repository.find).toHaveBeenCalledWith({ order: { key: 'ASC' } });
-        expect(repository.findOneBy).toHaveBeenCalledWith({ key: 'b' });
+        await expect(service.listDatabaseConfig()).resolves.toEqual([{ key: 'a', scope: 'public' }]);
+        await expect(service.listDatabaseConfig('b', 'user')).resolves.toEqual({ key: 'b', scope: 'user' });
+        expect(repository.find).toHaveBeenCalledWith({ where: { scope: expect.anything() }, order: { key: 'ASC' } });
+        const listCall = repository.find.mock.calls[0][0] as any;
+        expect(listCall.where.scope._value).toEqual(['public']);
+        expect(repository.findOne).toHaveBeenCalledWith({ where: { key: 'b', scope: expect.anything() } });
+        const getCall = repository.findOne.mock.calls[0][0] as any;
+        expect(getCall.where.scope._value).toEqual(expect.arrayContaining(['public', 'user']));
     });
 
     it('handles database config creation and updates', async () => {
@@ -93,20 +98,21 @@ describe('AppConfigService', () => {
         await expect(service.setDatabaseConfig('x', 1)).resolves.toEqual({ key: 'x', value: 1 });
         await expect(service.setDatabaseConfig('y', 3)).resolves.toEqual({ key: 'y', value: 3 });
 
-        expect(repository.save).toHaveBeenNthCalledWith(1, { key: 'x', value: 1 });
+        expect(repository.save).toHaveBeenNthCalledWith(1, { key: 'x', value: 1, scope: 'admin' });
         expect(repository.save).toHaveBeenNthCalledWith(2, { key: 'y', value: 3 });
     });
 
     it('reconciles defaults by saving missing entries, updating descriptions, and deleting obsolete keys', async () => {
-        repository.find.mockResolvedValue([{ id: 1, key: 'keep' }, { id: 2, key: 'remove' }] as any);
-        repository.save.mockResolvedValue([{ key: 'new', value: 'val', description: 'desc' }] as any);
+        repository.find.mockResolvedValueOnce([{ id: 1, key: 'keep', scope: 'public' }, { id: 2, key: 'remove', scope: 'user' }, {id: 3, key: 'null_value', scope: 'public'}] as any);
+        repository.find.mockResolvedValueOnce([{ id: 3, key: 'null_value', scope: 'public', value: null }] as any);
+        repository.save.mockResolvedValue([{ key: 'new', value: 'val', description: 'desc', scope: 'user' }] as any);
 
-        await service.reconcileDefaults({ keep: 'v1', new: 'val' }, { keep: 'k-desc', new: 'desc' });
+        await service.reconcileDefaults({ keep: 'v1', new: 'val', null_value: 1 }, { keep: 'k-desc', new: 'desc', null_value: 'null-desc' }, { keep: 'public', new: 'user', null_value: 'public' });
 
-        expect(repository.save).toHaveBeenCalledWith([{ key: 'new', value: 'val', description: 'desc' }]);
+        expect(repository.save).toHaveBeenCalledWith([{ id: 3, key: 'null_value', scope: 'public', value: 1 }]);
+        expect(repository.save).toHaveBeenCalledWith([{ key: 'new', value: 'val', description: 'desc', scope: 'user' }]);
         expect(repository.save).toHaveBeenCalledWith({ id: 1, description: 'k-desc' });
-        expect(repository.save).toHaveBeenCalledWith({ id: 2, description: undefined });
-        expect(repository.save).toHaveBeenCalledTimes(3);
+        expect(repository.save).toHaveBeenCalledTimes(4);
         expect(repository.delete).toHaveBeenCalledTimes(1);
         const deleteArgs = repository.delete.mock.calls[0][0] as any;
         expect(deleteArgs.key._value).toEqual(expect.arrayContaining(['remove']));
