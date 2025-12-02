@@ -79,6 +79,6 @@ RUN chown nodeuser:nodejs /usr/src/app/output-api/
 EXPOSE 1080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://localhost:1080/api/config/health || exit 1
+  CMD wget -qO- http://localhost:1080$BASE_HREF/api/config/health || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
