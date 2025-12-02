@@ -5,8 +5,8 @@ set -e
 # CONFIG_DIR
 export CONFIG_DIR=/config
 # BASE_HREF
-sed -i "s|\$BASE_HREF|${BASE_HREF}|g" /etc/nginx/nginx.conf
-sed -i "s|href=\"/\"|href=\"${BASE_HREF}/\"|g" /var/www/html/index.html
+sed -i "s|\$BASE_HREF|${BASE_HREF%/}/|g" /etc/nginx/nginx.conf
+sed -i "s|href=\"/\"|href=\"${BASE_HREF%/}/\"|g" /var/www/html/index.html
 
 cd /usr/src/app/output-api
 # run pending migrations

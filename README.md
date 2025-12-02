@@ -27,7 +27,8 @@ Create `env.$NODE_ENV` and `environment.json` from the given templates (see File
 And for running the container (either via port mapping or base_href):
 
 > docker run -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
-> docker run -e BASE_HREF=/your-sub-domain -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+> 
+> docker run -e BASE_HREF=/$BASE_HREF -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
 
 
 ### File actions
