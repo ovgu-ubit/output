@@ -21,14 +21,13 @@ A simple way to set up the application is to user our docker image. Pull the ima
 
 Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
 
-> $ docker run --rm -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+> $ docker run --rm -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
 > 
 
 And for running the container (either via port mapping or base_href):
 
-> docker run -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config -e BASE_HREF=/ -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" output-app
-> docker run -e BASE_HREF=/your-sub-domain -e NODE_ENV=$NODE_ENV -e CONFIG_DIR=/config  -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" output-app
-
+> docker run -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+> docker run -e BASE_HREF=/your-sub-domain -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
 
 
 ### File actions
