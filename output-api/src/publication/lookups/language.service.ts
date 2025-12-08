@@ -25,7 +25,7 @@ export class LanguageService {
 
     public async findOrSave(title: string, dryRun = false): Promise<Language> {
         if (!title) return null;
-        let label = await this.identifyLanguage(title);
+        const label = await this.identifyLanguage(title);
         let funder: Language;
         funder = await this.repository.findOne({ where: { label: ILike(label) } });
         if (funder || dryRun) return funder;

@@ -103,9 +103,9 @@ export class BASEImportService extends ApiImportOffsetService {
         return [];
     }
     protected getAuthors(element: any): string {
-        let elem = element['dccreator'] ? element['dccreator'] : element['dcperson'];
+        const elem = element['dccreator'] ? element['dccreator'] : element['dcperson'];
         if (!elem || elem[0] === '.') return '*tbd*';
-        let res = elem.reduce((v, c) => v + c + ';', '');
+        const res = elem.reduce((v, c) => v + c + ';', '');
         return res.slice(0, res.length - 1)
     }
     protected getGreaterEntity(element: any): GreaterEntity {
@@ -118,13 +118,13 @@ export class BASEImportService extends ApiImportOffsetService {
     }
     protected getPubDate(element: any): Date {
         if (!element['dcdate']) return new Date(Date.UTC(element['dcyear'], 0));
-        let date = Date.parse(element['dcdate'])
+        const date = Date.parse(element['dcdate'])
         if (date && !Number.isNaN(date)) {
-            let pubdate = new Date();
+            const pubdate = new Date();
             pubdate.setTime(date);
             return pubdate;
         }
-        let data = element['dcdate'].split('-');
+        const data = element['dcdate'].split('-');
 
         let pubdate = null;
         if (data.length === 3) pubdate = new Date(Date.UTC(data[0], data[1] - 1, data[2]));

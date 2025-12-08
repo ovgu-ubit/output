@@ -31,7 +31,7 @@ export class ExportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async getExports() {
-    let result = [];
+    const result = [];
     for (let i = 0; i < this.list().length; i++) {
       result.push({
         path: this.list()[i].path,
@@ -85,7 +85,7 @@ export class ExportController {
   @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
   @Body('withMasterData') withMasterData?: boolean) {
     //res.setHeader('Content-type', 'text/plain')
-    let so = this.list().findIndex(e => e.path === path)
+    const so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
 
     if (this.exportServices[so].isExcelResponse()) {
@@ -100,7 +100,7 @@ export class ExportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async exportMasterStatus(@Param('path') path: string) {
-    let so = this.list().findIndex(e => e.path === path)
+    const so = this.list().findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     return this.exportServices[so].status();
   }

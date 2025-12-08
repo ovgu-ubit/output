@@ -46,8 +46,8 @@ export class PublicationController {
         let year;
         if (!yop) year = this.appConfigService.get("reporting_year");
         else year = yop;
-        let beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+        const beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
         //Show all
         return this.repository.find({
             where: [{ pub_date: Between(beginDate, endDate) },], relations: {
@@ -155,7 +155,7 @@ export class PublicationController {
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        let res = await this.publicationService.combine(id1, ids);
+        const res = await this.publicationService.combine(id1, ids);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publication')
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publication')
         else return res;
@@ -181,8 +181,8 @@ export class PublicationController {
     })
     async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
         let res = await this.publicationService.filterIndex(filter);
-        if (paths && paths.length > 0) for (let path of paths) {
-            let so = this.list().findIndex(e => e.path === path)
+        if (paths && paths.length > 0) for (const path of paths) {
+            const so = this.list().findIndex(e => e.path === path)
             if (so === -1) throw new NotFoundException();
             res = await this.filterServices[so].filter(res)
         }
@@ -191,7 +191,7 @@ export class PublicationController {
 
     @Get('filter')
     async get_filter() {
-        let result = [];
+        const result = [];
         for (let i = 0; i < this.list().length; i++) {
             result.push({
                 path: this.list()[i].path,

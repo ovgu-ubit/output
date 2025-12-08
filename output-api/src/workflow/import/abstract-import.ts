@@ -227,34 +227,34 @@ export abstract class AbstractImportService {
         }
         let remark = '';
         // process author objects
-        let authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute, role: Role }[] = [];
-        let authors_inst = this.getInstAuthors(item);
+        const authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute, role: Role }[] = [];
+        const authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
-            for (let aut of authors_inst) {
-                let res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name?.trim(), aut.first_name?.trim(), aut.orcid?.trim(), aut.affiliation?.trim(), this.dryRun).catch(e => {
+            for (const aut of authors_inst) {
+                const res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name?.trim(), aut.first_name?.trim(), aut.orcid?.trim(), aut.affiliation?.trim(), this.dryRun).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                     return { author: null, error: e }
                 });
                 //identify an institution from the affiliation string
-                let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim(), this.dryRun)) : null;
+                const inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim(), this.dryRun)) : null;
                 //identify a role from the author object, or assign "aut"
-                let role = aut.role ? await this.roleService.findOrSave(aut.role?.trim(), this.dryRun) : await this.roleService.findOrSave('aut', this.dryRun); //default role author
+                const role = aut.role ? await this.roleService.findOrSave(aut.role?.trim(), this.dryRun) : await this.roleService.findOrSave('aut', this.dryRun); //default role author
                 if (res.author) authors_entities.push({ author: res.author, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst, role });
                 if (res.error?.text && res.error?.text.includes('mehrdeutig')) remark += res.error.text + '\n';
             }
         }
         //identify greater entity
-        let ge = this.getGreaterEntity(item);
+        const ge = this.getGreaterEntity(item);
         let ge_ent = null;
         if (ge) ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(e => {
             this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
         })
         //identify funders
-        let funders = this.getFunder(item);
+        const funders = this.getFunder(item);
         let funder_ents: Funder[] = []
         if (funders) {
-            for (let funder of funders) {
-                let funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
+            for (const funder of funders) {
+                const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
                 });
                 if (funder_ent) funder_ents.push(funder_ent);
@@ -262,9 +262,9 @@ export abstract class AbstractImportService {
             funder_ents = funder_ents.filter((v, i, s) => { return s.indexOf(s.find(f => f.id === v.id)) === i; });
         }
         //identify publication type
-        let pub_type = await this.publicationTypeService.findOrSave(this.getPubType(item), this.dryRun);
+        const pub_type = await this.publicationTypeService.findOrSave(this.getPubType(item), this.dryRun);
         //identify publisher
-        let publisher_obj = this.getPublisher(item);
+        const publisher_obj = this.getPublisher(item);
         let publisher: Publisher;
         let publisher_ent;
         if (publisher_obj) {
@@ -275,19 +275,19 @@ export abstract class AbstractImportService {
         if (!publisher_ent && this.getDOI(item)) publisher_ent = await this.publisherService.findByDOI(this.getDOI(item))
         if (publisher_ent) publisher = publisher_ent
         //identify oa category
-        let oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(item), this.dryRun));
+        const oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(item), this.dryRun));
         //identify conctract
-        let contract = await firstValueFrom(this.contractService.findOrSave(this.getContract(item), this.dryRun));
+        const contract = await firstValueFrom(this.contractService.findOrSave(this.getContract(item), this.dryRun));
         //get invoice information
-        let inv_info = this.getInvoiceInformation(item);
+        const inv_info = this.getInvoiceInformation(item);
         //import of invoices
-        let invoices: Invoice[] = [];
-        if (inv_info) for (let inv of inv_info) {
-            let cost_items = [];
-            for (let ci of inv.cost_items) {
+        const invoices: Invoice[] = [];
+        if (inv_info) for (const inv of inv_info) {
+            const cost_items = [];
+            for (const ci of inv.cost_items) {
                 cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, orig_currency: ci.orig_currency, vat: ci.vat, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })
             }
-            let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
+            const cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
             invoices.push({
                 number: inv.number,
                 booking_amount: inv.booking_amount,
@@ -298,22 +298,22 @@ export abstract class AbstractImportService {
             })
         }
         //identify language
-        let language = await this.languageService.findOrSave(this.getLanguage(item), this.dryRun);
+        const language = await this.languageService.findOrSave(this.getLanguage(item), this.dryRun);
         //identify publication date(s)
-        let pub_date = this.getPubDate(item);
+        const pub_date = this.getPubDate(item);
         //identify status
         let status = this.getStatus(item);
         if (!status) status = 0;
 
-        let ca = this.getCostApproach(item);
-        let cost_approach = Number.isNaN(ca) ? undefined : ca;
+        const ca = this.getCostApproach(item);
+        const cost_approach = Number.isNaN(ca) ? undefined : ca;
 
         let doi;
-        let doi_a = this.publicationService.doi_regex.exec(this.getDOI(item)?.trim());
+        const doi_a = this.publicationService.doi_regex.exec(this.getDOI(item)?.trim());
         if (doi_a) doi = doi_a[0];
 
         //construct publication object to save
-        let obj: Publication = {
+        const obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
             title: this.getTitle(item)?.trim().replace(/<\/?[\w\s="/.':;#-\/\?]+>/gi, ""),//remove html tags from input
             doi,
@@ -348,7 +348,7 @@ export abstract class AbstractImportService {
             if (await this.configService.get('optional_fields')['pub_date_submitted'] && pub_date.pub_date_submitted && !isNaN(pub_date.pub_date_submitted as any)) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
         //process citation information
-        let cit = this.getCitation(item);
+        const cit = this.getCitation(item);
         if (cit) {
             obj.volume = cit.volume;
             obj.issue = cit.issue;
@@ -357,8 +357,8 @@ export abstract class AbstractImportService {
         }
         if (!this.dryRun) {
         //save publication object and assign authorships
-            let pub_ent = (await this.publicationService.save([obj]))[0];
-            for (let aut of authors_entities) {
+            const pub_ent = (await this.publicationService.save([obj]))[0];
+            for (const aut of authors_entities) {
                 await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
             }
 
@@ -373,13 +373,13 @@ export abstract class AbstractImportService {
      * @returns the updated publication entity or null if no update has been performed
      */
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
-        let fields = [];
+        const fields = [];
         // all fields are processed according to the update mapping
         if (!orig.locked_author) switch (this.updateMapping.authors) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                let text = this.getAuthors(element);
+                const text = this.getAuthors(element);
                 if (text) {
                     orig.authors += '|' + text;
                     fields.push('authors')
@@ -401,7 +401,7 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                let text = this.getTitle(element);
+                const text = this.getTitle(element);
                 if (text) {
                     orig.title += '|' + text;
                     fields.push('title')
@@ -423,7 +423,7 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                let text = this.getDOI(element);
+                const text = this.getDOI(element);
                 if (text) {
                     orig.doi += '|' + text;
                     fields.push('doi')
@@ -445,7 +445,7 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                let text = this.getLink(element);
+                const text = this.getLink(element);
                 if (text) {
                     orig.link += '|' + text;
                     fields.push('link')
@@ -559,13 +559,13 @@ export abstract class AbstractImportService {
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
-                    let publisher = await this.getPublisher(element);
+                    const publisher = await this.getPublisher(element);
                     if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher, this.dryRun);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
-                let publisher = await this.getPublisher(element);
+                const publisher = await this.getPublisher(element);
                 if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher, this.dryRun);
                 if (orig.publisher) fields.push('publisher')
                 break;
@@ -588,8 +588,8 @@ export abstract class AbstractImportService {
         }
 
         if (!orig.locked_biblio) if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
-            let ge = this.getGreaterEntity(element);
-            let ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(e => {
+            const ge = this.getGreaterEntity(element);
+            const ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(e => {
                 this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text: `: ${e['text']} for publication ${orig.id}, must be assigned manually` })
             })
             if (ge_ent) {
@@ -599,11 +599,11 @@ export abstract class AbstractImportService {
         }
 
         if (!orig.locked_finance) if (this.updateMapping.funder !== UpdateOptions.IGNORE && !(this.updateMapping.funder === UpdateOptions.REPLACE_IF_EMPTY && orig.funders !== null && orig.funders.length > 0)) {
-            let funders = this.getFunder(element);
+            const funders = this.getFunder(element);
             let funder_ents: Funder[] = []
             if (funders) {
-                for (let funder of funders) {
-                    let funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
+                for (const funder of funders) {
+                    const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
                         this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text: `${e['text']} for publication ${orig.id}, must be checked manually` })
                     });
                     if (funder_ent) funder_ents.push(funder_ent);
@@ -620,16 +620,16 @@ export abstract class AbstractImportService {
         }
 
         if (!orig.locked_author) if (this.updateMapping.author_inst !== UpdateOptions.IGNORE) {
-            let existing_aut = await this.publicationService.getAuthorsPublication(orig);
+            const existing_aut = await this.publicationService.getAuthorsPublication(orig);
             if (!(this.updateMapping.author_inst === UpdateOptions.REPLACE_IF_EMPTY && existing_aut.length === 0)) {
-                let authors_entities: any[] = [];
-                let authors_inst = this.getInstAuthors(element);
+                const authors_entities: any[] = [];
+                const authors_inst = this.getInstAuthors(element);
                 if (authors_inst) {
-                    for (let aut of authors_inst) {
-                        let aut_ent = await this.authorService.findOrSave(aut.last_name, aut.first_name, aut.orcid, aut.affiliation, this.dryRun).catch(e => {
+                    for (const aut of authors_inst) {
+                        const aut_ent = await this.authorService.findOrSave(aut.last_name, aut.first_name, aut.orcid, aut.affiliation, this.dryRun).catch(e => {
                             this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                         });
-                        let inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim(), this.dryRun)) : null;
+                        const inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim(), this.dryRun)) : null;
                         if (aut_ent) authors_entities.push({ author: aut_ent.author, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst });
                     }
                 }
@@ -638,7 +638,7 @@ export abstract class AbstractImportService {
                     if (!this.dryRun) await this.publicationService.resetAuthorPublication(orig);
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.APPEND) {
-                    for (let aut of authors_entities) if (!existing_aut.find(e => e.authorId === aut.id)) {
+                    for (const aut of authors_entities) if (!existing_aut.find(e => e.authorId === aut.id)) {
                         if (!this.dryRun) await this.publicationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
                         fields.push('author_inst')
                     }
@@ -651,15 +651,15 @@ export abstract class AbstractImportService {
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
                 if (!orig.invoices || orig.invoices.length === 0) {
-                    let inv_info = this.getInvoiceInformation(element);
+                    const inv_info = this.getInvoiceInformation(element);
                     //import of invoices
-                    let invoices: Invoice[] = [];
-                    for (let inv of inv_info) {
-                        let cost_items = [];
-                        for (let ci of inv.cost_items) {
+                    const invoices: Invoice[] = [];
+                    for (const inv of inv_info) {
+                        const cost_items = [];
+                        for (const ci of inv.cost_items) {
                             cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })
                         }
-                        let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
+                        const cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
                         invoices.push({
                             number: inv.number,
                             booking_amount: inv.booking_amount,
@@ -675,16 +675,16 @@ export abstract class AbstractImportService {
                 break;
             case UpdateOptions.APPEND:
                 if (!orig.invoices) orig.invoices = [];
-                let inv_info1 = this.getInvoiceInformation(element);
+                const inv_info1 = this.getInvoiceInformation(element);
                 //import of invoices
-                let invoices1 = [];
-                for (let inv of inv_info1) {
-                    let cost_items = [];
-                    for (let ci of inv.cost_items) {
+                const invoices1 = [];
+                for (const inv of inv_info1) {
+                    const cost_items = [];
+                    for (const ci of inv.cost_items) {
                         if (ci.cost_type.includes('DEAL Servicepauschale') && orig.invoices?.find(e => e.cost_items?.find(f => f.cost_type?.label.includes('DEAL Servicepauschale')))) continue;
                         cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })
                     }
-                    let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
+                    const cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
                     if (cost_items.length > 0) invoices1.push({
                         number: inv.number,
                         booking_amount: inv.booking_amount,
@@ -698,15 +698,15 @@ export abstract class AbstractImportService {
                 if (invoices1 && invoices1.length > 0) fields.push('invoice')
                 break;
             case UpdateOptions.REPLACE:
-                let inv_info2 = this.getInvoiceInformation(element);
+                const inv_info2 = this.getInvoiceInformation(element);
                 //import of invoices
-                let invoices2 = [];
-                for (let inv of inv_info2) {
-                    let cost_items = [];
-                    for (let ci of inv.cost_items) {
+                const invoices2 = [];
+                for (const inv of inv_info2) {
+                    const cost_items = [];
+                    for (const ci of inv.cost_items) {
                         cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })
                     }
-                    let cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
+                    const cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
                     invoices2.push({
                         number: inv.number,
                         booking_amount: inv.booking_amount,
@@ -776,7 +776,7 @@ export abstract class AbstractImportService {
                 case UpdateOptions.APPEND:
                 case UpdateOptions.REPLACE_IF_EMPTY:
                     if (!orig.volume || !orig.issue || !orig.first_page || !orig.last_page) {
-                        let cit = this.getCitation(element)
+                        const cit = this.getCitation(element)
                         if (cit.volume) orig.volume = cit.volume;
                         if (cit.issue) orig.issue = cit.issue;
                         if (cit.first_page) orig.first_page = cit.first_page;
@@ -785,7 +785,7 @@ export abstract class AbstractImportService {
                     }
                     break;
                 case UpdateOptions.REPLACE:
-                    let cit = this.getCitation(element)
+                    const cit = this.getCitation(element)
                     orig.volume = cit.volume;
                     orig.issue = cit.issue;
                     orig.first_page = cit.first_page;
@@ -833,7 +833,7 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                let text = this.getCostApproach(element);
+                const text = this.getCostApproach(element);
                 if (text && !Number.isNaN(text)) {
                     orig.cost_approach += text;
                     fields.push('cost_approach')
@@ -841,18 +841,18 @@ export abstract class AbstractImportService {
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY:
                 if (!orig.cost_approach) {
-                    let ca = this.getCostApproach(element);
+                    const ca = this.getCostApproach(element);
                     orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
                     if (orig.cost_approach) fields.push('cost_approach')
                 }
                 break;
             case UpdateOptions.REPLACE:
-                let ca = this.getCostApproach(element);
+                const ca = this.getCostApproach(element);
                 orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
                 if (orig.cost_approach) fields.push('cost_approach')
                 break;
         }
-        let res = this.finalize(orig, element);
+        const res = this.finalize(orig, element);
         orig = res.pub;
         fields.push(...res.fields)
 

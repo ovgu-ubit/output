@@ -20,12 +20,12 @@ export abstract class AuthorizationService implements IAuthorizationService{
      * @returns 
      */
     async verify(context: ExecutionContext) {
-        let request = context.switchToHttp().getRequest();
+        const request = context.switchToHttp().getRequest();
         if (['false', '0'].includes((await this.configService.get('AUTH'))?.toLowerCase())) {
             request['user'] = { username: "unknown", read: true, write_publication: true ,write: true, admin: true }
             return true;
         }
-        let permissions = this.reflector.get<PermissionDecoration[]>('permissions', context.getHandler());
+        const permissions = this.reflector.get<PermissionDecoration[]>('permissions', context.getHandler());
         // Case I: if no permission array is given, the endpoint is public
         if (!permissions) return true;
         // Case II: if permissions is an empty array, a valid token is required to proceed

@@ -40,10 +40,10 @@ export class InvoiceService {
     }
 
     public getCostTypeIndex(reporting_year: number) {
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
 
-        let query = this.ctRepository.createQueryBuilder("cost_type")
+        const query = this.ctRepository.createQueryBuilder("cost_type")
             .leftJoin("cost_item", "cost_item", "cost_item.\"costTypeId\"=cost_type.id")
             .leftJoin("invoice", "invoice", "cost_item.\"invoiceId\"=invoice.id")
             .leftJoin("invoice.publication", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
@@ -57,7 +57,7 @@ export class InvoiceService {
     }
 
     public async getCostType(id: number, writer: boolean) {
-        let ct = await this.ctRepository.findOneBy({ id });
+        const ct = await this.ctRepository.findOneBy({ id });
 
         if (writer && !ct.locked_at) {
             await this.saveCT([{
@@ -105,9 +105,9 @@ export class InvoiceService {
 
     public async getCostCenterIndex(reporting_year: number): Promise<CostCenterIndex[]> {
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        let query = this.ccRepository.createQueryBuilder("cost_center")
+        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+        const query = this.ccRepository.createQueryBuilder("cost_center")
             .leftJoin("invoice", "invoice", "invoice.\"costCenterId\"=cost_center.id")
             .leftJoin("invoice.publication", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
             .select("cost_center.id", "id")
@@ -124,7 +124,7 @@ export class InvoiceService {
     }
 
     public async getCostCenter(id: number, writer: boolean) {
-        let cc = await this.ccRepository.findOne({ where: { id } });
+        const cc = await this.ccRepository.findOne({ where: { id } });
 
         if (writer && !cc.locked_at) {
             await this.saveCC([{

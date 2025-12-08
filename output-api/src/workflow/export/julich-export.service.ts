@@ -29,15 +29,15 @@ export class JulichExportService extends AbstractExportService {
         this.report = await this.reportService.createReport('Export', this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
-        if (filter && filter.paths) for (let path of filter.paths) {
-            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+        if (filter && filter.paths) for (const path of filter.paths) {
+            const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
-        let rows = [];
-        for (let pub of pubs) {
-            let rowMaster: any = {
+        const rows = [];
+        for (const pub of pubs) {
+            const rowMaster: any = {
                 doi: pub.doi,
                 foerderfaehig: '',
                 name_des_verlags: pub.publisher?.label,
@@ -51,9 +51,9 @@ export class JulichExportService extends AbstractExportService {
                 dfg_wissenschaftsbereich: ''
             }
             if (pub.invoices && pub.invoices.length > 0) {
-                for (let inv of pub.invoices) {
+                for (const inv of pub.invoices) {
                     if (inv.cost_items && inv.cost_items.length > 0) {
-                        let row = {
+                        const row = {
                             ...rowMaster,
                             bemerkung: inv.cost_items[0].label,
                             originalwaehrung: inv.cost_items[0].orig_currency,
@@ -69,7 +69,7 @@ export class JulichExportService extends AbstractExportService {
                     }
                 }
             } else if (pub.contract) {
-                let row = {
+                const row = {
                     ...rowMaster,
                     bemerkung: '',
                     originalwaehrung: '',
@@ -85,8 +85,8 @@ export class JulichExportService extends AbstractExportService {
             }
         }
 
-        let workbook = XLSX.utils.book_new();
-        let worksheet = XLSX.utils.json_to_sheet(rows, {
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(rows, {
             cellStyles: true, header: ['doi', 'foerderfaehig', 'bemerkung', 'name_des_verlags', 'publikationsform', 'cc_lizenz',
                 'originalwaehrung', 'rechnungsbetrag_in_originalwaehrung', 'euro_netto', 'steuersatz', 'euro_brutto', 'kostensplitting', 'zuschussbetrag_dfg', 'gebuehrenart',
                 'zuordnung_zu_mitgliedschaft', 'zuordnung_zu_transformationsvertrag', 'rechnungsjahr_lizenzjahr', 'publikationsjahr', 'projektnummer_projektID', 'dfg_wissenschaftsbereich']

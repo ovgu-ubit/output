@@ -32,7 +32,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
 
     public async findOrSave(publisher: Publisher, dryRun = false): Promise<Publisher> {
         if (!publisher.label) return null;
-        const canonicalPublisher = await this.aliasLookupService.findCanonicalElement(this.aliasRepository, publisher.label);
+        const canonicalPublisher = await this.aliasLookupService.findCanonicalElement<AliasPublisher, Publisher>(this.aliasRepository, publisher.label);
         const label = canonicalPublisher?.label ?? publisher.label;
         let publisher_ent: Publisher;
         publisher_ent = await this.repository.findOne({ where: { label: ILike(label) } })
@@ -44,9 +44,9 @@ export class PublisherService extends AbstractEntityService<Publisher> {
     }
 
     public async findByDOI(doi: string) {
-        let regex = /(10.*)\//g;
-        let found = doi.match(regex);
-        let doi_search = found[0].slice(0, found[0].length - 1);
+        const regex = /(10.*)\//g;
+        const found = doi.match(regex);
+        const doi_search = found[0].slice(0, found[0].length - 1);
         return await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: ILike(doi_search) } }, relations: { doi_prefixes: true } })
     }
 
@@ -71,8 +71,8 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             .addGroupBy("a.doi_prefix")
 
         if (reporting_year) {
-            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .leftJoin(Publication, "publication", "publication.\"publisherId\" = a.id and publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
         }
@@ -111,10 +111,10 @@ export class PublisherService extends AbstractEntityService<Publisher> {
     }
 
     public async delete(insts: Publisher[]) {
-        for (let inst of insts) {
-            let conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true, doi_prefixes: true }, withDeleted: true });
-            let pubs = [];
-            if (conE.publications) for (let pub of conE.publications) {
+        for (const inst of insts) {
+            const conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true, doi_prefixes: true }, withDeleted: true });
+            const pubs = [];
+            if (conE.publications) for (const pub of conE.publications) {
                 pubs.push({ id: pub.id, publisher: null })
             }
 

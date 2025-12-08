@@ -33,7 +33,7 @@ export abstract class AbstractPlausibilityService {
         this.identified = 0;
 
         this.publications = (await this.publicationService.get({ relations: { publisher: true, oa_category: true, pub_type: true, greater_entity: true, contract: true } }));
-        for (let [idx, pub] of this.publications.entries()) {
+        for (const [idx, pub] of this.publications.entries()) {
             this.checked++;
             if (await this.checkPub(pub, idx)) this.identified++;
         }

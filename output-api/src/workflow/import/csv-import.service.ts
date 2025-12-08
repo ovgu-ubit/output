@@ -102,7 +102,7 @@ export class CSVImportService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        let delimiter = this.importConfig.delimiter.includes("\\t") ? "\t" : this.importConfig.delimiter;
+        const delimiter = this.importConfig.delimiter.includes("\\t") ? "\t" : this.importConfig.delimiter;
 
         await Papa.parse(this.file.buffer.toString(), {
             encoding: this.importConfig.encoding,
@@ -117,20 +117,20 @@ export class CSVImportService extends AbstractImportService {
                 this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
                 if (this.checkFormat(result.data, this.importConfig)) {
                     try {
-                        let data = result.data;
+                        const data = result.data;
                         if (!data) return;
-                        for (let pub of data) {
-                            let flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                        for (const pub of data) {
+                            const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                             if (!flag) {
-                                let pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                                const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
                                 if (pubNew) {
                                     this.newPublications.push(pubNew);
                                     this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
                                 }
                             } else if (update) {
-                                let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                                const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                                 if (orig.locked) continue;
-                                let pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                                const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                                     this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                                     return null;
                                 })
@@ -177,7 +177,7 @@ export class CSVImportService extends AbstractImportService {
 
     checkFormat(data: any[], format: CSVMapping): boolean {
         if (data.length === 0) return true;
-        for (let field in format.mapping) {
+        for (const field in format.mapping) {
             if (format.mapping[field] && !format.mapping[field].toString().startsWith('$') && typeof format.mapping[field] !== 'boolean' && typeof data[0][format.mapping[field]] === 'undefined') {
                 console.log(`Error while importing, expected field '${format.mapping[field]}', but was not found`);
                 return false;
@@ -204,12 +204,12 @@ export class CSVImportService extends AbstractImportService {
         let string = '';
         if (this.importConfig.mapping.author_inst.startsWith('$')) string = this.importConfig.mapping.authors.slice(1, this.importConfig.mapping.authors.length);
         else string = element[this.importConfig.mapping.author_inst]
-        let authors = this.importConfig.split_authors ? string.split(this.importConfig.split_authors) : [string];
-        let res = [];
-        for (let author of authors) {
+        const authors = this.importConfig.split_authors ? string.split(this.importConfig.split_authors) : [string];
+        const res = [];
+        for (const author of authors) {
             if (this.importConfig.last_name_first) res.push({ first_name: author.split(', ')[1], last_name: author.split(', ')[0] });
             else {
-                let split = author.split(' ');
+                const split = author.split(' ');
                 if (split.length === 2) res.push({ first_name: split[0], last_name: split[1] });
                 else if (split.length > 2) {
                     continue;
@@ -433,7 +433,7 @@ export class CSVImportService extends AbstractImportService {
         try {
             if (!this.importConfig.mapping.cost_approach) return null;
             if (this.importConfig.mapping.cost_approach.startsWith('$')) return this.parseNumber(this.importConfig.mapping.cost_approach.slice(1, this.importConfig.mapping.cost_approach.length));
-            let e = element[this.importConfig.mapping.cost_approach];
+            const e = element[this.importConfig.mapping.cost_approach];
             return this.parseNumber(e);
         } catch (err) {
             return null;
@@ -461,8 +461,8 @@ export class CSVImportService extends AbstractImportService {
     }
 
     parseNumber(toParse: string): number {
-        let german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+)(,[0-9]{1,2})?$", "g");
-        let parse = german.exec(toParse);
+        const german = new RegExp("^([0-9]{1,3}(\.[0-9]{3})+|[0-9]+)(,[0-9]{1,2})?$", "g");
+        const parse = german.exec(toParse);
         if (parse && parse.length > 0) {
             toParse = parse[0].replace(/\./g, "").replace(/,/g, ".");
         }

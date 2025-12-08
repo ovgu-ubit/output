@@ -25,9 +25,9 @@ export class AuthorService {
         private aliasLookupService: AliasLookupService) { }
 
     public async save(aut: any[]) {
-        let result = [];
-        for (let auth of aut) {
-            let obj = { ...auth, institutes: undefined }
+        const result = [];
+        for (const auth of aut) {
+            const obj = { ...auth, institutes: undefined }
             let authEnt = await this.repository.save(obj).catch(err => { console.log(err) });
             if (authEnt) authEnt = await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
             result.push(authEnt);
@@ -40,7 +40,7 @@ export class AuthorService {
     }
 
     public async one(id: number, writer: boolean) {
-        let aut = await this.repository.findOne({ where: { id }, relations: { institutes: true, aliases_first_name: true, aliases_last_name: true } });
+        const aut = await this.repository.findOne({ where: { id }, relations: { institutes: true, aliases_first_name: true, aliases_last_name: true } });
         if (writer && !aut.locked_at) {
             await this.save([{
                 id: aut.id,
@@ -62,18 +62,18 @@ export class AuthorService {
 
         if (aliasL && aliasL.length > 0 && aliasF && aliasF.length > 0) {
             //both alias in the same entity
-            let id = aliasL.find(e => aliasF.find(f => f.elementId === e.elementId)).elementId;
+            const id = aliasL.find(e => aliasF.find(f => f.elementId === e.elementId)).elementId;
             if (id) return this.repository.findOne({ where: { id }, relations: { institutes: true } })
         }
         if (aliasL.length > 0) {
-            for (let alias of aliasL) {
-                let aut = await this.repository.findOne({ where: { id: alias.elementId }, relations: { institutes: true } })
+            for (const alias of aliasL) {
+                const aut = await this.repository.findOne({ where: { id: alias.elementId }, relations: { institutes: true } })
                 if (aut.first_name.toLowerCase().includes(first_name.toLowerCase())) return aut;
             }
         }
         if (aliasF.length > 0) {
-            for (let alias of aliasF) {
-                let aut = await this.repository.findOne({ where: { id: alias.elementId }, relations: { institutes: true } })
+            for (const alias of aliasF) {
+                const aut = await this.repository.findOne({ where: { id: alias.elementId }, relations: { institutes: true } })
                 if (aut.last_name.toLowerCase().includes(last_name.toLowerCase())) return aut;
             }
         }
@@ -92,7 +92,7 @@ export class AuthorService {
         if (orcid) author = await this.repository.findOne({ where: { orcid }, relations: { institutes: true } });
         if (!author) {
             //find via name
-            let authors = await this.repository.find({ where: { last_name: ILike(last_name), first_name: ILike(first_name + '%') }, relations: { institutes: true } });
+            const authors = await this.repository.find({ where: { last_name: ILike(last_name), first_name: ILike(first_name + '%') }, relations: { institutes: true } });
             if (authors.length > 1) {
                 //assign first author and give warning
                 author = authors[0];
@@ -105,7 +105,7 @@ export class AuthorService {
         }
         //2. if found, possibly enrich
         //find an affiliation institute
-        let inst = affiliation ? await firstValueFrom(this.instService.findOrSave(affiliation, dryRun)) : null;
+        const inst = affiliation ? await firstValueFrom(this.instService.findOrSave(affiliation, dryRun)) : null;
         if (author) {
             let flag = false;
             if (orcid && !author.orcid) {
@@ -196,8 +196,8 @@ export class AuthorService {
             .addGroupBy("a.institutes")
 
         if (reporting_year) {
-            let beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-            let endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .addSelect("SUM(CASE WHEN b.pub_date >= '" + beginDate.toISOString() + "' and b.pub_date <= '" + endDate.toISOString() + "' and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
                 .addSelect("SUM(CASE WHEN b.pub_date >= '" + beginDate.toISOString() + "' and b.pub_date <= '" + endDate.toISOString() + "' THEN 1 ELSE 0 END)", "pub_count")
@@ -214,9 +214,9 @@ export class AuthorService {
     }
 
     public async delete(auts: Author[]) {
-        for (let aut of auts) {
-            let autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
-            if (autE.authorPublications) for (let autPub of autE.authorPublications) {
+        for (const aut of auts) {
+            const autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
+            if (autE.authorPublications) for (const autPub of autE.authorPublications) {
                 await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
             }
             if (autE.aliases_first_name) await this.aliasFirstNameRepository.remove(autE.aliases_first_name)

@@ -26,10 +26,10 @@ export class PubTypeExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Export',this.name, by_user);
 
-        let pubs = await this.service.get();
+        const pubs = await this.service.get();
 
         let res = "id;label;reviewed\n";
-        for (let pub of pubs) {
+        for (const pub of pubs) {
             res+=this.format(pub.id);
             res+=this.format(pub.label);
             res+=this.format(pub.review);
@@ -50,7 +50,7 @@ export class PubTypeExportService extends AbstractExportService {
 
     format(field):string {
         let res = this.quote;
-        let value = field? (field.label? field.label : field) : '';
+        const value = field? (field.label? field.label : field) : '';
         if (typeof value === 'string') res += value.replace(new RegExp(this.quote,"g"),"<quote>");
         else if (value instanceof Date) res += this.df.format(value)
         else if (Number.isNaN(value)) res += value.toLocaleString().slice(0,10000);

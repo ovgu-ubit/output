@@ -17,7 +17,7 @@ export class ReportItemService {
 
     async createReport(type:'Import'|'Enrich'|'Check'|'Export', label:string,by_user:string) {
         await this.init();
-        let filename = `${type}_${label}_${this.format(new Date(),true)}_by_${by_user}.log`;
+        const filename = `${type}_${label}_${this.format(new Date(),true)}_by_${by_user}.log`;
         fs.writeFileSync(this.path+filename,'')
         return this.path+filename;
     }
@@ -30,13 +30,13 @@ export class ReportItemService {
     }
 
     finish(reportFile:string, content:{status:string, count_import?:number, count_update?:number}) {
-        let res = `\n\nStatus: ${content.status}\nImported: ${content.count_import}\nUpdated: ${content.count_update}`;
+        const res = `\n\nStatus: ${content.status}\nImported: ${content.count_import}\nUpdated: ${content.count_update}`;
         fs.appendFileSync(reportFile, res);
     }
 
     async getReports(type:'Import'|'Enrich'|'Check'|'Export') {
         await this.init();
-        let files = fs.readdirSync(this.path).filter(e => e.startsWith(type));
+        const files = fs.readdirSync(this.path).filter(e => e.startsWith(type));
         return files;
     }
     
@@ -54,13 +54,13 @@ export class ReportItemService {
     public async deleteOldFiles() {
         await this.init();
         if (!this.path.endsWith("/")) this.path += "/";
-        let now = new Date();
+        const now = new Date();
         console.log("Delete run at "+now)
-        let files = fs.readdirSync(this.path, { withFileTypes: true });
-        for (let file of files) {
+        const files = fs.readdirSync(this.path, { withFileTypes: true });
+        for (const file of files) {
             if (file.isDirectory()) continue;
-            let stat = fs.statSync(this.path + file.name);
-            let days = 93;
+            const stat = fs.statSync(this.path + file.name);
+            const days = 93;
             if (file.isFile() && (now.getTime() - new Date(stat["ctime"]).getTime()) > days * 24 * 60 * 60 * 1000) {
                 console.log("Deleting "+this.path + file.name)
                 fs.rmSync(this.path + file.name)
@@ -69,12 +69,12 @@ export class ReportItemService {
     }
 
     format(timestamp:Date, filename?:boolean):string {
-        let month = timestamp.getMonth()+1 < 10? '0'+(timestamp.getMonth()+1): (timestamp.getMonth()+1);
-        let date = timestamp.getDate() < 10? '0'+timestamp.getDate(): timestamp.getDate();
-        let hours = timestamp.getHours() < 10? '0'+timestamp.getHours(): timestamp.getHours();
-        let minutes = timestamp.getMinutes() < 10? '0'+timestamp.getMinutes(): timestamp.getMinutes();
-        let secs = timestamp.getSeconds() < 10? '0'+timestamp.getSeconds(): timestamp.getSeconds();
-        let msecs = timestamp.getMilliseconds() < 10? '00'+timestamp.getMilliseconds(): (timestamp.getMilliseconds() < 100? '0'+timestamp.getMilliseconds() : timestamp.getMilliseconds());
+        const month = timestamp.getMonth()+1 < 10? '0'+(timestamp.getMonth()+1): (timestamp.getMonth()+1);
+        const date = timestamp.getDate() < 10? '0'+timestamp.getDate(): timestamp.getDate();
+        const hours = timestamp.getHours() < 10? '0'+timestamp.getHours(): timestamp.getHours();
+        const minutes = timestamp.getMinutes() < 10? '0'+timestamp.getMinutes(): timestamp.getMinutes();
+        const secs = timestamp.getSeconds() < 10? '0'+timestamp.getSeconds(): timestamp.getSeconds();
+        const msecs = timestamp.getMilliseconds() < 10? '00'+timestamp.getMilliseconds(): (timestamp.getMilliseconds() < 100? '0'+timestamp.getMilliseconds() : timestamp.getMilliseconds());
 
         if (!filename) return `${timestamp.getFullYear()}-${month}-${date} ${hours}:${minutes}:${secs}.${msecs}`
         else return `${timestamp.getFullYear()}${month}${date}_${hours}${minutes}${secs}_${msecs}`

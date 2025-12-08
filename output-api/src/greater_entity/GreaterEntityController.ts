@@ -36,7 +36,7 @@ export class GreaterEntityController extends AbstractCrudController<GreaterEntit
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        let res = await this.service.combine(id1,ids);
+        const res = await this.service.combine(id1,ids);
         if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publisher') 
         else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publisher') 
         else return res;

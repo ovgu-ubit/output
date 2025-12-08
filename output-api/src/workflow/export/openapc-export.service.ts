@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
-import { AbstractExportService, ExportService } from './abstract-export.service';
-import { PublicationService } from '../../publication/core/publication.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ContractService } from '../../contract/contract.service';
-import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { ContractService } from '../../contract/contract.service';
+import { Publication } from '../../publication/core/Publication.entity';
+import { PublicationService } from '../../publication/core/publication.service';
+import { AbstractFilterService } from '../filter/abstract-filter.service';
+import { ReportItemService } from '../report-item.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 
 @ExportService({path: 'openapc'})
 @Injectable()
@@ -28,15 +27,15 @@ export class OpenAPCExportService extends AbstractExportService {
         this.report = await this.reportService.createReport('Export', this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
-        if (filter) for (let path of filter.paths) {
-            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+        if (filter) for (const path of filter.paths) {
+            const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
         let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url"\n';
-        for (let pub of pubs) {
-            let hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
+        for (const pub of pubs) {
+            const hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
             if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
 
             res += this.format(await this.configService.get("institution_label"));
@@ -48,7 +47,7 @@ export class OpenAPCExportService extends AbstractExportService {
                 if (pub.pub_date_accepted) res += this.format(pub.pub_date_accepted.getFullYear());
                 else if (pub.pub_date) res += this.format(pub.pub_date.getFullYear());
                 else if (pub.contract.start_date) res += this.format(pub.contract.start_date.getFullYear());
-                let contract = await this.contractService.one(pub.contract.id, false);
+                const contract = await this.contractService.one(pub.contract.id, false);
                 res += this.format(pub.contract.invoice_amount / contract.publications.length)
             }
             res+=this.format(pub.doi);
@@ -73,7 +72,7 @@ export class OpenAPCExportService extends AbstractExportService {
 
     format(field): string {
         let res = this.quote;
-        let value = field ? (field.label ? field.label : field) : '';
+        const value = field ? (field.label ? field.label : field) : '';
         if (value instanceof Date || Number.isNaN(value)) res += value.toLocaleString().slice(0, 10000);
         else res += value;
         res += this.quote;

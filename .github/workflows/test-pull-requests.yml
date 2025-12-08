@@ -1,0 +1,40 @@
+name: Build and test Docker image
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: output-api
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: output-api/package-lock.json
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: Run tests
+        run: npm test -- --watch=false
+
+      - name: Build
+        run: npm run build
+
+      - name: Build Docker image
+        run: docker build -t output-ci-test ../.

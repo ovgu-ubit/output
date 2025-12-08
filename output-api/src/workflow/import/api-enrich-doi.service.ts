@@ -84,7 +84,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
     }
 
     private request(doi: string): Observable<any> {
-        let url = this.createUrl(doi);
+        const url = this.createUrl(doi);
         return this.http.get(url).pipe(catchError((error, caught) => {
             if (error.response?.status === 404) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + doi })
@@ -115,27 +115,27 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         this.processedPublications = 0;
         this.publicationsUpdate = [];
         this.errors = 0;
-        let obs$ = [];
-        let publications = (await this.publicationService.get(this.whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
+        const obs$ = [];
+        const publications = (await this.publicationService.get(this.whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
             this.progress = 0;
             this.status_text = 'Nothing to enrich on ' + new Date();
             this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: this.name, text: `Nothing to enrich` })
             return;
         }
-        for (let pub of publications) obs$.push(this.request(pub.doi));
+        for (const pub of publications) obs$.push(this.request(pub.doi));
         //console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting enrich with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "")  })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
         scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
             next: async (data: any) => {
                 if (data) {
-                    let item = this.getData(data);
+                    const item = this.getData(data);
                     if (item) {
                         //let orig = publications.find(e => e.doi.toLocaleLowerCase().trim().includes(this.getDOI(item).toLocaleLowerCase().trim()));
-                        let orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                        const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                         if (!orig.locked) {
-                            let pubUpd = await this.mapUpdate(item, orig).catch(e => {
+                            const pubUpd = await this.mapUpdate(item, orig).catch(e => {
                                 this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
                                 //console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
                                 return null;

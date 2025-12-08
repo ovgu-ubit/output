@@ -20,7 +20,7 @@ export class PublisherDOIPrefixService extends AbstractPlausibilityService {
     async checkPub(pub: Publication, idx: number) {
         let res = false;
         if (pub.publisher && pub.doi) {
-            let other = await this.publisherService.findByDOI(pub.doi)
+            const other = await this.publisherService.findByDOI(pub.doi)
             if (other && other.id !== pub.publisher.id) {
                 this.reportService.write(this.report, { type: 'info', publication_id: pub.id, timestamp: new Date(), origin: 'publisher_doi', text: `Possible DOI mismatch with ${other.label}` })
                 res = true;

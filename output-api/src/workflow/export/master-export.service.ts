@@ -29,8 +29,8 @@ export class MasterExportService extends AbstractExportService {
         this.report = await this.reportService.createReport('Export',this.name, by_user);
 
         let pubs = await this.publicationService.getAll(filter?.filter);
-        if (filter) for (let path of filter.paths) {
-            let so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+        if (filter) for (const path of filter.paths) {
+            const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
@@ -39,12 +39,12 @@ export class MasterExportService extends AbstractExportService {
         +"pub_date;publisher;language;oa_category;pub_type;funders;contract;cost_approach;invoice_number;net costs;paid amount;cost_center;"
         +"data_source;second_pub;add_info;import_date;edit_date";
         //add cost type columns
-        let cost_types = await this.invoiceService.getCostTypes();
-        for (let ct of cost_types) {
+        const cost_types = await this.invoiceService.getCostTypes();
+        for (const ct of cost_types) {
             res+=";"+ct.label;
         }
         res+="\n";
-        for (let pub of pubs) {
+        for (const pub of pubs) {
             res+=this.format(pub.id);
             res+=this.format(pub.locked);
             res+=this.format(pub.status);
@@ -74,7 +74,7 @@ export class MasterExportService extends AbstractExportService {
             res+=this.format(pub.add_info);
             res+=this.format(pub.import_date);
             res+=this.format(pub.edit_date);
-            if (pub.invoices.length>0) for (let ct of cost_types) {
+            if (pub.invoices.length>0) for (const ct of cost_types) {
                 res+=this.format(pub.invoices?.map(e => e.cost_items.filter(e => e.cost_type && e.cost_type.id === ct.id).map(e => e.euro_value+e.vat).reduce((v,e) => v+e,0)).reduce((v,e) => v+e,0))
             }
 
@@ -94,7 +94,7 @@ export class MasterExportService extends AbstractExportService {
 
     format(field):string {
         let res = this.quote;
-        let value = field? (field.label? field.label : field) : '';
+        const value = field? (field.label? field.label : field) : '';
         if (typeof value === 'string') res += value.replace(new RegExp(this.quote,"g"),"<quote>");
         else if (value instanceof Date) res += this.df.format(value)
         else if (Number.isNaN(value)) res += value.toLocaleString().slice(0,10000);
