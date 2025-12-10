@@ -1,0 +1,94 @@
+(
+    $tags := ["ovgu", "guericke"];
+    $date_builder := function($array) {(
+        $year  := $array[0];
+        $month := $exists($array[1]) ? $array[1] : 1;
+        $day   := $exists($array[2]) ? $array[2] : 1;
+        $year & "-" & $string($month).$pad(2, "0") & "-" & $string($day).$pad(2, "0")
+    )};
+{
+  "title": $.title[0],
+  "doi": $.DOI,
+  "oa_category": $.license ? "gold" : ($.isHybrid ? "hybrid" : "closed"),
+  "authors_inst": $.author[
+      (
+      $hits := $filter(affiliation, function($aff) {
+        $count(
+          $filter($tags, function($tag) {
+            $contains($lowercase($aff.name), $lowercase($tag))
+          })
+        ) > 0
+      });
+      $count($hits) > 0
+    )
+  ].{
+    "first_name": given,
+    "last_name": family,
+    "orcid": ORCID,
+    "affiliation": affiliation[(
+      $hits := $filter(name, function($aff) {
+        $count(
+          $filter($tags, function($tag) {
+            $contains($lowercase($aff), $lowercase($tag))
+          })
+        ) > 0
+      });
+      $count($hits) > 0
+    )][0].name
+  },
+  "authors": $join($.author.($string(given & " " & family)), "; "),
+  "greater_entity": {
+      "label": $."container-title"[0],
+      "identifiers": $.ISSN.{
+        "type" : "issn",
+        "value" : $
+      }
+  },
+  "publisher": {
+      "label": $.publisher
+  },
+  "pub_date": (
+    $dp := $."published-online"."date-parts"[0];
+    $dp ? $date_builder($dp)
+    ),
+  "pub_date_print": (
+    $dp := $."published-print"."date-parts"[0];
+    $dp ? $date_builder($dp)
+    ),
+  "pub_date_accepted": (
+    $dp := $."approved" ? $."approved"."date-parts"[0] : $."accepted"."date-parts"[0];
+    $dp ? $date_builder($dp)
+    ),
+    "language": $.language,
+    "link": $.URL,
+    "funder": $.funder.{
+        label: name,
+        doi: DOI
+    },
+    "pub_type": $.type,
+    "license": (
+        $url := $.license[$lookup($, "content-version")="vor"].URL;
+        $contains($url, "creativecommons.org/licenses/by/") ? 'cc-by' : (
+            $contains($url, "creativecommons.org/licenses/by-nc/") ? 'cc-by-nc' : (
+                $contains($url, "creativecommons.org/licenses/by-nc-nd/") ? 'cc-by-nc-nd' : null
+            )
+        )
+    ),
+    "status": 1,
+    "abstract": $.abstract,
+    "page_count": (
+        $p := $.page;
+        /* Bereich "start-end" nur mit Ziffern */
+        $range := $match($p, /^(\d+)\s*-\s*(\d+)$/);
+        /* Einzelne Seite nur Ziffern */
+        $single := $match($p, /^(\d+)$/);
+
+        $range ? (
+            $start := $number($range[0].groups[0]);
+            $end := $number($range[0].groups[1]);
+            $end - $start + 1
+            )
+        : ($single ? 1 : null)
+        )
+}
+)

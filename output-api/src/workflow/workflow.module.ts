@@ -54,6 +54,7 @@ import { UnpaywallEnrichService } from './import/unpaywall-enrich.service';
 import { ImportController } from './ImportController';
 import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
+import { JSONataImportService } from './import/jsonata-import';
 
 @Module({
   imports: [
@@ -83,7 +84,9 @@ import { ReportItemService } from './report-item.service';
   ],
   providers: [
     ReportItemService,
-    CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,BibliographyImportService,
+    CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,
+    CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,
+    BibliographyImportService,JSONataImportService,
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,

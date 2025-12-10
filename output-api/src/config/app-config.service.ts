@@ -47,12 +47,12 @@ export class AppConfigService {
         });
         const have = existing.map((r) => `${r.key}`);
 
-        let existingNull = await this.repository.find({
+        const existingNull = await this.repository.find({
             select: ['id', 'key', 'scope'],
             where: {value: IsNull()}
         });
         //reconcile defaults for null values
-        let defaultNull = existingNull.map(e => {return {...e, value: defaults[e.key]}})
+        const defaultNull = existingNull.map(e => {return {...e, value: defaults[e.key]}})
         if (defaultNull.length) {
             await this.repository.save(defaultNull)
         }

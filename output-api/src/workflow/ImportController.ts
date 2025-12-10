@@ -214,7 +214,7 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
-    description: "<p>JSON Request:</p><pre>{<br />  \"reporting_year\" : \"number\",<br />  \"dry_run\": \"boolean\"<br />}</pre>",
+    description: "",
     schema: {
       example: {
         reporting_year: '2022',
