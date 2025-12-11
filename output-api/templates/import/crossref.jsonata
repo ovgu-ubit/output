@@ -2,15 +2,15 @@
     $tags := ["ovgu", "guericke"];
     $date_builder := function($array) {(
         $year  := $array[0];
-        $month := $exists($array[1]) ? $array[1] : 1;
-        $day   := $exists($array[2]) ? $array[2] : 1;
-        $year & "-" & $string($month).$pad(2, "0") & "-" & $string($day).$pad(2, "0")
+        $month := $array[1] ? $array[1] : 1;
+        $day   := $array[2] ? $array[2] : 1;
+        $year & "-" & $pad($string($month), -2, "0") & "-" & $pad($string($day),-2, "0");
     )};
 {
-  "title": $.title[0],
-  "doi": $.DOI,
-  "oa_category": $.license ? "gold" : ($.isHybrid ? "hybrid" : "closed"),
-  "authors_inst": $.author[
+    "title": $.title[0],
+    "doi": $.DOI,
+    "oa_category": $.license ? "gold" : ($.isHybrid ? "hybrid" : "closed"),
+    "authors_inst": $.author[
       (
       $hits := $filter(affiliation, function($aff) {
         $count(
@@ -21,49 +21,49 @@
       });
       $count($hits) > 0
     )
-  ].{
-    "first_name": given,
-    "last_name": family,
-    "orcid": ORCID,
-    "affiliation": affiliation[(
-      $hits := $filter(name, function($aff) {
-        $count(
-          $filter($tags, function($tag) {
-            $contains($lowercase($aff), $lowercase($tag))
-          })
-        ) > 0
-      });
-      $count($hits) > 0
-    )][0].name
-  },
-  "authors": $join($.author.($string(given & " " & family)), "; "),
-  "greater_entity": {
+        ].{
+        "first_name": given,
+        "last_name": family,
+        "orcid": ORCID,
+        "affiliation": affiliation[(
+                $hits := $filter(name, function($aff) {
+                    $count(
+                    $filter($tags, function($tag) {
+                        $contains($lowercase($aff), $lowercase($tag))
+                    })
+                    ) > 0
+                });
+                $count($hits) > 0
+                )][0].name
+        }[],
+    "authors": $join($.author.($string(given & " " & family)), "; "),
+    "greater_entity": {
       "label": $."container-title"[0],
       "identifiers": $.ISSN.{
         "type" : "issn",
         "value" : $
       }
-  },
-  "publisher": {
+    },
+    "publisher": {
       "label": $.publisher
-  },
-  "pub_date": (
-    $dp := $."published-online"."date-parts"[0];
-    $dp ? $date_builder($dp)
-    ),
-  "pub_date_print": (
-    $dp := $."published-print"."date-parts"[0];
-    $dp ? $date_builder($dp)
-    ),
-  "pub_date_accepted": (
-    $dp := $."approved" ? $."approved"."date-parts"[0] : $."accepted"."date-parts"[0];
-    $dp ? $date_builder($dp)
-    ),
+    },
+    "pub_date": (
+        $dp := $."published-online"."date-parts"[0];
+        $dp ? $date_builder($dp)
+        ),
+    "pub_date_print": (
+        $dp := $."published-print"."date-parts"[0];
+        $dp ? $date_builder($dp)
+        ),
+    "pub_date_accepted": (
+        $dp := $."approved" ? $."approved"."date-parts"[0] : $."accepted"."date-parts"[0];
+        $dp ? $date_builder($dp)
+        ),
     "language": $.language,
     "link": $.URL,
-    "funder": $.funder.{
-        label: name,
-        doi: DOI
+    "funder": $.funder[].{
+        "label": name,
+        "doi": DOI
     },
     "pub_type": $.type,
     "license": (

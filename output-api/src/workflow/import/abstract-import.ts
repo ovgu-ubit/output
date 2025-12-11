@@ -110,7 +110,7 @@ export abstract class AbstractImportService {
      * test function if an element should be imported
      * @param element 
      */
-    protected abstract importTest(element: any): boolean;
+    protected abstract importTest(element: any): boolean | Promise<boolean>;
     /**
      * retrieves the institutional authors of an element
      * @param element 
@@ -221,7 +221,7 @@ export abstract class AbstractImportService {
      * @returns the persisted publication entity
      */
     async mapNew(item) {
-        if (!this.importTest(item)) {
+        if (!(await this.importTest(item))) {
             this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
             return null;
         }
@@ -252,7 +252,7 @@ export abstract class AbstractImportService {
         //identify funders
         const funders = this.getFunder(item);
         let funder_ents: Funder[] = []
-        if (funders) {
+        if (funders && Array.isArray(funder_ents)) {
             for (const funder of funders) {
                 const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
                     this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
@@ -654,7 +654,7 @@ export abstract class AbstractImportService {
                     const inv_info = this.getInvoiceInformation(element);
                     //import of invoices
                     const invoices: Invoice[] = [];
-                    for (const inv of inv_info) {
+                    if (inv_info && inv_info.length > 0) for (const inv of inv_info) {
                         const cost_items = [];
                         for (const ci of inv.cost_items) {
                             cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })

@@ -22,8 +22,44 @@ import { AbstractImportService, ImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import * as fs from 'fs';
-import { concatWith, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { concat, concatWith, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
+
+export interface JSONataParsedObject {
+    title?: string;
+    doi?: string;
+    oa_category?: string;
+    authors_inst?: { first_name: string, last_name: string, orcid?: string, affiliation?: string }[];
+    authors?: string;
+    greater_entity?: { label: string, identifiers?: { type: string, value: string }[] };
+    publisher?: { label: string };
+    pub_date?: Date;
+    pub_date_print?: Date;
+    pub_date_accepted?: Date;
+    pub_date_submitted?: Date;
+    language?: string;
+    link?: string;
+    funder?: { label: string, doi?: string }[];
+    pub_type?: string;
+    license?: string;
+    status?: number;
+    abstract?: string;
+    page_count?: number;
+    contract?: string;
+    invoices?:{
+        number?: string, date?: Date, booking_date?: Date, booking_amount?: number, cost_center?: string,
+        cost_items: { euro_value?: number, vat?: number, orig_value?: number, orig_currency?: string, cost_type?: string }[]
+    }[];
+    peer_reviewed: boolean;
+    cost_approach: number;
+    volume: string;
+    issue: string;
+    first_page: string,
+    last_page: string,
+    publisher_location: string,
+    edition: string,
+    article_number: string,
+}
 
 @ImportService({ path: 'jsonata' })
 @Injectable()
@@ -86,27 +122,42 @@ export class JSONataImportService extends AbstractImportService {
 
     private completeURL = '';
 
-    public async setUp(jsonata: string, updateMapping?: UpdateMapping) {
-        this.importConfig = jsonata;
-        //this.name = this.importConfig.name;
-        if (updateMapping) this.updateMapping = updateMapping;
-    }
-    protected async getData(response: any) {
-        return await Promise.all(response.data.message.items.map(e => this.transform(e)))
-    }
+    protected importDefinition;
+    protected reporting_year;
 
-    public async setReportingYear(year: string) {
+    public async setUp(jsonata: string, importDefinition, updateMapping?: UpdateMapping) {
+        this.importConfig = jsonata;
+        this.importDefinition = importDefinition;
+        if (updateMapping) this.updateMapping = updateMapping;
+
         (await this.configService.get('search_tags')).forEach(tag => {
             this.searchText += tag + "+"
         })
         this.affiliation_tags = await this.configService.get('affiliation_tags')
         this.params = [
-            { key: 'query.affiliation', value: this.searchText.slice(0, this.searchText.length - 1) },
-            { key: 'query.bibliographic', value: year },
-            { key: 'sort', value: 'indexed' }]//sorting avoids redundant publications in pages
+            { key: this.importDefinition.query_search_term_param, value: this.searchText.slice(0, this.searchText.length - 1) },
+            { key: this.importDefinition.query_search_year_param, value: this.reporting_year },
+        ]
+        for (const { key, value } of this.importDefinition.query_additional_params) {
+            this.params.push({ key, value })
+        }
+        this.url = this.importDefinition.url_items;
+        this.max_res = this.importDefinition.max_res;
+        this.max_res_name = this.importDefinition.max_res_name;
+        this.offset_name = this.importDefinition.offset_name;
+        this.offset_count = this.importDefinition.offset_count;
+        this.offset_start = this.importDefinition.offset_start;
+        this.parallelCalls = this.importDefinition.parallelCalls;
+    }
+    protected async getData(response: any):Promise<JSONataParsedObject[]> {
+        return await Promise.all(response.data.message.items.map(e => this.transform(e)))
     }
 
-    async transform(element: any) {
+    public async setReportingYear(year: string) {
+        this.reporting_year = year;
+    }
+
+    async transform(element: any):Promise<JSONataParsedObject> {
         try {
             const mapping = jsonata(this.importConfig)
             const obj = (await mapping.evaluate(element))
@@ -123,7 +174,7 @@ export class JSONataImportService extends AbstractImportService {
     public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
-        await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString());
+        await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', this.name, by_user);
@@ -141,8 +192,8 @@ export class JSONataImportService extends AbstractImportService {
         this.numberOfPublications = 0;
 
         const obs$ = [];
-        this.retrieveCountRequest().pipe(map(resp => {
-            this.numberOfPublications = this.getNumber(resp);
+        await firstValueFrom(this.retrieveCountRequest().pipe(map(async resp => {
+            this.numberOfPublications = await this.getNumber(resp);
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with parameters ${this.params.map(e => e.key + ': ' + e.value).join('; ')} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
             if (this.numberOfPublications <= 0) {
@@ -163,12 +214,17 @@ export class JSONataImportService extends AbstractImportService {
                 obs$.push(this.request(offset));
             } while (offset + this.max_res <= this.numberOfPublications)
             return null;
-        }), concatWith(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
+        }))); 
+        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: any) => {
                 if (!data) return;
                 try {
                     const parsedData = await this.getData(data);
                     for (const [idx, pub] of parsedData.entries()) {
+                        if (this.importDefinition.only_import_if_authors_inst && (!pub.authors_inst || pub.authors_inst.length == 0)) {
+                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without institution authors is not imported ' + this.getAuthors(pub) })
+                            continue;
+                        }
                         if (!this.getDOI(pub) && !this.getTitle(pub)) {
                             this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
                             continue;
@@ -239,74 +295,85 @@ export class JSONataImportService extends AbstractImportService {
         return this.http.get(url);
     }
 
-    protected getNumber(response: any): number {
-        return response.data.message['total-results'];
+    protected async getNumber(response: any): Promise<number> {
+        const mapping = jsonata(this.importDefinition.get_count)
+        return mapping.evaluate(response.data)
     }
-    protected importTest(element: any): boolean {
-        return element && !(element.pub_type.includes('posted-content') || element.pub_type.includes('peer-review')) && (element.authors_inst)?.length > 0;
+    protected async importTest(element: any): Promise<boolean> {
+        const mapping = jsonata(this.importDefinition.exclusion_criteria)
+        const obj = await mapping.evaluate(element)
+        return !obj;
     }
 
-    protected getDOI(element: any): string {
+    protected getDOI(element: JSONataParsedObject): string {
         return element.doi;
     }
-    protected getTitle(element: any): string {
+    protected getTitle(element: JSONataParsedObject): string {
         return element.title;
     }
-    protected getInstAuthors(element: any): { first_name: string; last_name: string; orcid?: string; affiliation?: string; }[] {
+    protected getInstAuthors(element: JSONataParsedObject): { first_name: string; last_name: string; orcid?: string; affiliation?: string; }[] {
         return element.authors_inst;
     }
-    protected getAuthors(element: any): string {
+    protected getAuthors(element: JSONataParsedObject): string {
         return element.authors;
     }
-    protected getGreaterEntity(element: any): GreaterEntity {
+    protected getGreaterEntity(element: JSONataParsedObject): GreaterEntity {
         return element.greater_entity;
     }
-    protected getPublisher(element: any): Publisher {
+    protected getPublisher(element: JSONataParsedObject): Publisher {
         return element.publisher;
     }
-    protected getPubDate(element: any): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date } {
+    protected getPubDate(element: JSONataParsedObject): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date } {
         return element.pub_date;
     }
-    protected getLink(element: any): string {
+    protected getLink(element: JSONataParsedObject): string {
         return element.link;
     }
-    protected getLanguage(element: any): string {
+    protected getLanguage(element: JSONataParsedObject): string {
         return element.language;
     }
-    protected getFunder(element: any): Funder[] {
+    protected getFunder(element: JSONataParsedObject): Funder[] {
         return element.funder;
     }
-    protected getPubType(element: any): string {
+    protected getPubType(element: JSONataParsedObject): string {
         return element.pub_type;
     }
-    protected getOACategory(element: any): string {
+    protected getOACategory(element: JSONataParsedObject): string {
         return element.oa_category;
     }
-    protected getContract(element: any): string {
+    protected getContract(element: JSONataParsedObject): string {
         return element.contract;
     }
-    protected getLicense(element: any): string {
+    protected getLicense(element: JSONataParsedObject): string {
         return element.license;
     }
-    protected getInvoiceInformation(element: any) {
+    protected getInvoiceInformation(element: JSONataParsedObject) {
         return element.invoices;
     }
-    protected getStatus(element: any): number {
+    protected getStatus(element: JSONataParsedObject): number {
         return element.status;
     }
-    protected getAbstract(element: any): string {
+    protected getAbstract(element: JSONataParsedObject): string {
         return element.abstract;
     }
-    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
-        return element.citation;
+    protected getCitation(element: JSONataParsedObject): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
+        return {
+            volume: element.volume,
+            issue: element.issue,
+            first_page: element.first_page,
+            last_page: element.last_page,
+            publisher_location: element.publisher_location,
+            edition: element.edition,
+            article_number: element.article_number,
+        };
     }
-    protected getPageCount(element: any): number {
+    protected getPageCount(element: JSONataParsedObject): number {
         return element.page_count;
     }
-    protected getPeerReviewed(element: any): boolean {
+    protected getPeerReviewed(element: JSONataParsedObject): boolean {
         return element.peer_reviewed;
     }
-    protected getCostApproach(element: any): number {
+    protected getCostApproach(element: JSONataParsedObject): number {
         return element.cost_approach;
 
     }

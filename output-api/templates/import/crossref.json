@@ -1,0 +1,21 @@
+{
+    "url_count": "https://api.crossref.org/works?",
+    "url_items": "https://api.crossref.org/works?",
+    "max_res": 20,
+    "max_res_name": "rows",
+    "offset_name": "offset",
+    "offset_count": 0,
+    "offset_start": 0,
+    "query_search_term_param": "query.affiliation",
+    "query_search_year_param": "query.bibliographic",
+    "query_additional_params": [
+        {
+            "key": "sort",
+            "value": "indexed"
+        }
+    ],
+    "parallelCalls": 1,
+    "get_count": "$.message.\"total-results\"",
+    "exclusion_criteria": "$contains($.type,\"posted-content\") or $contains($.type,\"peer-review\")",
+    "only_import_if_authors_inst": true
+}
