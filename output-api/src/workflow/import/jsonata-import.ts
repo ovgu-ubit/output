@@ -150,7 +150,14 @@ export class JSONataImportService extends AbstractImportService {
         this.parallelCalls = this.importDefinition.parallelCalls;
     }
     protected async getData(response: any):Promise<JSONataParsedObject[]> {
-        return await Promise.all(response.data.message.items.map(e => this.transform(e)))
+        try {
+            const mapping = jsonata(this.importDefinition.get_items)
+            const items = (await mapping.evaluate(response.data))
+            return await Promise.all(items.map(e => this.transform(e)))
+        } catch (err) {
+            console.log(err)
+            return null;
+        }
     }
 
     public async setReportingYear(year: string) {
@@ -158,14 +165,9 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     async transform(element: any):Promise<JSONataParsedObject> {
-        try {
-            const mapping = jsonata(this.importConfig)
-            const obj = (await mapping.evaluate(element))
-            return obj;
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const mapping = jsonata(this.importConfig)
+        const obj = (await mapping.evaluate(element))
+        return obj;
     }
 
     /**

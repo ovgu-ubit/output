@@ -68,11 +68,11 @@
     "pub_type": $.type,
     "license": (
         $url := $.license[$lookup($, "content-version")="vor"].URL;
-        $contains($url, "creativecommons.org/licenses/by/") ? 'cc-by' : (
-            $contains($url, "creativecommons.org/licenses/by-nc/") ? 'cc-by-nc' : (
-                $contains($url, "creativecommons.org/licenses/by-nc-nd/") ? 'cc-by-nc-nd' : null
+        $url ? ($contains($string($url), "creativecommons.org/licenses/by/") ? 'cc-by' : (
+            $contains($string($url), "creativecommons.org/licenses/by-nc/") ? 'cc-by-nc' : (
+                $contains($string($url), "creativecommons.org/licenses/by-nc-nd/") ? 'cc-by-nc-nd' : null
             )
-        )
+        )) : null
     ),
     "status": 1,
     "abstract": $.abstract,
