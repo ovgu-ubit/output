@@ -1,0 +1,17 @@
+{
+    "url_count": "https://api.openalex.org/works?",
+    "url_items": "https://api.openalex.org/works?",
+    "max_res": 1,
+    "max_res_name": "per-page",
+    "offset_name": "page",
+    "offset_count": 1,
+    "offset_start": 1,
+    "query_search_schema": "filter=publication_year:[year],institutions.id:[openalex_id]",
+    "query_additional_params": [],
+    "parallelCalls": 1,
+    "get_count": "$.meta.count",
+    "get_items": "$.results",
+    "exclusion_criteria": "false",
+    "only_import_if_authors_inst": false,
+    "config_key" : ""
+}

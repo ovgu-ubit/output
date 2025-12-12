@@ -46,7 +46,7 @@ export interface JSONataParsedObject {
     abstract?: string;
     page_count?: number;
     contract?: string;
-    invoices?:{
+    invoices?: {
         number?: string, date?: Date, booking_date?: Date, booking_amount?: number, cost_center?: string,
         cost_items: { euro_value?: number, vat?: number, orig_value?: number, orig_currency?: string, cost_type?: string }[]
     }[];
@@ -109,9 +109,6 @@ export class JSONataImportService extends AbstractImportService {
     protected offset_name = 'offset';
     protected offset_count = 0;
     protected offset_start = 0;
-    protected params: { key: string, value: string }[] = [
-        { key: 'query.affiliation', value: '' },
-        { key: 'query.bibliographic', value: '' }];
     protected parallelCalls = 1;
 
     protected name = 'JSONata-Import'
@@ -134,14 +131,25 @@ export class JSONataImportService extends AbstractImportService {
             this.searchText += tag + "+"
         })
         this.affiliation_tags = await this.configService.get('affiliation_tags')
-        this.params = [
-            { key: this.importDefinition.query_search_term_param, value: this.searchText.slice(0, this.searchText.length - 1) },
-            { key: this.importDefinition.query_search_year_param, value: this.reporting_year },
-        ]
+        let queryString: string = this.importDefinition.query_search_schema;
+        //process query string
+        const regex = /\[([^\]]+)\]/g
+        const keys = [...queryString.matchAll(regex)].map(m => m[1]);
+        const values = await Promise.all(keys.map(k => this.configService.get(k)));
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            let value;
+            if (key === 'year') value = this.reporting_year;
+            else if (key === 'search_tags') value = this.searchText;
+            else value = values[i] ?? ""; // oder Fehler werfen
+            queryString = queryString.replace(`[${key}]`, value);
+        }
         for (const { key, value } of this.importDefinition.query_additional_params) {
-            this.params.push({ key, value })
+            queryString += `&${key}=${value}`;
         }
         this.url = this.importDefinition.url_items;
+        if (!this.url.endsWith('?')) this.url = this.url + '?';
+        this.url = this.url + queryString;
         this.max_res = this.importDefinition.max_res;
         this.max_res_name = this.importDefinition.max_res_name;
         this.offset_name = this.importDefinition.offset_name;
@@ -149,7 +157,7 @@ export class JSONataImportService extends AbstractImportService {
         this.offset_start = this.importDefinition.offset_start;
         this.parallelCalls = this.importDefinition.parallelCalls;
     }
-    protected async getData(response: any):Promise<JSONataParsedObject[]> {
+    protected async getData(response: any): Promise<JSONataParsedObject[]> {
         try {
             const mapping = jsonata(this.importDefinition.get_items)
             const items = (await mapping.evaluate(response.data))
@@ -164,7 +172,7 @@ export class JSONataImportService extends AbstractImportService {
         this.reporting_year = year;
     }
 
-    async transform(element: any):Promise<JSONataParsedObject> {
+    async transform(element: any): Promise<JSONataParsedObject> {
         const mapping = jsonata(this.importConfig)
         const obj = (await mapping.evaluate(element))
         return obj;
@@ -181,12 +189,7 @@ export class JSONataImportService extends AbstractImportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', this.name, by_user);
 
-        if (!this.url.endsWith('?') && this.params.length !== 0) this.completeURL = this.url + '?';
-        else this.completeURL = this.url;
-        this.params.forEach(e => {
-            this.completeURL += `${e.key}=${e.value}&`;
-        })
-        this.completeURL += `${this.max_res_name}=${this.max_res}`;
+        this.completeURL = this.url+`&${this.max_res_name}=${this.max_res}`;
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -196,7 +199,7 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
         await firstValueFrom(this.retrieveCountRequest().pipe(map(async resp => {
             this.numberOfPublications = await this.getNumber(resp);
-            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with parameters ${this.params.map(e => e.key + ': ' + e.value).join('; ')} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
+            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with ${this.completeURL} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
             if (this.numberOfPublications <= 0) {
                 //finalize
@@ -216,7 +219,7 @@ export class JSONataImportService extends AbstractImportService {
                 obs$.push(this.request(offset));
             } while (offset + this.max_res <= this.numberOfPublications)
             return null;
-        }))); 
+        })));
         concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: any) => {
                 if (!data) return;
@@ -326,7 +329,12 @@ export class JSONataImportService extends AbstractImportService {
         return element.publisher;
     }
     protected getPubDate(element: JSONataParsedObject): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date } {
-        return element.pub_date;
+        return {
+            pub_date: element.pub_date instanceof Date ? element.pub_date : new Date(element.pub_date), 
+            pub_date_print: element.pub_date_print instanceof Date ? element.pub_date_print : new Date(element.pub_date_print), 
+            pub_date_accepted: element.pub_date_accepted instanceof Date ? element.pub_date_accepted : new Date(element.pub_date_accepted), 
+            pub_date_submitted: element.pub_date_submitted instanceof Date ? element.pub_date_submitted : new Date(element.pub_date_submitted), 
+        }
     }
     protected getLink(element: JSONataParsedObject): string {
         return element.link;
