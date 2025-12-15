@@ -3,7 +3,7 @@
   $openalex_id := $cfg.openalex_id;
   {
       "title": $.title[0],
-      "doi": $substringAfter($.doi, "doi.org/"),
+      "doi": $.doi ? $substringAfter($.doi, "doi.org/") : undefined,
       "oa_category": (
           $status := $.open_access.oa_status;
           $status = "gold" and $.apc_list.value = 0 ? "diamond" : $status
@@ -11,11 +11,7 @@
       "authors_inst": $.authorships[
         (
         $hits := $filter(institutions, function($aff) {
-          $count(
-            $filter($tags, function($tag) {
-              $contains($aff.id, $openalex_id)
-            })
-          ) > 0
+          $contains($aff.id, $openalex_id)
         });
         $count($hits) > 0
       )
@@ -26,13 +22,13 @@
           "corresponding": is_corresponding,
           "affiliation":  $join(raw_affiliation_strings, "; ")
           }[],
-      "authors": $join($.authorships.author.display_name, "; "),
+      "authors": $join($.authorships.author.display_name[$type($) = "string"], "; "),
       "greater_entity": {
         "label": $.primary_location.source.display_name,
-        "identifiers": $.primary_location.source.issn[].{
+        "identifiers": $.primary_location.source.issn ? $.primary_location.source.issn[].{
           "type" : "issn",
           "value" : $
-        }
+        } : undefined
       },
       "publisher": {
         "label": $.primary_location.source.host_organization_name
@@ -54,9 +50,9 @@
       "first_page" : $.biblio.first_page,
       "last_page" : $.biblio.last_page,
       "page_count": (
-          $start := $number($.biblio.first_page);
-          $end := $number($.biblio.last_page);
-          $end - $start + 1
+          $start := $match($string($.biblio.first_page), /^(\d+)$/);
+          $end := $match($string($.biblio.last_page), /^(\d+)$/);
+          $end and $start ? $number($end.groups[0]) - $number($start.groups[0]) + 1 : undefined
           ),
       "cost_approach": (
           $elem := $.apc_paid ? $.apc_paid : $.apc_list;

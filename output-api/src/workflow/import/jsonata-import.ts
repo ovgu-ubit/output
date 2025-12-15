@@ -122,14 +122,19 @@ export class JSONataImportService extends AbstractImportService {
     protected importDefinition;
     protected reporting_year;
 
+    private config;
+
     public async setUp(jsonata: string, importDefinition, updateMapping?: UpdateMapping) {
         this.importConfig = jsonata;
         this.importDefinition = importDefinition;
         if (updateMapping) this.updateMapping = updateMapping;
-
-        (await this.configService.get('search_tags')).forEach(tag => {
+        this.config = {};
+        (await this.configService.listDatabaseConfig('admin')).map(e => {
+            this.config[e.key] = e.value;
+        });
+        await this.config['search_tags'].forEach(tag => {
             this.searchText += tag + "+"
-        })
+        });
         this.affiliation_tags = await this.configService.get('affiliation_tags')
         let queryString: string = this.importDefinition.query_search_schema;
         //process query string
@@ -175,12 +180,8 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     async transform(element: any): Promise<JSONataParsedObject> {
-        const cfg = {};
-        (await this.configService.listDatabaseConfig()).map(e => {
-            cfg[e.key] = e.value;
-        });
         const mapping = jsonata(this.importConfig)
-        const obj = (await mapping.evaluate({data: element, params: {cfg}}))
+        const obj = (await mapping.evaluate({...element, params: {cfg: this.config}}))
         return obj;
     }
 
