@@ -1,62 +1,66 @@
-{
-    "title": $.title[0],
-    "doi": $substringAfter($.doi, "doi.org/"),
-    "oa_category": (
-        $status := $.open_access.oa_status;
-        $status = "gold" and $.apc_list.value = 0 ? "diamond" : $status
-    ),
-    "authors_inst": $.authorships[
-      (
-      $hits := $filter(institutions, function($aff) {
-        $count(
-          $filter($tags, function($tag) {
-            $contains($aff.id, "I95793202")
-          })
-        ) > 0
-      });
-      $count($hits) > 0
-    )
-        ].{
-        "first_name": $join($filter($split(author.display_name, " "), function($v, $i) { $i < $count($split(author.display_name, " ")) - 1 })," "),
-        "last_name": $split(author.display_name, " ")[-1],
-        "orcid": $split($string(author.orcid), "/")[-1],
-        "corresponding": is_corresponding,
-        "affiliation":  $join(raw_affiliation_strings, "; ")
-        }[],
-    "authors": $join($.authorships.author.display_name, "; "),
-    "greater_entity": {
-      "label": $.primary_location.source.display_name,
-      "identifiers": $.primary_location.source.issn[].{
-        "type" : "issn",
-        "value" : $
-      }
-    },
-    "publisher": {
-      "label": $.primary_location.source.host_organization_name
-    },
-    "pub_date": $.publication_date ?? $.publication_year&"-01-01",
-    "language": $.language,
-    "link": $.primary_location.landing_page_url,
-    "funder": $.grants[].{
-        "label": funder_display_name
-    },
-    "pub_type": (
-        $type := $.type;
-        $type = "article" and $.primary_location.source.type = "conference" ? "conference proceedings" : $type
-        ),
-    "license": $.license,
-    "status": 1,
-    "volume": $.biblio.volume,
-    "issue" : $.biblio.issue,
-    "first_page" : $.biblio.first_page,
-    "last_page" : $.biblio.last_page,
-    "page_count": (
-        $start := $number($.biblio.first_page);
-        $end := $number($.biblio.last_page);
-        $end - $start + 1
-        ),
-    "cost_approach": (
-        $elem := $.apc_paid ? $.apc_paid : $.apc_list;
-        $elem.currency = "EUR" ? $elem.value : null;
-    )
-}
+(
+  $cfg := params.cfg;
+  $openalex_id := $cfg.openalex_id;
+  {
+      "title": $.title[0],
+      "doi": $substringAfter($.doi, "doi.org/"),
+      "oa_category": (
+          $status := $.open_access.oa_status;
+          $status = "gold" and $.apc_list.value = 0 ? "diamond" : $status
+      ),
+      "authors_inst": $.authorships[
+        (
+        $hits := $filter(institutions, function($aff) {
+          $count(
+            $filter($tags, function($tag) {
+              $contains($aff.id, $openalex_id)
+            })
+          ) > 0
+        });
+        $count($hits) > 0
+      )
+          ].{
+          "first_name": $join($filter($split(author.display_name, " "), function($v, $i) { $i < $count($split(author.display_name, " ")) - 1 })," "),
+          "last_name": $split(author.display_name, " ")[-1],
+          "orcid": $split($string(author.orcid), "/")[-1],
+          "corresponding": is_corresponding,
+          "affiliation":  $join(raw_affiliation_strings, "; ")
+          }[],
+      "authors": $join($.authorships.author.display_name, "; "),
+      "greater_entity": {
+        "label": $.primary_location.source.display_name,
+        "identifiers": $.primary_location.source.issn[].{
+          "type" : "issn",
+          "value" : $
+        }
+      },
+      "publisher": {
+        "label": $.primary_location.source.host_organization_name
+      },
+      "pub_date": $.publication_date ?? $.publication_year&"-01-01",
+      "language": $.language,
+      "link": $.primary_location.landing_page_url,
+      "funder": $.grants[].{
+          "label": funder_display_name
+      },
+      "pub_type": (
+          $type := $.type;
+          $type = "article" and $.primary_location.source.type = "conference" ? "conference proceedings" : $type
+          ),
+      "license": $.license,
+      "status": 1,
+      "volume": $.biblio.volume,
+      "issue" : $.biblio.issue,
+      "first_page" : $.biblio.first_page,
+      "last_page" : $.biblio.last_page,
+      "page_count": (
+          $start := $number($.biblio.first_page);
+          $end := $number($.biblio.last_page);
+          $end - $start + 1
+          ),
+      "cost_approach": (
+          $elem := $.apc_paid ? $.apc_paid : $.apc_list;
+          $elem.currency = "EUR" ? $elem.value : null;
+      )
+  }
+)

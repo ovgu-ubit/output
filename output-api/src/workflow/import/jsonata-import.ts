@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { Funder } from '../../funder/Funder.entity';
@@ -142,7 +142,9 @@ export class JSONataImportService extends AbstractImportService {
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
             else value = values[i] ?? ""; // oder Fehler werfen
-            queryString = queryString.replace(`[${key}]`, value);
+            
+            if (value) queryString = queryString.replace(`[${key}]`, value);
+            else throw new BadRequestException(`value for ${key} is not available`);
         }
         for (const { key, value } of this.importDefinition.query_additional_params) {
             queryString += `&${key}=${value}`;
@@ -173,8 +175,9 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     async transform(element: any): Promise<JSONataParsedObject> {
+        const cfg = await this.configService.listDatabaseConfig();
         const mapping = jsonata(this.importConfig)
-        const obj = (await mapping.evaluate(element))
+        const obj = (await mapping.evaluate({data: element, params: {cfg}}))
         return obj;
     }
 
