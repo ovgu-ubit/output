@@ -255,6 +255,8 @@ export class JSONataImportService extends AbstractImportService {
                             if (pubNew) {
                                 this.newPublications.push(pubNew);
                                 this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
+                            } else {
+                                this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `Nothing imported` })
                             }
                         } else if (update) {
                             const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
@@ -338,10 +340,10 @@ export class JSONataImportService extends AbstractImportService {
     }
     protected getPubDate(element: JSONataParsedObject): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date } {
         return {
-            pub_date: element.pub_date instanceof Date ? element.pub_date : new Date(element.pub_date), 
-            pub_date_print: element.pub_date_print instanceof Date ? element.pub_date_print : new Date(element.pub_date_print), 
-            pub_date_accepted: element.pub_date_accepted instanceof Date ? element.pub_date_accepted : new Date(element.pub_date_accepted), 
-            pub_date_submitted: element.pub_date_submitted instanceof Date ? element.pub_date_submitted : new Date(element.pub_date_submitted), 
+            pub_date: element.pub_date ? (element.pub_date instanceof Date ? element.pub_date : new Date(element.pub_date)) : undefined, 
+            pub_date_print: element.pub_date_print ? (element.pub_date_print instanceof Date ? element.pub_date_print : new Date(element.pub_date_print)) : undefined, 
+            pub_date_accepted: element.pub_date_accepted ? (element.pub_date_accepted instanceof Date ? element.pub_date_accepted : new Date(element.pub_date_accepted)) : undefined, 
+            pub_date_submitted: element.pub_date_submitted ? (element.pub_date_submitted instanceof Date ? element.pub_date_submitted : new Date(element.pub_date_submitted)) : undefined, 
         }
     }
     protected getLink(element: JSONataParsedObject): string {

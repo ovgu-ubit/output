@@ -8,7 +8,7 @@
     "offset_start": 1,
     "query_search_schema": "filter=publication_year:[year],institutions.id:[openalex_id]",
     "query_additional_params": [],
-    "parallelCalls": 1,
+    "parallelCalls": 10,
     "get_count": "$.meta.count",
     "get_items": "$.results",
     "exclusion_criteria": "false",
