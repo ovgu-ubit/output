@@ -23,11 +23,14 @@ export class AppConfigService {
         }
     }
 
-    public listDatabaseConfig(key?: string, scope: ConfigScope = 'public') {
+    public async listDatabaseConfig(scope: ConfigScope = 'public', key?: string):Promise<Config[]> {
         const allowedScopes = this.resolveAllowedScopes(scope);
 
         if (!key) return this.repository.find({ where: { scope: In(allowedScopes) }, order: { key: 'ASC' } });
-        else return this.repository.findOne({ where: { key, scope: In(allowedScopes) } });
+        else {
+            const cfg = await this.repository.findOne({ where: { key, scope: In(allowedScopes) } });
+            return [cfg];
+        }
     }
 
     public async setDatabaseConfig(key: string, value: any) {

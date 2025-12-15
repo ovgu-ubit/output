@@ -175,7 +175,10 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     async transform(element: any): Promise<JSONataParsedObject> {
-        const cfg = await this.configService.listDatabaseConfig();
+        const cfg = {};
+        (await this.configService.listDatabaseConfig()).map(e => {
+            cfg[e.key] = e.value;
+        });
         const mapping = jsonata(this.importConfig)
         const obj = (await mapping.evaluate({data: element, params: {cfg}}))
         return obj;
@@ -187,7 +190,8 @@ export class JSONataImportService extends AbstractImportService {
     public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
-        await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
+        //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
+        await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', this.name, by_user);
