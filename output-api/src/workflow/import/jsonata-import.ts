@@ -119,7 +119,8 @@ export class JSONataImportService extends AbstractImportService {
 
     private path: string = 'jsonata';
     private searchText = '';
-    private affiliation_tags = [];
+    private affiliationText = '';
+    protected search_text_combiner;
 
     private completeURL = '';
 
@@ -131,15 +132,37 @@ export class JSONataImportService extends AbstractImportService {
     public async setUp(jsonata: string, importDefinition, updateMapping?: UpdateMapping) {
         this.importConfig = jsonata;
         this.importDefinition = importDefinition;
+
+        
+        this.url = this.importDefinition.url_items;
+        if (!this.url.endsWith('?')) this.url = this.url + '?';
+        this.max_res = this.importDefinition.max_res;
+        this.max_res_name = this.importDefinition.max_res_name;
+        this.mode = this.importDefinition.request_mode;
+        this.offset_name = this.importDefinition.offset_name;
+        this.offset_count = this.importDefinition.offset_count;
+        this.offset_start = this.importDefinition.offset_start;
+        this.parallelCalls = this.importDefinition.parallelCalls;
+        this.search_text_combiner = this.importDefinition.search_text_combiner
+
         if (updateMapping) this.updateMapping = updateMapping;
         this.config = {};
         (await this.configService.listDatabaseConfig('admin')).map(e => {
             this.config[e.key] = e.value;
         });
-        await this.config['search_tags'].forEach(tag => {
-            this.searchText += tag + "+"
+        (await this.configService.listEnvConfig()).map(e => {
+            this.config[e.key] = e.value;
         });
-        this.affiliation_tags = await this.configService.get('affiliation_tags')
+        await this.config['search_tags'].forEach(tag => {
+            this.searchText += tag + this.search_text_combiner;
+        });
+        this.searchText = this.searchText.slice(0, this.searchText.length - this.search_text_combiner.length)
+        
+        await this.config['affiliation_tags'].forEach(tag => {
+            this.affiliationText += tag + this.search_text_combiner;
+        });
+        this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
+
         let queryString: string = this.importDefinition.query_search_schema;
         //process query string
         const regex = /\[([^\]]+)\]/g
@@ -150,6 +173,7 @@ export class JSONataImportService extends AbstractImportService {
             let value;
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
+            else if (key === 'affiliation_tags') value = this.affiliationText;
             else value = values[i] ?? ""; // oder Fehler werfen
             
             if (value) queryString = queryString.replace(`[${key}]`, value);
@@ -158,16 +182,7 @@ export class JSONataImportService extends AbstractImportService {
         for (const { key, value } of this.importDefinition.query_additional_params) {
             queryString += `&${key}=${value}`;
         }
-        this.url = this.importDefinition.url_items;
-        if (!this.url.endsWith('?')) this.url = this.url + '?';
         this.url = this.url + queryString;
-        this.max_res = this.importDefinition.max_res;
-        this.max_res_name = this.importDefinition.max_res_name;
-        this.mode = this.importDefinition.request_mode;
-        this.offset_name = this.importDefinition.offset_name;
-        this.offset_count = this.importDefinition.offset_count;
-        this.offset_start = this.importDefinition.offset_start;
-        this.parallelCalls = this.importDefinition.parallelCalls;
     }
     protected async getData(response: any): Promise<JSONataParsedObject[]> {
         try {
@@ -197,7 +212,8 @@ export class JSONataImportService extends AbstractImportService {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
         //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
-        await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
+        //await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
+        await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()));
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', this.name, by_user);

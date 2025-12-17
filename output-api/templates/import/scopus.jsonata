@@ -1,13 +1,9 @@
 (
   $cfg := params.cfg;
-  $openalex_id := $cfg.openalex_id;
+  $tags := $cfg.affiliation_tags;
   {
-      "title": $.title[0],
-      "doi": $.doi ? $substringAfter($.doi, "doi.org/") : undefined,
-      "oa_category": (
-          $status := $.open_access.oa_status;
-          $status = "gold" and $.apc_list.value = 0 ? "diamond" : $status
-      ),
+      "title": $."dc:title",
+      "doi": $."prism:doi",
       "authors_inst": $.authorships[
         (
         $hits := $filter(institutions, function($aff) {
@@ -22,7 +18,7 @@
           "corresponding": is_corresponding,
           "affiliation":  $join(raw_affiliation_strings, "; ")
           }[],
-      "authors": $join($.authorships.author.display_name[$type($) = "string"], "; "),
+      "authors": $join($.author.(surname? surname & ", " & $."given-name" : authname), "; "),
       "greater_entity": {
         "label": $.primary_location.source.display_name,
         "identifiers": $.primary_location.source.issn ? $.primary_location.source.issn[].{

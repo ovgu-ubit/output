@@ -4,6 +4,7 @@ import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 import { HealthState } from '../../../output-interfaces/Config';
+import { EnvSchemas } from './environment.schema';
 
 @Injectable()
 export class AppConfigService {
@@ -31,6 +32,15 @@ export class AppConfigService {
             const cfg = await this.repository.findOne({ where: { key, scope: In(allowedScopes) } });
             return [cfg];
         }
+    }
+
+    public async listEnvConfig() {
+        const keys = EnvSchemas.shape;
+        const result = [];
+        for (const key of Object.keys(keys)) {
+            result.push({key, value: await this.configService.get(key)});
+        }
+        return result;
     }
 
     public async setDatabaseConfig(key: string, value: any) {

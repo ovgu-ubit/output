@@ -7,6 +7,7 @@
     "offset_name": "offset",
     "offset_count": 0,
     "offset_start": 0,
+    "search_text_combiner": "+",
     "query_search_schema": "query.affiliation=[search_tags]&query.bibliographic=[year]",
     "query_additional_params": [
         {

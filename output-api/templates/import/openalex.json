@@ -7,6 +7,7 @@
     "offset_name": "page",
     "offset_count": 1,
     "offset_start": 1,
+    "search_text_combiner": " or ",
     "query_search_schema": "filter=publication_year:[year],institutions.id:[openalex_id]",
     "query_additional_params": [],
     "parallelCalls": 10,

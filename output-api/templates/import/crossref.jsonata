@@ -1,5 +1,6 @@
 (
-    $tags := ["ovgu", "guericke"];
+    $cfg := params.cfg;
+    $tags := $cfg.affiliation_tags;
     $date_builder := function($array) {(
         $year  := $array[0];
         $month := $array[1] ? $array[1] : 1;

@@ -1,0 +1,18 @@
+{
+    "url_count": "https://api.elsevier.com/content/search/scopus?",
+    "url_items": "https://api.elsevier.com/content/search/scopus?",
+    "max_res": 20,
+    "max_res_name": "count",
+    "request_mode": "offset",
+    "offset_name": "start",
+    "offset_count": 0,
+    "offset_start": 0,
+    "search_text_combiner": " or ",
+    "query_search_schema": "query=AFFIL('[affiliation_tags]')+and+PUBYEAR+IS+[year]&view=complete&apiKey=[SECRET_SCOPUS]&httpAccept=application/json",
+    "query_additional_params": [],
+    "parallelCalls": 10,
+    "get_count": "$.\"search-results\".\"opensearch:totalResults\"",
+    "get_items": "$.\"search-results\".entry",
+    "exclusion_criteria": "false",
+    "only_import_if_authors_inst": true
+}
