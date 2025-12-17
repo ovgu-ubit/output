@@ -3,6 +3,7 @@
     "url_items": "https://api.crossref.org/works?",
     "max_res": 20,
     "max_res_name": "rows",
+    "request_mode": "offset",
     "offset_name": "offset",
     "offset_count": 0,
     "offset_start": 0,
@@ -16,6 +17,6 @@
     "parallelCalls": 1,
     "get_count": "$.message.\"total-results\"",
     "get_items": "$.message.items",
-    "exclusion_criteria": "$contains($.type,\"posted-content\") or $contains($.type,\"peer-review\")",
+    "exclusion_criteria": "$contains($.pub_type,\"posted-content\") or $contains($.pub_type,\"peer-review\")",
     "only_import_if_authors_inst": true
 }

@@ -61,6 +61,8 @@ export interface JSONataParsedObject {
     article_number: string,
 }
 
+type RequestMode = 'offset'|'page';
+
 @ImportService({ path: 'jsonata' })
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
@@ -111,6 +113,8 @@ export class JSONataImportService extends AbstractImportService {
     protected offset_start = 0;
     protected parallelCalls = 1;
 
+    protected mode:RequestMode = 'offset'
+
     protected name = 'JSONata-Import'
 
     private path: string = 'jsonata';
@@ -159,6 +163,7 @@ export class JSONataImportService extends AbstractImportService {
         this.url = this.url + queryString;
         this.max_res = this.importDefinition.max_res;
         this.max_res_name = this.importDefinition.max_res_name;
+        this.mode = this.importDefinition.request_mode;
         this.offset_name = this.importDefinition.offset_name;
         this.offset_count = this.importDefinition.offset_count;
         this.offset_start = this.importDefinition.offset_start;
@@ -221,11 +226,18 @@ export class JSONataImportService extends AbstractImportService {
             }
 
             //collect observables
-            let offset = this.offset_start - this.max_res;
-            do {
-                offset += this.max_res;
-                obs$.push(this.request(offset));
-            } while (offset + this.max_res <= this.numberOfPublications)
+            if (this.mode === 'offset') {
+                let offset = this.offset_start - this.max_res;
+                do {
+                    offset += this.max_res;
+                    obs$.push(this.request(offset));
+                } while (offset + this.max_res <= this.numberOfPublications);
+            } else if (this.mode === 'page') {
+                let page = this.offset_start - 1;
+                do {
+                    obs$.push(this.request(++page));
+                } while (page * this.max_res < this.numberOfPublications);
+            }
             return null;
         })));
         concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
