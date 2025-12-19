@@ -142,7 +142,6 @@ export class JSONataImportService extends AbstractImportService {
         this.enrich_whereClause = enrich_whereClause;
 
         this.url = this.importDefinition.url_items;
-        if (!this.url.endsWith('?')) this.url = this.url + '?';
         this.max_res = this.importDefinition.max_res;
         this.max_res_name = this.importDefinition.max_res_name;
         this.mode = this.importDefinition.request_mode;
@@ -151,7 +150,6 @@ export class JSONataImportService extends AbstractImportService {
         this.offset_start = this.importDefinition.offset_start;
         this.parallelCalls = this.importDefinition.parallelCalls;
         this.search_text_combiner = this.importDefinition.search_text_combiner
-        this.query_doi_schema = this.importDefinition.query_doi_schema;
         this.get_doi_item = this.importDefinition.get_doi_item;
         this.url_doi = this.importDefinition.url_doi;
         this.delayInMs = this.importDefinition.delayInMs;
@@ -174,10 +172,8 @@ export class JSONataImportService extends AbstractImportService {
         });
         this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
 
-        let queryString: string = this.importDefinition.query_search_schema;
         //process query string
-        queryString = await this.setVariables(queryString);
-        this.url = this.url + queryString;
+        this.url = await this.setVariables(this.url);
     }
 
     async setVariables(queryString: string, doi?: string): Promise<string> {
@@ -408,7 +404,7 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
 
         for (const pub of publications) {
-            const url = this.url_doi + (await this.setVariables(this.query_doi_schema, pub.doi))
+            const url = await this.setVariables(this.url_doi, pub.doi);
             obs$.push(this.http.get(url))
         }
 

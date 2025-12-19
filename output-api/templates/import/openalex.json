@@ -1,6 +1,7 @@
 {
-    "url_count": "https://api.openalex.org/works?",
-    "url_items": "https://api.openalex.org/works?",
+    "url_count": "https://api.openalex.org/works?filter=publication_year:[year],institutions.id:[openalex_id]",
+    "url_items": "https://api.openalex.org/works?filter=publication_year:[year],institutions.id:[openalex_id]",
+    "url_doi" : "https://api.openalex.org/works/doi:[doi]",
     "max_res": 10,
     "max_res_name": "per-page",
     "request_mode": "page",
@@ -8,8 +9,6 @@
     "offset_count": 1,
     "offset_start": 1,
     "search_text_combiner": " or ",
-    "query_search_schema": "filter=publication_year:[year],institutions.id:[openalex_id]",
-    "query_additional_params": [],
     "parallelCalls": 10,
     "get_count": "$.meta.count",
     "get_items": "$.results",

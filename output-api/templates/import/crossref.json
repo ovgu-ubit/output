@@ -1,6 +1,7 @@
 {
-    "url_count": "https://api.crossref.org/works?",
-    "url_items": "https://api.crossref.org/works?",
+    "url_count": "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed",
+    "url_items": "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed",
+    "url_doi" : "https://api.crossref.org/works/[doi]",
     "max_res": 20,
     "max_res_name": "rows",
     "request_mode": "offset",
@@ -8,13 +9,6 @@
     "offset_count": 0,
     "offset_start": 0,
     "search_text_combiner": "+",
-    "query_search_schema": "query.affiliation=[search_tags]&query.bibliographic=[year]",
-    "query_additional_params": [
-        {
-            "key": "sort",
-            "value": "indexed"
-        }
-    ],
     "parallelCalls": 1,
     "get_count": "$.message.\"total-results\"",
     "get_items": "$.message.items",
