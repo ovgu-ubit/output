@@ -1,29 +1,30 @@
+import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import * as fs from 'fs';
 import jsonata from 'jsonata';
-import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { Funder } from '../../funder/Funder.entity';
-import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
-import { GEIdentifier } from '../../greater_entity/GEIdentifier.entity';
-import { Publication } from '../../publication/core/Publication.entity';
-import { Publisher } from '../../publisher/Publisher.entity';
+import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { FindManyOptions, In } from 'typeorm';
+import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { AuthorService } from '../../author/author.service';
+import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
+import { Funder } from '../../funder/Funder.entity';
 import { FunderService } from '../../funder/funder.service';
 import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
+import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
-import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
+import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
-import { PublisherService } from '../../publisher/publisher.service';
+import { LanguageService } from '../../publication/lookups/language.service';
 import { RoleService } from '../../publication/relations/role.service';
-import { AbstractImportService, ImportService } from './abstract-import';
+import { Publisher } from '../../publisher/Publisher.entity';
+import { PublisherService } from '../../publisher/publisher.service';
 import { ReportItemService } from '../report-item.service';
-import { AppConfigService } from '../../config/app-config.service';
-import * as fs from 'fs';
-import { concat, concatWith, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
-import { HttpService } from '@nestjs/axios';
+import { AbstractImportService, ImportService } from './abstract-import';
+import { EnrichService } from './api-enrich-doi.service';
 
 export interface JSONataParsedObject {
     title?: string;
@@ -61,9 +62,10 @@ export interface JSONataParsedObject {
     article_number: string,
 }
 
-type RequestMode = 'offset'|'page';
+type RequestMode = 'offset' | 'page';
 
 @ImportService({ path: 'jsonata' })
+@EnrichService({ path: 'jsonata' })
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
@@ -112,8 +114,9 @@ export class JSONataImportService extends AbstractImportService {
     protected offset_count = 0;
     protected offset_start = 0;
     protected parallelCalls = 1;
+    protected delayInMs = 200;
 
-    protected mode:RequestMode = 'offset'
+    protected mode: RequestMode = 'offset'
 
     protected name = 'JSONata-Import'
 
@@ -126,14 +129,18 @@ export class JSONataImportService extends AbstractImportService {
 
     protected importDefinition;
     protected reporting_year;
+    protected query_doi_schema;
+    protected get_doi_item;
+    public enrich_whereClause;
+    protected url_doi;
 
     private config;
 
-    public async setUp(jsonata: string, importDefinition, updateMapping?: UpdateMapping) {
+    public async setUp(jsonata: string, importDefinition, updateMapping?: UpdateMapping, enrich_whereClause?: FindManyOptions) {
         this.importConfig = jsonata;
         this.importDefinition = importDefinition;
+        this.enrich_whereClause = enrich_whereClause;
 
-        
         this.url = this.importDefinition.url_items;
         if (!this.url.endsWith('?')) this.url = this.url + '?';
         this.max_res = this.importDefinition.max_res;
@@ -144,6 +151,10 @@ export class JSONataImportService extends AbstractImportService {
         this.offset_start = this.importDefinition.offset_start;
         this.parallelCalls = this.importDefinition.parallelCalls;
         this.search_text_combiner = this.importDefinition.search_text_combiner
+        this.query_doi_schema = this.importDefinition.query_doi_schema;
+        this.get_doi_item = this.importDefinition.get_doi_item;
+        this.url_doi = this.importDefinition.url_doi;
+        this.delayInMs = this.importDefinition.delayInMs;
 
         if (updateMapping) this.updateMapping = updateMapping;
         this.config = {};
@@ -157,7 +168,7 @@ export class JSONataImportService extends AbstractImportService {
             this.searchText += tag + this.search_text_combiner;
         });
         this.searchText = this.searchText.slice(0, this.searchText.length - this.search_text_combiner.length)
-        
+
         await this.config['affiliation_tags'].forEach(tag => {
             this.affiliationText += tag + this.search_text_combiner;
         });
@@ -165,30 +176,49 @@ export class JSONataImportService extends AbstractImportService {
 
         let queryString: string = this.importDefinition.query_search_schema;
         //process query string
+        queryString = await this.setVariables(queryString);
+        this.url = this.url + queryString;
+    }
+
+    async setVariables(queryString: string, doi?: string): Promise<string> {
+        let result = queryString;
         const regex = /\[([^\]]+)\]/g
-        const keys = [...queryString.matchAll(regex)].map(m => m[1]);
+        const keys = [...result.matchAll(regex)].map(m => m[1]);
         const values = await Promise.all(keys.map(k => this.configService.get(k)));
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             let value;
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
+            else if (key === 'doi') value = doi;
             else if (key === 'affiliation_tags') value = this.affiliationText;
             else value = values[i] ?? ""; // oder Fehler werfen
-            
-            if (value) queryString = queryString.replace(`[${key}]`, value);
+
+            if (value) result = result.replace(`[${key}]`, value);
             else throw new BadRequestException(`value for ${key} is not available`);
         }
         for (const { key, value } of this.importDefinition.query_additional_params) {
-            queryString += `&${key}=${value}`;
+            result += `&${key}=${value}`;
         }
-        this.url = this.url + queryString;
+        return result;
     }
+
     protected async getData(response: any): Promise<JSONataParsedObject[]> {
         try {
             const mapping = jsonata(this.importDefinition.get_items)
             const items = (await mapping.evaluate(response.data))
             return await Promise.all(items.map(e => this.transform(e)))
+        } catch (err) {
+            console.log(err)
+            return null;
+        }
+    }
+
+    protected async getDataEnrich(response: any): Promise<JSONataParsedObject> {
+        try {
+            const mapping = jsonata(this.importDefinition.get_doi_item)
+            const item = (await mapping.evaluate(response.data))
+            return await this.transform(item)
         } catch (err) {
             console.log(err)
             return null;
@@ -201,7 +231,7 @@ export class JSONataImportService extends AbstractImportService {
 
     async transform(element: any): Promise<JSONataParsedObject> {
         const mapping = jsonata(this.importConfig)
-        const obj = (await mapping.evaluate({...element, params: {cfg: this.config}}))
+        const obj = (await mapping.evaluate({ ...element, params: { cfg: this.config } }))
         return obj;
     }
 
@@ -218,7 +248,7 @@ export class JSONataImportService extends AbstractImportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', this.name, by_user);
 
-        this.completeURL = this.url+`&${this.max_res_name}=${this.max_res}`;
+        this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -256,7 +286,7 @@ export class JSONataImportService extends AbstractImportService {
             }
             return null;
         })));
-        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
+        concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
             next: async (data: any) => {
                 if (!data) return;
                 try {
@@ -330,6 +360,110 @@ export class JSONataImportService extends AbstractImportService {
         });
     }
 
+    public async enrich(by_user?: string, dryRun = false) {
+        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+        this.dryRun = dryRun;
+        //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
+        //await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
+        await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()), {
+            author_inst: UpdateOptions.APPEND,
+            authors: UpdateOptions.REPLACE_IF_EMPTY,
+            title: UpdateOptions.REPLACE_IF_EMPTY,
+            pub_type: UpdateOptions.REPLACE_IF_EMPTY,
+            oa_category: UpdateOptions.IGNORE,
+            greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
+            publisher: UpdateOptions.REPLACE_IF_EMPTY,
+            contract: UpdateOptions.IGNORE,
+            funder: UpdateOptions.APPEND,
+            doi: UpdateOptions.REPLACE_IF_EMPTY,
+            pub_date: UpdateOptions.REPLACE_IF_EMPTY,
+            link: UpdateOptions.REPLACE_IF_EMPTY,
+            language: UpdateOptions.REPLACE_IF_EMPTY,
+            license: UpdateOptions.REPLACE_IF_EMPTY,
+            invoice: UpdateOptions.IGNORE,
+            status: UpdateOptions.REPLACE_IF_EMPTY,
+            abstract: UpdateOptions.REPLACE_IF_EMPTY,
+            citation: UpdateOptions.IGNORE,
+            page_count: UpdateOptions.REPLACE_IF_EMPTY,
+            peer_reviewed: UpdateOptions.IGNORE,
+            cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
+        }, this.enrich_whereClause);
+        this.progress = -1;
+        this.status_text = 'Started on ' + new Date();
+        this.report = await this.reportService.createReport('Enrich', this.name, by_user);
+
+        const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
+        if (!publications || publications.length === 0) {
+            this.progress = 0;
+            this.status_text = 'Nothing to enrich on ' + new Date();
+            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: this.name, text: `Nothing to enrich` })
+            return;
+        }
+
+        this.processedPublications = 0;
+        this.newPublications = [];
+        this.publicationsUpdate = [];
+        this.numberOfPublications = 0;
+
+        const obs$ = [];
+
+        for (const pub of publications) {
+            const url = this.url_doi + (await this.setVariables(this.query_doi_schema, pub.doi))
+            obs$.push(this.http.get(url))
+        }
+
+        let errors = 0;
+        concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
+            next: async (data: any) => {
+                if (!data) {
+                    errors++
+                    return;
+                }
+                try {
+                    const item = await this.getDataEnrich(data);
+
+                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                    if (!orig?.locked) {
+                        const pubUpd = await this.mapUpdate(item, orig).catch(e => {
+                            this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                            //console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
+                            return null;
+                        });
+                        if (pubUpd?.pub) {
+                            this.publicationsUpdate.push(pubUpd.pub);
+                            this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                        }
+                    }
+                    this.processedPublications++;
+                } catch (e) {
+                    this.numberOfPublications -= this.max_res;
+                    this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${e}` })
+                } finally {
+                    if (this.progress !== 0) this.progress = (this.processedPublications + errors) / publications.length;
+                    if (this.progress === 1) {
+                        //finalize
+                        this.progress = 0;
+                        this.reportService.finish(this.report, {
+                            status: 'Successfull enrich on ' + new Date(),
+                            count_import: 0,
+                            count_update: this.publicationsUpdate.length
+                        })
+                        this.status_text = 'Successfull enrich on ' + new Date();
+                    }
+                }
+            }, error: async err => {
+                console.log(err.message);
+                if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
+                this.progress = 0;
+                this.reportService.finish(this.report, {
+                    status: 'Error while importing on ' + new Date(),
+                    count_import: this.newPublications.length,
+                    count_update: this.publicationsUpdate.length
+                })
+            }
+        });
+    }
+
     protected retrieveCountRequest() {
         return this.request(this.offset_count);
     }
@@ -368,10 +502,10 @@ export class JSONataImportService extends AbstractImportService {
     }
     protected getPubDate(element: JSONataParsedObject): Date | { pub_date?: Date, pub_date_print?: Date, pub_date_accepted?: Date, pub_date_submitted?: Date } {
         return {
-            pub_date: element.pub_date ? (element.pub_date instanceof Date ? element.pub_date : new Date(element.pub_date)) : undefined, 
-            pub_date_print: element.pub_date_print ? (element.pub_date_print instanceof Date ? element.pub_date_print : new Date(element.pub_date_print)) : undefined, 
-            pub_date_accepted: element.pub_date_accepted ? (element.pub_date_accepted instanceof Date ? element.pub_date_accepted : new Date(element.pub_date_accepted)) : undefined, 
-            pub_date_submitted: element.pub_date_submitted ? (element.pub_date_submitted instanceof Date ? element.pub_date_submitted : new Date(element.pub_date_submitted)) : undefined, 
+            pub_date: element.pub_date ? (element.pub_date instanceof Date ? element.pub_date : new Date(element.pub_date)) : undefined,
+            pub_date_print: element.pub_date_print ? (element.pub_date_print instanceof Date ? element.pub_date_print : new Date(element.pub_date_print)) : undefined,
+            pub_date_accepted: element.pub_date_accepted ? (element.pub_date_accepted instanceof Date ? element.pub_date_accepted : new Date(element.pub_date_accepted)) : undefined,
+            pub_date_submitted: element.pub_date_submitted ? (element.pub_date_submitted instanceof Date ? element.pub_date_submitted : new Date(element.pub_date_submitted)) : undefined,
         }
     }
     protected getLink(element: JSONataParsedObject): string {

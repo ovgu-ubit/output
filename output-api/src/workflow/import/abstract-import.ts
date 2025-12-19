@@ -638,7 +638,8 @@ export abstract class AbstractImportService {
                     if (!this.dryRun) await this.publicationService.resetAuthorPublication(orig);
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.APPEND) {
-                    for (const aut of authors_entities) if (!existing_aut.find(e => e.authorId === aut.id)) {
+                    for (const aut of authors_entities) if (
+                        !existing_aut.find(e => e.authorId === aut.author.id)) {
                         if (!this.dryRun) await this.publicationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
                         fields.push('author_inst')
                     }

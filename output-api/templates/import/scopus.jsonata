@@ -72,6 +72,7 @@
             $split := $split($."prism:pageRange","-");
             $number($split[1]) - $number($split[0]) + 1;
             ) : undefined;
-      )
+      ),
+      "abstract": $."dc:description"
   }
 )

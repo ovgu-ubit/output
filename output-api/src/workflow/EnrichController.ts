@@ -8,6 +8,7 @@ import { Permissions } from "../authorization/permission.decorator";
 import { ApiEnrichDOIService, getEnrichServiceMeta } from "./import/api-enrich-doi.service";
 import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
+import { JSONataImportService } from "./import/jsonata-import";
 
 @Controller("enrich")
 @ApiTags("enrich")
@@ -86,17 +87,33 @@ export class EnrichController {
     },
   })
   async enrichUnpaywall(@Req() request: Request, @Param('path') path: string, @Body('reporting_year') reporting_year: number, @Body('ids') ids: number[], @Body('dry_run') dryRun: boolean) {
+    if (path === 'jsonata') {
+      if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw new BadRequestException('reporting year or array of IDs is mandatory');
+      const so = (await this.list()).findIndex(e => e.path === path)
+      if (so === -1) throw new NotFoundException();
+      if (ids && ids.length >= 0) {
+        (this.enrichServices[so] as unknown as JSONataImportService).enrich_whereClause = { where: { id: In(ids) } };
+        return (this.enrichServices[so] as unknown as JSONataImportService).enrich(request["user"]["username"], dryRun);
+      } else {
+        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+        const jsonata = this.enrichServices[so] as unknown as JSONataImportService
+        jsonata.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
+        jsonata.setReportingYear(reporting_year+"")
+        return jsonata.enrich(request["user"]["username"], dryRun);
+      }
+    }
     if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw new BadRequestException('reporting year or array of IDs is mandatory');
     const so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw new NotFoundException();
     if (ids && ids.length >= 0) {
       this.enrichServices[so].setWhereClause({ where: { id: In(ids) } });
-      return this.enrichServices[so].import(true,request["user"]["username"],dryRun);
+      return this.enrichServices[so].import(true, request["user"]["username"], dryRun);
     } else {
       const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
       const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
       this.enrichServices[so].setWhereClause({ where: { pub_date: Between(beginDate, endDate) } });
-      return this.enrichServices[so].import(true,request["user"]["username"],dryRun);
+      return this.enrichServices[so].import(true, request["user"]["username"], dryRun);
     }
   }
   @Get(":path")
