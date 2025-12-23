@@ -108,6 +108,7 @@ export class JSONataImportService extends AbstractImportService {
     private importConfig: string;
 
     protected url = 'https://api.crossref.org/works?';
+    protected url_count = this.url;
     protected max_res: number = 20;
     protected max_res_name = 'rows';
     protected offset_name = 'offset';
@@ -142,6 +143,7 @@ export class JSONataImportService extends AbstractImportService {
         this.enrich_whereClause = enrich_whereClause;
 
         this.url = this.importDefinition.url_items;
+        this.url_count = this.importDefinition.url_count;
         this.max_res = this.importDefinition.max_res;
         this.max_res_name = this.importDefinition.max_res_name;
         this.mode = this.importDefinition.request_mode;
@@ -174,6 +176,7 @@ export class JSONataImportService extends AbstractImportService {
 
         //process query string
         this.url = await this.setVariables(this.url);
+        this.url_count = await this.setVariables(this.url_count);
     }
 
     async setVariables(queryString: string, doi?: string): Promise<string> {
@@ -461,7 +464,8 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected retrieveCountRequest() {
-        return this.request(this.offset_count);
+        const url = this.url_count + `&${this.offset_name}=` + this.offset_count;
+        return this.http.get(url);
     }
     protected request(offset: number): Observable<any> {
         const url = this.completeURL + `&${this.offset_name}=` + offset;

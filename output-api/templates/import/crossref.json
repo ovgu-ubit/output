@@ -8,6 +8,7 @@
     "offset_name": "offset",
     "offset_count": 0,
     "offset_start": 0,
+    "delayInMs": 0,
     "search_text_combiner": "+",
     "parallelCalls": 1,
     "get_count": "$.message.\"total-results\"",

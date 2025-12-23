@@ -8,6 +8,7 @@
     "offset_name": "page",
     "offset_count": 1,
     "offset_start": 1,
+    "delayInMs": 0,
     "search_text_combiner": " or ",
     "parallelCalls": 10,
     "get_count": "$.meta.count",
