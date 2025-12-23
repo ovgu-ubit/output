@@ -180,6 +180,7 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     async setVariables(queryString: string, doi?: string): Promise<string> {
+        if (!queryString) return null;
         let result = queryString;
         const regex = /\[([^\]]+)\]/g
         const keys = [...result.matchAll(regex)].map(m => m[1]);
@@ -243,6 +244,8 @@ export class JSONataImportService extends AbstractImportService {
         //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
         //await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
         await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()));
+        if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || !this.offset_count || !this.offset_name || !this.offset_start || !this.importDefinition.get_count || !this.importDefinition.get_items) 
+            throw new BadRequestException('Import cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Import', this.name, by_user);
@@ -360,11 +363,11 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     public async enrich(by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
         //await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
-        await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()), {
+        /*await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()), {
             author_inst: UpdateOptions.APPEND,
             authors: UpdateOptions.REPLACE_IF_EMPTY,
             title: UpdateOptions.REPLACE_IF_EMPTY,
@@ -386,7 +389,32 @@ export class JSONataImportService extends AbstractImportService {
             page_count: UpdateOptions.REPLACE_IF_EMPTY,
             peer_reviewed: UpdateOptions.IGNORE,
             cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
+        }, this.enrich_whereClause);*/
+        await this.setUp(fs.readFileSync('./templates/import/unpaywall.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/unpaywall.json').toString()), {
+            author_inst: UpdateOptions.APPEND,
+            authors: UpdateOptions.REPLACE_IF_EMPTY,
+            title: UpdateOptions.REPLACE_IF_EMPTY,
+            pub_type: UpdateOptions.REPLACE_IF_EMPTY,
+            oa_category: UpdateOptions.REPLACE,
+            greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
+            publisher: UpdateOptions.REPLACE_IF_EMPTY,
+            contract: UpdateOptions.IGNORE,
+            funder: UpdateOptions.APPEND,
+            doi: UpdateOptions.REPLACE_IF_EMPTY,
+            pub_date: UpdateOptions.REPLACE_IF_EMPTY,
+            link: UpdateOptions.REPLACE_IF_EMPTY,
+            language: UpdateOptions.REPLACE_IF_EMPTY,
+            license: UpdateOptions.REPLACE_IF_EMPTY,
+            invoice: UpdateOptions.IGNORE,
+            status: UpdateOptions.REPLACE_IF_EMPTY,
+            abstract: UpdateOptions.REPLACE_IF_EMPTY,
+            citation: UpdateOptions.IGNORE,
+            page_count: UpdateOptions.REPLACE_IF_EMPTY,
+            peer_reviewed: UpdateOptions.IGNORE,
+            cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
         }, this.enrich_whereClause);
+        if (!this.url_doi || !this.importDefinition.get_doi_item) 
+            throw new BadRequestException('Enrich cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Enrich', this.name, by_user);
@@ -520,8 +548,14 @@ export class JSONataImportService extends AbstractImportService {
     protected getPubType(element: JSONataParsedObject): string {
         return element.pub_type;
     }
-    protected getOACategory(element: JSONataParsedObject): string {
-        return element.oa_category;
+    protected getOACategory(element: JSONataParsedObject): { oa_category?: string, is_oa?: string, oa_status?: string, journal_is_oa?: string, best_oa_host?: string } {
+        return {
+            oa_category: element.oa_category,
+            is_oa: element["is_oa"],
+            oa_status: element["oa_status"],
+            journal_is_oa: element["journal_is_oa"],
+            best_oa_host: element["best_oa_host"],
+        }
     }
     protected getContract(element: JSONataParsedObject): string {
         return element.contract;

@@ -160,7 +160,7 @@ export abstract class AbstractImportService {
      * retrieves the open access category string of an element
      * @param element 
      */
-    protected abstract getOACategory(element: any): string;
+    protected abstract getOACategory(element: any): string | { oa_category?: string, is_oa?: string, oa_status?: string, journal_is_oa?: string, best_oa_host?: string };
     /**
      * retrieves the contract string of an element
      * @param element 
@@ -275,7 +275,20 @@ export abstract class AbstractImportService {
         if (!publisher_ent && this.getDOI(item)) publisher_ent = await this.publisherService.findByDOI(this.getDOI(item))
         if (publisher_ent) publisher = publisher_ent
         //identify oa category
-        const oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(item), this.dryRun));
+        const oa = this.getOACategory(item);
+        let oa_category;
+        let is_oa;
+        let oa_status;
+        let is_journal_oa;
+        let best_oa_host;
+        if (typeof (oa_category) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun));
+        else {
+            oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun));
+            is_oa = oa["is_oa"];
+            oa_status = oa["oa_status"];
+            is_journal_oa = oa["is_journal_oa"];
+            best_oa_host = oa["best_oa_host"];
+        }
         //identify conctract
         const contract = await firstValueFrom(this.contractService.findOrSave(this.getContract(item), this.dryRun));
         //get invoice information
@@ -334,6 +347,10 @@ export abstract class AbstractImportService {
             status,
             add_info: remark,
             cost_approach,
+            is_oa,
+            oa_status,
+            is_journal_oa,
+            best_oa_host
         };
         //process publication date in case it is a complex object, dates are assigned to the publication
         if (!pub_date) {
@@ -356,7 +373,7 @@ export abstract class AbstractImportService {
             obj.last_page = cit.last_page;
         }
         if (!this.dryRun) {
-        //save publication object and assign authorships
+            //save publication object and assign authorships
             const pub_ent = (await this.publicationService.save([obj]))[0];
             for (const aut of authors_entities) {
                 await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
@@ -571,20 +588,60 @@ export abstract class AbstractImportService {
                 break;
         }
 
-        if (!orig.locked_oa) switch (this.updateMapping.oa_category) {
-            case UpdateOptions.IGNORE:
-                break;
-            case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
-            case UpdateOptions.APPEND:
-                if (!orig.oa_category) {
-                    orig.oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(element), this.dryRun));
+        if (!orig.locked_oa) {
+            const oa = this.getOACategory(element);
+            let oa_category;
+            let is_oa;
+            let oa_status;
+            let is_journal_oa;
+            let best_oa_host;
+            if (typeof (oa_category) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun));
+            else {
+                oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun));
+                is_oa = oa["is_oa"];
+                oa_status = oa["oa_status"];
+                is_journal_oa = oa["is_journal_oa"];
+                best_oa_host = oa["best_oa_host"];
+            }
+            switch (this.updateMapping.oa_category) {
+                case UpdateOptions.IGNORE:
+                    break;
+                case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
+                case UpdateOptions.APPEND:
+                    if (!orig.oa_category) {
+                        orig.oa_category = oa_category;
+                        if (orig.oa_category) fields.push('oa_category')
+                    }
+                    if (!orig.is_oa) {
+                        orig.is_oa = is_oa;
+                        if (orig.is_oa) fields.push('is_oa')
+                    }
+                    if (!orig.oa_status) {
+                        orig.oa_status = oa_status;
+                        if (orig.oa_status) fields.push('oa_status')
+                    }
+                    if (!orig.is_journal_oa) {
+                        orig.is_journal_oa = is_journal_oa;
+                        if (orig.is_journal_oa) fields.push('is_journal_oa')
+                    }
+                    if (!orig.best_oa_host) {
+                        orig.best_oa_host = best_oa_host;
+                        if (orig.best_oa_host) fields.push('best_oa_host')
+                    }
+                    break;
+                case UpdateOptions.REPLACE:
+                    orig.oa_category = oa_category;
                     if (orig.oa_category) fields.push('oa_category')
-                }
-                break;
-            case UpdateOptions.REPLACE:
-                orig.oa_category = await firstValueFrom(this.oaService.findOrSave(this.getOACategory(element), this.dryRun));
-                if (orig.oa_category) fields.push('oa_category')
-                break;
+                    orig.is_oa = is_oa;
+                    if (orig.is_oa) fields.push('is_oa')
+                    orig.oa_status = oa_status;
+                    if (orig.oa_status) fields.push('oa_status')
+                    orig.is_journal_oa = is_journal_oa;
+                    if (orig.is_journal_oa) fields.push('is_journal_oa')
+                    orig.best_oa_host = best_oa_host;
+                    if (orig.best_oa_host) fields.push('best_oa_host')
+                    break;
+            }
         }
 
         if (!orig.locked_biblio) if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
@@ -860,10 +917,10 @@ export abstract class AbstractImportService {
         let pub_ent: Publication;
         if (fields.length > 0) {
             if (!this.dryRun) {
-            pub_ent = (await this.publicationService.save([orig]))[0];
-            return { pub: pub_ent, fields };
+                pub_ent = (await this.publicationService.save([orig]))[0];
+                return { pub: pub_ent, fields };
             } else return { pub: orig, fields }
-        } else return {pub: orig, fields}
+        } else return { pub: orig, fields }
     }
 
     /**
