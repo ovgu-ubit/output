@@ -98,7 +98,15 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         for (let aut of authors) {
             if (aut['institutions'].find(e => e['id']?.includes(this.id))) {
                 let name = aut['author']['display_name']
-                res.push({
+                if (name?.includes(','))
+                    res.push({
+                        first_name: name.slice(name.lastIndexOf(',') + 2),
+                        last_name: name.slice(0, name.lastIndexOf(',')),
+                        orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
+                        affiliation: aut['raw_affiliation_strings'].reduce((a, v) => a + '; ' + v),
+                        corresponding: aut['is_corresponding']
+                    });
+                else if (name) res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
                     last_name: name.slice(name.lastIndexOf(' ') + 1),
                     orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
