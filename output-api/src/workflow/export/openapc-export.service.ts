@@ -33,7 +33,7 @@ export class OpenAPCExportService extends AbstractExportService {
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
-        let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url"\n';
+        let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url","isbn"\n';
         for (const pub of pubs) {
             const hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
             if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
@@ -55,8 +55,11 @@ export class OpenAPCExportService extends AbstractExportService {
             res+=this.format(pub.publisher?.label);
             res+=this.format(pub.greater_entity?.label);
             res+=this.format(pub.link);
-            res=res.slice(0,res.length-1);
+            let isbn:string = "";
+            if (pub.identifiers) isbn = pub.identifiers.find(e => e.type.toLowerCase() == 'isbn')?.value;
+            res+=this.format(isbn);
 
+            res=res.slice(0,res.length-1);
             res += '\n';
         }
         //res = res.replace(/undefined/g, '');
