@@ -112,7 +112,7 @@ export class OpenAlexImportService extends ApiImportOffsetService {
                         affiliation: aut['raw_affiliation_strings'].reduce((a, v) => a + '; ' + v),
                         corresponding: aut['is_corresponding']
                     });
-                else res.push({
+                else if (name) res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
                     last_name: name.slice(name.lastIndexOf(' ') + 1),
                     orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
