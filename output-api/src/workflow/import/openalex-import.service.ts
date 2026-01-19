@@ -21,7 +21,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
 import { ImportService } from './abstract-import';
 
-@ImportService({path: 'openalex'})
+@ImportService({ path: 'openalex' })
 @Injectable()
 export class OpenAlexImportService extends ApiImportOffsetService {
 
@@ -30,11 +30,11 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
-        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService,
+        protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
         protected http: HttpService) {
         super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
-        
+
     }
 
     protected updateMapping: UpdateMapping = {
@@ -73,15 +73,15 @@ export class OpenAlexImportService extends ApiImportOffsetService {
 
     async setReportingYear(year: string) {
         this.id = await this.configService.get('openalex_id')
-        let tmp =   `publication_year:${year}`;
-        tmp = tmp+=`,institutions.id:${this.id}`
+        let tmp = `publication_year:${year}`;
+        tmp = tmp += `,institutions.id:${this.id}`
         this.params = [
             { key: 'filter', value: tmp }]
     }
     protected getNumber(response: any): number {
         return response.data.meta['count'];
     }
-    protected importTest(element: any): boolean {
+    protected importTest(_element: any): boolean {
         return true;//element['primary_location']['is_published'];
     }
     protected getData(response: any): any[] {
@@ -104,11 +104,19 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         for (const aut of authors) {
             if (aut['institutions'].find(e => e['id']?.includes(this.id))) {
                 const name = aut['author']['display_name']
-                res.push({
+                if (name?.includes(','))
+                    res.push({
+                        first_name: name.slice(name.lastIndexOf(',') + 2),
+                        last_name: name.slice(0, name.lastIndexOf(',')),
+                        orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
+                        affiliation: aut['raw_affiliation_strings'].reduce((a, v) => a + '; ' + v),
+                        corresponding: aut['is_corresponding']
+                    });
+                else res.push({
                     first_name: name.slice(0, name.lastIndexOf(' ')),
                     last_name: name.slice(name.lastIndexOf(' ') + 1),
                     orcid: aut['author']['orcid'] ? aut['author']['orcid'].slice(aut['author']['orcid'].lastIndexOf('/') + 1) : undefined,
-                    affiliation: aut['raw_affiliation_strings'].reduce((a, v, i) => a + '; ' + v),
+                    affiliation: aut['raw_affiliation_strings'].reduce((a, v) => a + '; ' + v),
                     corresponding: aut['is_corresponding']
                 })
             }
@@ -175,22 +183,22 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         if (status === 'gold' && element['apc_list'] && element['apc_list']['value'] === 0) return 'diamond';
         return status;
     }
-    protected getContract(element: any): string {
+    protected getContract(_element: any): string {
         return null;
     }
     protected getLicense(element: any): string {
         return element['license'];
     }
-    protected getInvoiceInformation(element: any) {
+    protected getInvoiceInformation(_element: any) {
         return null;
     }
-    protected getStatus(element: any): number {
+    protected getStatus(_element: any): number {
         return 1;
     }
-    protected getAbstract(element: any): string {
+    protected getAbstract(_element: any): string {
         return null;
     }
-    protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
+    protected getCitation(element: any): { volume?: string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string } {
         if (element['biblio']) {
             const e = {
                 volume: element['biblio']['volume'],
@@ -206,9 +214,12 @@ export class OpenAlexImportService extends ApiImportOffsetService {
             const count = Number(element['biblio']['last_page']) - Number(element['biblio']['first_page']) + 1;
             if (!Number.isNaN(count) && count < 999999) return count;
             else return null;
-        } catch (e) { return null; }
+        } catch (e) { 
+            console.log(e)
+            return null; 
+        }
     }
-    protected getPeerReviewed(element: any): boolean {
+    protected getPeerReviewed(_element: any): boolean {
         return null;
     }
     protected getCostApproach(element: any): number {
