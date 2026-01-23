@@ -8,6 +8,7 @@ export interface Workflow {
     published_at?: Date;
     deteted_at?: Date;
     description?: string;
+    mapping?: string;
 }
 
 export interface ImportWorkflow extends Workflow {

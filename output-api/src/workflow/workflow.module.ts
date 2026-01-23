@@ -55,6 +55,9 @@ import { ImportController } from './ImportController';
 import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
 import { JSONataImportService } from './import/jsonata-import';
+import { WorkflowService } from './workflow.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ImportWorkflow } from './ImportWorkflow.entity';
 
 @Module({
   imports: [
@@ -74,7 +77,8 @@ import { JSONataImportService } from './import/jsonata-import';
       maxRedirects: 5,
     }),
     ScheduleModule.forRoot(),
-    DiscoveryModule
+    DiscoveryModule,
+    TypeOrmModule.forFeature([ImportWorkflow])
   ],
   controllers: [
     ImportController,
@@ -90,7 +94,7 @@ import { JSONataImportService } from './import/jsonata-import';
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService,
+    DiscoveryService, WorkflowService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],

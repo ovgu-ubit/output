@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn, VersionColumn } from "typeorm";
 import { ImportWorkflow as IImportWorkflow, Strategy } from "../../../output-interfaces/Workflow";
 
-@Entity()
+@Entity("workflow_import")
 @Unique(["workflow_id", "version"])
 export class ImportWorkflow implements IImportWorkflow {
 
@@ -37,4 +37,7 @@ export class ImportWorkflow implements IImportWorkflow {
 
     @Column({ nullable: true, type: 'jsonb' })
     strategy?: unknown;
+
+    @Column({ nullable: true})
+    mapping?: string;
 }
