@@ -1,22 +1,24 @@
 import { Injectable } from '@nestjs/common';
+import { AbstractExportService } from './abstract-export.service';
+import { ReportItemService } from '../report-item.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
-import { AppConfigService } from '../../config/app-config.service';
+import { AbstractFilterService } from '../filter/abstract-filter.service';
+import { ConfigService } from '@nestjs/config';
+import { PublicationService } from '../../publication/core/publication.service';
 import { ContractService } from '../../contract/contract.service';
 import { Publication } from '../../publication/core/Publication.entity';
-import { PublicationService } from '../../publication/core/publication.service';
-import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ReportItemService } from '../report-item.service';
-import { AbstractExportService, ExportService } from './abstract-export.service';
 
-@ExportService({path: 'openapc'})
 @Injectable()
+/**
+ * abstract class for all exports
+ */
 export class OpenAPCExportService extends AbstractExportService {
 
     quote = '"';
     sep = ',';
 
-    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: AppConfigService, private contractService: ContractService) {
+    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: ConfigService, private contractService: ContractService) {
         super();
     }
 
@@ -28,17 +30,17 @@ export class OpenAPCExportService extends AbstractExportService {
 
         let pubs = await this.publicationService.getAll(filter?.filter);
         if (filter) for (const path of filter.paths) {
-            const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
+            const so = this.configService.get('filter_services').findIndex(e => e.path === path)
             if (so === -1) continue;
             pubs = await filterServices[so].filter(pubs) as Publication[]
         }
 
-        let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url"\n';
+        let res = '"institution","period","euro","doi","is_hybrid","publisher","journal_full_title","url","isbn"\n';
         for (const pub of pubs) {
             const hybrid = pub.oa_category?.label.toLocaleLowerCase().includes('hybrid');
             if ((hybrid && !pub.contract) || (!hybrid && pub.invoices.length === 0)) continue;
 
-            res += this.format(await this.configService.get("institution_label"));
+            res += this.format(this.configService.get("institution_label"));
             if (!hybrid) {
                 res += this.format(pub.invoices[0].date?.getFullYear());
                 res += this.format(pub.invoices.reduce<number>((p: number, c) => { return p + c.booking_amount }, 0));
@@ -50,12 +52,16 @@ export class OpenAPCExportService extends AbstractExportService {
                 const contract = await this.contractService.one(pub.contract.id, false);
                 res += this.format(pub.contract.invoice_amount / contract.publications.length)
             }
-            res+=this.format(pub.doi);
-            res+=this.format(hybrid);
-            res+=this.format(pub.publisher?.label);
-            res+=this.format(pub.greater_entity?.label);
-            res+=this.format(pub.link);
-            res=res.slice(0,res.length-1);
+            res += this.format(pub.doi);
+            res += this.format(hybrid);
+            res += this.format(pub.publisher?.label);
+            res += this.format(pub.greater_entity?.label);
+            res += this.format(pub.link);
+            let isbn: string = "";
+            if (pub.identifiers) isbn = pub.identifiers.find(e => e.type.toLowerCase() == 'isbn')?.value;
+            res += this.format(isbn);
+
+            res = res.slice(0, res.length - 1);
 
             res += '\n';
         }
