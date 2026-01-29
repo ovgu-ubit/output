@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
@@ -22,7 +22,12 @@ export class WorkflowService {
         return this.importRepository.findOneBy({id});
     }
 
-    saveImport(workflow:ImportWorkflow) {
+    async saveImport(workflow:ImportWorkflow) {
+        if (workflow.id) {
+            const db = await this.importRepository.findOneBy({id:workflow.id})
+            if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
+            if (db.published_at) throw new BadRequestException("Error: workflow to update has already been published");
+        } 
         let validated = validateImportWorkflow(workflow);
         if (validated) return this.importRepository.save(workflow);
     }
