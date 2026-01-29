@@ -4,6 +4,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { Repository } from 'typeorm';
 import { JSONataImportService } from './import/jsonata-import';
+import { validateImportWorkflow } from './import-workflow.schema';
 
 @Injectable()
 export class WorkflowService {
@@ -15,6 +16,11 @@ export class WorkflowService {
 
     getImports() {
         return this.importRepository.find();
+    }
+
+    saveImport(workflow:ImportWorkflow) {
+        let validated = validateImportWorkflow(workflow);
+        if (validated) return this.importRepository.save(workflow);
     }
 
     async startImport(id: number) {

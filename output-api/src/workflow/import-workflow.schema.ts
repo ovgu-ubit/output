@@ -1,14 +1,53 @@
-import { z } from "zod";
+import { z, ZodError } from "zod";
+import { ImportWorkflow } from "./ImportWorkflow.entity";
+import { BadRequestException } from "@nestjs/common";
+import { Strategy } from "../../../output-interfaces/Workflow";
+
+const StrategyTypeSchema = z.enum([
+  "FILE_CSV",
+  "FILE_XLSX",
+  "URL_QUERY_OFFSET",
+  "URL_DOI",
+]);
+
+const StrategyFromApi: Record<
+  z.infer<typeof StrategyTypeSchema>,
+  Strategy
+> = {
+  FILE_CSV: Strategy.FILE_CSV,
+  FILE_XLSX: Strategy.FILE_XLSX,
+  URL_QUERY_OFFSET: Strategy.URL_QUERY_OFFSET,
+  URL_DOI: Strategy.URL_DOI,
+};
+
+const StrategyTypeFromNumber = (v: unknown) => {
+  if (typeof v !== "number" || !Number.isInteger(v)) return v;
+
+  switch (v) {
+    case 0: return "FILE_CSV";
+    case 1: return "FILE_XLSX";
+    case 2: return "URL_QUERY_OFFSET";
+    case 3: return "URL_DOI";
+    default: return v; // damit Zod sauber "invalid_enum_value" o.ä. wirft
+  }
+};
+
+const StrategyTypeCoerced = z.preprocess(StrategyTypeFromNumber, StrategyTypeSchema);
 
 const JsonataExpr = z.string().min(1, "JSONata expression must not be empty");
 
-const ImportStrategyConfig = z
-  .looseObject({
-    exclusion_criteria: JsonataExpr,
-    only_import_if_authors_inst: z.boolean(),
-    format: z.enum(["json", "xml", "csv", "xlsx"]),
-    mapping: JsonataExpr
-  }); // später ggf. .strict()
+const ImportMeta = z.object({
+  workflow_id: z.number().int(),
+  label: z.string().min(1),
+  strategy_type: StrategyTypeCoerced,
+  mapping: JsonataExpr,
+});
+
+const CommonStrategy = z.looseObject({
+  exclusion_criteria: JsonataExpr,
+  only_import_if_authors_inst: z.boolean(),
+  format: z.enum(["json", "xml", "csv", "xlsx"]),
+});
 
 const URLStrategyConfig = z
   .looseObject({
@@ -18,46 +57,86 @@ const URLStrategyConfig = z
 
 const DoiStrategyConfig = z
   .intersection(
-    URLStrategyConfig,
-    z.looseObject({
-      url_doi: z.string().min(1),
-      get_doi_item: JsonataExpr,
-    }));
+    CommonStrategy,
+    z.intersection(
+      URLStrategyConfig,
+      z.looseObject({
+        url_doi: z.string().min(1),
+        get_doi_item: JsonataExpr,
+      })));
 
 const QueryOffsetStrategyConfig = z
   .intersection(
-    URLStrategyConfig,
-    z.looseObject({
-      url_count: z.string().min(1),
-      url_items: z.string().min(1),
-      max_res: z.number().int().positive(),
-      max_res_name: z.string().min(1),
-      request_mode: z.enum(["offset", "page"]),
-      offset_name: z.string().min(1),
-      offset_start: z.number().int(),
-      get_count: JsonataExpr,
-      get_items: JsonataExpr,
-      search_text_combiner: z.string().default(" "),
-    }));
+    CommonStrategy,
+    z.intersection(
+      URLStrategyConfig,
+      z.looseObject({
+        url_count: z.string().min(1),
+        url_items: z.string().min(1),
+        max_res: z.number().int().positive(),
+        max_res_name: z.string().min(1),
+        request_mode: z.enum(["offset", "page"]),
+        offset_name: z.string().min(1),
+        offset_start: z.number().int(),
+        get_count: JsonataExpr,
+        get_items: JsonataExpr,
+        search_text_combiner: z.string().default(" "),
+      })));
 
-const UrlStrategies = z.discriminatedUnion("strategy_type", [
-  z.object({
-    strategy_type: z.literal("url_doi"),
-    strategy_config: DoiStrategyConfig,
-  }),
-  z.object({
-    strategy_type: z.literal("url_query_offset"),
-    strategy_config: QueryOffsetStrategyConfig,
-  })
-]);
-
-const FileStrategy = z.object({
-  strategy_type: z.literal("file"),
-  strategy_config: z.looseObject({}),
+const Base = ImportMeta.extend({
+  strategy: z.unknown(), // wird je Variante überschrieben
 });
 
-export const ImportWorkflowSourceSchema =
-  ImportStrategyConfig
-    .and(z.union([UrlStrategies, FileStrategy]))
+export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
+  if (obj && typeof obj === "object") {
+    const o = obj as any;
+    return {
+      ...o,
+      strategy_type: StrategyTypeFromNumber(o.strategy_type),
+    };
+  }
+  return obj;
+},
+  z.discriminatedUnion("strategy_type", [
+    Base.extend({
+      strategy_type: z.literal("URL_QUERY_OFFSET"),
+      strategy: QueryOffsetStrategyConfig,
+    }),
+    Base.extend({
+      strategy_type: z.literal("URL_DOI"),
+      strategy: DoiStrategyConfig,
+    }),
+    Base.extend({
+      strategy_type: z.literal("FILE_CSV"),
+      strategy: z.looseObject({}), // ggf. hier file-spezifische Felder
+    }),
+    Base.extend({
+      strategy_type: z.literal("FILE_XLSX"),
+      strategy: z.looseObject({}), // ggf. hier file-spezifische Felder
+    }),
+  ]));
 
 export type ImportWorkflowSourceInput = z.infer<typeof ImportWorkflowSourceSchema>;
+
+export function validateImportWorkflow(workflow: ImportWorkflow) {
+  const schema = ImportWorkflowSourceSchema;
+
+  if (!schema) return; // unbekannter Key → dito
+  try {
+    return schema.parse(workflow);
+  } catch (e) {
+    if (e instanceof ZodError) {
+      // UI-freundliches Fehlerformat
+      const details = e.issues.map((iss) => ({
+        path: iss.path.join("."),
+        message: iss.message,
+        code: iss.code,
+      }));
+      throw new BadRequestException({
+        message: "Validation failed",
+        details,
+      });
+    }
+    throw e;
+  }
+}
