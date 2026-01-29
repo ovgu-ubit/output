@@ -18,6 +18,10 @@ export class WorkflowService {
         return this.importRepository.find();
     }
 
+    getImport(id?:number) {
+        return this.importRepository.findOneBy({id});
+    }
+
     saveImport(workflow:ImportWorkflow) {
         let validated = validateImportWorkflow(workflow);
         if (validated) return this.importRepository.save(workflow);
