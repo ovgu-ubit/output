@@ -1,8 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Options } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { JSONataImportService } from './import/jsonata-import';
 import { validateImportWorkflow } from './import-workflow.schema';
 
@@ -14,8 +14,13 @@ export class WorkflowService {
         private configService: AppConfigService, private importService: JSONataImportService) { }
 
 
-    getImports() {
-        return this.importRepository.find();
+    getImports(type?:'draft'|'published'|'archived') {
+        let options = {};
+        if (type === 'draft') options = {where:  {published_at: IsNull()}};
+        else if (type === 'published') options = {where:  {published_at: Not(IsNull())}};
+        else if (type === 'archived') options = {where:  {deleted_at: Not(IsNull())}};
+        
+        return this.importRepository.find(options);
     }
 
     getImport(id?:number) {
@@ -28,7 +33,7 @@ export class WorkflowService {
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             if (db.published_at) throw new BadRequestException("Error: workflow to update has already been published");
         } 
-        let validated = validateImportWorkflow(workflow);
+        const validated = validateImportWorkflow(workflow);
         if (validated) return this.importRepository.save(workflow);
     }
 

@@ -1,4 +1,12 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<mat-form-field>
+  <mat-label>Angezeigte Workflows</mat-label>
+  <mat-select [(value)]="this.indexOptions.type" (selectionChange)="this.change($event)">
+      <mat-option value="draft">Entwürfe</mat-option>
+      <mat-option value="published">Veröffentlicht</mat-option>
+      <mat-option value="archived">Archiviert</mat-option>
+  </mat-select>
+</mat-form-field>
 <appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'save_alt'" #table
     nameSingle="Import-Workflow" [serviceClass]="this.workflowService" [formComponent]="this.formComponent"
     filter_key="pub_type_id">

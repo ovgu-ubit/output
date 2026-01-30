@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, Query, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { Strategy } from "../../../output-interfaces/Workflow";
@@ -21,9 +21,16 @@ export class WorkflowController {
   @Get("import")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  get_imports() {
-    return this.workflowService.getImports()
+  get_imports(@Query('type') type?:'draft'|'published'|'archived') {
+    return this.workflowService.getImports(type)
     //return this.workflowService.startImport(1)
+  }
+
+  @Get("import/:id")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_import(@Param('id') id: number) {
+    return this.workflowService.getImport(id);
   }
 
   @Post("import")

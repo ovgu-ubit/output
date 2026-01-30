@@ -15,19 +15,20 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public getAll() {
     return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true });
   }
-  public index() {
-    return this.getAll();
+  public index(reporting_year:number, options?: {type: 'draft'|'published'|'archived'}) {
+    if (options) return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import?type='+options.type, { withCredentials: true });
+    return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true });
   }
   public getOne(id:number) {
-    return this.http.get<Workflow>(this.runtimeConfigService.getValue("api") + 'workflow/one?id='+id, { withCredentials: true });
+    return this.http.get<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/'+id, { withCredentials: true });
   }
-  public add(ge:Workflow) {
-    return this.http.post<Workflow>(this.runtimeConfigService.getValue("api") + 'workflow', ge, { withCredentials: true });
+  public add(ge:ImportWorkflow) {
+    return this.http.post<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import', ge, { withCredentials: true });
   }
-  public update(ge:Workflow) {
-    return this.http.put<Workflow>(this.runtimeConfigService.getValue("api") + 'workflow', ge, { withCredentials: true });
+  public update(ge:ImportWorkflow) {
+    return this.http.post<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import', ge, { withCredentials: true });
   }
   public delete(ids:number[]) {
-    return this.http.delete<Workflow[]>(this.runtimeConfigService.getValue("api") + 'workflow', { withCredentials: true, body: ids.map(e => ({id:e})) });
+    return this.http.delete<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true, body: ids.map(e => ({id:e})) });
   }
 }

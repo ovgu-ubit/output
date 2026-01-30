@@ -27,7 +27,7 @@ export class ImportWorkflow implements IImportWorkflow {
     published_at?: Date;
 
     @DeleteDateColumn({ type: 'timestamptz' })
-    deteted_at?: Date;
+    deleted_at?: Date;
 
     @Column({ nullable: true })
     description?: string;
