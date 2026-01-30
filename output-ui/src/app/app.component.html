@@ -54,6 +54,14 @@
           [disabled]="!this.tokenService.hasRole('admin')"> Konfiguration </button>
       </mat-menu>
 
+      <button mat-button [matMenuTriggerFor]="adminMenu2"
+        [disabled]="!this.tokenService.hasRole('reader') && !this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"><mat-icon>pending_actions</mat-icon>
+        Workflows </button>
+      <mat-menu #adminMenu2="matMenu">
+        <button mat-menu-item routerLink="/workflow/publication_import" [disabled]="!this.tokenService.hasRole('admin')">
+          Imports verwalten </button>
+      </mat-menu>
+
       <ng-container *ngIf="!this.user">
         <button mat-button (click)="this.login()" [disabled]="!(this.security)"> <mat-icon>face</mat-icon> Login
         </button>

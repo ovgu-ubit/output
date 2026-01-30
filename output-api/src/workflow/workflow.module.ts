@@ -58,6 +58,7 @@ import { JSONataImportService } from './import/jsonata-import';
 import { WorkflowService } from './workflow.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportWorkflow } from './ImportWorkflow.entity';
+import { WorkflowController } from './WorkflowController';
 
 @Module({
   imports: [
@@ -84,7 +85,8 @@ import { ImportWorkflow } from './ImportWorkflow.entity';
     ImportController,
     EnrichController,
     ExportController,
-    PlausibilityController
+    PlausibilityController,
+    WorkflowController
   ],
   providers: [
     ReportItemService,

@@ -1,0 +1,5 @@
+<app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<appTable [name]="this.getName()" [wide]=false [id_col]=2 [headers]="headers" [parent]="this" [icon]="'save_alt'" #table
+    nameSingle="Import-Workflow" [serviceClass]="this.workflowService" [formComponent]="this.formComponent"
+    filter_key="pub_type_id">
+</appTable>
