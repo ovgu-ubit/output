@@ -15,7 +15,7 @@ export class ReportItemService {
         if (!fs.existsSync(this.path)) fs.mkdirSync(this.path)
     }
 
-    async createReport(type:'Import'|'Enrich'|'Check'|'Export', label:string,by_user:string) {
+    async createReport(type:'Import'|'Enrich'|'Check'|'Export'|'Worfklow_Import', label:string,by_user:string) {
         await this.init();
         const filename = `${type}_${label}_${this.format(new Date(),true)}_by_${by_user}.log`;
         fs.writeFileSync(this.path+filename,'')
@@ -34,7 +34,7 @@ export class ReportItemService {
         fs.appendFileSync(reportFile, res);
     }
 
-    async getReports(type:'Import'|'Enrich'|'Check'|'Export') {
+    async getReports(type:'Import'|'Enrich'|'Check'|'Export'|'Worfklow_Import') {
         await this.init();
         const files = fs.readdirSync(this.path).filter(e => e.startsWith(type));
         return files;

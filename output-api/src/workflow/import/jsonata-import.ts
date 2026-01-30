@@ -65,8 +65,6 @@ export interface JSONataParsedObject {
 
 type RequestMode = 'offset' | 'page';
 
-@ImportService({ path: 'jsonata' })
-@EnrichService({ path: 'jsonata' })
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
@@ -246,7 +244,7 @@ export class JSONataImportService extends AbstractImportService {
             throw new BadRequestException('Import cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = await this.reportService.createReport('Import', this.name, by_user);
+        this.report = await this.reportService.createReport('Worfklow_Import', this.name, by_user);
 
         this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
