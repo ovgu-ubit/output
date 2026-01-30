@@ -41,6 +41,7 @@ export class WorkflowController {
     schema: {
       example: {
         workflow_id: 0,
+        version: 1,
         label: 'Crossref Import',
         strategy_type: Strategy.URL_QUERY_OFFSET,
         strategy: {

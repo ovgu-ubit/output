@@ -14,7 +14,7 @@ export class ImportWorkflow implements IImportWorkflow {
     @Column()
     label?: string;
 
-    @VersionColumn()
+    @Column({ type: 'int' })
     version?: number;
 
     @CreateDateColumn({ type: 'timestamptz' })
@@ -38,6 +38,6 @@ export class ImportWorkflow implements IImportWorkflow {
     @Column({ nullable: true, type: 'jsonb' })
     strategy?: unknown;
 
-    @Column({ nullable: true})
+    @Column({ nullable: true })
     mapping?: string;
 }

@@ -39,13 +39,17 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, Entit
   }
 
   ngAfterViewInit(): void {
-    if (this.data?.entity?.id) this.workflowService.getOne(this.data.entity.id).subscribe({
-      next: data => {
-        this.entity = data;
-        this.form.patchValue(data);
-        if (this.entity.published_at) this.form.disable();
-      }
-    })
+    if (this.data?.entity?.id) {
+      this.workflowService.getOne(this.data.entity.id).subscribe({
+        next: data => {
+          this.entity = data;
+          this.form.patchValue(data);
+          if (this.entity.published_at) this.form.disable();
+        }
+      })
+    } else if (this.data?.entity) {
+      this.form.patchValue(this.data.entity);
+    }
   }
 
   disable() {

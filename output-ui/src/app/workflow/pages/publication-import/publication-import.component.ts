@@ -4,6 +4,7 @@ import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
 import { ImportWorkflowFormComponent } from '../../dialogs/import-workflow-form/import-workflow-form.component';
 import { TableComponent } from 'src/app/table/table-component/table.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-publication-import',
@@ -12,9 +13,6 @@ import { TableComponent } from 'src/app/table/table-component/table.component';
   standalone: false
 })
 export class PublicationImportComponent implements TableParent<ImportWorkflow>, OnInit {
-  buttons: TableButton[] = [
-  ];
-
   formComponent = ImportWorkflowFormComponent;
 
   headers: TableHeader[] = [
@@ -32,13 +30,22 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
 
-  constructor(public workflowService: WorkflowService) { }
+  constructor(public workflowService: WorkflowService, private snackBar: MatSnackBar) { }
+
+  publishedButtons: TableButton[] =[{ title: 'Neue Entwurfsversion erstellen', action_function: this.fork.bind(this) }]
+  draftButtons: TableButton[] = [{ title: 'Veröffentlichen', action_function: this.publish.bind(this) }]
+  
+  buttons: TableButton[] = this.draftButtons;
 
   ngOnInit(): void {
   }
 
   getName() {
-    return 'Import-Workflows';
+    let res = 'Import-Workflows'
+    if (this.indexOptions.type === 'draft') res +=' (Entwürfe)'
+    else if (this.indexOptions.type === 'published') res +=' (Aktiv)'
+    else if (this.indexOptions.type === 'archived') res +=' (Archiviert)'
+    return res;
   }
 
   getLink() {
@@ -53,6 +60,49 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     this.indexOptions = {
       type: event.value
     }
+    if (event.value === 'draft') this.buttons = this.draftButtons;
+    else if (event.value === 'published') this.buttons = this.publishedButtons;
+    else this.buttons = [];
     this.table.updateData().subscribe();
+  }
+
+  fork() {
+    if (this.table.selection.selected.length !== 1) {
+      this.snackBar.open('Bitte wählen Sie genau ein Element aus.', 'Alles klar!', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+          verticalPosition: 'top'
+        });
+      return;
+    }
+    //create new workflow from selected version and edit it
+    let nextVersion = {...this.table.selection.selected[0]}
+    nextVersion.id = undefined;
+    nextVersion.version = nextVersion.version + 1;
+    nextVersion.deteted_at = null;
+    nextVersion.published_at = null;
+    nextVersion.created_at = null;
+    nextVersion.modified_at = null;
+
+    this.table.edit(nextVersion);
+  }
+
+  publish() {
+    if (this.table.selection.selected.length !== 1) {
+      this.snackBar.open('Bitte wählen Sie genau ein Element aus.', 'Alles klar!', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+          verticalPosition: 'top'
+        });
+      return;
+    }
+    let elem = this.table.selection.selected[0];
+    elem.published_at = new Date();
+
+    this.workflowService.update(elem).subscribe({
+      next: data => {
+        this.table.updateData().subscribe();
+      }
+    });
   }
 }
