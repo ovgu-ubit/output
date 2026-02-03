@@ -1,16 +1,16 @@
-<app-breadcrump [path]="getLink()" [label]="label$ | async"></app-breadcrump>
+<app-breadcrump [path]="getLink()" [label]="'/Workflows/Publikationsimport/' + (this.facade.import$ | async)?.label + ' (' + (this.facade.import$ | async)?.version + ')'"></app-breadcrump>
 <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
     <div style="display: flex;gap: 10px">
-        <h1>{{this.entity?.label}}, Version {{this.entity?.version}}</h1>
+        <h1>{{(this.facade.import$ | async)?.label}}, Version {{(this.facade.import$ | async)?.version}}</h1>
         <mat-chip-set>
-            <mat-chip class="status-chip status-draft" *ngIf="!this.entity?.published_at">Entwurf</mat-chip>
+            <mat-chip class="status-chip status-draft" *ngIf="!(this.facade.import$ | async)?.published_at">Entwurf</mat-chip>
             <mat-chip class="status-chip status-active"
-                *ngIf="this.entity?.published_at && !this.entity?.deleted_at">Aktiv</mat-chip>
-            <mat-chip class="status-chip status-archived" *ngIf="this.entity?.deleted_at">Archiviert</mat-chip>
+                *ngIf="(this.facade.import$ | async)?.published_at && !(this.facade.import$ | async)?.deleted_at">Aktiv</mat-chip>
+            <mat-chip class="status-chip status-archived" *ngIf="(this.facade.import$ | async)?.deleted_at">Archiviert</mat-chip>
         </mat-chip-set>
     </div>
     <div style="display: flex;justify-content: flex-end;">
-        <button mat-icon-button (click)="this.action()" [matTooltip]="this.entity?.label + ' speichern'"
+        <button mat-icon-button (click)="this.action()" [matTooltip]="(this.facade.import$ | async)?.label + ' speichern'"
             [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
         <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
             [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
@@ -64,8 +64,6 @@
     <mat-sidenav-content>
         <div class="content-wrap">
             <div class="content">
-
-                <h2>MatChipStatus</h2>
                 <router-outlet></router-outlet>
             </div>
         </div>

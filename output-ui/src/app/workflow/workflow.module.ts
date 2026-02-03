@@ -9,7 +9,7 @@ import { WorkflowRoutingModule } from './workflow-routing.module';
 
 @NgModule({
   declarations: [
-    PublicationImportComponent,
+    PublicationImportComponent
   ],
   imports: [
     TableModule,

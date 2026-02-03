@@ -1,9 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
-import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { RouterModule } from '@angular/router';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-general',
@@ -17,10 +16,9 @@ import { SharedModule } from 'src/app/shared/shared.module';
 export class ImportFormGeneralComponent implements OnInit {
 
   public form: FormGroup;
+  entity: ImportWorkflow;
 
-  @Input() entity: ImportWorkflow;
-
-  constructor(private formBuilder: FormBuilder, private workflowService: WorkflowService) { }
+  constructor(private formBuilder: FormBuilder, private facade: ImportFormFacade) { }
 
   ngOnInit(): void {
     this.form = this.formBuilder.group({
@@ -34,11 +32,14 @@ export class ImportFormGeneralComponent implements OnInit {
       description: [''],
     })
     this.form.get('id').disable();
-    this.form.patchValue(this.entity);
+    this.facade.import$.forEach(e => {
+      this.entity = e;
+      this.form.patchValue(e)
+    })
   }
 
   action() {
-    
+
   }
 
   enter(event) {
