@@ -5,6 +5,7 @@ mat-nav-list a.active {
 mat-nav-list a.mat-mdc-list-item {
   border-radius: 10px;
   margin: 4px 8px;
+  position: relative;
 }
 
 mat-nav-list a.active::before {
@@ -56,3 +57,55 @@ mat-nav-list a.active::before {
 
 .status-archived.mat-mdc-chip { border-color: rgba(255, 183, 77, 0.70); }
 :host ::ng-deep .status-archived .mdc-evolution-chip__text-label { color: rgba(255, 224, 178, 0.98) !important; }
+
+.mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* normale Breite */
+.sidenav {
+  width: 260px;
+  transition: width 160ms ease;
+}
+
+/* collapsed Breite (nur Icons) */
+.sidenav.collapsed {
+  width: 72px;
+}
+
+/* Collapsed: Toggle-Button mittig */
+.sidenav.collapsed .nav-header {
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+/* Collapsed: List-Items mittig */
+.sidenav.collapsed .nav a.mat-mdc-list-item {
+  margin: 6px 10px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Collapsed: Icon ohne Abstand */
+.sidenav.collapsed .nav a .mat-icon {
+  margin-right: 0;
+}
+
+/* Sicherheitsgurt: kein RTL/Reverse irgendwo */
+.sidenav .nav a.mat-mdc-list-item {
+  direction: ltr;
+}
+
+/* Header (Toggle) */
+.nav-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 8px 4px;
+}
+
+/* Text ausblenden */
+.nav-text.hide {
+  display: none;
+}

@@ -1,13 +1,12 @@
 import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { filter, map, Observable, shareReplay, startWith, switchMap } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { BreadcrumpComponent } from 'src/app/shared/breadcrump/breadcrump.component';
-import { concat, concatMap, concatWith, distinctUntilChanged, filter, map, Observable, of, shareReplay, startWith, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-import-workflow-form',
@@ -29,6 +28,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit {
   id: string;
   entity: ImportWorkflow;
   opened = true;
+
   label$:Observable<string> = this.route.paramMap.pipe(
   map(pm => pm.get('id')),
     filter((id): id is string => id !== null),
@@ -56,6 +56,10 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit {
 
   action() {
 
+  }
+
+  toggle() {
+    this.opened = !this.opened;
   }
 
   getLink() {
