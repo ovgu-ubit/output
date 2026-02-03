@@ -5,6 +5,7 @@ import { WorkflowService } from '../../workflow.service';
 import { ImportWorkflowFormComponent } from '../../dialogs/import-workflow-form/import-workflow-form.component';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-publication-import',
@@ -30,7 +31,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
 
-  constructor(public workflowService: WorkflowService, private snackBar: MatSnackBar) { }
+  constructor(public workflowService: WorkflowService, private snackBar: MatSnackBar, private router:Router) { }
 
   publishedButtons: TableButton[] =[{ title: 'Neue Entwurfsversion erstellen', action_function: this.fork.bind(this) }]
   draftButtons: TableButton[] = [{ title: 'Veröffentlichen', action_function: this.publish.bind(this) }]
@@ -46,6 +47,10 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     else if (this.indexOptions.type === 'published') res +=' (Aktiv)'
     else if (this.indexOptions.type === 'archived') res +=' (Archiviert)'
     return res;
+  }
+
+  edit(workflow: ImportWorkflow) {
+   this.router.navigate(["/workflow/publication_import/"+workflow.id]); 
   }
 
   getLink() {
@@ -76,10 +81,10 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
       return;
     }
     //create new workflow from selected version and edit it
-    let nextVersion = {...this.table.selection.selected[0]}
+    let nextVersion:ImportWorkflow = {...this.table.selection.selected[0]}
     nextVersion.id = undefined;
     nextVersion.version = nextVersion.version + 1;
-    nextVersion.deteted_at = null;
+    nextVersion.deleted_at = null;
     nextVersion.published_at = null;
     nextVersion.created_at = null;
     nextVersion.modified_at = null;

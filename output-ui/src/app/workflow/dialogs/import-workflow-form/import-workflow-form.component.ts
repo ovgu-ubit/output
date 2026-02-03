@@ -1,103 +1,64 @@
-import { AfterViewInit, Component, Inject, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { EntityFormComponent } from 'src/app/services/entities/service.interface';
-import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { MatListModule } from '@angular/material/list';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { BreadcrumpComponent } from 'src/app/shared/breadcrump/breadcrump.component';
+import { concat, concatMap, concatWith, distinctUntilChanged, filter, map, Observable, of, shareReplay, startWith, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-import-workflow-form',
   templateUrl: './import-workflow-form.component.html',
   styleUrl: './import-workflow-form.component.css',
-  standalone: false
+  standalone: true,
+  imports: [
+    SharedModule,
+    RouterModule,
+    MatSidenavModule,
+    MatListModule,
+    MatToolbarModule
+  ]
 })
-export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, EntityFormComponent<ImportWorkflow> {
+export class ImportWorkflowFormComponent implements OnInit, AfterViewInit {
 
-  constructor(public dialogRef: MatDialogRef<ImportWorkflowFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private workflowService: WorkflowService, private dialog: MatDialog,
-    private formBuilder: FormBuilder) { }
+  constructor(private workflowService: WorkflowService, private route: ActivatedRoute) { }
 
+  id: string;
   entity: ImportWorkflow;
-
-  public form: FormGroup;
-  disabled: boolean;
-  name = 'Import-Workflow'
+  opened = true;
+  label$:Observable<string> = this.route.paramMap.pipe(
+  map(pm => pm.get('id')),
+    filter((id): id is string => id !== null),
+    switchMap(id => this.workflowService.getOne(+id)),
+    map(entity => {
+        this.entity = entity;
+        return `/Workflows/Publikationsimport/${entity.label} (${entity.version})`
+      }
+    ),
+    startWith('/Workflows/Publikationsimport/'),
+    shareReplay({ bufferSize: 1, refCount: true })
+);
 
   ngOnInit(): void {
-    this.form = this.formBuilder.group({
-      id: [''],
-      label: [''],
-      version: [''],
-      created_at: [''],
-      modified_at: [''],
-      published_at: [''],
-      deleted_at: [''],
-      description: [''],
-    })
-    this.form.get('id').disable();
+    
   }
 
   ngAfterViewInit(): void {
-    if (this.data?.entity?.id) {
-      this.workflowService.getOne(this.data.entity.id).subscribe({
-        next: data => {
-          this.entity = data;
-          this.form.patchValue(data);
-          if (this.entity.published_at) this.form.disable();
-        }
-      })
-    } else if (this.data?.entity) {
-      this.form.patchValue(this.data.entity);
-    }
-  }
 
-  disable() {
-    this.disabled = true;
-    this.form.disable();
-  }
-
-  async action() {
-    if (this.form.invalid) return;
-    this.entity = { ...this.entity, ...this.form.getRawValue() }
-    //doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined
-    for (let field of Object.keys(this.entity)) if (this.entity[field] === '') this.entity[field] = null;
-    if (!this.entity.id) this.entity.id = undefined;
-    this.dialogRef.close({ ...this.entity, updated: true })
-  }
-
-  close() {
-    this.dialogRef.close(null)
   }
 
   abort() {
-    if (this.form.dirty) {
-      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
-
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
-        data: dialogData
-      });
-
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) { //save
-          this.action();
-        } else if (this.entity?.id) this.close();
-        else this.close()
-      });
-    } else this.close();
+    console.log(this.entity)
   }
 
-  enter(event) {
-    if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
-    return true;
+  action() {
+
   }
 
-  escape(event) {
-    if (event.key === 'Escape') {
-      this.abort();
-      return false;
-    }
-    return true;
+  getLink() {
+    return "/workflow/publication_import/" + (this.id ?? "neu");
   }
 }

@@ -56,6 +56,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() softDelete? = false;
   @Input() filter_key? = "";
 
+  @Input() editFunction? = this.edit;
+
   @Input() parent: TableParent<T>;
   @Input() serviceClass: EntityService<E, T>;
   @Input() formComponent: ComponentType<EntityFormComponent<E>>;

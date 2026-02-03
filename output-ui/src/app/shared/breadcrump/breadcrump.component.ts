@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, OnChanges, SimpleChanges } from '@angular/core';
 
 @Component({
     selector: 'app-breadcrump',
@@ -7,7 +7,7 @@ import { Component, OnInit, Input } from '@angular/core';
     standalone: false
 })
 
-export class BreadcrumpComponent implements OnInit {
+export class BreadcrumpComponent implements OnInit, OnChanges {
 
   @Input() path: string;
   @Input() label: string;
@@ -17,7 +17,7 @@ export class BreadcrumpComponent implements OnInit {
 
   constructor() { }
 
-  ngOnInit(): void {
+  ngOnChanges(changes: SimpleChanges): void {
     if (!this.label) {
       if (this.path === '/') {
         this.labels = ['home'];
@@ -51,6 +51,10 @@ export class BreadcrumpComponent implements OnInit {
         }
       }
     }
+  }
+
+  ngOnInit(): void {
+    this.ngOnChanges(null)
   }
 
 }

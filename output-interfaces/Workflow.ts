@@ -6,7 +6,7 @@ export interface Workflow {
     created_at?: Date;
     modified_at?: Date;
     published_at?: Date;
-    deteted_at?: Date;
+    deleted_at?: Date;
     description?: string;
     mapping?: string;
 }

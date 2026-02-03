@@ -108,7 +108,7 @@
             </div>
           </th>
           <td mat-cell *matCellDef="let row">
-            <button mat-icon-button (click)="this.edit(row)" matTooltip="Element untersuchen"
+            <button mat-icon-button (click)="this.editFunction(row)" matTooltip="Element untersuchen"
               [matTooltipShowDelay]="800">
               <mat-icon
                 *ngIf="((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked); else else1">edit</mat-icon>
