@@ -24,7 +24,6 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   get_imports(@Query('type') type?: 'draft' | 'published' | 'archived') {
     return this.workflowService.getImports(type)
-    //return this.workflowService.startImport(1)
   }
 
   @Get("import/:id")
@@ -42,8 +41,15 @@ export class WorkflowController {
     const json = JSON.stringify(wf, null, 2);
     const filename = 'Import_' + wf.label + '_' + wf.version + '_' + wf.published_at;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="'+filename+'.json"');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
     return new StreamableFile(Buffer.from(json, 'utf-8'));
+  }
+
+  @Get("import/:id/test")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async test_import(@Param('id') id: number) {
+    return await this.workflowService.testImport(id);
   }
 
   @Post("import")

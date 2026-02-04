@@ -1,10 +1,10 @@
 import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import * as fs from 'fs';
 import jsonata from 'jsonata';
-import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
-import { FindManyOptions, In } from 'typeorm';
+import { catchError, concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import { ImportWorkflow, Strategy } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -23,9 +23,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { Publisher } from '../../publisher/Publisher.entity';
 import { PublisherService } from '../../publisher/publisher.service';
 import { ReportItemService } from '../report-item.service';
-import { AbstractImportService, ImportService } from './abstract-import';
-import { EnrichService } from './api-enrich-doi.service';
-import { ImportWorkflow } from '../../../../output-interfaces/Workflow';
+import { AbstractImportService } from './abstract-import';
 
 export interface JSONataParsedObject {
     title?: string;
@@ -127,7 +125,7 @@ export class JSONataImportService extends AbstractImportService {
 
     private completeURL = '';
 
-    protected importDefinition:ImportWorkflow;
+    protected importDefinition: ImportWorkflow;
     protected reporting_year;
     protected query_doi_schema;
     protected get_doi_item;
@@ -136,7 +134,7 @@ export class JSONataImportService extends AbstractImportService {
 
     private config;
 
-    public async setUp(importDefinition:ImportWorkflow, updateMapping?: UpdateMapping, enrich_whereClause?: FindManyOptions) {
+    public async setUp(importDefinition: ImportWorkflow, updateMapping?: UpdateMapping, enrich_whereClause?: FindManyOptions) {
         this.importDefinition = importDefinition;
         this.enrich_whereClause = enrich_whereClause;
 
@@ -172,7 +170,7 @@ export class JSONataImportService extends AbstractImportService {
             this.affiliationText += tag + this.search_text_combiner;
         });
         this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
-        
+
         //process query string
         this.url = await this.setVariables(this.url);
         this.url_count = await this.setVariables(this.url_count);
@@ -231,16 +229,56 @@ export class JSONataImportService extends AbstractImportService {
         return obj;
     }
 
+    public async test(pos: number = 1): Promise<string | Publication[]> {
+        this.dryRun = true;
+        switch (this.importDefinition.strategy_type) {
+            case Strategy.URL_QUERY_OFFSET:
+            default:
+                this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
+                let ob$;
+                let resp_count;
+                try {
+                    resp_count = await firstValueFrom(this.retrieveCountRequest())
+                } catch (err) { return 'Error retrieving count with ' + this.completeURL }
+
+                let count = 0;
+                try {
+                    count = await this.getNumber(resp_count);
+                } catch (e) { return 'Error retrieving count from response' }
+
+                if (pos > count) return 'Position greater than count'
+
+                if (this.mode === 'offset') {
+                    ob$ = this.request(this.offset_start + pos - 1);
+                } else if (this.mode === 'page') {
+                    let page = this.offset_start + Math.floor(pos / this.max_res)
+                    ob$ = this.request(page);
+                }
+
+                let resp;
+                try {
+                    resp = await firstValueFrom(ob$);
+                } catch (err) { return 'Error while retrieving items with ' + this.completeURL; }
+
+                try {
+                    const parsedData = await this.getData(resp);
+                    let result = [];
+                    for (let chunk of parsedData) {
+                        const pubNew = await this.mapNew(chunk)
+                        result.push(pubNew);
+                    }
+                    return result;
+                } catch (err) { return 'Error while converting data with mapping' }
+        }
+    }
+
     /**
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
-        //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
-        //await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
-        //await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()));
-        if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items) 
+        if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
             throw new BadRequestException('Import cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -409,7 +447,7 @@ export class JSONataImportService extends AbstractImportService {
             peer_reviewed: UpdateOptions.IGNORE,
             cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
         }, this.enrich_whereClause);*/
-        if (!this.url_doi || !this.importDefinition.strategy.get_doi_item) 
+        if (!this.url_doi || !this.importDefinition.strategy.get_doi_item)
             throw new BadRequestException('Enrich cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();

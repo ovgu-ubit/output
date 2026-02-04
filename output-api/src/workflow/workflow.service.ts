@@ -5,6 +5,7 @@ import { ImportWorkflow } from './ImportWorkflow.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { JSONataImportService } from './import/jsonata-import';
 import { validateImportWorkflow } from './import-workflow.schema';
+import { Publication } from '../publication/core/Publication.entity';
 
 @Injectable()
 export class WorkflowService {
@@ -42,6 +43,13 @@ export class WorkflowService {
         await this.importService.setReportingYear("2024");
         await this.importService.setUp(importDef);
         await this.importService.import(false);
+    }
+
+    async testImport(id: number):Promise<string|Publication[]> {
+        const importDef = await this.importRepository.findOneBy({ id });
+        await this.importService.setReportingYear("2024");
+        await this.importService.setUp(importDef);
+        return await this.importService.test(1);
     }
 }
 
