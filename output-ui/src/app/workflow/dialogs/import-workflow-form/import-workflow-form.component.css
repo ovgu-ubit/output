@@ -68,6 +68,8 @@ mat-nav-list a.active::before {
 .sidenav {
   width: 260px;
   transition: width 160ms ease;
+  background: var(--nav-bg);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
 }
 
 /* collapsed Breite (nur Icons) */
