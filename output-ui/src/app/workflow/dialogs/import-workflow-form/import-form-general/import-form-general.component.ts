@@ -39,19 +39,16 @@ export class ImportFormGeneralComponent implements OnInit {
   }
 
   action() {
-
-  }
-
-  enter(event) {
-    if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
-    return true;
-  }
-
-  escape(event) {
-    if (event.key === 'Escape') {
-      //this.abort();
-      return false;
+    let res = {
+      id: this.form.get('id').value,
+      label: this.form.get('label').value,
+      version: this.form.get('version').value,
+      description: this.form.get('description').value,
     }
-    return true;
+    console.log(res)
+  }
+
+  reset() {
+    this.form.patchValue(this.entity)
   }
 }

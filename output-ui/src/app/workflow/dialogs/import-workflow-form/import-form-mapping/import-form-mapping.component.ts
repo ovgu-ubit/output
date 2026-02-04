@@ -11,8 +11,9 @@ import { FormBuilder, FormGroup } from '@angular/forms';
   styleUrl: './import-form-mapping.component.css',
 })
 export class ImportFormMappingComponent implements OnInit {
-  readonly workflow$ = this.facade.import$;
   form: FormGroup;
+
+  entity: ImportWorkflow;
 
   constructor(private facade: ImportFormFacade, private formBuilder:FormBuilder) { }
 
@@ -22,8 +23,20 @@ export class ImportFormMappingComponent implements OnInit {
     });
     this.facade.import$.subscribe(workflow => {
       if (!workflow) return;
+      this.entity = workflow;
       this.form.patchValue({ mapping: workflow.mapping ?? '' }, { emitEvent: false });
     });
+  }
+
+  action() {
+    let res = {
+      mapping: this.form.controls.mapping.value
+    }
+    console.log(res)
+  }
+
+  reset() {
+    this.form.patchValue({ mapping: this.entity.mapping ?? '' }, { emitEvent: false });
   }
 
 }

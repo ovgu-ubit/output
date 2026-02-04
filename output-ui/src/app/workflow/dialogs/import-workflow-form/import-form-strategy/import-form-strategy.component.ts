@@ -69,7 +69,18 @@ export class ImportFormStrategyComponent implements OnInit {
   }
 
   action() {
+    let res = {
+      strategy_type: this.previousStrategy,
+      stategy: {...this.strategyForm.value}
+    }
+    console.log(res)
+  }
 
+  reset() {
+    this.previousStrategy = this.entity.strategy_type;
+      this.selectionForm.controls.strategy.setValue(this.entity.strategy_type, { emitEvent: false })
+      this.applyStrategy(this.entity.strategy_type);
+    this.strategyForm.patchValue(this.entity)
   }
 
   getLabel(s:Strategy) {

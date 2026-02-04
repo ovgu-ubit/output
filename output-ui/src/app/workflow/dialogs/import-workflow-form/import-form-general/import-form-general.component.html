@@ -1,37 +1,45 @@
-<form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
-    (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
-    <mat-form-field *ngIf="this.entity?.id" appearance="fill">
-        <mat-label>ID</mat-label>
-        <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
-    </mat-form-field>
+<mat-card>
+    <mat-card-title>Allgemeine Informationen</mat-card-title>
+    <mat-card-content>
+        <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
+            <mat-form-field *ngIf="this.entity?.id" appearance="fill">
+                <mat-label>ID</mat-label>
+                <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
+            </mat-form-field>
 
-    <mat-form-field appearance="fill">
-        <mat-label>Bezeichnung</mat-label>
-        <input matInput placeholder="Bezeichnung" formControlName="label" />
-    </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Bezeichnung</mat-label>
+                <input matInput placeholder="Bezeichnung" formControlName="label" />
+            </mat-form-field>
 
-    <mat-form-field appearance="fill">
-        <mat-label>Beschreibung</mat-label>
-        <textarea matInput placeholder="Beschreibung" formControlName="description"></textarea>
-    </mat-form-field>
+            <mat-form-field appearance="fill">
+                <mat-label>Beschreibung</mat-label>
+                <textarea matInput placeholder="Beschreibung" formControlName="description"></textarea>
+            </mat-form-field>
 
-    <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>Erstellt am</mat-label>
-        <input matInput [value]="form.get('created_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled/>
-    </mat-form-field>
+            <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Erstellt am</mat-label>
+                <input matInput [value]="form.get('created_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+            </mat-form-field>
 
-    <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>Geändert am</mat-label>
-        <input matInput [value]="form.get('modified_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled/>
-    </mat-form-field>
+            <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Geändert am</mat-label>
+                <input matInput [value]="form.get('modified_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+            </mat-form-field>
 
-    <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>Veröffentlicht am</mat-label>
-        <input matInput [value]="form.get('published_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled/>
-    </mat-form-field>
+            <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Veröffentlicht am</mat-label>
+                <input matInput [value]="form.get('published_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+            </mat-form-field>
 
-    <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>Archiviert am</mat-label>
-        <input matInput [value]="form.get('deleted_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled/>
-    </mat-form-field>
-</form>
+            <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Archiviert am</mat-label>
+                <input matInput [value]="form.get('deleted_at').value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+            </mat-form-field>
+        </form>
+    </mat-card-content>
+    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+        <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
+        <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
+    </mat-card-actions>
+</mat-card>

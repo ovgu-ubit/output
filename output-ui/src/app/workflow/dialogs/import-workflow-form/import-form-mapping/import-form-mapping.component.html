@@ -1,4 +1,4 @@
-<mat-card *ngIf="workflow$ | async as workflow">
+<mat-card *ngIf="this.entity">
   <mat-card-title>JSONata Mapping</mat-card-title>
   <mat-card-content>
     <!--<pre class="mapping">{{ workflow.mapping }}</pre>-->
@@ -14,4 +14,8 @@
       </mat-form-field>
     </form>
   </mat-card-content>
+    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+        <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
+        <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
+    </mat-card-actions>
 </mat-card>
