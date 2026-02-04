@@ -35,6 +35,7 @@ export class ImportFormGeneralComponent implements OnInit {
     this.facade.import$.forEach(e => {
       this.entity = e;
       this.form.patchValue(e)
+      if (this.entity.published_at || this.entity.deleted_at) this.form.disable();
     })
   }
 
@@ -45,7 +46,7 @@ export class ImportFormGeneralComponent implements OnInit {
       version: this.form.get('version').value,
       description: this.form.get('description').value,
     }
-    console.log(res)
+    this.facade.patch(res);
   }
 
   reset() {

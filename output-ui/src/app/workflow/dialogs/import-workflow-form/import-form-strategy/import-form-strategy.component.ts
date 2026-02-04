@@ -50,6 +50,10 @@ export class ImportFormStrategyComponent implements OnInit {
       this.previousStrategy = e.strategy_type;
       this.selectionForm.controls.strategy.setValue(e.strategy_type, { emitEvent: false })
       this.applyStrategy(e.strategy_type);
+      if (this.entity.published_at || this.entity.deleted_at) {
+        this.selectionForm.disable();
+        this.strategyForm.disable();
+      }
     })
 
     this.selectionForm.controls.strategy.valueChanges.subscribe(async (next) => {
@@ -73,7 +77,7 @@ export class ImportFormStrategyComponent implements OnInit {
       strategy_type: this.previousStrategy,
       stategy: {...this.strategyForm.value}
     }
-    console.log(res)
+    this.facade.patch(res);
   }
 
   reset() {

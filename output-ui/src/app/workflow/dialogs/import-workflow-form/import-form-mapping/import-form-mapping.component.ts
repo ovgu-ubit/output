@@ -25,6 +25,7 @@ export class ImportFormMappingComponent implements OnInit {
       if (!workflow) return;
       this.entity = workflow;
       this.form.patchValue({ mapping: workflow.mapping ?? '' }, { emitEvent: false });
+      if (this.entity.published_at || this.entity.deleted_at) this.form.disable();
     });
   }
 
@@ -32,7 +33,8 @@ export class ImportFormMappingComponent implements OnInit {
     let res = {
       mapping: this.form.controls.mapping.value
     }
-    console.log(res)
+    this.facade.patch(res);
+    this.facade.save().subscribe()
   }
 
   reset() {

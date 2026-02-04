@@ -14,8 +14,10 @@
       </mat-form-field>
     </form>
   </mat-card-content>
+    @if (!this.entity.published_at && !this.entity.deleted_at) {
     <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
         <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
         <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
     </mat-card-actions>
+  }
 </mat-card>

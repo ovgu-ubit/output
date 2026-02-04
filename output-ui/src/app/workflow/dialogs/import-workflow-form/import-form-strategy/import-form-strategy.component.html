@@ -10,166 +10,171 @@
 </form>
 <mat-card class="content">
     <mat-card-content>
-    <form class="form" [formGroup]="strategyForm">
-        <ng-container [ngSwitch]="selectedStrategyId">
+        <form class="form" [formGroup]="strategyForm">
+            <ng-container [ngSwitch]="selectedStrategyId">
 
-            <!-- OFFSET -->
-            <ng-container *ngSwitchCase="'offset'">
-                <div class="form">
-                    <mat-checkbox formControlName="only_import_if_authors_inst">Nur importieren bei beteiligten Personen der Einrichtung</mat-checkbox>
+                <!-- OFFSET -->
+                <ng-container *ngSwitchCase="'offset'">
+                    <div class="form">
+                        <mat-checkbox formControlName="only_import_if_authors_inst">Nur importieren bei beteiligten
+                            Personen der Einrichtung</mat-checkbox>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Format</mat-label>
-                        <mat-select formControlName="format">
-                            <mat-option *ngFor="let s of formats" [value]="s.value">
-                                {{ s.label }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Format</mat-label>
+                            <mat-select formControlName="format">
+                                <mat-option *ngFor="let s of formats" [value]="s.value">
+                                    {{ s.label }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Ausschlusskriterium (JSONata)</mat-label>
-                        <input matInput formControlName="exclusion_criteria">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Ausschlusskriterium (JSONata)</mat-label>
+                            <input matInput formControlName="exclusion_criteria">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Delay (ms)</mat-label>
-                        <input matInput type="number" formControlName="delayInMs">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Delay (ms)</mat-label>
+                            <input matInput type="number" formControlName="delayInMs">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Parallel Calls</mat-label>
-                        <input matInput type="number" formControlName="parallelCalls">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Parallel Calls</mat-label>
+                            <input matInput type="number" formControlName="parallelCalls">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>URL Count</mat-label>
-                        <input matInput formControlName="url_count" placeholder="https://.../count?[...]">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>URL Count</mat-label>
+                            <input matInput formControlName="url_count" placeholder="https://.../count?[...]">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>URL Items</mat-label>
-                        <input matInput formControlName="url_items" placeholder="https://.../items?[...]">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>URL Items</mat-label>
+                            <input matInput formControlName="url_items" placeholder="https://.../items?[...]">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Max pro Call</mat-label>
-                        <input matInput type="number" formControlName="max_res">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Max pro Call</mat-label>
+                            <input matInput type="number" formControlName="max_res">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Query-Parameter für Max</mat-label>
-                        <input matInput formControlName="max_res_name">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Query-Parameter für Max</mat-label>
+                            <input matInput formControlName="max_res_name">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Modus</mat-label>
-                        <mat-select formControlName="request_mode">
-                            <mat-option value="offset">Offset</mat-option>
-                            <mat-option value="page">Page</mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Modus</mat-label>
+                            <mat-select formControlName="request_mode">
+                                <mat-option value="offset">Offset</mat-option>
+                                <mat-option value="page">Page</mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Query-Parameter für Offset</mat-label>
-                        <input matInput formControlName="offset_name">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Query-Parameter für Offset</mat-label>
+                            <input matInput formControlName="offset_name">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Offset-Wert für Anzahl-Abfrage</mat-label>
-                        <input matInput type="number" formControlName="offset_count">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Offset-Wert für Anzahl-Abfrage</mat-label>
+                            <input matInput type="number" formControlName="offset_count">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Erster Offset-Wert</mat-label>
-                        <input matInput type="number" formControlName="offset_start">
-                    </mat-form-field>
-                    
-                    <mat-form-field appearance="fill">
-                        <mat-label>Anzahl bestimmen (JSONata)</mat-label>
-                        <input matInput formControlName="get_count">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Erster Offset-Wert</mat-label>
+                            <input matInput type="number" formControlName="offset_start">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Elemente bestimmen (JSONata)</mat-label>
-                        <input matInput formControlName="get_items">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Anzahl bestimmen (JSONata)</mat-label>
+                            <input matInput formControlName="get_count">
+                        </mat-form-field>
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Suchbegriff-Kombinierer</mat-label>
-                        <input matInput formControlName="search_text_combiner">
-                    </mat-form-field>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Elemente bestimmen (JSONata)</mat-label>
+                            <input matInput formControlName="get_items">
+                        </mat-form-field>
 
-                </div>
+                        <mat-form-field appearance="fill">
+                            <mat-label>Suchbegriff-Kombinierer</mat-label>
+                            <input matInput formControlName="search_text_combiner">
+                        </mat-form-field>
+
+                    </div>
+                </ng-container>
+
+                <!-- DOI -->
+                <ng-container *ngSwitchCase="'doi'">
+                    <div class="form">
+                        <mat-checkbox formControlName="only_import_if_authors_inst">Nur importieren bei beteiligten
+                            Personen der Einrichtung</mat-checkbox>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Format</mat-label>
+                            <mat-select formControlName="format">
+                                <mat-option *ngFor="let s of formats" [value]="s.value">
+                                    {{ s.label }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Ausschlusskriterium (JSONata)</mat-label>
+                            <input matInput formControlName="exclusion_criteria">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Delay (ms)</mat-label>
+                            <input matInput type="number" formControlName="delayInMs">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Parallel Calls</mat-label>
+                            <input matInput type="number" formControlName="parallelCalls">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>URL DOI</mat-label>
+                            <input matInput formControlName="url_doi" placeholder="https://.../doi?[...]">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Element bestimmen (JSONata)</mat-label>
+                            <input matInput formControlName="get_doi_item">
+                        </mat-form-field>
+
+                    </div>
+                </ng-container>
+
+                <!-- File -->
+                <ng-container *ngSwitchCase="'file'">
+                    <div class="form">
+                        <mat-checkbox formControlName="only_import_if_authors_inst">Nur importieren bei beteiligten
+                            Personen der Einrichtung</mat-checkbox>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Format</mat-label>
+                            <mat-select formControlName="format">
+                                <mat-option *ngFor="let s of formats" [value]="s.value">
+                                    {{ s.label }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Ausschlusskriterium (JSONata)</mat-label>
+                            <input matInput formControlName="exclusion_criteria">
+                        </mat-form-field>
+                    </div>
+                </ng-container>
             </ng-container>
-
-            <!-- DOI -->
-            <ng-container *ngSwitchCase="'doi'">
-                <div class="form">
-                    <mat-checkbox formControlName="only_import_if_authors_inst">Nur importieren bei beteiligten Personen der Einrichtung</mat-checkbox>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Format</mat-label>
-                        <mat-select formControlName="format">
-                            <mat-option *ngFor="let s of formats" [value]="s.value">
-                                {{ s.label }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Ausschlusskriterium (JSONata)</mat-label>
-                        <input matInput formControlName="exclusion_criteria">
-                    </mat-form-field>
-
-                     <mat-form-field appearance="fill">
-                        <mat-label>Delay (ms)</mat-label>
-                        <input matInput type="number" formControlName="delayInMs">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Parallel Calls</mat-label>
-                        <input matInput type="number" formControlName="parallelCalls">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>URL DOI</mat-label>
-                        <input matInput formControlName="url_doi" placeholder="https://.../doi?[...]">
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Element bestimmen (JSONata)</mat-label>
-                        <input matInput formControlName="get_doi_item">
-                    </mat-form-field>
-
-                </div>
-            </ng-container>
-
-            <!-- File -->
-            <ng-container *ngSwitchCase="'file'">
-                <div class="form">
-                    <mat-checkbox formControlName="only_import_if_authors_inst">Nur importieren bei beteiligten Personen der Einrichtung</mat-checkbox>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Format</mat-label>
-                        <mat-select formControlName="format">
-                            <mat-option *ngFor="let s of formats" [value]="s.value">
-                                {{ s.label }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Ausschlusskriterium (JSONata)</mat-label>
-                        <input matInput formControlName="exclusion_criteria">
-                    </mat-form-field>
-                </div>
-            </ng-container>
-        </ng-container>
-    </form>
+        </form>
     </mat-card-content>
+    @if (!this.entity.published_at && !this.entity.deleted_at) {
     <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
         <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
         <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
     </mat-card-actions>
+    }
 </mat-card>
