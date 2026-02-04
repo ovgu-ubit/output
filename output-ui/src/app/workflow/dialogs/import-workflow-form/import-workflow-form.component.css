@@ -2,6 +2,30 @@ mat-nav-list a.active {
     background: rgba(25, 118, 210, 0.10);
 }
 
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 90vh;
+}
+
+.import-workflow-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.import-sidenav-container {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.import-sidenav-container mat-sidenav,
+.import-sidenav-container mat-sidenav-content {
+  height: 100%;
+}
+
 mat-nav-list a.mat-mdc-list-item {
   border-radius: 10px;
   margin: 4px 8px;
@@ -70,6 +94,10 @@ mat-nav-list a.active::before {
   transition: width 160ms ease;
   background: var(--nav-bg);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+:host ::ng-deep .mat-drawer-inner-container {
+  overflow-x: hidden !important;
 }
 
 /* collapsed Breite (nur Icons) */
