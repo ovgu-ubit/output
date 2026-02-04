@@ -1,4 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="'/Workflows/Publikationsimport/' + (this.facade.import$ | async)?.label + ' (' + (this.facade.import$ | async)?.version + ')'"></app-breadcrump>
+<div style="display: flex;flex-direction: column;">
 <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
     <div style="display: flex;gap: 10px">
         <h1>{{(this.facade.import$ | async)?.label}}, Version {{(this.facade.import$ | async)?.version}}</h1>
@@ -16,7 +17,7 @@
             [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
     </div>
 </mat-toolbar>
-<mat-sidenav-container style="height: 100vh;" autosize>
+<mat-sidenav-container autosize style="height: 80vh;">
     <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.collapsed]="!this.opened">
         <div class="nav-header">
             <button mat-icon-button (click)="this.toggle()" matTooltip="Navigation umschalten"
@@ -70,3 +71,4 @@
 
     </mat-sidenav-content>
 </mat-sidenav-container>
+</div>
