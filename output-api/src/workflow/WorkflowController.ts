@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Query, Res, StreamableFile, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { Strategy } from "../../../output-interfaces/Workflow";
@@ -8,6 +8,7 @@ import { AppConfigService } from "../config/app-config.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
 import { WorkflowService } from "./workflow.service";
+import { createReadStream } from "fs";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -21,7 +22,7 @@ export class WorkflowController {
   @Get("import")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  get_imports(@Query('type') type?:'draft'|'published'|'archived') {
+  get_imports(@Query('type') type?: 'draft' | 'published' | 'archived') {
     return this.workflowService.getImports(type)
     //return this.workflowService.startImport(1)
   }
@@ -31,6 +32,18 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   get_import(@Param('id') id: number) {
     return this.workflowService.getImport(id);
+  }
+
+  @Get("import/:id/export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async export_import(@Param('id') id: number, @Res({ passthrough: true }) res) {
+    const wf = await this.workflowService.getImport(id);
+    const json = JSON.stringify(wf, null, 2);
+    const filename = 'Import_' + wf.label + '_' + wf.version + '_' + wf.published_at;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="'+filename+'.json"');
+    return new StreamableFile(Buffer.from(json, 'utf-8'));
   }
 
   @Post("import")

@@ -22,6 +22,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public getOne(id:number) {
     return this.http.get<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/'+id, { withCredentials: true });
   }
+  public export(id:number) {
+    return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/import/'+id+'/export', { withCredentials: true, observe: 'response',  responseType: 'blob' as const });
+  }
   public add(ge:ImportWorkflow) {
     return this.http.post<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import', ge, { withCredentials: true });
   }

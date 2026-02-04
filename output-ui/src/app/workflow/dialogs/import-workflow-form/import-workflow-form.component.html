@@ -14,9 +14,9 @@
             </mat-chip-set>
         </div>
         <div style="display: flex;justify-content: flex-end;">
-            <button mat-icon-button (click)="this.action()"
-                [matTooltip]="(this.facade.import$ | async)?.label + ' speichern'"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.export()"
+                [matTooltip]="(this.facade.import$ | async)?.label + ' exportieren'"
+                [matTooltipShowDelay]="800"><mat-icon>share</mat-icon></button>
             <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
                 [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
         </div>
@@ -60,8 +60,8 @@
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Test & Debug</span>
                 </a>
 
-                <a *ngIf="!this.entity?.deleted_at" mat-list-item [routerLink]="['action']" routerLinkActive="active" matTooltip="Freigabe/Archivierung"
-                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                <a *ngIf="!this.entity?.deleted_at" mat-list-item [routerLink]="['action']" routerLinkActive="active"
+                    matTooltip="Freigabe/Archivierung" [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>publish</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">
                         {{this.entity?.published_at? 'Publizieren' : 'Archivieren' }}
