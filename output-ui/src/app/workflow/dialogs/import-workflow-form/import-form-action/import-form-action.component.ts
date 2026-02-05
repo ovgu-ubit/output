@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
 import { ImportFormFacade } from '../import-form-facade.service';
-import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces/Workflow';
 import { finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -42,6 +42,10 @@ export class ImportFormActionComponent implements OnInit {
   async ngOnInit() {
     this.facade.import$.subscribe((workflow) => {
       this.entity = workflow;
+      if (this.entity.strategy_type === Strategy.URL_DOI) {
+        this.form.controls.update.setValue(true)
+        this.form.controls.update.disable();
+      }
       this.update()
     });
   }

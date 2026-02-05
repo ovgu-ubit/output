@@ -15,6 +15,8 @@ import { Router } from '@angular/router';
 })
 export class PublicationImportComponent implements TableParent<ImportWorkflow>, OnInit {
   formComponent = ImportWorkflowFormComponent;
+  buttons = [];
+  not_selectable?: boolean = true;
 
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
@@ -26,17 +28,12 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   ];
 
   indexOptions = {
-    type: 'draft'
+    type: 'published'
   }
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
 
   constructor(public workflowService: WorkflowService, private snackBar: MatSnackBar, private router:Router) { }
-
-  publishedButtons: TableButton[] =[{ title: 'Neue Entwurfsversion erstellen', action_function: this.fork.bind(this) }]
-  draftButtons: TableButton[] = [{ title: 'Veröffentlichen', action_function: this.publish.bind(this) }]
-  
-  buttons: TableButton[] = this.draftButtons;
 
   ngOnInit(): void {
   }
@@ -65,9 +62,6 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     this.indexOptions = {
       type: event.value
     }
-    if (event.value === 'draft') this.buttons = this.draftButtons;
-    else if (event.value === 'published') this.buttons = this.publishedButtons;
-    else this.buttons = [];
     this.table.updateData().subscribe();
   }
 

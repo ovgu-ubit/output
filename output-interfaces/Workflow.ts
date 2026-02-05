@@ -36,6 +36,7 @@ export interface ImportWorkflowTestResult {
         status: 'ok' | 'warning' | 'error';
         issues: string[];
         imported: Publication[];
+        update_fields : string[][];
         excluded: any[];
     }
 }

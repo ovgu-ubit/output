@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
 import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
-import { DeepPartial, FindManyOptions } from 'typeorm';
+import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { ImportWorkflow, ImportWorkflowTestResult, Strategy } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
@@ -162,15 +162,15 @@ export class JSONataImportService extends AbstractImportService {
         (await this.configService.listEnvConfig()).map(e => {
             this.config[e.key] = e.value;
         });
-        await this.config['search_tags'].forEach(tag => {
+        if (this.search_text_combiner) await this.config['search_tags'].forEach(tag => {
             this.searchText += tag + this.search_text_combiner;
         });
-        this.searchText = this.searchText.slice(0, this.searchText.length - this.search_text_combiner.length)
+        if (this.searchText && this.search_text_combiner) this.searchText = this.searchText.slice(0, this.searchText.length - this.search_text_combiner.length)
 
-        await this.config['affiliation_tags'].forEach(tag => {
+        if (this.search_text_combiner) await this.config['affiliation_tags'].forEach(tag => {
             this.affiliationText += tag + this.search_text_combiner;
         });
-        this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
+        if (this.affiliationText) this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
 
         //process query string
         this.url = await this.setVariables(this.url);
@@ -179,7 +179,7 @@ export class JSONataImportService extends AbstractImportService {
         this.name = this.importDefinition.label + '_v' + this.importDefinition.version;
     }
 
-    async setVariables(queryString: string, doi?: string, safe=false): Promise<string> {
+    async setVariables(queryString: string, doi?: string, safe = false): Promise<string> {
         if (!queryString) return null;
         let result = queryString;
         const regex = /\[([^\]]+)\]/g
@@ -192,7 +192,7 @@ export class JSONataImportService extends AbstractImportService {
             else if (key === 'search_tags') value = this.searchText;
             else if (key === 'doi') value = doi;
             else if (key === 'affiliation_tags') value = this.affiliationText;
-            else if (safe && key.includes('SECRET')) value=key
+            else if (safe && key.includes('SECRET')) value = key
             else value = values[i] ?? ""; // oder Fehler werfen
 
             if (value) result = result.replace(`[${key}]`, value);
@@ -258,7 +258,38 @@ export class JSONataImportService extends AbstractImportService {
         let resp_count;
         let count = 0;
         let resp;
+        let pub: Publication;
+        let item;
+        let pubUpd;
         switch (this.importDefinition.strategy_type) {
+            case Strategy.URL_DOI:
+                try {
+                    pub = (await this.publicationService.get({ where: { doi: Not(IsNull()) }, take: 1 }))[0]
+                } catch (err) { result.result.issues.push('Could not find any publication with DOI') }
+
+                result.read.source = await this.setVariables(this.url_doi, pub.doi, true);
+                ob$ = this.http.get(result.read.source)
+                try {
+                    resp = await firstValueFrom(ob$) as AxiosResponse;
+                } catch (err) { result.result.issues.push('Could not retrieve response from URL') }
+
+                try {
+                    item = await this.getDataEnrich(resp);
+                    result.read.read_items = item;
+                } catch (err) { result.result.issues.push('Could not retrieve item from response') }
+
+                const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                if (!orig?.locked) {
+                    try {
+                        pubUpd = await this.mapUpdate(item, orig)
+                    } catch (err) { result.result.issues.push('Could not map item') }
+                    if (pubUpd?.pub) {
+                        result.result.imported.push(pubUpd.pub);
+                        result.result.update_fields.push(pubUpd.fields);
+                    }
+                }
+
+                break;
             case Strategy.URL_QUERY_OFFSET:
             default:
                 this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
@@ -285,7 +316,7 @@ export class JSONataImportService extends AbstractImportService {
                 try {
                     resp = await firstValueFrom(ob$);
                 } catch (err) { result.result.issues.push('Error while retrieving items with ' + this.completeURL) }
-                
+
                 try {
                     const parsedData = await this.getData(resp);
                     result.read.read_items = parsedData;
@@ -429,54 +460,6 @@ export class JSONataImportService extends AbstractImportService {
     public async enrich(by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
-        //await this.setUp(fs.readFileSync('./templates/import/crossref.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/crossref.json').toString()));
-        //await this.setUp(fs.readFileSync('./templates/import/openalex.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/openalex.json').toString()));
-        /*await this.setUp(fs.readFileSync('./templates/import/scopus.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/scopus.json').toString()), {
-            author_inst: UpdateOptions.APPEND,
-            authors: UpdateOptions.REPLACE_IF_EMPTY,
-            title: UpdateOptions.REPLACE_IF_EMPTY,
-            pub_type: UpdateOptions.REPLACE_IF_EMPTY,
-            oa_category: UpdateOptions.IGNORE,
-            greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
-            publisher: UpdateOptions.REPLACE_IF_EMPTY,
-            contract: UpdateOptions.IGNORE,
-            funder: UpdateOptions.APPEND,
-            doi: UpdateOptions.REPLACE_IF_EMPTY,
-            pub_date: UpdateOptions.REPLACE_IF_EMPTY,
-            link: UpdateOptions.REPLACE_IF_EMPTY,
-            language: UpdateOptions.REPLACE_IF_EMPTY,
-            license: UpdateOptions.REPLACE_IF_EMPTY,
-            invoice: UpdateOptions.IGNORE,
-            status: UpdateOptions.REPLACE_IF_EMPTY,
-            abstract: UpdateOptions.REPLACE_IF_EMPTY,
-            citation: UpdateOptions.IGNORE,
-            page_count: UpdateOptions.REPLACE_IF_EMPTY,
-            peer_reviewed: UpdateOptions.IGNORE,
-            cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
-        }, this.enrich_whereClause);*/
-        /*await this.setUp(fs.readFileSync('./templates/import/unpaywall.jsonata').toString(), JSON.parse(fs.readFileSync('./templates/import/unpaywall.json').toString()), {
-            author_inst: UpdateOptions.APPEND,
-            authors: UpdateOptions.REPLACE_IF_EMPTY,
-            title: UpdateOptions.REPLACE_IF_EMPTY,
-            pub_type: UpdateOptions.REPLACE_IF_EMPTY,
-            oa_category: UpdateOptions.REPLACE,
-            greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
-            publisher: UpdateOptions.REPLACE_IF_EMPTY,
-            contract: UpdateOptions.IGNORE,
-            funder: UpdateOptions.APPEND,
-            doi: UpdateOptions.REPLACE_IF_EMPTY,
-            pub_date: UpdateOptions.REPLACE_IF_EMPTY,
-            link: UpdateOptions.REPLACE_IF_EMPTY,
-            language: UpdateOptions.REPLACE_IF_EMPTY,
-            license: UpdateOptions.REPLACE_IF_EMPTY,
-            invoice: UpdateOptions.IGNORE,
-            status: UpdateOptions.REPLACE_IF_EMPTY,
-            abstract: UpdateOptions.REPLACE_IF_EMPTY,
-            citation: UpdateOptions.IGNORE,
-            page_count: UpdateOptions.REPLACE_IF_EMPTY,
-            peer_reviewed: UpdateOptions.IGNORE,
-            cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
-        }, this.enrich_whereClause);*/
         if (!this.url_doi || !this.importDefinition.strategy.get_doi_item)
             throw new BadRequestException('Enrich cannot be run due to missing parameters.')
         this.progress = -1;

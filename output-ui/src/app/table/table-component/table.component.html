@@ -39,7 +39,7 @@
           </ng-container>
           <button mat-raised-button (click)="this.add()" *ngIf="!this.parent.not_editable"
             [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
-          <button mat-raised-button (click)="this.delete()" *ngIf="!this.parent.not_editable"
+          <button mat-raised-button (click)="this.delete()" *ngIf="!this.parent.not_editable && this.deleteable"
             [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
           <button mat-raised-button *ngIf="this.serviceClass.combine && !this.parent.not_editable" (click)="this.combine()"
             [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
