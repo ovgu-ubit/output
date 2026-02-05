@@ -7,8 +7,9 @@ import { ImportFormFacade } from '../import-form-facade.service';
 import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
 import { finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ImportConfigComponent } from 'src/app/administration/components/import-config/import-config.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-import-form-action',
@@ -34,7 +35,8 @@ export class ImportFormActionComponent implements OnInit {
     private workflowService: WorkflowService,
     private snackBar: MatSnackBar,
     private router: Router,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private dialog: MatDialog
   ) { }
 
   async ngOnInit() {
@@ -53,7 +55,6 @@ export class ImportFormActionComponent implements OnInit {
         if (data.progress === 0 || data.progress >= 1) {//finish signal
           this.isRunning = false;
           this.ob$ = undefined;
-          this.workflowService.getProgress(this.entity.id).subscribe();
           this.form.enable();
           this.subject.next('');
         }
@@ -149,7 +150,7 @@ export class ImportFormActionComponent implements OnInit {
     const dryRun = this.form.controls.dry_run.value
     const update = this.form.controls.update.value
     this.workflowService
-      .run(this.entity.id, reporting_year, dryRun)
+      .run(this.entity.id, reporting_year, update, dryRun)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: () => {
@@ -193,5 +194,18 @@ export class ImportFormActionComponent implements OnInit {
           });
         },
       });
+  }
+
+  configureImport() {
+    let dialogRef = this.dialog.open(ImportConfigComponent, {
+      width: '800px',
+      maxHeight: '800px',
+      data: {
+        workflow: this.entity
+      }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+
+    });
   }
 }

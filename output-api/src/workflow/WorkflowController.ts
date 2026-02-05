@@ -9,6 +9,7 @@ import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
 import { WorkflowService } from "./workflow.service";
 import { createReadStream } from "fs";
+import { UpdateMapping, UpdateOptions } from "../../../output-interfaces/Config";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -56,7 +57,7 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   run_import(@Param('id') id: number, @Body('dry_run') dryRun: boolean, @Req() req, @Body('update') update: boolean, @Body('reporting_year') reporting_year: string) {
-    return this.workflowService.startImport(id, reporting_year, req.user?.username, !!dryRun);
+    return this.workflowService.startImport(id, reporting_year, update, req.user?.username, !!dryRun);
   }
 
   @Get('import/:id/run')
@@ -145,5 +146,42 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   delete_report(@Body('filename') filename: string) {
     return this.reportService.deleteReport(filename);
+  }
+
+  @Get("import/:id/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async importConfig(@Param('id') id: number) {
+    return this.workflowService.getUpdateMapping(id);
+  }
+
+  @Post("import/:id/config")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async importConfigSet(@Param('id') id: number, @Body('mapping') mapping: UpdateMapping) {
+    /*const m : UpdateMapping = {
+            author_inst: UpdateOptions.IGNORE,
+            authors: UpdateOptions.REPLACE_IF_EMPTY,
+            title: UpdateOptions.REPLACE_IF_EMPTY,
+            pub_type: UpdateOptions.REPLACE_IF_EMPTY,
+            oa_category: UpdateOptions.REPLACE_IF_EMPTY,
+            greater_entity: UpdateOptions.REPLACE_IF_EMPTY,
+            publisher: UpdateOptions.REPLACE_IF_EMPTY,
+            contract: UpdateOptions.REPLACE_IF_EMPTY,
+            funder: UpdateOptions.APPEND,
+            doi: UpdateOptions.REPLACE_IF_EMPTY,
+            pub_date: UpdateOptions.REPLACE_IF_EMPTY,
+            link: UpdateOptions.REPLACE_IF_EMPTY,
+            language: UpdateOptions.REPLACE_IF_EMPTY,
+            license: UpdateOptions.REPLACE_IF_EMPTY,
+            invoice: UpdateOptions.REPLACE_IF_EMPTY,
+            status: UpdateOptions.REPLACE_IF_EMPTY,
+            abstract: UpdateOptions.REPLACE_IF_EMPTY,
+            citation: UpdateOptions.REPLACE_IF_EMPTY,
+            page_count: UpdateOptions.REPLACE_IF_EMPTY,
+            peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
+            cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
+        };*/
+    return this.workflowService.setUpdateMapping(id, mapping);
   }
 }

@@ -22,7 +22,6 @@ import { ConfigComponent } from './pages/config/config.component';
     ExportComponent,
     ImportComponent,
     PlausibilityComponent,
-    ImportConfigComponent,
     CsvFormatComponent,
     ConfigComponent
   ],
@@ -31,7 +30,8 @@ import { ConfigComponent } from './pages/config/config.component';
     SharedModule,
     AdministrationRoutingModule,
     MatProgressBarModule,
-    LogDialogComponent
+    LogDialogComponent,
+    ImportConfigComponent
   ],
 })
 export class AdministrationModule { }

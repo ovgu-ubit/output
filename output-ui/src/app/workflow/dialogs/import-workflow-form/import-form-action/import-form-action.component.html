@@ -28,6 +28,7 @@
                     <input matInput placeholder="Publikationsjahr" formControlName="reporting_year" />
                 </mat-form-field>
                 <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
+                <button mat-raised-button [hidden]="!this.form.get('update').value" type="button"  class="secondary-button" [disabled]="this.ob$" (click)="configureImport()">Update konfigurieren</button>
                 <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
             </form>
             <div *ngIf="this.ob$">{{((this.ob$ | async)?.progress)*100 | number: '1.2-2'}} %</div>

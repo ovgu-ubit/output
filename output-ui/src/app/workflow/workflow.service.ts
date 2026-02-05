@@ -4,6 +4,7 @@ import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import { ImportWorkflow, ImportWorkflowTestResult, Workflow } from '../../../../output-interfaces/Workflow';
 import { concatMap, firstValueFrom, interval, Observable } from 'rxjs';
+import { UpdateMapping } from '../../../../output-interfaces/Config';
 
 @Injectable({
   providedIn: 'root'
@@ -23,18 +24,25 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public getOne(id: number) {
     return this.http.get<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id, { withCredentials: true });
   }
+  public getConfig(id: number) {
+    return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config')
+  }
+  public setConfig(id: number, mapping: UpdateMapping) {
+    return this.http.post<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { mapping })
+  }
   public export(id: number) {
     return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });
   }
   public test(id: number) {
     return this.http.get<ImportWorkflowTestResult>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/test', { withCredentials: true });
   }
-  public run(id: number, reporting_year: number, dryRun = false) {
+  public run(id: number, reporting_year: number, update: boolean, dryRun = false) {
     return this.http.post<{ status: string; dry_run: boolean }>(
       this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run',
       {
         dry_run: dryRun,
-        reporting_year
+        reporting_year,
+        update
       },
       { withCredentials: true }
     );
@@ -52,7 +60,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     }))
   }
   getStatus(id: number): Observable<{ progress: number, status: string }> {
-      return this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true })
+    return this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true })
   }
 
   public add(ge: ImportWorkflow) {
