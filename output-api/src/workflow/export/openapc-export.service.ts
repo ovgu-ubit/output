@@ -62,7 +62,6 @@ export class OpenAPCExportService extends AbstractExportService {
             res += this.format(isbn);
 
             res = res.slice(0, res.length - 1);
-
             res += '\n';
         }
         //res = res.replace(/undefined/g, '');
