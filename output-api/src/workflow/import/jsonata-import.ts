@@ -174,6 +174,8 @@ export class JSONataImportService extends AbstractImportService {
         //process query string
         this.url = await this.setVariables(this.url);
         this.url_count = await this.setVariables(this.url_count);
+
+        this.name = this.importDefinition.label + '_v' + this.importDefinition.version;
     }
 
     async setVariables(queryString: string, doi?: string, safe=false): Promise<string> {
