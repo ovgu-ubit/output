@@ -1,1 +1,59 @@
-<p>import-form-test works!</p>
+<mat-card>
+  <mat-card-title>Workflow-Test</mat-card-title>
+  <mat-card-content>
+    <p>Starten Sie einen Testlauf, um Lesedaten und Importergebnis des aktuellen Workflows zu prüfen.</p>
+
+    <button mat-raised-button class="primary-button" [disabled]="!workflowId || isRunning" (click)="runTest()">
+      {{ isRunning ? 'Test läuft…' : 'Testlauf starten' }}
+    </button>
+
+    @if (!workflowId) {
+      <p class="hint">Bitte speichern Sie den Workflow zuerst, damit ein Testlauf gestartet werden kann.</p>
+    }
+
+    @if (errorMessage) {
+      <p class="error">{{ errorMessage }}</p>
+    }
+
+    @if (result) {
+      <div class="test-result">
+        <h3>Meta</h3>
+        <p><strong>Workflow-ID:</strong> {{ result.meta.workflow_id }}</p>
+        <p><strong>Strategie-Typ:</strong> {{ result.meta.strategy_type }}</p>
+        <p><strong>Position:</strong> {{ result.meta.pos }}</p>
+        <p><strong>Zeitpunkt:</strong> {{ result.meta.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</p>
+        <p><strong>Dauer:</strong> {{ result.meta.durationMs }} ms</p>
+
+        <h3>Quelle</h3>
+        <p><strong>Source:</strong> {{ result.read.source }}</p>
+        <p><strong>Gelesene Datensätze:</strong> {{ result.read.count }}</p>
+
+        <h3>Ergebnis</h3>
+        <p><strong>Status:</strong> {{ result.result.status }}</p>
+        <p><strong>Importiert:</strong> {{ result.result.imported.length }}</p>
+        <p><strong>Ausgeschlossen:</strong> {{ result.result.excluded.length }}</p>
+
+        @if (result.result.issues.length) {
+          <h4>Issues</h4>
+          <ul>
+            @for (issue of result.result.issues; track issue) {
+              <li>{{ issue }}</li>
+            }
+          </ul>
+        }
+
+        <h4>Strategie-Konfiguration</h4>
+        <pre>{{ result.meta.strategy | json }}</pre>
+
+        <h4>Gelesene Elemente</h4>
+        <pre>{{ result.read.read_items | json }}</pre>
+
+        <h4>Importierte Publikationen</h4>
+        <pre>{{ result.result.imported | json }}</pre>
+
+        <h4>Ausgeschlossene Elemente</h4>
+        <pre>{{ result.result.excluded | json }}</pre>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

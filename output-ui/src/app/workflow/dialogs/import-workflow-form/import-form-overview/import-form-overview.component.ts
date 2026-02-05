@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-import-form-overview',
@@ -6,6 +6,12 @@ import { Component } from '@angular/core';
   templateUrl: './import-form-overview.component.html',
   styleUrl: './import-form-overview.component.css',
 })
-export class ImportFormOverviewComponent {
+export class ImportFormOverviewComponent implements OnInit {
 
+
+  constructor() {}
+
+  ngOnInit() {
+
+  }
 }

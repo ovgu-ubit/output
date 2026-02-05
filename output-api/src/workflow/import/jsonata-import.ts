@@ -176,7 +176,7 @@ export class JSONataImportService extends AbstractImportService {
         this.url_count = await this.setVariables(this.url_count);
     }
 
-    async setVariables(queryString: string, doi?: string): Promise<string> {
+    async setVariables(queryString: string, doi?: string, safe=false): Promise<string> {
         if (!queryString) return null;
         let result = queryString;
         const regex = /\[([^\]]+)\]/g
@@ -189,6 +189,7 @@ export class JSONataImportService extends AbstractImportService {
             else if (key === 'search_tags') value = this.searchText;
             else if (key === 'doi') value = doi;
             else if (key === 'affiliation_tags') value = this.affiliationText;
+            else if (safe && key.includes('SECRET')) value=key
             else value = values[i] ?? ""; // oder Fehler werfen
 
             if (value) result = result.replace(`[${key}]`, value);
@@ -258,7 +259,7 @@ export class JSONataImportService extends AbstractImportService {
             default:
                 this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
-                result.read.source = this.url_count + `&${this.offset_name}=` + this.offset_count;
+                result.read.source = await this.setVariables(this.url_count, undefined, true);
                 try {
                     resp_count = await firstValueFrom(this.retrieveCountRequest())
                 } catch (err) { result.result.issues.push('Error retrieving count with ' + this.completeURL) }
