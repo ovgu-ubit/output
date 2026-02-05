@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Res, StreamableFile, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
@@ -50,6 +50,27 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async test_import(@Param('id') id: number): Promise<ImportWorkflowTestResult> {
     return await this.workflowService.testImport(id);
+  }
+
+  @Post("import/:id/run")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  run_import(@Param('id') id: number, @Body('dry_run') dryRun: boolean, @Req() req, @Body('update') update: boolean, @Body('reporting_year') reporting_year: string) {
+    return this.workflowService.startImport(id, reporting_year, req.user?.username, !!dryRun);
+  }
+
+  @Get('import/:id/run')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  status(@Param('id') id: number) {
+    return this.workflowService.status(id);
+  }
+
+  @Delete("import")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  delete_imports(@Body() body: { id: number }[]) {
+    return this.workflowService.deleteImports(body.map((entry) => entry.id));
   }
 
   @Post("import")

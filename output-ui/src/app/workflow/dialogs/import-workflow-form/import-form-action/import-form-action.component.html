@@ -1,1 +1,54 @@
-<p>import-form-action works!</p>
+<mat-card>
+    <mat-card-title>Aktionen</mat-card-title>
+    <mat-card-content>
+        @if (isDraft) {
+        <div class="action-group">
+            <h3>Entwurf</h3>
+            <button mat-raised-button class="warn-button" [disabled]="loading" (click)="deleteDraft()">
+                <mat-icon>delete</mat-icon>
+                Entwurf löschen
+            </button>
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="publish()">
+                <mat-icon>publish</mat-icon>
+                Entwurf veröffentlichen
+            </button>
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
+                <mat-icon>content_copy</mat-icon>
+                Entwurf duplizieren
+            </button>
+        </div>
+        }
+
+        @if (isPublished) {
+        <div class="action-group">
+            <h3>Veröffentlicht</h3>
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="run()">
+                <mat-icon>play_arrow</mat-icon>
+                Importlauf starten
+            </button>
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="run(true)">
+                <mat-icon>science</mat-icon>
+                Dry-Run starten
+            </button>
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
+                <mat-icon>content_copy</mat-icon>
+                Als neuen Entwurf duplizieren
+            </button>
+            <button mat-raised-button class="warn-button" [disabled]="loading" (click)="archive()">
+                <mat-icon>archive</mat-icon>
+                Workflow archivieren
+            </button>
+        </div>
+        }
+
+        @if (isArchived) {
+        <div class="action-group">
+            <h3>Archiviert</h3>
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
+                <mat-icon>content_copy</mat-icon>
+                Als neuen Entwurf duplizieren
+            </button>
+        </div>
+        }
+    </mat-card-content>
+</mat-card>
