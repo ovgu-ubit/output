@@ -2,9 +2,9 @@ import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import { catchError, concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
-import { FindManyOptions } from 'typeorm';
+import { DeepPartial, FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { ImportWorkflow, Strategy } from '../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportWorkflowTestResult, Strategy } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -229,47 +229,72 @@ export class JSONataImportService extends AbstractImportService {
         return obj;
     }
 
-    public async test(pos: number = 1): Promise<string | Publication[]> {
+    public async test(pos: number = 1): Promise<ImportWorkflowTestResult> {
+        const start = new Date();
+        const result: DeepPartial<ImportWorkflowTestResult> = {
+            meta: {
+                workflow_id: this.importDefinition.id,
+                strategy_type: this.importDefinition.strategy_type,
+                strategy: this.importDefinition.strategy,
+                pos,
+                timestamp: start
+            },
+            read: {
+                read_items: [],
+            },
+            result: {
+                excluded: [],
+                imported: [],
+                issues: [],
+            }
+        };
         this.dryRun = true;
+        let ob$: Observable<unknown>;
+        let resp_count;
+        let count = 0;
+        let resp;
         switch (this.importDefinition.strategy_type) {
             case Strategy.URL_QUERY_OFFSET:
             default:
                 this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
-                let ob$;
-                let resp_count;
+
+                result.read.source = this.url_count + `&${this.offset_name}=` + this.offset_count;
                 try {
                     resp_count = await firstValueFrom(this.retrieveCountRequest())
-                } catch (err) { return 'Error retrieving count with ' + this.completeURL }
+                } catch (err) { result.result.issues.push('Error retrieving count with ' + this.completeURL) }
 
-                let count = 0;
                 try {
                     count = await this.getNumber(resp_count);
-                } catch (e) { return 'Error retrieving count from response' }
+                    result.read.count = count;
+                } catch (e) { result.result.issues.push('Error retrieving count from response') }
 
-                if (pos > count) return 'Position greater than count'
+                if (pos > count) result.result.issues.push('Position greater than count')
 
                 if (this.mode === 'offset') {
                     ob$ = this.request(this.offset_start + pos - 1);
                 } else if (this.mode === 'page') {
-                    let page = this.offset_start + Math.floor(pos / this.max_res)
+                    const page = this.offset_start + Math.floor(pos / this.max_res)
                     ob$ = this.request(page);
                 }
 
-                let resp;
                 try {
                     resp = await firstValueFrom(ob$);
-                } catch (err) { return 'Error while retrieving items with ' + this.completeURL; }
-
+                } catch (err) { result.result.issues.push('Error while retrieving items with ' + this.completeURL) }
+                
                 try {
                     const parsedData = await this.getData(resp);
-                    let result = [];
-                    for (let chunk of parsedData) {
+                    result.read.read_items = parsedData;
+                    for (const chunk of parsedData) {
                         const pubNew = await this.mapNew(chunk)
-                        result.push(pubNew);
+                        if (pubNew) result.result.imported.push(pubNew);
+                        else result.result.excluded.push(chunk);
                     }
-                    return result;
-                } catch (err) { return 'Error while converting data with mapping' }
+                } catch (err) { result.result.issues.push('Error while converting data with mapping') }
         }
+        const now = new Date()
+        result.meta.durationMs = now.getTime() - start.getTime()
+        result.result.status = 'ok';
+        return result as ImportWorkflowTestResult;
     }
 
     /**

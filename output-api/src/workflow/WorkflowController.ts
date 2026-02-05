@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Res, StreamableFile, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
-import { Strategy } from "../../../output-interfaces/Workflow";
+import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
@@ -48,7 +48,7 @@ export class WorkflowController {
   @Get("import/:id/test")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async test_import(@Param('id') id: number) {
+  async test_import(@Param('id') id: number): Promise<ImportWorkflowTestResult> {
     return await this.workflowService.testImport(id);
   }
 

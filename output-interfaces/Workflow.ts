@@ -1,3 +1,5 @@
+import { Publication } from "./Publication";
+
 export interface Workflow {
     id?: number;
     workflow_id?: number;
@@ -14,6 +16,28 @@ export interface Workflow {
 export interface ImportWorkflow extends Workflow {
     strategy_type?: Strategy;
     strategy?: any;
+}
+
+export interface ImportWorkflowTestResult {
+    meta: {
+        workflow_id: number;
+        strategy_type: Strategy;
+        pos: number;
+        strategy: any;
+        timestamp: Date;
+        durationMs: number;
+    },
+    read: {
+        source: string;
+        count: number;
+        read_items: any[];
+    },
+    result: {
+        status: 'ok' | 'warning' | 'error';
+        issues: string[];
+        imported: Publication[];
+        excluded: any[];
+    }
 }
 
 export enum Strategy {
