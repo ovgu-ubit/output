@@ -1,17 +1,48 @@
 import { Component, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { ImportFormFacade } from '../import-form-facade.service';
+import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
 
 @Component({
   selector: 'app-import-form-overview',
-  imports: [],
+  imports: [SharedModule],
   templateUrl: './import-form-overview.component.html',
   styleUrl: './import-form-overview.component.css',
 })
 export class ImportFormOverviewComponent implements OnInit {
+  workflowReportName = '';
+  entity: ImportWorkflow;
+  associatedReports: string[] = [];
 
-
-  constructor() {}
+  constructor(private dialog: MatDialog, private facade: ImportFormFacade) { }
 
   ngOnInit() {
+    this.facade.import$.subscribe((workflow) => {
+      if (!workflow) return;
 
+      this.workflowReportName = `${workflow.label}_v${workflow.version}`;
+      this.facade.getReports(this.workflowReportName).subscribe((reports) => {
+        this.associatedReports = reports;
+      });
+    });
+  }
+
+  requestReport(reportName: string) {
+    this.facade.requestReport(reportName).subscribe((data) => {
+      this.dialog.open(LogDialogComponent, {
+        data: {
+          data,
+          label: reportName,
+        },
+      });
+    });
+  }
+
+  deleteReport(reportName: string) {
+    this.facade.deleteReport(reportName).subscribe((data) => {
+      this.ngOnInit();
+    });
   }
 }

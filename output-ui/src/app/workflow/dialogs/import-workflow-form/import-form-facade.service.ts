@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, map, of, tap } from "rxjs";
+import { BehaviorSubject, concatWith, map, Observable, of, tap } from "rxjs";
 import { ImportWorkflow } from "../../../../../../output-interfaces/Workflow";
 import { WorkflowService } from "../../workflow.service";
 import { ReportService } from "src/app/administration/services/report.service";
@@ -10,18 +10,27 @@ import { ReportService } from "src/app/administration/services/report.service";
 export class ImportFormFacade {
   private readonly importSubject = new BehaviorSubject<ImportWorkflow | null>(null);
   readonly import$ = this.importSubject.asObservable();
-  reportFiles = [];
 
-  constructor(private api: WorkflowService, private reportService:ReportService) {}
+  constructor(private api: WorkflowService, private reportService: ReportService) { }
 
   load(id: number) {
     this.api.getOne(id).subscribe(wf => this.importSubject.next(wf));
   }
 
-  getReports() {
-    this.reportService.getReports('Import').pipe(map(data => {
-      this.reportFiles = data.sort((a, b) => b.localeCompare(a));
-    }))
+  getReports(workflowName: string): Observable<string[]> {
+    return this.reportService.getReports('workflow').pipe(map(data =>
+      data
+        .filter((report) => report.includes(workflowName))
+        .sort((a, b) => b.localeCompare(a))
+    ))
+  }
+
+  requestReport(filename: string) {
+    return this.reportService.getReport('workflow', filename);
+  }
+
+  deleteReport(filename: string) {
+    return this.reportService.deleteReport('workflow', filename);
   }
 
   patch(p: Partial<ImportWorkflow>) {

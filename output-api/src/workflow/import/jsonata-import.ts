@@ -1,7 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
-import { catchError, concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
 import { DeepPartial, FindManyOptions } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { ImportWorkflow, ImportWorkflowTestResult, Strategy } from '../../../../output-interfaces/Workflow';
@@ -200,7 +201,7 @@ export class JSONataImportService extends AbstractImportService {
         return result;
     }
 
-    protected async getData(response: any): Promise<JSONataParsedObject[]> {
+    protected async getData(response: AxiosResponse): Promise<JSONataParsedObject[]> {
         try {
             const mapping = jsonata(this.importDefinition.strategy.get_items)
             const items = (await mapping.evaluate(response.data))
@@ -211,7 +212,7 @@ export class JSONataImportService extends AbstractImportService {
         }
     }
 
-    protected async getDataEnrich(response: any): Promise<JSONataParsedObject> {
+    protected async getDataEnrich(response: AxiosResponse): Promise<JSONataParsedObject> {
         try {
             const mapping = jsonata(this.importDefinition.strategy.get_doi_item)
             const item = (await mapping.evaluate(response.data))
@@ -226,13 +227,14 @@ export class JSONataImportService extends AbstractImportService {
         this.reporting_year = year;
     }
 
-    async transform(element: any): Promise<JSONataParsedObject> {
+    async transform(element: AxiosResponse): Promise<JSONataParsedObject> {
         const mapping = jsonata(this.importConfig)
         const obj = (await mapping.evaluate({ ...element, params: { cfg: this.config } }))
         return obj;
     }
 
     public async test(pos: number = 1): Promise<ImportWorkflowTestResult> {
+        this.report = await this.reportService.createReport('Worfklow_Import', this.name, 'testRun');
         const start = new Date();
         const result: DeepPartial<ImportWorkflowTestResult> = {
             meta: {
@@ -351,11 +353,11 @@ export class JSONataImportService extends AbstractImportService {
             return null;
         })));
         concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
-            next: async (data: any) => {
+            next: async (data: AxiosResponse) => {
                 if (!data) return;
                 try {
                     const parsedData = await this.getData(data);
-                    for (const [idx, pub] of parsedData.entries()) {
+                    for (const pub of parsedData.values()) {
                         if (this.importDefinition.strategy.only_import_if_authors_inst && (!pub.authors_inst || pub.authors_inst.length == 0)) {
                             this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without institution authors is not imported ' + this.getAuthors(pub) })
                             continue;
@@ -503,7 +505,7 @@ export class JSONataImportService extends AbstractImportService {
 
         let errors = 0;
         concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
-            next: async (data: any) => {
+            next: async (data: AxiosResponse) => {
                 if (!data) {
                     errors++
                     return;
@@ -553,20 +555,20 @@ export class JSONataImportService extends AbstractImportService {
         });
     }
 
-    protected retrieveCountRequest() {
+    protected retrieveCountRequest(): Observable<AxiosResponse> {
         const url = this.url_count + `&${this.offset_name}=` + this.offset_count;
         return this.http.get(url);
     }
-    protected request(offset: number): Observable<any> {
+    protected request(offset: number): Observable<AxiosResponse> {
         const url = this.completeURL + `&${this.offset_name}=` + offset;
         return this.http.get(url);
     }
 
-    protected async getNumber(response: any): Promise<number> {
+    protected async getNumber(response: AxiosResponse): Promise<number> {
         const mapping = jsonata(this.importDefinition.strategy.get_count)
         return mapping.evaluate(response.data)
     }
-    protected async importTest(element: any): Promise<boolean> {
+    protected async importTest(element: AxiosResponse): Promise<boolean> {
         const mapping = jsonata(this.importDefinition.strategy.exclusion_criteria)
         const obj = await mapping.evaluate(element)
         return !obj;
