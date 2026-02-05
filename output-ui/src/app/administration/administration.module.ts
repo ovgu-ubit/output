@@ -24,14 +24,14 @@ import { ConfigComponent } from './pages/config/config.component';
     PlausibilityComponent,
     ImportConfigComponent,
     CsvFormatComponent,
-    LogDialogComponent,
     ConfigComponent
   ],
   imports: [
     TableModule,
     SharedModule,
     AdministrationRoutingModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    LogDialogComponent
   ],
 })
 export class AdministrationModule { }

@@ -22,19 +22,25 @@
         @if (isPublished) {
         <div class="action-group">
             <h3>Veröffentlicht</h3>
-            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="run()">
+            <form [formGroup]="form">
+                <mat-form-field appearance="fill">
+                    <mat-label>Publikationsjahr</mat-label>
+                    <input matInput placeholder="Publikationsjahr" formControlName="reporting_year" />
+                </mat-form-field>
+                <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
+                <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
+            </form>
+            <div *ngIf="this.ob$">{{((this.ob$ | async)?.progress)*100 | number: '1.2-2'}} %</div>
+            <mat-progress-bar *ngIf="this.ob$" mode="determinate" [value]="(this.ob$ | async)?.progress*100"></mat-progress-bar>
+            <button mat-raised-button class="primary-button" (click)="run()" [disabled]="this.ob$">
                 <mat-icon>play_arrow</mat-icon>
                 Importlauf starten
             </button>
-            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="run(true)">
-                <mat-icon>science</mat-icon>
-                Dry-Run starten
-            </button>
-            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
+            <button mat-raised-button class="primary-button" [disabled]="this.ob$" (click)="duplicate()">
                 <mat-icon>content_copy</mat-icon>
                 Als neuen Entwurf duplizieren
             </button>
-            <button mat-raised-button class="warn-button" [disabled]="loading" (click)="archive()">
+            <button mat-raised-button class="warn-button" [disabled]="this.ob$" (click)="archive()">
                 <mat-icon>archive</mat-icon>
                 Workflow archivieren
             </button>

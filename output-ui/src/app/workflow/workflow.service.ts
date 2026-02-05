@@ -40,6 +40,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     );
   }
   async isRunning(id: number) {
+    if (!id) return false;
     let resp = await firstValueFrom(this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true }))
     return resp?.progress != 0
   }
@@ -49,6 +50,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       //console.log(new Date())
       return this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true })
     }))
+  }
+  getStatus(id: number): Observable<{ progress: number, status: string }> {
+      return this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true })
   }
 
   public add(ge: ImportWorkflow) {

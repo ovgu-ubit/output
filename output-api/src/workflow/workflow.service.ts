@@ -82,7 +82,7 @@ export class WorkflowService {
     }
 
     async status(id:number) {
-        return this.importService.status;
+        return this.importService.status();
     }
 }
 

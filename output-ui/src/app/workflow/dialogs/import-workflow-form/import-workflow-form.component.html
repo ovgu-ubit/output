@@ -60,11 +60,11 @@
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Test & Debug</span>
                 </a>
 
-                <a *ngIf="!this.entity?.deleted_at" mat-list-item [routerLink]="['action']" routerLinkActive="active"
-                    matTooltip="Freigabe/Archivierung" [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                <a mat-list-item [routerLink]="['action']" routerLinkActive="active"
+                    matTooltip="Aktionen" [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>publish</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">
-                        {{this.entity?.published_at? 'Publizieren' : 'Archivieren' }}
+                        Aktionen
                     </span>
                 </a>
             </mat-nav-list>
