@@ -34,6 +34,7 @@
                     </mat-expansion-panel-header>
                     <p><strong>Source:</strong> {{ result.read.source }}</p>
                     <p><strong>Gelesene Datensätze:</strong> {{ result.read.count }}</p>
+                    <p><strong>Response-Keys:</strong>{{result.read.response}}</p>
                 </mat-expansion-panel>
                 <mat-expansion-panel>
                     <mat-expansion-panel-header>
@@ -52,7 +53,11 @@
                     </mat-expansion-panel-header>
                     <ul>
                         @for (issue of result.result.issues; track issue) {
-                        <li>{{ issue }}</li>
+                        <li>{{ issue.message }}
+                            <ul>
+                                <li>{{this.getErrorText(issue.error)}}</li>
+                            </ul>
+                        </li>
                         }
                     </ul>
                 </mat-expansion-panel>

@@ -10,7 +10,7 @@ export class ImportWorkflow implements IImportWorkflow {
     id?: number;
 
     @Column({ type: "int" })
-    workflow_id: number;
+    workflow_id?: number;
 
     @Column()
     label?: string;
@@ -44,4 +44,7 @@ export class ImportWorkflow implements IImportWorkflow {
 
     @Column({ nullable: true, type: 'jsonb' })
     update_config?: UpdateMapping
+
+    @Column({ nullable: true, type: 'timestamptz' })
+    locked_at?: Date;
 }

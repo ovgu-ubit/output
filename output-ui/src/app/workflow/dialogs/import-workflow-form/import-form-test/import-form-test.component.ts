@@ -48,4 +48,8 @@ export class ImportFormTestComponent implements OnInit {
         },
       });
   }
+
+  getErrorText(error) {
+    return JSON.stringify(error)
+  }
 }

@@ -6,6 +6,8 @@ import { ImportWorkflowFormComponent } from '../../dialogs/import-workflow-form/
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { ConfigService } from 'src/app/administration/services/config.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-publication-import',
@@ -33,21 +35,29 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
 
-  constructor(public workflowService: WorkflowService, private snackBar: MatSnackBar, private router:Router) { }
+  constructor(public workflowService: WorkflowService, private _snackBar: MatSnackBar, private router: Router, private configService:ConfigService) { }
 
   ngOnInit(): void {
   }
 
   getName() {
     let res = 'Import-Workflows'
-    if (this.indexOptions.type === 'draft') res +=' (Entwürfe)'
-    else if (this.indexOptions.type === 'published') res +=' (Aktiv)'
-    else if (this.indexOptions.type === 'archived') res +=' (Archiviert)'
+    if (this.indexOptions.type === 'draft') res += ' (Entwürfe)'
+    else if (this.indexOptions.type === 'published') res += ' (Aktiv)'
+    else if (this.indexOptions.type === 'archived') res += ' (Archiviert)'
     return res;
   }
 
-  edit(workflow: ImportWorkflow) {
-   this.router.navigate(["/workflow/publication_import/"+workflow.id+"/overview"]); 
+  async edit(workflow: ImportWorkflow) {
+    if (await firstValueFrom(this.workflowService.isLocked(workflow.id))) {
+      this._snackBar.open('Workflow wird gerade bearbeitet, bitte warten.', 'Nagut', {
+        duration: 5000,
+        panelClass: ['danger-snackbar'],
+        verticalPosition: 'top'
+      })
+      return;
+    }
+    this.router.navigate(["/workflow/publication_import/" + workflow.id + "/overview"]);
   }
 
   getLink() {
@@ -58,50 +68,10 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     return '/Workflows/Publikationsimport'
   }
 
-  change(event:any) {
+  change(event: any) {
     this.indexOptions = {
       type: event.value
     }
     this.table.updateData().subscribe();
-  }
-
-  fork() {
-    if (this.table.selection.selected.length !== 1) {
-      this.snackBar.open('Bitte wählen Sie genau ein Element aus.', 'Alles klar!', {
-          duration: 5000,
-          panelClass: ['error-snackbar'],
-          verticalPosition: 'top'
-        });
-      return;
-    }
-    //create new workflow from selected version and edit it
-    let nextVersion:ImportWorkflow = {...this.table.selection.selected[0]}
-    nextVersion.id = undefined;
-    nextVersion.version = nextVersion.version + 1;
-    nextVersion.deleted_at = null;
-    nextVersion.published_at = null;
-    nextVersion.created_at = null;
-    nextVersion.modified_at = null;
-
-    this.table.edit(nextVersion);
-  }
-
-  publish() {
-    if (this.table.selection.selected.length !== 1) {
-      this.snackBar.open('Bitte wählen Sie genau ein Element aus.', 'Alles klar!', {
-          duration: 5000,
-          panelClass: ['error-snackbar'],
-          verticalPosition: 'top'
-        });
-      return;
-    }
-    let elem = this.table.selection.selected[0];
-    elem.published_at = new Date();
-
-    this.workflowService.update(elem).subscribe({
-      next: data => {
-        this.table.updateData().subscribe();
-      }
-    });
   }
 }

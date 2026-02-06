@@ -251,6 +251,7 @@ export class JSONataImportService extends AbstractImportService {
                 excluded: [],
                 imported: [],
                 issues: [],
+                update_fields: []
             }
         };
         this.dryRun = true;
@@ -265,24 +266,65 @@ export class JSONataImportService extends AbstractImportService {
             case Strategy.URL_DOI:
                 try {
                     pub = (await this.publicationService.get({ where: { doi: Not(IsNull()) }, take: 1 }))[0]
-                } catch (err) { result.result.issues.push('Could not find any publication with DOI') }
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Could not find any publication with DOI', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
 
                 result.read.source = await this.setVariables(this.url_doi, pub.doi, true);
                 ob$ = this.http.get(result.read.source)
                 try {
                     resp = await firstValueFrom(ob$) as AxiosResponse;
-                } catch (err) { result.result.issues.push('Could not retrieve response from URL') }
+                    result.read.response = this.collectKeys(resp.data)
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Could not retrieve response from URL', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
 
                 try {
                     item = await this.getDataEnrich(resp);
                     result.read.read_items = item;
-                } catch (err) { result.result.issues.push('Could not retrieve item from response') }
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Could not retrieve item from response', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
 
                 const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
-                if (!orig?.locked) {
+                if (orig && !orig?.locked) {
                     try {
                         pubUpd = await this.mapUpdate(item, orig)
-                    } catch (err) { result.result.issues.push('Could not map item') }
+                    } catch (err) {
+                        result.result.issues.push({
+                            message: 'Could not map item', error: err instanceof Error
+                                ? {
+                                    name: err.name,
+                                    message: err.message,
+                                    stack: err.stack,
+                                }
+                                : err
+                        })
+                    }
                     if (pubUpd?.pub) {
                         result.result.imported.push(pubUpd.pub);
                         result.result.update_fields.push(pubUpd.fields);
@@ -297,14 +339,34 @@ export class JSONataImportService extends AbstractImportService {
                 result.read.source = await this.setVariables(this.url_count, undefined, true);
                 try {
                     resp_count = await firstValueFrom(this.retrieveCountRequest())
-                } catch (err) { result.result.issues.push('Error retrieving count with ' + this.completeURL) }
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error retrieving count with ' + this.completeURL, error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
 
                 try {
                     count = await this.getNumber(resp_count);
                     result.read.count = count;
-                } catch (e) { result.result.issues.push('Error retrieving count from response') }
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error retrieving count from response', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
 
-                if (pos > count) result.result.issues.push('Position greater than count')
+                if (pos > count) result.result.issues.push({ message: 'Position greater than count', error: null })
 
                 if (this.mode === 'offset') {
                     ob$ = this.request(this.offset_start + pos - 1);
@@ -315,7 +377,18 @@ export class JSONataImportService extends AbstractImportService {
 
                 try {
                     resp = await firstValueFrom(ob$);
-                } catch (err) { result.result.issues.push('Error while retrieving items with ' + this.completeURL) }
+                    result.read.response = this.collectKeys(resp.data)
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error while retrieving items with ' + this.completeURL, error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
 
                 try {
                     const parsedData = await this.getData(resp);
@@ -325,11 +398,22 @@ export class JSONataImportService extends AbstractImportService {
                         if (pubNew) result.result.imported.push(pubNew);
                         else result.result.excluded.push(chunk);
                     }
-                } catch (err) { result.result.issues.push('Error while converting data with mapping') }
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error while converting data with mapping', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
         }
         const now = new Date()
         result.meta.durationMs = now.getTime() - start.getTime()
-        result.result.status = 'ok';
+        if (result.result.issues.length === 0) result.result.status = 'ok';
+        else result.result.status = 'error';
         return result as ImportWorkflowTestResult;
     }
 
@@ -639,5 +723,24 @@ export class JSONataImportService extends AbstractImportService {
     protected getCostApproach(element: JSONataParsedObject): number {
         return element.cost_approach;
 
+    }
+    collectKeys(
+        obj: unknown,
+        depth = 3,
+        prefix = ''
+    ): string[] {
+        if (depth === 0 || obj === null || typeof obj !== 'object') {
+            return [];
+        }
+
+        return Object.keys(obj as Record<string, unknown>).flatMap(key => {
+            const path = prefix ? `${prefix}.${key}` : key;
+            const value = (obj as any)[key];
+
+            return [
+                path,
+                ...this.collectKeys(value, depth - 1, path)
+            ];
+        });
     }
 }

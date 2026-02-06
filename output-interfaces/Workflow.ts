@@ -11,6 +11,7 @@ export interface Workflow {
     deleted_at?: Date;
     description?: string;
     mapping?: string;
+    locked_at?: Date;
 }
 
 export interface ImportWorkflow extends Workflow {
@@ -31,10 +32,11 @@ export interface ImportWorkflowTestResult {
         source: string;
         count: number;
         read_items: any[];
+        response: any;
     },
     result: {
         status: 'ok' | 'warning' | 'error';
-        issues: string[];
+        issues: {message: string, error: any}[];
         imported: Publication[];
         update_fields : string[][];
         excluded: any[];

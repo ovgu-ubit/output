@@ -25,8 +25,22 @@ export class WorkflowService {
         return this.importRepository.find(options);
     }
 
-    getImport(id?: number) {
-        return this.importRepository.findOneBy({ id });
+    async getImport(id?: number) {
+        const res = await this.importRepository.findOneBy({ id });
+        if (res.published_at || res.deleted_at) return res;
+        else if (!res.locked_at) {
+            await this.saveImport({
+                id: res.id,
+                locked_at: new Date()
+            });
+            return this.importRepository.findOneBy({id})
+        } else if ((new Date().getTime() - res.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
+            await this.saveImport({
+                id: res.id,
+                locked_at: null
+            });
+            return this.importRepository.findOneBy({id})
+        }
     }
 
     async saveImport(workflow: ImportWorkflow) {
@@ -59,7 +73,7 @@ export class WorkflowService {
             throw new BadRequestException('Error: only published workflows can be executed');
         }
         await this.importService.setReportingYear(reporting_year);
-        await this.importService.setUp(importDef, update? importDef.update_config : undefined);
+        await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
         await this.importService.import(update, user, dryRun);
     }
 
@@ -69,6 +83,13 @@ export class WorkflowService {
         await this.importService.setReportingYear("2024");
         await this.importService.setUp(importDef, importDef.update_config);
         return await this.importService.test(1);
+    }
+
+    async isLocked(id:number):Promise<boolean> {
+        const db = await this.importRepository.findOneBy({ id })
+        if (!db.locked_at) return false;
+        else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
+        else return true;
     }
 
     async deleteImports(ids: number[]) {

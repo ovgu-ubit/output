@@ -119,6 +119,7 @@ export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
 export type ImportWorkflowSourceInput = z.infer<typeof ImportWorkflowSourceSchema>;
 
 export function validateImportWorkflow(workflow: ImportWorkflow) {
+  if (!workflow.strategy_type) return true;
   const schema = ImportWorkflowSourceSchema;
 
   if (!schema) return; // unbekannter Key → dito

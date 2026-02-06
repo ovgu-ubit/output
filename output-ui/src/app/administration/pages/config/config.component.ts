@@ -43,7 +43,7 @@ export class ConfigComponent implements OnInit {
         this.loading = false;
         this.snackBar.open('Konfiguration konnte nicht geladen werden.', 'Schließen', {
           duration: 5000,
-          panelClass: ['error-snackbar'],
+          panelClass: ['danger-snackbar'],
           verticalPosition: 'top'
         });
       }

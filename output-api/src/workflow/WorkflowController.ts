@@ -53,6 +53,13 @@ export class WorkflowController {
     return await this.workflowService.testImport(id);
   }
 
+  @Get("import/:id/locked")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  isLocked(@Param('id') id: number): Promise<boolean> {
+    return this.workflowService.isLocked(id);
+  }
+
   @Post("import/:id/run")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])

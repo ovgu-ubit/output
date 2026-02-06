@@ -4,6 +4,7 @@ import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces
 import { ImportFormFacade } from '../import-form-facade.service';
 import { MatSelectModule } from '@angular/material/select';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { tap } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-strategy',
@@ -44,7 +45,7 @@ export class ImportFormStrategyComponent implements OnInit {
     this.previousStrategy = this.selectionForm.controls.strategy.value;
     this.strategyForm = this.buildForm(this.previousStrategy);
 
-    this.facade.import$.forEach(e => {
+    this.facade.import$.pipe(tap(e => {
       if (!e) return;
       this.entity = e;
       this.previousStrategy = e.strategy_type;
@@ -55,6 +56,7 @@ export class ImportFormStrategyComponent implements OnInit {
         this.strategyForm.disable();
       }
     })
+  ).subscribe();
 
     this.selectionForm.controls.strategy.valueChanges.subscribe(async (next) => {
       if (!next || next === this.previousStrategy) return;
@@ -75,9 +77,10 @@ export class ImportFormStrategyComponent implements OnInit {
   action() {
     let res = {
       strategy_type: this.previousStrategy,
-      stategy: {...this.strategyForm.value}
+      strategy: {...this.strategyForm.value}
     }
     this.facade.patch(res);
+    this.facade.save().subscribe();
   }
 
   reset() {

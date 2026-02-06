@@ -108,7 +108,7 @@ export class ImportFormActionComponent implements OnInit {
           this.snackBar.open('Der Entwurf konnte nicht gelöscht werden.', 'OK', {
             duration: 4500,
             verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
+            panelClass: ['danger-snackbar'],
           });
         },
       });
@@ -140,7 +140,7 @@ export class ImportFormActionComponent implements OnInit {
           this.snackBar.open('Neue Entwurfsversion konnte nicht erstellt werden.', 'OK', {
             duration: 4500,
             verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
+            panelClass: ['danger-snackbar'],
           });
         },
       });
@@ -169,7 +169,7 @@ export class ImportFormActionComponent implements OnInit {
           this.snackBar.open('Der Workflow konnte nicht gestartet werden.', 'OK', {
             duration: 4500,
             verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
+            panelClass: ['danger-snackbar'],
           });
           this.update();
         },
@@ -194,7 +194,7 @@ export class ImportFormActionComponent implements OnInit {
           this.snackBar.open('Änderung konnte nicht gespeichert werden.', 'OK', {
             duration: 4500,
             verticalPosition: 'top',
-            panelClass: ['error-snackbar'],
+            panelClass: ['danger-snackbar'],
           });
         },
       });

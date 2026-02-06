@@ -24,6 +24,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public getOne(id: number) {
     return this.http.get<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id, { withCredentials: true });
   }
+  public isLocked(id: number) {
+    return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/locked', { withCredentials: true });
+  }
   public getConfig(id: number) {
     return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config')
   }
