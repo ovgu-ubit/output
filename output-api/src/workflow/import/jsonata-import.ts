@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
+import * as xmljs from 'xml-js';
 import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -203,8 +204,15 @@ export class JSONataImportService extends AbstractImportService {
 
     protected async getData(response: AxiosResponse): Promise<JSONataParsedObject[]> {
         try {
+            let data = response.data;
+            if (this.importDefinition.strategy.format) {
+                if (this.importDefinition.strategy.format === 'xml') {
+                    data = JSON.parse(xmljs.xml2json(data, { compact: true }));
+                }
+            }
+
             const mapping = jsonata(this.importDefinition.strategy.get_items)
-            const items = (await mapping.evaluate(response.data))
+            const items = (await mapping.evaluate(data))
             return await Promise.all(items.map(e => this.transform(e)))
         } catch (err) {
             console.log(err)
@@ -214,8 +222,14 @@ export class JSONataImportService extends AbstractImportService {
 
     protected async getDataEnrich(response: AxiosResponse): Promise<JSONataParsedObject> {
         try {
+            let data = response.data;
+            if (this.importDefinition.strategy.format) {
+                if (this.importDefinition.strategy.format === 'xml') {
+                    data = JSON.parse(xmljs.xml2json(data, { compact: true }));
+                }
+            }
             const mapping = jsonata(this.importDefinition.strategy.get_doi_item)
-            const item = (await mapping.evaluate(response.data))
+            const item = (await mapping.evaluate(data))
             return await this.transform(item)
         } catch (err) {
             console.log(err)
@@ -632,8 +646,14 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected async getNumber(response: AxiosResponse): Promise<number> {
+        let data = response.data;
+        if (this.importDefinition.strategy.format) {
+            if (this.importDefinition.strategy.format === 'xml') {
+                data = JSON.parse(xmljs.xml2json(data, { compact: true }));
+            }
+        }
         const mapping = jsonata(this.importDefinition.strategy.get_count)
-        return mapping.evaluate(response.data)
+        return mapping.evaluate(data)
     }
     protected async importTest(element: AxiosResponse): Promise<boolean> {
         const mapping = jsonata(this.importDefinition.strategy.exclusion_criteria)
