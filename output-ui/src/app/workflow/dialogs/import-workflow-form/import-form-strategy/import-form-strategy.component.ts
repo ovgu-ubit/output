@@ -28,7 +28,7 @@ export class ImportFormStrategyComponent implements OnInit {
   strategies = [
     {value: Strategy.URL_QUERY_OFFSET, label: 'Web-Abfrage per Suche und Offset', id: 'offset'},
     {value: Strategy.URL_DOI, label: 'Web-Abfrage per DOI', id: 'doi'},
-    {value: Strategy.FILE_XLSX, label: 'Datei-Upload', id: 'file'},
+    {value: Strategy.FILE_UPLOAD, label: 'Datei-Upload', id: 'file'},
   ]
 
   formats = [
@@ -97,7 +97,7 @@ export class ImportFormStrategyComponent implements OnInit {
   private buildForm(key: Strategy): FormGroup {
     let res;
     switch (key) {
-      case Strategy.FILE_XLSX:
+      case Strategy.FILE_UPLOAD:
         res = this.formBuilder.group({
           only_import_if_authors_inst: [true],
           format: ['', Validators.required],

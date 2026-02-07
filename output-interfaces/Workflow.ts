@@ -44,8 +44,8 @@ export interface ImportWorkflowTestResult {
 }
 
 export enum Strategy {
-    FILE_CSV,
-    FILE_XLSX,
+    FILE_UPLOAD,
+    URL_LOOKUP_AND_RETRIEVE,
     URL_QUERY_OFFSET,
     URL_DOI
 }

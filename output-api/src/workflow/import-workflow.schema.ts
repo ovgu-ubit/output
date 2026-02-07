@@ -4,8 +4,8 @@ import { BadRequestException } from "@nestjs/common";
 import { Strategy } from "../../../output-interfaces/Workflow";
 
 const StrategyTypeSchema = z.enum([
-  "FILE_CSV",
-  "FILE_XLSX",
+  "FILE_UPLOAD",
+  "URL_LOOKUP_AND_RETRIEVE",
   "URL_QUERY_OFFSET",
   "URL_DOI",
 ]);
@@ -14,8 +14,8 @@ const StrategyFromApi: Record<
   z.infer<typeof StrategyTypeSchema>,
   Strategy
 > = {
-  FILE_CSV: Strategy.FILE_CSV,
-  FILE_XLSX: Strategy.FILE_XLSX,
+  FILE_UPLOAD: Strategy.FILE_UPLOAD,
+  URL_LOOKUP_AND_RETRIEVE: Strategy.URL_LOOKUP_AND_RETRIEVE,
   URL_QUERY_OFFSET: Strategy.URL_QUERY_OFFSET,
   URL_DOI: Strategy.URL_DOI,
 };
@@ -24,8 +24,8 @@ const StrategyTypeFromNumber = (v: unknown) => {
   if (typeof v !== "number" || !Number.isInteger(v)) return v;
 
   switch (v) {
-    case 0: return "FILE_CSV";
-    case 1: return "FILE_XLSX";
+    case 0: return "FILE_UPLOAD";
+    case 1: return "URL_LOOKUP_AND_RETRIEVE";
     case 2: return "URL_QUERY_OFFSET";
     case 3: return "URL_DOI";
     default: return v; // damit Zod sauber "invalid_enum_value" o.ä. wirft
