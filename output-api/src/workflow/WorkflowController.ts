@@ -63,8 +63,8 @@ export class WorkflowController {
   @Post("import/:id/run")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  run_import(@Param('id') id: number, @Body('dry_run') dryRun: boolean, @Req() req, @Body('update') update: boolean, @Body('reporting_year') reporting_year: string) {
-    return this.workflowService.startImport(id, reporting_year, update, req.user?.username, !!dryRun);
+  run_import(@Param('id') id: number, @Body('dry_run') dryRun: boolean, @Req() req, @Body('update') update: boolean, @Body('reporting_year') reporting_year?: number, @Body('ids') ids?: number[]) {
+    return this.workflowService.startImport(id, reporting_year, ids, update, req.user?.username, !!dryRun);
   }
 
   @Get('import/:id/run')

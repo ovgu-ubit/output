@@ -133,7 +133,7 @@ export class ImportFormActionComponent implements OnInit {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (created) => {
-          this.snackBar.open('Neue Entwurfsversion erstellt.', 'OK', { duration: 3500, verticalPosition: 'top' });
+          this.snackBar.open('Neue Entwurfsversion erstellt.', 'OK', { duration: 3500, verticalPosition: 'top', panelClass: ['success-snackbar'] });
           this.router.navigateByUrl(`/workflow/publication_import/${created.id}/overview`);
         },
         error: () => {
@@ -161,7 +161,7 @@ export class ImportFormActionComponent implements OnInit {
           this.snackBar.open(
             dryRun ? 'Dry-Run gestartet. Das Ergebnis wird im Report protokolliert.' : 'Importlauf gestartet.',
             'OK',
-            { duration: 4500, verticalPosition: 'top' },
+            { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
           );
           this.update();
         },

@@ -548,7 +548,7 @@ export class JSONataImportService extends AbstractImportService {
             throw new BadRequestException('Enrich cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = await this.reportService.createReport('Enrich', this.name, by_user);
+        this.report = await this.reportService.createReport('Worfklow_Import', this.name, by_user);
 
         const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {

@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, NotFoundException, Options } from '@ne
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
-import { IsNull, Not, Repository } from 'typeorm';
+import { Between, In, IsNull, Not, Repository } from 'typeorm';
 import { JSONataImportService } from './import/jsonata-import';
 import { validateImportWorkflow } from './import-workflow.schema';
-import { ImportWorkflowTestResult } from '../../../output-interfaces/Workflow';
+import { ImportWorkflowTestResult, Strategy } from '../../../output-interfaces/Workflow';
 import { UpdateMapping } from '../../../output-interfaces/Config';
 
 @Injectable()
@@ -38,7 +38,7 @@ export class WorkflowService {
                 id: res.id,
                 locked_at: null
             });
-            return this.importRepository.findOneBy({id})
+            return this.importRepository.findOneBy({ id })
         }
         return res;
     }
@@ -65,16 +65,30 @@ export class WorkflowService {
         if (validated) return this.importRepository.save(workflow);
     }
 
-    async startImport(id: number, reporting_year: string, update: boolean, user?: string, dryRun = false) {
+    async startImport(id: number, reporting_year: number, ids: number[], update: boolean, user?: string, dryRun = false) {
         const importDef = await this.importRepository.findOneBy({ id });
 
         if (!importDef) throw new BadRequestException('Error: workflow not found');
         if (!importDef.published_at || importDef.deleted_at) {
             throw new BadRequestException('Error: only published workflows can be executed');
         }
-        await this.importService.setReportingYear(reporting_year);
-        await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-        await this.importService.import(update, user, dryRun);
+        if (importDef.strategy_type === Strategy.URL_QUERY_OFFSET) {
+            await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
+            await this.importService.setReportingYear(reporting_year +"");
+            await this.importService.import(update, user, dryRun);
+        }
+        else if (importDef.strategy_type === Strategy.URL_DOI) {
+            await this.importService.setUp(importDef, importDef.update_config);
+            if (ids && ids.length >= 0) {
+                this.importService.enrich_whereClause = { where: { id: In(ids) } };
+            } else {
+                const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+                const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+                this.importService.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
+                this.importService.setReportingYear(reporting_year +"")
+            }
+            await this.importService.enrich(user, dryRun);
+        }
     }
 
     async testImport(id: number): Promise<ImportWorkflowTestResult> {
@@ -85,7 +99,7 @@ export class WorkflowService {
         return await this.importService.test(1);
     }
 
-    async isLocked(id:number):Promise<boolean> {
+    async isLocked(id: number): Promise<boolean> {
         const db = await this.importRepository.findOneBy({ id })
         if (!db.locked_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
