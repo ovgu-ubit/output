@@ -40,7 +40,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
         return this.id
       }),
       filter(id => !Number.isNaN(id))
-      , concatMap(
+      , switchMap(
         id => this.facade.load(id)
       ), tap(wf => { this.entity = wf; }),
       takeUntil(this.facade.destroy$)
