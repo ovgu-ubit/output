@@ -1,9 +1,9 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { concatMap, concatWith, filter, map, Observable, shareReplay, startWith, switchMap, take } from 'rxjs';
+import { concat, concatMap, concatWith, filter, map, Observable, shareReplay, startWith, switchMap, take, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
@@ -24,7 +24,7 @@ import { ImportFormFacade } from './import-form-facade.service';
     ImportFormFacade
   ]
 })
-export class ImportWorkflowFormComponent implements OnInit, AfterViewInit {
+export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(protected facade: ImportFormFacade, private route: ActivatedRoute,
     private workflowService: WorkflowService, private router: Router) { }
@@ -40,15 +40,21 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit {
         return this.id
       }),
       filter(id => !Number.isNaN(id))
-      , map(id => this.facade.load(id))
-      ).subscribe();
-      this.facade.import$.forEach(e => {
-        this.entity = e;
+      , map(id => this.facade.load(id)),
+      concatMap(() => {
+        return this.facade.import$.pipe(takeUntil(this.facade.destroy$), map(wf => {
+          this.entity = wf
+      }))
       })
+    ).subscribe();
   }
 
   ngAfterViewInit(): void {
 
+  }
+
+  ngOnDestroy(): void {
+    this.facade.destroy();
   }
 
   abort() {

@@ -40,7 +40,7 @@ export class ImportFormActionComponent implements OnInit {
   ) { }
 
   async ngOnInit() {
-    this.facade.import$.subscribe((workflow) => {
+    this.facade.import$.pipe(takeUntil(this.facade.destroy$)).subscribe((workflow) => {
       this.entity = workflow;
       if (this.entity.strategy_type === Strategy.URL_DOI) {
         this.form.controls.update.setValue(true)

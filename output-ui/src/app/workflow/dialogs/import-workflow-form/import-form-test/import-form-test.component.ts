@@ -3,7 +3,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflowTestResult } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { finalize } from 'rxjs';
+import { finalize, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-test',
@@ -23,7 +23,7 @@ export class ImportFormTestComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.facade.import$.subscribe((workflow) => {
+    this.facade.import$.pipe(takeUntil(this.facade.destroy$)).subscribe((workflow) => {
       this.workflowId = workflow?.id ?? null;
     });
   }

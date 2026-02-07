@@ -3,6 +3,7 @@ import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow'
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-mapping',
@@ -21,7 +22,7 @@ export class ImportFormMappingComponent implements OnInit {
     this.form = this.formBuilder.group({
       mapping: [''],
     });
-    this.facade.import$.subscribe(workflow => {
+    this.facade.import$.pipe(takeUntil(this.facade.destroy$)).subscribe(workflow => {
       if (!workflow) return;
       this.entity = workflow;
       this.form.patchValue({ mapping: workflow.mapping ?? '' }, { emitEvent: false });

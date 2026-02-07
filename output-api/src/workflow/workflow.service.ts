@@ -33,7 +33,6 @@ export class WorkflowService {
                 id: res.id,
                 locked_at: new Date()
             });
-            return this.importRepository.findOneBy({id})
         } else if ((new Date().getTime() - res.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
             await this.saveImport({
                 id: res.id,
@@ -41,6 +40,7 @@ export class WorkflowService {
             });
             return this.importRepository.findOneBy({id})
         }
+        return res;
     }
 
     async saveImport(workflow: ImportWorkflow) {

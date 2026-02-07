@@ -4,6 +4,7 @@ import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow'
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { DatePipe } from '@angular/common';
+import { takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-general',
@@ -32,7 +33,7 @@ export class ImportFormGeneralComponent implements OnInit {
       deleted_at: [{value: new Date(), disabled:true}],
       description: [''],
     })
-    this.facade.import$.forEach(e => {
+    this.facade.import$.pipe(takeUntil(this.facade.destroy$)).subscribe(e => {
       this.entity = e;
       this.form.patchValue(e)
       if (this.entity.published_at || this.entity.deleted_at) this.form.disable();

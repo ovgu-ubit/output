@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, concatWith, map, Observable, of, tap } from "rxjs";
+import { BehaviorSubject, concatWith, map, Observable, of, Subject, tap } from "rxjs";
 import { ImportWorkflow } from "../../../../../../output-interfaces/Workflow";
 import { WorkflowService } from "../../workflow.service";
 import { ReportService } from "src/app/administration/services/report.service";
@@ -10,6 +10,7 @@ import { ReportService } from "src/app/administration/services/report.service";
 export class ImportFormFacade {
   private readonly importSubject = new BehaviorSubject<ImportWorkflow | null>(null);
   readonly import$ = this.importSubject.asObservable();
+  readonly destroy$ = new Subject<void>();
 
   constructor(private api: WorkflowService, private reportService: ReportService) { }
 
@@ -23,6 +24,11 @@ export class ImportFormFacade {
         .filter((report) => report.includes(workflowName))
         .sort((a, b) => b.localeCompare(a))
     ))
+  }
+
+  destroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   requestReport(filename: string) {
