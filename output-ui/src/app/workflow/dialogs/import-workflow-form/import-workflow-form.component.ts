@@ -3,7 +3,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { concat, concatMap, concatWith, filter, map, Observable, shareReplay, startWith, switchMap, take, takeUntil } from 'rxjs';
+import { concat, concatMap, concatWith, filter, map, Observable, shareReplay, startWith, switchMap, take, takeUntil, tap } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
@@ -40,12 +40,10 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
         return this.id
       }),
       filter(id => !Number.isNaN(id))
-      , map(id => this.facade.load(id)),
-      concatMap(() => {
-        return this.facade.import$.pipe(takeUntil(this.facade.destroy$), map(wf => {
-          this.entity = wf
-      }))
-      })
+      , concatMap(
+        id => this.facade.load(id)
+      ), tap(wf => { this.entity = wf; }),
+      takeUntil(this.facade.destroy$)
     ).subscribe();
   }
 

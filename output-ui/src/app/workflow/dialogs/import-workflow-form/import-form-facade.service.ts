@@ -4,9 +4,7 @@ import { ImportWorkflow } from "../../../../../../output-interfaces/Workflow";
 import { WorkflowService } from "../../workflow.service";
 import { ReportService } from "src/app/administration/services/report.service";
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class ImportFormFacade {
   private readonly importSubject = new BehaviorSubject<ImportWorkflow | null>(null);
   readonly import$ = this.importSubject.asObservable();
@@ -15,7 +13,9 @@ export class ImportFormFacade {
   constructor(private api: WorkflowService, private reportService: ReportService) { }
 
   load(id: number) {
-    this.api.getOne(id).subscribe(wf => this.importSubject.next(wf));
+    return this.api.getOne(id).pipe(
+    tap(wf => this.importSubject.next(wf))
+  );
   }
 
   getReports(workflowName: string): Observable<string[]> {

@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ImportWorkflowTestResult } from '../../../../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportWorkflowTestResult } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { finalize, takeUntil } from 'rxjs';
+import { filter, finalize, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-test',
@@ -23,7 +23,7 @@ export class ImportFormTestComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.facade.import$.pipe(takeUntil(this.facade.destroy$)).subscribe((workflow) => {
+    this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$)).subscribe((workflow) => {
       this.workflowId = workflow?.id ?? null;
     });
   }

@@ -4,7 +4,7 @@ import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces
 import { ImportFormFacade } from '../import-form-facade.service';
 import { MatSelectModule } from '@angular/material/select';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { takeUntil, tap } from 'rxjs';
+import { filter, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-strategy',
@@ -45,7 +45,7 @@ export class ImportFormStrategyComponent implements OnInit {
     this.previousStrategy = this.selectionForm.controls.strategy.value;
     this.strategyForm = this.buildForm(this.previousStrategy);
 
-    this.facade.import$.pipe(takeUntil(this.facade.destroy$), tap(e => {
+    this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$), tap(e => {
       if (!e) return;
       this.entity = e;
       this.previousStrategy = e.strategy_type;

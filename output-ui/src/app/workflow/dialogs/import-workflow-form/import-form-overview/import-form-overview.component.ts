@@ -4,7 +4,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
 import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
-import { takeUntil } from 'rxjs';
+import { filter, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-overview',
@@ -20,7 +20,7 @@ export class ImportFormOverviewComponent implements OnInit {
   constructor(private dialog: MatDialog, private facade: ImportFormFacade) { }
 
   ngOnInit() {
-    this.facade.import$.pipe(takeUntil(this.facade.destroy$)).subscribe((workflow) => {
+    this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$)).subscribe((workflow) => {
       if (!workflow) return;
 
       this.workflowReportName = `${workflow.label}_v${workflow.version}`;
