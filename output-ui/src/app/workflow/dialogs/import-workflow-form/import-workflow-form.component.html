@@ -1,9 +1,13 @@
 <app-breadcrump [path]="getLink()"
-    [label]="'/Workflows/Publikationsimport/' + (this.facade.import$ | async)?.label + ' (' + (this.facade.import$ | async)?.version + ')'"></app-breadcrump>
+    [label]="getLabel()"></app-breadcrump>
 <div class="import-workflow-layout">
     <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
         <div style="display: flex;gap: 10px">
+            @if ((this.facade.import$ | async)?.id) {
             <h1>{{(this.facade.import$ | async)?.label}}, Version {{(this.facade.import$ | async)?.version}}</h1>
+            } @else {
+                <h1>Neuer Import</h1>
+            }
             <mat-chip-set>
                 <mat-chip class="status-chip status-draft"
                     *ngIf="!(this.facade.import$ | async)?.published_at">Entwurf</mat-chip>
@@ -17,7 +21,9 @@
             <button mat-icon-button (click)="this.export()"
                 [matTooltip]="(this.facade.import$ | async)?.label + ' exportieren'"
                 [matTooltipShowDelay]="800"><mat-icon>share</mat-icon></button>
-            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+            <button mat-icon-button (click)="this.save()" matTooltip="Speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Schließen"
                 [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
         </div>
     </mat-toolbar>

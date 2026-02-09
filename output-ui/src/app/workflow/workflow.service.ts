@@ -36,17 +36,24 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public export(id: number) {
     return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });
   }
-  public test(id: number) {
-    return this.http.get<ImportWorkflowTestResult>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/test', { withCredentials: true });
+  public test(id: number, pos = 1) {
+    return this.http.get<ImportWorkflowTestResult>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/test?pos='+pos, { withCredentials: true });
   }
-  public run(id: number, reporting_year: number, update: boolean, dryRun = false) {
+  public run(id: number, reporting_year: number, update: boolean, dryRun = false, file?: File) {
+    let body;
+    if (file) {
+      body = new FormData();
+      body.append("file", file)
+      body.append("update", update)
+      body.append("dry_run", dryRun)
+    } else body = {
+      dry_run: dryRun,
+      reporting_year,
+      update
+    }
     return this.http.post<{ status: string; dry_run: boolean }>(
       this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run',
-      {
-        dry_run: dryRun,
-        reporting_year,
-        update
-      },
+      body,
       { withCredentials: true }
     );
   }

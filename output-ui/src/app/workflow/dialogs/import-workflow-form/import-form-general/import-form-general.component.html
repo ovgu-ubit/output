@@ -2,7 +2,8 @@
     <mat-card-title>Allgemeine Informationen</mat-card-title>
     <mat-card-content>
         <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
-            <mat-form-field *ngIf="this.entity?.id" appearance="fill">
+            @if (this.entity?.id) {
+            <mat-form-field appearance="fill">
                 <mat-label>ID</mat-label>
                 <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
             </mat-form-field>
@@ -11,7 +12,7 @@
                 <mat-label>UUID</mat-label>
                 <input matInput placeholder="UUID" formControlName="workflow_id" />
             </mat-form-field>
-
+            }
             <mat-form-field appearance="fill">
                 <mat-label>Bezeichnung</mat-label>
                 <input matInput placeholder="Bezeichnung" formControlName="label" />
@@ -19,7 +20,7 @@
 
             <mat-form-field appearance="fill">
                 <mat-label>Version</mat-label>
-                <input matInput type="number" onwheel="return false;" placeholder="Version" formControlName="version"/>
+                <input matInput type="number" onwheel="return false;" placeholder="Version" formControlName="version" />
             </mat-form-field>
 
             <mat-form-field appearance="fill">

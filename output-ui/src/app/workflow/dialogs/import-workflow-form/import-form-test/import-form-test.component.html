@@ -3,11 +3,18 @@
     <mat-card-content>
         <p>Starten Sie einen Testlauf, um Lesedaten und Importergebnis des aktuellen Workflows zu prüfen.</p>
 
-        <button mat-raised-button class="primary-button" [disabled]="!workflowId || isRunning" (click)="runTest()">
+        <button mat-raised-button class="primary-button" [disabled]="!workflow?.id || isRunning" (click)="runTest()">
             {{ isRunning ? 'Test läuft…' : 'Testlauf starten' }}
         </button>
-
-        @if (!workflowId) {
+        @if (doiStrategy) {
+        <form [formGroup]="form">
+            <mat-form-field>
+                <mat-label>DOI Position</mat-label>
+            <input matInput [type]="'number'" onwheel="return false;" placeholder="Position" formControlName="pos">
+            </mat-form-field>
+        </form>
+        }
+        @if (!workflow?.id) {
         <p class="hint">Bitte speichern Sie den Workflow zuerst, damit ein Testlauf gestartet werden kann.</p>
         }
 

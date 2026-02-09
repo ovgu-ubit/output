@@ -280,7 +280,7 @@ export class JSONataImportService extends AbstractImportService {
         switch (this.importDefinition.strategy_type) {
             case Strategy.URL_DOI:
                 try {
-                    pub = (await this.publicationService.get({ where: { doi: Not(IsNull()) }, take: 1 }))[0]
+                    pub = (await this.publicationService.get({ where: { doi: Not(IsNull()) }, take: 1, skip: pos }))[0]
                 } catch (err) {
                     result.result.issues.push({
                         message: 'Could not find any publication with DOI', error: err instanceof Error
@@ -294,7 +294,7 @@ export class JSONataImportService extends AbstractImportService {
                 }
 
                 result.read.source = await this.setVariables(this.url_doi, pub.doi, true);
-                ob$ = this.http.get(result.read.source)
+                ob$ = this.http.get(await this.setVariables(this.url_doi, pub.doi, false))
                 try {
                     resp = await firstValueFrom(ob$) as AxiosResponse;
                     result.read.response = this.collectKeys(resp.data)
@@ -324,8 +324,19 @@ export class JSONataImportService extends AbstractImportService {
                             : err
                     })
                 }
-
+                try {
                 orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Could not retrieve original via DOI or title', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
                 if (orig && !orig?.locked) {
                     try {
                         pubUpd = await this.mapUpdate(item, orig)

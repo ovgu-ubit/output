@@ -50,8 +50,8 @@ export class WorkflowController {
   @Get("import/:id/test")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async test_import(@Param('id') id: number): Promise<ImportWorkflowTestResult> {
-    return await this.workflowService.testImport(id);
+  async test_import(@Param('id') id: number, @Query('pos') pos?:number): Promise<ImportWorkflowTestResult> {
+    return await this.workflowService.testImport(id, pos);
   }
 
   @Get("import/:id/locked")

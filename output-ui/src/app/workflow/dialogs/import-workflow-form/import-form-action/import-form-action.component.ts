@@ -1,15 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
+import { ImportConfigComponent } from 'src/app/administration/components/import-config/import-config.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { ImportFormFacade } from '../import-form-facade.service';
 import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces/Workflow';
-import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { ImportConfigComponent } from 'src/app/administration/components/import-config/import-config.component';
-import { MatDialog } from '@angular/material/dialog';
+import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-action',
@@ -24,6 +24,8 @@ export class ImportFormActionComponent implements OnInit {
   ob$: Observable<{ progress: number, status: string }>;
   isRunning = false;
   status: { progress: number, status: string };
+  file: File;
+
   form: FormGroup = this.formBuilder.group({
     reporting_year: ['', Validators.required],
     update: [''],
@@ -81,9 +83,13 @@ export class ImportFormActionComponent implements OnInit {
     return !!this.entity && !!this.entity.deleted_at;
   }
 
+  get fileStrategy(): boolean {
+    return !!this.entity && this.entity.strategy_type === Strategy.FILE_UPLOAD;
+  }
+
   publish(): void {
     if (!this.entity || !this.entity.id || this.loading) return;
-    this.persistChanges({ published_at: new Date(), deleted_at: null }, 'Workflow veröffentlicht.');
+    this.persistChanges({ published_at: new Date(), deleted_at: null, locked_at: null }, 'Workflow veröffentlicht.');
   }
 
   archive(): void {
@@ -120,6 +126,7 @@ export class ImportFormActionComponent implements OnInit {
     const nextVersion: ImportWorkflow = {
       ...this.entity,
       id: undefined,
+      workflow_id: this.entity.workflow_id,
       version: (this.entity.version ?? 0) + 1,
       published_at: null,
       deleted_at: null,
@@ -150,16 +157,18 @@ export class ImportFormActionComponent implements OnInit {
     if (!this.entity?.id || this.loading) return;
 
     this.loading = true;
+    this.form.disable();
+
     const reporting_year = this.form.controls.reporting_year.value;
     const dryRun = this.form.controls.dry_run.value
     const update = this.form.controls.update.value
     this.workflowService
-      .run(this.entity.id, reporting_year, update, dryRun)
+      .run(this.entity.id, reporting_year, update, dryRun, this.file)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: () => {
           this.snackBar.open(
-            dryRun ? 'Dry-Run gestartet. Das Ergebnis wird im Report protokolliert.' : 'Importlauf gestartet.',
+            dryRun ? 'Dry-Run gestartet. Das Ergebnis wird im Report protokolliert.' : 'Workflow gestartet.',
             'OK',
             { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
           );
@@ -174,6 +183,10 @@ export class ImportFormActionComponent implements OnInit {
           this.update();
         },
       });
+  }
+
+  setFile(event) {
+    this.file = event.target.files[0];
   }
 
   private persistChanges(patch: Partial<ImportWorkflow>, successMessage: string): void {

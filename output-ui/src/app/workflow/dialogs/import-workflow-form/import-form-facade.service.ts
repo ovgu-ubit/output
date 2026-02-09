@@ -14,8 +14,19 @@ export class ImportFormFacade {
 
   load(id: number) {
     return this.api.getOne(id).pipe(
-    tap(wf => this.importSubject.next(wf))
-  );
+      tap(wf => this.importSubject.next(wf))
+    );
+  }
+
+  createNew() {
+    const wf:ImportWorkflow = {
+      created_at: null,
+      modified_at: null,
+      deleted_at: null,
+      published_at: null
+    }
+    this.importSubject.next(wf)
+    return wf;
   }
 
   getReports(workflowName: string): Observable<string[]> {
@@ -49,7 +60,10 @@ export class ImportFormFacade {
   save() {
     const cur = this.importSubject.value;
     if (!cur) return of(null);
-    return this.api.update(cur).pipe(
+    if (cur.id) return this.api.update(cur).pipe(
+      tap(updated => this.importSubject.next(updated))
+    );
+    else return this.api.add(cur).pipe(
       tap(updated => this.importSubject.next(updated))
     );
   }

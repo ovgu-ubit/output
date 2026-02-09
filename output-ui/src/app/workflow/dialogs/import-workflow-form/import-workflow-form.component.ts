@@ -3,11 +3,12 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { concat, concatMap, concatWith, filter, map, Observable, shareReplay, startWith, switchMap, take, takeUntil, tap } from 'rxjs';
+import { concat, concatMap, concatWith, EMPTY, filter, firstValueFrom, map, Observable, of, shareReplay, startWith, switchMap, take, takeUntil, tap } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
 import { ImportFormFacade } from './import-form-facade.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-import-workflow-form',
@@ -27,22 +28,28 @@ import { ImportFormFacade } from './import-form-facade.service';
 export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(protected facade: ImportFormFacade, private route: ActivatedRoute,
-    private workflowService: WorkflowService, private router: Router) { }
+    private workflowService: WorkflowService, private router: Router,
+    private _snackBar: MatSnackBar) { }
 
-  id: number;
+  id: any;
   entity: ImportWorkflow;
   opened = true;
 
   ngOnInit(): void {
     this.route.paramMap.pipe(
       map(pm => {
-        this.id = Number(pm.get('id'))
+        this.id = pm.get('id')
         return this.id
-      }),
-      filter(id => !Number.isNaN(id))
+      })
       , switchMap(
-        id => this.facade.load(id)
-      ), tap(wf => { this.entity = wf; }),
+        id => {
+          if (id === 'new') {
+            const wf = this.facade.createNew();
+            return of(wf)
+          }
+          if (Number.isNaN(Number(id))) return EMPTY;
+          return this.facade.load(id)
+        }), tap(wf => { this.entity = wf; }),
       takeUntil(this.facade.destroy$)
     ).subscribe();
   }
@@ -59,6 +66,19 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
       this.workflowService.update({ id: this.entity.id, locked_at: null }).subscribe();
     }
     this.facade.destroy();
+  }
+
+  save() {
+    this.facade.save().subscribe({
+      next: data => {
+        this._snackBar.open(
+            'Workflow erfolgreich gespeichert unter ID '+data.id+'.',
+            'Sehr schön.',
+            { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
+          );
+          this.router.navigateByUrl('/workflow/publication_import/'+data.id+'/overview')
+      }
+    });
   }
 
   abort() {
@@ -110,5 +130,10 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
 
   getLink() {
     return "/workflow/publication_import/" + (this.id ?? "neu");
+  }
+
+  getLabel(): string {
+    if (this.entity?.id) return '/Workflows/Publikationsimport/' + this.entity.label + ' (' + this.entity.version + ')'
+    else return '/Workflows/Publikationsimport/Neuer Import'
   }
 }

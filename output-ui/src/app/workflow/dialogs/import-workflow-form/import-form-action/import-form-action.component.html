@@ -14,7 +14,7 @@
             </button>
             <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
                 <mat-icon>content_copy</mat-icon>
-                Entwurf duplizieren
+                Nächste Entwurfsversion erstellen
             </button>
         </div>
         }
@@ -23,10 +23,14 @@
         <div class="action-group">
             <h3>Veröffentlicht</h3>
             <form [formGroup]="form">
+                @if (fileStrategy) {
+                <input type="file" #fileInput accept=".json,application/json" (change)="setFile($event)">
+                } @else {
                 <mat-form-field appearance="fill">
                     <mat-label>Publikationsjahr</mat-label>
                     <input matInput placeholder="Publikationsjahr" formControlName="reporting_year" />
                 </mat-form-field>
+            }
                 <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
                 <button mat-raised-button [hidden]="!this.form.get('update').value" type="button"  class="secondary-button" [disabled]="this.ob$" (click)="configureImport()">Update konfigurieren</button>
                 <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
@@ -39,7 +43,7 @@
             </button>
             <button mat-raised-button class="primary-button" [disabled]="this.ob$" (click)="duplicate()">
                 <mat-icon>content_copy</mat-icon>
-                Als neuen Entwurf duplizieren
+                Neue Version als Entwurf speichern
             </button>
             <button mat-raised-button class="warn-button" [disabled]="this.ob$" (click)="archive()">
                 <mat-icon>archive</mat-icon>

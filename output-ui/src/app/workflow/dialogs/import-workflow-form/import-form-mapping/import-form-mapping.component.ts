@@ -35,7 +35,6 @@ export class ImportFormMappingComponent implements OnInit {
       mapping: this.form.controls.mapping.value
     }
     this.facade.patch(res);
-    this.facade.save().subscribe()
   }
 
   reset() {

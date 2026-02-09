@@ -80,14 +80,24 @@ export class WorkflowService {
                 toSave = { ...db, deleted_at: new Date() };
             } else if (!db.published_at && workflow.published_at) {
                 //does another published version exist?
-                const other = await this.importRepository.findOneBy({workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id)})
+                const other = await this.importRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) })
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = {...db, published_at: new Date()}
+                else toSave = { ...db, published_at: new Date() }
             } else {
                 toSave = { ...db, ...workflow };
             }
         } else {
-            toSave = { ...toSave, workflow_id: uuidv4(), version: workflow.version ?? 1 }
+            toSave = {
+                ...toSave,
+                workflow_id: uuidv4(),
+                version: workflow.version ?? 1,
+                id: undefined,
+                created_at: undefined,
+                published_at: undefined,
+                deleted_at: undefined,
+                modified_at: undefined,
+                update_config: this.importService.getUpdateMapping()
+            }
         }
         const validated = validateImportWorkflow(toSave);
         if (validated) return this.importRepository.save(toSave);
@@ -119,12 +129,12 @@ export class WorkflowService {
         }
     }
 
-    async testImport(id: number): Promise<ImportWorkflowTestResult> {
+    async testImport(id: number, pos = 1): Promise<ImportWorkflowTestResult> {
         const importDef = await this.importRepository.findOneBy({ id });
 
         await this.importService.setReportingYear("2024");
         await this.importService.setUp(importDef, importDef.update_config);
-        return await this.importService.test(1);
+        return await this.importService.test(pos);
     }
 
     async isLocked(id: number): Promise<boolean> {

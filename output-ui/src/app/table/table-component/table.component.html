@@ -37,7 +37,7 @@
                 [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}</button>
             </ng-container>
           </ng-container>
-          <button mat-raised-button (click)="this.add()" *ngIf="!this.parent.not_editable"
+          <button mat-raised-button (click)="this.addFunction()" *ngIf="!this.parent.not_editable"
             [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
           <button mat-raised-button (click)="this.delete()" *ngIf="!this.parent.not_editable && this.deleteable"
             [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>

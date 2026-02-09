@@ -80,7 +80,6 @@ export class ImportFormStrategyComponent implements OnInit {
       strategy: {...this.strategyForm.value}
     }
     this.facade.patch(res);
-    this.facade.save().subscribe();
   }
 
   reset() {

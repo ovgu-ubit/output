@@ -63,6 +63,10 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     this.router.navigate(["/workflow/publication_import/" + workflow.id + "/overview"]);
   }
 
+  add() {
+    this.router.navigate(["/workflow/publication_import/new/overview"]);
+  }
+
   getLink() {
     return '/workflow/publication_import'
   }
