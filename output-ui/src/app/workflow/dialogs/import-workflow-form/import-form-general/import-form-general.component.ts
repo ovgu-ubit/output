@@ -25,6 +25,7 @@ export class ImportFormGeneralComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.formBuilder.group({
       id: [{value:'', disabled:true}],
+      workflow_id: [{value:'', disabled:true}],
       label: [''],
       version: [''],
       created_at: [{value: new Date(), disabled:true}],
