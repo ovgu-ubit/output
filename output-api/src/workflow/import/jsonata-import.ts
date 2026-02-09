@@ -252,7 +252,7 @@ export class JSONataImportService extends AbstractImportService {
         const start = new Date();
         const result: DeepPartial<ImportWorkflowTestResult> = {
             meta: {
-                workflow_id: this.importDefinition.id,
+                workflow_id: this.importDefinition.workflow_id,
                 strategy_type: this.importDefinition.strategy_type,
                 strategy: this.importDefinition.strategy,
                 pos,
@@ -276,6 +276,7 @@ export class JSONataImportService extends AbstractImportService {
         let pub: Publication;
         let item;
         let pubUpd;
+        let orig;
         switch (this.importDefinition.strategy_type) {
             case Strategy.URL_DOI:
                 try {
@@ -324,7 +325,7 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
 
-                const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                 if (orig && !orig?.locked) {
                     try {
                         pubUpd = await this.mapUpdate(item, orig)
@@ -755,7 +756,7 @@ export class JSONataImportService extends AbstractImportService {
 
         return Object.keys(obj as Record<string, unknown>).flatMap(key => {
             const path = prefix ? `${prefix}.${key}` : key;
-            const value = (obj as any)[key];
+            const value = (obj as object)[key];
 
             return [
                 path,

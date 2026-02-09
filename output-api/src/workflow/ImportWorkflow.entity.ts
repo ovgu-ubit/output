@@ -1,6 +1,6 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn, VersionColumn } from "typeorm";
-import { ImportWorkflow as IImportWorkflow, Strategy } from "../../../output-interfaces/Workflow";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 import { UpdateMapping } from "../../../output-interfaces/Config";
+import { ImportWorkflow as IImportWorkflow, Strategy } from "../../../output-interfaces/Workflow";
 
 @Entity("workflow_import")
 @Unique(["workflow_id", "version"])
@@ -9,8 +9,8 @@ export class ImportWorkflow implements IImportWorkflow {
     @PrimaryGeneratedColumn()
     id?: number;
 
-    @Column({ type: "int" })
-    workflow_id?: number;
+    @Column()
+    workflow_id?: string;
 
     @Column()
     label?: string;

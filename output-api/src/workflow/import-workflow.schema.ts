@@ -37,7 +37,7 @@ const StrategyTypeCoerced = z.preprocess(StrategyTypeFromNumber, StrategyTypeSch
 const JsonataExpr = z.string().min(1, "JSONata expression must not be empty");
 
 const ImportMeta = z.object({
-  workflow_id: z.number().int(),
+  workflow_id: z.string(),
   label: z.string().min(1),
   strategy_type: StrategyTypeCoerced,
   mapping: JsonataExpr,

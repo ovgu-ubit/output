@@ -2,7 +2,7 @@ import { Publication } from "./Publication";
 
 export interface Workflow {
     id?: number;
-    workflow_id?: number;
+    workflow_id?: string;
     label?: string;
     version?: number;
     created_at?: Date;
@@ -21,7 +21,7 @@ export interface ImportWorkflow extends Workflow {
 
 export interface ImportWorkflowTestResult {
     meta: {
-        workflow_id: number;
+        workflow_id: string;
         strategy_type: Strategy;
         pos: number;
         strategy: any;

@@ -1,12 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException, Options } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AppConfigService } from '../config/app-config.service';
-import { ImportWorkflow } from './ImportWorkflow.entity';
 import { Between, In, IsNull, Not, Repository } from 'typeorm';
-import { JSONataImportService } from './import/jsonata-import';
-import { validateImportWorkflow } from './import-workflow.schema';
-import { ImportWorkflowTestResult, Strategy } from '../../../output-interfaces/Workflow';
 import { UpdateMapping } from '../../../output-interfaces/Config';
+import { ImportWorkflowTestResult, Strategy } from '../../../output-interfaces/Workflow';
+import { AppConfigService } from '../config/app-config.service';
+import { validateImportWorkflow } from './import-workflow.schema';
+import { JSONataImportService } from './import/jsonata-import';
+import { ImportWorkflow } from './ImportWorkflow.entity';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class WorkflowService {
@@ -43,26 +44,48 @@ export class WorkflowService {
         return res;
     }
 
+    async importImport(file: Express.Multer.File) {
+        let workflow: ImportWorkflow;
+        try {
+            workflow = JSON.parse(file.buffer.toString('utf-8'));
+        } catch {
+            throw new BadRequestException('invalid json');
+        }
+
+        const lastVersion = await this.importRepository.findOne({ where: { workflow_id: workflow.workflow_id }, order: { version: 'DESC' } })
+        const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+
+        const obj: ImportWorkflow = {
+            workflow_id: workflow.workflow_id,
+            label: workflow.label,
+            version: nextVersion,
+            description: workflow.description,
+            strategy_type: workflow.strategy_type,
+            strategy: workflow.strategy,
+            mapping: workflow.mapping,
+            update_config: workflow.update_config
+        }
+
+        return this.importRepository.save(obj);
+    }
+
     async saveImport(workflow: ImportWorkflow) {
+        let toSave = workflow;
         if (workflow.id) {
             const db = await this.importRepository.findOneBy({ id: workflow.id })
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             if (db.published_at) {
-                const isArchiving = !!workflow.deleted_at
-                    && workflow.label === db.label
-                    && workflow.version === db.version
-                    && workflow.workflow_id === db.workflow_id
-                    && workflow.description === db.description
-                    && workflow.mapping === db.mapping
-                    && workflow.strategy_type === db.strategy_type
-                    && JSON.stringify(workflow.strategy) === JSON.stringify(db.strategy)
-                    && !!workflow.published_at;
-
+                const isArchiving = !!workflow.deleted_at; // optional: plus equality checks
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
+                toSave = { ...db, deleted_at: workflow.deleted_at };
+            } else {
+                toSave = { ...db, ...workflow };
             }
+        } else {
+            toSave = { ...toSave, workflow_id: uuidv4(), version: workflow.version ?? 1 }
         }
-        const validated = validateImportWorkflow(workflow);
-        if (validated) return this.importRepository.save(workflow);
+        const validated = validateImportWorkflow(toSave);
+        if (validated) return this.importRepository.save(toSave);
     }
 
     async startImport(id: number, reporting_year: number, ids: number[], update: boolean, user?: string, dryRun = false) {
@@ -74,7 +97,7 @@ export class WorkflowService {
         }
         if (importDef.strategy_type === Strategy.URL_QUERY_OFFSET) {
             await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-            await this.importService.setReportingYear(reporting_year +"");
+            await this.importService.setReportingYear(reporting_year + "");
             await this.importService.import(update, user, dryRun);
         }
         else if (importDef.strategy_type === Strategy.URL_DOI) {
@@ -85,7 +108,7 @@ export class WorkflowService {
                 const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
                 const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
                 this.importService.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
-                this.importService.setReportingYear(reporting_year +"")
+                this.importService.setReportingYear(reporting_year + "")
             }
             await this.importService.enrich(user, dryRun);
         }

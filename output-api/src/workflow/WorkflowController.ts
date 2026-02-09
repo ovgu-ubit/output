@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from "@nestjs/common";
-import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
@@ -10,6 +10,7 @@ import { ReportItemService } from "./report-item.service";
 import { WorkflowService } from "./workflow.service";
 import { createReadStream } from "fs";
 import { UpdateMapping, UpdateOptions } from "../../../output-interfaces/Config";
+import { FileInterceptor } from "@nestjs/platform-express";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -79,6 +80,26 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   delete_imports(@Body() body: { id: number }[]) {
     return this.workflowService.deleteImports(body.map((entry) => entry.id));
+  }
+
+  @Post("import/import")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiConsumes('multipart/form-data')@ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        }
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  import_import(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.originalname.endsWith('.json')) throw new BadRequestException('valid json file required');
+    return this.workflowService.importImport(file);
   }
 
   @Post("import")

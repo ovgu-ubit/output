@@ -17,7 +17,9 @@ import { firstValueFrom } from 'rxjs';
 })
 export class PublicationImportComponent implements TableParent<ImportWorkflow>, OnInit {
   formComponent = ImportWorkflowFormComponent;
-  buttons = [];
+  buttons:TableButton[] = [
+    {title: 'Import aus Datei hinzufügen', action_function: () => this.import.bind(this)}
+  ];
   not_selectable?: boolean = true;
 
   headers: TableHeader[] = [
@@ -73,5 +75,9 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
       type: event.value
     }
     this.table.updateData().subscribe();
+  }
+
+  import() {
+
   }
 }
