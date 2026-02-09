@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
 import { WorkflowService } from '../../workflow.service';
@@ -17,8 +17,8 @@ import { firstValueFrom } from 'rxjs';
 })
 export class PublicationImportComponent implements TableParent<ImportWorkflow>, OnInit {
   formComponent = ImportWorkflowFormComponent;
-  buttons:TableButton[] = [
-    {title: 'Import aus Datei hinzufügen', action_function: () => this.import.bind(this)}
+  buttons: TableButton[] = [
+    { title: 'Import aus Datei hinzufügen', action_function: this.import.bind(this) }
   ];
   not_selectable?: boolean = true;
 
@@ -36,8 +36,9 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   }
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
+  @ViewChild('fileInput') fileInput: ElementRef<HTMLInputElement>;
 
-  constructor(public workflowService: WorkflowService, private _snackBar: MatSnackBar, private router: Router, private configService:ConfigService) { }
+  constructor(public workflowService: WorkflowService, private _snackBar: MatSnackBar, private router: Router, private configService: ConfigService) { }
 
   ngOnInit(): void {
   }
@@ -78,6 +79,38 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   }
 
   import() {
+    this.fileInput?.nativeElement.click();
+  }
 
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.name.endsWith('.json')) {
+      this._snackBar.open('Bitte eine JSON-Datei auswählen.', 'Ok...', {
+        duration: 5000,
+        panelClass: ['danger-snackbar'],
+        verticalPosition: 'top'
+      })
+      return;
+    }
+    this.workflowService.importWorkflow(file).subscribe({
+      next: () => {
+        this._snackBar.open('Import-Workflow wurde hinzugefügt.', 'Ok', {
+          duration: 5000,
+          panelClass: ['success-snackbar'],
+          verticalPosition: 'top'
+        })
+        this.table.updateData().subscribe();
+      },
+      error: () => {
+        this._snackBar.open('Import fehlgeschlagen.', 'Ok...', {
+          duration: 5000,
+          panelClass: ['danger-snackbar'],
+          verticalPosition: 'top'
+        })
+      }
+    })
   }
 }

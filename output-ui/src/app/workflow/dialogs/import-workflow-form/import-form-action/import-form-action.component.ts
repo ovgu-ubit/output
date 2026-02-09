@@ -188,14 +188,15 @@ export class ImportFormActionComponent implements OnInit {
       .subscribe({
         next: (saved) => {
           this.facade.patch(saved);
-          this.snackBar.open(successMessage, 'OK', { duration: 3500, verticalPosition: 'top' });
+          this.snackBar.open(successMessage, 'OK', { duration: 3500, verticalPosition: 'top', panelClass: ['success-snackbar'] });
         },
-        error: () => {
+        error: err => {
           this.snackBar.open('Änderung konnte nicht gespeichert werden.', 'OK', {
             duration: 4500,
             verticalPosition: 'top',
             panelClass: ['danger-snackbar'],
           });
+          console.log(err)
         },
       });
   }

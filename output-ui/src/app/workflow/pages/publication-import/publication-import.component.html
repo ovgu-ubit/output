@@ -1,4 +1,5 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
+<input type="file" #fileInput accept=".json,application/json" style="display:none" (change)="onFileSelected($event)">
 <mat-form-field>
   <mat-label>Angezeigte Workflows</mat-label>
   <mat-select [(value)]="this.indexOptions.type" (selectionChange)="this.change($event)">

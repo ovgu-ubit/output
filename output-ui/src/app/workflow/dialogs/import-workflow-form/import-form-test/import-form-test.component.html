@@ -34,7 +34,14 @@
                     </mat-expansion-panel-header>
                     <p><strong>Source:</strong> {{ result.read.source }}</p>
                     <p><strong>Gelesene Datensätze:</strong> {{ result.read.count }}</p>
-                    <p><strong>Response-Keys:</strong>{{result.read.response}}</p>
+                    <p><strong>Response-Keys:</strong></p>
+                    <ul>
+                        @for (item of result.read.response;track item) {
+                        <li>{{ item }}</li>
+                        } @empty {
+                        <li>There are no items.</li>
+                        }
+                    </ul>
                 </mat-expansion-panel>
                 <mat-expansion-panel>
                     <mat-expansion-panel-header>
@@ -67,14 +74,14 @@
                     <mat-expansion-panel-header>
                         <mat-panel-title>Strategie-Konfiguration</mat-panel-title>
                     </mat-expansion-panel-header>
-                <pre>{{ result.meta.strategy | json }}</pre>
+                    <pre>{{ result.meta.strategy | json }}</pre>
                 </mat-expansion-panel>
                 <mat-expansion-panel>
                     <mat-expansion-panel-header>
                         <mat-panel-title>Gelesene Elemente</mat-panel-title>
                         <mat-panel-description> {{result.read.read_items?.length}} </mat-panel-description>
                     </mat-expansion-panel-header>
-                <pre>{{ result.read.read_items | json }}</pre>
+                    <pre>{{ result.read.read_items | json }}</pre>
                 </mat-expansion-panel>
 
                 <mat-expansion-panel>
@@ -82,14 +89,14 @@
                         <mat-panel-title>Importierte Publikationen</mat-panel-title>
                         <mat-panel-description> {{result.result.imported?.length}} </mat-panel-description>
                     </mat-expansion-panel-header>
-                <pre>{{ result.result.imported | json }}</pre>
+                    <pre>{{ result.result.imported | json }}</pre>
                 </mat-expansion-panel>
                 <mat-expansion-panel>
                     <mat-expansion-panel-header>
                         <mat-panel-title>Ausgeschlossene Elemente</mat-panel-title>
                         <mat-panel-description> {{result.result.excluded?.length}} </mat-panel-description>
                     </mat-expansion-panel-header>
-                <pre>{{ result.result.excluded | json }}</pre>
+                    <pre>{{ result.result.excluded | json }}</pre>
                 </mat-expansion-panel>
             </mat-accordion>
         </div>

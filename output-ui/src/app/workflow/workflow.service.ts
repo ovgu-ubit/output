@@ -75,4 +75,14 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public delete(ids: number[]) {
     return this.http.delete<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true, body: ids.map(e => ({ id: e })) });
   }
+
+  public importWorkflow(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ImportWorkflow>(
+      this.runtimeConfigService.getValue("api") + 'workflow/import/import',
+      formData,
+      { withCredentials: true }
+    );
+  }
 }

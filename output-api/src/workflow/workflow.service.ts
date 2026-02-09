@@ -71,13 +71,18 @@ export class WorkflowService {
 
     async saveImport(workflow: ImportWorkflow) {
         let toSave = workflow;
-        if (workflow.id) {
+        if (workflow.id) { //update
             const db = await this.importRepository.findOneBy({ id: workflow.id })
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at; // optional: plus equality checks
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, deleted_at: workflow.deleted_at };
+                toSave = { ...db, deleted_at: new Date() };
+            } else if (!db.published_at && workflow.published_at) {
+                //does another published version exist?
+                const other = await this.importRepository.findOneBy({workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id)})
+                if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
+                else toSave = {...db, published_at: new Date()}
             } else {
                 toSave = { ...db, ...workflow };
             }
