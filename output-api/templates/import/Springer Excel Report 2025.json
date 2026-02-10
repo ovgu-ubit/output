@@ -1,0 +1,42 @@
+{
+  "id": 5,
+  "workflow_id": "d7d20076-b9da-4347-a352-42f21c8c3748",
+  "label": "Springer CSV Report",
+  "version": 1,
+  "created_at": "2026-02-10T14:14:16.151Z",
+  "modified_at": "2026-02-10T14:31:27.169Z",
+  "published_at": "2026-02-10T14:31:27.167Z",
+  "deleted_at": null,
+  "description": "DEAL 2025 Springer CSV Report",
+  "strategy_type": 0,
+  "strategy": {
+    "format": "xlsx",
+    "exclusion_criteria": "false",
+    "only_import_if_authors_inst": false
+  },
+  "mapping": "(\r\n    $cfg := params.cfg;\r\n    $tags := $cfg.affiliation_tags;\r\n{\r\n    \"title\": $.\"article title\",\r\n    \"doi\": $.DOI,\r\n    \"oa_category\": $.\"journal publishing model\",\r\n    \"authors_inst\": (\r\n        $n := $trim($.\"corresponding author name\");\r\n        $exists($n) and $n != \"\" ?\r\n        (\r\n            $parts := $split($n, \" \");\r\n            [\r\n                {\r\n                    \"first_name\": $join(\r\n                    $filter($parts, function($v, $i){ $i < $count($parts) - 1 }),\r\n                    \" \"\r\n                    ),\r\n                    \"last_name\": $parts[-1]\r\n                }\r\n            ]\r\n        ) : []\r\n),\r\n    \"authors\": $.\"contributing authors\",\r\n    \"greater_entity\": (\r\n        $n = $.\"journal title\";\r\n        $exists($n) and $n != \"\" ? \r\n        {\r\n      \"label\": $.\"journal title\",\r\n      \"identifiers\": $.eISSN.{\r\n        \"type\" : \"issn\",\r\n        \"value\" : $\r\n        } \r\n    }: null),\r\n    \"publisher\": {\r\n      \"label\": 'Springer Nature'\r\n    },\r\n    \"pub_date\": $.\"online first publication date\",\r\n    \"pub_date_accepted\": $.\"acceptance date\",\r\n    \"pub_date_submitted\": $.\"submission date\",\r\n    \"funder\": (\r\n            $n := $trim($.FundNames);\r\n            $exists($n) and $n != \"\" ? (\r\n\t\t        $names := $filter(\r\n                $map($split(FundNames, \",\"), $trim),\r\n            function($v){ $v != \"\" }\r\n            );\r\n            $ids   := $map($split(FundRefIDs, \",\"), $trim);\r\n            $map($names, function($name, $i){\r\n                {\r\n                \"label\": $name,\r\n                \"doi\": $ids[$i]\r\n                }\r\n            })[]\r\n            ) : []\r\n),\r\n    \"pub_type\": \"article\",\r\n    \"license\": $contains($.\"Licence type(s)\",\"CC BY\")? \"CC-BY\" : null,\r\n    \"status\": 1,\r\n    \"abstract\": $.abstract,\r\n\t\"add_info\": $.\"approval comment\",\r\n\t\"contract\": \"DEAL Springer\"\r\n}\r\n)",
+  "update_config": {
+    "doi": 2,
+    "link": 2,
+    "title": 2,
+    "funder": 3,
+    "status": 2,
+    "authors": 2,
+    "invoice": 2,
+    "license": 2,
+    "abstract": 2,
+    "citation": 2,
+    "contract": 2,
+    "language": 2,
+    "pub_date": 2,
+    "pub_type": 2,
+    "publisher": 2,
+    "page_count": 2,
+    "author_inst": 0,
+    "oa_category": 2,
+    "cost_approach": 2,
+    "peer_reviewed": 2,
+    "greater_entity": 2
+  },
+  "locked_at": null
+}

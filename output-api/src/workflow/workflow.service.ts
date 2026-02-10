@@ -103,7 +103,7 @@ export class WorkflowService {
         if (validated) return this.importRepository.save(toSave);
     }
 
-    async startImport(id: number, reporting_year: number, ids: number[], update: boolean, user?: string, dryRun = false) {
+    async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {
         const importDef = await this.importRepository.findOneBy({ id });
 
         if (!importDef) throw new BadRequestException('Error: workflow not found');
@@ -126,6 +126,9 @@ export class WorkflowService {
                 this.importService.setReportingYear(reporting_year + "")
             }
             await this.importService.enrich(user, dryRun);
+        } else if (importDef.strategy_type === Strategy.FILE_UPLOAD) {
+            await this.importService.setUp(importDef, importDef.update_config);
+            if (file) this.importService.loadFile(update, file, user, dryRun);
         }
     }
 

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
@@ -50,7 +50,7 @@ export class WorkflowController {
   @Get("import/:id/test")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async test_import(@Param('id') id: number, @Query('pos') pos?:number): Promise<ImportWorkflowTestResult> {
+  async test_import(@Param('id') id: number, @Query('pos') pos?: number): Promise<ImportWorkflowTestResult> {
     return await this.workflowService.testImport(id, pos);
   }
 
@@ -64,8 +64,10 @@ export class WorkflowController {
   @Post("import/:id/run")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  run_import(@Param('id') id: number, @Body('dry_run') dryRun: boolean, @Req() req, @Body('update') update: boolean, @Body('reporting_year') reporting_year?: number, @Body('ids') ids?: number[]) {
-    return this.workflowService.startImport(id, reporting_year, ids, update, req.user?.username, !!dryRun);
+  @UseInterceptors(FileInterceptor('file'))
+  run_import(@Param('id') id: number, @Body('dry_run', new ParseBoolPipe({ optional: true })) dryRun: boolean, @Req() req, @Body('update') update: boolean,
+    @Body('reporting_year') reporting_year?: number, @Body('ids') ids?: number[], @UploadedFile() file?: Express.Multer.File) {
+    return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
   }
 
   @Get('import/:id/run')
@@ -85,7 +87,7 @@ export class WorkflowController {
   @Post("import/import")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  @ApiConsumes('multipart/form-data')@ApiBody({
+  @ApiConsumes('multipart/form-data') @ApiBody({
     schema: {
       type: 'object',
       properties: {

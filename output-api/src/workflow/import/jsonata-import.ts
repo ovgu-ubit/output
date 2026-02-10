@@ -1,8 +1,10 @@
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
 import * as xmljs from 'xml-js';
+import * as moment from 'moment';
+import * as XLSX from 'xlsx';
 import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -133,6 +135,7 @@ export class JSONataImportService extends AbstractImportService {
     protected get_doi_item;
     public enrich_whereClause;
     protected url_doi;
+    private file: Express.Multer.File;
 
     private config;
 
@@ -325,7 +328,7 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
                 try {
-                orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                    orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                 } catch (err) {
                     result.result.issues.push({
                         message: 'Could not retrieve original via DOI or title', error: err instanceof Error
@@ -441,6 +444,82 @@ export class JSONataImportService extends AbstractImportService {
         if (result.result.issues.length === 0) result.result.status = 'ok';
         else result.result.status = 'error';
         return result as ImportWorkflowTestResult;
+    }
+
+    public async loadFile(update: boolean, file: Express.Multer.File, by_user?: string, dryRun = false) {
+        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+        this.dryRun = dryRun;
+        this.progress = -1;
+        this.status_text = 'Started on ' + new Date();
+        this.report = await this.reportService.createReport('Worfklow_Import', this.name, by_user);
+
+        this.file = file;
+
+        this.processedPublications = 0;
+        this.newPublications = [];
+        this.publicationsUpdate = [];
+        this.numberOfPublications = 0;
+
+        let jsonData;
+        if (this.importDefinition.strategy.format === 'xlsx') {
+            const workbook = XLSX.read(this.file.buffer, { type: 'buffer' })
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            jsonData = XLSX.utils.sheet_to_json(worksheet);
+        } else throw new NotImplementedException();
+        let data = [];
+        try {
+            data = await Promise.all(jsonData.map(e => this.transform(e)))
+        } catch (err) {
+            throw new InternalServerErrorException("JSONata mapping could not be applied")
+        }
+        this.numberOfPublications = data.length;
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
+        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+
+        try {
+            if (!data) return;
+            for (const pub of data) {
+                const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                if (!flag) {
+                    const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                    if (pubNew) {
+                        this.newPublications.push(pubNew);
+                        this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
+                    }
+                } else if (update) {
+                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                    if (orig.locked) continue;
+                    const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                        this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                        return null;
+                    })
+                    if (pubUpd?.pub) {
+                        this.publicationsUpdate.push(pubUpd.pub);
+                        this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                    }
+                }
+                // Update Progress Value
+                this.processedPublications++;
+                if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+            }
+            //finalize
+            this.progress = 0;
+            this.reportService.finish(this.report, {
+                status: 'Successfull import on ' + new Date(),
+                count_import: this.newPublications.length,
+                count_update: this.publicationsUpdate.length
+            })
+            this.status_text = 'Successfull import on ' + new Date();
+        } catch (err) {
+            this.progress = 0;
+            this.status_text = 'Error while importing on ' + new Date();
+            console.log(err.stack);
+            this.reportService.finish(this.report, {
+                status: 'Error while importing on ' + new Date(),
+                count_import: this.newPublications.length,
+                count_update: this.publicationsUpdate.length
+            })
+        }
     }
 
     /**
