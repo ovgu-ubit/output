@@ -21,7 +21,7 @@ export class WorkflowService {
         let options = {};
         if (type === 'draft') options = { where: { published_at: IsNull(), deleted_at: IsNull() } };
         else if (type === 'published') options = { where: { published_at: Not(IsNull()), deleted_at: IsNull() } };
-        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull()), withDeleted: true } };
+        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull())}, withDeleted: true };
 
         return this.importRepository.find(options);
     }
@@ -129,7 +129,8 @@ export class WorkflowService {
             await this.importService.enrich(user, dryRun);
         } else if (importDef.strategy_type === Strategy.FILE_UPLOAD) {
             await this.importService.setUp(importDef, importDef.update_config);
-            if (file) this.importService.loadFile(update, file, user, dryRun);
+            if (file) await this.importService.loadFile(update, file, user, dryRun);
+            else throw new BadRequestException('no file supported')
         }
     }
 
@@ -161,7 +162,7 @@ export class WorkflowService {
         return this.importRepository.remove(workflows);
     }
 
-    async status(id: number) {
+    async status(_id: number) {
         return this.importService.status();
     }
 

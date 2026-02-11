@@ -160,7 +160,7 @@ export abstract class AbstractImportService {
      * retrieves the open access category string of an element
      * @param element 
      */
-    protected abstract getOACategory(element: any): string | { oa_category?: string, is_oa?: string, oa_status?: string, journal_is_oa?: string, best_oa_host?: string };
+    protected abstract getOACategory(element: any): string | { oa_category?: string, is_oa?: string, oa_status?: string, is_journal_oa?: string, best_oa_host?: string };
     /**
      * retrieves the contract string of an element
      * @param element 

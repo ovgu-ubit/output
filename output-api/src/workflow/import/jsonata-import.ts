@@ -790,12 +790,12 @@ export class JSONataImportService extends AbstractImportService {
     protected getPubType(element: JSONataParsedObject): string {
         return element.pub_type;
     }
-    protected getOACategory(element: JSONataParsedObject): { oa_category?: string, is_oa?: string, oa_status?: string, journal_is_oa?: string, best_oa_host?: string } {
+    protected getOACategory(element: JSONataParsedObject): { oa_category?: string, is_oa?: string, oa_status?: string, is_journal_oa?: string, best_oa_host?: string } {
         return {
             oa_category: element.oa_category,
             is_oa: element["is_oa"],
             oa_status: element["oa_status"],
-            journal_is_oa: element["journal_is_oa"],
+            is_journal_oa: element["is_journal_oa"],
             best_oa_host: element["best_oa_host"],
         }
     }
