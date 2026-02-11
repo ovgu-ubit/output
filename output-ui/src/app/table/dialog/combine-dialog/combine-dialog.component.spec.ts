@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CombineDialogComponent } from './combine-dialog.component';
 
 describe('CombineDialogComponent', () => {
-  let component: CombineDialogComponent;
-  let fixture: ComponentFixture<CombineDialogComponent>;
+  let component: CombineDialogComponent<any>;
+  let fixture: ComponentFixture<CombineDialogComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
