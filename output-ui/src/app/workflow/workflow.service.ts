@@ -28,10 +28,10 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/locked', { withCredentials: true });
   }
   public getConfig(id: number) {
-    return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config')
+    return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { withCredentials: true })
   }
   public setConfig(id: number, mapping: UpdateMapping) {
-    return this.http.post<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { mapping })
+    return this.http.post<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { mapping }, { withCredentials: true })
   }
   public export(id: number) {
     return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });

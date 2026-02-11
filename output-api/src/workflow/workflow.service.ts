@@ -118,14 +118,14 @@ export class WorkflowService {
         }
         else if (importDef.strategy_type === Strategy.URL_DOI) {
             await this.importService.setUp(importDef, importDef.update_config);
-            if (ids && ids.length >= 0) {
+            if (ids && ids.length > 0) {
                 this.importService.enrich_whereClause = { where: { id: In(ids) } };
-            } else {
+            } else if (reporting_year) {
                 const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
                 const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
                 this.importService.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
                 this.importService.setReportingYear(reporting_year + "")
-            }
+            } else throw new BadRequestException('neither reporting_year nor ids are given')
             await this.importService.enrich(user, dryRun);
         } else if (importDef.strategy_type === Strategy.FILE_UPLOAD) {
             await this.importService.setUp(importDef, importDef.update_config);

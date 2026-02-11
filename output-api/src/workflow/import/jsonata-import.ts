@@ -166,11 +166,13 @@ export class JSONataImportService extends AbstractImportService {
         (await this.configService.listEnvConfig()).map(e => {
             this.config[e.key] = e.value;
         });
+        this.searchText = '';
         if (this.search_text_combiner) await this.config['search_tags'].forEach(tag => {
             this.searchText += tag + this.search_text_combiner;
         });
         if (this.searchText && this.search_text_combiner) this.searchText = this.searchText.slice(0, this.searchText.length - this.search_text_combiner.length)
 
+        this.affiliationText = '';
         if (this.search_text_combiner) await this.config['affiliation_tags'].forEach(tag => {
             this.affiliationText += tag + this.search_text_combiner;
         });
