@@ -26,16 +26,19 @@ export class ImportFormStrategyComponent implements OnInit {
   previousStrategy = Strategy.URL_QUERY_OFFSET;
 
   strategies = [
-    {value: Strategy.URL_QUERY_OFFSET, label: 'Web-Abfrage per Suche und Offset', id: 'offset'},
-    {value: Strategy.URL_DOI, label: 'Web-Abfrage per DOI', id: 'doi'},
-    {value: Strategy.FILE_UPLOAD, label: 'Datei-Upload', id: 'file'},
+    { value: Strategy.URL_QUERY_OFFSET, label: 'Web-Abfrage per Suche und Offset', id: 'offset' },
+    { value: Strategy.URL_DOI, label: 'Web-Abfrage per DOI', id: 'doi' },
+    { value: Strategy.FILE_UPLOAD, label: 'Datei-Upload', id: 'file' },
   ]
 
-  formats = [
-    {value: 'json', label: 'JSON'},
-    {value: 'xml', label: 'XML'},
-    {value: 'csv', label: 'CSV'},
-    {value: 'xlsx', label: 'XLSX'},
+  fileFormats = [
+    //{ value: 'csv', label: 'CSV' },
+    { value: 'xlsx', label: 'XLSX' },
+  ]
+
+  webFormats = [
+    { value: 'json', label: 'JSON' },
+    { value: 'xml', label: 'XML' },
   ]
 
   ngOnInit(): void {
@@ -56,12 +59,12 @@ export class ImportFormStrategyComponent implements OnInit {
         this.strategyForm.disable();
       }
     })
-  ).subscribe();
+    ).subscribe();
 
     this.selectionForm.controls.strategy.valueChanges.subscribe(async (next) => {
       if (!next || next === this.previousStrategy) return;
       this.applyStrategy(next);
-        return;
+      return;
     })
   }
 
@@ -77,19 +80,19 @@ export class ImportFormStrategyComponent implements OnInit {
   action() {
     let res = {
       strategy_type: this.previousStrategy,
-      strategy: {...this.strategyForm.value}
+      strategy: { ...this.strategyForm.value }
     }
     this.facade.patch(res);
   }
 
   reset() {
     this.previousStrategy = this.entity.strategy_type;
-      this.selectionForm.controls.strategy.setValue(this.entity.strategy_type, { emitEvent: false })
-      this.applyStrategy(this.entity.strategy_type);
+    this.selectionForm.controls.strategy.setValue(this.entity.strategy_type, { emitEvent: false })
+    this.applyStrategy(this.entity.strategy_type);
     this.strategyForm.patchValue(this.entity)
   }
 
-  getLabel(s:Strategy) {
+  getLabel(s: Strategy) {
     return this.strategies.find(e => e.value === s)
   }
 
@@ -126,10 +129,10 @@ export class ImportFormStrategyComponent implements OnInit {
           url_items: ['', Validators.required],
           max_res: [100, [Validators.required, Validators.min(1), Validators.max(5000)]],
           max_res_name: ['', Validators.required],
-          request_mode : ['', Validators.required],
-          offset_name : ['', Validators.required],
-          offset_start : [0, [Validators.min(0)]],
-          offset_count : [0, [Validators.min(0)]],
+          request_mode: ['', Validators.required],
+          offset_name: ['', Validators.required],
+          offset_start: [0, [Validators.min(0)]],
+          offset_count: [0, [Validators.min(0)]],
           search_text_combiner: ['', Validators.required],
           get_count: ['', Validators.required],
           get_items: ['', Validators.required],

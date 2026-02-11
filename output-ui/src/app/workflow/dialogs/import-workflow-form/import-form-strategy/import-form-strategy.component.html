@@ -22,7 +22,7 @@
                         <mat-form-field appearance="fill">
                             <mat-label>Format</mat-label>
                             <mat-select formControlName="format">
-                                <mat-option *ngFor="let s of formats" [value]="s.value">
+                                <mat-option *ngFor="let s of webFormats" [value]="s.value">
                                     {{ s.label }}
                                 </mat-option>
                             </mat-select>
@@ -113,7 +113,7 @@
                         <mat-form-field appearance="fill">
                             <mat-label>Format</mat-label>
                             <mat-select formControlName="format">
-                                <mat-option *ngFor="let s of formats" [value]="s.value">
+                                <mat-option *ngFor="let s of webFormats" [value]="s.value">
                                     {{ s.label }}
                                 </mat-option>
                             </mat-select>
@@ -156,7 +156,7 @@
                         <mat-form-field appearance="fill">
                             <mat-label>Format</mat-label>
                             <mat-select formControlName="format">
-                                <mat-option *ngFor="let s of formats" [value]="s.value">
+                                <mat-option *ngFor="let s of fileFormats" [value]="s.value">
                                     {{ s.label }}
                                 </mat-option>
                             </mat-select>
@@ -171,7 +171,7 @@
             </ng-container>
         </form>
     </mat-card-content>
-    @if (!this.entity.published_at && !this.entity.deleted_at) {
+    @if (!this.entity?.published_at && !this.entity?.deleted_at) {
     <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
         <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
         <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
