@@ -5,6 +5,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 import { MatSelectModule } from '@angular/material/select';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { filter, takeUntil, tap } from 'rxjs';
+import { delimiter } from 'path';
 
 @Component({
   selector: 'app-import-form-strategy',
@@ -19,7 +20,11 @@ export class ImportFormStrategyComponent implements OnInit {
   constructor(private formBuilder: FormBuilder, private facade: ImportFormFacade) { }
 
   selectionForm: FormGroup;
-  strategyForm: FormGroup;
+  strategyForm: FormGroup = this.formBuilder.group({
+    only_import_if_authors_inst: [true],
+    format: ['', Validators.required],
+    exclusion_criteria: ['', Validators.required]
+  });
 
   entity: ImportWorkflow;
 
@@ -32,7 +37,7 @@ export class ImportFormStrategyComponent implements OnInit {
   ]
 
   fileFormats = [
-    //{ value: 'csv', label: 'CSV' },
+    { value: 'csv', label: 'CSV' },
     { value: 'xlsx', label: 'XLSX' },
   ]
 
@@ -77,6 +82,10 @@ export class ImportFormStrategyComponent implements OnInit {
     return this.strategies.find(e => e.value === this.selectionForm.controls.strategy.value)?.id;
   }
 
+  get selectedFormat(): string {
+    return this.strategyForm.controls.format.value;
+  }
+
   action() {
     let res = {
       strategy_type: this.previousStrategy,
@@ -103,7 +112,11 @@ export class ImportFormStrategyComponent implements OnInit {
         res = this.formBuilder.group({
           only_import_if_authors_inst: [true],
           format: ['', Validators.required],
-          exclusion_criteria: ['', Validators.required]
+          exclusion_criteria: ['', Validators.required],
+          quote_char: [''],
+          delimiter: [''],
+          skip_first_line: [''],
+          encoding: ['']
         });
         break;
       case Strategy.URL_DOI:

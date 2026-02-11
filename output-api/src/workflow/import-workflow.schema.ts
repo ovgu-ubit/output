@@ -47,6 +47,40 @@ const CommonStrategy = z.looseObject({
   exclusion_criteria: JsonataExpr,
   only_import_if_authors_inst: z.boolean(),
   format: z.enum(["json", "xml", "csv", "xlsx"]),
+}).superRefine((strategy, ctx) => {
+  if (strategy.format !== "csv") return;
+
+  if (typeof strategy.delimiter !== "string" || strategy.delimiter.length < 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["delimiter"],
+      message: "delimiter is required when format is csv",
+    });
+  }
+
+  if (typeof strategy.quote_char !== "string" || strategy.quote_char.length < 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["quote_char"],
+      message: "quote_char is required when format is csv",
+    });
+  }
+
+  if (typeof strategy.skip_first_line !== "boolean") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["skip_first_line"],
+      message: "skip_first_line is required when format is csv",
+    });
+  }
+
+  if (typeof strategy.encoding !== "string" || strategy.encoding.length < 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["encoding"],
+      message: "encoding is required when format is csv",
+    });
+  }
 });
 
 const URLStrategyConfig = z

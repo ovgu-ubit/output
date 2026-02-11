@@ -162,6 +162,25 @@
                             </mat-select>
                         </mat-form-field>
 
+                        @if (selectedFormat === 'csv') {
+                            <mat-form-field appearance="fill">
+                            <mat-label>Kodierung</mat-label>
+                            <input matInput formControlName="encoding">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Trennzeichen</mat-label>
+                            <input matInput formControlName="delimiter">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Anführungszeichen</mat-label>
+                            <input matInput formControlName="quote_char">
+                        </mat-form-field>
+
+                        <mat-checkbox formControlName="skip_first_line">Erste Zeile überspringen</mat-checkbox>
+                        }
+
                         <mat-form-field appearance="fill">
                             <mat-label>Ausschlusskriterium (JSONata)</mat-label>
                             <input matInput formControlName="exclusion_criteria">
