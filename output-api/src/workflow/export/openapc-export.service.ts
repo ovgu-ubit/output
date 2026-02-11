@@ -7,12 +7,10 @@ import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ReportItemService } from '../report-item.service';
-import { AbstractExportService } from './abstract-export.service';
+import { AbstractExportService, ExportService } from './abstract-export.service';
 
 @Injectable()
-/**
- * abstract class for all exports
- */
+@ExportService({path: 'openapc'})
 export class OpenAPCExportService extends AbstractExportService {
 
     quote = '"';

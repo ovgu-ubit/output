@@ -21,13 +21,13 @@ export class WorkflowService {
         let options = {};
         if (type === 'draft') options = { where: { published_at: IsNull(), deleted_at: IsNull() } };
         else if (type === 'published') options = { where: { published_at: Not(IsNull()), deleted_at: IsNull() } };
-        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull()) } };
+        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull()), withDeleted: true } };
 
         return this.importRepository.find(options);
     }
 
     async getImport(id?: number) {
-        const res = await this.importRepository.findOneBy({ id });
+        const res = await this.importRepository.findOne({where: {id}, withDeleted: true });
         if (!res) throw new NotFoundException();
         if (res.published_at || res.deleted_at) return res;
         else if (!res.locked_at) {
@@ -90,7 +90,7 @@ export class WorkflowService {
         } else {
             toSave = {
                 ...toSave,
-                workflow_id: uuidv4(),
+                workflow_id: workflow.workflow_id ?? uuidv4(),
                 version: workflow.version ?? 1,
                 id: undefined,
                 created_at: undefined,

@@ -573,20 +573,20 @@ export abstract class AbstractImportService {
                 if (orig.pub_type) fields.push('pub_type')
                 break;
         }
-
+        let publisher;
         if (!orig.locked_biblio) switch (this.updateMapping.publisher) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
             case UpdateOptions.APPEND:
                 if (!orig.publisher) {
-                    const publisher = await this.getPublisher(element);
+                    publisher = await this.getPublisher(element);
                     if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher, this.dryRun);
                     if (orig.publisher) fields.push('publisher')
                 }
                 break;
             case UpdateOptions.REPLACE:
-                const publisher = await this.getPublisher(element);
+                publisher = await this.getPublisher(element);
                 if (publisher) orig.publisher = await this.publisherService.findOrSave(publisher, this.dryRun);
                 if (orig.publisher) fields.push('publisher')
                 break;
@@ -599,7 +599,7 @@ export abstract class AbstractImportService {
             let oa_status;
             let is_journal_oa;
             let best_oa_host;
-            if (typeof (oa_category) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun));
+            if (typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun));
             else {
                 oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun));
                 is_oa = oa["is_oa"];
