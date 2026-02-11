@@ -471,8 +471,8 @@ export class JSONataImportService extends AbstractImportService {
         } else if (this.importDefinition.strategy.format === 'csv') {
             await Papa.parse(this.file.buffer.toString(), {
                         encoding: this.importDefinition.strategy.encoding,
-                        header: this.importDefinition.strategy.header,
-                        quoteChar: this.importDefinition.strategy.quoteChar,
+                        header: this.importDefinition.strategy.skip_first_line,
+                        quoteChar: this.importDefinition.strategy.quote_char,
                         delimiter: this.importDefinition.strategy.delimiter,
                         skipEmptyLines: true,
                         complete: async (result, _file) => {
