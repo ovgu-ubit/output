@@ -67,7 +67,7 @@ export class ImportFormStrategyComponent implements OnInit {
     ).subscribe();
 
     this.selectionForm.controls.strategy.valueChanges.subscribe(async (next) => {
-      if (!next || next === this.previousStrategy) return;
+      if (next === null || next === undefined || next === this.previousStrategy) return;
       this.applyStrategy(next);
       return;
     })

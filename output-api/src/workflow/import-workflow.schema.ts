@@ -141,11 +141,11 @@ export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
       strategy: DoiStrategyConfig,
     }),
     Base.extend({
-      strategy_type: z.literal("FILE_CSV"),
+      strategy_type: z.literal("FILE_UPLOAD"),
       strategy: z.looseObject({}), // ggf. hier file-spezifische Felder
     }),
     Base.extend({
-      strategy_type: z.literal("FILE_XLSX"),
+      strategy_type: z.literal("URL_LOOKUP_AND_RETRIEVE"),
       strategy: z.looseObject({}), // ggf. hier file-spezifische Felder
     }),
   ]));

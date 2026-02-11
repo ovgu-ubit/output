@@ -1,6 +1,8 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
+import { UpdateMapping } from "../../../output-interfaces/Config";
 import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
@@ -8,9 +10,6 @@ import { AppConfigService } from "../config/app-config.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
 import { WorkflowService } from "./workflow.service";
-import { createReadStream } from "fs";
-import { UpdateMapping, UpdateOptions } from "../../../output-interfaces/Config";
-import { FileInterceptor } from "@nestjs/platform-express";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -65,7 +64,7 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   @UseInterceptors(FileInterceptor('file'))
-  run_import(@Param('id') id: number, @Body('dry_run', new ParseBoolPipe({ optional: true })) dryRun: boolean, @Req() req, @Body('update') update: boolean,
+  run_import(@Param('id') id: number, @Body('dry_run', new ParseBoolPipe({ optional: true })) dryRun: boolean, @Req() req, @Body('update', new ParseBoolPipe({ optional: true })) update: boolean,
     @Body('reporting_year') reporting_year?: number, @Body('ids') ids?: number[], @UploadedFile() file?: Express.Multer.File) {
     return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
   }

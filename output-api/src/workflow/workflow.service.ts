@@ -28,6 +28,7 @@ export class WorkflowService {
 
     async getImport(id?: number) {
         const res = await this.importRepository.findOneBy({ id });
+        if (!res) throw new NotFoundException();
         if (res.published_at || res.deleted_at) return res;
         else if (!res.locked_at) {
             await this.saveImport({
@@ -134,6 +135,7 @@ export class WorkflowService {
 
     async testImport(id: number, pos = 1): Promise<ImportWorkflowTestResult> {
         const importDef = await this.importRepository.findOneBy({ id });
+        if (!importDef) throw new NotFoundException();
 
         await this.importService.setReportingYear("2024");
         await this.importService.setUp(importDef, importDef.update_config);
@@ -142,6 +144,7 @@ export class WorkflowService {
 
     async isLocked(id: number): Promise<boolean> {
         const db = await this.importRepository.findOneBy({ id })
+        if (!db) throw new NotFoundException();
         if (!db.locked_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
         else return true;
@@ -163,7 +166,9 @@ export class WorkflowService {
     }
 
     getUpdateMapping(id: number) {
-        return this.importRepository.findOneBy({ id }).then(w => w.update_config)
+        return this.importRepository.findOneBy({ id }).then(w => w.update_config).catch(err => {
+            throw new NotFoundException(err.message);
+        });
     }
 
     async setUpdateMapping(id: number, mapping: UpdateMapping) {
