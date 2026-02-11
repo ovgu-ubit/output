@@ -97,7 +97,7 @@ export class WorkflowService {
                 published_at: undefined,
                 deleted_at: undefined,
                 modified_at: undefined,
-                update_config: this.importService.getUpdateMapping()
+                update_config: workflow.update_config ?? this.importService.getUpdateMapping()
             }
         }
         const validated = validateImportWorkflow(toSave);

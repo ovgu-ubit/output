@@ -61,7 +61,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   release = false;
 
   ngOnDestroy(): void {
-    if (!this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
+    if (this.entity?.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
       this.workflowService.update({ id: this.entity.id, locked_at: null }).subscribe();
     }

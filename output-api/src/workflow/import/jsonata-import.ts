@@ -5,6 +5,7 @@ import jsonata from 'jsonata';
 import * as xmljs from 'xml-js';
 import * as moment from 'moment';
 import * as XLSX from 'xlsx';
+import * as Papa from 'papaparse';
 import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -467,6 +468,16 @@ export class JSONataImportService extends AbstractImportService {
             const workbook = XLSX.read(this.file.buffer, { type: 'buffer' })
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             jsonData = XLSX.utils.sheet_to_json(worksheet);
+        } else if (this.importDefinition.strategy.format === 'csv') {
+            await Papa.parse(this.file.buffer.toString(), {
+                        encoding: this.importDefinition.strategy.encoding,
+                        header: this.importDefinition.strategy.header,
+                        quoteChar: this.importDefinition.strategy.quoteChar,
+                        delimiter: this.importDefinition.strategy.delimiter,
+                        skipEmptyLines: true,
+                        complete: async (result, _file) => {
+                            jsonData = result.data;
+                        }});
         } else throw new NotImplementedException();
         let data = [];
         try {
