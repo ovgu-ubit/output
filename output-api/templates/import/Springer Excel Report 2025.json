@@ -1,13 +1,13 @@
 {
   "id": 5,
   "workflow_id": "d7d20076-b9da-4347-a352-42f21c8c3748",
-  "label": "Springer CSV Report",
+  "label": "Springer Excel Report",
   "version": 1,
   "created_at": "2026-02-10T14:14:16.151Z",
   "modified_at": "2026-02-10T14:31:27.169Z",
   "published_at": "2026-02-10T14:31:27.167Z",
   "deleted_at": null,
-  "description": "DEAL 2025 Springer CSV Report",
+  "description": "DEAL 2025 Springer Excel Report",
   "strategy_type": 0,
   "strategy": {
     "format": "xlsx",
