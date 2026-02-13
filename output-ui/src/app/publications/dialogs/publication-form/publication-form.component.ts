@@ -140,7 +140,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       finance_info: this.formBuilder.group({
         cost_approach: [''],
         grant_number: [''],
-        budget_relevant: [''],
+        not_budget_relevant: [''],
         contract_year: ['']
       }),
     }, {

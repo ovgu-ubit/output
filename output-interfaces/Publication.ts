@@ -61,6 +61,7 @@ export interface Publication extends Identifiable<Publication> {
     cost_approach?: number;
     supplements?: PublicationSupplement[];
     duplicates?: PublicationDuplicate[];
+    not_budget_relevant?: boolean;
 }
 
 export interface PublicationDuplicate {
