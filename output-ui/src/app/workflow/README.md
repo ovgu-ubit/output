@@ -93,14 +93,17 @@ Typical target fields include for example:
 
 - `title`
 - `doi`
-- `authors_inst`
+- `authors_inst : {last_name, first_name, orcid?, affiliation?}`
 - `authors` 
-- `publisher`
+- `publisher : {label}`
 - `pub_type`
 - `pub_date`
 - `oa_category`
 - `link`
 - `abstract`
+- `greater_entity : {label, identifiers? : {type, value}[] }`
+- `funder : {label, doi }[]`
+- `invoices?: {number?: string, date?: Date, booking_date?: Date, booking_amount?: number, cost_center?: string, cost_items: { euro_value?: number, vat?: number, orig_value?: number, orig_currency?: string, cost_type?: string }[] }[]`
 
 ### Minimal mapping example
 
