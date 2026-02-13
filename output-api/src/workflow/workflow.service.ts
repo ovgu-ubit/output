@@ -112,8 +112,8 @@ export class WorkflowService {
             throw new BadRequestException('Error: only published workflows can be executed');
         }
         if (importDef.strategy_type === Strategy.URL_QUERY_OFFSET) {
-            await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
             await this.importService.setReportingYear(reporting_year + "");
+            await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
             await this.importService.import(update, user, dryRun);
         }
         else if (importDef.strategy_type === Strategy.URL_DOI) {

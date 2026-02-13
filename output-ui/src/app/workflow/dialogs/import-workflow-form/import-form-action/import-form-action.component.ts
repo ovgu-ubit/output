@@ -160,8 +160,9 @@ export class ImportFormActionComponent implements OnInit {
     this.form.disable();
 
     const reporting_year = this.form.controls.reporting_year.value;
-    const dryRun = this.form.controls.dry_run.value
-    const update = this.form.controls.update.value
+    const dryRun = this.form.controls.dry_run.value;
+    let update = this.form.controls.update.value;
+    if (!update) update = false;
     this.workflowService
       .run(this.entity.id, reporting_year, update, dryRun, this.file)
       .pipe(finalize(() => (this.loading = false)))

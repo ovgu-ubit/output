@@ -556,7 +556,7 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
         await firstValueFrom(this.retrieveCountRequest().pipe(map(async resp => {
             this.numberOfPublications = await this.getNumber(resp);
-            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with ${this.completeURL} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
+            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with with mapping ${this.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
             if (this.numberOfPublications <= 0) {
                 //finalize
