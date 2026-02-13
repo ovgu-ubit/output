@@ -36,6 +36,12 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   opened = true;
 
   ngOnInit(): void {
+    this.facade.import$.pipe(
+      filter((wf): wf is ImportWorkflow => wf != null),
+      takeUntil(this.facade.destroy$),
+    ).subscribe((wf) => {
+      this.entity = wf;
+    });
     this.route.paramMap.pipe(
       map(pm => {
         this.id = pm.get('id')
@@ -49,7 +55,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
           }
           if (Number.isNaN(Number(id))) return EMPTY;
           return this.facade.load(id)
-        }), tap(wf => { this.entity = wf; }),
+        }),
       takeUntil(this.facade.destroy$)
     ).subscribe();
   }
