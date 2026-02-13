@@ -1,0 +1,27 @@
+<mat-card>
+    <mat-card-title>Überblick</mat-card-title>
+    <mat-card-content>
+        <div class="reports-container">
+            <h3>Zugehörige Reports</h3>
+            <p class="report-name" *ngIf="workflowReportName">Workflow-Name: {{ workflowReportName }}</p>
+
+            @if (associatedReports.length === 0) {
+            <p>Keine Reports für diesen Workflow vorhanden.</p>
+            } @else {
+            <ul class="report-list">
+                <li *ngFor="let report of associatedReports" class="report-list-item">
+                    <span>{{ report }}</span>
+                    <div class="report-actions">
+                        <button mat-raised-button class="primary-button" (click)="requestReport(report)">
+                            Report anfordern
+                        </button>
+                        <button mat-icon-button (click)="deleteReport(report)" class="delete-button">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </li>
+            </ul>
+            }
+        </div>
+    </mat-card-content>
+</mat-card>

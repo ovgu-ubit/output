@@ -1,0 +1,87 @@
+<app-breadcrump [path]="getLink()"
+    [label]="getLabel()"></app-breadcrump>
+<div class="import-workflow-layout">
+    <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
+        <div style="display: flex;gap: 10px">
+            @if ((this.facade.import$ | async)?.id) {
+            <h1>{{(this.facade.import$ | async)?.label}}, Version {{(this.facade.import$ | async)?.version}}</h1>
+            } @else {
+                <h1>Neuer Import</h1>
+            }
+            <mat-chip-set>
+                <mat-chip class="status-chip status-draft"
+                    *ngIf="!(this.facade.import$ | async)?.published_at">Entwurf</mat-chip>
+                <mat-chip class="status-chip status-active"
+                    *ngIf="(this.facade.import$ | async)?.published_at && !(this.facade.import$ | async)?.deleted_at">Aktiv</mat-chip>
+                <mat-chip class="status-chip status-archived"
+                    *ngIf="(this.facade.import$ | async)?.deleted_at">Archiviert</mat-chip>
+            </mat-chip-set>
+        </div>
+        <div style="display: flex;justify-content: flex-end;">
+            <button mat-icon-button (click)="this.export()"
+                [matTooltip]="(this.facade.import$ | async)?.label + ' exportieren'"
+                [matTooltipShowDelay]="800"><mat-icon>share</mat-icon></button>
+            <button mat-icon-button (click)="this.save()" matTooltip="Speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Schließen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+    </mat-toolbar>
+    <mat-sidenav-container autosize class="import-sidenav-container">
+        <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.collapsed]="!this.opened">
+            <div class="nav-header">
+                <button mat-icon-button (click)="this.toggle()" matTooltip="Navigation umschalten"
+                    matTooltipPosition="right"><mat-icon>{{ this.opened ? 'chevron_left' : 'chevron_right'
+                        }}</mat-icon></button>
+            </div>
+            <mat-nav-list class="nav">
+                <a mat-list-item [routerLink]="['overview']" routerLinkActive="active" matTooltip="Übersicht"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right"
+                    [routerLinkActiveOptions]="{exact:true}">
+                    <mat-icon matListItemIcon>info</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Übersicht</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['general']" routerLinkActive="active" matTooltip="Allgemein"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>description</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Allgemein</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['strategy']" routerLinkActive="active" matTooltip="Import-Strategie"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>tune</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Import-Strategie</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['mapping']" routerLinkActive="active" matTooltip="Mapping"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>code</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Mapping</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['test']" routerLinkActive="active" matTooltip="Test & Debug"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>bug_report</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Test & Debug</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['action']" routerLinkActive="active"
+                    matTooltip="Aktionen" [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>publish</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">
+                        Aktionen
+                    </span>
+                </a>
+            </mat-nav-list>
+        </mat-sidenav>
+        <mat-sidenav-content>
+            <div class="content-wrap">
+                <div class="content">
+                    <router-outlet></router-outlet>
+                </div>
+            </div>
+
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</div>

@@ -22,16 +22,16 @@ import { ConfigComponent } from './pages/config/config.component';
     ExportComponent,
     ImportComponent,
     PlausibilityComponent,
-    ImportConfigComponent,
     CsvFormatComponent,
-    LogDialogComponent,
     ConfigComponent
   ],
   imports: [
     TableModule,
     SharedModule,
     AdministrationRoutingModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    LogDialogComponent,
+    ImportConfigComponent
   ],
 })
 export class AdministrationModule { }

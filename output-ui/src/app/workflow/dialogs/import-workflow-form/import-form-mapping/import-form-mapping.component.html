@@ -1,0 +1,23 @@
+<mat-card *ngIf="this.entity">
+  <mat-card-title>JSONata Mapping</mat-card-title>
+  <mat-card-content>
+    <!--<pre class="mapping">{{ workflow.mapping }}</pre>-->
+    <form [formGroup]="form">
+      <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-label>Mapping</mat-label>
+        <textarea
+          matInput
+          formControlName="mapping"
+          rows="20"
+          placeholder="JSONata Mapping eingeben"
+        ></textarea>
+      </mat-form-field>
+    </form>
+  </mat-card-content>
+    @if (!this.entity.published_at && !this.entity.deleted_at) {
+    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+        <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
+        <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
+    </mat-card-actions>
+  }
+</mat-card>

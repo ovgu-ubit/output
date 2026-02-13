@@ -18,7 +18,10 @@ export class ConfigController {
     @UseGuards(AccessGuard)
     async list(@Req() req: Request, @Query("key") key?: string) {
         const userScope: ConfigScope = req?.['user']?.admin ? 'admin' : req?.['user']?.read ? 'user' : 'public';
-        return await this.configService.listDatabaseConfig(key, userScope);
+        let res;
+        if (key) res = (await this.configService.listDatabaseConfig( userScope, key))[0];
+        else res = await this.configService.listDatabaseConfig(userScope)
+        return res;
     }
 
     @Post()

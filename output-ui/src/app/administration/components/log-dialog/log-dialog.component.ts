@@ -1,11 +1,13 @@
 import { Component,Inject,OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @Component({
     selector: 'app-log-dialog',
     templateUrl: './log-dialog.component.html',
     styleUrls: ['./log-dialog.component.css'],
-    standalone: false
+    imports: [SharedModule],
+    standalone: true
 })
 export class LogDialogComponent implements OnInit {
 

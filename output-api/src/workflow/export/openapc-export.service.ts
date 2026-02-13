@@ -9,8 +9,8 @@ import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { ReportItemService } from '../report-item.service';
 import { AbstractExportService, ExportService } from './abstract-export.service';
 
-@ExportService({path: 'openapc'})
 @Injectable()
+@ExportService({path: 'openapc'})
 export class OpenAPCExportService extends AbstractExportService {
 
     quote = '"';
@@ -50,16 +50,16 @@ export class OpenAPCExportService extends AbstractExportService {
                 const contract = await this.contractService.one(pub.contract.id, false);
                 res += this.format(pub.contract.invoice_amount / contract.publications.length)
             }
-            res+=this.format(pub.doi);
-            res+=this.format(hybrid);
-            res+=this.format(pub.publisher?.label);
-            res+=this.format(pub.greater_entity?.label);
-            res+=this.format(pub.link);
-            let isbn:string = "";
+            res += this.format(pub.doi);
+            res += this.format(hybrid);
+            res += this.format(pub.publisher?.label);
+            res += this.format(pub.greater_entity?.label);
+            res += this.format(pub.link);
+            let isbn: string = "";
             if (pub.identifiers) isbn = pub.identifiers.find(e => e.type.toLowerCase() == 'isbn')?.value;
-            res+=this.format(isbn);
+            res += this.format(isbn);
 
-            res=res.slice(0,res.length-1);
+            res = res.slice(0, res.length - 1);
             res += '\n';
         }
         //res = res.replace(/undefined/g, '');

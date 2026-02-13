@@ -1,30 +1,37 @@
-import { Component,OnInit,Inject } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { UpdateMapping, UpdateOptions } from '../../../../../../output-interfaces/Config';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { WorkflowService } from 'src/app/workflow/workflow.service';
 
 @Component({
-    selector: 'app-import-config',
-    templateUrl: './import-config.component.html',
-    styleUrls: ['./import-config.component.css'],
-    standalone: false
+  selector: 'app-import-config',
+  templateUrl: './import-config.component.html',
+  styleUrls: ['./import-config.component.css'],
+  standalone: true,
+  imports: [SharedModule]
 })
 export class ImportConfigComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<ImportConfigComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any, private importService:ImportService, private enrichService:EnrichService) {}
+    @Inject(MAT_DIALOG_DATA) public data: any, private importService: ImportService, private enrichService: EnrichService,
+    private workflowService: WorkflowService) { }
 
   import;
   enrich;
+  workflow;
   mapping: UpdateMapping;
   keys;
 
   ngOnInit(): void {
     this.import = this.data.import;
     this.enrich = this.data.enrich;
+    this.workflow = this.data.workflow;
     let ob$;
     if (this.import) ob$ = this.importService.getConfig(this.import.path)
-    else ob$ = this.enrichService.getConfig(this.enrich.path);
+    else if (this.enrich) ob$ = this.enrichService.getConfig(this.enrich.path);
+    else ob$ = this.workflowService.getConfig(this.workflow.id);
     ob$.subscribe({
       next: data => {
         this.mapping = data;
@@ -47,10 +54,12 @@ export class ImportConfigComponent implements OnInit {
     this.dialogRef.close(null)
   }
 
-  action() {let ob$;
+  action() {
+    let ob$;
     if (this.import) ob$ = this.importService.setConfig(this.import.path, this.mapping)
-    else ob$ = this.enrichService.setConfig(this.enrich.path, this.mapping)
-    
+    else if (this.enrich) ob$ = this.enrichService.setConfig(this.enrich.path, this.mapping)
+    else ob$ = this.workflowService.setConfig(this.workflow.id, this.mapping)
+
     ob$.subscribe({
       next: data => {
         this.dialogRef.close(true)

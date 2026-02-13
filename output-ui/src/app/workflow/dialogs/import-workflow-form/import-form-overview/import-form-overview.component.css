@@ -1,0 +1,32 @@
+.reports-container {
+  margin-top: 1rem;
+}
+
+.report-name {
+  font-style: italic;
+}
+
+.report-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.report-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-button {
+  height: 36px;       /* Standard mat-raised-button Höhe */
+  width: 36px;
+}

@@ -10,6 +10,9 @@ import { CSVImportService } from "./import/csv-import.service";
 import { ExcelImportService } from "./import/excel-import.service";
 import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
+import { WorkflowService } from "./workflow.service";
+import { ImportWorkflow } from "./ImportWorkflow.entity";
+import { Strategy } from "../../../output-interfaces/Workflow";
 
 @Controller("import")
 @ApiTags("import")
@@ -19,12 +22,14 @@ export class ImportController {
     private reportService: ReportItemService,
     private configService: AppConfigService,
     @Inject('Imports') private importServices: AbstractImportService[],
-    private csvService: CSVImportService, private excelService: ExcelImportService) { }
+    private csvService: CSVImportService, private excelService: ExcelImportService,
+    private workflowService: WorkflowService) { }
 
 
   async list() {
     const allowed = await this.configService.get("import_services")
     const res = this.importServices.map(i => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
       const meta = getImportServiceMeta(i.constructor as Function)!;
       return { path: meta.path, allowed: allowed[meta.path] };
     })
@@ -214,7 +219,7 @@ export class ImportController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   @ApiBody({
-    description: "<p>JSON Request:</p><pre>{<br />  \"reporting_year\" : \"number\",<br />  \"dry_run\": \"boolean\"<br />}</pre>",
+    description: "",
     schema: {
       example: {
         reporting_year: '2022',

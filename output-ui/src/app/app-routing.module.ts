@@ -19,6 +19,10 @@ const routes: Routes = [
   {
     path: 'statistics',
     loadChildren: () => import('./statistics/statistics.module').then(m => m.StatisticsModule),
+  },
+  {
+    path: 'workflow',
+    loadChildren: () => import('./workflow/workflow.module').then(m => m.WorkflowModule),
   }
 ];
 

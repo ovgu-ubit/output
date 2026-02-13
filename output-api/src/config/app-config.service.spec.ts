@@ -79,7 +79,7 @@ describe('AppConfigService', () => {
         repository.findOne.mockResolvedValueOnce({ key: 'b', scope: 'user' } as any);
 
         await expect(service.listDatabaseConfig()).resolves.toEqual([{ key: 'a', scope: 'public' }]);
-        await expect(service.listDatabaseConfig('b', 'user')).resolves.toEqual({ key: 'b', scope: 'user' });
+        await expect(service.listDatabaseConfig('user', 'b')).resolves.toEqual([{ key: 'b', scope: 'user' }]);
         expect(repository.find).toHaveBeenCalledWith({ where: { scope: expect.anything() }, order: { key: 'ASC' } });
         const listCall = repository.find.mock.calls[0][0] as any;
         expect(listCall.where.scope._value).toEqual(['public']);
