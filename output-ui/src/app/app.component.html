@@ -56,7 +56,7 @@
 
       <button mat-button [matMenuTriggerFor]="adminMenu2"
         [disabled]="!this.tokenService.hasRole('reader') && !this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"><mat-icon>pending_actions</mat-icon>
-        Workflows </button>
+        Workflows (beta)</button>
       <mat-menu #adminMenu2="matMenu">
         <button mat-menu-item routerLink="/workflow/publication_import" [disabled]="!this.tokenService.hasRole('admin')">
           Imports verwalten </button>

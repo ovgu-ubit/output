@@ -2,12 +2,11 @@ import { HttpService } from '@nestjs/axios';
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
-import * as xmljs from 'xml-js';
-import * as moment from 'moment';
-import * as XLSX from 'xlsx';
 import * as Papa from 'papaparse';
 import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
+import * as XLSX from 'xlsx';
+import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { ImportWorkflow, ImportWorkflowTestResult, Strategy } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
@@ -483,7 +482,7 @@ export class JSONataImportService extends AbstractImportService {
         try {
             data = await Promise.all(jsonData.map(e => this.transform(e)))
         } catch (err) {
-            throw new InternalServerErrorException("JSONata mapping could not be applied")
+            throw new InternalServerErrorException(err, "JSONata mapping could not be applied")
         }
         this.numberOfPublications = data.length;
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
