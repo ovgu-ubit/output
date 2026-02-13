@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AliasTableComponent } from './alias-table.component';
 
 describe('AliasTableComponent', () => {
-  let component: AliasTableComponent;
-  let fixture: ComponentFixture<AliasTableComponent>;
+  let component: AliasTableComponent<any>;
+  let fixture: ComponentFixture<AliasTableComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

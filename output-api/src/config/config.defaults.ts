@@ -62,7 +62,8 @@ export const CONFIG_DEFAULTS = {
         open_access_monitor: true,
         openalex: true,
         pubmed: true,
-        scopus: true
+        scopus: true,
+        jsonata: true
     },
     enrich_services: {
         crossref: true,

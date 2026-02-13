@@ -54,6 +54,11 @@ import { UnpaywallEnrichService } from './import/unpaywall-enrich.service';
 import { ImportController } from './ImportController';
 import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
+import { JSONataImportService } from './import/jsonata-import';
+import { WorkflowService } from './workflow.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ImportWorkflow } from './ImportWorkflow.entity';
+import { WorkflowController } from './WorkflowController';
 
 @Module({
   imports: [
@@ -73,21 +78,25 @@ import { ReportItemService } from './report-item.service';
       maxRedirects: 5,
     }),
     ScheduleModule.forRoot(),
-    DiscoveryModule
+    DiscoveryModule,
+    TypeOrmModule.forFeature([ImportWorkflow])
   ],
   controllers: [
     ImportController,
     EnrichController,
     ExportController,
-    PlausibilityController
+    PlausibilityController,
+    WorkflowController
   ],
   providers: [
     ReportItemService,
-    CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,BibliographyImportService,
+    CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,
+    CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,
+    BibliographyImportService,JSONataImportService,
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService,
+    DiscoveryService, WorkflowService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],

@@ -59,7 +59,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     if (!this.preProcessing) this.preProcessing = of(null);
     if (!this.postProcessing) this.postProcessing = of(null);
     this.preProcessing.pipe(concatMap(data => {
-      if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data.locked) {
+      if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data?.locked) {
         this.disable();
       }
       if (this.data.entity?.id && this.service) {//edit mode with current db entity

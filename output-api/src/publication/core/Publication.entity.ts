@@ -152,7 +152,7 @@ export class Publication implements IPublication {
     cost_approach?: number;
     
     @Column({ nullable: true })
-    budget_relevant?: boolean;
+    not_budget_relevant?: boolean;
     
     @Column({ nullable: true })
     grant_number?: string;

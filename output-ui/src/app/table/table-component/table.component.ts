@@ -56,6 +56,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() softDelete? = false;
   @Input() filter_key? = "";
 
+  @Input() editFunction? = this.edit;
+  @Input() addFunction? = this.add;
+  @Input() deleteable? = true;
+
   @Input() parent: TableParent<T>;
   @Input() serviceClass: EntityService<E, T>;
   @Input() formComponent: ComponentType<EntityFormComponent<E>>;
@@ -269,7 +273,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       width: '1000px',
       maxHeight: '800px',
       data: {
-        entity: { id: row.id }
+        entity: row
       },
       disableClose: true
     });

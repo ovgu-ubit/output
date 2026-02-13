@@ -1,0 +1,112 @@
+<mat-card>
+    <mat-card-title>Workflow-Test</mat-card-title>
+    <mat-card-content>
+        <p>Starten Sie einen Testlauf, um Lesedaten und Importergebnis des aktuellen Workflows zu prüfen.</p>
+
+        <button mat-raised-button class="primary-button" [disabled]="!workflow?.id || isRunning" (click)="runTest()">
+            {{ isRunning ? 'Test läuft…' : 'Testlauf starten' }}
+        </button>
+        @if (doiStrategy) {
+        <form [formGroup]="form">
+            <mat-form-field>
+                <mat-label>DOI Position</mat-label>
+            <input matInput [type]="'number'" onwheel="return false;" placeholder="Position" formControlName="pos">
+            </mat-form-field>
+        </form>
+        }
+        @if (!workflow?.id) {
+        <p class="hint">Bitte speichern Sie den Workflow zuerst, damit ein Testlauf gestartet werden kann.</p>
+        }
+
+        @if (errorMessage) {
+        <p class="error">{{ errorMessage }}</p>
+        }
+
+        @if (result) {
+        <div class="test-result">
+            <mat-accordion>
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Meta-Informationen</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <p><strong>Workflow-ID:</strong> {{ result.meta.workflow_id }}</p>
+                    <p><strong>Strategie-Typ:</strong> {{ result.meta.strategy_type }}</p>
+                    <p><strong>Position:</strong> {{ result.meta.pos }}</p>
+                    <p><strong>Zeitpunkt:</strong> {{ result.meta.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</p>
+                    <p><strong>Dauer:</strong> {{ result.meta.durationMs }} ms</p>
+                </mat-expansion-panel>
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Quelle</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <p><strong>Source:</strong> {{ result.read.source }}</p>
+                    <p><strong>Gelesene Datensätze:</strong> {{ result.read.count }}</p>
+                    <p><strong>Response-Keys:</strong></p>
+                    <ul>
+                        @for (item of result.read.response;track item) {
+                        <li>{{ item }}</li>
+                        } @empty {
+                        <li>There are no items.</li>
+                        }
+                    </ul>
+                </mat-expansion-panel>
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Ergebnis</mat-panel-title>
+                        <mat-panel-description> {{result.result.status}} </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <p><strong>Status:</strong> {{ result.result.status }}</p>
+                    <p><strong>Importiert:</strong> {{ result.result.imported.length }}</p>
+                    <p><strong>Ausgeschlossen:</strong> {{ result.result.excluded.length }}</p>
+                </mat-expansion-panel>
+                @if (result.result.issues.length) {
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Probleme</mat-panel-title>
+                        <mat-panel-description> {{result.result.issues?.length}} </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <ul>
+                        @for (issue of result.result.issues; track issue) {
+                        <li>{{ issue.message }}
+                            <ul>
+                                <li>{{this.getErrorText(issue.error)}}</li>
+                            </ul>
+                        </li>
+                        }
+                    </ul>
+                </mat-expansion-panel>
+                }
+
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Strategie-Konfiguration</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <pre>{{ result.meta.strategy | json }}</pre>
+                </mat-expansion-panel>
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Gelesene Elemente</mat-panel-title>
+                        <mat-panel-description> {{result.read.read_items?.length}} </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <pre>{{ result.read.read_items | json }}</pre>
+                </mat-expansion-panel>
+
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Importierte Publikationen</mat-panel-title>
+                        <mat-panel-description> {{result.result.imported?.length}} </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <pre>{{ result.result.imported | json }}</pre>
+                </mat-expansion-panel>
+                <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                        <mat-panel-title>Ausgeschlossene Elemente</mat-panel-title>
+                        <mat-panel-description> {{result.result.excluded?.length}} </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <pre>{{ result.result.excluded | json }}</pre>
+                </mat-expansion-panel>
+            </mat-accordion>
+        </div>
+        }
+    </mat-card-content>
+</mat-card>

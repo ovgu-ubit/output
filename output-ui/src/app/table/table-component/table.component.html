@@ -37,9 +37,9 @@
                 [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}</button>
             </ng-container>
           </ng-container>
-          <button mat-raised-button (click)="this.add()" *ngIf="!this.parent.not_editable"
+          <button mat-raised-button (click)="this.addFunction()" *ngIf="!this.parent.not_editable"
             [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
-          <button mat-raised-button (click)="this.delete()" *ngIf="!this.parent.not_editable"
+          <button mat-raised-button (click)="this.delete()" *ngIf="!this.parent.not_editable && this.deleteable"
             [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
           <button mat-raised-button *ngIf="this.serviceClass.combine && !this.parent.not_editable" (click)="this.combine()"
             [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
@@ -108,7 +108,7 @@
             </div>
           </th>
           <td mat-cell *matCellDef="let row">
-            <button mat-icon-button (click)="this.edit(row)" matTooltip="Element untersuchen"
+            <button mat-icon-button (click)="this.editFunction(row)" matTooltip="Element untersuchen"
               [matTooltipShowDelay]="800">
               <mat-icon
                 *ngIf="((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked); else else1">edit</mat-icon>

@@ -2,6 +2,7 @@ module.exports = {
   apps : [{
     name: 'output',
     script: 'npm run start:prod',
-    watch: '.'
+    watch: '.',
+    ignore_watch : ["node_modules", "*.log"],
   }]
 };

@@ -1,15 +1,15 @@
-import { SwaggerModule, DocumentBuilder, SwaggerDocumentOptions } from '@nestjs/swagger';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { RequestMethod, ValidationPipe } from '@nestjs/common';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import express from 'express'
+import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
-import * as fs from 'fs'
-import * as http from 'http'
-import * as https from 'https'
 import cookieParser from 'cookie-parser';
+import express from 'express';
+import * as fs from 'fs';
+import * as http from 'http';
+import * as https from 'https';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
     const server = express();

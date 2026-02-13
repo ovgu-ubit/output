@@ -4,6 +4,7 @@ import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 import { HealthState } from '../../../output-interfaces/Config';
+import { EnvSchemas } from './environment.schema';
 
 @Injectable()
 export class AppConfigService {
@@ -23,11 +24,23 @@ export class AppConfigService {
         }
     }
 
-    public listDatabaseConfig(key?: string, scope: ConfigScope = 'public') {
+    public async listDatabaseConfig(scope: ConfigScope = 'public', key?: string):Promise<Config[]> {
         const allowedScopes = this.resolveAllowedScopes(scope);
 
-        if (!key) return this.repository.find({ where: { scope: In(allowedScopes) }, order: { key: 'ASC' } });
-        else return this.repository.findOne({ where: { key, scope: In(allowedScopes) } });
+        if (!key) return await this.repository.find({ where: { scope: In(allowedScopes) }, order: { key: 'ASC' } });
+        else {
+            const cfg = await this.repository.findOne({ where: { key, scope: In(allowedScopes) } });
+            return [cfg];
+        }
+    }
+
+    public async listEnvConfig() {
+        const keys = EnvSchemas.shape;
+        const result = [];
+        for (const key of Object.keys(keys)) {
+            result.push({key, value: await this.configService.get(key)});
+        }
+        return result;
     }
 
     public async setDatabaseConfig(key: string, value: any) {
@@ -47,12 +60,12 @@ export class AppConfigService {
         });
         const have = existing.map((r) => `${r.key}`);
 
-        let existingNull = await this.repository.find({
+        const existingNull = await this.repository.find({
             select: ['id', 'key', 'scope'],
             where: {value: IsNull()}
         });
         //reconcile defaults for null values
-        let defaultNull = existingNull.map(e => {return {...e, value: defaults[e.key]}})
+        const defaultNull = existingNull.map(e => {return {...e, value: defaults[e.key]}})
         if (defaultNull.length) {
             await this.repository.save(defaultNull)
         }
