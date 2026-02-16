@@ -32,6 +32,24 @@ In the UI, users can currently choose these strategy types:
 
 ## 3) Strategy reference
 
+### URL placeholders in strategy definitions
+
+URL strategy fields (`url_count`, `url_items`, `url_doi`) support placeholders in square brackets (`[name]`).
+The backend resolves them before making HTTP calls.
+
+Built-in placeholders:
+
+- `[year]` → selected reporting year from the workflow run dialog
+- `[search_tags]` → configured search tags joined with `search_text_combiner`
+- `[affiliation_tags]` → configured affiliation tags joined with `search_text_combiner`
+- `[doi]` → current DOI (for DOI-based enrich workflows)
+
+Configuration placeholders:
+
+- Any configuration key can be referenced as `[config_key]`.
+- This is used in templates for values like `[openalex_id]`, `[SECRET_SCOPUS]`, `[SECRET_UNPAYWALL]`.
+- If a placeholder has no value, validation fails with an error.
+
 ### A) Web-Abfrage per Suche und Offset (`URL_QUERY_OFFSET`)
 
 Use this when an API supports search plus pagination (offset or page).
@@ -89,6 +107,20 @@ CSV-only fields (required when `format = csv`):
 
 `mapping` is a JSONata expression that transforms **one source item** into the target publication structure used by Output.
 
+### Which configurations are accessible in JSONata
+
+Mappings are evaluated with an additional object `params.cfg`.
+
+- Access syntax: `params.cfg.<key>` (usually assigned once: `$cfg := params.cfg;`)
+- `params.cfg` contains the merged runtime configuration:
+  - DB-backed configuration entries
+  - environment configuration entries (including secret values)
+
+Examples from shipped templates:
+
+- `$cfg.affiliation_tags`
+- `$cfg.openalex_id`
+
 Typical target fields include for example:
 
 - `title`
@@ -137,3 +169,36 @@ Typical target fields include for example:
 7. Publish when test results are correct.
 
 If validation fails, check missing required fields first (especially strategy-specific fields such as CSV settings, URL templates, and JSONata expressions).
+
+---
+
+## 6) Workflow lifecycle: draft, published, archived, and new versions
+
+Workflows are versioned and grouped by `workflow_id`.
+
+### States
+
+- **Draft**: `published_at = null` and `deleted_at = null`
+  - editable
+  - can be deleted
+- **Published (active)**: `published_at != null` and `deleted_at = null`
+  - can be executed
+  - no direct content updates allowed
+- **Archived**: `deleted_at != null`
+  - kept for history/export
+  - not executable
+
+### Publishing rule
+
+Only one version per `workflow_id` may be published at a time.
+To publish another version, archive the currently published one first.
+
+### Forking / creating a new version
+
+In the action tab, “duplicate” creates a **new draft version** by copying the current workflow:
+
+- same `workflow_id`
+- `version + 1`
+- reset lifecycle timestamps (`published_at`, `deleted_at`)
+
+This is the normal path to evolve a workflow after it has already been published.
