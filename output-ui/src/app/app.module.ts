@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { APP_INITIALIZER, LOCALE_ID, NgModule } from '@angular/core';
 import { MAT_MOMENT_DATE_ADAPTER_OPTIONS } from '@angular/material-moment-adapter';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { BrowserModule } from '@angular/platform-browser';
@@ -17,6 +17,11 @@ import { TableModule } from './table/table.module';
 import { FormModule } from './form/form.module';
 import { provideHighcharts } from 'highcharts-angular';
 import { RuntimeConfigService } from './services/runtime-config.service';
+import { registerLocaleData } from '@angular/common';
+import localeDe from '@angular/common/locales/de';
+import 'moment/locale/de';
+
+registerLocaleData(localeDe);
 
 export const metaReducers: MetaReducer[] = [hydrationMetaReducer];
 export function initRuntimeConfig(rc: RuntimeConfigService) {
@@ -46,6 +51,7 @@ export function initRuntimeConfig(rc: RuntimeConfigService) {
             multi: true,
         },
         { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
+        { provide: LOCALE_ID, useValue: 'de-DE' },
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
         { provide: AuthorizationService, useClass: environment.authorization_service },
         provideHttpClient(withInterceptorsFromDi()),
