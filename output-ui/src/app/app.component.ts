@@ -13,7 +13,7 @@ import { RuntimeConfigService } from './services/runtime-config.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public title: string = 'Output';
-  public version = '2.0.0';
+  public version = '2.0.1';
   public user: string | null;
   public institution: string = '';
   public isLoading: boolean = true;
