@@ -7,6 +7,7 @@ General information can be found in the [Wiki](https://github.com/ovgu-ubit/outp
 2. [Configuration](#configuration)
 3. [Security Concept](#security)
 4. [Updating](#updating)
+5. [Workflow-Definition](https://github.com/ovgu-ubit/output/tree/main/output-ui/src/app/workflow)
 
 ## Installation <a name="installation"></a>
 ### Requirements
@@ -184,6 +185,7 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 4. Build backend and run pending migrations for DB schema:
 
 > $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+
 
 
 

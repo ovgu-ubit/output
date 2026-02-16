@@ -7,10 +7,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ChartConstructorType } from 'highcharts-angular';
 
 @Component({
-    selector: 'app-statistics-year',
-    templateUrl: './statistics-year.component.html',
-    styleUrls: ['./statistics-year.component.css'],
-    standalone: false
+  selector: 'app-statistics-year',
+  templateUrl: './statistics-year.component.html',
+  styleUrls: ['./statistics-year.component.css'],
+  standalone: false
 })
 export class StatisticsYearComponent implements OnInit {
 
@@ -44,12 +44,12 @@ export class StatisticsYearComponent implements OnInit {
           }
         }
       }
-    },navigation: {
+    }, navigation: {
       buttonOptions: {
         theme: {
           fill: window.getComputedStyle(document.body).getPropertyValue("background-color"),
         }
-      }, menuStyle : {
+      }, menuStyle: {
         backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
       }
     }
@@ -91,16 +91,7 @@ export class StatisticsYearComponent implements OnInit {
       text: 'Anteil Verträge'
     }
   }
-  chartCallback: Highcharts.ChartCallbackFunction = function (chart) { return null } // function after chart is created
-  updateFlag: boolean = false; // set to true if you wish to update the chart
-  updateFlag1: boolean = false; // set to true if you wish to update the chart
-  updateFlag2: boolean = false; // set to true if you wish to update the chart
-  updateFlag3: boolean = false; // set to true if you wish to update the chart
-  updateFlag4: boolean = false; // set to true if you wish to update the chart
-  updateFlag5: boolean = false; // set to true if you wish to update the chart
-  updateFlagLocked: boolean = false; // set to true if you wish to update the chart
-  oneToOneFlag: boolean = true; // changing number of series
-  runOutsideAngular: boolean = false; // optional boolean, defaults to false
+  charts = new Map<string, Highcharts.Chart>();
 
   year;
   costs = false;
@@ -118,13 +109,17 @@ export class StatisticsYearComponent implements OnInit {
     this.loadData(this.costs)
   }
 
+  onChartInstance(id: string, chart: Highcharts.Chart) {
+    this.charts.set(id, chart);
+  }
+
   loadData(costs: boolean) {
     this.costs = costs;
     let ob$: Observable<any> = this.statService.corresponding(this.year, costs, this.filter).pipe(map(
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.corresponding === null? "Unbekannt": (e.corresponding? "Corresponding" : "Keine Person der Einrichtung"), e.value])
+          chartData.push([e.corresponding === null ? "Unbekannt" : (e.corresponding ? "Corresponding" : "Keine Person der Einrichtung"), e.value])
         }
         this.chartOptions.series = [{
           type: 'pie',
@@ -135,13 +130,13 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           }
         }]
-        this.updateFlag = true;
+        this.charts.get('corresponding')?.update(this.chartOptions, true, true);
       }));
     ob$ = merge(ob$, this.statService.locked(this.year, this.filter).pipe(map(
       data => {
         let chartData = []
         for (let e of data) {
-          chartData.push([e.locked? "Gesperrt": "Nicht gesperrt", e.value])
+          chartData.push([e.locked ? "Gesperrt" : "Nicht gesperrt", e.value])
         }
         this.chartOptionsLocked.series = [{
           type: 'pie',
@@ -152,16 +147,16 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           }
         }]
-        this.updateFlagLocked = true;
+        this.charts.get('locked')?.update(this.chartOptionsLocked, true, true);
       })));
     ob$ = merge(ob$, this.statService.institute(this.year, costs, this.filter).pipe(map(
       data => {
-        this.institutes = data.map(e => {return {id:e.id, label:e.institute}});
+        this.institutes = data.map(e => { return { id: e.id, label: e.institute } });
         let chartData = []
         for (let e of data) {
-          chartData.push([e.institute? e.institute: 'Unbekannt', e.value])
+          chartData.push([e.institute ? e.institute : 'Unbekannt', e.value])
         }
-        chartData = chartData.sort((a,b) => {
+        chartData = chartData.sort((a, b) => {
           if (a[0] === "Unbekannt") return 1;
           else if (b[0] === "Unbekannt") return -1;
           else return b[1] - a[1]
@@ -175,10 +170,10 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
-        this.updateFlag1 = true;
+        this.charts.get('institute')?.update(this.chartOptionsInstitute, true, true);
       })));
     ob$ = merge(ob$, this.statService.oaCat(this.year, costs, this.filter).pipe(map(
       data => {
@@ -187,7 +182,7 @@ export class StatisticsYearComponent implements OnInit {
         for (let e of data) {
           chartData.push([e.oa_cat, e.value])
         }
-        chartData = chartData.sort((a,b) => {
+        chartData = chartData.sort((a, b) => {
           if (a[0] === "Unbekannt") return 1;
           else if (b[0] === "Unbekannt") return -1;
           else return b[1] - a[1]
@@ -201,10 +196,10 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
-        this.updateFlag2 = true;
+        this.charts.get('oa_cat')?.update(this.chartOptionsOACat, true, true);
       })));
     ob$ = merge(ob$, this.statService.publisher(this.year, costs, this.filter).pipe(map(
       data => {
@@ -213,7 +208,7 @@ export class StatisticsYearComponent implements OnInit {
         for (let e of data) {
           chartData.push([e.publisher, e.value])
         }
-        chartData = chartData.sort((a,b) => {
+        chartData = chartData.sort((a, b) => {
           if (a[0] === "Unbekannt") return 1;
           else if (b[0] === "Unbekannt") return -1;
           else return b[1] - a[1]
@@ -227,10 +222,10 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
-        this.updateFlag3 = true;
+        this.charts.get('publisher')?.update(this.chartOptionsPublisher, true, true);
       })));
     ob$ = merge(ob$, this.statService.pub_type(this.year, costs, this.filter).pipe(map(
       data => {
@@ -239,7 +234,7 @@ export class StatisticsYearComponent implements OnInit {
         for (let e of data) {
           chartData.push([e.pub_type, e.value])
         }
-        chartData = chartData.sort((a,b) => {
+        chartData = chartData.sort((a, b) => {
           if (a[0] === "Unbekannt") return 1;
           else if (b[0] === "Unbekannt") return -1;
           else return b[1] - a[1]
@@ -253,10 +248,10 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
-        this.updateFlag4 = true;
+        this.charts.get('pub_type')?.update(this.chartOptionsPubType, true, true);
       })));
     ob$ = merge(ob$, this.statService.contract(this.year, costs, this.filter).pipe(map(
       data => {
@@ -265,7 +260,7 @@ export class StatisticsYearComponent implements OnInit {
         for (let e of data) {
           chartData.push([e.contract, e.value])
         }
-        chartData = chartData.sort((a,b) => {
+        chartData = chartData.sort((a, b) => {
           if (a[0] === "Unbekannt") return 1;
           else if (b[0] === "Unbekannt") return -1;
           else return b[1] - a[1]
@@ -279,16 +274,19 @@ export class StatisticsYearComponent implements OnInit {
               (event) => { this.applyFilter(event.point.series.name, event.point.name) }
           },
           tooltip: {
-            pointFormat: `<b>{point.y:,.0f}${costs? ' €' : ''}</b><br>{point.percentage:.1f} %`
+            pointFormat: `<b>{point.y:,.0f}${costs ? ' €' : ''}</b><br>{point.percentage:.1f} %`
           }
         }]
-        this.updateFlag5 = true;
+        this.charts.get('contract')?.update(this.chartOptionsContract, true, true);
       })));
     ob$.subscribe({
-      error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
+      error: err => {
+        this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
         panelClass: [`danger-snackbar`],
         verticalPosition: 'top'
       })
+      console.log(err)
+    }
     })
   }
 
@@ -371,7 +369,7 @@ export class StatisticsYearComponent implements OnInit {
     }
     if (series_name === 'Vertrag') {
       let notContractId = this.filter?.notContractId ? this.filter.notContractId : [];
-      if (cat_name === 'Unbekannt') id=null
+      if (cat_name === 'Unbekannt') id = null
       else id = this.constracts.find(e => e.label === cat_name)?.id;
       notContractId.push(id)
       this.filter.notContractId = notContractId;
@@ -380,15 +378,15 @@ export class StatisticsYearComponent implements OnInit {
     if (series_name === 'Publikationsart') {
       let notPubTypeId = this.filter?.notPubTypeId ? this.filter.notPubTypeId : [];
       if (cat_name === 'Unbekannt') id = null
-      else id=this.pub_types.find(e => e.label === cat_name)?.id
+      else id = this.pub_types.find(e => e.label === cat_name)?.id
       notPubTypeId.push(id)
       this.filter.notPubTypeId = notPubTypeId;
       key = 'notPubTypeId'
     }
     if (series_name === 'Verlag') {
       let notPublisherId = this.filter?.notPublisherId ? this.filter.notPublisherId : [];
-      if (cat_name === 'Unbekannt') id=null
-      else id=this.publisher.find(e => e.label === cat_name)?.id
+      if (cat_name === 'Unbekannt') id = null
+      else id = this.publisher.find(e => e.label === cat_name)?.id
       notPublisherId.push(id)
       this.filter.notPublisherId = notPublisherId;
       key = 'notPublisherId'
