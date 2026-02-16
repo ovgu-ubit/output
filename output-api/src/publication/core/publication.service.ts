@@ -17,6 +17,8 @@ import { InstituteService } from '../../institute/institute.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { mergeEntities } from '../../common/merge';
 
+type WhereCondition = { clause: string; params: Record<string, unknown> };
+
 @Injectable()
 export class PublicationService {
     doi_regex = new RegExp('10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+', 'i');
@@ -491,50 +493,30 @@ export class PublicationService {
         this.cost_type = false;
         this.invoice = false;
 
-        //let indexQuery = this.indexQuery();
-        const first = false;
+        let first = true;
+        let paramIndex = 0;
         if (filter) for (const expr of filter.expressions) {
             if (expr.key.includes("institute_id")) {
                 expr.comp = CompareOperation.IN;
-                const ids = [expr.value].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
-                expr.value = '(' + ids.join(',') + ')';
+                const ids = [expr.value as number].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
+                expr.value = ids as unknown as string | number;
             }
 
-            let compareString;
-            switch (expr.comp) {
-                case CompareOperation.INCLUDES:
-                    compareString = this.getWhereStringIncludes(expr.key, expr.value)
-                    break;
-                case CompareOperation.EQUALS:
-                    compareString = this.getWhereStringEquals(expr.key, expr.value)
-                    break;
-                case CompareOperation.STARTS_WITH:
-                    compareString = this.getWhereStringStartsWith(expr.key, expr.value)
-                    break;
-                case CompareOperation.GREATER_THAN:
-                    compareString = "publication." + expr.key + " > '" + expr.value + "'";
-                    break;
-                case CompareOperation.SMALLER_THAN:
-                    compareString = "publication." + expr.key + " < '" + expr.value + "'";
-                    break;
-                case CompareOperation.IN:
-                    compareString = this.getWhereStringIn(expr.key, expr.value)
-                    break;
-            }
+            const comparison = this.buildComparisonCondition(expr, paramIndex++);
+            if (!comparison) continue;
+            const { clause, params } = comparison;
             switch (expr.op) {
                 case JoinOperation.AND:
-                    if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.andWhere(compareString);
+                    indexQuery = first ? indexQuery.where(clause, params) : indexQuery.andWhere(clause, params);
                     break;
                 case JoinOperation.OR:
-                    if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.orWhere(compareString);
+                    indexQuery = first ? indexQuery.where(clause, params) : indexQuery.orWhere(clause, params);
                     break;
                 case JoinOperation.AND_NOT:
-                    if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.andWhere("NOT " + compareString);
+                    indexQuery = first ? indexQuery.where(`NOT (${clause})`, params) : indexQuery.andWhere(`NOT (${clause})`, params);
                     break;
             }
+            first = false;
         }
         if (this.funder && !this.filter_joins.has("funder")) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
         if (this.identifiers && !this.filter_joins.has("identifier")) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
@@ -554,8 +536,30 @@ export class PublicationService {
         return indexQuery;
     }
 
-    getWhereStringEquals(key: string, value: string | number) {
-        let where = '';
+
+    private buildComparisonCondition(expr: SearchFilterExpression, index: number): WhereCondition | null {
+        const paramName = `param${index}`;
+        switch (expr.comp) {
+            case CompareOperation.INCLUDES:
+                return this.getWhereStringIncludes(expr.key, expr.value, paramName);
+            case CompareOperation.EQUALS:
+                return this.getWhereStringEquals(expr.key, expr.value, paramName);
+            case CompareOperation.STARTS_WITH:
+                return this.getWhereStringStartsWith(expr.key, expr.value, paramName);
+            case CompareOperation.GREATER_THAN:
+                return { clause: `publication.${expr.key} > :${paramName}`, params: { [paramName]: expr.value } };
+            case CompareOperation.SMALLER_THAN:
+                return { clause: `publication.${expr.key} < :${paramName}`, params: { [paramName]: expr.value } };
+            case CompareOperation.IN:
+                return this.getWhereStringIn(expr.key, expr.value, paramName);
+            default:
+                return null;
+        }
+    }
+
+    private getWhereStringEquals(key: string, value: string | number, paramName: string): WhereCondition {
+        let clause = '';
+        const params: Record<string, unknown> = {};
         switch (key) {
             case 'greater_entity':
             case 'oa_category':
@@ -566,7 +570,8 @@ export class PublicationService {
             case 'institute':
             case 'cost_center':
             case 'cost_type':
-                where = key + ".label = '" + value + "'";
+                clause = `${key}.label = :${paramName}`;
+                params[paramName] = value;
                 if (key == 'funder') this.funder = true;
                 if (key == 'cost_center') this.cost_center = true;
                 if (key == 'greater_entity') this.ge = true;
@@ -576,77 +581,98 @@ export class PublicationService {
                 if (key == 'cost_type') this.cost_type = true;
                 break;
             case 'author_id':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"authorId\" = ' + value + ')'
+                clause = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."authorId" = :' + paramName + ')';
+                params[paramName] = value;
                 break;
             case 'author_id_corr':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"authorId\" = ' + value + ')'
+                clause = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap.corresponding and ap."authorId" = :' + paramName + ')';
+                params[paramName] = value;
                 break;
             case 'institute_id':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"instituteId\" = ' + value + ')'
+                clause = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."instituteId" = :' + paramName + ')';
+                params[paramName] = value;
                 break;
             case 'institute_id_corr':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"instituteId\" = ' + value + ')'
+                clause = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap.corresponding and ap."instituteId" = :' + paramName + ')';
+                params[paramName] = value;
                 break;
             case 'inst_authors':
                 this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value + "'";
+                clause = "concat(author.last_name, ', ' ,author.first_name)  = :" + paramName;
+                params[paramName] = value;
                 break;
             case 'contract_id':
-                where = 'contract.id=' + value;
+                clause = 'contract.id = :' + paramName;
+                params[paramName] = value;
                 this.contract = true;
                 break;
             case 'funder_id':
-                where = 'funder.id=' + value;
+                clause = 'funder.id = :' + paramName;
+                params[paramName] = value;
                 this.funder = true;
                 break;
             case 'greater_entity_id':
-                where = 'greater_entity.id=' + value;
+                clause = 'greater_entity.id = :' + paramName;
+                params[paramName] = value;
                 this.ge = true;
                 break;
             case 'oa_category_id':
-                where = 'oa_category.id=' + value;
+                clause = 'oa_category.id = :' + paramName;
+                params[paramName] = value;
                 this.oa_cat = true;
                 break;
             case 'pub_type_id':
-                where = 'publication_type.id=' + value;
+                clause = 'publication_type.id = :' + paramName;
+                params[paramName] = value;
                 this.pub_type = true;
                 break;
             case 'publisher_id':
-                where = 'publisher.id=' + value;
+                clause = 'publisher.id = :' + paramName;
+                params[paramName] = value;
                 this.publisher = true;
                 break;
             case 'other_ids':
-                where = "identifier.value='" + value + "'";
+                clause = "identifier.value = :" + paramName;
+                params[paramName] = value;
                 this.identifiers = true;
                 break;
             case 'cost_center_id':
-                where = "cost_center.id=" + value;
+                clause = "cost_center.id = :" + paramName;
+                params[paramName] = value;
                 this.cost_center = true;
                 this.invoice = true;
                 break;
             case 'cost_type_id':
-                where = "cost_type.id=" + value;
+                clause = "cost_type.id = :" + paramName;
+                params[paramName] = value;
                 this.cost_type = true;
                 this.invoice = true;
                 break;
             case 'invoice_year':
                 const beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
                 const endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
-                where = "invoice.date > '" + beginDate.toISOString() + "' and invoice.date < '" + endDate.toISOString() + "'";
+                clause = `invoice.date > :${paramName}Begin and invoice.date < :${paramName}End`;
+                params[`${paramName}Begin`] = beginDate;
+                params[`${paramName}End`] = endDate;
                 this.invoice = true;
                 break;
             case 'pub_date':
-                if (value) where = "publication.pub_date = '" + value + "'";
-                else where = "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL"
+                if (value !== undefined && value !== null && value !== '') {
+                    clause = `publication.pub_date = :${paramName}`;
+                    params[paramName] = value;
+                }
+                else clause = 'publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL';
                 break;
             default:
-                where = "publication." + key + " = '" + value + "'";
+                clause = `publication.${key} = :${paramName}`;
+                params[paramName] = value;
         }
-        return where;
+        return { clause, params };
     }
 
-    getWhereStringIncludes(key: string, value: string | number) {
-        let where = '';
+    private getWhereStringIncludes(key: string, value: string | number, paramName: string): WhereCondition {
+        let clause = '';
+        const params: Record<string, unknown> = {};
         switch (key) {
             case 'greater_entity':
             case 'oa_category':
@@ -665,24 +691,29 @@ export class PublicationService {
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
                 if (key == 'cost_type') this.cost_type = true;
-                where = key + ".label ILIKE '%" + value + "%'";
+                clause = `${key}.label ILIKE :${paramName}`;
+                params[paramName] = `%${value}%`;
                 break;
             case 'inst_authors':
                 this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '%" + value + "%'";
+                clause = "concat(author.last_name, ', ' ,author.first_name)  ILIKE :" + paramName;
+                params[paramName] = `%${value}%`;
                 break;
             case 'other_ids':
-                where = "identifier.value ILIKE '%" + value + "%'";
+                clause = "identifier.value ILIKE :" + paramName;
+                params[paramName] = `%${value}%`;
                 this.identifiers = true;
                 break;
             default:
-                where = "publication." + key + " ILIKE '%" + value + "%'";
+                clause = `publication.${key} ILIKE :${paramName}`;
+                params[paramName] = `%${value}%`;
         }
-        return where;
+        return { clause, params };
     }
 
-    getWhereStringStartsWith(key: string, value: string | number) {
-        let where = '';
+    private getWhereStringStartsWith(key: string, value: string | number, paramName: string): WhereCondition {
+        let clause = '';
+        const params: Record<string, unknown> = {};
         switch (key) {
             case 'greater_entity':
             case 'oa_category':
@@ -701,24 +732,30 @@ export class PublicationService {
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
                 if (key == 'cost_type') this.cost_type = true;
-                where = key + ".label ILIKE '" + value + "%'";
+                clause = `${key}.label ILIKE :${paramName}`;
+                params[paramName] = `${value}%`;
                 break;
             case 'inst_authors':
                 this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '" + value + "%'";
+                clause = "concat(author.last_name, ', ' ,author.first_name)  ILIKE :" + paramName;
+                params[paramName] = `${value}%`;
                 break;
             case 'other_ids':
-                where = "identifier.value ILIKE '" + value + "%'";
+                clause = "identifier.value ILIKE :" + paramName;
+                params[paramName] = `${value}%`;
                 this.identifiers = true;
                 break;
             default:
-                where = "publication." + key + " ILIKE '" + value + "%'";
+                clause = `publication.${key} ILIKE :${paramName}`;
+                params[paramName] = `${value}%`;
         }
-        return where;
+        return { clause, params };
     }
 
-    getWhereStringIn(key: string, value: string | number) {
-        let where = '';
+    private getWhereStringIn(key: string, value: string | number, paramName: string): WhereCondition {
+        let clause = '';
+        const params: Record<string, unknown> = {};
+        const values = this.normalizeInValues(value);
         switch (key) {
             case 'greater_entity':
             case 'oa_category':
@@ -737,18 +774,36 @@ export class PublicationService {
                 if (key == 'contract') this.contract = true;
                 if (key == 'publisher') this.publisher = true;
                 if (key == 'cost_type') this.cost_type = true;
-                where = key + ".label IN " + value;
+                clause = `${key}.label IN (:...${paramName})`;
+                params[paramName] = values;
                 break;
             case 'institute_id':
-                where = '\"authorPublications\".\"instituteId\" IN ' + value;
+                clause = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."instituteId" IN (:...' + paramName + '))';
+                params[paramName] = values;
                 break;
             case 'institute_id_corr':
-                where = '\"authorPublications\".\"instituteId\" IN' + value + ' and \"authorPublications\".corresponding';
+                clause = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."instituteId" IN (:...' + paramName + ') and ap.corresponding)';
+                params[paramName] = values;
                 break;
             default:
-                where = "publication." + key + " IN " + value;
+                clause = `publication.${key} IN (:...${paramName})`;
+                params[paramName] = values;
         }
-        return where;
+        return { clause, params };
+    }
+
+    private normalizeInValues(value: string | number | string[] | number[]): (string | number)[] {
+        if (Array.isArray(value)) return value as (string | number)[];
+        return value
+            .toString()
+            .replace(/[()]/g, '')
+            .split(',')
+            .map(v => v.trim())
+            .filter(v => v !== '')
+            .map(v => {
+                const asNumber = Number(v);
+                return Number.isNaN(asNumber) ? v : asNumber;
+            });
     }
 
 }

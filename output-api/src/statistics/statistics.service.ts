@@ -132,15 +132,11 @@ export class StatisticsService {
         const field = "(CASE WHEN pub_date is not null THEN extract('Year' from pub_date at time zone 'UTC') ELSE " +
             "(CASE WHEN pub_date_print is not null THEN extract('Year' from pub_date_print at time zone 'UTC') ELSE " +
             "(CASE WHEN pub_date_accepted is not null THEN extract('Year' from pub_date_accepted at time zone 'UTC') ELSE " +
-            "(CASE WHEN pub_date_submitted is not null THEN extract('Year' from pub_date_submitted at time zone 'UTC') ELSE null END) END) END) END)"
+            "(CASE WHEN pub_date_submitted is not null THEN extract('Year' from pub_date_submitted at time zone 'UTC') ELSE null END) END) END) END)";
         query = query.select(field + "::int", "pub_year")
         query = query.groupBy("pub_year")
         if (reporting_years && reporting_years.length > 0) {
-            let clauses = "(";
-            for (const reporting_year of reporting_years) {
-                clauses += field + " =" + reporting_year + " or ";
-            }
-            query = query.where(clauses.substring(0, clauses.length - 4) + ")")
+            query = query.where(`${field} IN (:...reportingYears)`, { reportingYears: reporting_years })
         }
         query = query.orderBy("pub_year")
         return query;
@@ -267,38 +263,60 @@ export class StatisticsService {
             if (filterOptions.notOaCatId.length > 0) query = query.andWhere('(publication.\"oaCategoryId\" NOT IN (:...notOaCatId) OR publication.\"oaCategoryId\" IS NULL)', { notOaCatId: filterOptions.notOaCatId })
         }
 
-        let highlight = '';
+        const highlightClauses: string[] = [];
+        const highlightParams: Record<string, unknown> = {};
         if (highlightOptions?.corresponding) {
             autPub = true;
-            highlight += 'array_position(corresponding, true) is not null and '
+            highlightClauses.push('array_position(corresponding, true) is not null')
         }
         if (highlightOptions?.locked) {
             autPub = true;
-            highlight += 'publication.locked AND '
+            highlightClauses.push('publication.locked')
         }
         if (highlightOptions?.instituteId !== undefined) {
             autPub = true;
-            if (highlightOptions?.instituteId) highlight += 'tmp.institute_id::integer[] @> ARRAY['+highlightOptions.instituteId+']::integer[] AND '
-            else highlight += '(array_length(array_remove(tmp.institute_id, NULL), 1) is null or array_length(tmp.institute_id, 1) > array_length(array_remove(tmp.institute_id, NULL), 1)) AND '
+            if (highlightOptions?.instituteId) {
+                highlightClauses.push('tmp.institute_id::integer[] @> ARRAY[:...highlightInstituteId]::integer[]')
+                highlightParams.highlightInstituteId = [highlightOptions.instituteId]
+            }
+            else highlightClauses.push('(array_length(array_remove(tmp.institute_id, NULL), 1) is null or array_length(tmp.institute_id, 1) > array_length(array_remove(tmp.institute_id, NULL), 1))')
         }
         if (highlightOptions?.publisherId !== undefined) {
-            if (highlightOptions?.publisherId) highlight += 'publication.\"publisherId\" = ' + highlightOptions?.publisherId + ' AND '
-            else highlight += 'publication.\"publisherId\" IS NULL AND '
+            if (highlightOptions?.publisherId) {
+                highlightClauses.push('publication."publisherId" = :highlightPublisherId')
+                highlightParams.highlightPublisherId = highlightOptions.publisherId
+            }
+            else highlightClauses.push('publication."publisherId" IS NULL')
         }
         if (highlightOptions?.contractId !== undefined) {
-            if (highlightOptions?.contractId) highlight += 'publication.\"contractId\" = ' + highlightOptions?.contractId + ' AND '
-            else highlight += 'publication.\"contractId\" IS NULL AND '
+            if (highlightOptions?.contractId) {
+                highlightClauses.push('publication."contractId" = :highlightContractId')
+                highlightParams.highlightContractId = highlightOptions.contractId
+            }
+            else highlightClauses.push('publication."contractId" IS NULL')
         }
         if (highlightOptions?.pubTypeId !== undefined) {
-            if (highlightOptions?.pubTypeId) highlight += 'publication.\"pubTypeId\" = ' + highlightOptions?.pubTypeId + ' AND '
-            else highlight += 'publication.\"pubTypeId\" IS NULL AND '
+            if (highlightOptions?.pubTypeId) {
+                highlightClauses.push('publication."pubTypeId" = :highlightPubTypeId')
+                highlightParams.highlightPubTypeId = highlightOptions.pubTypeId
+            }
+            else highlightClauses.push('publication."pubTypeId" IS NULL')
         }
         if (highlightOptions?.oaCatId !== undefined) {
-            if (highlightOptions?.oaCatId) highlight += 'publication.\"oaCategoryId\" = ' + highlightOptions?.oaCatId + ' AND '
-            else highlight += 'publication.\"oaCategoryId\" IS NULL AND '
+            if (highlightOptions?.oaCatId) {
+                highlightClauses.push('publication."oaCategoryId" = :highlightOaCatId')
+                highlightParams.highlightOaCatId = highlightOptions.oaCatId
+            }
+            else highlightClauses.push('publication."oaCategoryId" IS NULL')
         }
 
-        if (highlight) query = query.addSelect('count(distinct CASE WHEN ' + highlight.slice(0, highlight.length - 5) + ' THEN publication.id ELSE NULL END)', 'highlight')
+        if (highlightClauses.length > 0) {
+            const highlightCondition = highlightClauses.join(' AND ');
+            query = query
+                .addSelect(`count(distinct CASE WHEN ${highlightCondition} THEN publication.id ELSE NULL END)`, 'highlight')
+                .setParameters({ ...query.getParameters(), ...highlightParams })
+        }
+
 
         if (autPub) {
             if (!innerJoin) query = query
