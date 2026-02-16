@@ -92,13 +92,8 @@ export class StatisticsComponent implements OnInit {
       }
     }
   }; // required
-
-  chartCallback: Highcharts.ChartCallbackFunction = function (chart) { return null } // function after chart is created
-  updateFlag: boolean = false; // set to true if you wish to update the chart
-  updateFlag1: boolean = false; // set to true if you wish to update the chart
-  updateFlag2: boolean = false; // set to true if you wish to update the chart
-  oneToOneFlag: boolean = true; // changing number of series
-  runOutsideAngular: boolean = false; // optional boolean, defaults to false
+  
+  charts = new Map<string, Highcharts.Chart>();
 
   form: FormGroup = this.formBuilder.group({
     institute: [''],
@@ -198,6 +193,10 @@ export class StatisticsComponent implements OnInit {
     })
   }
 
+  onChartInstance(id: string, chart: Highcharts.Chart) {
+    this.charts.set(id, chart);
+  }
+
   updateChart() {
     this.chartOptions1.series = []
     this.chartOptions2.series = []
@@ -232,7 +231,7 @@ export class StatisticsComponent implements OnInit {
             })
           })
         }
-        this.updateFlag = true;
+        this.charts.get('count')?.update(this.chartOptions, true, true);
       }))
     ob$ = merge(ob$, this.statService.countPubByYearAndOACat(this.filter).pipe(map(
       data => {
@@ -255,7 +254,7 @@ export class StatisticsComponent implements OnInit {
           }
           this.chartOptions1.series.push(series)
         }
-        this.updateFlag1 = true;
+        this.charts.get('oa_cat')?.update(this.chartOptions1, true, true);
       })))
     ob$ = merge(ob$, this.statService.countPubByYearAndPubType(this.filter).pipe(map(
       data => {
@@ -278,7 +277,7 @@ export class StatisticsComponent implements OnInit {
           }
           this.chartOptions2.series.push(series)
         }
-        this.updateFlag2 = true;
+        this.charts.get('pub_type')?.update(this.chartOptions2, true, true);
       })))
     return ob$.pipe(catchError((e, c) => { return of(console.log(e.message)) }));
   }

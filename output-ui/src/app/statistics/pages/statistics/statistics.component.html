@@ -150,11 +150,11 @@
   </mat-expansion-panel>
 </mat-accordion>
 
-<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions" [(update)]="updateFlag"
-  [oneToOne]="oneToOneFlag" style="width: 100%; height: 400px; display: block;"></highcharts-chart>
+<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions" (chartInstance)="onChartInstance('count',$event)"
+   style="width: 100%; height: 400px; display: block;"></highcharts-chart>
 
-<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions1" [(update)]="updateFlag1"
-  [oneToOne]="oneToOneFlag" style="width: 100%; height: 400px; display: block;"></highcharts-chart>
+<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions1" (chartInstance)="onChartInstance('oa_cat',$event)"
+  style="width: 100%; height: 400px; display: block;"></highcharts-chart>
 
-<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions2" [(update)]="updateFlag2"
-  [oneToOne]="oneToOneFlag" style="width: 100%; height: 400px; display: block;"></highcharts-chart>
+<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions2" (chartInstance)="onChartInstance('pub_type',$event)"
+  style="width: 100%; height: 400px; display: block;"></highcharts-chart>
