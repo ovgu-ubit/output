@@ -33,26 +33,26 @@
 </div>
 <div style="display: flex;flex-flow: row wrap;">
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsLocked"
-     [(update)]="updateFlagLocked" [oneToOne]="oneToOneFlag"
-     class="chart"></highcharts-chart>
+     class="chart" (chartInstance)="onChartInstance('locked', $event)"></highcharts-chart>
+
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions"
-     [(update)]="updateFlag" [oneToOne]="oneToOneFlag"
+     (chartInstance)="onChartInstance('corresponding',$event)"
      class="chart"></highcharts-chart>
 
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsInstitute"
-     [(update)]="updateFlag1" [oneToOne]="oneToOneFlag"
+     (chartInstance)="onChartInstance('institute',$event)"
      class="chart"></highcharts-chart>
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsOACat"
-     [(update)]="updateFlag2" [oneToOne]="oneToOneFlag"
+     (chartInstance)="onChartInstance('oa_cat',$event)"
      class="chart"></highcharts-chart>
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPublisher"
-     [(update)]="updateFlag3" [oneToOne]="oneToOneFlag"
+     (chartInstance)="onChartInstance('publisher',$event)"
      class="chart"></highcharts-chart>
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPubType"
-     [(update)]="updateFlag4" [oneToOne]="oneToOneFlag"
+     (chartInstance)="onChartInstance('pub_type',$event)"
      class="chart"></highcharts-chart>
   <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsContract"
-     [(update)]="updateFlag5" [oneToOne]="oneToOneFlag"
+     (chartInstance)="onChartInstance('contract',$event)"
      class="chart"></highcharts-chart>
 
 </div>

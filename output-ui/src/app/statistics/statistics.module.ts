@@ -11,6 +11,7 @@ import { HighchartsChartComponent, provideHighcharts } from 'highcharts-angular'
     StatisticsYearComponent,
   ],
   providers: [
+    provideHighcharts()
   ],
   imports: [
     SharedModule,
