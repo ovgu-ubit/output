@@ -7,7 +7,7 @@ export interface Entity {
     label?: string;
 }
 
-export interface Identifiable<T> extends Entity{
+export interface Identifiable<T> extends Entity {
     identifiers?: IIdentifier<T>[]
 }
 
@@ -113,7 +113,7 @@ export interface Contract extends Identifiable<Contract> {
     sec_pub?: string;
     gold_option?: string;
     verification_method?: string;
-	publications?: Publication[];
+    publications?: Publication[];
     components?: ContractComponent[];
 }
 
@@ -127,6 +127,7 @@ export interface ContractComponent extends Entity {
     oa_categories?: OA_Category[];
     pub_types?: PublicationType[];
     greater_entities?: GreaterEntity[];
+    cost_types?: CostType[];
 }
 
 export enum ContractModel {
@@ -162,7 +163,7 @@ export interface Funder extends Entity, Aliasable<Funder> {
     publications?: Publication[];
 }
 
-export interface GreaterEntity extends Identifiable<GreaterEntity>{
+export interface GreaterEntity extends Identifiable<GreaterEntity> {
     label: string;
     rating?: string;
     doaj_since?: Date;
@@ -187,11 +188,11 @@ export interface ContractIdentifier extends IIdentifier<Contract> {
 
 export interface Institute extends Entity, Aliasable<Institute> {
     super_institute?: Institute
-	sub_institutes?: Institute[]
+    sub_institutes?: Institute[]
     label: string;
     short_label?: string;
-	authors?: Author[];
-	authorPublications?: AuthorPublication[];
+    authors?: Author[];
+    authorPublications?: AuthorPublication[];
 }
 
 export interface Invoice extends Entity {
