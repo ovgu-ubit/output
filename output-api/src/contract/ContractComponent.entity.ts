@@ -6,6 +6,7 @@ import { OA_Category } from "../oa_category/OA_Category.entity";
 import { GreaterEntity } from "../greater_entity/GreaterEntity.entity";
 import { Publication } from "../publication/core/Publication.entity";
 import { PublicationType } from "../pub_type/PublicationType.entity";
+import { CostType } from "../invoice/CostType.entity";
 
 @Entity()
 export class ContractComponent implements IContractComponent {
@@ -45,4 +46,8 @@ export class ContractComponent implements IContractComponent {
     @ManyToMany(() => GreaterEntity)
     @JoinTable()
     greater_entities?: GreaterEntity[];
+
+    @ManyToMany(() => CostType)
+    @JoinTable()
+    cost_types?: CostType[];
 }
