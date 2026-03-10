@@ -123,6 +123,9 @@ export interface ContractComponent extends Entity {
     contract_model?: ContractModel;
     contract_model_version?: number;
     contract_model_params?: any;
+    oa_categories?: OA_Category[];
+    pub_types?: PublicationType[];
+    greater_entities?: GreaterEntity[];
 }
 
 export enum ContractModel {
