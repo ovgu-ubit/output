@@ -4,4 +4,65 @@
  [fields]="this.fields"
  [dialogRef]="this.dialogRef"
  [data]="this.data">
+    <mat-card class="contract-components-card">
+        <mat-card-header>
+            <mat-card-subtitle>Vertragskomponenten</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <table *ngIf="this.components.length > 0" mat-table [dataSource]="this.components" class="contract-components-table">
+                <ng-container matColumnDef="label">
+                    <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
+                    <td mat-cell *matCellDef="let element"> {{element.label}} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="contract_model">
+                    <th mat-header-cell *matHeaderCellDef> Contract Model </th>
+                    <td mat-cell *matCellDef="let element"> {{this.formatContractModel(element.contract_model)}} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="contract_model_version">
+                    <th mat-header-cell *matHeaderCellDef> Version </th>
+                    <td mat-cell *matCellDef="let element"> {{element.contract_model_version || '-'}} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="contract_model_params">
+                    <th mat-header-cell *matHeaderCellDef> Parameter </th>
+                    <td mat-cell *matCellDef="let element"> {{this.formatContractModelParams(element)}} </td>
+                </ng-container>
+
+                <ng-container matColumnDef="edit">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                        <button mat-icon-button type="button" (click)="this.openComponentForm(element)"
+                            [matTooltip]="this.abstractForm?.disabled ? 'Komponente ansehen' : 'Komponente bearbeiten'">
+                            <mat-icon>{{this.abstractForm?.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
+                        </button>
+                    </td>
+                </ng-container>
+
+                <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                        <button mat-icon-button type="button" (click)="this.deleteComponent(element)"
+                            [disabled]="this.abstractForm?.disabled" matTooltip="Komponente löschen">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+
+            <p *ngIf="this.components.length === 0" class="contract-components-empty">
+                Für diesen Vertrag sind noch keine Komponenten hinterlegt.
+            </p>
+        </mat-card-content>
+        <mat-card-actions>
+            <button mat-icon-button type="button" (click)="this.openComponentForm()" [hidden]="this.abstractForm?.disabled"
+                matTooltip="Komponente hinzufügen">
+                <mat-icon>add</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
 </app-abstract-form>

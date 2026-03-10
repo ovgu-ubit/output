@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { SharedModule } from '../shared/shared.module';
 import { AuthorFormComponent } from './author-form/author-form.component';
 import { AuthorshipFormComponent } from './authorship-form/authorship-form.component';
+import { ContractComponentFormComponent } from './contract-component-form/contract-component-form.component';
 import { ContractFormComponent } from './contract-form/contract-form.component';
 import { CostCenterFormComponent } from './cost-center-form/cost-center-form.component';
 import { CostItemFormComponent } from './cost-item-form/cost-item-form.component';
@@ -23,6 +24,7 @@ import { AbstractFormComponent } from './abstract-form/abstract-form.component';
     AbstractFormComponent,
     AuthorFormComponent,
     AuthorshipFormComponent,
+    ContractComponentFormComponent,
     ContractFormComponent,
     CostCenterFormComponent,
     CostItemFormComponent,
