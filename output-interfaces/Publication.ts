@@ -114,6 +114,22 @@ export interface Contract extends Identifiable<Contract> {
     gold_option?: string;
     verification_method?: string;
 	publications?: Publication[];
+    components?: ContractComponent[];
+}
+
+export interface ContractComponent extends Entity {
+    contract?: Contract;
+    invoices?: Invoice[];
+    pre_invoices?: Invoice[];
+    contract_model?: ContractModel;
+    contract_model_version?: number;
+    contract_model_params?: any;
+}
+
+export enum ContractModel {
+    DISCOUNT,
+    PUBLISH_AND_READ,
+    FLATRATE
 }
 
 export interface CostCenter extends Entity {

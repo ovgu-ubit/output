@@ -4,6 +4,7 @@ import { CostCenter } from "./CostCenter.entity";
 import { CostItem } from "./CostItem.entity";
 import { Invoice as IInvoice } from "../../../output-interfaces/Publication"
 import { Publication } from "../publication/core/Publication.entity";
+import { ContractComponent } from "../contract/ContractComponent.entity";
 
 @Entity()
 export class Invoice implements IInvoice {
@@ -19,6 +20,9 @@ export class Invoice implements IInvoice {
 
     @ManyToOne(() => Publication, (pub) => pub.invoices)
     publication?: Publication
+
+    @ManyToOne(() => ContractComponent, (pub) => pub.invoices)
+    contract_component?: ContractComponent
 
     @Column({ nullable: true })
     number?: string;
