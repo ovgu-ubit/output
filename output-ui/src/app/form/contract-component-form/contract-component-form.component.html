@@ -1,0 +1,87 @@
+<app-window-toolbar
+    [name]="this.name"
+    [disabled]="this.disabled"
+    [parent]="this"></app-window-toolbar>
+<mat-dialog-content>
+    <form class="contract-component-form" [formGroup]="form"
+        (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
+        <mat-form-field *ngIf="this.entity?.id" appearance="fill">
+            <mat-label>ID</mat-label>
+            <input matInput type="number" onwheel="return false;" formControlName="id" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <input matInput placeholder="Bezeichnung" formControlName="label" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Vertragsmodell</mat-label>
+            <mat-select formControlName="contract_model">
+                <mat-option [value]="null">Kein Contract Model</mat-option>
+                <mat-option *ngFor="let model of this.contractModels" [value]="model.value">{{model.label}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Version des Vertragsmodells</mat-label>
+            <input matInput type="number" onwheel="return false;" formControlName="contract_model_version" />
+        </mat-form-field>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-subtitle>Modellspezifische Parameter</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.DISCOUNT">
+                    <mat-form-field appearance="fill">
+                        <mat-label>Rabatt in %</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="percentage" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                    </mat-form-field>
+                </div>
+
+                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.PUBLISH_AND_READ">
+                    <mat-form-field appearance="fill">
+                        <mat-label>PAR-Gebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="par_fee" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                    </mat-form-field>
+                </div>
+
+                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.FLATRATE">
+                    <mat-form-field appearance="fill">
+                        <mat-label>Limit-Typ</mat-label>
+                        <mat-select formControlName="limit_type">
+                            <mat-option *ngFor="let type of this.limitTypes" [value]="type.value">{{type.label}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Verteilungsformel</mat-label>
+                        <mat-select formControlName="distribution_formula">
+                            <mat-option *ngFor="let formula of this.distributionFormulas" [value]="formula.value">{{formula.label}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                    </mat-form-field>
+                </div>
+
+                <p class="component-params-empty" *ngIf="this.selectedModel === null || this.selectedModel === undefined">
+                    Wählen Sie ein Vertragsmodell, um die zugehörigen Parameter zu bearbeiten.
+                </p>
+            </mat-card-content>
+        </mat-card>
+    </form>
+</mat-dialog-content>
