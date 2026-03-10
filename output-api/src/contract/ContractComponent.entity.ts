@@ -1,12 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, ManyToMany, JoinTable } from "typeorm";
-import { ContractModel, ContractComponent as IContractComponent } from "../../../output-interfaces/Publication"
-import { Contract } from "./Contract.entity";
+import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ContractModel, ContractComponent as IContractComponent } from "../../../output-interfaces/Publication";
+import { GreaterEntity } from "../greater_entity/GreaterEntity.entity";
+import { CostType } from "../invoice/CostType.entity";
 import { Invoice } from "../invoice/Invoice.entity";
 import { OA_Category } from "../oa_category/OA_Category.entity";
-import { GreaterEntity } from "../greater_entity/GreaterEntity.entity";
-import { Publication } from "../publication/core/Publication.entity";
 import { PublicationType } from "../pub_type/PublicationType.entity";
-import { CostType } from "../invoice/CostType.entity";
+import { Contract } from "./Contract.entity";
 
 @Entity()
 export class ContractComponent implements IContractComponent {
