@@ -240,7 +240,9 @@ export class ContractService extends AbstractEntityService<Contract> {
     private getContractComponentRelations(): FindOptionsRelations<ContractComponent> {
         return {
             contract: true,
-            linked_invoices: true,
+            linked_invoices: {
+                cost_items: true
+            },
             oa_categories: true,
             pub_types: true,
             greater_entities: true,
