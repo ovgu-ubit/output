@@ -39,7 +39,9 @@ export class ContractService extends AbstractEntityService<Contract> {
             identifiers: true,
             publications: true,
             components: {
-                linked_invoices: true,
+                linked_invoices: {
+                    cost_items: true,
+                },
                 oa_categories: true,
                 pub_types: true,
                 greater_entities: true,
@@ -135,9 +137,9 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async deleteComponents(components: Pick<ContractComponent, 'id'>[]) {
-        const componentIds = components.map(component => component.id).filter((id): id is number => !!id);
-        if (!componentIds.length) {
-            return this.contractComponentRepository.delete([]);
+        const componentIds = components?.map(component => component.id).filter((id): id is number => !!id);
+        if (!components || !componentIds.length) {
+            throw new BadRequestException('No valid component ids provided for deletion');
         }
 
         const linkedInvoices = await this.invoiceRepository.find({
