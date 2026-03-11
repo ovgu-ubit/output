@@ -30,4 +30,16 @@ describe('ContractFormComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should hide add component button when abstract form is disabled', () => {
+    component.abstractForm = { disabled: true } as any;
+
+    expect(component.hideAddComponentButton).toBeTrue();
+  });
+
+  it('should show add component button when abstract form is enabled', () => {
+    component.abstractForm = { disabled: false } as any;
+
+    expect(component.hideAddComponentButton).toBeFalse();
+  });
 });

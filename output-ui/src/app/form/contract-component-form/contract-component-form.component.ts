@@ -232,7 +232,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     if (!invoice) {
       return '';
     }
-    if (invoice.booking_amount) {
+    if (invoice.booking_amount !== null && invoice.booking_amount !== undefined) {
       return invoice.booking_amount;
     }
     if (!invoice.cost_items) {
