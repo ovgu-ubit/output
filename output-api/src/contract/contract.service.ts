@@ -51,7 +51,7 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public override async save(contract: Contract) {
-        const orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } });
+        const orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: this.getFindOneRelations() });
         const normalizedContract = this.normalizeContractComponents(contract);
 
         if (normalizedContract.identifiers) {
