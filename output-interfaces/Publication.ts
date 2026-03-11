@@ -1,4 +1,4 @@
-import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
+﻿import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
 
 export interface Entity {
     id?: number;
@@ -135,6 +135,11 @@ export enum ContractModel {
     FLATRATE
 }
 
+export enum InvoiceKind {
+    INVOICE = 'invoice',
+    PRE_INVOICE = 'pre_invoice',
+}
+
 export interface CostCenter extends Entity {
     number?: string;
     label?: string;
@@ -198,6 +203,7 @@ export interface Invoice extends Entity {
     cost_center?: CostCenter
     cost_items?: CostItem[]
     publication?: Publication
+    invoice_kind?: InvoiceKind;
     number?: string;
     date?: Date;
     booking_date?: Date;
