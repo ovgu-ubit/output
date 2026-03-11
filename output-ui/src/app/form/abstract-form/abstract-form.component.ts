@@ -87,6 +87,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         return of(null)
       }
       else {
+        if (!this.fields) this.fields = [];
         this.fields = this.fields.filter(e => e.key !== 'id' || e.type === 'status')
         if (this.data.entity) {
           for (let field of this.fields) {
