@@ -1,13 +1,15 @@
-﻿import { Component, Inject, inject } from '@angular/core';
+﻿import { Component, Inject, ViewChild, inject } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { Observable, forkJoin, map, of, startWith, tap } from 'rxjs';
-import { ContractComponent, ContractModel, GreaterEntity, OA_Category, PublicationType } from '../../../../../output-interfaces/Publication';
+import { ContractComponent, ContractModel, GreaterEntity, Invoice, OA_Category, PublicationType } from '../../../../../output-interfaces/Publication';
 import { GreaterEntityService } from '../../services/entities/greater-entity.service';
 import { OACategoryService } from '../../services/entities/oa-category.service';
 import { PublicationTypeService } from '../../services/entities/publication-type.service';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
+import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 
 interface DiscountContractModelParams {
   percentage?: number;
@@ -26,6 +28,7 @@ interface FlatrateContractModelParams {
 }
 
 type ContractComponentRelationKey = 'oa_categories' | 'pub_types' | 'greater_entities';
+type InvoiceCollectionKey = 'invoices' | 'pre_invoices';
 
 interface SelectableContractComponentEntity {
   id?: number;
@@ -43,8 +46,13 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
   private readonly oaCategoryService = inject(OACategoryService);
   private readonly publicationTypeService = inject(PublicationTypeService);
   private readonly greaterEntityService = inject(GreaterEntityService);
+  private readonly invoiceDialog = inject(MatDialog);
+
+  @ViewChild('tableInvoice') tableInvoice?: MatTable<Invoice>;
+  @ViewChild('tablePreInvoice') tablePreInvoice?: MatTable<Invoice>;
 
   override name = 'Vertragskomponente';
+  displayedInvoiceColumns: string[] = ['date', 'number', 'costs', 'edit', 'delete'];
   contractModel = ContractModel;
   contractModels = [
     { value: ContractModel.DISCOUNT, label: 'Rabatt' },
@@ -82,6 +90,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
 
   override ngOnInit(): void {
     this.postProcessing = of(null).pipe(tap(() => {
+      this.ensureInvoiceCollections();
       this.patchContractModelParams();
       this.setRelationControlValue('oa_categories', this.entity?.oa_categories ?? []);
       this.setRelationControlValue('pub_types', this.entity?.pub_types ?? []);
@@ -132,6 +141,14 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     return this.form?.get('greater_entities')?.value ?? [];
   }
 
+  get invoices(): Invoice[] {
+    return this.entity?.invoices ?? [];
+  }
+
+  get preInvoices(): Invoice[] {
+    return this.entity?.pre_invoices ?? [];
+  }
+
   override disable() {
     super.disable();
     this.disableRelationInputs();
@@ -143,11 +160,15 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
       return;
     }
 
+    this.ensureInvoiceCollections();
+
     const rawValue = this.form.getRawValue();
     const contractModelParams = this.buildContractModelParams(rawValue.contract_model);
     const entity: any = {
       ...this.entity,
       ...rawValue,
+      invoices: this.entity?.invoices ?? [],
+      pre_invoices: this.entity?.pre_invoices ?? [],
       contract_model_params: contractModelParams,
     };
 
@@ -189,6 +210,40 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
 
   removeGreaterEntity(greaterEntity: GreaterEntity) {
     this.removeRelationSelection('greater_entities', greaterEntity);
+  }
+
+  addInvoice(invoice?: Invoice) {
+    this.openInvoiceDialog('invoices', invoice);
+  }
+
+  addPreInvoice(invoice?: Invoice) {
+    this.openInvoiceDialog('pre_invoices', invoice);
+  }
+
+  deleteInvoice(invoice: Invoice) {
+    this.removeInvoice('invoices', invoice);
+  }
+
+  deletePreInvoice(invoice: Invoice) {
+    this.removeInvoice('pre_invoices', invoice);
+  }
+
+  getInvoiceCosts(invoice: Invoice) {
+    if (!invoice) {
+      return '';
+    }
+    if (invoice.booking_amount) {
+      return invoice.booking_amount;
+    }
+    if (!invoice.cost_items) {
+      return '';
+    }
+
+    let sum = 0;
+    for (const costItem of invoice.cost_items) {
+      sum += costItem.euro_value;
+    }
+    return sum;
   }
 
   private patchContractModelParams() {
@@ -410,5 +465,82 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
       (left.label ?? '').localeCompare(right.label ?? '', 'de'),
     );
   }
-}
 
+  private ensureInvoiceCollections() {
+    if (!this.entity) {
+      this.entity = {} as ContractComponent;
+    }
+    if (!this.entity.invoices) {
+      this.entity.invoices = [];
+    }
+    if (!this.entity.pre_invoices) {
+      this.entity.pre_invoices = [];
+    }
+  }
+
+  private openInvoiceDialog(collection: InvoiceCollectionKey, invoice?: Invoice) {
+    this.ensureInvoiceCollections();
+
+    const invoices = this.getInvoiceCollection(collection);
+    const dialogRef = this.invoiceDialog.open(InvoiceFormComponent, {
+      width: '800px',
+      data: {
+        entity: invoice,
+        locked: this.disabled,
+      },
+      disableClose: true
+    });
+
+    if (invoice && !invoice.id) {
+      this.setInvoiceCollection(collection, invoices.filter(current => current !== invoice));
+    }
+
+    dialogRef.afterClosed().subscribe({
+      next: data => {
+        if (data && data.updated) {
+          const currentInvoices = this.getInvoiceCollection(collection);
+          const nextInvoices = invoice?.id
+            ? currentInvoices.filter(current => current.id !== data.id)
+            : currentInvoices;
+          this.setInvoiceCollection(collection, [...nextInvoices, data]);
+          this.form.markAsDirty();
+          this.updateInvoiceTableData(collection);
+        } else if (invoice && !invoice.id) {
+          this.setInvoiceCollection(collection, [...this.getInvoiceCollection(collection), invoice]);
+          this.updateInvoiceTableData(collection);
+        }
+      }
+    });
+  }
+
+  private removeInvoice(collection: InvoiceCollectionKey, invoice: Invoice) {
+    if (this.disabled) {
+      return;
+    }
+
+    const nextInvoices = invoice.id
+      ? this.getInvoiceCollection(collection).filter(current => current.id !== invoice.id)
+      : this.getInvoiceCollection(collection).filter(current => current !== invoice);
+
+    this.setInvoiceCollection(collection, nextInvoices);
+    this.form.markAsDirty();
+    this.updateInvoiceTableData(collection);
+  }
+
+  private getInvoiceCollection(collection: InvoiceCollectionKey): Invoice[] {
+    this.ensureInvoiceCollections();
+    return this.entity?.[collection] ?? [];
+  }
+
+  private setInvoiceCollection(collection: InvoiceCollectionKey, invoices: Invoice[]) {
+    this.ensureInvoiceCollections();
+    this.entity[collection] = invoices;
+  }
+
+  private updateInvoiceTableData(collection: InvoiceCollectionKey) {
+    const table = collection === 'invoices' ? this.tableInvoice : this.tablePreInvoice;
+    if (table) {
+      table.dataSource = new MatTableDataSource<Invoice>(this.getInvoiceCollection(collection));
+    }
+  }
+}

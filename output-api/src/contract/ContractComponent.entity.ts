@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+﻿import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { ContractModel, ContractComponent as IContractComponent } from "../../../output-interfaces/Publication";
 import { GreaterEntity } from "../greater_entity/GreaterEntity.entity";
 import { CostType } from "../invoice/CostType.entity";
@@ -29,9 +29,10 @@ export class ContractComponent implements IContractComponent {
     contract_model_params?: unknown;
 
     @OneToMany(() => Invoice, (i) => i.contract_component, { cascade: true })
+    linked_invoices?: Invoice[]
+
     invoices?: Invoice[]
 
-    @OneToMany(() => Invoice, (i) => i.contract_component, { cascade: true })
     pre_invoices?: Invoice[]
 
     @ManyToMany(() => OA_Category)
