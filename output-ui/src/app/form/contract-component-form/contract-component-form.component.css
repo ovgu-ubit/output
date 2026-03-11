@@ -1,7 +1,17 @@
-.contract-component-form {
+﻿.contract-component-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.relation-selectors {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.chip-field {
+  width: 100%;
 }
 
 .component-params {
