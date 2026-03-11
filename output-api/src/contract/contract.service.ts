@@ -3,17 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
-import { InvoiceKind, ContractModel } from '../../../output-interfaces/Publication';
+import { InvoiceKind } from '../../../output-interfaces/Publication';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
-import { PublicationService } from '../publication/core/publication.service';
-import { Contract } from './Contract.entity';
-import { ContractIdentifier } from './ContractIdentifier.entity';
-import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { mergeEntities } from '../common/merge';
-import { ContractComponent } from './ContractComponent.entity';
-import { parseContractModelParams } from './contract-model-params.schema';
+import { AppConfigService } from '../config/app-config.service';
 import { Invoice } from '../invoice/Invoice.entity';
+import { PublicationService } from '../publication/core/publication.service';
+import { Contract } from './Contract.entity';
+import { ContractComponent } from './ContractComponent.entity';
+import { ContractIdentifier } from './ContractIdentifier.entity';
+import { parseContractModelParams } from './contract-model-params.schema';
 
 @Injectable()
 export class ContractService extends AbstractEntityService<Contract> {
