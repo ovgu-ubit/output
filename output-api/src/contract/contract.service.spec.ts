@@ -169,6 +169,7 @@ describe('ContractService', () => {
 
         repository.findOne!.mockResolvedValue(undefined as never);
         repository.save!.mockImplementation(async entity => entity as Contract);
+        componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
 
         const saved = await service.save(contract);
 
