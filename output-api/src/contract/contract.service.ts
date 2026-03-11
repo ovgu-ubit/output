@@ -1,11 +1,12 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+﻿import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
-import { Contract } from './Contract.entity';
+import { InvoiceKind, ContractModel } from '../../../output-interfaces/Publication';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
 import { PublicationService } from '../publication/core/publication.service';
+import { Contract } from './Contract.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
@@ -38,8 +39,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             identifiers: true,
             publications: true,
             components: {
-                invoices: true,
-                pre_invoices: true,
+                linked_invoices: true,
                 oa_categories: true,
                 pub_types: true,
                 greater_entities: true,
@@ -70,10 +70,17 @@ export class ContractService extends AbstractEntityService<Contract> {
             });
         }
 
-        return await this.repository.save(normalizedContract).catch(err => {
+        const savedContract = await this.repository.save(normalizedContract).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail);
             else throw new InternalServerErrorException(err);
         });
+
+        return this.splitContractComponentInvoicesForContract(savedContract);
+    }
+
+    public override async one(id: number, writer: boolean) {
+        const contract = await super.one(id, writer);
+        return this.splitContractComponentInvoicesForContract(contract);
     }
 
     public async saveComponent(component: DeepPartial<ContractComponent>) {
@@ -83,10 +90,12 @@ export class ContractService extends AbstractEntityService<Contract> {
             throw new BadRequestException('contract.id is required to create a contract component');
         }
 
-        return await this.contractComponentRepository.save(normalizedComponent).catch(err => {
+        const savedComponent = await this.contractComponentRepository.save(normalizedComponent).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail);
             else throw new InternalServerErrorException(err);
         });
+
+        return this.splitContractComponentInvoices(savedComponent);
     }
 
     public async updateComponent(component: DeepPartial<ContractComponent>) {
@@ -95,11 +104,12 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
 
         const normalizedComponent = this.validateAndNormalizeContractComponent(component);
-
-        return await this.contractComponentRepository.save(normalizedComponent).catch(err => {
+        const savedComponent = await this.contractComponentRepository.save(normalizedComponent).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail);
             else throw new InternalServerErrorException(err);
         });
+
+        return this.splitContractComponentInvoices(savedComponent);
     }
 
     public async getComponents(contractId?: number) {
@@ -111,14 +121,17 @@ export class ContractService extends AbstractEntityService<Contract> {
             options.where = { contract: { id: contractId } } as FindOptionsWhere<ContractComponent>;
         }
 
-        return this.contractComponentRepository.find(options);
+        const components = await this.contractComponentRepository.find(options);
+        return components.map(component => this.splitContractComponentInvoices(component));
     }
 
     public async oneComponent(id: number) {
-        return this.contractComponentRepository.findOne({
+        const component = await this.contractComponentRepository.findOne({
             where: { id },
             relations: this.getContractComponentRelations(),
         });
+
+        return this.splitContractComponentInvoices(component);
     }
 
     public async deleteComponents(components: Pick<ContractComponent, 'id'>[]) {
@@ -227,8 +240,7 @@ export class ContractService extends AbstractEntityService<Contract> {
     private getContractComponentRelations(): FindOptionsRelations<ContractComponent> {
         return {
             contract: true,
-            invoices: true,
-            pre_invoices: true,
+            linked_invoices: true,
             oa_categories: true,
             pub_types: true,
             greater_entities: true,
@@ -251,7 +263,12 @@ export class ContractService extends AbstractEntityService<Contract> {
         const normalizedComponent = {
             ...component,
             contract_model_params: component?.contract_model_params,
-        };
+        } as DeepPartial<ContractComponent> & { linked_invoices?: Invoice[] };
+
+        this.ensureNoDuplicateInvoiceIds(component?.invoices ?? [], component?.pre_invoices ?? []);
+        normalizedComponent.linked_invoices = this.mergeComponentInvoices(component);
+        delete normalizedComponent.invoices;
+        delete normalizedComponent.pre_invoices;
 
         if (normalizedComponent.contract_model === undefined || normalizedComponent.contract_model === null) {
             if (normalizedComponent.contract_model_params !== undefined && normalizedComponent.contract_model_params !== null) {
@@ -271,6 +288,79 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
     }
 
+    private splitContractComponentInvoicesForContract(contract?: Contract | null) {
+        if (!contract?.components) {
+            return contract;
+        }
+
+        return {
+            ...contract,
+            components: contract.components.map(component => this.splitContractComponentInvoices(component)),
+        };
+    }
+
+    private splitContractComponentInvoices(component?: ContractComponent | null) {
+        if (!component) {
+            return component;
+        }
+
+        const linkedInvoices = component.linked_invoices ?? [];
+        const invoices = linkedInvoices
+            .filter(invoice => this.normalizeInvoiceKind(invoice.invoice_kind) === InvoiceKind.INVOICE)
+            .map(invoice => ({ ...invoice }));
+        const preInvoices = linkedInvoices
+            .filter(invoice => this.normalizeInvoiceKind(invoice.invoice_kind) === InvoiceKind.PRE_INVOICE)
+            .map(invoice => ({ ...invoice }));
+
+        return {
+            ...component,
+            invoices,
+            pre_invoices: preInvoices,
+            linked_invoices: undefined,
+        };
+    }
+
+    private mergeComponentInvoices(component: DeepPartial<ContractComponent>) {
+        const hasDerivedInvoiceLists = Object.prototype.hasOwnProperty.call(component ?? {}, 'invoices')
+            || Object.prototype.hasOwnProperty.call(component ?? {}, 'pre_invoices');
+        const invoices = component?.invoices ?? [];
+        const preInvoices = component?.pre_invoices ?? [];
+
+        if (!hasDerivedInvoiceLists) {
+            return (component?.linked_invoices ?? []).map(invoice => ({
+                ...invoice,
+                invoice_kind: this.normalizeInvoiceKind(invoice.invoice_kind),
+            }));
+        }
+
+        return [
+            ...invoices.map(invoice => this.normalizeComponentInvoice(invoice, InvoiceKind.INVOICE)),
+            ...preInvoices.map(invoice => this.normalizeComponentInvoice(invoice, InvoiceKind.PRE_INVOICE)),
+        ];
+    }
+
+    private normalizeComponentInvoice(invoice: DeepPartial<Invoice>, invoiceKind: InvoiceKind): DeepPartial<Invoice> {
+        return {
+            ...invoice,
+            invoice_kind: invoiceKind,
+        };
+    }
+
+    private normalizeInvoiceKind(invoiceKind?: InvoiceKind) {
+        return invoiceKind === InvoiceKind.PRE_INVOICE
+            ? InvoiceKind.PRE_INVOICE
+            : InvoiceKind.INVOICE;
+    }
+
+    private ensureNoDuplicateInvoiceIds(invoices: DeepPartial<Invoice>[], preInvoices: DeepPartial<Invoice>[]) {
+        const invoiceIds = new Set(invoices.map(invoice => invoice?.id).filter((id): id is number => !!id));
+        const duplicateId = preInvoices.find(invoice => invoice?.id && invoiceIds.has(invoice.id))?.id;
+
+        if (duplicateId) {
+            throw new BadRequestException(`Invoice ${duplicateId} cannot be assigned to invoices and pre_invoices at the same time`);
+        }
+    }
+
     private throwContractComponentValidationError(error: unknown): never {
         if (error instanceof ZodError) {
             throw new BadRequestException({
@@ -286,3 +376,4 @@ export class ContractService extends AbstractEntityService<Contract> {
         throw error;
     }
 }
+

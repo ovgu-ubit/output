@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+﻿import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,7 +9,7 @@ import { ContractIdentifier } from './ContractIdentifier.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 import { ContractComponent } from './ContractComponent.entity';
-import { ContractModel } from '../../../output-interfaces/Publication';
+import { InvoiceKind, ContractModel } from '../../../output-interfaces/Publication';
 import { Invoice } from '../invoice/Invoice.entity';
 
 describe('ContractService', () => {
@@ -83,9 +83,30 @@ describe('ContractService', () => {
                 percentage: 15,
                 service_fee: 50,
             },
+            linked_invoices: [],
         }));
         expect(saved).toEqual(expect.objectContaining({
             label: 'Discount component',
+            invoices: [],
+            pre_invoices: [],
+        }));
+    });
+
+    it('persists invoices and pre_invoices with distinct invoice kinds', async () => {
+        componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
+
+        await service.saveComponent({
+            contract: { id: 1 } as Contract,
+            label: 'Typed invoices',
+            invoices: [{ id: 10, number: 'INV-1' } as Invoice],
+            pre_invoices: [{ id: 11, number: 'PRE-1' } as Invoice],
+        } as ContractComponent);
+
+        expect(componentRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            linked_invoices: [
+                expect.objectContaining({ id: 10, invoice_kind: InvoiceKind.INVOICE }),
+                expect.objectContaining({ id: 11, invoice_kind: InvoiceKind.PRE_INVOICE }),
+            ],
         }));
     });
 
@@ -117,6 +138,17 @@ describe('ContractService', () => {
         expect(componentRepository.save).not.toHaveBeenCalled();
     });
 
+    it('rejects the same invoice id in invoices and pre_invoices', async () => {
+        await expect(service.saveComponent({
+            contract: { id: 1 } as Contract,
+            label: 'Broken invoices',
+            invoices: [{ id: 10 } as Invoice],
+            pre_invoices: [{ id: 10 } as Invoice],
+        } as ContractComponent)).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(componentRepository.save).not.toHaveBeenCalled();
+    });
+
     it('saves contract components embedded in a contract with validated params', async () => {
         const contract = {
             id: 11,
@@ -130,6 +162,8 @@ describe('ContractService', () => {
                     par_fee: 2000,
                     service_fee: 125,
                 },
+                invoices: [{ id: 20 } as Invoice],
+                pre_invoices: [{ id: 21 } as Invoice],
             }],
         } as unknown as Contract;
 
@@ -144,19 +178,37 @@ describe('ContractService', () => {
                     par_fee: 2000,
                     service_fee: 125,
                 },
+                linked_invoices: [
+                    expect.objectContaining({ id: 20, invoice_kind: InvoiceKind.INVOICE }),
+                    expect.objectContaining({ id: 21, invoice_kind: InvoiceKind.PRE_INVOICE }),
+                ],
             })],
         }));
         expect(saved).toEqual(expect.objectContaining({ id: 11 }));
     });
 
-    it('lists contract components and can filter by contract id', async () => {
-        componentRepository.find!.mockResolvedValue([] as ContractComponent[]);
+    it('lists contract components and splits linked invoices by invoice kind', async () => {
+        componentRepository.find!.mockResolvedValue([{
+            id: 1,
+            label: 'Component',
+            linked_invoices: [
+                { id: 30, invoice_kind: InvoiceKind.INVOICE, number: 'INV' } as Invoice,
+                { id: 31, invoice_kind: InvoiceKind.PRE_INVOICE, number: 'PRE' } as Invoice,
+            ],
+        } as ContractComponent]);
 
-        await service.getComponents(42);
+        const components = await service.getComponents(42);
 
         expect(componentRepository.find).toHaveBeenCalledWith(expect.objectContaining({
             where: { contract: { id: 42 } },
         }));
+        expect(components).toEqual([
+            expect.objectContaining({
+                invoices: [expect.objectContaining({ id: 30, number: 'INV' })],
+                pre_invoices: [expect.objectContaining({ id: 31, number: 'PRE' })],
+                linked_invoices: undefined,
+            }),
+        ]);
     });
 
     it('detaches linked invoices before deleting contract components', async () => {

@@ -1,7 +1,7 @@
 ﻿import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { GreaterEntityService } from '../../services/entities/greater-entity.service';
 import { OACategoryService } from '../../services/entities/oa-category.service';
@@ -19,6 +19,7 @@ describe('ContractComponentFormComponent', () => {
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
         { provide: MatDialogRef, useValue: { close: jasmine.createSpy('close') } },
+        { provide: MatDialog, useValue: { open: jasmine.createSpy('open') } },
         { provide: OACategoryService, useValue: { getAll: () => of([]) } },
         { provide: PublicationTypeService, useValue: { getAll: () => of([]) } },
         { provide: GreaterEntityService, useValue: { getAll: () => of([]) } },
