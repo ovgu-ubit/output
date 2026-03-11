@@ -22,7 +22,7 @@ export class ContractComponent implements IContractComponent {
     @Column({ nullable: true, type: 'enum', enum: ContractModel })
     contract_model?: ContractModel;
 
-    @Column({ type: 'int' })
+    @Column({ nullable: true, type: 'int' })
     contract_model_version?: number;
 
     @Column({ nullable: true, type: 'jsonb' })

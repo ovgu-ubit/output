@@ -59,7 +59,8 @@
             </p>
         </mat-card-content>
         <mat-card-actions>
-            <button mat-icon-button type="button" (click)="this.openComponentForm()" [hidden]="this.abstractForm?.disabled"
+            <button mat-icon-button type="button" (click)="this.openComponentForm()"
+                [hidden]="this.hideAddComponentButton"
                 matTooltip="Komponente hinzufügen">
                 <mat-icon>add</mat-icon>
             </button>

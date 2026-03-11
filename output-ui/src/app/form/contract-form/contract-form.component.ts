@@ -14,7 +14,7 @@ import { ContractComponentFormComponent } from '../contract-component-form/contr
 export class ContractFormComponent {
 
   @ViewChild(AbstractFormComponent) abstractForm: AbstractFormComponent<Contract>;
-
+  
   name = 'Vertrag';
   displayedColumns: string[] = ['label', 'contract_model', 'contract_model_version', 'contract_model_params', 'edit', 'delete'];
   fields = [
@@ -38,6 +38,10 @@ export class ContractFormComponent {
     public service: ContractService,
     private dialog: MatDialog,
   ) { }
+
+  get hideAddComponentButton(): boolean {
+    return !!this.abstractForm?.disabled;
+  }
 
   get components(): ContractComponent[] {
     return this.abstractForm?.entity?.components ?? [];
@@ -135,3 +139,5 @@ export class ContractFormComponent {
     };
   }
 }
+
+

@@ -6,7 +6,7 @@ export class ContractComponent1773147708005 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "workflow_import" DROP CONSTRAINT "UQ_df41b3a5cdc3da7b056c9023304"`);
         await queryRunner.query(`CREATE TYPE "public"."contract_component_contract_model_enum" AS ENUM('0', '1', '2')`);
-        await queryRunner.query(`CREATE TABLE "contract_component" ("id" SERIAL NOT NULL, "label" character varying NOT NULL, "contract_model" "public"."contract_component_contract_model_enum", "contract_model_version" integer NOT NULL, "contract_model_params" jsonb, "contractId" integer, CONSTRAINT "PK_a38fa220281e2599e46a9c7c4e0" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "contract_component" ("id" SERIAL NOT NULL, "label" character varying NOT NULL, "contract_model" "public"."contract_component_contract_model_enum", "contract_model_version" integer, "contract_model_params" jsonb, "contractId" integer, CONSTRAINT "PK_a38fa220281e2599e46a9c7c4e0" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "contract_component_oa_categories_oa_category" ("contractComponentId" integer NOT NULL, "oaCategoryId" integer NOT NULL, CONSTRAINT "PK_c7344d532bb591a097534b2ca8b" PRIMARY KEY ("contractComponentId", "oaCategoryId"))`);
         await queryRunner.query(`CREATE INDEX "IDX_b7bef2b13f9f9e9736d0a7b3ee" ON "contract_component_oa_categories_oa_category" ("contractComponentId") `);
         await queryRunner.query(`CREATE INDEX "IDX_643d8339348bf7aa1086228076" ON "contract_component_oa_categories_oa_category" ("oaCategoryId") `);
