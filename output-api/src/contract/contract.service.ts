@@ -72,6 +72,22 @@ export class ContractService extends AbstractEntityService<Contract> {
             });
         }
 
+        if (normalizedContract.components) {
+            for (const c of normalizedContract.components) {
+                if (!c.id) {
+                    c.id = (await this.contractComponentRepository.save(c).catch(err => {
+                        if (err.constraint) throw new BadRequestException(err.detail);
+                        else throw new InternalServerErrorException(err);
+                    })).id;
+                }
+            }
+        }
+        if (normalizedContract.components && orig && orig.components) {
+            orig.components.forEach(async c => {
+                if (!normalizedContract.components.find(e => e.id === c.id)) await this.contractComponentRepository.delete(c.id);
+            });
+        }
+
         const savedContract = await this.repository.save(normalizedContract).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail);
             else throw new InternalServerErrorException(err);

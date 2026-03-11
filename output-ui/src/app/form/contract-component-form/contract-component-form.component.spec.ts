@@ -36,4 +36,8 @@ describe('ContractComponentFormComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should return booking_amount even when it is zero', () => {
+    expect(component.getInvoiceCosts({ booking_amount: 0 } as any)).toBe(0);
+  });
 });
