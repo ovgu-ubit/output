@@ -157,12 +157,16 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     const serviceFee = this.form.get('service_fee');
     const limitType = this.form.get('limit_type');
     const distributionFormula = this.form.get('distribution_formula');
+    const version = this.form.get('contract_model_version');
 
     percentage?.clearValidators();
     parFee?.clearValidators();
     serviceFee?.clearValidators();
     limitType?.clearValidators();
     distributionFormula?.clearValidators();
+    
+    version.setValue(1);
+    version.disable();
 
     if (model === ContractModel.DISCOUNT) {
       percentage?.setValidators([Validators.required]);
