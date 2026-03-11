@@ -1,4 +1,4 @@
-<app-window-toolbar
+﻿<app-window-toolbar
     [name]="this.name"
     [disabled]="this.disabled"
     [parent]="this"></app-window-toolbar>
@@ -27,6 +27,86 @@
             <mat-label>Version des Vertragsmodells</mat-label>
             <input matInput type="number" onwheel="return false;" formControlName="contract_model_version" />
         </mat-form-field>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-subtitle>Zugeordnete Auswahlwerte</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content class="relation-selectors">
+                <mat-form-field appearance="fill" class="chip-field">
+                    <mat-label>OA-Kategorien</mat-label>
+                    <mat-chip-grid #oaCategoryGrid aria-label="Ausgewählte OA-Kategorien">
+                        <mat-chip-row *ngFor="let category of this.selectedOACategories" (removed)="this.removeOACategory(category)"
+                            [removable]="!this.disabled">
+                            {{category.label}}
+                            <button matChipRemove *ngIf="!this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                        <input matInput [formControl]="this.oaCategoryInput" [matChipInputFor]="oaCategoryGrid"
+                            [matAutocomplete]="oaCategoryAuto" [readonly]="this.disabled"
+                            placeholder="OA-Kategorie auswählen" />
+                    </mat-chip-grid>
+                    <mat-autocomplete #oaCategoryAuto="matAutocomplete" (optionSelected)="this.addOACategory($event)">
+                        <mat-option *ngFor="let category of this.filteredOACategories$ | async" [value]="category.label">
+                            {{category.label}}
+                        </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Leer bedeutet: keine Einschränkung.</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="chip-field">
+                    <mat-label>Publikationstypen</mat-label>
+                    <mat-chip-grid #publicationTypeGrid aria-label="Ausgewählte Publikationstypen">
+                        <mat-chip-row *ngFor="let publicationType of this.selectedPublicationTypes"
+                            (removed)="this.removePublicationType(publicationType)" [removable]="!this.disabled">
+                            {{publicationType.label}}
+                            <button matChipRemove *ngIf="!this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                        <input matInput [formControl]="this.publicationTypeInput" [matChipInputFor]="publicationTypeGrid"
+                            [matAutocomplete]="publicationTypeAuto" [readonly]="this.disabled"
+                            placeholder="Publikationstyp auswählen" />
+                    </mat-chip-grid>
+                    <mat-autocomplete #publicationTypeAuto="matAutocomplete" (optionSelected)="this.addPublicationType($event)">
+                        <mat-option *ngFor="let publicationType of this.filteredPublicationTypes$ | async"
+                            [value]="publicationType.label">
+                            {{publicationType.label}}
+                        </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Mehrfachauswahl über Chips.</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="chip-field">
+                    <mat-label>Größere Einheiten</mat-label>
+                    <mat-chip-grid #greaterEntityGrid aria-label="Ausgewählte groessere Einheiten">
+                        <mat-chip-row *ngFor="let greaterEntity of this.selectedGreaterEntities"
+                            (removed)="this.removeGreaterEntity(greaterEntity)" [removable]="!this.disabled">
+                            {{greaterEntity.label}}
+                            <button matChipRemove *ngIf="!this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                        <input matInput [formControl]="this.greaterEntityInput" [matChipInputFor]="greaterEntityGrid"
+                            [matAutocomplete]="greaterEntityAuto" [readonly]="this.disabled"
+                            placeholder="Größere Einheit auswählen" />
+                    </mat-chip-grid>
+                    <mat-autocomplete #greaterEntityAuto="matAutocomplete" (optionSelected)="this.addGreaterEntity($event)">
+                        <mat-option *ngFor="let greaterEntity of this.filteredGreaterEntities$ | async"
+                            [value]="greaterEntity.label">
+                            {{greaterEntity.label}}
+                            <ng-container *ngIf="greaterEntity.identifiers?.length">
+                                (<ng-container *ngFor="let identifier of greaterEntity.identifiers; let last = last">
+                                    {{identifier.value}}<span *ngIf="!last">, </span>
+                                </ng-container>)
+                            </ng-container>
+                        </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Suche auch über Identifier.</mat-hint>
+                </mat-form-field>
+            </mat-card-content>
+        </mat-card>
 
         <mat-card>
             <mat-card-header>
@@ -85,3 +165,4 @@
         </mat-card>
     </form>
 </mat-dialog-content>
+
