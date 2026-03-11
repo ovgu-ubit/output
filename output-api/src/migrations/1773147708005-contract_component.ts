@@ -22,7 +22,7 @@ export class ContractComponent1773147708005 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "invoice" ADD "contractComponentId" integer`);
         await queryRunner.query(`ALTER TABLE "workflow_import" ADD CONSTRAINT "UQ_a6206e5ae06b4a0fdb941fe3c05" UNIQUE ("workflow_id", "version")`);
         await queryRunner.query(`ALTER TABLE "invoice" ADD CONSTRAINT "FK_403d34b57af131c2b87eb7c901f" FOREIGN KEY ("contractComponentId") REFERENCES "contract_component"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "contract_component" ADD CONSTRAINT "FK_9eb8de910fe95a998c3c0bf3141" FOREIGN KEY ("contractId") REFERENCES "contract"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "contract_component" ADD CONSTRAINT "FK_9eb8de910fe95a998c3c0bf3141" FOREIGN KEY ("contractId") REFERENCES "contract"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "contract_component_oa_categories_oa_category" ADD CONSTRAINT "FK_b7bef2b13f9f9e9736d0a7b3ee0" FOREIGN KEY ("contractComponentId") REFERENCES "contract_component"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "contract_component_oa_categories_oa_category" ADD CONSTRAINT "FK_643d8339348bf7aa1086228076a" FOREIGN KEY ("oaCategoryId") REFERENCES "oa_category"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
         await queryRunner.query(`ALTER TABLE "contract_component_pub_types_publication_type" ADD CONSTRAINT "FK_5693043a32ff330349657d0dcf5" FOREIGN KEY ("contractComponentId") REFERENCES "contract_component"("id") ON DELETE CASCADE ON UPDATE CASCADE`);

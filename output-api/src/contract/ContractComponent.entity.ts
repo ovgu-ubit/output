@@ -13,7 +13,7 @@ export class ContractComponent implements IContractComponent {
     @PrimaryGeneratedColumn()
     id?: number;
 
-    @ManyToOne(() => Contract, (p) => p.id)
+    @ManyToOne(() => Contract, (p) => p.id, { onDelete: 'CASCADE' })
     contract: Contract;
 
     @Column()
