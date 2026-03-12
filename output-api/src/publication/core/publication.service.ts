@@ -315,7 +315,7 @@ export class PublicationService {
             }]);
             return this.getPublication(id, reader, writer);
         }
-        if (!reader) pub.add_info = undefined;
+        if (pub && !reader) pub.add_info = undefined;
         return pub;
     }
 
