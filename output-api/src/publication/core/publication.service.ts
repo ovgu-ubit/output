@@ -303,6 +303,7 @@ export class PublicationService {
                 supplements: true
             }, withDeleted: true
         })
+        if (!pub) return null;
         if (writer && !pub.locked_at) {
             await this.save([{
                 id: pub.id,
@@ -315,7 +316,7 @@ export class PublicationService {
             }]);
             return this.getPublication(id, reader, writer);
         }
-        if (pub && !reader) pub.add_info = undefined;
+        if (!reader) pub.add_info = undefined;
         return pub;
     }
 
@@ -755,4 +756,5 @@ export class PublicationService {
     }
 
 }
+
 
