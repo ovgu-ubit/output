@@ -1,24 +1,25 @@
-import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Author } from '../../author/Author.entity';
-import { AuthorPublication } from '../relations/AuthorPublication.entity';
-import { Publication } from './Publication.entity';
+import { mergeEntities } from '../../common/merge';
+import { AppConfigService } from '../../config/app-config.service';
 import { Institute } from '../../institute/Institute.entity';
+import { InstituteService } from '../../institute/institute.service';
+import { CostItem } from '../../invoice/CostItem.entity';
+import { Invoice } from '../../invoice/Invoice.entity';
+import { AuthorPublication } from '../relations/AuthorPublication.entity';
+import { Role } from '../relations/Role.entity';
+import { Publication } from './Publication.entity';
+import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
-import { PublicationDuplicate } from './PublicationDuplicate.entity';
-import { Invoice } from '../../invoice/Invoice.entity';
-import { CostItem } from '../../invoice/CostItem.entity';
-import { Role } from '../relations/Role.entity';
-import { InstituteService } from '../../institute/institute.service';
-import { AppConfigService } from '../../config/app-config.service';
-import { mergeEntities } from '../../common/merge';
 
 @Injectable()
 export class PublicationService {
+    // eslint-disable-next-line no-useless-escape
     doi_regex = new RegExp('10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+', 'i');
 
     funder = false;
@@ -314,6 +315,7 @@ export class PublicationService {
             }]);
             return this.getPublication(id, reader, writer);
         }
+        if (!reader) pub.add_info = undefined;
         return pub;
     }
 
@@ -556,6 +558,7 @@ export class PublicationService {
 
     getWhereStringEquals(key: string, value: string | number) {
         let where = '';
+        let beginDate, endDate;
         switch (key) {
             case 'greater_entity':
             case 'oa_category':
@@ -576,16 +579,16 @@ export class PublicationService {
                 if (key == 'cost_type') this.cost_type = true;
                 break;
             case 'author_id':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"authorId\" = ' + value + ')'
+                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."authorId" = ' + value + ')'
                 break;
             case 'author_id_corr':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"authorId\" = ' + value + ')'
+                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap.corresponding and ap."authorId" = ' + value + ')'
                 break;
             case 'institute_id':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.\"instituteId\" = ' + value + ')'
+                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."instituteId" = ' + value + ')'
                 break;
             case 'institute_id_corr':
-                where = '\"authorPublications\".\"publicationId\" in (select \"publicationId\" from author_publication ap where ap.corresponding and ap.\"instituteId\" = ' + value + ')'
+                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap.corresponding and ap."instituteId" = ' + value + ')'
                 break;
             case 'inst_authors':
                 this.author = true;
@@ -630,8 +633,8 @@ export class PublicationService {
                 this.invoice = true;
                 break;
             case 'invoice_year':
-                const beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
-                const endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
+                beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
+                endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
                 where = "invoice.date > '" + beginDate.toISOString() + "' and invoice.date < '" + endDate.toISOString() + "'";
                 this.invoice = true;
                 break;
@@ -740,10 +743,10 @@ export class PublicationService {
                 where = key + ".label IN " + value;
                 break;
             case 'institute_id':
-                where = '\"authorPublications\".\"instituteId\" IN ' + value;
+                where = '"authorPublications"."instituteId" IN ' + value;
                 break;
             case 'institute_id_corr':
-                where = '\"authorPublications\".\"instituteId\" IN' + value + ' and \"authorPublications\".corresponding';
+                where = '"authorPublications"."instituteId" IN ' + value + ' and "authorPublications".corresponding';
                 break;
             default:
                 where = "publication." + key + " IN " + value;
