@@ -56,7 +56,7 @@
             </a>
         </mat-form-field>
 
-        <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
             <mat-label>Weitere Informationen</mat-label>
             <textarea matInput [type]="'text'" placeholder="Informationen" formControlName="add_info"></textarea>
         </mat-form-field>

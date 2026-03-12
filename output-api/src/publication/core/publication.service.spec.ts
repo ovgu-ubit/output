@@ -165,6 +165,42 @@ describe('PublicationService combine', () => {
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
+    it('returns a find error when the primary publication does not exist during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        pubRepository.findOne.mockResolvedValue(null);
+
+        const result = await service.combine(999, [62]);
+
+        expect(result).toEqual({ error: 'find' });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('returns a find error when a duplicate publication does not exist during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        const primary = { id: 61, locked: false } as Publication;
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => where.id === 61 ? primary : null);
+
+        const result = await service.combine(61, [999]);
+
+        expect(result).toEqual({ error: 'find' });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('returns null when a requested publication id does not exist', async () => {
+        pubRepository.findOne.mockResolvedValue(null);
+
+        const result = await service.getPublication(999, false, true);
+
+        expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 999 },
+            withDeleted: true,
+        }));
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(result).toBeNull();
+    });
+
     it('checks DOI or title existence using case-insensitive matching', async () => {
         pubRepository.findOne.mockResolvedValue({ id: 42 } as Publication);
 
@@ -225,3 +261,4 @@ describe('PublicationService combine', () => {
         });
     });
 });
+
