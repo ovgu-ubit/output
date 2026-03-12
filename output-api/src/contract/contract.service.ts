@@ -73,9 +73,9 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
         
         if (normalizedContract.identifiers && orig && orig.identifiers) {
-            orig.identifiers.forEach(async id => {
-                if (!normalizedContract.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id);
-            });
+            await Promise.all(orig.identifiers
+                .filter(id => !normalizedContract.identifiers.find(e => e.id === id.id))
+                .map(id => this.idRepository.delete(id.id)));
         }
         if (normalizedContract.components) {
             for (const c of normalizedContract.components) {
@@ -87,9 +87,9 @@ export class ContractService extends AbstractEntityService<Contract> {
             }
         }
         if (normalizedContract.components && orig && orig.components) {
-            orig.components.forEach(async c => {
-                if (!normalizedContract.components.find(e => e.id === c.id)) await this.contractComponentRepository.delete(c.id);
-            });
+            await Promise.all(orig.components
+                .filter(c => !normalizedContract.components.find(e => e.id === c.id))
+                .map(c => this.contractComponentRepository.delete(c.id)));
         }
 
         const savedContract = await this.repository.save(contract).catch((error: unknown) => {
@@ -397,4 +397,3 @@ export class ContractService extends AbstractEntityService<Contract> {
         throw error;
     }
 }
-

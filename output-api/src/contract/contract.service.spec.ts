@@ -188,6 +188,42 @@ describe('ContractService', () => {
         expect(saved).toEqual(expect.objectContaining({ id: 11 }));
     });
 
+    it('awaits identifier and component deletions when updating a contract', async () => {
+        const contract = {
+            id: 11,
+            label: 'Contract With Components',
+            components: [{ id: 2, label: 'Existing component' }],
+            identifiers: [{ id: 2, value: 'new', type: 'local' }],
+        } as unknown as Contract;
+
+        repository.findOne!.mockResolvedValue({
+            id: 11,
+            identifiers: [{ id: 1, value: 'old', type: 'legacy' }],
+            components: [{ id: 1, label: 'Old component' }],
+        } as unknown as Contract);
+        repository.save!.mockImplementation(async entity => entity as Contract);
+
+        let identifierDeleteCompleted = false;
+        let componentDeleteCompleted = false;
+
+        identifierRepository.delete!.mockImplementation(async () => {
+            await new Promise(resolve => setTimeout(resolve, 15));
+            identifierDeleteCompleted = true;
+            return undefined as never;
+        });
+        componentRepository.delete!.mockImplementation(async () => {
+            await new Promise(resolve => setTimeout(resolve, 15));
+            componentDeleteCompleted = true;
+            return undefined as never;
+        });
+
+        await service.save(contract);
+
+        expect(identifierRepository.delete).toHaveBeenCalledWith(1);
+        expect(componentRepository.delete).toHaveBeenCalledWith(1);
+        expect(identifierDeleteCompleted).toBe(true);
+        expect(componentDeleteCompleted).toBe(true);
+    });
     it('lists contract components and splits linked invoices by invoice kind', async () => {
         componentRepository.find!.mockResolvedValue([{
             id: 1,
