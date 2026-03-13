@@ -1,6 +1,12 @@
 <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
     <h1>{{this.name}}</h1>
     <div style="display: flex;justify-content: flex-end;">
+        <button *ngIf="this.maximizeable" mat-icon-button (click)="this.parent.toggleMaximize()"
+            [matTooltip]="this.parent.isMaximized ? 'Fenster wiederherstellen' : 'Fenster maximieren'"
+            [matTooltipShowDelay]="800">
+            <mat-icon *ngIf="this.parent.isMaximized">close_fullscreen</mat-icon>
+            <mat-icon *ngIf="!this.parent.isMaximized">open_in_full</mat-icon>
+        </button>
         <button *ngIf="this.lockable" mat-icon-button (click)="this.parent.lock()" [matTooltip]="this.name + ' (ent)sperren'" [matTooltipShowDelay]="800"
             [disabled]="this.disabled">
             <mat-icon *ngIf="this.parent.pub?.locked">lock</mat-icon>

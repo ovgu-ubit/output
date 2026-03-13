@@ -12,4 +12,5 @@ export class WindowToolbarComponent {
   @Input() disabled: boolean;
   @Input() parent: any;
   @Input() lockable? = false;
+  @Input() maximizeable? = false;
 }
