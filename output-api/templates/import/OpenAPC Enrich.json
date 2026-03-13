@@ -1,11 +1,11 @@
 {
-  "id": 7,
+  "id": 21,
   "workflow_id": "8744bdd5-3bee-4317-ade9-94bfe6a077be",
   "label": "OpenAPC Enrich",
-  "version": 1,
-  "created_at": "2026-02-12T12:31:36.606Z",
-  "modified_at": "2026-02-12T12:32:52.084Z",
-  "published_at": null,
+  "version": 2,
+  "created_at": "2026-03-13T08:30:10.283Z",
+  "modified_at": "2026-03-13T08:37:23.281Z",
+  "published_at": "2026-03-13T08:37:23.278Z",
   "deleted_at": null,
   "description": "OpenAPC Enrich via DOI for cost approach",
   "strategy_type": 3,
@@ -18,7 +18,7 @@
     "exclusion_criteria": "false",
     "only_import_if_authors_inst": false
   },
-  "mapping": "{\n   \"doi\": $.doi,\n   \"cost_approach\": $contains($.currency, 'EUR') ? ($.apc_paid ? $.apc_paid : $.apc_list),\n   \"publisher\": $.publisher,\n   \"greater_entity\": {\n        \"label\": $.journal_full_title\n }\n}",
+  "mapping": "{\n   \"doi\": $.doi,\n   \"cost_approach\": $.euro,\n   \"cost_approach_currency\": 'EUR',\n   \"publisher\": $.publisher,\n   \"greater_entity\": {\n        \"label\": $.journal_full_title\n }\n}",
   "update_config": {
     "doi": 2,
     "link": 2,

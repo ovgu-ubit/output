@@ -59,6 +59,7 @@ export interface Publication extends Identifiable<Publication> {
     first_page?: string;
     last_page?: string;
     cost_approach?: number;
+    cost_approach_currency?: string;
     supplements?: PublicationSupplement[];
     duplicates?: PublicationDuplicate[];
     not_budget_relevant?: boolean;

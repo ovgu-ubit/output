@@ -36,7 +36,7 @@ export class MasterExportService extends AbstractExportService {
         }
 
         let res = "id;locked;status;title;doi;link;authors;authors_inst;institutes;corr_authors;corr_institutes;greater_entity;"
-        +"pub_date;publisher;language;oa_category;pub_type;funders;contract;cost_approach;invoice_number;net costs;paid amount;cost_center;"
+        +"pub_date;publisher;language;oa_category;pub_type;funders;contract;cost_approach;cost_approach_currency;invoice_number;net costs;paid amount;cost_center;"
         +"data_source;second_pub;add_info;import_date;edit_date";
         //add cost type columns
         const cost_types = await this.invoiceService.getCostTypes();
@@ -65,6 +65,7 @@ export class MasterExportService extends AbstractExportService {
             res+=this.format(pub.funders?.map(e => e.label).join(' | '));
             res+=this.format(pub.contract);
             res+=this.format(pub.cost_approach);
+            res+=this.format(pub.cost_approach_currency);
             res+=this.format(pub.invoices?.map(e => e.number).join(' | '));
             res+=this.format(pub.invoices?.map(e => e.cost_items.map(e => e.euro_value).reduce((v,e) => v+e,0)).reduce((v,e) => v+e,0));
             res+=this.format(pub.invoices?.map(e => e.booking_amount).reduce((v,e) => v+e,0));

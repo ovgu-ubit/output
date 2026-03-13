@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, FindManyOptions, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { Author } from '../../author/Author.entity';
@@ -280,7 +280,7 @@ export class PublicationService {
     }
 
     public async getPublication(id: number, reader: boolean, writer: boolean) {
-        let invoice: any = false;
+        let invoice: boolean | FindOptionsRelations<Invoice> = false;
         if (reader) invoice = { cost_items: { cost_type: true }, cost_center: true };
         const pub = await this.pubRepository.findOne({
             where: { id }, relations: {
@@ -395,7 +395,7 @@ export class PublicationService {
                 , 'year')
             .distinct(true)
             .orderBy('year', 'DESC');
-        return query.getRawMany() as Promise<any>;
+        return query.getRawMany() as Promise<{year: string}[]>;
     }
 
 
@@ -756,5 +756,4 @@ export class PublicationService {
     }
 
 }
-
 

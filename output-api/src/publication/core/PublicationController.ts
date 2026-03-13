@@ -24,6 +24,7 @@ export class PublicationController {
 
       list() {
         return this.filterServices.map(i => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
           const meta = getFilterServiceMeta(i.constructor as Function)!;
           return { path: meta.path };
         });

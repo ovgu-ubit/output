@@ -225,11 +225,20 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected getCostApproach(element: any): number {
         const elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
         if (elem) {
-            if (elem['currency'] != 'EUR') {
-                //return element['apc_paid']['currency'] + " " + element['apc_paid']['value']
+            try {
+                return Number(elem['value'])
+            } catch(err) {
+                console.log(err);
                 return null;
-            } else return Number(elem['value'])
+            }
         }
         return null;
+    }
+    protected getCostApproachCurrency(element: any): string {
+        const elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
+        if (elem) {
+            return elem['currency'] || 'EUR';
+        }
+        return 'EUR';
     }
 }

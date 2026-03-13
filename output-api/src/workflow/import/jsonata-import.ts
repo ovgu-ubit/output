@@ -56,6 +56,7 @@ export interface JSONataParsedObject {
     }[];
     peer_reviewed: boolean;
     cost_approach: number;
+    cost_approach_currency?: string;
     volume: string;
     issue: string;
     first_page: string,
@@ -846,6 +847,9 @@ export class JSONataImportService extends AbstractImportService {
     protected getCostApproach(element: JSONataParsedObject): number {
         return element.cost_approach;
 
+    }
+    protected getCostApproachCurrency(element: JSONataParsedObject): string {
+        return element.cost_approach_currency;
     }
     collectKeys(
         obj: unknown,

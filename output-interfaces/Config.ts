@@ -94,6 +94,7 @@ export class CSVMapping {
         edition?: string;
         article_number?: string;
         cost_approach?: string;
+        cost_approach_currency?: string;
     }
 }
 
