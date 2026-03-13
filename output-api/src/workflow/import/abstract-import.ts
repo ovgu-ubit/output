@@ -905,14 +905,6 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                number = this.getCostApproach(element);
-                if (number !== undefined && number !== null && !Number.isNaN(number)) {
-                    orig.cost_approach = (orig.cost_approach ?? 0) + number;
-                    orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
-                    fields.push('cost_approach')
-                    fields.push('cost_approach_currency')
-                }
-                break;
             case UpdateOptions.REPLACE_IF_EMPTY:
                 if (orig.cost_approach === undefined || orig.cost_approach === null) {
                     const ca = this.getCostApproach(element);
