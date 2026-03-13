@@ -27,6 +27,7 @@ import { AppConfigService } from '../../config/app-config.service';
 export function ImportService(meta: { path: string }): ClassDecorator {
     return (target) => Reflect.defineMetadata("import_service", meta, target);
 }
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 export function getImportServiceMeta(target: Function): { path: string } | undefined {
     return Reflect.getMetadata("import_service", target);
 }
@@ -336,6 +337,7 @@ export abstract class AbstractImportService {
         //construct publication object to save
         const obj: Publication = {
             authors: this.getAuthors(item)?.trim(),
+            // eslint-disable-next-line no-useless-escape
             title: this.getTitle(item)?.trim().replace(/<\/?[\w\s="/.':;#-\/\?]+>/gi, ""),//remove html tags from input
             doi,
             link: this.getLink(item)?.trim(),
@@ -400,12 +402,14 @@ export abstract class AbstractImportService {
      */
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
         const fields = [];
+        let text = "";
+        let number = 0;
         // all fields are processed according to the update mapping
         if (!orig.locked_author) switch (this.updateMapping.authors) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                const text = this.getAuthors(element);
+                text = this.getAuthors(element);
                 if (text) {
                     orig.authors += '|' + text;
                     fields.push('authors')
@@ -427,7 +431,7 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                const text = this.getTitle(element);
+                text = this.getTitle(element);
                 if (text) {
                     orig.title += '|' + text;
                     fields.push('title')
@@ -449,7 +453,7 @@ export abstract class AbstractImportService {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                const text = this.getDOI(element);
+                text = this.getDOI(element);
                 if (text) {
                     orig.doi += '|' + text;
                     fields.push('doi')
@@ -466,12 +470,11 @@ export abstract class AbstractImportService {
                 if (orig.doi) fields.push('doi')
                 break;
         }
-
         switch (this.updateMapping.link) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                const text = this.getLink(element);
+                text = this.getLink(element);
                 if (text) {
                     orig.link += '|' + text;
                     fields.push('link')
@@ -504,14 +507,14 @@ export abstract class AbstractImportService {
                 if (orig.language) fields.push('language')
                 break;
         }
-        let pd;
+        let pd, flag;
         if (!orig.locked_biblio) switch (this.updateMapping.pub_date) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
             case UpdateOptions.APPEND:
                 pd = this.getPubDate(element);
-                let flag = false;
+                flag = false;
                 if (pd instanceof Date) {
                     if (!orig.pub_date || (orig.pub_date.getDate() === 1 && orig.pub_date.getMonth() === 0)) orig.pub_date = pd;
                     flag = true;
@@ -712,15 +715,17 @@ export abstract class AbstractImportService {
                 }
             }
         }
-
+        
+        let inv_info;
+        let invoices = [];
         if (!orig.locked_finance) switch (this.updateMapping.invoice) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY://append is replace if empty
                 if (!orig.invoices || orig.invoices.length === 0) {
-                    const inv_info = this.getInvoiceInformation(element);
+                    inv_info = this.getInvoiceInformation(element);
                     //import of invoices
-                    const invoices: Invoice[] = [];
+                    invoices = [];
                     if (inv_info && inv_info.length > 0) for (const inv of inv_info) {
                         const cost_items = [];
                         for (const ci of inv.cost_items) {
@@ -742,17 +747,17 @@ export abstract class AbstractImportService {
                 break;
             case UpdateOptions.APPEND:
                 if (!orig.invoices) orig.invoices = [];
-                const inv_info1 = this.getInvoiceInformation(element);
+                inv_info = this.getInvoiceInformation(element);
                 //import of invoices
-                const invoices1 = [];
-                for (const inv of inv_info1) {
+                invoices = [];
+                for (const inv of inv_info) {
                     const cost_items = [];
                     for (const ci of inv.cost_items) {
                         if (ci.cost_type.includes('DEAL Servicepauschale') && orig.invoices?.find(e => e.cost_items?.find(f => f.cost_type?.label.includes('DEAL Servicepauschale')))) continue;
                         cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })
                     }
                     const cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
-                    if (cost_items.length > 0) invoices1.push({
+                    if (cost_items.length > 0) invoices.push({
                         number: inv.number,
                         booking_amount: inv.booking_amount,
                         booking_date: inv.booking_date,
@@ -761,20 +766,20 @@ export abstract class AbstractImportService {
                         date: inv.date,
                     })
                 }
-                orig.invoices = orig.invoices.concat(invoices1);
-                if (invoices1 && invoices1.length > 0) fields.push('invoice')
+                orig.invoices = orig.invoices.concat(invoices);
+                if (invoices && invoices.length > 0) fields.push('invoice')
                 break;
             case UpdateOptions.REPLACE:
-                const inv_info2 = this.getInvoiceInformation(element);
+                inv_info = this.getInvoiceInformation(element);
                 //import of invoices
-                const invoices2 = [];
-                for (const inv of inv_info2) {
+                invoices = [];
+                for (const inv of inv_info) {
                     const cost_items = [];
                     for (const ci of inv.cost_items) {
                         cost_items.push({ euro_value: ci.euro_value, orig_value: ci.orig_value, vat: ci.vat, orig_currency: ci.orig_currency, cost_type: await firstValueFrom(this.invoiceService.findOrSaveCT(ci.cost_type, this.dryRun)) })
                     }
                     const cost_center = await firstValueFrom(this.invoiceService.findOrSaveCC(inv.cost_center, this.dryRun))
-                    invoices2.push({
+                    invoices.push({
                         number: inv.number,
                         booking_amount: inv.booking_amount,
                         booking_date: inv.booking_date,
@@ -783,7 +788,7 @@ export abstract class AbstractImportService {
                         date: inv.date,
                     })
                 }
-                if (inv_info2) orig.invoices = invoices2; else orig.invoices = [];
+                if (inv_info) orig.invoices = invoices; else orig.invoices = [];
                 fields.push('invoice')
                 break;
         }
@@ -837,6 +842,7 @@ export abstract class AbstractImportService {
             }
         }
         if (await this.configService.get('optional_fields')['citation'] && !orig.locked_biblio) {
+            let cit;
             switch (this.updateMapping.citation) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -852,7 +858,7 @@ export abstract class AbstractImportService {
                     }
                     break;
                 case UpdateOptions.REPLACE:
-                    const cit = this.getCitation(element)
+                    cit = this.getCitation(element)
                     orig.volume = cit.volume;
                     orig.issue = cit.issue;
                     orig.first_page = cit.first_page;
@@ -895,35 +901,34 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-
         switch (this.updateMapping.cost_approach) {
             case UpdateOptions.IGNORE:
                 break;
             case UpdateOptions.APPEND:
-                const text = this.getCostApproach(element);
-                if (text && !Number.isNaN(text)) {
-                    orig.cost_approach = (orig.cost_approach ?? 0) + text;
+                number = this.getCostApproach(element);
+                if (number !== undefined && number !== null && !Number.isNaN(number)) {
+                    orig.cost_approach = (orig.cost_approach ?? 0) + number;
                     orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
                     fields.push('cost_approach')
                     fields.push('cost_approach_currency')
                 }
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY:
-                if (!orig.cost_approach) {
+                if (orig.cost_approach === undefined || orig.cost_approach === null) {
                     const ca = this.getCostApproach(element);
                     orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
                     orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
-                    if (orig.cost_approach) {
+                    if (orig.cost_approach !== undefined && orig.cost_approach !== null) {
                         fields.push('cost_approach')
                         fields.push('cost_approach_currency')
                     }
                 }
                 break;
             case UpdateOptions.REPLACE:
-                const ca = this.getCostApproach(element);
-                orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
+                number = this.getCostApproach(element);
+                orig.cost_approach = Number.isNaN(number) ? undefined : number;
                 orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
-                if (orig.cost_approach) {
+                if (orig.cost_approach !== undefined && orig.cost_approach !== null) {
                     fields.push('cost_approach')
                     fields.push('cost_approach_currency')
                 }
