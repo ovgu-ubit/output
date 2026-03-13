@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, ManyToOne, OneToMany } from "typeorm";
-import { Contract } from "../contract/Contract.entity";
+﻿import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
 import { CostCenter } from "./CostCenter.entity";
 import { CostItem } from "./CostItem.entity";
-import { Invoice as IInvoice } from "../../../output-interfaces/Publication"
+import { Invoice as IInvoice, InvoiceKind } from "../../../output-interfaces/Publication"
 import { Publication } from "../publication/core/Publication.entity";
+import { ContractComponent } from "../contract/ContractComponent.entity";
 
 @Entity()
 export class Invoice implements IInvoice {
@@ -19,6 +19,12 @@ export class Invoice implements IInvoice {
 
     @ManyToOne(() => Publication, (pub) => pub.invoices)
     publication?: Publication
+
+    @ManyToOne(() => ContractComponent, (component) => component.linked_invoices)
+    contract_component?: ContractComponent
+
+    @Column({ type: 'enum', enum: InvoiceKind, default: InvoiceKind.INVOICE })
+    invoice_kind?: InvoiceKind;
 
     @Column({ nullable: true })
     number?: string;

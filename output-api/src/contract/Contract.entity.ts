@@ -3,6 +3,7 @@ import { Publisher } from "../publisher/Publisher.entity";
 import { Contract as IContract} from "../../../output-interfaces/Publication"
 import { Publication } from "../publication/core/Publication.entity";
 import { ContractIdentifier } from "./ContractIdentifier.entity";
+import { ContractComponent } from "./ContractComponent.entity";
 
 @Entity()
 export class Contract implements IContract {
@@ -48,4 +49,7 @@ export class Contract implements IContract {
     
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
+
+    @OneToMany(() => ContractComponent, (ide) => ide.contract, {cascade: true})
+    components?: ContractComponent[];
 }

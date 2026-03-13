@@ -6,11 +6,13 @@ import { Contract } from './Contract.entity';
 import { ContractController } from './ContractController';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { ContractService } from './contract.service';
+import { ContractComponent } from './ContractComponent.entity';
+import { Invoice } from '../invoice/Invoice.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Contract, ContractIdentifier]), 
-    PublicationModule, 
+    TypeOrmModule.forFeature([Contract, ContractIdentifier, ContractComponent, Invoice]),
+    PublicationModule,
     AppConfigModule
   ],
   controllers: [ContractController],
