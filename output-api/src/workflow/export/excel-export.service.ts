@@ -71,6 +71,7 @@ export class ExcelExportService extends AbstractExportService {
                 funders: pub.funders?.map(e => e.label).join(' | '),
                 contract: pub.contract?.label,
                 cost_approach: pub.cost_approach,
+                cost_approach_currency: pub.cost_approach_currency,
                 invoice_numbers: pub.invoices?.map(e => e.number).join(' | '),
                 net_costs: pub.invoices?.map(e => e.cost_items.map(e => e.euro_value).reduce((v, e) => v + e, 0)).reduce((v, e) => v + e, 0),
                 paid_amount: pub.invoices?.map(e => e.booking_amount).reduce((v, e) => v + e, 0),
@@ -94,15 +95,15 @@ export class ExcelExportService extends AbstractExportService {
         if (!worksheet["!cols"]) worksheet["!cols"] = [];
         worksheet["!cols"][XLSX.utils.decode_col("D")] = { width: 30 }
         worksheet["!cols"][XLSX.utils.decode_col("E")] = { width: 20 }
-        worksheet["!cols"][XLSX.utils.decode_col("AB")] = { width: 20 }
         worksheet["!cols"][XLSX.utils.decode_col("AC")] = { width: 20 }
+        worksheet["!cols"][XLSX.utils.decode_col("AD")] = { width: 20 }
         for (let i = 2; i <= rows.length + 1; i++) {
-            worksheet["T" + i].z = '#,##0.00 "€"'; //cost approach
-            worksheet["V" + i].z = '#,##0.00 "€"'; //net costs
-            worksheet["W" + i].z = '#,##0.00 "€"'; //paid amount
-            worksheet["AB" + i].z = "DD.MM.YYYY HH:MM:SS"; //import date
-            worksheet["AC" + i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
-            const columns = ["AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT"]
+            worksheet["T" + i].z = '#,##0.00'; //cost approach
+            worksheet["W" + i].z = '#,##0.00 "€"'; //net costs
+            worksheet["X" + i].z = '#,##0.00 "€"'; //paid amount
+            worksheet["AC" + i].z = "DD.MM.YYYY HH:MM:SS"; //import date
+            worksheet["AD" + i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
+            const columns = ["AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU"]
             if (cost_types.length > columns.length) throw new InternalServerErrorException('too many cost types, please report to developer')
             for (let j = 0; j < cost_types.length; j++) {
                 if (worksheet[columns[j] + "" + i]) worksheet[columns[j] + "" + i].z = '#,##0.00 "€"';

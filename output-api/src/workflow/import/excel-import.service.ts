@@ -418,6 +418,15 @@ export class ExcelImportService extends AbstractImportService {
             return null;
         }
     }
+    protected getCostApproachCurrency(element: any): string {
+        try {
+            if (!this.importConfig.mapping.cost_approach_currency) return 'EUR';
+            if (this.importConfig.mapping.cost_approach_currency.startsWith('$')) return this.importConfig.mapping.cost_approach_currency.slice(1, this.importConfig.mapping.cost_approach_currency.length);
+            return element[this.importConfig.mapping.cost_approach_currency];
+        } catch (err) {
+            return 'EUR';
+        }
+    }
 
     async getConfigs() {
         this.path = await this.configService.get('APP_CONFIG_PATH');

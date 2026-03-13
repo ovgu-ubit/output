@@ -139,6 +139,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       }),
       finance_info: this.formBuilder.group({
         cost_approach: [''],
+        cost_approach_currency: ['EUR'],
         grant_number: [''],
         not_budget_relevant: [''],
         contract_year: ['']
@@ -176,7 +177,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.edit = false;
       this.pub = {
         authorPublications: [],
-        identifiers: []
+        identifiers: [],
+        cost_approach_currency: 'EUR'
       };
       let dialogRef = this.dialog.open(DoiFormComponent, {
         width: '800px',
@@ -230,6 +232,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       this.form.get('biblio_info').patchValue(data);
       this.form.get('oa_info').patchValue(data);
       this.form.get('finance_info').patchValue(data);
+      if (!this.form.get('finance_info').get('cost_approach_currency').value) {
+        this.form.get('finance_info').get('cost_approach_currency').setValue('EUR');
+      }
       if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('oa_info').get('best_oa_license').setValue('Sonstige')
 
       if (this.pub?.locked) this.setLock(true);
@@ -369,6 +374,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     for (let key of Object.keys(this.pub)) {
       if (this.pub[key] === '') this.pub[key] = null;
     }
+    if (!this.pub.cost_approach_currency) this.pub.cost_approach_currency = 'EUR';
     if (this.idTable && this.idTable.isDirty()) {
       let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Identifier, möchten Sie diesen zunächst speichern?`);
 

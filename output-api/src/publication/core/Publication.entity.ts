@@ -150,6 +150,9 @@ export class Publication implements IPublication {
 
     @Column({ nullable: true,  type: "float" })
     cost_approach?: number;
+
+    @Column({ default: 'EUR' })
+    cost_approach_currency?: string;
     
     @Column({ nullable: true })
     not_budget_relevant?: boolean;

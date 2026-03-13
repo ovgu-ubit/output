@@ -209,6 +209,9 @@ export abstract class AbstractImportService {
      * @param element 
      */
     protected abstract getCostApproach(element: any): number;
+    protected getCostApproachCurrency(_element: any): string {
+        return 'EUR';
+    }
 
     /**
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
@@ -324,6 +327,7 @@ export abstract class AbstractImportService {
 
         const ca = this.getCostApproach(item);
         const cost_approach = Number.isNaN(ca) ? undefined : ca;
+        const cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(item));
 
         let doi;
         const doi_a = this.publicationService.doi_regex.exec(this.getDOI(item)?.trim());
@@ -351,6 +355,7 @@ export abstract class AbstractImportService {
             status,
             add_info: remark,
             cost_approach,
+            cost_approach_currency,
             is_oa,
             oa_status,
             is_journal_oa,
@@ -897,21 +902,31 @@ export abstract class AbstractImportService {
             case UpdateOptions.APPEND:
                 const text = this.getCostApproach(element);
                 if (text && !Number.isNaN(text)) {
-                    orig.cost_approach += text;
+                    orig.cost_approach = (orig.cost_approach ?? 0) + text;
+                    orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
                     fields.push('cost_approach')
+                    fields.push('cost_approach_currency')
                 }
                 break;
             case UpdateOptions.REPLACE_IF_EMPTY:
                 if (!orig.cost_approach) {
                     const ca = this.getCostApproach(element);
                     orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
-                    if (orig.cost_approach) fields.push('cost_approach')
+                    orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
+                    if (orig.cost_approach) {
+                        fields.push('cost_approach')
+                        fields.push('cost_approach_currency')
+                    }
                 }
                 break;
             case UpdateOptions.REPLACE:
                 const ca = this.getCostApproach(element);
                 orig.cost_approach = Number.isNaN(ca) ? undefined : ca;
-                if (orig.cost_approach) fields.push('cost_approach')
+                orig.cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(element));
+                if (orig.cost_approach) {
+                    fields.push('cost_approach')
+                    fields.push('cost_approach_currency')
+                }
                 break;
         }
         const res = this.finalize(orig, element);
@@ -934,6 +949,12 @@ export abstract class AbstractImportService {
      */
     protected finalize(orig: Publication, element: any): { fields: string[], pub: Publication } {
         return { fields: [], pub: orig };
+    }
+
+    protected normalizeCostApproachCurrency(currency?: string): string {
+        if (!currency) return 'EUR';
+        const normalized = currency.trim().toUpperCase();
+        return normalized || 'EUR';
     }
 
     public status() {
