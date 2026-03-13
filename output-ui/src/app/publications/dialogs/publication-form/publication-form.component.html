@@ -1,13 +1,13 @@
 <app-window-toolbar name="Publikation" [disabled]="this.disabled" [parent]="this"
-    [lockable]="true"></app-window-toolbar>
+    [lockable]="true" [maximizeable]="true"></app-window-toolbar>
 
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
     </div>
 </div>
-<mat-dialog-content [hidden]="this.loading">
-    <form [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
-        (keyup)="escape($event)" style="display: flex; flex-direction: column;justify-content: space-evenly;">
+<mat-dialog-content class="publication-dialog-content" [hidden]="this.loading">
+    <form class="publication-dialog-form" [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
+        (keyup)="escape($event)">
 
         <div style="display: flex;flex-direction: row;justify-content: space-between;">
             <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
@@ -61,7 +61,7 @@
             <textarea matInput [type]="'text'" placeholder="Informationen" formControlName="add_info"></textarea>
         </mat-form-field>
 
-        <mat-accordion multi="true">
+        <mat-accordion class="publication-panel-grid" multi="true">
             <mat-expansion-panel formGroupName="author_info">
                 <mat-expansion-panel-header>
                     <mat-panel-title>

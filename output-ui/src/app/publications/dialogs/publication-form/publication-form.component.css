@@ -1,4 +1,38 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
 mat-form-field {
     font-size:14px;
     width: 100%;
+}
+
+.publication-dialog-content {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    height: 100%;
+    overflow: auto;
+}
+
+.publication-dialog-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 100%;
+}
+
+.publication-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(630px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.publication-panel-grid > mat-expansion-panel {
+    margin: 0;
 }

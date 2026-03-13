@@ -56,6 +56,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   public form: FormGroup;
   public supplForm: FormGroup;
   submitted = false;
+  isMaximized = false;
 
   edit: boolean = false;
   loading: boolean;
@@ -77,6 +78,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
   currencies = ['EUR', 'USD', 'CHF'];
+  private readonly defaultDialogWidth: string;
+  private readonly defaultDialogHeight = '800px';
   optional_fields: {
     abstract?: boolean,
     citation?: boolean,
@@ -100,6 +103,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService,
     private configService: ConfigService,
     private statusService: StatusService, private enrichService: EnrichService) {
+    this.defaultDialogWidth = this.data?.entity?.id ? '1000px' : '800px';
     this.form = this.formBuilder.group({
       id: [''],
       title: [''],
@@ -318,6 +322,21 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   close() {
     this.dialogRef.close(null)
+  }
+
+  toggleMaximize() {
+    this.isMaximized = !this.isMaximized;
+
+    if (this.isMaximized) {
+      this.dialogRef.addPanelClass('publication-form-dialog-maximized');
+      this.dialogRef.updateSize('100vw', '100vh');
+      this.dialogRef.updatePosition({ top: '0', left: '0' });
+      return;
+    }
+
+    this.dialogRef.removePanelClass('publication-form-dialog-maximized');
+    this.dialogRef.updateSize(this.defaultDialogWidth, this.defaultDialogHeight);
+    this.dialogRef.updatePosition();
   }
 
   abort(): void {
