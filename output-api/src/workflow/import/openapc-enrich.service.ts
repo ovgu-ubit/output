@@ -136,13 +136,6 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         return null;
     }
     protected getCostApproach(element: any): number {
-        const elem = element['apc_paid'] ? element['apc_paid'] : element['apc_list'];
-        if (elem) {
-            if (elem['currency'] != 'EUR') {
-                //return element['apc_paid']['currency'] + " " + element['apc_paid']['value']
-                return null;
-            } else return Number(elem['value'])
-        }
-        return null;
+        return element['euro'];
     }
 }
