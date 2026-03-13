@@ -441,7 +441,9 @@
 
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Währung des Kostenansatzes</mat-label>
-                    <input matInput placeholder="z.B. EUR" formControlName="cost_approach_currency" />
+                    <mat-select formControlName="cost_approach_currency">
+                        <mat-option *ngFor="let currency of this.currencies" [value]="currency">{{currency}}</mat-option>
+                    </mat-select>
                 </mat-form-field>
 
                 <mat-card>

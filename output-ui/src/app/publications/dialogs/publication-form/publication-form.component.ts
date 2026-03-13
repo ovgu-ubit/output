@@ -76,6 +76,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   today = new Date();
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
+  currencies = ['EUR', 'USD', 'CHF'];
   optional_fields: {
     abstract?: boolean,
     citation?: boolean,
