@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 import { UpdateMapping } from "../../../output-interfaces/Config";
 import { ImportWorkflow as IImportWorkflow, Strategy } from "../../../output-interfaces/Workflow";
+import { WorkflowReport } from "./WorkflowReport.entity";
 
 @Entity("workflow_import")
 @Unique(["workflow_id", "version"])
@@ -47,4 +48,7 @@ export class ImportWorkflow implements IImportWorkflow {
 
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
+
+    @OneToMany(() => WorkflowReport, (report) => report.workflow)
+    reports?: WorkflowReport[];
 }

@@ -58,6 +58,9 @@ import { JSONataImportService } from './import/jsonata-import';
 import { WorkflowService } from './workflow.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportWorkflow } from './ImportWorkflow.entity';
+import { PublicationChange } from './PublicationChange.entity';
+import { WorkflowReport } from './WorkflowReport.entity';
+import { WorkflowReportItem } from './WorkflowReportItem.entity';
 import { WorkflowController } from './WorkflowController';
 
 @Module({
@@ -79,7 +82,7 @@ import { WorkflowController } from './WorkflowController';
     }),
     ScheduleModule.forRoot(),
     DiscoveryModule,
-    TypeOrmModule.forFeature([ImportWorkflow])
+    TypeOrmModule.forFeature([ImportWorkflow, WorkflowReport, WorkflowReportItem, PublicationChange])
   ],
   controllers: [
     ImportController,

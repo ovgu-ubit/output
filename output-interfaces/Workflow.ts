@@ -19,6 +19,37 @@ export interface ImportWorkflow extends Workflow {
     strategy?: any;
 }
 
+export interface WorkflowReport {
+    id?: number;
+    workflowId?: number;
+    params?: unknown;
+    by_user?: string;
+    status?: string;
+    started_at?: Date;
+    finished_at?: Date;
+    summary?: unknown;
+    dry_run?: boolean;
+}
+
+export interface WorkflowReportItem {
+    id?: number;
+    workflowReportId?: number;
+    timestamp?: Date;
+    level?: WorkflowReportItemLevel;
+    code?: string;
+    message?: string;
+}
+
+export interface PublicationChange {
+    id?: number;
+    publicationId?: number;
+    workflowReportId?: number | null;
+    timestamp?: Date;
+    by_user?: string;
+    patch_data?: unknown;
+    dry_change?: boolean;
+}
+
 export interface ImportWorkflowTestResult {
     meta: {
         workflow_id: string;
@@ -48,4 +79,11 @@ export enum Strategy {
     URL_LOOKUP_AND_RETRIEVE,
     URL_QUERY_OFFSET,
     URL_DOI
+}
+
+export enum WorkflowReportItemLevel {
+    ERROR = 'error',
+    WARNING = 'warning',
+    INFO = 'info',
+    DEBUG = 'debug',
 }
