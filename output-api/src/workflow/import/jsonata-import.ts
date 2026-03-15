@@ -8,7 +8,7 @@ import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { ImportWorkflow, ImportWorkflowTestResult, Strategy } from '../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportWorkflowTestResult, Strategy, WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -185,6 +185,17 @@ export class JSONataImportService extends AbstractImportService {
         this.url_count = await this.setVariables(this.url_count);
 
         this.name = this.importDefinition.label + '_v' + this.importDefinition.version;
+
+        this.workflowReport = await this.workflowReportService.createReport({
+            status: 'initialized',
+            workflow: this.importDefinition,
+            params: {
+                reporting_year: this.reporting_year,
+                search_text: this.searchText,
+                affiliation_text: this.affiliationText,
+                url: await this.setVariables(this.url, undefined, true)
+            }
+        })
     }
 
     async setVariables(queryString: string, doi?: string, safe = false): Promise<string> {
@@ -255,7 +266,12 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     public async test(pos: number = 1): Promise<ImportWorkflowTestResult> {
-        this.report = await this.reportService.createReport('Worfklow_Import', this.name, 'testRun');
+        this.workflowReport = await this.workflowReportService.save({
+            id: this.workflowReport.id,
+            status: 'test_run started',
+            started_at: new Date(),
+            dry_run: true
+        })
         const start = new Date();
         const result: DeepPartial<ImportWorkflowTestResult> = {
             meta: {
@@ -455,7 +471,13 @@ export class JSONataImportService extends AbstractImportService {
         this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = await this.reportService.createReport('Worfklow_Import', this.name, by_user);
+        this.workflowReport = await this.workflowReportService.save({
+            id: this.workflowReport.id,
+            status: 'started',
+            started_at: new Date(),
+            dry_run: dryRun,
+            by_user
+        });
 
         this.file = file;
 
@@ -471,14 +493,15 @@ export class JSONataImportService extends AbstractImportService {
             jsonData = XLSX.utils.sheet_to_json(worksheet);
         } else if (this.importDefinition.strategy.format === 'csv') {
             await Papa.parse(this.file.buffer.toString(), {
-                        encoding: this.importDefinition.strategy.encoding,
-                        header: this.importDefinition.strategy.skip_first_line,
-                        quoteChar: this.importDefinition.strategy.quote_char,
-                        delimiter: this.importDefinition.strategy.delimiter,
-                        skipEmptyLines: true,
-                        complete: async (result, _file) => {
-                            jsonData = result.data;
-                        }});
+                encoding: this.importDefinition.strategy.encoding,
+                header: this.importDefinition.strategy.skip_first_line,
+                quoteChar: this.importDefinition.strategy.quote_char,
+                delimiter: this.importDefinition.strategy.delimiter,
+                skipEmptyLines: true,
+                complete: async (result, _file) => {
+                    jsonData = result.data;
+                }
+            });
         } else throw new NotImplementedException();
         let data = [];
         try {
@@ -487,29 +510,29 @@ export class JSONataImportService extends AbstractImportService {
             throw new InternalServerErrorException(err, "JSONata mapping could not be applied")
         }
         this.numberOfPublications = data.length;
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
-        this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `${this.numberOfPublications} elements found` })
 
         try {
             if (!data) return;
             for (const pub of data) {
                 const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                 if (!flag) {
-                    const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                    const pubNew = await this.mapNew(pub).catch(e =>
+                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` }));
                     if (pubNew) {
                         this.newPublications.push(pubNew);
-                        this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
+                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
                     }
                 } else if (update) {
                     const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                     if (orig.locked) continue;
                     const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                        this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error updating publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
                         return null;
                     })
                     if (pubUpd?.pub) {
                         this.publicationsUpdate.push(pubUpd.pub);
-                        this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `Publication updated (${pubUpd.fields.join(',')})` })
                     }
                 }
                 // Update Progress Value
@@ -518,23 +541,24 @@ export class JSONataImportService extends AbstractImportService {
             }
             //finalize
             this.progress = 0;
-            this.reportService.finish(this.report, {
-                status: 'Successfull import on ' + new Date(),
+            this.workflowReportService.finish(this.workflowReport.id, {
+                status: 'Successfull import',
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length
             })
-            this.status_text = 'Successfull import on ' + new Date();
+
         } catch (err) {
             this.progress = 0;
             this.status_text = 'Error while importing on ' + new Date();
             console.log(err.stack);
-            this.reportService.finish(this.report, {
-                status: 'Error while importing on ' + new Date(),
+            this.workflowReportService.finish(this.workflowReport.id, {
+                status: 'Error while importing',
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length
             })
         }
     }
+
 
     /**
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB

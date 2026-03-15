@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkflowReportItemLevel } from '../../../output-interfaces/Workflow';
@@ -34,6 +34,11 @@ export class WorkflowReportService {
             summary: options.summary,
             dry_run: options.dry_run ?? false,
         });
+    }
+
+    async save(options: WorkflowReport): Promise<WorkflowReport> {
+        if (!options.id) throw new BadRequestException('create report first before saving it');
+        return this.workflowReportRepository.save(options);
     }
 
     async write(workflowReportId: number, content: WorkflowReportItem): Promise<WorkflowReportItem> {
