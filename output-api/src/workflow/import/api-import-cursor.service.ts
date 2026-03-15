@@ -17,6 +17,7 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { ContractService } from '../../contract/contract.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { RoleService } from '../../publication/relations/role.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @Injectable()
 export abstract class ApiImportCursorService extends AbstractImportService {
@@ -25,8 +26,8 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
-        protected invoiceService: InvoiceService, protected configService: AppConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected invoiceService: InvoiceService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     private newPublications: Publication[] = [];

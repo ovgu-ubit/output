@@ -20,6 +20,7 @@ import { ApiImportOffsetService } from './api-import-offset.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
 import { ImportService } from './abstract-import';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @ImportService({path: 'bibliography_md'})
 @Injectable()
@@ -29,8 +30,8 @@ export class BibliographyImportService extends ApiImportOffsetService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
     }
 
     protected updateMapping: UpdateMapping = {

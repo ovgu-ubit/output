@@ -20,6 +20,7 @@ import { LanguageService } from '../../publication/lookups/language.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @EnrichService({path: 'unpaywall'})
 @Injectable()
@@ -29,9 +30,9 @@ export class UnpaywallEnrichService extends ApiEnrichDOIService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService,
-        protected roleService: RoleService, protected configService: AppConfigService, protected http: HttpService,
+        protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService,
     ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
 
     }
 

@@ -23,6 +23,8 @@ import { Invoice } from '../../invoice/Invoice.entity';
 import { Role } from '../../publication/relations/Role.entity';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { WorkflowReport } from '../WorkflowReport.entity';
+import { WorkflowReportService } from '../workflow-report.service';
 
 export function ImportService(meta: { path: string }): ClassDecorator {
     return (target) => Reflect.defineMetadata("import_service", meta, target);
@@ -42,11 +44,12 @@ export abstract class AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
-        protected invoiceService: InvoiceService, protected configService: AppConfigService) { }
+        protected invoiceService: InvoiceService, protected configService: AppConfigService, protected workflowReportService:WorkflowReportService) { }
 
     protected progress = 0;
     protected status_text = 'initialized';
     protected report: string;
+    protected workflowReport: WorkflowReport;
     protected dryRun = false;
 
     /**
