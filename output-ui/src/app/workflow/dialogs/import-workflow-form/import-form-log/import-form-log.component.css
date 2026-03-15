@@ -24,6 +24,14 @@
   padding: 1rem;
 }
 
+.section-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
 .summary-card pre,
 .change-row pre {
   margin: 0.5rem 0 0;

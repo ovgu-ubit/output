@@ -15,6 +15,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 export class ImportFormLogComponent implements OnInit {
   workflow: ImportWorkflow | null = null;
   report: WorkflowReport | null = null;
+  hideInfoItems = false;
 
   readonly workflowReportItemLevel = WorkflowReportItemLevel;
 
@@ -54,5 +55,11 @@ export class ImportFormLogComponent implements OnInit {
       default:
         return 'log-info';
     }
+  }
+
+  get filteredItems() {
+    if (!this.report?.items) return [];
+    if (!this.hideInfoItems) return this.report.items;
+    return this.report.items.filter((item) => item.level !== WorkflowReportItemLevel.INFO);
   }
 }

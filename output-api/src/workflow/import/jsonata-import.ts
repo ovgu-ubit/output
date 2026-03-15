@@ -629,7 +629,7 @@ export class JSONataImportService extends AbstractImportService {
                             await this.workflowReportService.write(this.workflowReport.id, {
                                 level: WorkflowReportItemLevel.WARNING,
                                 timestamp: new Date(),
-                                message: 'Publication without institution authors is not imported ' + this.getAuthors(pub)
+                                message: 'Publication without institution authors is not imported ' + `title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
                             });
                             continue;
                         }
@@ -637,7 +637,7 @@ export class JSONataImportService extends AbstractImportService {
                             await this.workflowReportService.write(this.workflowReport.id, {
                                 level: WorkflowReportItemLevel.WARNING,
                                 timestamp: new Date(),
-                                message: 'Publication without title or doi is not imported ' + this.getAuthors(pub)
+                                message: 'Publication without title or doi is not imported ' + `title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
                             });
                             continue;
                         }
