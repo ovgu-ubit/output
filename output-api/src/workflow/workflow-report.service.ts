@@ -25,7 +25,7 @@ export class WorkflowReportService {
 
     async createReport(options: WorkflowReport): Promise<WorkflowReport> {
         return this.workflowReportRepository.save({
-            workflowId: options.workflow?.id,
+            workflow: options.workflow,
             params: options.params ?? {},
             by_user: options.by_user,
             status: options.status ?? 'started',
@@ -42,10 +42,10 @@ export class WorkflowReportService {
     }
 
     async write(workflowReportId: number, content: WorkflowReportItem): Promise<WorkflowReportItem> {
-        await this.ensureReportExists(workflowReportId);
-
+        const workflowReport = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+        if (!workflowReport) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
         return this.workflowReportItemRepository.save({
-            workflowReportId,
+            workflowReport,
             timestamp: content.timestamp ?? new Date(),
             level: this.normalizeLevel(content.level),
             code: content.code,
