@@ -439,7 +439,7 @@ export abstract class AbstractImportService {
         }
         if (!this.dryRun) {
             //save publication object and assign authorships
-            const pub_ent = (await this.publicationService.save([obj]))[0];
+            const pub_ent = (await this.publicationService.save([obj], { workflowReport: this.workflowReport })) [0];
             for (const aut of authors_entities) {
                 await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
             }
@@ -987,7 +987,7 @@ export abstract class AbstractImportService {
         let pub_ent: Publication;
         if (fields.length > 0) {
             if (!this.dryRun) {
-                pub_ent = (await this.publicationService.save([orig]))[0];
+                pub_ent = (await this.publicationService.save([orig], { workflowReport: this.workflowReport }))[0];
                 return { pub: pub_ent, fields };
             } else return { pub: orig, fields }
         } else return { pub: orig, fields }

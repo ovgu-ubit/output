@@ -120,16 +120,16 @@ export class PublicationController {
             }
         }
     })
-    async save(@Body() body: Publication) {
-        return this.publicationService.save([body]);
+    async save(@Body() body: Publication, @Req() request: Request) {
+        return this.publicationService.save([body], { by_user: request['user']?.['username'] });
     }
 
     @Put()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async update(@Body() body: Publication[] | Publication) {
-        if (Array.isArray(body)) return this.publicationService.update(body);
-        else return this.publicationService.update([body]);
+    async update(@Body() body: Publication[] | Publication, @Req() request: Request) {
+        if (Array.isArray(body)) return this.publicationService.update(body, { by_user: request['user']?.['username'] });
+        else return this.publicationService.update([body], { by_user: request['user']?.['username'] });
     }
 
     @Delete()

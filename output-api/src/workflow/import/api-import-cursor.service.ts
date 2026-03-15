@@ -82,9 +82,9 @@ export abstract class ApiImportCursorService extends AbstractImportService {
             console.log(this.newPublications.length + ' pubs import to DB');
             console.log(this.publicationsUpdate.length + ' pubs update to DB');
             //insert new objects
-            if (!this.dryRun) await this.publicationService.save(this.newPublications);
+            if (!this.dryRun) await this.publicationService.save(this.newPublications, { workflowReport: this.workflowReport });
             //update objects
-            if (!this.dryRun) await this.publicationService.save(this.publicationsUpdate);
+            if (!this.dryRun) await this.publicationService.save(this.publicationsUpdate, { workflowReport: this.workflowReport });
             //finalize
             this.progress = 0;
             this.status_text = 'Successfull import on ' + new Date();

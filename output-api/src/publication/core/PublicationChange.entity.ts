@@ -1,7 +1,7 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { PublicationChange as IPublicationChange } from "../../../output-interfaces/Workflow";
-import { Publication } from "../publication/core/Publication.entity";
-import { WorkflowReport } from "./WorkflowReport.entity";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { PublicationChange as IPublicationChange } from "../../../../output-interfaces/Workflow";
+import { WorkflowReport } from "../../workflow/WorkflowReport.entity";
+import { Publication } from "./Publication.entity";
 
 @Entity("publication_change")
 export class PublicationChange implements IPublicationChange {

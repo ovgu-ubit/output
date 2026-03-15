@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
 import { Author } from '../../author/Author.entity';
 import { mergeEntities } from '../../common/merge';
 import { AppConfigService } from '../../config/app-config.service';
@@ -16,6 +17,13 @@ import { Publication } from './Publication.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
+import { PublicationChangeService } from './publication-change.service';
+
+interface SavePublicationOptions {
+    workflowReport?: IWorkflowReport;
+    by_user?: string;
+    dry_change?: boolean;
+}
 
 @Injectable()
 export class PublicationService {
@@ -44,13 +52,39 @@ export class PublicationService {
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
         private configService: AppConfigService, 
-        private instService: InstituteService) { }
+        private instService: InstituteService,
+        private publicationChangeService: PublicationChangeService) { }
 
-    public save(pub: Publication[]) {
-        return this.pubRepository.save(pub).catch(err => {
+    public async save(pub: Publication[], options?: SavePublicationOptions) {
+        const shouldLogChanges = this.shouldCreatePublicationChange(options);
+        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub) : new Map<number, Publication>();
+
+        const saved = await this.pubRepository.save(pub).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
+
+        if (shouldLogChanges) {
+            for (let i = 0; i < saved.length; i++) {
+                const savedPub = saved[i];
+                if (this.isLockOnlyPayload(pub[i])) continue;
+                const before = savedPub.id ? beforeMap.get(savedPub.id) : null;
+                await this.publicationChangeService.createPublicationChange({
+                    publication: { id: savedPub.id },
+                    workflowReport: options?.workflowReport?.id ? { id: options.workflowReport.id } : null,
+                    timestamp: new Date(),
+                    by_user: options?.by_user ?? options?.workflowReport?.by_user,
+                    dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
+                    patch_data: {
+                        action: before ? 'update' : 'create',
+                        before: before ? this.buildPublicationChangeSnapshot(before) : null,
+                        after: this.buildPublicationChangeSnapshot(savedPub),
+                    }
+                } as any);
+            }
+        }
+
+        return saved;
     }
 
     public get(options?: FindManyOptions) {
@@ -214,7 +248,7 @@ export class PublicationService {
         return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
-    public async update(pubs: Publication[]) {
+    public async update(pubs: Publication[], options?: SavePublicationOptions) {
         //return this.pubRepository.save(pubs);
         let i = 0;
         for (const pub of pubs) {
@@ -253,7 +287,22 @@ export class PublicationService {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
             }
-            if (await this.pubRepository.save(pub)) i++;
+            const savedPub = await this.pubRepository.save(pub);
+            if (savedPub) i++;
+            if (savedPub && this.shouldCreatePublicationChange(options) && !this.isLockOnlyPayload(pub)) {
+                await this.publicationChangeService.createPublicationChange({
+                    publication: { id: savedPub.id },
+                    workflowReport: options?.workflowReport?.id ? { id: options.workflowReport.id } : null,
+                    timestamp: new Date(),
+                    by_user: options?.by_user ?? options?.workflowReport?.by_user,
+                    dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
+                    patch_data: {
+                        action: 'update',
+                        before: orig ? this.buildPublicationChangeSnapshot(orig) : null,
+                        after: this.buildPublicationChangeSnapshot(savedPub),
+                    }
+                } as any);
+            }
         }
         return i;
     }
@@ -753,6 +802,118 @@ export class PublicationService {
                 where = "publication." + key + " IN " + value;
         }
         return where;
+    }
+
+    private async loadPublicationsForChangeLog(pubs: Publication[]): Promise<Map<number, Publication>> {
+        const ids = pubs.map((publication) => publication.id).filter((id): id is number => !!id);
+        if (ids.length === 0) return new Map<number, Publication>();
+
+        const existing = await this.pubRepository.find({
+            where: { id: In(ids) },
+            relations: {
+                pub_type: true,
+                oa_category: true,
+                greater_entity: true,
+                publisher: true,
+                contract: true,
+                funders: true,
+                invoices: {
+                    cost_items: {
+                        cost_type: true
+                    },
+                    cost_center: true
+                },
+                language: true,
+                identifiers: true,
+                supplements: true
+            },
+            withDeleted: true
+        });
+
+        return new Map(existing.map((publication) => [publication.id, publication]));
+    }
+
+    private buildPublicationChangeSnapshot(publication: Publication) {
+        return {
+            id: publication.id,
+            authors: publication.authors,
+            title: publication.title,
+            doi: publication.doi,
+            pub_date: this.serializeDate(publication.pub_date),
+            pub_date_submitted: this.serializeDate(publication.pub_date_submitted),
+            pub_date_accepted: this.serializeDate(publication.pub_date_accepted),
+            pub_date_print: this.serializeDate(publication.pub_date_print),
+            link: publication.link,
+            dataSource: publication.dataSource,
+            language: publication.language ? { id: publication.language.id, label: publication.language['label'] } : null,
+            add_info: publication.add_info,
+            status: publication.status,
+            is_oa: publication.is_oa,
+            oa_status: publication.oa_status,
+            is_journal_oa: publication.is_journal_oa,
+            best_oa_host: publication.best_oa_host,
+            best_oa_license: publication.best_oa_license,
+            abstract: publication.abstract,
+            volume: publication.volume,
+            issue: publication.issue,
+            first_page: publication.first_page,
+            last_page: publication.last_page,
+            publisher_location: publication.publisher_location,
+            edition: publication.edition,
+            article_number: publication.article_number,
+            page_count: publication.page_count,
+            peer_reviewed: publication.peer_reviewed,
+            cost_approach: publication.cost_approach,
+            cost_approach_currency: publication.cost_approach_currency,
+            not_budget_relevant: publication.not_budget_relevant,
+            grant_number: publication.grant_number,
+            contract_year: publication.contract_year,
+            pub_type: publication.pub_type ? { id: publication.pub_type.id, label: publication.pub_type['label'] } : null,
+            oa_category: publication.oa_category ? { id: publication.oa_category.id, label: publication.oa_category['label'] } : null,
+            greater_entity: publication.greater_entity ? { id: publication.greater_entity.id, label: publication.greater_entity['label'] } : null,
+            publisher: publication.publisher ? { id: publication.publisher.id, label: publication.publisher['label'] } : null,
+            contract: publication.contract ? { id: publication.contract.id, label: publication.contract['label'] } : null,
+            funders: publication.funders?.map((funder) => ({ id: funder.id, label: funder.label, doi: funder.doi })) ?? [],
+            invoices: publication.invoices?.map((invoice) => ({
+                id: invoice.id,
+                number: invoice.number,
+                date: this.serializeDate(invoice.date),
+                booking_date: this.serializeDate(invoice.booking_date),
+                booking_amount: invoice.booking_amount,
+                cost_center: invoice.cost_center ? { id: invoice.cost_center.id, label: invoice.cost_center['label'] } : null,
+                cost_items: invoice.cost_items?.map((costItem) => ({
+                    id: costItem.id,
+                    euro_value: costItem.euro_value,
+                    orig_value: costItem.orig_value,
+                    orig_currency: costItem.orig_currency,
+                    vat: costItem.vat,
+                    cost_type: costItem.cost_type ? { id: costItem.cost_type.id, label: costItem.cost_type['label'] } : null
+                })) ?? []
+            })) ?? [],
+            identifiers: publication.identifiers?.map((identifier) => ({
+                id: identifier.id,
+                type: identifier.type,
+                value: identifier.value
+            })) ?? [],
+            supplements: publication.supplements?.map((supplement) => ({
+                id: supplement.id,
+                link: supplement.link
+            })) ?? []
+        };
+    }
+
+    private serializeDate(date?: Date) {
+        return date ? new Date(date).toISOString() : null;
+    }
+
+    private shouldCreatePublicationChange(options?: SavePublicationOptions): boolean {
+        return !!options?.workflowReport?.id || !!options?.by_user;
+    }
+
+    private isLockOnlyPayload(publication?: Publication): boolean {
+        if (!publication) return false;
+        const keys = Object.keys(publication).filter((key) => publication[key] !== undefined);
+        return keys.length > 0 && keys.every((key) => key === 'id' || key === 'locked_at');
     }
 
 }

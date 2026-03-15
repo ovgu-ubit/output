@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkflowReportItemLevel } from '../../../output-interfaces/Workflow';
-import { PublicationChange } from './PublicationChange.entity';
+import { PublicationChangeService } from '../publication/core/publication-change.service';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
 
@@ -20,7 +20,7 @@ export class WorkflowReportService {
     constructor(
         @InjectRepository(WorkflowReport) private workflowReportRepository: Repository<WorkflowReport>,
         @InjectRepository(WorkflowReportItem) private workflowReportItemRepository: Repository<WorkflowReportItem>,
-        @InjectRepository(PublicationChange) private publicationChangeRepository: Repository<PublicationChange>,
+        private publicationChangeService: PublicationChangeService,
     ) { }
 
     async createReport(options: WorkflowReport): Promise<WorkflowReport> {
@@ -86,12 +86,7 @@ export class WorkflowReportService {
             .orderBy('item.timestamp', 'ASC')
             .addOrderBy('item.id', 'ASC')
             .getMany();
-        report.publication_changes = await this.publicationChangeRepository
-            .createQueryBuilder('publicationChange')
-            .where('publicationChange.workflowReportId = :workflowReportId', { workflowReportId })
-            .orderBy('publicationChange.timestamp', 'ASC')
-            .addOrderBy('publicationChange.id', 'ASC')
-            .getMany();
+        report.publication_changes = await this.publicationChangeService.getPublicationChangesForReport(workflowReportId);
 
         return report;
     }
@@ -121,39 +116,6 @@ export class WorkflowReportService {
     async deleteReport(workflowReportId: number) {
         await this.ensureReportExists(workflowReportId);
         return this.workflowReportRepository.delete({ id: workflowReportId });
-    }
-
-    async createPublicationChange(options: PublicationChange): Promise<PublicationChange> {
-        if (options.workflowReport?.id) {
-            await this.ensureReportExists(options.workflowReport?.id);
-        }
-
-        return this.publicationChangeRepository.save({
-            publicationId: options.publication?.id,
-            workflowReportId: options.workflowReport?.id ?? null,
-            timestamp: options.timestamp ?? new Date(),
-            by_user: options.by_user,
-            patch_data: options.patch_data,
-            dry_change: options.dry_change ?? false,
-        });
-    }
-
-    async getPublicationChangesForPublication(publicationId: number): Promise<PublicationChange[]> {
-        return this.publicationChangeRepository
-            .createQueryBuilder('publicationChange')
-            .where('publicationChange.publicationId = :publicationId', { publicationId })
-            .orderBy('publicationChange.timestamp', 'DESC')
-            .addOrderBy('publicationChange.id', 'DESC')
-            .getMany();
-    }
-
-    async getPublicationChangesForReport(workflowReportId: number): Promise<PublicationChange[]> {
-        return this.publicationChangeRepository
-            .createQueryBuilder('publicationChange')
-            .where('publicationChange.workflowReportId = :workflowReportId', { workflowReportId })
-            .orderBy('publicationChange.timestamp', 'ASC')
-            .addOrderBy('publicationChange.id', 'ASC')
-            .getMany();
     }
 
     private async ensureReportExists(workflowReportId: number) {
