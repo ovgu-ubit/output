@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import { WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { Publication } from '../../publication/core/Publication.entity';
@@ -82,6 +83,56 @@ export abstract class AbstractImportService {
         peer_reviewed: UpdateOptions.REPLACE_IF_EMPTY,
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
+
+    protected async writeReport(content: {
+        type: string,
+        publication_id?: number,
+        publication_doi?: string,
+        publication_title?: string,
+        timestamp: Date,
+        origin: string,
+        text: string
+    }) {
+        if (this.report) {
+            this.reportService.write(this.report, content);
+        }
+        if (this.workflowReport?.id) {
+            await this.workflowReportService.write(this.workflowReport.id, {
+                timestamp: content.timestamp,
+                level: this.toWorkflowReportLevel(content.type),
+                code: content.origin,
+                message: this.toWorkflowReportMessage(content)
+            });
+        }
+    }
+
+    private toWorkflowReportLevel(type: string): WorkflowReportItemLevel {
+        switch ((type ?? '').toLowerCase()) {
+            case 'error':
+                return WorkflowReportItemLevel.ERROR;
+            case 'warning':
+                return WorkflowReportItemLevel.WARNING;
+            case 'debug':
+                return WorkflowReportItemLevel.DEBUG;
+            case 'info':
+            default:
+                return WorkflowReportItemLevel.INFO;
+        }
+    }
+
+    private toWorkflowReportMessage(content: {
+        publication_id?: number,
+        publication_doi?: string,
+        publication_title?: string,
+        text: string
+    }): string {
+        const suffix = content.publication_id
+            ? ` - ID ${content.publication_id}`
+            : (content.publication_doi || content.publication_title)
+                ? ` - DOI: ${content.publication_doi} - Title: ${content.publication_title}`
+                : '';
+        return `${content.text}${suffix}`;
+    }
 
     public getUpdateMapping() {
         return this.updateMapping;
@@ -229,7 +280,7 @@ export abstract class AbstractImportService {
      */
     async mapNew(item) {
         if (!(await this.importTest(item))) {
-            this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
+            await this.writeReport({ type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
             return null;
         }
         let remark = '';
@@ -238,8 +289,8 @@ export abstract class AbstractImportService {
         const authors_inst = this.getInstAuthors(item);
         if (authors_inst) {
             for (const aut of authors_inst) {
-                const res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name?.trim(), aut.first_name?.trim(), aut.orcid?.trim(), aut.affiliation?.trim(), this.dryRun).catch(e => {
-                    this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
+                const res: { author: Author, error: AppError } = await this.authorService.findOrSave(aut.last_name?.trim(), aut.first_name?.trim(), aut.orcid?.trim(), aut.affiliation?.trim(), this.dryRun).catch(async e => {
+                    await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                     return { author: null, error: e }
                 });
                 //identify an institution from the affiliation string
@@ -253,16 +304,16 @@ export abstract class AbstractImportService {
         //identify greater entity
         const ge = this.getGreaterEntity(item);
         let ge_ent = null;
-        if (ge) ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(e => {
-            this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
+        if (ge) ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(async e => {
+            await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'GreaterEntityService', text: e['text'] ? e['text'] + ', must be assigned manually' : 'Unknown error' })
         })
         //identify funders
         const funders = this.getFunder(item);
         let funder_ents: Funder[] = []
         if (funders && Array.isArray(funder_ents)) {
             for (const funder of funders) {
-                const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
-                    this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
+                const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(async e => {
+                    await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'FunderService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
                 });
                 if (funder_ent) funder_ents.push(funder_ent);
             }
@@ -275,8 +326,8 @@ export abstract class AbstractImportService {
         let publisher: Publisher;
         let publisher_ent;
         if (publisher_obj) {
-            publisher_ent = await this.publisherService.findOrSave(publisher_obj, this.dryRun).catch(e => {
-                this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
+            publisher_ent = await this.publisherService.findOrSave(publisher_obj, this.dryRun).catch(async e => {
+                await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'PublisherService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
         }
         if (!publisher_ent && this.getDOI(item)) publisher_ent = await this.publisherService.findByDOI(this.getDOI(item))
@@ -288,12 +339,12 @@ export abstract class AbstractImportService {
         let oa_status;
         let is_journal_oa;
         let best_oa_host;
-        if (typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun)).catch(e => {
-                this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'OACategoryService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
+        if (typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun)).catch(async e => {
+                await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'OACategoryService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
         else {
-            oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun)).catch(e => {
-                this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'OACategoryService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
+            oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun)).catch(async e => {
+                await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'OACategoryService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
             is_oa = oa["is_oa"];
             oa_status = oa["oa_status"];
@@ -368,7 +419,7 @@ export abstract class AbstractImportService {
         };
         //process publication date in case it is a complex object, dates are assigned to the publication
         if (!pub_date) {
-            this.reportService.write(this.report, { type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'pub_date', text: 'Publication not imported since no pub_date was available' })
+            await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'pub_date', text: 'Publication not imported since no pub_date was available' })
             return null;
         }
         if (pub_date instanceof Date) obj.pub_date = pub_date ? pub_date : undefined;
@@ -661,8 +712,8 @@ export abstract class AbstractImportService {
 
         if (!orig.locked_biblio) if (this.updateMapping.greater_entity !== UpdateOptions.IGNORE && !(this.updateMapping.greater_entity === UpdateOptions.REPLACE_IF_EMPTY && orig.greater_entity !== null)) {
             const ge = this.getGreaterEntity(element);
-            const ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(e => {
-                this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text: `: ${e['text']} for publication ${orig.id}, must be assigned manually` })
+            const ge_ent = await this.geService.findOrSave(ge, this.dryRun).catch(async e => {
+                await this.writeReport({ type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'GreaterEntityService', text: `: ${e['text']} for publication ${orig.id}, must be assigned manually` })
             })
             if (ge_ent) {
                 orig.greater_entity = ge_ent; //replace if not ignore or not empty (append is also replace if empty)
@@ -675,8 +726,8 @@ export abstract class AbstractImportService {
             let funder_ents: Funder[] = []
             if (funders) {
                 for (const funder of funders) {
-                    const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(e => {
-                        this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text: `${e['text']} for publication ${orig.id}, must be checked manually` })
+                    const funder_ent = await this.funderService.findOrSave(funder, this.dryRun).catch(async e => {
+                        await this.writeReport({ type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'FunderService', text: `${e['text']} for publication ${orig.id}, must be checked manually` })
                     });
                     if (funder_ent) funder_ents.push(funder_ent);
                 }
@@ -698,8 +749,8 @@ export abstract class AbstractImportService {
                 const authors_inst = this.getInstAuthors(element);
                 if (authors_inst) {
                     for (const aut of authors_inst) {
-                        const aut_ent = await this.authorService.findOrSave(aut.last_name, aut.first_name, aut.orcid, aut.affiliation, this.dryRun).catch(e => {
-                            this.reportService.write(this.report, { type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
+                        const aut_ent = await this.authorService.findOrSave(aut.last_name, aut.first_name, aut.orcid, aut.affiliation, this.dryRun).catch(async e => {
+                            await this.writeReport({ type: 'warning', publication_id: orig.id, timestamp: new Date(), origin: 'AuthorService', text: e['text'] ? e['text'] + (aut.corresponding ? ' (corr.)' : '') : e + (aut.corresponding ? ' (corr.)' : '') })
                         });
                         const inst = aut.affiliation?.trim() ? await firstValueFrom(this.instService.findOrSave(aut.affiliation?.trim(), this.dryRun)) : null;
                         if (aut_ent) authors_entities.push({ author: aut_ent.author, corresponding: aut.corresponding, affiliation: aut.affiliation?.trim(), institute: inst });
