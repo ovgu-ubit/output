@@ -12,6 +12,7 @@ import { PublicationSupplement } from './PublicationSupplement.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
+import { PublicationChangeService } from './publication-change.service';
 describe('PublicationService combine', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
@@ -62,6 +63,7 @@ describe('PublicationService combine', () => {
                 { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
+                { provide: PublicationChangeService, useValue: { createPublicationChange: jest.fn() } },
             ],
         }).compile();
 
