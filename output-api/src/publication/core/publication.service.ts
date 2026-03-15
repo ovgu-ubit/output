@@ -69,6 +69,8 @@ export class PublicationService {
                 const savedPub = saved[i];
                 if (this.isLockOnlyPayload(pub[i])) continue;
                 const before = savedPub.id ? beforeMap.get(savedPub.id) : null;
+                const patch = this.buildPublicationChangePatch(before, savedPub);
+                if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
                     workflowReport: options?.workflowReport?.id ? { id: options.workflowReport.id } : null,
@@ -77,8 +79,8 @@ export class PublicationService {
                     dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
                     patch_data: {
                         action: before ? 'update' : 'create',
-                        before: before ? this.buildPublicationChangeSnapshot(before) : null,
-                        after: this.buildPublicationChangeSnapshot(savedPub),
+                        before: patch.before,
+                        after: patch.after,
                     }
                 } as any);
             }
@@ -290,6 +292,8 @@ export class PublicationService {
             const savedPub = await this.pubRepository.save(pub);
             if (savedPub) i++;
             if (savedPub && this.shouldCreatePublicationChange(options) && !this.isLockOnlyPayload(pub)) {
+                const patch = this.buildPublicationChangePatch(orig, savedPub);
+                if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
                     workflowReport: options?.workflowReport?.id ? { id: options.workflowReport.id } : null,
@@ -298,8 +302,8 @@ export class PublicationService {
                     dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
                     patch_data: {
                         action: 'update',
-                        before: orig ? this.buildPublicationChangeSnapshot(orig) : null,
-                        after: this.buildPublicationChangeSnapshot(savedPub),
+                        before: patch.before,
+                        after: patch.after,
                     }
                 } as any);
             }
@@ -833,9 +837,39 @@ export class PublicationService {
         return new Map(existing.map((publication) => [publication.id, publication]));
     }
 
+    private buildPublicationChangePatch(before?: Publication | null, after?: Publication | null) {
+        const beforeSnapshot = before ? this.buildPublicationChangeSnapshot(before) : null;
+        const afterSnapshot = after ? this.buildPublicationChangeSnapshot(after) : null;
+        const beforePatch = {};
+        const afterPatch = {};
+
+        if (!beforeSnapshot && !afterSnapshot) return null;
+
+        const keys = beforeSnapshot
+            ? Array.from(new Set([...Object.keys(beforeSnapshot), ...Object.keys(afterSnapshot ?? {})]))
+            : Object.keys(afterSnapshot ?? {}).filter((key) => this.hasPublicationChangeValue(afterSnapshot?.[key]));
+
+        for (const key of keys) {
+            const beforeValue = beforeSnapshot?.[key];
+            const afterValue = afterSnapshot?.[key];
+
+            if (!beforeSnapshot && !this.hasPublicationChangeValue(afterValue)) continue;
+            if (this.arePublicationChangeValuesEqual(beforeValue, afterValue)) continue;
+
+            if (beforeSnapshot) beforePatch[key] = beforeValue ?? null;
+            if (afterSnapshot) afterPatch[key] = afterValue ?? null;
+        }
+
+        if (Object.keys(beforePatch).length === 0 && Object.keys(afterPatch).length === 0) return null;
+
+        return {
+            before: Object.keys(beforePatch).length > 0 ? beforePatch : null,
+            after: Object.keys(afterPatch).length > 0 ? afterPatch : null,
+        };
+    }
+
     private buildPublicationChangeSnapshot(publication: Publication) {
         return {
-            id: publication.id,
             authors: publication.authors,
             title: publication.title,
             doi: publication.doi,
@@ -900,6 +934,18 @@ export class PublicationService {
                 link: supplement.link
             })) ?? []
         };
+    }
+
+    private arePublicationChangeValuesEqual(before: unknown, after: unknown): boolean {
+        return JSON.stringify(before) === JSON.stringify(after);
+    }
+
+    private hasPublicationChangeValue(value: unknown): boolean {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'string') return value.length > 0;
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'object') return Object.keys(value).length > 0;
+        return true;
     }
 
     private serializeDate(date?: Date) {
