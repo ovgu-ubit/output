@@ -570,7 +570,13 @@ export class JSONataImportService extends AbstractImportService {
             throw new BadRequestException('Import cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = await this.reportService.createReport('Worfklow_Import', this.name, by_user);
+        this.workflowReport = await this.workflowReportService.save({
+            id: this.workflowReport.id,
+            status: 'started',
+            started_at: new Date(),
+            dry_run: dryRun,
+            by_user
+        });
 
         this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
@@ -582,16 +588,19 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
         await firstValueFrom(this.retrieveCountRequest().pipe(map(async resp => {
             this.numberOfPublications = await this.getNumber(resp);
-            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with with mapping ${this.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
-            this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+            await this.workflowReportService.write(this.workflowReport.id, {
+                level: WorkflowReportItemLevel.INFO,
+                timestamp: new Date(),
+                message: `${this.numberOfPublications} elements found`
+            });
             if (this.numberOfPublications <= 0) {
                 //finalize
                 this.progress = 0;
-                this.reportService.finish(this.report, {
-                    status: 'Nothing to import on' + new Date(),
+                await this.workflowReportService.finish(this.workflowReport.id, {
+                    status: 'Nothing to import',
                     count_import: 0,
                     count_update: 0
-                })
+                });
                 this.status_text = 'Nothing to import on ' + new Date();
             }
 
@@ -617,39 +626,71 @@ export class JSONataImportService extends AbstractImportService {
                     const parsedData = await this.getData(data);
                     for (const pub of parsedData.values()) {
                         if (this.importDefinition.strategy.only_import_if_authors_inst && (!pub.authors_inst || pub.authors_inst.length == 0)) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without institution authors is not imported ' + this.getAuthors(pub) })
+                            await this.workflowReportService.write(this.workflowReport.id, {
+                                level: WorkflowReportItemLevel.WARNING,
+                                timestamp: new Date(),
+                                message: 'Publication without institution authors is not imported ' + this.getAuthors(pub)
+                            });
                             continue;
                         }
                         if (!this.getDOI(pub) && !this.getTitle(pub)) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
+                            await this.workflowReportService.write(this.workflowReport.id, {
+                                level: WorkflowReportItemLevel.WARNING,
+                                timestamp: new Date(),
+                                message: 'Publication without title or doi is not imported ' + this.getAuthors(pub)
+                            });
                             continue;
                         }
                         if (this.newPublications.find(e => e.doi && e.doi === this.getDOI(pub)) || this.publicationsUpdate.find(e => e.doi && e.doi === this.getDOI(pub))) {
-                            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.' })
+                            await this.workflowReportService.write(this.workflowReport.id, {
+                                level: WorkflowReportItemLevel.WARNING,
+                                timestamp: new Date(),
+                                message: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.'
+                            });
                             continue;
                         }
                         const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                         if (!flag) {
-                            const pubNew = await this.mapNew(pub).catch(e => {
-                                this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message })
+                            const pubNew = await this.mapNew(pub).catch(async e => {
+                                await this.workflowReportService.write(this.workflowReport.id, {
+                                    level: WorkflowReportItemLevel.ERROR,
+                                    timestamp: new Date(),
+                                    message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}: ${e.stack ? e.stack : e.message}`
+                                });
                                 //console.log('Error while mapping publication ' + this.getDOI(pub) + ' with title ' + this.getTitle(pub) + ': ' + e.message + ' with stack ' + e.stack)
                             });
                             if (pubNew) {
                                 this.newPublications.push(pubNew);
-                                this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
+                                await this.workflowReportService.write(this.workflowReport.id, {
+                                    level: WorkflowReportItemLevel.INFO,
+                                    timestamp: new Date(),
+                                    message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
+                                });
                             } else {
-                                this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `Nothing imported` })
+                                await this.workflowReportService.write(this.workflowReport.id, {
+                                    level: WorkflowReportItemLevel.INFO,
+                                    timestamp: new Date(),
+                                    message: `Nothing imported for title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
+                                });
                             }
                         } else if (update) {
                             const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                             if (orig.locked || orig.delete_date) continue;
-                            const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                                this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                            const pubUpd = await this.mapUpdate(pub, orig).catch(async e => {
+                                await this.workflowReportService.write(this.workflowReport.id, {
+                                    level: WorkflowReportItemLevel.ERROR,
+                                    timestamp: new Date(),
+                                    message: `Error updating publication ${orig.id}: ${e.stack ? e.stack : e.message}`
+                                });
                                 return null;
-                            })
+                            });
                             if (pubUpd?.pub) {
                                 this.publicationsUpdate.push(pubUpd.pub);
-                                this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                                await this.workflowReportService.write(this.workflowReport.id, {
+                                    level: WorkflowReportItemLevel.INFO,
+                                    timestamp: new Date(),
+                                    message: `Publication ${orig.id} updated (${pubUpd.fields.join(',')})`
+                                });
                             }
                         }
                     }
@@ -657,17 +698,21 @@ export class JSONataImportService extends AbstractImportService {
                     this.processedPublications += parsedData.length;
                 } catch (e) {
                     this.numberOfPublications -= this.max_res;
-                    this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${e}` })
+                    await this.workflowReportService.write(this.workflowReport.id, {
+                        level: WorkflowReportItemLevel.ERROR,
+                        timestamp: new Date(),
+                        message: `Error while processing data chunk: ${e}`
+                    });
                 } finally {
                     if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
                     if (this.progress === 1) {
                         //finalize
                         this.progress = 0;
-                        this.reportService.finish(this.report, {
-                            status: 'Successfull import on ' + new Date(),
+                        await this.workflowReportService.finish(this.workflowReport.id, {
+                            status: 'Successfull import',
                             count_import: this.newPublications.length,
                             count_update: this.publicationsUpdate.length
-                        })
+                        });
                         this.status_text = 'Successfull import on ' + new Date();
                     }
                 }
@@ -675,11 +720,11 @@ export class JSONataImportService extends AbstractImportService {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
                 this.progress = 0;
-                this.reportService.finish(this.report, {
-                    status: 'Error while importing on ' + new Date(),
+                await this.workflowReportService.finish(this.workflowReport.id, {
+                    status: 'Error while importing',
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
-                })
+                });
             }
         });
     }
@@ -691,13 +736,23 @@ export class JSONataImportService extends AbstractImportService {
             throw new BadRequestException('Enrich cannot be run due to missing parameters.')
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
-        this.report = await this.reportService.createReport('Worfklow_Import', this.name, by_user);
+        this.workflowReport = await this.workflowReportService.save({
+            id: this.workflowReport.id,
+            status: 'started',
+            started_at: new Date(),
+            dry_run: dryRun,
+            by_user
+        });
 
         const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
             this.progress = 0;
             this.status_text = 'Nothing to enrich on ' + new Date();
-            this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: this.name, text: `Nothing to enrich` })
+            await this.workflowReportService.finish(this.workflowReport.id, {
+                status: 'Nothing to enrich',
+                count_import: 0,
+                count_update: 0
+            });
             return;
         }
 
@@ -725,30 +780,42 @@ export class JSONataImportService extends AbstractImportService {
 
                     const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                     if (!orig?.locked) {
-                        const pubUpd = await this.mapUpdate(item, orig).catch(e => {
-                            this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                        const pubUpd = await this.mapUpdate(item, orig).catch(async e => {
+                            await this.workflowReportService.write(this.workflowReport.id, {
+                                level: WorkflowReportItemLevel.ERROR,
+                                timestamp: new Date(),
+                                message: `Error updating publication ${orig?.id}: ${e.stack ? e.stack : e.message}`
+                            });
                             //console.log('Error while mapping update for publication ' + orig.id + ': ' + e.message)
                             return null;
                         });
                         if (pubUpd?.pub) {
                             this.publicationsUpdate.push(pubUpd.pub);
-                            this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                            await this.workflowReportService.write(this.workflowReport.id, {
+                                level: WorkflowReportItemLevel.INFO,
+                                timestamp: new Date(),
+                                message: `Publication ${orig.id} updated (${pubUpd.fields.join(',')})`
+                            });
                         }
                     }
                     this.processedPublications++;
                 } catch (e) {
                     this.numberOfPublications -= this.max_res;
-                    this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${e}` })
+                    await this.workflowReportService.write(this.workflowReport.id, {
+                        level: WorkflowReportItemLevel.ERROR,
+                        timestamp: new Date(),
+                        message: `Error while processing data chunk: ${e}`
+                    });
                 } finally {
                     if (this.progress !== 0) this.progress = (this.processedPublications + errors) / publications.length;
                     if (this.progress === 1) {
                         //finalize
                         this.progress = 0;
-                        this.reportService.finish(this.report, {
-                            status: 'Successfull enrich on ' + new Date(),
+                        await this.workflowReportService.finish(this.workflowReport.id, {
+                            status: 'Successfull enrich',
                             count_import: 0,
                             count_update: this.publicationsUpdate.length
-                        })
+                        });
                         this.status_text = 'Successfull enrich on ' + new Date();
                     }
                 }
@@ -756,11 +823,11 @@ export class JSONataImportService extends AbstractImportService {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
                 this.progress = 0;
-                this.reportService.finish(this.report, {
-                    status: 'Error while importing on ' + new Date(),
+                await this.workflowReportService.finish(this.workflowReport.id, {
+                    status: 'Error while enriching',
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
-                })
+                });
             }
         });
     }
