@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
-import { ImportWorkflow, ImportWorkflowTestResult, Workflow } from '../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportWorkflowTestResult, Workflow, WorkflowReport } from '../../../../output-interfaces/Workflow';
 import { concatMap, firstValueFrom, interval, Observable } from 'rxjs';
 import { UpdateMapping } from '../../../../output-interfaces/Config';
 
@@ -38,6 +38,15 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   }
   public test(id: number, pos = 1) {
     return this.http.get<ImportWorkflowTestResult>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/test?pos='+pos, { withCredentials: true });
+  }
+  public getWorkflowReports(id: number) {
+    return this.http.get<WorkflowReport[]>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/workflow-reports', { withCredentials: true });
+  }
+  public getWorkflowReport(reportId: number) {
+    return this.http.get<WorkflowReport>(this.runtimeConfigService.getValue("api") + 'workflow/workflow-report/' + reportId, { withCredentials: true });
+  }
+  public deleteWorkflowReport(reportId: number) {
+    return this.http.delete(this.runtimeConfigService.getValue("api") + 'workflow/workflow-report/' + reportId, { withCredentials: true });
   }
   public run(id: number, reporting_year: number, update: boolean, dryRun = false, file?: File) {
     let body;

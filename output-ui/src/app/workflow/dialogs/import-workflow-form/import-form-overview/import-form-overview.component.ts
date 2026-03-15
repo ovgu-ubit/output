@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
+import { ActivatedRoute, Router } from '@angular/router';
+import { filter, takeUntil } from 'rxjs';
+import { ImportWorkflow, WorkflowReport } from '../../../../../../../output-interfaces/Workflow';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportFormFacade } from '../import-form-facade.service';
-import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
-import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
-import { filter, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-import-form-overview',
@@ -13,37 +12,38 @@ import { filter, takeUntil } from 'rxjs';
   styleUrl: './import-form-overview.component.css',
 })
 export class ImportFormOverviewComponent implements OnInit {
-  workflowReportName = '';
-  entity: ImportWorkflow;
-  associatedReports: string[] = [];
+  entity: ImportWorkflow | null = null;
+  associatedReports: WorkflowReport[] = [];
 
-  constructor(private dialog: MatDialog, private facade: ImportFormFacade) { }
+  constructor(private facade: ImportFormFacade, private router: Router, private route: ActivatedRoute) { }
 
   ngOnInit() {
-    this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$)).subscribe((workflow) => {
-      if (!workflow) return;
+    this.facade.import$
+      .pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$))
+      .subscribe((workflow) => {
+        this.entity = workflow;
+        if (!workflow.id) {
+          this.associatedReports = [];
+          return;
+        }
 
-      this.workflowReportName = `${workflow.label}_v${workflow.version}`;
-      this.facade.getReports(this.workflowReportName).subscribe((reports) => {
+        this.facade.getReports(workflow.id).subscribe((reports) => {
+          this.associatedReports = reports;
+        });
+      });
+  }
+
+  openReport(reportId?: number) {
+    if (!reportId || !this.entity?.id) return;
+    this.router.navigate(['../logs', reportId], { relativeTo: this.route });
+  }
+
+  deleteReport(reportId?: number) {
+    if (!reportId || !this.entity?.id) return;
+    this.facade.deleteReport(reportId).subscribe(() => {
+      this.facade.getReports(this.entity!.id!).subscribe((reports) => {
         this.associatedReports = reports;
       });
-    });
-  }
-
-  requestReport(reportName: string) {
-    this.facade.requestReport(reportName).subscribe((data) => {
-      this.dialog.open(LogDialogComponent, {
-        data: {
-          data,
-          label: reportName,
-        },
-      });
-    });
-  }
-
-  deleteReport(reportName: string) {
-    this.facade.deleteReport(reportName).subscribe((data) => {
-      this.ngOnInit();
     });
   }
 }

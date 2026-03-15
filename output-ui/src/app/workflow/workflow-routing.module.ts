@@ -14,6 +14,8 @@ const routes: Routes = [
     children: [
       { path: 'overview', loadComponent: () => import('./dialogs/import-workflow-form/import-form-overview/import-form-overview.component').then(m => m.ImportFormOverviewComponent), 
     canActivate: [LoginGuard], data: { roles: ['admin'] } },
+      { path: 'logs/:reportId', loadComponent: () => import('./dialogs/import-workflow-form/import-form-log/import-form-log.component').then(m => m.ImportFormLogComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] } },
       { path: 'general', loadComponent: () => import('./dialogs/import-workflow-form/import-form-general/import-form-general.component').then(m => m.ImportFormGeneralComponent), 
     canActivate: [LoginGuard], data: { roles: ['admin'] } },
       { path: 'strategy', loadComponent: () => import('./dialogs/import-workflow-form/import-form-strategy/import-form-strategy.component').then(m => m.ImportFormStrategyComponent), 

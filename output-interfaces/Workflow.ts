@@ -29,6 +29,8 @@ export interface WorkflowReport {
     finished_at?: Date;
     summary?: unknown;
     dry_run?: boolean;
+    items?: WorkflowReportItem[];
+    publication_changes?: PublicationChange[];
 }
 
 export interface WorkflowReportItem {
