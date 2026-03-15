@@ -38,7 +38,13 @@
         <div class="log-section">
             <div class="section-header">
                 <h3>Log-Eintraege</h3>
-                <mat-checkbox [(ngModel)]="hideInfoItems">Info-Eintraege ausblenden</mat-checkbox>
+                <div class="filter-controls">
+                    <mat-form-field appearance="outline" class="filter-input">
+                        <mat-label>Textfilter</mat-label>
+                        <input matInput [(ngModel)]="messageFilter" placeholder="Nachricht durchsuchen">
+                    </mat-form-field>
+                    <mat-checkbox [(ngModel)]="hideInfoItems">Info-Eintraege ausblenden</mat-checkbox>
+                </div>
             </div>
             @if (!report.items || report.items.length === 0) {
             <p>Keine Log-Eintraege vorhanden.</p>

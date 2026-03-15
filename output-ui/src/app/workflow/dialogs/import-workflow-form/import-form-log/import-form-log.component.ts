@@ -16,6 +16,7 @@ export class ImportFormLogComponent implements OnInit {
   workflow: ImportWorkflow | null = null;
   report: WorkflowReport | null = null;
   hideInfoItems = false;
+  messageFilter = '';
 
   readonly workflowReportItemLevel = WorkflowReportItemLevel;
 
@@ -59,7 +60,11 @@ export class ImportFormLogComponent implements OnInit {
 
   get filteredItems() {
     if (!this.report?.items) return [];
-    if (!this.hideInfoItems) return this.report.items;
-    return this.report.items.filter((item) => item.level !== WorkflowReportItemLevel.INFO);
+    const needle = this.messageFilter.trim().toLowerCase();
+    return this.report.items.filter((item) => {
+      if (this.hideInfoItems && item.level === WorkflowReportItemLevel.INFO) return false;
+      if (!needle) return true;
+      return (item.message || '').toLowerCase().includes(needle);
+    });
   }
 }

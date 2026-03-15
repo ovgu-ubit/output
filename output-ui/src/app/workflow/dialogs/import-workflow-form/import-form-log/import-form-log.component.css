@@ -32,6 +32,18 @@
   justify-content: space-between;
 }
 
+.filter-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filter-input {
+  margin-bottom: -1.25em;
+  width: min(320px, 100%);
+}
+
 .summary-card pre,
 .change-row pre {
   margin: 0.5rem 0 0;
