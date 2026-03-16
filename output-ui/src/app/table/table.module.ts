@@ -6,6 +6,7 @@ import { MatPaginatorDE } from './mat-paginator-de';
 import { CombineDialogComponent } from './dialog/combine-dialog/combine-dialog.component';
 import { AliasFormComponent } from './dialog/alias-form/alias-form.component';
 import { MatSortModule } from '@angular/material/sort';
+import { RouterModule } from '@angular/router';
 
 @NgModule({
   declarations: [
@@ -16,7 +17,8 @@ import { MatSortModule } from '@angular/material/sort';
   imports: [
     SharedModule,
     MatPaginatorModule,
-    MatSortModule
+    MatSortModule,
+    RouterModule
   ],
   exports: [
     TableComponent

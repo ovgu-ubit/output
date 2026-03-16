@@ -470,7 +470,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterAvailable(col: TableHeader) {
-    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime')
+    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime' && col.type !== 'route-link')
   }
 
   /**
@@ -500,7 +500,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
    * @returns depending on the column, if the text is longer than the max_char, a truncated string is returned with three dots at the end
    */
   public truncString(text: string, max_char: number, col: TableHeader): string {
-    if (!text) return text;
+    if (!text) return '';
     if (text.length > max_char) return text.substring(0, max_char) + '...';
     else return text;
   }

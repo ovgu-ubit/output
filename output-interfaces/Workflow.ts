@@ -17,6 +17,10 @@ export interface Workflow {
 export interface ImportWorkflow extends Workflow {
     strategy_type?: Strategy;
     strategy?: any;
+    last_run_status?: string;
+    last_run_finished_at?: Date;
+    last_run_report_id?: number;
+    last_run_log_link?: string;
 }
 
 export interface WorkflowReport {

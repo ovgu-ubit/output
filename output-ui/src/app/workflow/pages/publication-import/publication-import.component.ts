@@ -22,18 +22,32 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   ];
   not_selectable?: boolean = true;
 
-  headers: TableHeader[] = [
+  common_headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'version', colTitle: 'Version', type: 'number' },
+  ]
+
+  draft_headers: TableHeader[] = [
     { colName: 'modified_at', colTitle: 'Zuletzt geändert', type: 'datetime' },
+  ]
+
+  published_headers: TableHeader[] = [
+    { colName: 'last_run_status', colTitle: 'Letzter Lauf Status' },
+    { colName: 'last_run_finished_at', colTitle: 'Letzter Lauf beendet', type: 'datetime' },
+    { colName: 'last_run_log_link', colTitle: 'Letzter Lauf Log', type: 'route-link' },
     { colName: 'published_at', colTitle: 'Veröffentlicht', type: 'datetime' },
+  ]
+
+  archived_headers: TableHeader[] = [
     { colName: 'deleted_at', colTitle: 'Archiviert', type: 'datetime' },
-  ];
+  ]
+
+  headers: TableHeader[] = this.common_headers.concat(this.published_headers);
 
   indexOptions = {
     type: 'published'
-  }
+  };
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
   @ViewChild('fileInput') fileInput: ElementRef<HTMLInputElement>;
@@ -44,41 +58,53 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   }
 
   getName() {
-    let res = 'Import-Workflows'
-    if (this.indexOptions.type === 'draft') res += ' (Entwürfe)'
-    else if (this.indexOptions.type === 'published') res += ' (Aktiv)'
-    else if (this.indexOptions.type === 'archived') res += ' (Archiviert)'
+    let res = 'Import-Workflows';
+    if (this.indexOptions.type === 'draft') res += ' (Entwürfe)';
+    else if (this.indexOptions.type === 'published') res += ' (Aktiv)';
+    else if (this.indexOptions.type === 'archived') res += ' (Archiviert)';
     return res;
   }
 
   async edit(workflow: ImportWorkflow) {
     if (await firstValueFrom(this.workflowService.isLocked(workflow.id))) {
-      this._snackBar.open('Workflow wird gerade bearbeitet, bitte warten.', 'Nagut', {
+      this._snackBar.open('Workflow wird gerade bearbeitet, bitte warten.', 'Na gut...', {
         duration: 5000,
         panelClass: ['danger-snackbar'],
         verticalPosition: 'top'
-      })
+      });
       return;
     }
-    this.router.navigate(["/workflow/publication_import/" + workflow.id + "/overview"]);
+    this.router.navigate(['/workflow/publication_import/' + workflow.id + '/overview']);
   }
 
   add() {
-    this.router.navigate(["/workflow/publication_import/new/overview"]);
+    this.router.navigate(['/workflow/publication_import/new/overview']);
   }
 
   getLink() {
-    return '/workflow/publication_import'
+    return '/workflow/publication_import';
   }
 
   getLabel() {
-    return '/Workflows/Publikationsimport'
+    return '/Workflows/Publikationsimport';
   }
 
   change(event: any) {
     this.indexOptions = {
       type: event.value
+    };
+    switch (event.value) {
+      case 'draft':
+        this.headers = this.common_headers.concat(this.draft_headers);
+        break;
+      case 'published':
+        this.headers = this.common_headers.concat(this.published_headers);
+        break;
+      case 'archived':
+        this.headers = this.common_headers.concat(this.archived_headers);
+        break;
     }
+
     this.table.updateData().subscribe();
   }
 
@@ -92,20 +118,20 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     input.value = '';
     if (!file) return;
     if (!file.name.endsWith('.json')) {
-      this._snackBar.open('Bitte eine JSON-Datei auswählen.', 'Ok...', {
+      this._snackBar.open('Bitte eine JSON-Datei auswählen.', 'Nagut...', {
         duration: 5000,
         panelClass: ['danger-snackbar'],
         verticalPosition: 'top'
-      })
+      });
       return;
     }
     this.workflowService.importWorkflow(file).subscribe({
       next: () => {
-        this._snackBar.open('Import-Workflow wurde hinzugefügt.', 'Ok', {
+        this._snackBar.open('Import-Workflow wurde hinzugefügt.', 'Super!', {
           duration: 5000,
           panelClass: ['success-snackbar'],
           verticalPosition: 'top'
-        })
+        });
         this.table.updateData().subscribe();
       },
       error: () => {
@@ -113,8 +139,8 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
           duration: 5000,
           panelClass: ['danger-snackbar'],
           verticalPosition: 'top'
-        })
+        });
       }
-    })
+    });
   }
 }

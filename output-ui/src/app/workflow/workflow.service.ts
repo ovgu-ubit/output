@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import { ImportWorkflow, ImportWorkflowTestResult, Workflow, WorkflowReport } from '../../../../output-interfaces/Workflow';
-import { concatMap, firstValueFrom, interval, Observable } from 'rxjs';
+import { concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
 import { UpdateMapping } from '../../../../output-interfaces/Config';
 
 @Injectable({
@@ -15,11 +15,16 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   constructor(private http: HttpClient, private runtimeConfigService: RuntimeConfigService) { }
 
   public getAll() {
-    return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true });
+    return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true })
+      .pipe(concatMap((workflows) => this.attachLatestReports(workflows)));
   }
   public index(reporting_year: number, options?: { type: 'draft' | 'published' | 'archived' }) {
-    if (options) return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import?type=' + options.type, { withCredentials: true });
-    return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true });
+    if (options) {
+      return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import?type=' + options.type, { withCredentials: true })
+        .pipe(concatMap((workflows) => this.attachLatestReports(workflows)));
+    }
+    return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true })
+      .pipe(concatMap((workflows) => this.attachLatestReports(workflows)));
   }
   public getOne(id: number) {
     return this.http.get<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id, { withCredentials: true });
@@ -100,5 +105,24 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       formData,
       { withCredentials: true }
     );
+  }
+
+  private attachLatestReports(workflows: ImportWorkflow[]): Observable<ImportWorkflow[]> {
+    if (!workflows?.length) return of([]);
+
+    return forkJoin(workflows.map((workflow) => {
+      if (!workflow.id) return of(workflow);
+
+      return this.getWorkflowReports(workflow.id).pipe(map((reports) => {
+        const lastReport = reports?.[0];
+        return {
+          ...workflow,
+          last_run_status: lastReport?.status,
+          last_run_finished_at: lastReport?.finished_at,
+          last_run_report_id: lastReport?.id,
+          last_run_log_link: lastReport?.id ? `/workflow/publication_import/${workflow.id}/logs/${lastReport.id}` : undefined,
+        };
+      }));
+    }));
   }
 }
