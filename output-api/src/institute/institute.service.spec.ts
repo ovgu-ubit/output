@@ -19,6 +19,7 @@ describe('InstituteService', () => {
 
     beforeEach(async () => {
         repository = {
+            find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
@@ -114,5 +115,23 @@ describe('InstituteService', () => {
             ]),
         });
         expect(repository.delete).toHaveBeenCalledWith([32, 33]);
+    });
+
+    it('returns institute ids including all descendants without duplicates', async () => {
+        const root = { id: 1, sub_institutes: [{ id: 2 }, { id: 3 }] } as Institute;
+        const childA = { id: 2, sub_institutes: [{ id: 4 }] } as Institute;
+        const childB = { id: 3, sub_institutes: [{ id: 4 }] } as Institute;
+        const grandChild = { id: 4, sub_institutes: [] } as Institute;
+
+        repository.find.mockResolvedValue([root, childA, childB, grandChild]);
+        repository.findOne.mockImplementation(async ({ where }: any) => {
+            if (where.id === 1) return root;
+            if (where.id === 2) return childA;
+            return null;
+        });
+
+        const ids = await service.findInstituteIdsIncludingSubInstitutes([1, 2]);
+
+        expect(ids).toEqual([1, 2, 3, 4]);
     });
 });

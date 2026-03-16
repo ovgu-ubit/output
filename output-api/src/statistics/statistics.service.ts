@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
+import { InstituteService } from '../institute/institute.service';
 import { Publication } from '../publication/core/Publication.entity';
 
 @Injectable()
@@ -19,11 +20,16 @@ export class StatisticsService {
             .groupBy("p.id")
     }
 
-    constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>) { }
+    constructor(
+        @InjectRepository(Publication) private pubRepository: Repository<Publication>,
+        private instituteService: InstituteService
+    ) { }
 
     async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
         let query = this.pubRepository.createQueryBuilder('publication')
         let autPubAlready = false;
+        const normalizedFilterOptions = await this.normalizeInstituteFilters(filterOptions);
+        const highlightInstituteIds = await this.resolveHighlightInstituteIds(highlightOptions);
 
         if (timeframe === TIMEFRAME.CURRENT_YEAR) {
             query = this.addReportingYears(query, [reporting_year]);
@@ -121,11 +127,61 @@ export class StatisticsService {
         }
 
         query = this.addStat(query, statistic === STATISTIC.NET_COSTS)
-        query = this.addFilter(query, autPubAlready, filterOptions, highlightOptions)
+        query = this.addFilter(query, autPubAlready, normalizedFilterOptions, highlightOptions, highlightInstituteIds)
 
         //console.log(query.getSql())
 
         return query.getRawMany();
+    }
+
+    private cloneFilterOptions(filterOptions?: FilterOptions) {
+        if (!filterOptions) return undefined;
+
+        return {
+            ...filterOptions,
+            instituteId: filterOptions.instituteId ? [...filterOptions.instituteId] : undefined,
+            notInstituteId: filterOptions.notInstituteId ? [...filterOptions.notInstituteId] : undefined,
+            publisherId: filterOptions.publisherId ? [...filterOptions.publisherId] : undefined,
+            notPublisherId: filterOptions.notPublisherId ? [...filterOptions.notPublisherId] : undefined,
+            contractId: filterOptions.contractId ? [...filterOptions.contractId] : undefined,
+            notContractId: filterOptions.notContractId ? [...filterOptions.notContractId] : undefined,
+            pubTypeId: filterOptions.pubTypeId ? [...filterOptions.pubTypeId] : undefined,
+            notPubTypeId: filterOptions.notPubTypeId ? [...filterOptions.notPubTypeId] : undefined,
+            oaCatId: filterOptions.oaCatId ? [...filterOptions.oaCatId] : undefined,
+            notOaCatId: filterOptions.notOaCatId ? [...filterOptions.notOaCatId] : undefined
+        };
+    }
+
+    private async normalizeInstituteFilters(filterOptions?: FilterOptions) {
+        const normalizedFilterOptions = this.cloneFilterOptions(filterOptions);
+        if (!normalizedFilterOptions) return normalizedFilterOptions;
+
+        if (normalizedFilterOptions.instituteId !== undefined) {
+            const instituteIds = normalizedFilterOptions.instituteId as Array<number | null>;
+            const expandedIds = await this.instituteService.findInstituteIdsIncludingSubInstitutes(instituteIds.filter((id): id is number => typeof id === 'number'));
+            if (instituteIds.some(id => id == null)) normalizedFilterOptions.instituteId = [...expandedIds, null] as unknown as number[];
+            else normalizedFilterOptions.instituteId = expandedIds;
+        }
+
+        if (normalizedFilterOptions.notInstituteId !== undefined) {
+            const instituteIds = normalizedFilterOptions.notInstituteId as Array<number | null>;
+            const expandedIds = await this.instituteService.findInstituteIdsIncludingSubInstitutes(instituteIds.filter((id): id is number => typeof id === 'number'));
+            if (instituteIds.some(id => id == null)) normalizedFilterOptions.notInstituteId = [...expandedIds, null] as unknown as number[];
+            else normalizedFilterOptions.notInstituteId = expandedIds;
+        }
+
+        return normalizedFilterOptions;
+    }
+
+    private async resolveHighlightInstituteIds(highlightOptions?: HighlightOptions) {
+        const instituteId = highlightOptions?.instituteId as number | number[] | null | undefined;
+        if (instituteId === undefined) return undefined;
+        if (instituteId === null) return null;
+
+        const instituteIds = (Array.isArray(instituteId) ? instituteId : [instituteId]).filter((id): id is number => typeof id === 'number');
+        if (instituteIds.length === 0) return null;
+
+        return this.instituteService.findInstituteIdsIncludingSubInstitutes(instituteIds);
     }
 
     addReportingYears(query: SelectQueryBuilder<Publication>, reporting_years: number[]) {
@@ -154,7 +210,7 @@ export class StatisticsService {
         return query//.orderBy('value', 'DESC');
     }
 
-    addFilter(query: SelectQueryBuilder<Publication>, autPubAlready: boolean, filterOptions: FilterOptions, highlightOptions?: HighlightOptions) {
+    addFilter(query: SelectQueryBuilder<Publication>, autPubAlready: boolean, filterOptions?: FilterOptions, highlightOptions?: HighlightOptions, highlightInstituteIds?: number[] | null) {
         let autPub = autPubAlready;
         let innerJoin = false;
 
@@ -179,7 +235,7 @@ export class StatisticsService {
                 filterOptions.instituteId = filterOptions.instituteId.filter(e => e != null);
                 query = query.andWhere('(array_length(array_remove(institute_id, NULL), 1) is null or array_length(institute_id, 1) > array_length(array_remove(institute_id, NULL), 1))')
             }
-            if (filterOptions.instituteId.length > 0) query = query.andWhere('tmp.institute_id::integer[] @> ARRAY[:...instituteId]::integer[]', { instituteId: filterOptions.instituteId })
+            if (filterOptions.instituteId.length > 0) query = query.andWhere('tmp.institute_id::integer[] && ARRAY[:...instituteId]::integer[]', { instituteId: filterOptions.instituteId })
         }
         if (filterOptions?.notInstituteId !== undefined) {
             autPub = true;
@@ -278,7 +334,7 @@ export class StatisticsService {
         }
         if (highlightOptions?.instituteId !== undefined) {
             autPub = true;
-            if (highlightOptions?.instituteId) highlight += 'tmp.institute_id::integer[] @> ARRAY['+highlightOptions.instituteId+']::integer[] AND '
+            if (highlightInstituteIds?.length) highlight += 'tmp.institute_id::integer[] && ARRAY[' + highlightInstituteIds.join(',') + ']::integer[] AND '
             else highlight += '(array_length(array_remove(tmp.institute_id, NULL), 1) is null or array_length(tmp.institute_id, 1) > array_length(array_remove(tmp.institute_id, NULL), 1)) AND '
         }
         if (highlightOptions?.publisherId !== undefined) {
@@ -310,4 +366,3 @@ export class StatisticsService {
         return query;
     }
 }
-
