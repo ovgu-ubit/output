@@ -72,7 +72,7 @@
             <div class="change-list">
                 <div *ngFor="let change of report.publication_changes" class="change-row">
                     <div class="change-meta">
-                        <span>Publikation #{{ change.publicationId }}</span>
+                        <span>Angepasste Publikation #{{ getPublicationChangeId(change) ?? 'unbekannt' }}</span>
                         <span>{{ change.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</span>
                         <span *ngIf="change.by_user">von {{ change.by_user }}</span>
                     </div>

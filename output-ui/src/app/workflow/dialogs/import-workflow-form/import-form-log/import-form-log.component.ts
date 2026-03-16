@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { filter, switchMap, takeUntil } from 'rxjs';
-import { ImportWorkflow, WorkflowReport, WorkflowReportItemLevel } from '../../../../../../../output-interfaces/Workflow';
+import { ImportWorkflow, PublicationChange, WorkflowReport, WorkflowReportItemLevel } from '../../../../../../../output-interfaces/Workflow';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
 import { ImportFormFacade } from '../import-form-facade.service';
@@ -66,5 +66,9 @@ export class ImportFormLogComponent implements OnInit {
       if (!needle) return true;
       return (item.message || '').toLowerCase().includes(needle);
     });
+  }
+
+  getPublicationChangeId(change: PublicationChange): number | undefined {
+    return change.publication?.id ?? change.publicationId;
   }
 }

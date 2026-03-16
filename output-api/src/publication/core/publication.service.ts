@@ -84,7 +84,7 @@ export class PublicationService {
                         before: patch.before,
                         after: patch.after,
                     }
-                } as any);
+                });
             }
         }
 
@@ -312,7 +312,7 @@ export class PublicationService {
                         before: patch.before,
                         after: patch.after,
                     }
-                } as any);
+                });
             }
         }
         return i;

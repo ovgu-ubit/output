@@ -44,7 +44,9 @@ export interface WorkflowReportItem {
 
 export interface PublicationChange {
     id?: number;
+    publication?: Publication;
     publicationId?: number;
+    worfklowReport?: WorkflowReport | null;
     workflowReportId?: number | null;
     timestamp?: Date;
     by_user?: string;
