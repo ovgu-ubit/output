@@ -190,10 +190,13 @@ export class JSONataImportService extends AbstractImportService {
             status: 'initialized',
             workflow: this.importDefinition,
             params: {
-                reporting_year: this.reporting_year,
-                search_text: this.searchText,
-                affiliation_text: this.affiliationText,
-                url: await this.setVariables(this.url, undefined, true)
+                reporting_year: this.reporting_year ?? undefined,
+                search_text: this.searchText ? this.searchText : undefined,
+                affiliation_text: this.affiliationText ? this.affiliationText : undefined,
+                url: await this.setVariables(this.url, undefined, true) ?? undefined,
+                url_count: await this.setVariables(this.url_count, undefined, true) ?? undefined,
+                url_doi: await this.setVariables(this.url_doi, undefined, true) ?? undefined,
+                enrich_whereClause: this.enrich_whereClause ?? undefined,
             }
         })
     }
@@ -215,7 +218,7 @@ export class JSONataImportService extends AbstractImportService {
             else value = values[i] ?? ""; // oder Fehler werfen
 
             if (value) result = result.replace(`[${key}]`, value);
-            else throw new BadRequestException(`value for ${key} is not available`);
+            else if (!safe) throw new BadRequestException(`value for ${key} is not available`);
         }
         return result;
     }
@@ -476,7 +479,9 @@ export class JSONataImportService extends AbstractImportService {
             status: 'started',
             started_at: new Date(),
             dry_run: dryRun,
-            by_user
+            by_user,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            params: {...this.workflowReport.params as any, file_name: file.originalname}
         });
 
         this.file = file;
