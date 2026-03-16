@@ -75,9 +75,9 @@ export class PublicationService {
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
-                    workflowReport: options?.workflowReport?.id ? { id: options.workflowReport.id } : null,
+                    workflowReport: options?.workflowReport,
                     timestamp: new Date(),
-                    by_user: options?.by_user ?? options?.workflowReport?.by_user,
+                    by_user: options?.by_user,
                     dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
                     patch_data: {
                         action: before ? 'update' : 'create',
@@ -303,9 +303,9 @@ export class PublicationService {
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
-                    workflowReport: options?.workflowReport?.id ? { id: options.workflowReport.id } : null,
+                    workflowReport: options?.workflowReport,
                     timestamp: new Date(),
-                    by_user: options?.by_user ?? options?.workflowReport?.by_user,
+                    by_user: options?.by_user,
                     dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
                     patch_data: {
                         action: 'update',

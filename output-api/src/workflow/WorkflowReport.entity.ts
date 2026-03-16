@@ -1,7 +1,7 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { WorkflowReport as IWorkflowReport } from "../../../output-interfaces/Workflow";
-import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { PublicationChange } from "../publication/core/PublicationChange.entity";
+import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { WorkflowReportItem } from "./WorkflowReportItem.entity";
 
 @Entity("workflow_report")
