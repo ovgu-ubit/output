@@ -18,6 +18,8 @@ export class ImportFormLogComponent implements OnInit {
   report: WorkflowReport | null = null;
   hideInfoItems = false;
   messageFilter = '';
+  collapseLogEntries = false;
+  collapsePublicationChanges = false;
 
   readonly workflowReportItemLevel = WorkflowReportItemLevel;
 
