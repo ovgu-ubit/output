@@ -29,7 +29,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px 12px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     font-size: 0.95rem;
 }
 
@@ -37,8 +37,32 @@
     font-weight: 600;
 }
 
-pre {
-    margin: 0;
-    white-space: pre-wrap;
+.change-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.change-table th,
+.change-table td {
+    padding: 10px 12px;
+    border-top: 1px solid #d7dbe0;
+    vertical-align: top;
+    text-align: left;
+}
+
+.change-table thead th {
+    border-top: none;
+    background: #eef2f6;
+    font-weight: 600;
+}
+
+.change-table tbody th {
+    width: 24%;
+    font-weight: 600;
+    background: #f7f9fb;
+}
+
+.change-value {
+    white-space: pre-line;
     word-break: break-word;
 }

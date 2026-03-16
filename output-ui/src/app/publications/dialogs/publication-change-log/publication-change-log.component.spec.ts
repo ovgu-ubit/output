@@ -11,7 +11,12 @@ describe('PublicationChangeLogComponent', () => {
 
   beforeEach(async () => {
     publicationService = jasmine.createSpyObj<PublicationService>('PublicationService', ['getChanges']);
-    publicationService.getChanges.and.returnValue(of([]));
+    publicationService.getChanges.and.returnValue(of([{
+      patch_data: {
+        before: { title: 'Alt' },
+        after: { title: 'Neu' }
+      }
+    } as any]));
 
     await TestBed.configureTestingModule({
       declarations: [PublicationChangeLogComponent],
@@ -39,5 +44,7 @@ describe('PublicationChangeLogComponent', () => {
     });
 
     expect(publicationService.getChanges).toHaveBeenCalledWith(42);
+    expect(component.changeEntries.length).toBe(1);
+    expect(component.changeEntries[0].rows[0].label).toBe('Titel');
   });
 });
