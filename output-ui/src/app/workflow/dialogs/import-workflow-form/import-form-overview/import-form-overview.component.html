@@ -1,12 +1,12 @@
 <mat-card>
-    <mat-card-title>Ueberblick</mat-card-title>
+    <mat-card-title>Überblick</mat-card-title>
     <mat-card-content>
         <div class="reports-container">
-            <h3>Zugehoerige Workflow-Logs</h3>
+            <h3>Zugehörige Workflow-Logs</h3>
             <p class="report-name" *ngIf="entity">Workflow: {{ entity.label }} v{{ entity.version }}</p>
 
             @if (associatedReports.length === 0) {
-            <p>Keine Workflow-Logs fuer diesen Workflow vorhanden.</p>
+            <p>Keine Workflow-Logs für diesen Workflow vorhanden.</p>
             } @else {
             <ul class="report-list">
                 <li *ngFor="let report of associatedReports" class="report-list-item">

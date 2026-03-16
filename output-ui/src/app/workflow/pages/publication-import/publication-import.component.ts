@@ -74,7 +74,8 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
       });
       return;
     }
-    this.router.navigate(['/workflow/publication_import/' + workflow.id + '/overview']);
+    if (this.indexOptions.type === 'published') this.router.navigate(['/workflow/publication_import/' + workflow.id + '/action']);
+    else this.router.navigate(['/workflow/publication_import/' + workflow.id + '/general']);
   }
 
   add() {

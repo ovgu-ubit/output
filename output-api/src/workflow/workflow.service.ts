@@ -144,9 +144,9 @@ export class WorkflowService {
     }
 
     async isLocked(id: number): Promise<boolean> {
-        const db = await this.importRepository.findOneBy({ id })
+        const db = await this.importRepository.findOne({where: { id }, withDeleted: true})
         if (!db) throw new NotFoundException();
-        if (!db.locked_at) return false;
+        if (!db.locked_at || db.deleted_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
         else return true;
     }
