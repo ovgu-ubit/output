@@ -7,12 +7,14 @@ import { PublicationsComponent } from './pages/publications/publications.compone
 import { TableModule } from '../table/table.module';
 import { FormModule } from '../form/form.module';
 import { FilterViewComponent } from './dialogs/filter-view/filter-view.component';
+import { PublicationChangeLogComponent } from './dialogs/publication-change-log/publication-change-log.component';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 
 @NgModule({
   declarations: [
     PublicationsComponent, 
     PublicationFormComponent, 
+    PublicationChangeLogComponent,
     ReportingYearFormComponent,
     FilterViewComponent
   ],

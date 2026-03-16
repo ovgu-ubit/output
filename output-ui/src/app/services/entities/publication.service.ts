@@ -4,6 +4,7 @@ import { EntityService } from 'src/app/services/entities/service.interface';
 import { SearchFilter } from '../../../../../output-interfaces/Config';
 import { Publication } from '../../../../../output-interfaces/Publication';
 import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
+import { PublicationChange } from '../../../../../output-interfaces/Workflow';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({
@@ -23,6 +24,9 @@ export class PublicationService implements EntityService<Publication, Publicatio
   }
   public getOne(id: number) {
     return this.http.get<Publication>(this.runtimeConfigService.getValue("api") + 'publications/one?id=' + id, { withCredentials: true });
+  }
+  public getChanges(id: number) {
+    return this.http.get<PublicationChange[]>(this.runtimeConfigService.getValue("api") + 'publications/changes?id=' + id, { withCredentials: true });
   }
   public update(pub: Publication) {
     return this.http.put<Publication>(this.runtimeConfigService.getValue("api") + 'publications', {...pub, edit_date:undefined}, { withCredentials: true });

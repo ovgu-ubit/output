@@ -1,0 +1,18 @@
+<div class="change-log-container">
+    <p *ngIf="loading" class="state-text">Änderungslog wird geladen...</p>
+    <p *ngIf="!loading && errorMessage" class="state-text error-text">{{ errorMessage }}</p>
+    <p *ngIf="!loading && !errorMessage && changes.length === 0" class="state-text">Keine Änderungen vorhanden.</p>
+
+    <div *ngIf="!loading && !errorMessage && changes.length > 0" class="change-list">
+        <div *ngFor="let change of changes" class="change-entry">
+            <div class="change-meta">
+                <span class="change-badge">{{ getActionLabel(change) }}</span>
+                <span *ngIf="getPublicationChangeId(change)">Publikation #{{ getPublicationChangeId(change) }}</span>
+                <span>{{ change.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</span>
+                <span *ngIf="change.by_user">von {{ change.by_user }}</span>
+                <span *ngIf="change.workflowReportId">Workflow-Log #{{ change.workflowReportId }}</span>
+            </div>
+            <pre>{{ change.patch_data | json }}</pre>
+        </div>
+    </div>
+</div>

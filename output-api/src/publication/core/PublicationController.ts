@@ -7,6 +7,7 @@ import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex
 import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { AppConfigService } from "../../config/app-config.service";
+import { PublicationChangeService } from "./publication-change.service";
 import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
@@ -18,6 +19,7 @@ export class PublicationController {
 
     constructor(@InjectRepository(Publication) private repository,
         private publicationService: PublicationService,
+        private publicationChangeService: PublicationChangeService,
         private appConfigService: AppConfigService,
         private configService: AppConfigService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
@@ -85,6 +87,21 @@ export class PublicationController {
     async one(@Query('id') id: number, @Req() request: Request) {
         if (!id) throw new BadRequestException('id must be given')
         return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write_publication'] : false);
+    }
+
+    @Get('changes')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @ApiQuery({
+        name: 'id',
+        type: 'integer',
+        required: true,
+        description: 'Publication ID',
+        example: "3"
+    })
+    async changes(@Query('id') id: number) {
+        if (!id) throw new BadRequestException('id must be given');
+        return this.publicationChangeService.getPublicationChangesForPublication(id);
     }
 
     @Get('publicationIndex')
