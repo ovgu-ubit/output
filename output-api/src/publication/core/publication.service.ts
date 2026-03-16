@@ -51,7 +51,7 @@ export class PublicationService {
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
-        private configService: AppConfigService, 
+        private configService: AppConfigService,
         private instService: InstituteService,
         private publicationChangeService: PublicationChangeService) { }
 
@@ -235,7 +235,7 @@ export class PublicationService {
                 .andWhere('publication.pub_date_print IS NULL')
                 .andWhere('publication.pub_date_accepted IS NULL')
                 .andWhere('publication.pub_date_submitted IS NULL')
-                
+
         }
         //console.log(query.getSql());
         return query.getRawMany() as Promise<PublicationIndex[]>;;
@@ -433,14 +433,24 @@ export class PublicationService {
                 oa_category: true,
                 contract: true,
                 funders: true,
+                language: true,
+                identifiers: true,
+                supplements: true,
                 invoices: {
                     cost_items: {
                         cost_type: true
                     }
+                },
+                authorPublications: {
+                    author: {
+                        institutes: true
+                    },
+                    institute: true,
+                    role: true
                 }
             },
             withDeleted: true
-        })
+        });
 
         return pub;
     }
@@ -455,12 +465,12 @@ export class PublicationService {
                 , 'year')
             .distinct(true)
             .orderBy('year', 'DESC');
-        return query.getRawMany() as Promise<{year: string}[]>;
+        return query.getRawMany() as Promise<{ year: string }[]>;
     }
 
 
 
-    async combine(id1: number, ids: number[], alias_strings? : string[]) {
+    async combine(id1: number, ids: number[], alias_strings?: string[]) {
         const duplicatePairs = await this.duplRepository.find({ where: { id_first: id1, id_second: In(ids) }, withDeleted: true });
         const reversePairs = await this.duplRepository.find({ where: { id_first: In(ids), id_second: id1 }, withDeleted: true });
         const duplicateRecords = duplicatePairs.concat(reversePairs);
@@ -503,12 +513,12 @@ export class PublicationService {
             },
         });
     }
-    getAllDuplicates(soft?:boolean) {
+    getAllDuplicates(soft?: boolean) {
         if (!soft) return this.duplRepository.find();
-        else return this.duplRepository.find({where:{delete_date: Not(IsNull())},withDeleted: true})
+        else return this.duplRepository.find({ where: { delete_date: Not(IsNull()) }, withDeleted: true })
     }
 
-    async getDuplicates(id:number) {
+    async getDuplicates(id: number) {
         /*let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.duplicates", 'duplicates')
             .select("duplicates.id_second")
@@ -517,20 +527,20 @@ export class PublicationService {
             .where("publication.id = :id", {id: id})
 
         return (await query.getRawMany());*/
-        return this.duplRepository.findOne({where: {id}, withDeleted: true})
+        return this.duplRepository.findOne({ where: { id }, withDeleted: true })
     }
 
-    async saveDuplicate(id_first :number, id_second:number, description?: string) {
-        const check = await this.duplRepository.findOne({where: {id_first, id_second}, withDeleted: true})
-        if (!check) return this.duplRepository.save({id_first,id_second,description})
+    async saveDuplicate(id_first: number, id_second: number, description?: string) {
+        const check = await this.duplRepository.findOne({ where: { id_first, id_second }, withDeleted: true })
+        if (!check) return this.duplRepository.save({ id_first, id_second, description })
         else return null;
     }
 
-    async updateDuplicate(dupl:PublicationDuplicate) {
-        return this.duplRepository.update(dupl.id, {id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date});
+    async updateDuplicate(dupl: PublicationDuplicate) {
+        return this.duplRepository.update(dupl.id, { id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date });
     }
 
-    deleteDuplicate(id, soft?:boolean) {
+    deleteDuplicate(id, soft?: boolean) {
         if (soft) return this.duplRepository.softDelete(id);
         else return this.duplRepository.delete(id);
     }
@@ -608,7 +618,7 @@ export class PublicationService {
         if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
         if ((this.invoice || this.cost_type) && !this.filter_joins.has("invoice")) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
         if (this.cost_center && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
-        
+
         if (this.cost_type && !this.filter_joins.has("cost_type")) {
             indexQuery = indexQuery.leftJoin('invoice.cost_items', 'cost_item')
             indexQuery = indexQuery.leftJoin('cost_item.cost_type', 'cost_type')
