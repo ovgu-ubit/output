@@ -140,11 +140,27 @@ export class InstituteService {
         return result;
     }
 
+    async findInstituteIdsIncludingSubInstitutes(ids: number[]) {
+        const result = new Set<number>();
+
+        for (const id of ids) {
+            if (typeof id !== 'number') continue;
+            result.add(id);
+            const subInstitutes = await this.findSubInstitutesFlat(id);
+            for (const subInstitute of subInstitutes) {
+                if (typeof subInstitute?.id === 'number') result.add(subInstitute.id);
+            }
+        }
+
+        return [...result];
+    }
+
     async findSubInstitutesFlat(id: number) {
         const insts = await this.repository.find({ relations: { sub_institutes: true } })
         const inst = await this.repository.findOne({ where: { id }, relations: { sub_institutes: true } })
+        if (!inst?.sub_institutes?.length) return [];
         let result = inst.sub_institutes;
-        let flag = inst.sub_institutes && inst.sub_institutes.length > 0;
+        let flag = true;
         while (flag) {
             flag = false;
             let newSubs = [];
@@ -161,4 +177,3 @@ export class InstituteService {
         return result;
     }
 }
-

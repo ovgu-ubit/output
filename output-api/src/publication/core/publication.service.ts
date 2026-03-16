@@ -572,7 +572,7 @@ export class PublicationService {
         if (filter) for (const expr of filter.expressions) {
             if (expr.key.includes("institute_id")) {
                 expr.comp = CompareOperation.IN;
-                const ids = [expr.value].concat((await this.instService.findSubInstitutesFlat(expr.value as number)).map(e => e.id))
+                const ids = await this.instService.findInstituteIdsIncludingSubInstitutes([expr.value as number]);
                 expr.value = '(' + ids.join(',') + ')';
             }
 
