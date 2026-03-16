@@ -22,13 +22,17 @@ describe('PublicationService combine', () => {
     let idRepository: jest.Mocked<Partial<Repository<PublicationIdentifier>>>;
     let supplRepository: jest.Mocked<Partial<Repository<PublicationSupplement>>>;
     let duplRepository: jest.Mocked<Partial<Repository<PublicationDuplicate>>>;
-    let publicationChangeService: { createPublicationChange: jest.Mock };
+    let publicationChangeService: {
+        createPublicationChange: jest.Mock;
+        deletePublicationChangesForPublications: jest.Mock;
+    };
     beforeEach(async () => {
         pubRepository = {
             find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
+            softDelete: jest.fn(),
         };
         pubAutRepository = {
             delete: jest.fn(),
@@ -54,6 +58,7 @@ describe('PublicationService combine', () => {
         };
         publicationChangeService = {
             createPublicationChange: jest.fn(),
+            deletePublicationChangesForPublications: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -168,6 +173,7 @@ describe('PublicationService combine', () => {
         expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: expect.anything() });
         expect(invoiceRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63]);
         expect(duplRepository.delete).toHaveBeenCalledWith([501, 502]);
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
@@ -301,5 +307,22 @@ describe('PublicationService combine', () => {
                 },
             }),
         }));
+    });
+
+    it('deletes publication changes before soft deleting publications', async () => {
+        pubRepository.findOne.mockResolvedValue({
+            id: 7,
+            authorPublications: [],
+            invoices: [],
+            identifiers: [],
+            supplements: [],
+        } as unknown as Publication);
+        pubRepository.softDelete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 7 } as Publication], true);
+
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+        expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
+        expect(pubRepository.delete).not.toHaveBeenCalled();
     });
 });

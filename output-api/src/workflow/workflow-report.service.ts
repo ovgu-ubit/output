@@ -118,6 +118,22 @@ export class WorkflowReportService {
         return this.workflowReportRepository.delete({ id: workflowReportId });
     }
 
+    async deleteReportsForWorkflow(workflowId: number): Promise<void> {
+        const reports = await this.workflowReportRepository
+            .createQueryBuilder('report')
+            .select('report.id', 'id')
+            .where('report.workflowId = :workflowId', { workflowId })
+            .getRawMany<{ id: number }>();
+
+        const reportIds = reports
+            .map((report) => Number(report.id))
+            .filter((reportId) => Number.isInteger(reportId));
+
+        if (reportIds.length === 0) return;
+
+        await this.workflowReportRepository.delete(reportIds);
+    }
+
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);

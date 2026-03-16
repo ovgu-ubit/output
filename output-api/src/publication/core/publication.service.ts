@@ -319,6 +319,7 @@ export class PublicationService {
     }
 
     public async delete(pubs: Publication[], soft?: boolean) {
+        const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => !!id);
         for (const pub of pubs) {
             const pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
             for (const autPub of pubE.authorPublications) {
@@ -335,8 +336,9 @@ export class PublicationService {
                 await this.supplRepository.delete(suppl.id);
             }
         }
-        if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
-        else return await this.pubRepository.softDelete(pubs.map(p => p.id));
+        await this.publicationChangeService.deletePublicationChangesForPublications(publicationIds);
+        if (!soft) return await this.pubRepository.delete(publicationIds);
+        else return await this.pubRepository.softDelete(publicationIds);
     }
 
     public async getPublication(id: number, reader: boolean, writer: boolean) {
@@ -503,6 +505,7 @@ export class PublicationService {
                     await this.pubAutRepository.delete({ publicationId: In(duplicateIds) });
                     await this.invoiceRepository.delete({ publication: { id: In(duplicateIds) } });
                     await this.supplRepository.delete({ publication: { id: In(duplicateIds) } });
+                    await this.publicationChangeService.deletePublicationChangesForPublications(duplicateIds);
                 }
 
                 if (duplicateRecordIds.length > 0) {

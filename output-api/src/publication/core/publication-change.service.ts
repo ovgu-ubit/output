@@ -49,6 +49,18 @@ export class PublicationChangeService {
             .getMany();
     }
 
+    async deletePublicationChangesForPublications(publicationIds: number[]): Promise<void> {
+        const ids = publicationIds.filter((publicationId): publicationId is number => Number.isInteger(publicationId));
+        if (ids.length === 0) return;
+
+        await this.publicationChangeRepository
+            .createQueryBuilder()
+            .delete()
+            .from(PublicationChange)
+            .where('publicationId IN (:...publicationIds)', { publicationIds: ids })
+            .execute();
+    }
+
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
