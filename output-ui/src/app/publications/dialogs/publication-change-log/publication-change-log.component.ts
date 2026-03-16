@@ -117,6 +117,19 @@ export class PublicationChangeLogComponent implements OnChanges {
     return change.publication?.id ?? change.publicationId;
   }
 
+  getWorkflowReportLabel(change: PublicationChange): string | null {
+    const reportId = change.workflowReport?.id ?? change.workflowReportId;
+    if (!reportId) return null;
+
+    const workflowLabel = change.workflowReport?.workflow?.label;
+    const workflowVersion = change.workflowReport?.workflow?.version;
+    const workflowName = workflowLabel
+      ? `${workflowLabel}${workflowVersion !== undefined ? ` v${workflowVersion}` : ''}`
+      : null;
+
+    return workflowName ? `Workflow-Log #${reportId} · ${workflowName}` : `Workflow-Log #${reportId}`;
+  }
+
   private loadChanges(publicationId: number): void {
     this.loading = true;
     this.errorMessage = '';

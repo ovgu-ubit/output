@@ -10,7 +10,7 @@
                 <span *ngIf="getPublicationChangeId(entry.change)">Publikation #{{ getPublicationChangeId(entry.change) }}</span>
                 <span>{{ entry.change.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</span>
                 <span *ngIf="entry.change.by_user">von {{ entry.change.by_user }}</span>
-                <span *ngIf="entry.change.workflowReportId">Workflow-Log #{{ entry.change.workflowReportId }}</span>
+                <span *ngIf="getWorkflowReportLabel(entry.change)">{{ getWorkflowReportLabel(entry.change) }}</span>
             </div>
 
             <table *ngIf="entry.rows.length > 0" class="change-table">

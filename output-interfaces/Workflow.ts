@@ -21,6 +21,7 @@ export interface ImportWorkflow extends Workflow {
 
 export interface WorkflowReport {
     id?: number;
+    workflow?: ImportWorkflow;
     workflowId?: number;
     params?: unknown;
     by_user?: string;
@@ -46,7 +47,7 @@ export interface PublicationChange {
     id?: number;
     publication?: Publication;
     publicationId?: number;
-    worfklowReport?: WorkflowReport | null;
+    workflowReport?: WorkflowReport | null;
     workflowReportId?: number | null;
     timestamp?: Date;
     by_user?: string;

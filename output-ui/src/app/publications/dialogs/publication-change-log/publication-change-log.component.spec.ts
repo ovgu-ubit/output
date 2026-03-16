@@ -67,4 +67,19 @@ describe('PublicationChangeLogComponent', () => {
     expect(component.changeEntries.length).toBe(1);
     expect(component.changeEntries[0].rows[0].label).toBe('DOI');
   });
+
+  it('formats the workflow report label with workflow name and version', () => {
+    const label = component.getWorkflowReportLabel({
+      workflowReportId: 15,
+      workflowReport: {
+        id: 15,
+        workflow: {
+          label: 'Crossref Import',
+          version: 3
+        }
+      }
+    } as any);
+
+    expect(label).toBe('Workflow-Log #15 · Crossref Import v3');
+  });
 });

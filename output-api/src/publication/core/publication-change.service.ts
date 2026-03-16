@@ -30,6 +30,8 @@ export class PublicationChangeService {
     async getPublicationChangesForPublication(publicationId: number): Promise<PublicationChange[]> {
         return this.publicationChangeRepository
             .createQueryBuilder('publicationChange')
+            .leftJoinAndSelect('publicationChange.workflowReport', 'workflowReport')
+            .leftJoinAndSelect('workflowReport.workflow', 'workflow')
             .where('publicationChange.publicationId = :publicationId', { publicationId })
             .orderBy('publicationChange.timestamp', 'DESC')
             .addOrderBy('publicationChange.id', 'DESC')
@@ -39,6 +41,8 @@ export class PublicationChangeService {
     async getPublicationChangesForReport(workflowReportId: number): Promise<PublicationChange[]> {
         return this.publicationChangeRepository
             .createQueryBuilder('publicationChange')
+            .leftJoinAndSelect('publicationChange.workflowReport', 'workflowReport')
+            .leftJoinAndSelect('workflowReport.workflow', 'workflow')
             .where('publicationChange.workflowReportId = :workflowReportId', { workflowReportId })
             .orderBy('publicationChange.timestamp', 'ASC')
             .addOrderBy('publicationChange.id', 'ASC')
