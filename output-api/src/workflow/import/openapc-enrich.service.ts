@@ -19,6 +19,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @EnrichService({path: 'openapc'})
 @Injectable()
@@ -28,9 +29,9 @@ export class OpenAPCEnrichService extends ApiEnrichDOIService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected http: HttpService,
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService,
     ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
     }
 
     protected updateMapping: UpdateMapping = {

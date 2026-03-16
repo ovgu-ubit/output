@@ -23,6 +23,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @Injectable()
 /**
@@ -34,8 +35,8 @@ export class CSVImportService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
-        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     protected updateMapping: UpdateMapping = {

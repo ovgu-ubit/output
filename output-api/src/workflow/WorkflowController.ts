@@ -10,6 +10,7 @@ import { AppConfigService } from "../config/app-config.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
 import { WorkflowService } from "./workflow.service";
+import { WorkflowReportService } from "./workflow-report.service";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -18,7 +19,8 @@ export class WorkflowController {
   constructor(
     private reportService: ReportItemService,
     private configService: AppConfigService,
-    private workflowService: WorkflowService) { }
+    private workflowService: WorkflowService,
+    private workflowReportService: WorkflowReportService) { }
 
   @Get("import")
   @UseGuards(AccessGuard)
@@ -182,6 +184,28 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async importConfig(@Param('id') id: number) {
     return this.workflowService.getUpdateMapping(id);
+  }
+
+  @Get("import/:id/workflow-reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async workflowReports(@Param('id') id: number) {
+    await this.workflowService.getImport(id);
+    return this.workflowReportService.getReports(id);
+  }
+
+  @Get("workflow-report/:reportId")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async workflowReport(@Param('reportId') reportId: number) {
+    return this.workflowReportService.getReport(reportId);
+  }
+
+  @Delete("workflow-report/:reportId")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async deleteWorkflowReport(@Param('reportId') reportId: number) {
+    return this.workflowReportService.deleteReport(reportId);
   }
 
   @Post("import/:id/config")

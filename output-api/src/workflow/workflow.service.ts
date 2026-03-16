@@ -7,6 +7,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { validateImportWorkflow } from './import-workflow.schema';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
+import { WorkflowReportService } from './workflow-report.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -14,7 +15,9 @@ export class WorkflowService {
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
-        private configService: AppConfigService, private importService: JSONataImportService) { }
+        private configService: AppConfigService,
+        private importService: JSONataImportService,
+        private workflowReportService: WorkflowReportService) { }
 
 
     getImports(type?: 'draft' | 'published' | 'archived') {
@@ -72,6 +75,7 @@ export class WorkflowService {
 
     async saveImport(workflow: ImportWorkflow) {
         let toSave = workflow;
+        let shouldDeleteArchivedWorkflowReports = false;
         if (workflow.id) { //update
             const db = await this.importRepository.findOneBy({ id: workflow.id })
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
@@ -79,6 +83,7 @@ export class WorkflowService {
                 const isArchiving = !!workflow.deleted_at; // optional: plus equality checks
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
                 toSave = { ...db, deleted_at: new Date() };
+                shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
                 //does another published version exist?
                 const other = await this.importRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) })
@@ -101,7 +106,14 @@ export class WorkflowService {
             }
         }
         const validated = validateImportWorkflow(toSave);
-        if (validated) return this.importRepository.save(toSave);
+        if (!validated) return;
+
+        const saved = await this.importRepository.save(toSave);
+        if (shouldDeleteArchivedWorkflowReports && saved.id) {
+            await this.workflowReportService.deleteReportsForWorkflow(saved.id);
+        }
+
+        return saved;
     }
 
     async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {
@@ -144,9 +156,9 @@ export class WorkflowService {
     }
 
     async isLocked(id: number): Promise<boolean> {
-        const db = await this.importRepository.findOneBy({ id })
+        const db = await this.importRepository.findOne({where: { id }, withDeleted: true})
         if (!db) throw new NotFoundException();
-        if (!db.locked_at) return false;
+        if (!db.locked_at || db.deleted_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
         else return true;
     }
@@ -178,4 +190,3 @@ export class WorkflowService {
         return this.importRepository.save({ id, update_config: mapping })
     }
 }
-

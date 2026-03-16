@@ -12,6 +12,7 @@ import { PublicationSupplement } from './PublicationSupplement.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
+import { PublicationChangeService } from './publication-change.service';
 describe('PublicationService combine', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
@@ -21,11 +22,17 @@ describe('PublicationService combine', () => {
     let idRepository: jest.Mocked<Partial<Repository<PublicationIdentifier>>>;
     let supplRepository: jest.Mocked<Partial<Repository<PublicationSupplement>>>;
     let duplRepository: jest.Mocked<Partial<Repository<PublicationDuplicate>>>;
+    let publicationChangeService: {
+        createPublicationChange: jest.Mock;
+        deletePublicationChangesForPublications: jest.Mock;
+    };
     beforeEach(async () => {
         pubRepository = {
+            find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
+            softDelete: jest.fn(),
         };
         pubAutRepository = {
             delete: jest.fn(),
@@ -49,6 +56,10 @@ describe('PublicationService combine', () => {
             findOne: jest.fn(),
             save: jest.fn(),
         };
+        publicationChangeService = {
+            createPublicationChange: jest.fn(),
+            deletePublicationChangesForPublications: jest.fn(),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -62,6 +73,7 @@ describe('PublicationService combine', () => {
                 { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
+                { provide: PublicationChangeService, useValue: publicationChangeService },
             ],
         }).compile();
 
@@ -161,6 +173,7 @@ describe('PublicationService combine', () => {
         expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: expect.anything() });
         expect(invoiceRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63]);
         expect(duplRepository.delete).toHaveBeenCalledWith([501, 502]);
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
@@ -260,5 +273,56 @@ describe('PublicationService combine', () => {
             expect(result).toBeNull();
         });
     });
-});
 
+    it('logs change patches from reloaded entities instead of partial save payloads', async () => {
+        const before = {
+            id: 7,
+            title: 'Before',
+            pub_type: { id: 11, label: 'Journal' },
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+        const after = {
+            id: 7,
+            title: 'After',
+            pub_type: { id: 11, label: 'Journal' },
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+
+        pubRepository.find
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 7, title: 'After' } as Publication] as any);
+
+        await service.save([{ id: 7, title: 'After' } as Publication], { by_user: 'scanner' } as any);
+
+        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+            patch_data: expect.objectContaining({
+                before: {
+                    title: 'Before',
+                },
+                after: {
+                    title: 'After',
+                },
+            }),
+        }));
+    });
+
+    it('deletes publication changes before soft deleting publications', async () => {
+        pubRepository.findOne.mockResolvedValue({
+            id: 7,
+            authorPublications: [],
+            invoices: [],
+            identifiers: [],
+            supplements: [],
+        } as unknown as Publication);
+        pubRepository.softDelete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 7 } as Publication], true);
+
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+        expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+});

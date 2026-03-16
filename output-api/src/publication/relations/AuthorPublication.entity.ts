@@ -1,9 +1,9 @@
-import { Entity, Column, ManyToOne, PrimaryColumn, JoinColumn, JoinTable, PrimaryGeneratedColumn } from "typeorm";
-import { AuthorPublication as IAuthorPublication} from "../../../../output-interfaces/Publication"
-import { Role } from "./Role.entity";
-import { Institute } from "../../institute/Institute.entity";
+import { Column, Entity, JoinColumn, JoinTable, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { AuthorPublication as IAuthorPublication } from "../../../../output-interfaces/Publication";
 import { Author } from "../../author/Author.entity";
+import { Institute } from "../../institute/Institute.entity";
 import { Publication } from "../core/Publication.entity";
+import { Role } from "./Role.entity";
 
 @Entity()
 export class AuthorPublication implements IAuthorPublication {
@@ -12,7 +12,7 @@ export class AuthorPublication implements IAuthorPublication {
     id?: number;
 
     @Column()
-    authorId:number;
+    authorId?:number;
 
     @ManyToOne(() => Author, author => author.authorPublications)
     @JoinColumn({
@@ -22,7 +22,7 @@ export class AuthorPublication implements IAuthorPublication {
     author?: Author
 
     @Column()
-    publicationId:number;
+    publicationId?:number;
 
     @ManyToOne(() => Publication, pub => pub.authorPublications)
     @JoinColumn({

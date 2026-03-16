@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
 import { Author } from '../../author/Author.entity';
 import { mergeEntities } from '../../common/merge';
 import { AppConfigService } from '../../config/app-config.service';
@@ -16,6 +17,13 @@ import { Publication } from './Publication.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
+import { PublicationChangeService } from './publication-change.service';
+
+interface SavePublicationOptions {
+    workflowReport?: IWorkflowReport;
+    by_user?: string;
+    dry_change?: boolean;
+}
 
 @Injectable()
 export class PublicationService {
@@ -43,14 +51,44 @@ export class PublicationService {
         @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
         @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
         @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
-        private configService: AppConfigService, 
-        private instService: InstituteService) { }
+        private configService: AppConfigService,
+        private instService: InstituteService,
+        private publicationChangeService: PublicationChangeService) { }
 
-    public save(pub: Publication[]) {
-        return this.pubRepository.save(pub).catch(err => {
+    public async save(pub: Publication[], options?: SavePublicationOptions) {
+        const shouldLogChanges = this.shouldCreatePublicationChange(options);
+        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub) : new Map<number, Publication>();
+
+        const saved = await this.pubRepository.save(pub).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
+        const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved) : new Map<number, Publication>();
+
+        if (shouldLogChanges) {
+            for (let i = 0; i < saved.length; i++) {
+                const savedPub = saved[i];
+                if (this.isLockOnlyPayload(pub[i])) continue;
+                const before = savedPub.id ? beforeMap.get(savedPub.id) : null;
+                const after = savedPub.id ? afterMap.get(savedPub.id) ?? savedPub : savedPub;
+                const patch = this.buildPublicationChangePatch(before, after);
+                if (!patch) continue;
+                await this.publicationChangeService.createPublicationChange({
+                    publication: { id: savedPub.id },
+                    workflowReport: options?.workflowReport,
+                    timestamp: new Date(),
+                    by_user: options?.by_user,
+                    dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
+                    patch_data: {
+                        action: before ? 'update' : 'create',
+                        before: patch.before,
+                        after: patch.after,
+                    }
+                });
+            }
+        }
+
+        return saved;
     }
 
     public get(options?: FindManyOptions) {
@@ -197,7 +235,7 @@ export class PublicationService {
                 .andWhere('publication.pub_date_print IS NULL')
                 .andWhere('publication.pub_date_accepted IS NULL')
                 .andWhere('publication.pub_date_submitted IS NULL')
-                
+
         }
         //console.log(query.getSql());
         return query.getRawMany() as Promise<PublicationIndex[]>;;
@@ -214,11 +252,15 @@ export class PublicationService {
         return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
-    public async update(pubs: Publication[]) {
+    public async update(pubs: Publication[], options?: SavePublicationOptions) {
         //return this.pubRepository.save(pubs);
         let i = 0;
+        const shouldLogChanges = this.shouldCreatePublicationChange(options);
+        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pubs) : new Map<number, Publication>();
         for (const pub of pubs) {
-            const orig = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } })
+            const orig = shouldLogChanges
+                ? beforeMap.get(pub.id)
+                : await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } });
             if (pub.identifiers) {
                 for (const id of pub.identifiers) {
                     if (!id.id) {
@@ -253,12 +295,31 @@ export class PublicationService {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
             }
-            if (await this.pubRepository.save(pub)) i++;
+            const savedPub = await this.pubRepository.save(pub);
+            if (savedPub) i++;
+            if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
+                const after = savedPub.id ? await this.loadPublicationForChangeLog(savedPub.id) : savedPub;
+                const patch = this.buildPublicationChangePatch(orig, after);
+                if (!patch) continue;
+                await this.publicationChangeService.createPublicationChange({
+                    publication: { id: savedPub.id },
+                    workflowReport: options?.workflowReport,
+                    timestamp: new Date(),
+                    by_user: options?.by_user,
+                    dry_change: options?.dry_change ?? options?.workflowReport?.dry_run ?? false,
+                    patch_data: {
+                        action: 'update',
+                        before: patch.before,
+                        after: patch.after,
+                    }
+                });
+            }
         }
         return i;
     }
 
     public async delete(pubs: Publication[], soft?: boolean) {
+        const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => !!id);
         for (const pub of pubs) {
             const pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
             for (const autPub of pubE.authorPublications) {
@@ -275,8 +336,9 @@ export class PublicationService {
                 await this.supplRepository.delete(suppl.id);
             }
         }
-        if (!soft) return await this.pubRepository.delete(pubs.map(p => p.id));
-        else return await this.pubRepository.softDelete(pubs.map(p => p.id));
+        await this.publicationChangeService.deletePublicationChangesForPublications(publicationIds);
+        if (!soft) return await this.pubRepository.delete(publicationIds);
+        else return await this.pubRepository.softDelete(publicationIds);
     }
 
     public async getPublication(id: number, reader: boolean, writer: boolean) {
@@ -373,14 +435,24 @@ export class PublicationService {
                 oa_category: true,
                 contract: true,
                 funders: true,
+                language: true,
+                identifiers: true,
+                supplements: true,
                 invoices: {
                     cost_items: {
                         cost_type: true
                     }
+                },
+                authorPublications: {
+                    author: {
+                        institutes: true
+                    },
+                    institute: true,
+                    role: true
                 }
             },
             withDeleted: true
-        })
+        });
 
         return pub;
     }
@@ -395,12 +467,12 @@ export class PublicationService {
                 , 'year')
             .distinct(true)
             .orderBy('year', 'DESC');
-        return query.getRawMany() as Promise<{year: string}[]>;
+        return query.getRawMany() as Promise<{ year: string }[]>;
     }
 
 
 
-    async combine(id1: number, ids: number[], alias_strings? : string[]) {
+    async combine(id1: number, ids: number[], alias_strings?: string[]) {
         const duplicatePairs = await this.duplRepository.find({ where: { id_first: id1, id_second: In(ids) }, withDeleted: true });
         const reversePairs = await this.duplRepository.find({ where: { id_first: In(ids), id_second: id1 }, withDeleted: true });
         const duplicateRecords = duplicatePairs.concat(reversePairs);
@@ -433,6 +505,7 @@ export class PublicationService {
                     await this.pubAutRepository.delete({ publicationId: In(duplicateIds) });
                     await this.invoiceRepository.delete({ publication: { id: In(duplicateIds) } });
                     await this.supplRepository.delete({ publication: { id: In(duplicateIds) } });
+                    await this.publicationChangeService.deletePublicationChangesForPublications(duplicateIds);
                 }
 
                 if (duplicateRecordIds.length > 0) {
@@ -443,12 +516,12 @@ export class PublicationService {
             },
         });
     }
-    getAllDuplicates(soft?:boolean) {
+    getAllDuplicates(soft?: boolean) {
         if (!soft) return this.duplRepository.find();
-        else return this.duplRepository.find({where:{delete_date: Not(IsNull())},withDeleted: true})
+        else return this.duplRepository.find({ where: { delete_date: Not(IsNull()) }, withDeleted: true })
     }
 
-    async getDuplicates(id:number) {
+    async getDuplicates(id: number) {
         /*let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.duplicates", 'duplicates')
             .select("duplicates.id_second")
@@ -457,20 +530,20 @@ export class PublicationService {
             .where("publication.id = :id", {id: id})
 
         return (await query.getRawMany());*/
-        return this.duplRepository.findOne({where: {id}, withDeleted: true})
+        return this.duplRepository.findOne({ where: { id }, withDeleted: true })
     }
 
-    async saveDuplicate(id_first :number, id_second:number, description?: string) {
-        const check = await this.duplRepository.findOne({where: {id_first, id_second}, withDeleted: true})
-        if (!check) return this.duplRepository.save({id_first,id_second,description})
+    async saveDuplicate(id_first: number, id_second: number, description?: string) {
+        const check = await this.duplRepository.findOne({ where: { id_first, id_second }, withDeleted: true })
+        if (!check) return this.duplRepository.save({ id_first, id_second, description })
         else return null;
     }
 
-    async updateDuplicate(dupl:PublicationDuplicate) {
-        return this.duplRepository.update(dupl.id, {id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date});
+    async updateDuplicate(dupl: PublicationDuplicate) {
+        return this.duplRepository.update(dupl.id, { id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date });
     }
 
-    deleteDuplicate(id, soft?:boolean) {
+    deleteDuplicate(id, soft?: boolean) {
         if (soft) return this.duplRepository.softDelete(id);
         else return this.duplRepository.delete(id);
     }
@@ -548,7 +621,7 @@ export class PublicationService {
         if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
         if ((this.invoice || this.cost_type) && !this.filter_joins.has("invoice")) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
         if (this.cost_center && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
-        
+
         if (this.cost_type && !this.filter_joins.has("cost_type")) {
             indexQuery = indexQuery.leftJoin('invoice.cost_items', 'cost_item')
             indexQuery = indexQuery.leftJoin('cost_item.cost_type', 'cost_type')
@@ -755,5 +828,162 @@ export class PublicationService {
         return where;
     }
 
-}
+    private async loadPublicationsForChangeLog(pubs: Publication[]): Promise<Map<number, Publication>> {
+        const ids = pubs.map((publication) => publication.id).filter((id): id is number => !!id);
+        if (ids.length === 0) return new Map<number, Publication>();
 
+        const existing = await this.pubRepository.find({
+            where: { id: In(ids) },
+            relations: {
+                pub_type: true,
+                oa_category: true,
+                greater_entity: true,
+                publisher: true,
+                contract: true,
+                funders: true,
+                invoices: {
+                    cost_items: {
+                        cost_type: true
+                    },
+                    cost_center: true
+                },
+                language: true,
+                identifiers: true,
+                supplements: true
+            },
+            withDeleted: true
+        });
+
+        return new Map(existing.map((publication) => [publication.id, publication]));
+    }
+
+    private async loadPublicationForChangeLog(id: number): Promise<Publication | null> {
+        return (await this.loadPublicationsForChangeLog([{ id } as Publication])).get(id) ?? null;
+    }
+
+    private buildPublicationChangePatch(before?: Publication | null, after?: Publication | null) {
+        const beforeSnapshot = before ? this.buildPublicationChangeSnapshot(before) : null;
+        const afterSnapshot = after ? this.buildPublicationChangeSnapshot(after) : null;
+        const beforePatch = {};
+        const afterPatch = {};
+
+        if (!beforeSnapshot && !afterSnapshot) return null;
+
+        const keys = beforeSnapshot
+            ? Array.from(new Set([...Object.keys(beforeSnapshot), ...Object.keys(afterSnapshot ?? {})]))
+            : Object.keys(afterSnapshot ?? {}).filter((key) => this.hasPublicationChangeValue(afterSnapshot?.[key]));
+
+        for (const key of keys) {
+            const beforeValue = beforeSnapshot?.[key];
+            const afterValue = afterSnapshot?.[key];
+
+            if (!beforeSnapshot && !this.hasPublicationChangeValue(afterValue)) continue;
+            if (this.arePublicationChangeValuesEqual(beforeValue, afterValue)) continue;
+
+            if (beforeSnapshot) beforePatch[key] = beforeValue ?? null;
+            if (afterSnapshot) afterPatch[key] = afterValue ?? null;
+        }
+
+        if (Object.keys(beforePatch).length === 0 && Object.keys(afterPatch).length === 0) return null;
+
+        return {
+            before: Object.keys(beforePatch).length > 0 ? beforePatch : null,
+            after: Object.keys(afterPatch).length > 0 ? afterPatch : null,
+        };
+    }
+
+    private buildPublicationChangeSnapshot(publication: Publication) {
+        return {
+            authors: publication.authors,
+            title: publication.title,
+            doi: publication.doi,
+            pub_date: this.serializeDate(publication.pub_date),
+            pub_date_submitted: this.serializeDate(publication.pub_date_submitted),
+            pub_date_accepted: this.serializeDate(publication.pub_date_accepted),
+            pub_date_print: this.serializeDate(publication.pub_date_print),
+            link: publication.link,
+            dataSource: publication.dataSource,
+            language: publication.language ? { id: publication.language.id, label: publication.language['label'] } : null,
+            add_info: publication.add_info,
+            status: publication.status,
+            is_oa: publication.is_oa,
+            oa_status: publication.oa_status,
+            is_journal_oa: publication.is_journal_oa,
+            best_oa_host: publication.best_oa_host,
+            best_oa_license: publication.best_oa_license,
+            abstract: publication.abstract,
+            volume: publication.volume,
+            issue: publication.issue,
+            first_page: publication.first_page,
+            last_page: publication.last_page,
+            publisher_location: publication.publisher_location,
+            edition: publication.edition,
+            article_number: publication.article_number,
+            page_count: publication.page_count,
+            peer_reviewed: publication.peer_reviewed,
+            cost_approach: publication.cost_approach,
+            cost_approach_currency: publication.cost_approach_currency,
+            not_budget_relevant: publication.not_budget_relevant,
+            grant_number: publication.grant_number,
+            contract_year: publication.contract_year,
+            pub_type: publication.pub_type ? { id: publication.pub_type.id, label: publication.pub_type['label'] } : null,
+            oa_category: publication.oa_category ? { id: publication.oa_category.id, label: publication.oa_category['label'] } : null,
+            greater_entity: publication.greater_entity ? { id: publication.greater_entity.id, label: publication.greater_entity['label'] } : null,
+            publisher: publication.publisher ? { id: publication.publisher.id, label: publication.publisher['label'] } : null,
+            contract: publication.contract ? { id: publication.contract.id, label: publication.contract['label'] } : null,
+            funders: publication.funders?.map((funder) => ({ id: funder.id, label: funder.label, doi: funder.doi })) ?? [],
+            invoices: publication.invoices?.map((invoice) => ({
+                id: invoice.id,
+                number: invoice.number,
+                date: this.serializeDate(invoice.date),
+                booking_date: this.serializeDate(invoice.booking_date),
+                booking_amount: invoice.booking_amount,
+                cost_center: invoice.cost_center ? { id: invoice.cost_center.id, label: invoice.cost_center['label'] } : null,
+                cost_items: invoice.cost_items?.map((costItem) => ({
+                    id: costItem.id,
+                    euro_value: costItem.euro_value,
+                    orig_value: costItem.orig_value,
+                    orig_currency: costItem.orig_currency,
+                    vat: costItem.vat,
+                    cost_type: costItem.cost_type ? { id: costItem.cost_type.id, label: costItem.cost_type['label'] } : null
+                })) ?? []
+            })) ?? [],
+            identifiers: publication.identifiers?.map((identifier) => ({
+                id: identifier.id,
+                type: identifier.type,
+                value: identifier.value
+            })) ?? [],
+            supplements: publication.supplements?.map((supplement) => ({
+                id: supplement.id,
+                link: supplement.link
+            })) ?? []
+        };
+    }
+
+    private arePublicationChangeValuesEqual(before: unknown, after: unknown): boolean {
+        return JSON.stringify(before) === JSON.stringify(after);
+    }
+
+    private hasPublicationChangeValue(value: unknown): boolean {
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'string') return value.length > 0;
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'object') return Object.keys(value).length > 0;
+        return true;
+    }
+
+    private serializeDate(date?: Date) {
+        return date ? new Date(date).toISOString() : null;
+    }
+
+    private shouldCreatePublicationChange(options?: SavePublicationOptions): boolean {
+        return !!options?.workflowReport?.id || !!options?.by_user;
+    }
+
+    private isLockOnlyPayload(publication?: Publication): boolean {
+        if (!publication) return false;
+        const keys = Object.keys(publication).filter((key) => publication[key] !== undefined);
+        return keys.length > 0 && keys.every((key) => key === 'id' || key === 'locked_at');
+    }
+
+}

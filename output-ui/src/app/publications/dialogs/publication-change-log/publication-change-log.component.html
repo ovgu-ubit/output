@@ -1,0 +1,34 @@
+<div class="change-log-container">
+    <p *ngIf="loading" class="state-text">Änderungslog wird geladen...</p>
+    <p *ngIf="!loading && errorMessage" class="state-text error-text">{{ errorMessage }}</p>
+    <p *ngIf="!loading && !errorMessage && changeEntries.length === 0" class="state-text">{{ emptyMessage }}</p>
+
+    <div *ngIf="!loading && !errorMessage && changeEntries.length > 0" class="change-list">
+        <div *ngFor="let entry of changeEntries" class="change-entry">
+            <div class="change-meta">
+                <span class="change-badge">{{ getActionLabel(entry.change) }}</span>
+                <span *ngIf="getPublicationChangeId(entry.change)">Publikation #{{ getPublicationChangeId(entry.change) }}</span>
+                <span>{{ entry.change.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</span>
+                <span *ngIf="entry.change.by_user">von {{ entry.change.by_user }}</span>
+                <span *ngIf="getWorkflowReportLabel(entry.change)">{{ getWorkflowReportLabel(entry.change) }}</span>
+            </div>
+
+            <table *ngIf="entry.rows.length > 0" class="change-table">
+                <thead>
+                    <tr>
+                        <th>Feld</th>
+                        <th>Vorher</th>
+                        <th>Nachher</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of entry.rows">
+                        <th>{{ row.label }}</th>
+                        <td class="change-value">{{ row.before }}</td>
+                        <td class="change-value">{{ row.after }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

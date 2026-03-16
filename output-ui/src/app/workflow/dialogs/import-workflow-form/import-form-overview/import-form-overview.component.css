@@ -6,6 +6,17 @@
   font-style: italic;
 }
 
+.report-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.report-status {
+  color: #5f6368;
+  font-size: 0.92rem;
+}
+
 .report-list {
   list-style: none;
   margin: 0;
@@ -27,6 +38,6 @@
 }
 
 .delete-button {
-  height: 36px;       /* Standard mat-raised-button Höhe */
+  height: 36px;
   width: 36px;
 }

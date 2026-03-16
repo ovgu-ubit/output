@@ -22,6 +22,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService, ImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @ImportService({ path: 'pubmed' })
 @Injectable()
@@ -32,8 +33,8 @@ export class PubMedImportService extends AbstractImportService {
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
-        protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     name = 'PubMed';

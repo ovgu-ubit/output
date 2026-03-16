@@ -22,6 +22,7 @@ import { AbstractImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { EnrichService } from './api-enrich-doi.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @EnrichService({path: 'doaj'})
 @Injectable()
@@ -139,8 +140,8 @@ export class DOAJEnrichService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, 
-        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected languageService: LanguageService,  protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     private publicationsUpdate = [];

@@ -58,7 +58,10 @@ import { JSONataImportService } from './import/jsonata-import';
 import { WorkflowService } from './workflow.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportWorkflow } from './ImportWorkflow.entity';
+import { WorkflowReport } from './WorkflowReport.entity';
+import { WorkflowReportItem } from './WorkflowReportItem.entity';
 import { WorkflowController } from './WorkflowController';
+import { WorkflowReportService } from './workflow-report.service';
 
 @Module({
   imports: [
@@ -79,7 +82,7 @@ import { WorkflowController } from './WorkflowController';
     }),
     ScheduleModule.forRoot(),
     DiscoveryModule,
-    TypeOrmModule.forFeature([ImportWorkflow])
+    TypeOrmModule.forFeature([ImportWorkflow, WorkflowReport, WorkflowReportItem])
   ],
   controllers: [
     ImportController,
@@ -96,7 +99,7 @@ import { WorkflowController } from './WorkflowController';
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService, WorkflowService,
+    DiscoveryService, WorkflowService, WorkflowReportService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],
@@ -159,6 +162,6 @@ import { WorkflowController } from './WorkflowController';
         return instances as AbstractExportService[];
       }
     },],
-  exports: ['Imports', 'Enrichs', 'Exports', 'Checks']
+  exports: ['Imports', 'Enrichs', 'Exports', 'Checks', WorkflowReportService]
 })
 export class WorkflowModule { }

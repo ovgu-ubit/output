@@ -35,11 +35,11 @@
                         }}</mat-icon></button>
             </div>
             <mat-nav-list class="nav">
-                <a mat-list-item [routerLink]="['overview']" routerLinkActive="active" matTooltip="Übersicht"
+                <a mat-list-item [routerLink]="['overview']" routerLinkActive="active" matTooltip="Protokolle"
                     [matTooltipDisabled]="this.opened" matTooltipPosition="right"
                     [routerLinkActiveOptions]="{exact:true}">
                     <mat-icon matListItemIcon>info</mat-icon>
-                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Übersicht</span>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Protokolle</span>
                 </a>
 
                 <a mat-list-item [routerLink]="['general']" routerLinkActive="active" matTooltip="Allgemein"

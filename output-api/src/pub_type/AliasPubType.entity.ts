@@ -1,5 +1,5 @@
-import { Column, Entity, JoinColumn, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
-import { AliasPubType as IAliasPubType} from "../../../output-interfaces/Alias"
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { AliasPubType as IAliasPubType } from "../../../output-interfaces/Alias";
 import { PublicationType } from "./PublicationType.entity";
 
 @Entity()
@@ -14,7 +14,7 @@ export class AliasPubType implements IAliasPubType {
     element?: PublicationType
 
     @PrimaryColumn()
-    elementId:number;
+    elementId?:number;
 
     @Column()
     @PrimaryColumn()

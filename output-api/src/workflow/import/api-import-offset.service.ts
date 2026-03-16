@@ -17,6 +17,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
 import { AppConfigService } from '../../config/app-config.service';
 import { ReportItemService } from '../report-item.service';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @Injectable()
 /**
@@ -29,8 +30,8 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
-        protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     private newPublications: Publication[] = [];

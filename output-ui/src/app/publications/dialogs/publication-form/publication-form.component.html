@@ -510,6 +510,16 @@
                     </button>
                 </mat-form-field>
             </mat-expansion-panel>
+
+            <mat-expansion-panel *ngIf="this.pub?.id">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>
+                        Änderungslog
+                    </mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <app-publication-change-log [publicationId]="this.pub?.id"></app-publication-change-log>
+            </mat-expansion-panel>
         </mat-accordion>
     </form>
 </mat-dialog-content>
