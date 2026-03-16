@@ -111,7 +111,10 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     if (!workflows?.length) return of([]);
 
     return forkJoin(workflows.map((workflow) => {
-      if (!workflow.id) return of(workflow);
+      // Only published (non-archived) workflows can have relevant "last run" metadata.
+      // Avoid report calls for drafts because the backend report endpoint internally loads
+      // the workflow and can set a draft lock as a side effect.
+      if (!workflow.id || !workflow.published_at || !!workflow.deleted_at) return of(workflow);
 
       return this.getWorkflowReports(workflow.id).pipe(map((reports) => {
         const lastReport = reports?.[0];
