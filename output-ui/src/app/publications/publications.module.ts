@@ -14,13 +14,13 @@ import { ClipboardModule } from '@angular/cdk/clipboard';
   declarations: [
     PublicationsComponent, 
     PublicationFormComponent, 
-    PublicationChangeLogComponent,
     ReportingYearFormComponent,
     FilterViewComponent
   ],
   imports: [
     ClipboardModule,
     SharedModule,
+    PublicationChangeLogComponent,
     TableModule,
     FormModule,
     PublicationsRoutingModule

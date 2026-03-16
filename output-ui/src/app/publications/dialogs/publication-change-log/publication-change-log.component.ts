@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { SharedModule } from 'src/app/shared/shared.module';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublicationChange } from '../../../../../../output-interfaces/Workflow';
 
@@ -22,12 +23,16 @@ type PublicationChangeEntry = {
 
 @Component({
   selector: 'app-publication-change-log',
+  imports: [SharedModule],
   templateUrl: './publication-change-log.component.html',
   styleUrls: ['./publication-change-log.component.css'],
-  standalone: false
+  standalone: true
 })
 export class PublicationChangeLogComponent implements OnChanges {
   @Input() publicationId?: number | null;
+  @Input() changes?: PublicationChange[] | null;
+  @Input() emptyMessage = 'Keine Aenderungen vorhanden.';
+  @Input() loadErrorMessage = 'Aenderungslog konnte nicht geladen werden.';
 
   changeEntries: PublicationChangeEntry[] = [];
   loading = false;
@@ -62,16 +67,16 @@ export class PublicationChangeLogComponent implements OnChanges {
     page_count: 'Seitenzahl',
     peer_reviewed: 'Peer-reviewed',
     cost_approach: 'Kostenansatz',
-    cost_approach_currency: 'Währung',
+    cost_approach_currency: 'Waehrung',
     not_budget_relevant: 'Nicht budgetrelevant',
-    grant_number: 'Fördernummer',
+    grant_number: 'Foerdernummer',
     contract_year: 'Vertragsjahr',
     pub_type: 'Publikationstyp',
     oa_category: 'OA-Kategorie',
-    greater_entity: 'Größere Einheit',
+    greater_entity: 'Groessere Einheit',
     publisher: 'Verlag',
     contract: 'Vertrag',
-    funders: 'Förderer',
+    funders: 'Foerderer',
     invoices: 'Rechnungen',
     identifiers: 'Identifikatoren',
     supplements: 'Ressourcen',
@@ -79,8 +84,15 @@ export class PublicationChangeLogComponent implements OnChanges {
 
   constructor(private publicationService: PublicationService) { }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (!('publicationId' in changes)) return;
+  ngOnChanges(simpleChanges: SimpleChanges): void {
+    if ('changes' in simpleChanges && this.changes !== undefined) {
+      this.loading = false;
+      this.errorMessage = '';
+      this.changeEntries = this.toEntries(this.changes ?? []);
+      return;
+    }
+
+    if (!('publicationId' in simpleChanges) || this.changes !== undefined) return;
     if (!this.publicationId) {
       this.changeEntries = [];
       this.errorMessage = '';
@@ -97,7 +109,7 @@ export class PublicationChangeLogComponent implements OnChanges {
       case 'update':
         return 'Aktualisiert';
       default:
-        return 'Geändert';
+        return 'Geaendert';
     }
   }
 
@@ -110,18 +122,22 @@ export class PublicationChangeLogComponent implements OnChanges {
     this.errorMessage = '';
     this.publicationService.getChanges(publicationId).subscribe({
       next: (changes) => {
-        this.changeEntries = changes.map((change) => ({
-          change,
-          rows: this.buildRows(change),
-        }));
+        this.changeEntries = this.toEntries(changes);
         this.loading = false;
       },
       error: () => {
         this.changeEntries = [];
-        this.errorMessage = 'Änderungslog konnte nicht geladen werden.';
+        this.errorMessage = this.loadErrorMessage;
         this.loading = false;
       }
     });
+  }
+
+  private toEntries(changes: PublicationChange[]): PublicationChangeEntry[] {
+    return changes.map((change) => ({
+      change,
+      rows: this.buildRows(change),
+    }));
   }
 
   private getPatch(change: PublicationChange): PublicationChangePatch | null {

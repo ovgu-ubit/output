@@ -66,20 +66,10 @@
 
         <div class="log-section">
             <h3>Publikationsaenderungen</h3>
-            @if (!report.publication_changes || report.publication_changes.length === 0) {
-            <p>Keine Publikationsaenderungen vorhanden.</p>
-            } @else {
-            <div class="change-list">
-                <div *ngFor="let change of report.publication_changes" class="change-row">
-                    <div class="change-meta">
-                        <span>Angepasste Publikation #{{ getPublicationChangeId(change) ?? 'unbekannt' }}</span>
-                        <span>{{ change.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</span>
-                        <span *ngIf="change.by_user">von {{ change.by_user }}</span>
-                    </div>
-                    <pre>{{ change.patch_data | json }}</pre>
-                </div>
-            </div>
-            }
+            <app-publication-change-log
+                [changes]="report.publication_changes ?? []"
+                emptyMessage="Keine Publikationsaenderungen vorhanden.">
+            </app-publication-change-log>
         </div>
     </mat-card-content>
 </mat-card>

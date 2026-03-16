@@ -1,7 +1,7 @@
 <div class="change-log-container">
-    <p *ngIf="loading" class="state-text">Änderungslog wird geladen...</p>
+    <p *ngIf="loading" class="state-text">Aenderungslog wird geladen...</p>
     <p *ngIf="!loading && errorMessage" class="state-text error-text">{{ errorMessage }}</p>
-    <p *ngIf="!loading && !errorMessage && changeEntries.length === 0" class="state-text">Keine Änderungen vorhanden.</p>
+    <p *ngIf="!loading && !errorMessage && changeEntries.length === 0" class="state-text">{{ emptyMessage }}</p>
 
     <div *ngIf="!loading && !errorMessage && changeEntries.length > 0" class="change-list">
         <div *ngFor="let entry of changeEntries" class="change-entry">

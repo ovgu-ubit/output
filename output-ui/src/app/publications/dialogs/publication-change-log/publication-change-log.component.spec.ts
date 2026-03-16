@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { SharedModule } from 'src/app/shared/shared.module';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublicationChangeLogComponent } from './publication-change-log.component';
 
@@ -19,8 +18,7 @@ describe('PublicationChangeLogComponent', () => {
     } as any]));
 
     await TestBed.configureTestingModule({
-      declarations: [PublicationChangeLogComponent],
-      imports: [SharedModule],
+      imports: [PublicationChangeLogComponent],
       providers: [
         { provide: PublicationService, useValue: publicationService }
       ]
@@ -46,5 +44,27 @@ describe('PublicationChangeLogComponent', () => {
     expect(publicationService.getChanges).toHaveBeenCalledWith(42);
     expect(component.changeEntries.length).toBe(1);
     expect(component.changeEntries[0].rows[0].label).toBe('Titel');
+  });
+
+  it('uses provided changes without triggering a reload', () => {
+    component.changes = [{
+      patch_data: {
+        before: { doi: '10.old/example' },
+        after: { doi: '10.new/example' }
+      }
+    } as any];
+
+    component.ngOnChanges({
+      changes: {
+        currentValue: component.changes,
+        previousValue: undefined,
+        firstChange: true,
+        isFirstChange: () => true
+      }
+    });
+
+    expect(publicationService.getChanges).not.toHaveBeenCalled();
+    expect(component.changeEntries.length).toBe(1);
+    expect(component.changeEntries[0].rows[0].label).toBe('DOI');
   });
 });
