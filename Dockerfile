@@ -11,6 +11,7 @@ COPY . .
 # ---- Backend ----
 WORKDIR /usr/src/app/output-api
 
+RUN mkdir -p /deploy
 # Install the application dependencies
 RUN npm i
 RUN npm audit fix 2>&1 > /deploy/deploy.log || echo "Errors while performing audit fix for api"
@@ -39,6 +40,7 @@ FROM node:22 AS runtime
 WORKDIR /usr/src/app/output-api
 
 # Copy distributables from build container
+COPY --from=build /deploy /deploy
 COPY --from=build /usr/src/app/output-api/node_modules ./node_modules
 COPY --from=build /usr/src/app/output-api/dist ./dist
 COPY --from=build /usr/src/app/output-api/config ./config
