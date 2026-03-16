@@ -22,8 +22,10 @@ describe('PublicationService combine', () => {
     let idRepository: jest.Mocked<Partial<Repository<PublicationIdentifier>>>;
     let supplRepository: jest.Mocked<Partial<Repository<PublicationSupplement>>>;
     let duplRepository: jest.Mocked<Partial<Repository<PublicationDuplicate>>>;
+    let publicationChangeService: { createPublicationChange: jest.Mock };
     beforeEach(async () => {
         pubRepository = {
+            find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
@@ -50,6 +52,9 @@ describe('PublicationService combine', () => {
             findOne: jest.fn(),
             save: jest.fn(),
         };
+        publicationChangeService = {
+            createPublicationChange: jest.fn(),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -63,7 +68,7 @@ describe('PublicationService combine', () => {
                 { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
-                { provide: PublicationChangeService, useValue: { createPublicationChange: jest.fn() } },
+                { provide: PublicationChangeService, useValue: publicationChangeService },
             ],
         }).compile();
 
@@ -262,5 +267,39 @@ describe('PublicationService combine', () => {
             expect(result).toBeNull();
         });
     });
-});
 
+    it('logs change patches from reloaded entities instead of partial save payloads', async () => {
+        const before = {
+            id: 7,
+            title: 'Before',
+            pub_type: { id: 11, label: 'Journal' },
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+        const after = {
+            id: 7,
+            title: 'After',
+            pub_type: { id: 11, label: 'Journal' },
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+
+        pubRepository.find
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 7, title: 'After' } as Publication] as any);
+
+        await service.save([{ id: 7, title: 'After' } as Publication], { by_user: 'scanner' } as any);
+
+        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+            patch_data: expect.objectContaining({
+                before: {
+                    title: 'Before',
+                },
+                after: {
+                    title: 'After',
+                },
+            }),
+        }));
+    });
+});

@@ -63,13 +63,15 @@ export class PublicationService {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
+        const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved) : new Map<number, Publication>();
 
         if (shouldLogChanges) {
             for (let i = 0; i < saved.length; i++) {
                 const savedPub = saved[i];
                 if (this.isLockOnlyPayload(pub[i])) continue;
                 const before = savedPub.id ? beforeMap.get(savedPub.id) : null;
-                const patch = this.buildPublicationChangePatch(before, savedPub);
+                const after = savedPub.id ? afterMap.get(savedPub.id) ?? savedPub : savedPub;
+                const patch = this.buildPublicationChangePatch(before, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
@@ -253,8 +255,12 @@ export class PublicationService {
     public async update(pubs: Publication[], options?: SavePublicationOptions) {
         //return this.pubRepository.save(pubs);
         let i = 0;
+        const shouldLogChanges = this.shouldCreatePublicationChange(options);
+        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pubs) : new Map<number, Publication>();
         for (const pub of pubs) {
-            const orig = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } })
+            const orig = shouldLogChanges
+                ? beforeMap.get(pub.id)
+                : await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } });
             if (pub.identifiers) {
                 for (const id of pub.identifiers) {
                     if (!id.id) {
@@ -291,8 +297,9 @@ export class PublicationService {
             }
             const savedPub = await this.pubRepository.save(pub);
             if (savedPub) i++;
-            if (savedPub && this.shouldCreatePublicationChange(options) && !this.isLockOnlyPayload(pub)) {
-                const patch = this.buildPublicationChangePatch(orig, savedPub);
+            if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
+                const after = savedPub.id ? await this.loadPublicationForChangeLog(savedPub.id) : savedPub;
+                const patch = this.buildPublicationChangePatch(orig, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
@@ -837,6 +844,10 @@ export class PublicationService {
         return new Map(existing.map((publication) => [publication.id, publication]));
     }
 
+    private async loadPublicationForChangeLog(id: number): Promise<Publication | null> {
+        return (await this.loadPublicationsForChangeLog([{ id } as Publication])).get(id) ?? null;
+    }
+
     private buildPublicationChangePatch(before?: Publication | null, after?: Publication | null) {
         const beforeSnapshot = before ? this.buildPublicationChangeSnapshot(before) : null;
         const afterSnapshot = after ? this.buildPublicationChangeSnapshot(after) : null;
@@ -963,4 +974,3 @@ export class PublicationService {
     }
 
 }
-
