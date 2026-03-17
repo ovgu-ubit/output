@@ -60,7 +60,7 @@ describe('JSONataImportService.setVariables', () => {
         await expect(service.setVariables('https://example.test/[missing]')).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('applies delayInMs to lookup requests', async () => {
+    it('delays the actual lookup request by delayInMs', async () => {
         jest.useFakeTimers();
         const response = { data: { ok: true } };
         http.get.mockReturnValue(of(response));
@@ -78,10 +78,17 @@ describe('JSONataImportService.setVariables', () => {
         });
 
         await Promise.resolve();
-        expect(http.get).toHaveBeenCalledWith('https://example.test/search&retmax=1000&retstart=100');
+        expect(http.get).not.toHaveBeenCalled();
         expect(resolved).toBe(false);
 
-        jest.advanceTimersByTime(250);
+        jest.advanceTimersByTime(249);
+        await Promise.resolve();
+        expect(http.get).not.toHaveBeenCalled();
+
+        jest.advanceTimersByTime(1);
+        await Promise.resolve();
+        expect(http.get).toHaveBeenCalledWith('https://example.test/search&retmax=1000&retstart=100');
+
         await expect(promise).resolves.toBe(response);
         expect(resolved).toBe(true);
         jest.useRealTimers();

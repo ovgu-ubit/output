@@ -3,7 +3,7 @@ import { BadRequestException, ConflictException, Injectable, InternalServerError
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
-import { concat, delay, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled } from 'rxjs';
+import { concat, concatMap, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled, timer } from 'rxjs';
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
@@ -808,10 +808,10 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
         for (const id of ids) {
             const url = await this.setVariables(this.retrieveURL, undefined, false, id);
-            obs$.push(this.http.get(url));
+            obs$.push(this.delayedGet(url));
         }
 
-        concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
+        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: AxiosResponse) => {
                 if (!data) return;
                 try {
@@ -906,7 +906,7 @@ export class JSONataImportService extends AbstractImportService {
             }
             return null;
         })));
-        concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
+        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: AxiosResponse) => {
                 if (!data) return;
                 try {
@@ -985,11 +985,11 @@ export class JSONataImportService extends AbstractImportService {
 
         for (const pub of publications) {
             const url = await this.setVariables(this.url_doi, pub.doi);
-            obs$.push(this.http.get(url))
+            obs$.push(this.delayedGet(url))
         }
 
         let errors = 0;
-        concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
+        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: AxiosResponse) => {
                 if (!data) {
                     errors++
@@ -1056,13 +1056,16 @@ export class JSONataImportService extends AbstractImportService {
         const url = this.url_count + `&${this.offset_name}=` + this.offset_count;
         return this.http.get(url);
     }
+    protected delayedGet(url: string): Observable<AxiosResponse> {
+        return timer(this.delayInMs).pipe(concatMap(() => this.http.get(url)));
+    }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
         const url = this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset;
-        return this.http.get(url).pipe(delay(this.delayInMs));
+        return this.delayedGet(url);
     }
     protected request(offset: number): Observable<AxiosResponse> {
         const url = this.completeURL + `&${this.offset_name}=` + offset;
-        return this.http.get(url);
+        return this.delayedGet(url);
     }
 
     protected async getNumber(response: AxiosResponse, format = this.importDefinition.strategy.format): Promise<number> {
