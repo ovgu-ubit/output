@@ -14,10 +14,10 @@ export class ContractComponent implements IContractComponent {
     id?: number;
 
     @ManyToOne(() => Contract, (p) => p.id, { onDelete: 'CASCADE' })
-    contract: Contract;
+    contract?: Contract;
 
     @Column()
-    label: string;
+    label?: string;
 
     @Column({ nullable: true, type: 'enum', enum: ContractModel })
     contract_model?: ContractModel;
