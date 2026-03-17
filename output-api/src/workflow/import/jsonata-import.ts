@@ -215,7 +215,7 @@ export class JSONataImportService extends AbstractImportService {
     async setVariables(queryString: string, doi?: string, safe = false, id?: string | number): Promise<string> {
         if (!queryString) return null;
         let result = queryString;
-        const regex = /\[([^\]]+)\]/g
+        const regex = /(?<!\\)\[([^\]]+)\]/g
         const keys = [...result.matchAll(regex)].map(m => m[1]);
         const values = await Promise.all(keys.map(k => this.configService.get(k)));
         for (let i = 0; i < keys.length; i++) {
@@ -232,7 +232,7 @@ export class JSONataImportService extends AbstractImportService {
             if (value) result = result.replace(`[${key}]`, value);
             else if (!safe) throw new BadRequestException(`value for ${key} is not available`);
         }
-        return result;
+        return result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
     }
 
     protected parseResponseData(response: AxiosResponse, format = this.importDefinition.strategy.format) {
@@ -547,7 +547,7 @@ export class JSONataImportService extends AbstractImportService {
                 if (pos > count) result.result.issues.push({ message: 'Position greater than count', error: null })
 
                 try {
-                    const id = ids[pos - 1];
+                    const id = ids[pos > 0 ? pos - 1 : 0];
                     ob$ = this.http.get(await this.setVariables(this.retrieveURL, undefined, false, id));
                     resp = await firstValueFrom(ob$);
                     result.read.response = this.collectKeys(resp.data)
@@ -1058,7 +1058,7 @@ export class JSONataImportService extends AbstractImportService {
     }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
         const url = this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset;
-        return this.http.get(url);
+        return this.http.get(url).pipe(delay(this.delayInMs));
     }
     protected request(offset: number): Observable<AxiosResponse> {
         const url = this.completeURL + `&${this.offset_name}=` + offset;
