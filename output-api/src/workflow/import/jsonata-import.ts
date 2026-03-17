@@ -771,6 +771,7 @@ export class JSONataImportService extends AbstractImportService {
             throw new BadRequestException('Import cannot be run due to missing parameters.')
         }
 
+        this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.workflowReport = await this.workflowReportService.save({

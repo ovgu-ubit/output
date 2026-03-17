@@ -130,7 +130,7 @@ export class WorkflowService {
         } else if (importDef.strategy_type === Strategy.URL_LOOKUP_AND_RETRIEVE) {
             await this.importService.setReportingYear(reporting_year + "");
             await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-            await this.importService.importLookupAndRetrieve(update, user, dryRun);
+            await this.importService.import(update, user, dryRun);
         } else if (importDef.strategy_type === Strategy.URL_DOI) {
             await this.importService.setUp(importDef, importDef.update_config);
             if (ids && ids.length > 0) {
