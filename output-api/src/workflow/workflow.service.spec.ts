@@ -21,6 +21,7 @@ describe('WorkflowService', () => {
         setReportingYear: jest.Mock;
         setUp: jest.Mock;
         import: jest.Mock;
+        importLookupAndRetrieve: jest.Mock;
         enrich: jest.Mock;
         loadFile: jest.Mock;
     };
@@ -38,6 +39,7 @@ describe('WorkflowService', () => {
             setReportingYear: jest.fn(),
             setUp: jest.fn(),
             import: jest.fn(),
+            importLookupAndRetrieve: jest.fn(),
             enrich: jest.fn(),
             loadFile: jest.fn(),
         };
@@ -131,12 +133,12 @@ describe('WorkflowService', () => {
         importRepository.findOneBy!.mockResolvedValue(publishedWorkflow);
         importService.setReportingYear.mockResolvedValue(undefined);
         importService.setUp.mockResolvedValue(undefined);
-        importService.import.mockResolvedValue(undefined);
+        importService.importLookupAndRetrieve.mockResolvedValue(undefined);
 
         await service.startImport(33, 2024, [], null, true, 'tester', false);
 
         expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
         expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
-        expect(importService.import).toHaveBeenCalledWith(true, 'tester', false);
+        expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
     });
 });
