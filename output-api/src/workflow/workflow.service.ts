@@ -24,13 +24,13 @@ export class WorkflowService {
         let options = {};
         if (type === 'draft') options = { where: { published_at: IsNull(), deleted_at: IsNull() } };
         else if (type === 'published') options = { where: { published_at: Not(IsNull()), deleted_at: IsNull() } };
-        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull())}, withDeleted: true };
+        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull()) }, withDeleted: true };
 
         return this.importRepository.find(options);
     }
 
     async getImport(id?: number) {
-        const res = await this.importRepository.findOne({where: {id}, withDeleted: true });
+        const res = await this.importRepository.findOne({ where: { id }, withDeleted: true });
         if (!res) throw new NotFoundException();
         if (res.published_at || res.deleted_at) return res;
         else if (!res.locked_at) {
@@ -127,8 +127,11 @@ export class WorkflowService {
             await this.importService.setReportingYear(reporting_year + "");
             await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
             await this.importService.import(update, user, dryRun);
-        }
-        else if (importDef.strategy_type === Strategy.URL_DOI) {
+        } else if (importDef.strategy_type === Strategy.URL_LOOKUP_AND_RETRIEVE) {
+            await this.importService.setReportingYear(reporting_year + "");
+            await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
+            await this.importService.importLookupAndRetrieve(update, user, dryRun);
+        } else if (importDef.strategy_type === Strategy.URL_DOI) {
             await this.importService.setUp(importDef, importDef.update_config);
             if (ids && ids.length > 0) {
                 this.importService.enrich_whereClause = { where: { id: In(ids) } };
@@ -156,7 +159,7 @@ export class WorkflowService {
     }
 
     async isLocked(id: number): Promise<boolean> {
-        const db = await this.importRepository.findOne({where: { id }, withDeleted: true})
+        const db = await this.importRepository.findOne({ where: { id }, withDeleted: true })
         if (!db) throw new NotFoundException();
         if (!db.locked_at || db.deleted_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;

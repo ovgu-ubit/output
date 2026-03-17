@@ -130,6 +130,10 @@ export class JSONataImportService extends AbstractImportService {
     protected search_text_combiner;
 
     private completeURL = '';
+    private lookupURL = '';
+    private retrieveURL = '';
+    private lookupFormat = 'json';
+    private retrieveFormat = 'json';
 
     protected importDefinition: ImportWorkflow;
     protected reporting_year;
@@ -159,6 +163,10 @@ export class JSONataImportService extends AbstractImportService {
         this.get_doi_item = this.importDefinition.strategy.get_doi_item;
         this.url_doi = this.importDefinition.strategy.url_doi;
         this.delayInMs = this.importDefinition.strategy.delayInMs;
+        this.lookupURL = this.importDefinition.strategy.url_lookup;
+        this.retrieveURL = this.importDefinition.strategy.url_retrieve;
+        this.lookupFormat = this.importDefinition.strategy.lookup_format ?? this.importDefinition.strategy.format ?? 'json';
+        this.retrieveFormat = this.importDefinition.strategy.retrieve_format ?? this.importDefinition.strategy.format ?? 'json';
 
         if (updateMapping) this.updateMapping = updateMapping;
         this.config = {};
@@ -183,6 +191,7 @@ export class JSONataImportService extends AbstractImportService {
         //process query string
         this.url = await this.setVariables(this.url);
         this.url_count = await this.setVariables(this.url_count);
+        this.lookupURL = await this.setVariables(this.lookupURL);
 
         this.name = this.importDefinition.label + '_v' + this.importDefinition.version;
 
@@ -195,13 +204,15 @@ export class JSONataImportService extends AbstractImportService {
                 affiliation_text: this.affiliationText ? this.affiliationText : undefined,
                 url: await this.setVariables(this.url, undefined, true) ?? undefined,
                 url_count: await this.setVariables(this.url_count, undefined, true) ?? undefined,
+                url_lookup: await this.setVariables(this.lookupURL, undefined, true) ?? undefined,
+                url_retrieve: await this.setVariables(this.retrieveURL, undefined, true) ?? undefined,
                 url_doi: await this.setVariables(this.url_doi, undefined, true) ?? undefined,
                 enrich_whereClause: this.enrich_whereClause ?? undefined,
             }
         })
     }
 
-    async setVariables(queryString: string, doi?: string, safe = false): Promise<string> {
+    async setVariables(queryString: string, doi?: string, safe = false, id?: string | number): Promise<string> {
         if (!queryString) return null;
         let result = queryString;
         const regex = /\[([^\]]+)\]/g
@@ -213,6 +224,7 @@ export class JSONataImportService extends AbstractImportService {
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
             else if (key === 'doi') value = doi;
+            else if (key === 'id' || key === 'lookup_id') value = id;
             else if (key === 'affiliation_tags') value = this.affiliationText;
             else if (safe && key.includes('SECRET')) value = key
             else value = values[i] ?? ""; // oder Fehler werfen
@@ -223,14 +235,17 @@ export class JSONataImportService extends AbstractImportService {
         return result;
     }
 
+    protected parseResponseData(response: AxiosResponse, format = this.importDefinition.strategy.format) {
+        let data = response.data;
+        if (format === 'xml') {
+            data = JSON.parse(xmljs.xml2json(data, { compact: true }));
+        }
+        return data;
+    }
+
     protected async getData(response: AxiosResponse): Promise<JSONataParsedObject[]> {
         try {
-            let data = response.data;
-            if (this.importDefinition.strategy.format) {
-                if (this.importDefinition.strategy.format === 'xml') {
-                    data = JSON.parse(xmljs.xml2json(data, { compact: true }));
-                }
-            }
+            const data = this.parseResponseData(response);
 
             const mapping = jsonata(this.importDefinition.strategy.get_items)
             const items = (await mapping.evaluate(data))
@@ -243,14 +258,34 @@ export class JSONataImportService extends AbstractImportService {
 
     protected async getDataEnrich(response: AxiosResponse): Promise<JSONataParsedObject> {
         try {
-            let data = response.data;
-            if (this.importDefinition.strategy.format) {
-                if (this.importDefinition.strategy.format === 'xml') {
-                    data = JSON.parse(xmljs.xml2json(data, { compact: true }));
-                }
-            }
+            const data = this.parseResponseData(response);
             const mapping = jsonata(this.importDefinition.strategy.get_doi_item)
             const item = (await mapping.evaluate(data))
+            return await this.transform(item)
+        } catch (err) {
+            console.log(err)
+            return null;
+        }
+    }
+
+    protected async getLookupIds(response: AxiosResponse): Promise<(string | number)[]> {
+        try {
+            const data = this.parseResponseData(response, this.lookupFormat);
+            const mapping = jsonata(this.importDefinition.strategy.get_lookup_ids)
+            const ids = await mapping.evaluate(data);
+            if (!ids) return [];
+            return Array.isArray(ids) ? ids : [ids];
+        } catch (err) {
+            console.log(err)
+            return [];
+        }
+    }
+
+    protected async getDataRetrieve(response: AxiosResponse): Promise<JSONataParsedObject> {
+        try {
+            const data = this.parseResponseData(response, this.retrieveFormat);
+            const mapping = jsonata(this.importDefinition.strategy.get_retrieve_item)
+            const item = await mapping.evaluate(data);
             return await this.transform(item)
         } catch (err) {
             console.log(err)
@@ -266,6 +301,111 @@ export class JSONataImportService extends AbstractImportService {
         const mapping = jsonata(this.importConfig)
         const obj = (await mapping.evaluate({ ...element, params: { cfg: this.config } }))
         return obj;
+    }
+
+    protected async collectLookupIds(): Promise<(string | number)[]> {
+        const ids: (string | number)[] = [];
+        const seenIds = new Set<string>();
+        let cursor = this.offset_start;
+        let count: number | undefined;
+
+        while (count === undefined || ids.length < count) {
+            const response = await firstValueFrom(this.retrieveLookupRequest(cursor));
+            if (count === undefined) count = await this.getNumber(response, this.lookupFormat);
+
+            const retrievedIds = await this.getLookupIds(response);
+            if (!retrievedIds || retrievedIds.length === 0) break;
+
+            for (const id of retrievedIds) {
+                if (id === undefined || id === null || id === '') continue;
+                const key = `${id}`;
+                if (seenIds.has(key)) continue;
+                seenIds.add(key);
+                ids.push(id);
+            }
+
+            if (ids.length >= count || retrievedIds.length < this.max_res) break;
+
+            if (this.mode === 'offset') cursor += this.max_res;
+            else cursor += 1;
+        }
+
+        return count !== undefined ? ids.slice(0, count) : ids;
+    }
+
+    protected async processImportItem(pub: JSONataParsedObject, update: boolean) {
+        if (this.importDefinition.strategy.only_import_if_authors_inst && (!pub.authors_inst || pub.authors_inst.length == 0)) {
+            await this.workflowReportService.write(this.workflowReport.id, {
+                level: WorkflowReportItemLevel.WARNING,
+                timestamp: new Date(),
+                message: 'Publication without institution authors is not imported ' + `title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
+            });
+            return;
+        }
+        if (!this.getDOI(pub) && !this.getTitle(pub)) {
+            await this.workflowReportService.write(this.workflowReport.id, {
+                level: WorkflowReportItemLevel.WARNING,
+                timestamp: new Date(),
+                message: 'Publication without title or doi is not imported ' + `title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
+            });
+            return;
+        }
+        if (this.newPublications.find(e => e.doi && e.doi === this.getDOI(pub)) || this.publicationsUpdate.find(e => e.doi && e.doi === this.getDOI(pub))) {
+            await this.workflowReportService.write(this.workflowReport.id, {
+                level: WorkflowReportItemLevel.WARNING,
+                timestamp: new Date(),
+                message: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.'
+            });
+            return;
+        }
+
+        const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+        if (!flag) {
+            const pubNew = await this.mapNew(pub).catch(async e => {
+                await this.workflowReportService.write(this.workflowReport.id, {
+                    level: WorkflowReportItemLevel.ERROR,
+                    timestamp: new Date(),
+                    message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}: ${e.stack ? e.stack : e.message}`
+                });
+                return null;
+            });
+            if (pubNew) {
+                this.newPublications.push(pubNew);
+                await this.workflowReportService.write(this.workflowReport.id, {
+                    level: WorkflowReportItemLevel.INFO,
+                    timestamp: new Date(),
+                    message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
+                });
+            } else {
+                await this.workflowReportService.write(this.workflowReport.id, {
+                    level: WorkflowReportItemLevel.INFO,
+                    timestamp: new Date(),
+                    message: `Nothing imported for title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
+                });
+            }
+            return;
+        }
+
+        if (!update) return;
+
+        const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+        if (orig.locked || orig.delete_date) return;
+        const pubUpd = await this.mapUpdate(pub, orig).catch(async e => {
+            await this.workflowReportService.write(this.workflowReport.id, {
+                level: WorkflowReportItemLevel.ERROR,
+                timestamp: new Date(),
+                message: `Error updating publication ${orig.id}: ${e.stack ? e.stack : e.message}`
+            });
+            return null;
+        });
+        if (pubUpd?.pub) {
+            this.publicationsUpdate.push(pubUpd.pub);
+            await this.workflowReportService.write(this.workflowReport.id, {
+                level: WorkflowReportItemLevel.INFO,
+                timestamp: new Date(),
+                message: `Publication ${orig.id} updated (${pubUpd.fields.join(',')})`
+            });
+        }
     }
 
     public async test(pos: number = 1): Promise<ImportWorkflowTestResult> {
@@ -384,6 +524,64 @@ export class JSONataImportService extends AbstractImportService {
                 }
 
                 break;
+            case Strategy.URL_LOOKUP_AND_RETRIEVE: {
+                let ids: (string | number)[] = [];
+
+                result.read.source = await this.setVariables(this.lookupURL, undefined, true);
+                try {
+                    ids = await this.collectLookupIds();
+                    count = ids.length;
+                    result.read.count = count;
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error retrieving lookup ids', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
+
+                if (pos > count) result.result.issues.push({ message: 'Position greater than count', error: null })
+
+                try {
+                    const id = ids[pos - 1];
+                    ob$ = this.http.get(await this.setVariables(this.retrieveURL, undefined, false, id));
+                    resp = await firstValueFrom(ob$);
+                    result.read.response = this.collectKeys(resp.data)
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error while retrieving item with lookup/retrieve strategy', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
+
+                try {
+                    item = await this.getDataRetrieve(resp);
+                    result.read.read_items = item;
+                    const pubNew = await this.mapNew(item)
+                    if (pubNew) result.result.imported.push(pubNew);
+                    else result.result.excluded.push(item);
+                } catch (err) {
+                    result.result.issues.push({
+                        message: 'Error while converting retrieved item with mapping', error: err instanceof Error
+                            ? {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                            }
+                            : err
+                    })
+                }
+                break;
+            }
             case Strategy.URL_QUERY_OFFSET:
             default:
                 this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
@@ -568,6 +766,90 @@ export class JSONataImportService extends AbstractImportService {
     /**
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
+    public async importLookupAndRetrieve(update: boolean, by_user?: string, dryRun = false) {
+        if (!this.lookupURL || !this.retrieveURL || !this.max_res_name || !this.max_res || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_lookup_ids || !this.importDefinition.strategy.get_retrieve_item) {
+            throw new BadRequestException('Import cannot be run due to missing parameters.')
+        }
+
+        this.progress = -1;
+        this.status_text = 'Started on ' + new Date();
+        this.workflowReport = await this.workflowReportService.save({
+            id: this.workflowReport.id,
+            status: 'started',
+            started_at: new Date(),
+            dry_run: dryRun,
+            by_user
+        });
+
+        this.processedPublications = 0;
+        this.newPublications = [];
+        this.publicationsUpdate = [];
+        this.numberOfPublications = 0;
+
+        const ids = await this.collectLookupIds();
+        this.numberOfPublications = ids.length;
+        await this.workflowReportService.write(this.workflowReport.id, {
+            level: WorkflowReportItemLevel.INFO,
+            timestamp: new Date(),
+            message: `${this.numberOfPublications} elements found`
+        });
+
+        if (this.numberOfPublications <= 0) {
+            this.progress = 0;
+            await this.workflowReportService.finish(this.workflowReport.id, {
+                status: 'Nothing to import',
+                count_import: 0,
+                count_update: 0
+            });
+            this.status_text = 'Nothing to import on ' + new Date();
+            return;
+        }
+
+        const obs$ = [];
+        for (const id of ids) {
+            const url = await this.setVariables(this.retrieveURL, undefined, false, id);
+            obs$.push(this.http.get(url));
+        }
+
+        concat(scheduled(obs$, queueScheduler).pipe(delay(this.delayInMs), mergeAll(this.parallelCalls))).subscribe({
+            next: async (data: AxiosResponse) => {
+                if (!data) return;
+                try {
+                    const parsedData = await this.getDataRetrieve(data);
+                    await this.processImportItem(parsedData, update);
+                    this.processedPublications++;
+                } catch (e) {
+                    this.numberOfPublications--;
+                    await this.workflowReportService.write(this.workflowReport.id, {
+                        level: WorkflowReportItemLevel.ERROR,
+                        timestamp: new Date(),
+                        message: `Error while processing data chunk: ${e}`
+                    });
+                } finally {
+                    if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+                    if (this.progress === 1) {
+                        this.progress = 0;
+                        await this.workflowReportService.finish(this.workflowReport.id, {
+                            status: 'Successfull import',
+                            count_import: this.newPublications.length,
+                            count_update: this.publicationsUpdate.length
+                        });
+                        this.status_text = 'Successfull import on ' + new Date();
+                    }
+                }
+            }, error: async err => {
+                console.log(err.message);
+                if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
+                this.progress = 0;
+                await this.workflowReportService.finish(this.workflowReport.id, {
+                    status: 'Error while importing',
+                    count_import: this.newPublications.length,
+                    count_update: this.publicationsUpdate.length
+                });
+            }
+        });
+    }
+
     public async import(update: boolean, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
@@ -630,74 +912,7 @@ export class JSONataImportService extends AbstractImportService {
                 try {
                     const parsedData = await this.getData(data);
                     for (const pub of parsedData.values()) {
-                        if (this.importDefinition.strategy.only_import_if_authors_inst && (!pub.authors_inst || pub.authors_inst.length == 0)) {
-                            await this.workflowReportService.write(this.workflowReport.id, {
-                                level: WorkflowReportItemLevel.WARNING,
-                                timestamp: new Date(),
-                                message: 'Publication without institution authors is not imported ' + `title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
-                            });
-                            continue;
-                        }
-                        if (!this.getDOI(pub) && !this.getTitle(pub)) {
-                            await this.workflowReportService.write(this.workflowReport.id, {
-                                level: WorkflowReportItemLevel.WARNING,
-                                timestamp: new Date(),
-                                message: 'Publication without title or doi is not imported ' + `title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
-                            });
-                            continue;
-                        }
-                        if (this.newPublications.find(e => e.doi && e.doi === this.getDOI(pub)) || this.publicationsUpdate.find(e => e.doi && e.doi === this.getDOI(pub))) {
-                            await this.workflowReportService.write(this.workflowReport.id, {
-                                level: WorkflowReportItemLevel.WARNING,
-                                timestamp: new Date(),
-                                message: 'Publication with doi ' + this.getDOI(pub) + ' has already been imported.'
-                            });
-                            continue;
-                        }
-                        const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
-                        if (!flag) {
-                            const pubNew = await this.mapNew(pub).catch(async e => {
-                                await this.workflowReportService.write(this.workflowReport.id, {
-                                    level: WorkflowReportItemLevel.ERROR,
-                                    timestamp: new Date(),
-                                    message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}: ${e.stack ? e.stack : e.message}`
-                                });
-                                //console.log('Error while mapping publication ' + this.getDOI(pub) + ' with title ' + this.getTitle(pub) + ': ' + e.message + ' with stack ' + e.stack)
-                            });
-                            if (pubNew) {
-                                this.newPublications.push(pubNew);
-                                await this.workflowReportService.write(this.workflowReport.id, {
-                                    level: WorkflowReportItemLevel.INFO,
-                                    timestamp: new Date(),
-                                    message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
-                                });
-                            } else {
-                                await this.workflowReportService.write(this.workflowReport.id, {
-                                    level: WorkflowReportItemLevel.INFO,
-                                    timestamp: new Date(),
-                                    message: `Nothing imported for title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}`
-                                });
-                            }
-                        } else if (update) {
-                            const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
-                            if (orig.locked || orig.delete_date) continue;
-                            const pubUpd = await this.mapUpdate(pub, orig).catch(async e => {
-                                await this.workflowReportService.write(this.workflowReport.id, {
-                                    level: WorkflowReportItemLevel.ERROR,
-                                    timestamp: new Date(),
-                                    message: `Error updating publication ${orig.id}: ${e.stack ? e.stack : e.message}`
-                                });
-                                return null;
-                            });
-                            if (pubUpd?.pub) {
-                                this.publicationsUpdate.push(pubUpd.pub);
-                                await this.workflowReportService.write(this.workflowReport.id, {
-                                    level: WorkflowReportItemLevel.INFO,
-                                    timestamp: new Date(),
-                                    message: `Publication ${orig.id} updated (${pubUpd.fields.join(',')})`
-                                });
-                            }
-                        }
+                        await this.processImportItem(pub, update);
                     }
                     // Update Progress Value
                     this.processedPublications += parsedData.length;
@@ -841,18 +1056,17 @@ export class JSONataImportService extends AbstractImportService {
         const url = this.url_count + `&${this.offset_name}=` + this.offset_count;
         return this.http.get(url);
     }
+    protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
+        const url = this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset;
+        return this.http.get(url);
+    }
     protected request(offset: number): Observable<AxiosResponse> {
         const url = this.completeURL + `&${this.offset_name}=` + offset;
         return this.http.get(url);
     }
 
-    protected async getNumber(response: AxiosResponse): Promise<number> {
-        let data = response.data;
-        if (this.importDefinition.strategy.format) {
-            if (this.importDefinition.strategy.format === 'xml') {
-                data = JSON.parse(xmljs.xml2json(data, { compact: true }));
-            }
-        }
+    protected async getNumber(response: AxiosResponse, format = this.importDefinition.strategy.format): Promise<number> {
+        const data = this.parseResponseData(response, format);
         const mapping = jsonata(this.importDefinition.strategy.get_count)
         return mapping.evaluate(data)
     }
