@@ -16,22 +16,6 @@ import * as xmljs from 'xml-js';
 
 @Injectable()
 export class JSONataExportService extends AbstractExportService {
-    private static readonly PUBLICATION_DATE_FIELDS = [
-        'pub_date',
-        'pub_date_submitted',
-        'pub_date_accepted',
-        'pub_date_print',
-        'import_date',
-        'edit_date',
-        'delete_date',
-        'locked_at',
-    ] as const;
-
-    private static readonly INVOICE_DATE_FIELDS = [
-        'date',
-        'booking_date',
-    ] as const;
-
     protected name = 'JSONata-Export';
 
     private exportDefinition?: ExportWorkflow;
@@ -108,7 +92,7 @@ export class JSONataExportService extends AbstractExportService {
         });
 
         try {
-            let publications = await this.publicationService.getAll(filter?.filter);
+            let publications = await this.publicationService.getAll(filter?.filter, { serializeDates: true });
             if (filter) {
                 const configuredFilterServices = (await this.configService.get('filter_services')) ?? [];
                 for (const path of filter.paths) {
@@ -197,9 +181,8 @@ export class JSONataExportService extends AbstractExportService {
     ): Publication & {
         params: { cfg: Record<string, unknown> }
     } {
-        const normalizedPublication = this.normalizePublicationDates(publication);
         return {
-            ...normalizedPublication,
+            ...publication,
             params: {
                 cfg: this.config,
             }
@@ -278,55 +261,5 @@ export class JSONataExportService extends AbstractExportService {
         if (value instanceof Date) return value.toISOString();
         if (Array.isArray(value) || (value && typeof value === 'object')) return JSON.stringify(value);
         return value;
-    }
-
-    private normalizePublicationDates(publication: Publication): Publication {
-        const normalized: Publication = { ...publication };
-        let hasChanges = false;
-
-        for (const field of JSONataExportService.PUBLICATION_DATE_FIELDS) {
-            if (!(field in normalized)) continue;
-            const current = normalized[field];
-            const serialized = this.serializeDate(current);
-            if (serialized !== current) {
-                normalized[field] = serialized as Publication[typeof field];
-                hasChanges = true;
-            }
-        }
-
-        if (publication.invoices?.length) {
-            let invoicesChanged = false;
-            const invoices = publication.invoices.map((invoice) => {
-                let invoiceChanged = false;
-                const normalizedInvoice = { ...invoice };
-
-                for (const field of JSONataExportService.INVOICE_DATE_FIELDS) {
-                    if (!(field in normalizedInvoice)) continue;
-                    const current = normalizedInvoice[field];
-                    const serialized = this.serializeDate(current);
-                    if (serialized !== current) {
-                        normalizedInvoice[field] = serialized as typeof normalizedInvoice[typeof field];
-                        invoiceChanged = true;
-                    }
-                }
-
-                if (invoiceChanged) {
-                    invoicesChanged = true;
-                    return normalizedInvoice;
-                }
-                return invoice;
-            });
-
-            if (invoicesChanged) {
-                normalized.invoices = invoices;
-                hasChanges = true;
-            }
-        }
-
-        return hasChanges ? normalized : publication;
-    }
-
-    private serializeDate(value: unknown) {
-        return value instanceof Date ? value.toISOString() : value;
     }
 }

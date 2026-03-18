@@ -11,22 +11,25 @@ describe('JSONataExportService', () => {
 
     beforeEach(() => {
         publicationService = {
-            getAll: jest.fn(async () => [
-                {
-                    id: 1,
-                    title: 'First',
-                    doi: '10.1/test',
-                    pub_date: new Date('2024-01-02T03:04:05.000Z'),
-                    invoices: [{ date: new Date('2024-02-03T04:05:06.000Z') }],
-                },
-                {
-                    id: 2,
-                    title: 'Second',
-                    doi: '10.2/test',
-                    pub_date: new Date('2024-05-06T07:08:09.000Z'),
-                    invoices: [{ date: new Date('2024-06-07T08:09:10.000Z') }],
-                },
-            ]),
+            getAll: jest.fn(async (_filter, options) => {
+                expect(options).toEqual({ serializeDates: true });
+                return [
+                    {
+                        id: 1,
+                        title: 'First',
+                        doi: '10.1/test',
+                        pub_date: '2024-01-02T03:04:05.000Z',
+                        invoices: [{ date: '2024-02-03T04:05:06.000Z' }],
+                    },
+                    {
+                        id: 2,
+                        title: 'Second',
+                        doi: '10.2/test',
+                        pub_date: '2024-05-06T07:08:09.000Z',
+                        invoices: [{ date: '2024-06-07T08:09:10.000Z' }],
+                    },
+                ];
+            }),
         };
         workflowReportService = {
             createReport: jest.fn(async (report) => ({ id: 41, ...report })),
