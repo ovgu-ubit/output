@@ -12,8 +12,20 @@ describe('JSONataExportService', () => {
     beforeEach(() => {
         publicationService = {
             getAll: jest.fn(async () => [
-                { id: 1, title: 'First', doi: '10.1/test' },
-                { id: 2, title: 'Second', doi: '10.2/test' },
+                {
+                    id: 1,
+                    title: 'First',
+                    doi: '10.1/test',
+                    pub_date: new Date('2024-01-02T03:04:05.000Z'),
+                    invoices: [{ date: new Date('2024-02-03T04:05:06.000Z') }],
+                },
+                {
+                    id: 2,
+                    title: 'Second',
+                    doi: '10.2/test',
+                    pub_date: new Date('2024-05-06T07:08:09.000Z'),
+                    invoices: [{ date: new Date('2024-06-07T08:09:10.000Z') }],
+                },
             ]),
         };
         workflowReportService = {
@@ -45,14 +57,26 @@ describe('JSONataExportService', () => {
             version: 1,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
             strategy: { format: 'json', disposition: 'inline' },
-            mapping: '{ "title": title, "doi": doi, "institution": params.cfg.institution }'
+            mapping: '{ "title": title, "doi": doi, "institution": params.cfg.institution, "pub_date": pub_date, "invoice_date": invoices[0].date }'
         });
 
         const result = await service.export(undefined, undefined, 'tester');
 
         expect(result).toBe(JSON.stringify([
-            { title: 'First', doi: '10.1/test', institution: 'Test University' },
-            { title: 'Second', doi: '10.2/test', institution: 'Test University' },
+            {
+                title: 'First',
+                doi: '10.1/test',
+                institution: 'Test University',
+                pub_date: '2024-01-02T03:04:05.000Z',
+                invoice_date: '2024-02-03T04:05:06.000Z',
+            },
+            {
+                title: 'Second',
+                doi: '10.2/test',
+                institution: 'Test University',
+                pub_date: '2024-05-06T07:08:09.000Z',
+                invoice_date: '2024-06-07T08:09:10.000Z',
+            },
         ], null, 2));
         expect(workflowReportService.createReport).toHaveBeenCalledWith(expect.objectContaining({
             workflow_type: WorkflowType.EXPORT,

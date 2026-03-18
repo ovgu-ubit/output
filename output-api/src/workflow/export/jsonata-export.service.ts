@@ -179,12 +179,12 @@ export class JSONataExportService extends AbstractExportService {
     private buildItemContext(
         publication: Publication
     ): Publication & { params: { cfg: Record<string, unknown> } } {
-        return {
+        return this.serializeForMapping({
             ...publication,
             params: {
                 cfg: this.config,
             }
-        };
+        }) as Publication & { params: { cfg: Record<string, unknown> } };
     }
 
     private render(items: unknown[]): string | Buffer {
@@ -259,5 +259,18 @@ export class JSONataExportService extends AbstractExportService {
         if (value instanceof Date) return value.toISOString();
         if (Array.isArray(value) || (value && typeof value === 'object')) return JSON.stringify(value);
         return value;
+    }
+
+    private serializeForMapping(value: unknown, seen = new WeakSet<object>()): unknown {
+        if (value instanceof Date) return value.toISOString();
+        if (Array.isArray(value)) return value.map((entry) => this.serializeForMapping(entry, seen));
+        if (!value || typeof value !== 'object') return value;
+        if (seen.has(value)) return null;
+
+        seen.add(value);
+        return Object.entries(value as Record<string, unknown>).reduce<Record<string, unknown>>((result, [key, entry]) => {
+            result[key] = this.serializeForMapping(entry, seen);
+            return result;
+        }, {});
     }
 }
