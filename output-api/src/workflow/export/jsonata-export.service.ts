@@ -2,13 +2,14 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportDisposition, ExportFormat, ExportWorkflow, ExportWorkflowStrategy } from '../../../../output-interfaces/Workflow';
+import { ExportDisposition, ExportFormat, ExportWorkflow, ExportWorkflowStrategy, WorkflowReportItemLevel, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { AppConfigService } from '../../config/app-config.service';
 import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
-import { ReportItemService } from '../report-item.service';
+import { WorkflowReport } from '../WorkflowReport.entity';
+import { WorkflowReportService } from '../workflow-report.service';
 import { AbstractExportService } from './abstract-export.service';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
@@ -30,11 +31,12 @@ export class JSONataExportService extends AbstractExportService {
 
     private exportDefinition?: ExportWorkflow;
     private config: Record<string, unknown> = {};
+    private workflowReport?: WorkflowReport;
 
     constructor(
         private publicationService: PublicationService,
-        private reportService: ReportItemService,
         private configService: AppConfigService,
+        private workflowReportService: WorkflowReportService,
     ) {
         super();
     }
@@ -60,6 +62,16 @@ export class JSONataExportService extends AbstractExportService {
             config[entry.key] = entry.value;
         });
         this.config = config;
+
+        this.workflowReport = await this.workflowReportService.createReport({
+            workflow_type: WorkflowType.EXPORT,
+            workflow: this.exportDefinition,
+            status: 'initialized',
+            params: {
+                format: this.resolveFormat(),
+                disposition: this.resolveDisposition(),
+            }
+        });
     }
 
     public async export(
@@ -71,41 +83,90 @@ export class JSONataExportService extends AbstractExportService {
         if (!this.exportDefinition?.mapping) {
             throw new BadRequestException('JSONata export workflow is not configured.');
         }
-
-        this.status_text = 'Started on ' + new Date();
-        this.report = await this.reportService.createReport('Export', this.name, by_user);
-
-        let publications = await this.publicationService.getAll(filter?.filter);
-        if (filter) {
-            for (const path of filter.paths) {
-                const serviceIndex = (await this.configService.get('filter_services'))?.findIndex((entry) => entry.path === path) ?? -1;
-                if (serviceIndex === -1 || !filterServices?.[serviceIndex]) continue;
-                publications = await filterServices[serviceIndex].filter(publications) as Publication[];
-            }
+        if (!this.workflowReport?.id) {
+            throw new BadRequestException('JSONata export workflow report is not configured.');
         }
 
-        const context: JSONataExportContext = {
-            publications,
-            filter: filter?.filter,
-            filter_paths: filter?.paths,
-            withMasterData: !!withMasterData,
+        this.status_text = 'Started on ' + new Date();
+        this.progress = -1;
+        this.workflowReport = await this.workflowReportService.save({
+            id: this.workflowReport.id,
+            by_user,
+            status: 'started',
+            started_at: new Date(),
             params: {
-                cfg: this.config,
+                ...this.workflowReport.params as Record<string, unknown>,
+                filter: filter?.filter,
+                filter_paths: filter?.paths,
+                withMasterData: !!withMasterData,
             }
-        };
-
-        const expression = jsonata(this.exportDefinition.mapping);
-        const result = await expression.evaluate(context);
-        const rendered = this.render(result);
-
-        this.progress = 0;
-        this.reportService.finish(this.report, {
-            status: 'Successfull export on ' + new Date(),
-            count_import: publications.length
         });
-        this.status_text = 'Successfull export on ' + new Date();
 
-        return rendered;
+        try {
+            let publications = await this.publicationService.getAll(filter?.filter);
+            if (filter) {
+                for (const path of filter.paths) {
+                    const serviceIndex = (await this.configService.get('filter_services'))?.findIndex((entry) => entry.path === path) ?? -1;
+                    if (serviceIndex === -1 || !filterServices?.[serviceIndex]) continue;
+                    publications = await filterServices[serviceIndex].filter(publications) as Publication[];
+                }
+            }
+
+            await this.workflowReportService.write(this.workflowReport.id, {
+                timestamp: new Date(),
+                level: WorkflowReportItemLevel.INFO,
+                message: `${publications.length} publications selected for export`
+            });
+
+            const context: JSONataExportContext = {
+                publications,
+                filter: filter?.filter,
+                filter_paths: filter?.paths,
+                withMasterData: !!withMasterData,
+                params: {
+                    cfg: this.config,
+                }
+            };
+
+            const expression = jsonata(this.exportDefinition.mapping);
+            const result = await expression.evaluate(context);
+            const rendered = this.render(result);
+
+            await this.workflowReportService.write(this.workflowReport.id, {
+                timestamp: new Date(),
+                level: WorkflowReportItemLevel.INFO,
+                message: `Export rendered as ${this.resolveFormat()} with disposition ${this.resolveDisposition()}`
+            });
+
+            this.progress = 0;
+            await this.workflowReportService.finish(this.workflowReport.id, {
+                status: 'Successful export',
+                summary: {
+                    count_export: publications.length,
+                    format: this.resolveFormat(),
+                    disposition: this.resolveDisposition(),
+                }
+            });
+            this.status_text = 'Successfull export on ' + new Date();
+
+            return rendered;
+        } catch (error) {
+            this.progress = 0;
+            await this.workflowReportService.write(this.workflowReport.id, {
+                timestamp: new Date(),
+                level: WorkflowReportItemLevel.ERROR,
+                message: `Error while exporting: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`
+            });
+            await this.workflowReportService.finish(this.workflowReport.id, {
+                status: 'Error while exporting',
+                summary: {
+                    format: this.resolveFormat(),
+                    disposition: this.resolveDisposition(),
+                }
+            });
+            this.status_text = 'Error while exporting on ' + new Date();
+            throw error;
+        }
     }
 
     private resolveFormat(): ExportFormat {

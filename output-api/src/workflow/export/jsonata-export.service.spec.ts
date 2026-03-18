@@ -1,12 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import * as XLSX from 'xlsx';
-import { ExportStrategy } from '../../../../output-interfaces/Workflow';
+import { ExportStrategy, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { JSONataExportService } from './jsonata-export.service';
 
 describe('JSONataExportService', () => {
     let service: JSONataExportService;
     let publicationService: { getAll: jest.Mock };
-    let reportService: { createReport: jest.Mock, finish: jest.Mock };
+    let workflowReportService: { createReport: jest.Mock, save: jest.Mock, write: jest.Mock, finish: jest.Mock };
     let configService: { listDatabaseConfig: jest.Mock, listEnvConfig: jest.Mock, get: jest.Mock };
 
     beforeEach(() => {
@@ -16,9 +16,11 @@ describe('JSONataExportService', () => {
                 { id: 2, title: 'Second', doi: '10.2/test' },
             ]),
         };
-        reportService = {
-            createReport: jest.fn(async () => 'report.log'),
-            finish: jest.fn(),
+        workflowReportService = {
+            createReport: jest.fn(async (report) => ({ id: 41, ...report })),
+            save: jest.fn(async (report) => report),
+            write: jest.fn(async () => undefined),
+            finish: jest.fn(async () => undefined),
         };
         configService = {
             listDatabaseConfig: jest.fn(async () => [{ key: 'institution', value: 'Test University' }]),
@@ -28,8 +30,8 @@ describe('JSONataExportService', () => {
 
         service = new JSONataExportService(
             publicationService as any,
-            reportService as any,
             configService as any,
+            workflowReportService as any,
         );
     });
 
@@ -55,8 +57,18 @@ describe('JSONataExportService', () => {
                 { title: 'Second', doi: '10.2/test' },
             ]
         }, null, 2));
-        expect(reportService.createReport).toHaveBeenCalledWith('Export', 'JSON Export_v1', 'tester');
-        expect(reportService.finish).toHaveBeenCalled();
+        expect(workflowReportService.createReport).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_type: WorkflowType.EXPORT,
+        }));
+        expect(workflowReportService.save).toHaveBeenCalledWith(expect.objectContaining({
+            id: 41,
+            by_user: 'tester',
+            status: 'started',
+        }));
+        expect(workflowReportService.write).toHaveBeenCalledTimes(2);
+        expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({
+            status: 'Successful export',
+        }));
     });
 
     it('renders mapped CSV output', async () => {
