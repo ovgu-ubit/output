@@ -25,8 +25,22 @@ export interface ImportWorkflow extends Workflow {
 
 export interface ExportWorkflow extends Workflow {
     strategy_type?: ExportStrategy;
-    strategy?: any;
+    strategy?: ExportWorkflowStrategy;
 }
+
+export interface ExportWorkflowStrategy {
+    format?: ExportFormat;
+    disposition?: ExportDisposition;
+    delimiter?: string;
+    quote_char?: string;
+    root_name?: string;
+    sheet_name?: string;
+    [key: string]: unknown;
+}
+
+export type ExportFormat = 'json' | 'xml' | 'csv' | 'xlsx';
+
+export type ExportDisposition = 'inline' | 'attachment';
 
 export interface WorkflowReport {
     id?: number;
@@ -96,7 +110,6 @@ export enum ImportStrategy {
 }
 
 export enum ExportStrategy {
-    EXCEL_DOWNLOAD,
     HTTP_RESPONSE
 }
 

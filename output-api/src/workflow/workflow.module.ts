@@ -26,6 +26,7 @@ import { ExcelExportService } from './export/excel-export.service';
 import { FunderExportService } from './export/funder-export.service';
 import { GreaterEntityExportService } from './export/greater-entity-export.service';
 import { InstituteExportService } from './export/institute-export.service';
+import { JSONataExportService } from './export/jsonata-export.service';
 import { JulichExportService } from './export/julich-export.service';
 import { MasterExportService } from './export/master-export.service';
 import { OACatExportService } from './export/oa-cat-export.service';
@@ -99,7 +100,7 @@ import { WorkflowReportService } from './workflow-report.service';
     BibliographyImportService,JSONataImportService,
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
-    AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
+    AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JSONataExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
     DiscoveryService, WorkflowService, WorkflowReportService,
     {
       provide: 'Imports',
