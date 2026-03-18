@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ImportStrategy } from '../../../output-interfaces/Workflow';
+import { ExportStrategy, ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
+import { ExportWorkflow } from './ExportWorkflow.entity';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { JSONataImportService } from './import/jsonata-import';
 import { WorkflowReportService } from './workflow-report.service';
@@ -15,6 +16,7 @@ jest.mock('uuid', () => ({
 describe('WorkflowService', () => {
     let service: WorkflowService;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
+    let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
     let workflowReportService: { deleteReportsForWorkflow: jest.Mock };
     let importService: {
         getUpdateMapping: jest.Mock;
@@ -28,8 +30,18 @@ describe('WorkflowService', () => {
 
     beforeEach(async () => {
         importRepository = {
+            findOne: jest.fn(),
             findOneBy: jest.fn(),
+            findBy: jest.fn(),
             save: jest.fn(),
+            remove: jest.fn(),
+        };
+        exportRepository = {
+            findOne: jest.fn(),
+            findOneBy: jest.fn(),
+            findBy: jest.fn(),
+            save: jest.fn(),
+            remove: jest.fn(),
         };
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
@@ -48,6 +60,7 @@ describe('WorkflowService', () => {
             providers: [
                 WorkflowService,
                 { provide: getRepositoryToken(ImportWorkflow), useValue: importRepository },
+                { provide: getRepositoryToken(ExportWorkflow), useValue: exportRepository },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
                 { provide: JSONataImportService, useValue: importService },
                 { provide: WorkflowReportService, useValue: workflowReportService },
@@ -140,5 +153,39 @@ describe('WorkflowService', () => {
         expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
         expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
         expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
+    });
+
+    it('defaults new export workflows to HTTP_RESPONSE', async () => {
+        exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
+
+        const saved = await service.saveExport({
+            label: 'Export',
+            mapping: '$',
+            strategy: { format: 'json', disposition: 'inline' },
+        } as ExportWorkflow);
+
+        expect(exportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'test-uuid',
+            version: 1,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'test-uuid',
+            version: 1,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+        });
+    });
+
+    it('deletes only draft export workflows', async () => {
+        exportRepository.findBy!.mockResolvedValue([
+            { id: 4, published_at: null, deleted_at: null } as ExportWorkflow,
+        ]);
+        (exportRepository.remove as jest.Mock).mockResolvedValue([{ id: 4 }]);
+
+        await service.deleteExports([4]);
+
+        expect(exportRepository.remove).toHaveBeenCalledWith([
+            expect.objectContaining({ id: 4 }),
+        ]);
     });
 });

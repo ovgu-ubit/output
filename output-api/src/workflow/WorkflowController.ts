@@ -3,10 +3,11 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ImportWorkflowTestResult, ImportStrategy } from "../../../output-interfaces/Workflow";
+import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
+import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
 import { WorkflowService } from "./workflow.service";
@@ -29,11 +30,25 @@ export class WorkflowController {
     return this.workflowService.getImports(type)
   }
 
+  @Get("export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_exports(@Query('type') type?: 'draft' | 'published' | 'archived') {
+    return this.workflowService.getExports(type)
+  }
+
   @Get("import/:id")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   get_import(@Param('id') id: number) {
     return this.workflowService.getImport(id);
+  }
+
+  @Get("export/:id")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_export(@Param('id') id: number) {
+    return this.workflowService.getExport(id);
   }
 
   @Get("import/:id/export")
@@ -43,6 +58,18 @@ export class WorkflowController {
     const wf = await this.workflowService.getImport(id);
     const json = JSON.stringify(wf, null, 2);
     const filename = 'Import_' + wf.label + '_' + wf.version + '_' + wf.published_at;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
+    return new StreamableFile(Buffer.from(json, 'utf-8'));
+  }
+
+  @Get("export/:id/export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async export_export(@Param('id') id: number, @Res({ passthrough: true }) res) {
+    const wf = await this.workflowService.getExport(id);
+    const json = JSON.stringify(wf, null, 2);
+    const filename = 'Export_' + wf.label + '_' + wf.version + '_' + wf.published_at;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
     return new StreamableFile(Buffer.from(json, 'utf-8'));
@@ -60,6 +87,13 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   isLocked(@Param('id') id: number): Promise<boolean> {
     return this.workflowService.isLocked(id);
+  }
+
+  @Get("export/:id/locked")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  isExportLocked(@Param('id') id: number): Promise<boolean> {
+    return this.workflowService.isExportLocked(id);
   }
 
   @Post("import/:id/run")
@@ -85,6 +119,13 @@ export class WorkflowController {
     return this.workflowService.deleteImports(body.map((entry) => entry.id));
   }
 
+  @Delete("export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  delete_exports(@Body() body: { id: number }[]) {
+    return this.workflowService.deleteExports(body.map((entry) => entry.id));
+  }
+
   @Post("import/import")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -103,6 +144,26 @@ export class WorkflowController {
   import_import(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw new BadRequestException('valid json file required');
     return this.workflowService.importImport(file);
+  }
+
+  @Post("export/import")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiConsumes('multipart/form-data') @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        }
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  import_export(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.originalname.endsWith('.json')) throw new BadRequestException('valid json file required');
+    return this.workflowService.importExport(file);
   }
 
   @Post("import")
@@ -140,6 +201,29 @@ export class WorkflowController {
   })
   save_import(@Body() body: ImportWorkflow) {
     return this.workflowService.saveImport(body);
+  }
+
+  @Post("export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiBody({
+    description: '<p>JSON Request:</p>',
+    schema: {
+      example: {
+        workflow_id: 'export-workflow-id',
+        version: 1,
+        label: 'JSONata Export',
+        strategy_type: ExportStrategy.HTTP_RESPONSE,
+        strategy: {
+          format: 'json',
+          disposition: 'inline'
+        },
+        mapping: '{ "items": publications.{ "id": id, "title": title, "doi": doi } }'
+      } satisfies IExportWorkflow
+    }
+  })
+  save_export(@Body() body: ExportWorkflow) {
+    return this.workflowService.saveExport(body);
   }
 
   @Get("reports")

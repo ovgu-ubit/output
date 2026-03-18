@@ -2,9 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, Not, Repository } from 'typeorm';
 import { UpdateMapping } from '../../../output-interfaces/Config';
-import { ImportWorkflowTestResult, ImportStrategy } from '../../../output-interfaces/Workflow';
+import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { validateImportWorkflow } from './import-workflow.schema';
+import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
@@ -15,37 +16,26 @@ export class WorkflowService {
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
+        @InjectRepository(ExportWorkflow) private exportRepository: Repository<ExportWorkflow>,
         private configService: AppConfigService,
         private importService: JSONataImportService,
         private workflowReportService: WorkflowReportService) { }
 
 
     getImports(type?: 'draft' | 'published' | 'archived') {
-        let options = {};
-        if (type === 'draft') options = { where: { published_at: IsNull(), deleted_at: IsNull() } };
-        else if (type === 'published') options = { where: { published_at: Not(IsNull()), deleted_at: IsNull() } };
-        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull()) }, withDeleted: true };
+        return this.importRepository.find(this.getWorkflowOptions(type));
+    }
 
-        return this.importRepository.find(options);
+    getExports(type?: 'draft' | 'published' | 'archived') {
+        return this.exportRepository.find(this.getWorkflowOptions(type));
     }
 
     async getImport(id?: number) {
-        const res = await this.importRepository.findOne({ where: { id }, withDeleted: true });
-        if (!res) throw new NotFoundException();
-        if (res.published_at || res.deleted_at) return res;
-        else if (!res.locked_at) {
-            await this.saveImport({
-                id: res.id,
-                locked_at: new Date()
-            });
-        } else if ((new Date().getTime() - res.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.saveImport({
-                id: res.id,
-                locked_at: null
-            });
-            return this.importRepository.findOneBy({ id })
-        }
-        return res;
+        return this.getWorkflow(this.importRepository, id, (workflow) => this.saveImport(workflow));
+    }
+
+    async getExport(id?: number) {
+        return this.getWorkflow(this.exportRepository, id, (workflow) => this.saveExport(workflow));
     }
 
     async importImport(file: Express.Multer.File) {
@@ -116,6 +106,63 @@ export class WorkflowService {
         return saved;
     }
 
+    async importExport(file: Express.Multer.File) {
+        let workflow: IExportWorkflow;
+        try {
+            workflow = JSON.parse(file.buffer.toString('utf-8'));
+        } catch {
+            throw new BadRequestException('invalid json');
+        }
+
+        const lastVersion = await this.exportRepository.findOne({ where: { workflow_id: workflow.workflow_id }, order: { version: 'DESC' } });
+        const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+
+        const obj: ExportWorkflow = {
+            workflow_id: workflow.workflow_id,
+            label: workflow.label,
+            version: nextVersion,
+            description: workflow.description,
+            strategy_type: workflow.strategy_type,
+            strategy: workflow.strategy,
+            mapping: workflow.mapping,
+        };
+
+        return this.exportRepository.save(obj);
+    }
+
+    async saveExport(workflow: ExportWorkflow) {
+        let toSave = workflow;
+        if (workflow.id) {
+            const db = await this.exportRepository.findOneBy({ id: workflow.id });
+            if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
+            if (db.published_at) {
+                const isArchiving = !!workflow.deleted_at;
+                if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
+                toSave = { ...db, deleted_at: new Date() };
+            } else if (!db.published_at && workflow.published_at) {
+                const other = await this.exportRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) });
+                if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
+                else toSave = { ...db, published_at: new Date() };
+            } else {
+                toSave = { ...db, ...workflow };
+            }
+        } else {
+            toSave = {
+                ...toSave,
+                workflow_id: workflow.workflow_id ?? uuidv4(),
+                version: workflow.version ?? 1,
+                strategy_type: workflow.strategy_type ?? ExportStrategy.HTTP_RESPONSE,
+                id: undefined,
+                created_at: undefined,
+                published_at: undefined,
+                deleted_at: undefined,
+                modified_at: undefined,
+            };
+        }
+
+        return this.exportRepository.save(toSave);
+    }
+
     async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {
         const importDef = await this.importRepository.findOneBy({ id });
 
@@ -159,22 +206,19 @@ export class WorkflowService {
     }
 
     async isLocked(id: number): Promise<boolean> {
-        const db = await this.importRepository.findOne({ where: { id }, withDeleted: true })
-        if (!db) throw new NotFoundException();
-        if (!db.locked_at || db.deleted_at) return false;
-        else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
-        else return true;
+        return this.isWorkflowLocked(this.importRepository, id);
+    }
+
+    async isExportLocked(id: number): Promise<boolean> {
+        return this.isWorkflowLocked(this.exportRepository, id);
     }
 
     async deleteImports(ids: number[]) {
-        const workflows = await this.importRepository.findBy(ids.map(id => ({ id })));
-        if (workflows.length !== ids.length) {
-            throw new BadRequestException('Error: at least one workflow ID does not exist');
-        }
-        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
-            throw new BadRequestException('Error: only draft workflows can be deleted');
-        }
-        return this.importRepository.remove(workflows);
+        return this.deleteWorkflows(this.importRepository, ids);
+    }
+
+    async deleteExports(ids: number[]) {
+        return this.deleteWorkflows(this.exportRepository, ids);
     }
 
     async status(_id: number) {
@@ -191,5 +235,55 @@ export class WorkflowService {
         const w = await this.importRepository.findOneBy({ id });
         if (!w) throw new NotFoundException();
         return this.importRepository.save({ id, update_config: mapping })
+    }
+
+    private getWorkflowOptions(type?: 'draft' | 'published' | 'archived') {
+        let options = {};
+        if (type === 'draft') options = { where: { published_at: IsNull(), deleted_at: IsNull() } };
+        else if (type === 'published') options = { where: { published_at: Not(IsNull()), deleted_at: IsNull() } };
+        else if (type === 'archived') options = { where: { deleted_at: Not(IsNull()) }, withDeleted: true };
+        return options;
+    }
+
+    private async getWorkflow<T extends { id?: number; published_at?: Date; deleted_at?: Date; locked_at?: Date }>(
+        repository: Repository<T>,
+        id: number,
+        save: (workflow: Partial<T>) => Promise<unknown>,
+    ) {
+        const res = await repository.findOne({ where: { id } as never, withDeleted: true });
+        if (!res) throw new NotFoundException();
+        if (res.published_at || res.deleted_at) return res;
+        else if (!res.locked_at) {
+            await save({
+                id: res.id,
+                locked_at: new Date()
+            } as Partial<T>);
+        } else if ((new Date().getTime() - res.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
+            await save({
+                id: res.id,
+                locked_at: null
+            } as Partial<T>);
+            return repository.findOneBy({ id } as never);
+        }
+        return res;
+    }
+
+    private async isWorkflowLocked<T extends { locked_at?: Date; deleted_at?: Date }>(repository: Repository<T>, id: number): Promise<boolean> {
+        const db = await repository.findOne({ where: { id } as never, withDeleted: true });
+        if (!db) throw new NotFoundException();
+        if (!db.locked_at || db.deleted_at) return false;
+        else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
+        else return true;
+    }
+
+    private async deleteWorkflows<T extends { id?: number; published_at?: Date; deleted_at?: Date }>(repository: Repository<T>, ids: number[]) {
+        const workflows = await repository.findBy(ids.map(id => ({ id })) as never);
+        if (workflows.length !== ids.length) {
+            throw new BadRequestException('Error: at least one workflow ID does not exist');
+        }
+        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
+            throw new BadRequestException('Error: only draft workflows can be deleted');
+        }
+        return repository.remove(workflows);
     }
 }
