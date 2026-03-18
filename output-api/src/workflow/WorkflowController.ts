@@ -3,7 +3,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy } from "../../../output-interfaces/Workflow";
+import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowType } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
@@ -275,7 +275,15 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async workflowReports(@Param('id') id: number) {
     await this.workflowService.getImport(id);
-    return this.workflowReportService.getReports(id);
+    return this.workflowReportService.getReports(id, WorkflowType.IMPORT);
+  }
+
+  @Get("export/:id/workflow-reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async exportWorkflowReports(@Param('id') id: number) {
+    await this.workflowService.getExport(id);
+    return this.workflowReportService.getReports(id, WorkflowType.EXPORT);
   }
 
   @Get("workflow-report/:reportId")

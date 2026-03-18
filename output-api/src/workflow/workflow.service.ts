@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, Not, Repository } from 'typeorm';
 import { UpdateMapping } from '../../../output-interfaces/Config';
-import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy } from '../../../output-interfaces/Workflow';
+import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowType } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { validateImportWorkflow } from './import-workflow.schema';
 import { ExportWorkflow } from './ExportWorkflow.entity';
@@ -132,6 +132,7 @@ export class WorkflowService {
 
     async saveExport(workflow: ExportWorkflow) {
         let toSave = workflow;
+        let shouldDeleteArchivedWorkflowReports = false;
         if (workflow.id) {
             const db = await this.exportRepository.findOneBy({ id: workflow.id });
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
@@ -139,6 +140,7 @@ export class WorkflowService {
                 const isArchiving = !!workflow.deleted_at;
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
                 toSave = { ...db, deleted_at: new Date() };
+                shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
                 const other = await this.exportRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) });
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
@@ -160,7 +162,11 @@ export class WorkflowService {
             };
         }
 
-        return this.exportRepository.save(toSave);
+        const saved = await this.exportRepository.save(toSave);
+        if (shouldDeleteArchivedWorkflowReports && saved.id) {
+            await this.workflowReportService.deleteReportsForWorkflow(saved.id, WorkflowType.EXPORT);
+        }
+        return saved;
     }
 
     async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {

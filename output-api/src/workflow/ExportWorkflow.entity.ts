@@ -1,5 +1,7 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 import { ExportStrategy, ExportWorkflow as IExportWorkflow, ExportWorkflowStrategy } from "../../../output-interfaces/Workflow";
+import { WorkflowReport } from "./WorkflowReport.entity";
+import { OneToMany } from "typeorm";
 
 @Entity("workflow_export")
 @Unique(["workflow_id", "version"])
@@ -43,4 +45,7 @@ export class ExportWorkflow implements IExportWorkflow {
 
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
+
+    @OneToMany(() => WorkflowReport, (report) => report.exportWorkflow)
+    reports?: WorkflowReport[];
 }

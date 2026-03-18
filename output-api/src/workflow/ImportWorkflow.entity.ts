@@ -49,6 +49,6 @@ export class ImportWorkflow implements IImportWorkflow {
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
 
-    @OneToMany(() => WorkflowReport, (report) => report.workflow)
+    @OneToMany(() => WorkflowReport, (report) => report.importWorkflow)
     reports?: WorkflowReport[];
 }

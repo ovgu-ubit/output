@@ -1,6 +1,7 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { WorkflowReport as IWorkflowReport } from "../../../output-interfaces/Workflow";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { WorkflowReport as IWorkflowReport, WorkflowType } from "../../../output-interfaces/Workflow";
 import { PublicationChange } from "../publication/core/PublicationChange.entity";
+import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { WorkflowReportItem } from "./WorkflowReportItem.entity";
 
@@ -10,8 +11,19 @@ export class WorkflowReport implements IWorkflowReport {
     @PrimaryGeneratedColumn()
     id?: number;
 
-    @ManyToOne(() => ImportWorkflow, (workflow) => workflow.reports)
-    workflow?: ImportWorkflow;
+    @Column({ type: 'enum', enum: WorkflowType, default: WorkflowType.IMPORT })
+    workflow_type?: WorkflowType;
+
+    @ManyToOne(() => ImportWorkflow, (workflow) => workflow.reports, { nullable: true })
+    @JoinColumn({ name: 'workflowId' })
+    importWorkflow?: ImportWorkflow;
+
+    @ManyToOne(() => ExportWorkflow, (workflow) => workflow.reports, { nullable: true })
+    @JoinColumn({ name: 'exportWorkflowId' })
+    exportWorkflow?: ExportWorkflow;
+
+    workflow?: ImportWorkflow | ExportWorkflow;
+    workflowId?: number;
 
     @Column({ type: 'jsonb' })
     params?: unknown;

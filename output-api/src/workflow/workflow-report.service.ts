@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { WorkflowReportItemLevel } from '../../../output-interfaces/Workflow';
+import { ExportWorkflow, ImportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
 import { PublicationChangeService } from '../publication/core/publication-change.service';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
@@ -24,8 +24,10 @@ export class WorkflowReportService {
     ) { }
 
     async createReport(options: WorkflowReport): Promise<WorkflowReport> {
-        return this.workflowReportRepository.save({
-            workflow: options.workflow,
+        const saved = await this.workflowReportRepository.save({
+            workflow_type: options.workflow_type ?? this.resolveWorkflowType(options),
+            importWorkflow: options.importWorkflow ?? ((options.workflow_type ?? this.resolveWorkflowType(options)) === WorkflowType.IMPORT ? options.workflow as ImportWorkflow : undefined),
+            exportWorkflow: options.exportWorkflow ?? ((options.workflow_type ?? this.resolveWorkflowType(options)) === WorkflowType.EXPORT ? options.workflow as ExportWorkflow : undefined),
             params: options.params ?? {},
             by_user: options.by_user,
             status: options.status ?? 'started',
@@ -34,11 +36,12 @@ export class WorkflowReportService {
             summary: options.summary,
             dry_run: options.dry_run ?? false,
         });
+        return this.hydrateWorkflowReference(saved);
     }
 
     async save(options: WorkflowReport): Promise<WorkflowReport> {
         if (!options.id) throw new BadRequestException('create report first before saving it');
-        return this.workflowReportRepository.save(options);
+        return this.hydrateWorkflowReference(await this.workflowReportRepository.save(options));
     }
 
     async write(workflowReportId: number, content: WorkflowReportItem): Promise<WorkflowReportItem> {
@@ -67,17 +70,27 @@ export class WorkflowReportService {
         return this.workflowReportRepository.save(report);
     }
 
-    async getReports(workflowId: number): Promise<WorkflowReport[]> {
-        return this.workflowReportRepository
+    async getReports(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowReport[]> {
+        const reports = await this.workflowReportRepository
             .createQueryBuilder('report')
-            .where('report.workflowId = :workflowId', { workflowId })
+            .leftJoinAndSelect('report.importWorkflow', 'importWorkflow')
+            .leftJoinAndSelect('report.exportWorkflow', 'exportWorkflow')
+            .where('report.workflow_type = :workflowType', { workflowType })
+            .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
             .orderBy('report.started_at', 'DESC')
             .addOrderBy('report.id', 'DESC')
             .getMany();
+        return reports.map((report) => this.hydrateWorkflowReference(report));
     }
 
     async getReport(workflowReportId: number): Promise<WorkflowReport> {
-        const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+        const report = await this.workflowReportRepository.findOne({
+            where: { id: workflowReportId },
+            relations: {
+                importWorkflow: true,
+                exportWorkflow: true,
+            }
+        });
         if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
 
         report.items = await this.workflowReportItemRepository
@@ -88,7 +101,7 @@ export class WorkflowReportService {
             .getMany();
         report.publication_changes = await this.publicationChangeService.getPublicationChangesForReport(workflowReportId);
 
-        return report;
+        return this.hydrateWorkflowReference(report);
     }
 
     async getReportText(workflowReportId: number): Promise<string> {
@@ -118,11 +131,12 @@ export class WorkflowReportService {
         return this.workflowReportRepository.delete({ id: workflowReportId });
     }
 
-    async deleteReportsForWorkflow(workflowId: number): Promise<void> {
+    async deleteReportsForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<void> {
         const reports = await this.workflowReportRepository
             .createQueryBuilder('report')
             .select('report.id', 'id')
-            .where('report.workflowId = :workflowId', { workflowId })
+            .where('report.workflow_type = :workflowType', { workflowType })
+            .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
             .getRawMany<{ id: number }>();
 
         const reportIds = reports
@@ -132,6 +146,23 @@ export class WorkflowReportService {
         if (reportIds.length === 0) return;
 
         await this.workflowReportRepository.delete(reportIds);
+    }
+
+    private resolveWorkflowType(options: WorkflowReport): WorkflowType {
+        if (options.workflow_type) return options.workflow_type;
+        if (options.exportWorkflow) return WorkflowType.EXPORT;
+        if (options.importWorkflow) return WorkflowType.IMPORT;
+        return WorkflowType.IMPORT;
+    }
+
+    private getWorkflowColumn(workflowType: WorkflowType) {
+        return workflowType === WorkflowType.EXPORT ? 'exportWorkflowId' : 'workflowId';
+    }
+
+    private hydrateWorkflowReference(report: WorkflowReport): WorkflowReport {
+        report.workflow = report.workflow_type === WorkflowType.EXPORT ? report.exportWorkflow : report.importWorkflow;
+        report.workflowId = report.workflow?.id;
+        return report;
     }
 
     private async ensureReportExists(workflowReportId: number) {

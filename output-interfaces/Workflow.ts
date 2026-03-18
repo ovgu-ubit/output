@@ -44,7 +44,10 @@ export type ExportDisposition = 'inline' | 'attachment';
 
 export interface WorkflowReport {
     id?: number;
-    workflow?: ImportWorkflow;
+    workflow_type?: WorkflowType;
+    workflow?: ImportWorkflow | ExportWorkflow;
+    importWorkflow?: ImportWorkflow;
+    exportWorkflow?: ExportWorkflow;
     workflowId?: number;
     params?: unknown;
     by_user?: string;
@@ -118,4 +121,9 @@ export enum WorkflowReportItemLevel {
     WARNING = 'warning',
     INFO = 'info',
     DEBUG = 'debug',
+}
+
+export enum WorkflowType {
+    IMPORT = 'import',
+    EXPORT = 'export',
 }

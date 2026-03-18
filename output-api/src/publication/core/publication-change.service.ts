@@ -28,25 +28,29 @@ export class PublicationChangeService {
     }
 
     async getPublicationChangesForPublication(publicationId: number): Promise<PublicationChange[]> {
-        return this.publicationChangeRepository
+        const changes = await this.publicationChangeRepository
             .createQueryBuilder('publicationChange')
             .leftJoinAndSelect('publicationChange.workflowReport', 'workflowReport')
-            .leftJoinAndSelect('workflowReport.workflow', 'workflow')
+            .leftJoinAndSelect('workflowReport.importWorkflow', 'importWorkflow')
+            .leftJoinAndSelect('workflowReport.exportWorkflow', 'exportWorkflow')
             .where('publicationChange.publicationId = :publicationId', { publicationId })
             .orderBy('publicationChange.timestamp', 'DESC')
             .addOrderBy('publicationChange.id', 'DESC')
             .getMany();
+        return changes.map((change) => this.hydrateWorkflowReport(change));
     }
 
     async getPublicationChangesForReport(workflowReportId: number): Promise<PublicationChange[]> {
-        return this.publicationChangeRepository
+        const changes = await this.publicationChangeRepository
             .createQueryBuilder('publicationChange')
             .leftJoinAndSelect('publicationChange.workflowReport', 'workflowReport')
-            .leftJoinAndSelect('workflowReport.workflow', 'workflow')
+            .leftJoinAndSelect('workflowReport.importWorkflow', 'importWorkflow')
+            .leftJoinAndSelect('workflowReport.exportWorkflow', 'exportWorkflow')
             .where('publicationChange.workflowReportId = :workflowReportId', { workflowReportId })
             .orderBy('publicationChange.timestamp', 'ASC')
             .addOrderBy('publicationChange.id', 'ASC')
             .getMany();
+        return changes.map((change) => this.hydrateWorkflowReport(change));
     }
 
     async deletePublicationChangesForPublications(publicationIds: number[]): Promise<void> {
@@ -64,5 +68,14 @@ export class PublicationChangeService {
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+    }
+
+    private hydrateWorkflowReport(change: PublicationChange): PublicationChange {
+        if (!change.workflowReport) return change;
+        change.workflowReport.workflow = change.workflowReport.workflow_type === 'export'
+            ? change.workflowReport.exportWorkflow
+            : change.workflowReport.importWorkflow;
+        change.workflowReport.workflowId = change.workflowReport.workflow?.id;
+        return change;
     }
 }
