@@ -16,6 +16,15 @@ describe('WorkflowService', () => {
     let service: WorkflowService;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let workflowReportService: { deleteReportsForWorkflow: jest.Mock };
+    let importService: {
+        getUpdateMapping: jest.Mock;
+        setReportingYear: jest.Mock;
+        setUp: jest.Mock;
+        import: jest.Mock;
+        importLookupAndRetrieve: jest.Mock;
+        enrich: jest.Mock;
+        loadFile: jest.Mock;
+    };
 
     beforeEach(async () => {
         importRepository = {
@@ -25,13 +34,22 @@ describe('WorkflowService', () => {
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
         };
+        importService = {
+            getUpdateMapping: jest.fn(),
+            setReportingYear: jest.fn(),
+            setUp: jest.fn(),
+            import: jest.fn(),
+            importLookupAndRetrieve: jest.fn(),
+            enrich: jest.fn(),
+            loadFile: jest.fn(),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 WorkflowService,
                 { provide: getRepositoryToken(ImportWorkflow), useValue: importRepository },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
-                { provide: JSONataImportService, useValue: { getUpdateMapping: jest.fn() } },
+                { provide: JSONataImportService, useValue: importService },
                 { provide: WorkflowReportService, useValue: workflowReportService },
             ],
         }).compile();
@@ -83,5 +101,44 @@ describe('WorkflowService', () => {
         await service.saveImport({ id: 21, description: 'updated' } as ImportWorkflow);
 
         expect(workflowReportService.deleteReportsForWorkflow).not.toHaveBeenCalled();
+    });
+
+    it('starts URL_LOOKUP_AND_RETRIEVE workflows via JSONata import service', async () => {
+        const publishedWorkflow = {
+            id: 33,
+            workflow_id: 'wf-33',
+            label: 'PubMed-like import',
+            version: 1,
+            strategy_type: Strategy.URL_LOOKUP_AND_RETRIEVE,
+            strategy: {
+                url_lookup: 'https://example.org/search',
+                url_retrieve: 'https://example.org/item/[id]',
+                max_res: 100,
+                max_res_name: 'retmax',
+                request_mode: 'offset',
+                offset_name: 'retstart',
+                offset_start: 0,
+                get_count: '$.count',
+                get_lookup_ids: '$.ids',
+                get_retrieve_item: '$.item',
+                exclusion_criteria: 'false',
+                only_import_if_authors_inst: false,
+                format: 'json',
+            },
+            mapping: '$',
+            published_at: new Date('2026-03-16T10:00:00.000Z'),
+            deleted_at: null,
+            update_config: { title: 'IGNORE' },
+        } as unknown as ImportWorkflow;
+        importRepository.findOneBy!.mockResolvedValue(publishedWorkflow);
+        importService.setReportingYear.mockResolvedValue(undefined);
+        importService.setUp.mockResolvedValue(undefined);
+        importService.importLookupAndRetrieve.mockResolvedValue(undefined);
+
+        await service.startImport(33, 2024, [], null, true, 'tester', false);
+
+        expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
+        expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
+        expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
     });
 });

@@ -117,6 +117,27 @@ const QueryOffsetStrategyConfig = z
         search_text_combiner: z.string().default(" "),
       })));
 
+const LookupAndRetrieveStrategyConfig = z
+  .intersection(
+    CommonStrategy,
+    z.intersection(
+      URLStrategyConfig,
+      z.looseObject({
+        url_lookup: z.string().min(1),
+        url_retrieve: z.string().min(1),
+        max_res: z.number().int().positive(),
+        max_res_name: z.string().min(1),
+        request_mode: z.enum(["offset", "page"]),
+        offset_name: z.string().min(1),
+        offset_start: z.number().int(),
+        get_count: JsonataExpr,
+        get_lookup_ids: JsonataExpr,
+        get_retrieve_item: JsonataExpr,
+        search_text_combiner: z.string().default(" "),
+        lookup_format: z.enum(["json", "xml"]).optional(),
+        retrieve_format: z.enum(["json", "xml"]).optional(),
+      })));
+
 const Base = ImportMeta.extend({
   strategy: z.unknown(), // wird je Variante überschrieben
 });
@@ -146,7 +167,7 @@ export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
     }),
     Base.extend({
       strategy_type: z.literal("URL_LOOKUP_AND_RETRIEVE"),
-      strategy: z.looseObject({}), // ggf. hier file-spezifische Felder
+      strategy: LookupAndRetrieveStrategyConfig,
     }),
   ]));
 

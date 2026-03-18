@@ -1,11 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
-import { MatSelectModule } from '@angular/material/select';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { filter, takeUntil, tap } from 'rxjs';
-import { delimiter } from 'path';
 
 @Component({
   selector: 'app-import-form-strategy',
@@ -32,6 +30,7 @@ export class ImportFormStrategyComponent implements OnInit {
 
   strategies = [
     { value: Strategy.URL_QUERY_OFFSET, label: 'Web-Abfrage per Suche und Offset', id: 'offset' },
+    { value: Strategy.URL_LOOKUP_AND_RETRIEVE, label: 'Web-Abfrage per Lookup und Einzelabruf', id: 'lookup' },
     { value: Strategy.URL_DOI, label: 'Web-Abfrage per DOI', id: 'doi' },
     { value: Strategy.FILE_UPLOAD, label: 'Datei-Upload', id: 'file' },
   ]
@@ -87,9 +86,14 @@ export class ImportFormStrategyComponent implements OnInit {
   }
 
   action() {
+    if (this.selectionForm.invalid || this.strategyForm.invalid) {
+      this.selectionForm.markAllAsTouched();
+      this.strategyForm.markAllAsTouched();
+      return;
+    }
     let res = {
       strategy_type: this.previousStrategy,
-      strategy: { ...this.strategyForm.value }
+      strategy: this.sanitizeStrategyPayload(this.strategyForm.getRawValue())
     }
     this.facade.patch(res);
   }
@@ -98,7 +102,7 @@ export class ImportFormStrategyComponent implements OnInit {
     this.previousStrategy = this.entity.strategy_type;
     this.selectionForm.controls.strategy.setValue(this.entity.strategy_type, { emitEvent: false })
     this.applyStrategy(this.entity.strategy_type);
-    this.strategyForm.patchValue(this.entity)
+    this.strategyForm.patchValue(this.entity.strategy ?? {})
   }
 
   getLabel(s: Strategy) {
@@ -130,6 +134,28 @@ export class ImportFormStrategyComponent implements OnInit {
           get_doi_item: ['', Validators.required],
         });
         break;
+      case Strategy.URL_LOOKUP_AND_RETRIEVE:
+        res = this.formBuilder.group({
+          only_import_if_authors_inst: [true],
+          format: ['', Validators.required],
+          exclusion_criteria: ['', Validators.required],
+          delayInMs: [0, [Validators.min(0), Validators.max(60000)]],
+          parallelCalls: [1, [Validators.min(1), Validators.max(20)]],
+          url_lookup: ['', Validators.required],
+          url_retrieve: ['', Validators.required],
+          max_res: [100, [Validators.required, Validators.min(1), Validators.max(5000)]],
+          max_res_name: ['', Validators.required],
+          request_mode: ['', Validators.required],
+          offset_name: ['', Validators.required],
+          offset_start: [0, [Validators.min(0)]],
+          search_text_combiner: ['', Validators.required],
+          get_count: ['', Validators.required],
+          get_lookup_ids: ['', Validators.required],
+          get_retrieve_item: ['', Validators.required],
+          lookup_format: [null],
+          retrieve_format: [null],
+        });
+        break;
       case Strategy.URL_QUERY_OFFSET:
       default:
         res = this.formBuilder.group({
@@ -153,5 +179,11 @@ export class ImportFormStrategyComponent implements OnInit {
     }
     if (this.entity) res.patchValue(this.entity.strategy);
     return res;
+  }
+
+  private sanitizeStrategyPayload(value: Record<string, unknown>) {
+    return Object.fromEntries(
+      Object.entries(value).filter(([, entry]) => entry !== null && entry !== undefined && entry !== '')
+    );
   }
 }

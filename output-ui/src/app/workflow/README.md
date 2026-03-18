@@ -101,6 +101,29 @@ CSV-only fields (required when `format = csv`):
 - `quote_char`
 - `skip_first_line`
 
+### D) Lookup + Einzelabruf (`URL_LOOKUP_AND_RETRIEVE`)
+
+Use this when an API first returns a list of record IDs and each record must then be fetched individually.
+
+Important fields:
+
+- `url_lookup`: URL template for the lookup/search request
+- `url_retrieve`: URL template for the single-record request
+- `max_res`: maximum number of lookup IDs requested per page
+- `max_res_name`: query parameter name used for lookup page size
+- `request_mode`: `offset` or `page`
+- `offset_name`: query parameter used for lookup pagination
+- `offset_start`: first lookup offset/page value
+- `get_count`: JSONata extracting total result count from the lookup response
+- `get_lookup_ids`: JSONata extracting the lookup ID array
+- `get_retrieve_item`: JSONata extracting the single source item from the retrieve response
+- `lookup_format`, `retrieve_format`: optional per-step response formats (default to `format`)
+- `search_text_combiner`, `delayInMs`, `parallelCalls`
+- `exclusion_criteria`
+- `only_import_if_authors_inst`
+
+URL placeholders additionally support `[id]` / `[lookup_id]` in `url_retrieve` for the current lookup result ID.
+
 ---
 
 ## 4) JSONata mapping (core concept)
