@@ -12,7 +12,7 @@ import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
 import { WorkflowService } from "./workflow.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
-import { Strategy } from "../../../output-interfaces/Workflow";
+import { ImportStrategy } from "../../../output-interfaces/Workflow";
 
 @Controller("import")
 @ApiTags("import")

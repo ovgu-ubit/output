@@ -8,7 +8,7 @@ import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { ImportWorkflow, ImportWorkflowTestResult, Strategy, WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -444,7 +444,7 @@ export class JSONataImportService extends AbstractImportService {
         let pubUpd;
         let orig;
         switch (this.importDefinition.strategy_type) {
-            case Strategy.URL_DOI:
+            case ImportStrategy.URL_DOI:
                 try {
                     pub = (await this.publicationService.get({ where: { doi: Not(IsNull()) }, take: 1, skip: pos }))[0]
                 } catch (err) {
@@ -524,7 +524,7 @@ export class JSONataImportService extends AbstractImportService {
                 }
 
                 break;
-            case Strategy.URL_LOOKUP_AND_RETRIEVE: {
+            case ImportStrategy.URL_LOOKUP_AND_RETRIEVE: {
                 let ids: (string | number)[] = [];
 
                 result.read.source = await this.setVariables(this.lookupURL, undefined, true);
@@ -582,7 +582,7 @@ export class JSONataImportService extends AbstractImportService {
                 }
                 break;
             }
-            case Strategy.URL_QUERY_OFFSET:
+            case ImportStrategy.URL_QUERY_OFFSET:
             default:
                 this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 

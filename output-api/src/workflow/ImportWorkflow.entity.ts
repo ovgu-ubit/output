@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ImportWorkflow as IImportWorkflow, Strategy } from "../../../output-interfaces/Workflow";
+import { ImportWorkflow as IImportWorkflow, ImportStrategy } from "../../../output-interfaces/Workflow";
 import { WorkflowReport } from "./WorkflowReport.entity";
 
 @Entity("workflow_import")
@@ -34,8 +34,8 @@ export class ImportWorkflow implements IImportWorkflow {
     @Column({ nullable: true })
     description?: string;
 
-    @Column({ nullable: true, type: 'enum', enum: Strategy })
-    strategy_type?: Strategy;
+    @Column({ nullable: true, type: 'enum', enum: ImportStrategy })
+    strategy_type?: ImportStrategy;
 
     @Column({ nullable: true, type: 'jsonb' })
     strategy?: unknown;

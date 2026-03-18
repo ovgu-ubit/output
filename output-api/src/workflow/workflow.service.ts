@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, Not, Repository } from 'typeorm';
 import { UpdateMapping } from '../../../output-interfaces/Config';
-import { ImportWorkflowTestResult, Strategy } from '../../../output-interfaces/Workflow';
+import { ImportWorkflowTestResult, ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { validateImportWorkflow } from './import-workflow.schema';
 import { JSONataImportService } from './import/jsonata-import';
@@ -123,15 +123,15 @@ export class WorkflowService {
         if (!importDef.published_at || importDef.deleted_at) {
             throw new BadRequestException('Error: only published workflows can be executed');
         }
-        if (importDef.strategy_type === Strategy.URL_QUERY_OFFSET) {
+        if (importDef.strategy_type === ImportStrategy.URL_QUERY_OFFSET) {
             await this.importService.setReportingYear(reporting_year + "");
             await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
             await this.importService.import(update, user, dryRun);
-        } else if (importDef.strategy_type === Strategy.URL_LOOKUP_AND_RETRIEVE) {
+        } else if (importDef.strategy_type === ImportStrategy.URL_LOOKUP_AND_RETRIEVE) {
             await this.importService.setReportingYear(reporting_year + "");
             await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
             await this.importService.importLookupAndRetrieve(update, user, dryRun)
-        } else if (importDef.strategy_type === Strategy.URL_DOI) {
+        } else if (importDef.strategy_type === ImportStrategy.URL_DOI) {
             await this.importService.setUp(importDef, importDef.update_config);
             if (ids && ids.length > 0) {
                 this.importService.enrich_whereClause = { where: { id: In(ids) } };
@@ -142,7 +142,7 @@ export class WorkflowService {
                 this.importService.setReportingYear(reporting_year + "")
             } else throw new BadRequestException('neither reporting_year nor ids are given')
             await this.importService.enrich(user, dryRun);
-        } else if (importDef.strategy_type === Strategy.FILE_UPLOAD) {
+        } else if (importDef.strategy_type === ImportStrategy.FILE_UPLOAD) {
             await this.importService.setUp(importDef, importDef.update_config);
             if (file) await this.importService.loadFile(update, file, user, dryRun);
             else throw new BadRequestException('no file supported')

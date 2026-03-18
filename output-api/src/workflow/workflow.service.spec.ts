@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Strategy } from '../../../output-interfaces/Workflow';
+import { ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { JSONataImportService } from './import/jsonata-import';
@@ -63,7 +63,7 @@ describe('WorkflowService', () => {
             workflow_id: 'wf-14',
             label: 'Import',
             version: 2,
-            strategy_type: Strategy.FILE_UPLOAD,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
             strategy: {},
             mapping: '$',
             published_at: new Date('2026-03-16T10:00:00.000Z'),
@@ -88,7 +88,7 @@ describe('WorkflowService', () => {
             workflow_id: 'wf-21',
             label: 'Draft',
             version: 1,
-            strategy_type: Strategy.FILE_UPLOAD,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
             strategy: {},
             mapping: '$',
             published_at: null,
@@ -109,7 +109,7 @@ describe('WorkflowService', () => {
             workflow_id: 'wf-33',
             label: 'PubMed-like import',
             version: 1,
-            strategy_type: Strategy.URL_LOOKUP_AND_RETRIEVE,
+            strategy_type: ImportStrategy.URL_LOOKUP_AND_RETRIEVE,
             strategy: {
                 url_lookup: 'https://example.org/search',
                 url_retrieve: 'https://example.org/item/[id]',

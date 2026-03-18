@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { filter, takeUntil, tap } from 'rxjs';
@@ -26,13 +26,13 @@ export class ImportFormStrategyComponent implements OnInit {
 
   entity: ImportWorkflow;
 
-  previousStrategy = Strategy.URL_QUERY_OFFSET;
+  previousStrategy = ImportStrategy.URL_QUERY_OFFSET;
 
   strategies = [
-    { value: Strategy.URL_QUERY_OFFSET, label: 'Web-Abfrage per Suche und Offset', id: 'offset' },
-    { value: Strategy.URL_LOOKUP_AND_RETRIEVE, label: 'Web-Abfrage per Lookup und Einzelabruf', id: 'lookup' },
-    { value: Strategy.URL_DOI, label: 'Web-Abfrage per DOI', id: 'doi' },
-    { value: Strategy.FILE_UPLOAD, label: 'Datei-Upload', id: 'file' },
+    { value: ImportStrategy.URL_QUERY_OFFSET, label: 'Web-Abfrage per Suche und Offset', id: 'offset' },
+    { value: ImportStrategy.URL_LOOKUP_AND_RETRIEVE, label: 'Web-Abfrage per Lookup und Einzelabruf', id: 'lookup' },
+    { value: ImportStrategy.URL_DOI, label: 'Web-Abfrage per DOI', id: 'doi' },
+    { value: ImportStrategy.FILE_UPLOAD, label: 'Datei-Upload', id: 'file' },
   ]
 
   fileFormats = [
@@ -47,7 +47,7 @@ export class ImportFormStrategyComponent implements OnInit {
 
   ngOnInit(): void {
     this.selectionForm = this.formBuilder.group({
-      strategy: this.formBuilder.nonNullable.control<Strategy>(Strategy.URL_QUERY_OFFSET),
+      strategy: this.formBuilder.nonNullable.control<ImportStrategy>(ImportStrategy.URL_QUERY_OFFSET),
     })
     this.previousStrategy = this.selectionForm.controls.strategy.value;
     this.strategyForm = this.buildForm(this.previousStrategy);
@@ -72,7 +72,7 @@ export class ImportFormStrategyComponent implements OnInit {
     })
   }
 
-  private applyStrategy(next: Strategy) {
+  private applyStrategy(next: ImportStrategy) {
     this.strategyForm = this.buildForm(next);
     this.previousStrategy = next;
   }
@@ -105,14 +105,14 @@ export class ImportFormStrategyComponent implements OnInit {
     this.strategyForm.patchValue(this.entity.strategy ?? {})
   }
 
-  getLabel(s: Strategy) {
+  getLabel(s: ImportStrategy) {
     return this.strategies.find(e => e.value === s)
   }
 
-  private buildForm(key: Strategy): FormGroup {
+  private buildForm(key: ImportStrategy): FormGroup {
     let res;
     switch (key) {
-      case Strategy.FILE_UPLOAD:
+      case ImportStrategy.FILE_UPLOAD:
         res = this.formBuilder.group({
           only_import_if_authors_inst: [true],
           format: ['', Validators.required],
@@ -123,7 +123,7 @@ export class ImportFormStrategyComponent implements OnInit {
           encoding: ['']
         });
         break;
-      case Strategy.URL_DOI:
+      case ImportStrategy.URL_DOI:
         res = this.formBuilder.group({
           only_import_if_authors_inst: [true],
           format: ['', Validators.required],
@@ -134,7 +134,7 @@ export class ImportFormStrategyComponent implements OnInit {
           get_doi_item: ['', Validators.required],
         });
         break;
-      case Strategy.URL_LOOKUP_AND_RETRIEVE:
+      case ImportStrategy.URL_LOOKUP_AND_RETRIEVE:
         res = this.formBuilder.group({
           only_import_if_authors_inst: [true],
           format: ['', Validators.required],
@@ -156,7 +156,7 @@ export class ImportFormStrategyComponent implements OnInit {
           retrieve_format: [null],
         });
         break;
-      case Strategy.URL_QUERY_OFFSET:
+      case ImportStrategy.URL_QUERY_OFFSET:
       default:
         res = this.formBuilder.group({
           only_import_if_authors_inst: [true],

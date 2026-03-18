@@ -3,7 +3,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
+import { ImportWorkflowTestResult, ImportStrategy } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
@@ -115,7 +115,7 @@ export class WorkflowController {
         workflow_id: 0,
         version: 1,
         label: 'Crossref Import',
-        strategy_type: Strategy.URL_QUERY_OFFSET,
+        strategy_type: ImportStrategy.URL_QUERY_OFFSET,
         strategy: {
           url_count: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed",
           url_items: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed",

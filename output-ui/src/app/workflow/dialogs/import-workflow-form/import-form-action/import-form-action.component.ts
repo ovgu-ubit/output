@@ -8,7 +8,7 @@ import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil }
 import { ImportConfigComponent } from 'src/app/administration/components/import-config/import-config.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { ImportWorkflow, Strategy } from '../../../../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
@@ -44,7 +44,7 @@ export class ImportFormActionComponent implements OnInit {
   async ngOnInit() {
     this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$)).subscribe((workflow) => {
       this.entity = workflow;
-      if (this.entity.strategy_type === Strategy.URL_DOI) {
+      if (this.entity.strategy_type === ImportStrategy.URL_DOI) {
         this.form.controls.update.setValue(true)
         this.form.controls.update.disable();
       }
@@ -84,7 +84,7 @@ export class ImportFormActionComponent implements OnInit {
   }
 
   get fileStrategy(): boolean {
-    return !!this.entity && this.entity.strategy_type === Strategy.FILE_UPLOAD;
+    return !!this.entity && this.entity.strategy_type === ImportStrategy.FILE_UPLOAD;
   }
 
   publish(): void {
