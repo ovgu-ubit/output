@@ -45,18 +45,15 @@ describe('JSONataExportService', () => {
             version: 1,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
             strategy: { format: 'json', disposition: 'inline' },
-            mapping: '{ "institution": params.cfg.institution, "items": publications.{ "title": title, "doi": doi } }'
+            mapping: '{ "title": title, "doi": doi, "institution": params.cfg.institution }'
         });
 
         const result = await service.export(undefined, undefined, 'tester');
 
-        expect(result).toBe(JSON.stringify({
-            institution: 'Test University',
-            items: [
-                { title: 'First', doi: '10.1/test' },
-                { title: 'Second', doi: '10.2/test' },
-            ]
-        }, null, 2));
+        expect(result).toBe(JSON.stringify([
+            { title: 'First', doi: '10.1/test', institution: 'Test University' },
+            { title: 'Second', doi: '10.2/test', institution: 'Test University' },
+        ], null, 2));
         expect(workflowReportService.createReport).toHaveBeenCalledWith(expect.objectContaining({
             workflow_type: WorkflowType.EXPORT,
         }));
@@ -68,6 +65,10 @@ describe('JSONataExportService', () => {
         expect(workflowReportService.write).toHaveBeenCalledTimes(2);
         expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({
             status: 'Successful export',
+            summary: expect.objectContaining({
+                count_source: 2,
+                count_export: 2,
+            })
         }));
     });
 
@@ -77,7 +78,7 @@ describe('JSONataExportService', () => {
             version: 2,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
             strategy: { format: 'csv', disposition: 'inline', delimiter: ',', quote_char: '"' },
-            mapping: 'publications.{ "title": title, "doi": doi }'
+            mapping: '{ "title": title, "doi": doi }'
         });
 
         const result = await service.export();
@@ -91,7 +92,7 @@ describe('JSONataExportService', () => {
             version: 3,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
             strategy: { format: 'xlsx', disposition: 'attachment', sheet_name: 'Rows' },
-            mapping: 'publications.{ "title": title, "doi": doi }'
+            mapping: '{ "title": title, "doi": doi }'
         });
 
         const result = await service.export();

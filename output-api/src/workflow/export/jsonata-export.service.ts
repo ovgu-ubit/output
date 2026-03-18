@@ -14,16 +14,6 @@ import { AbstractExportService } from './abstract-export.service';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
 
-interface JSONataExportContext {
-    publications: Publication[];
-    filter?: SearchFilter;
-    filter_paths?: string[];
-    withMasterData?: boolean;
-    params: {
-        cfg: Record<string, unknown>;
-    };
-}
-
 @Injectable()
 export class JSONataExportService extends AbstractExportService {
 
@@ -117,32 +107,21 @@ export class JSONataExportService extends AbstractExportService {
                 level: WorkflowReportItemLevel.INFO,
                 message: `${publications.length} publications selected for export`
             });
-
-            const context: JSONataExportContext = {
-                publications,
-                filter: filter?.filter,
-                filter_paths: filter?.paths,
-                withMasterData: !!withMasterData,
-                params: {
-                    cfg: this.config,
-                }
-            };
-
-            const expression = jsonata(this.exportDefinition.mapping);
-            const result = await expression.evaluate(context);
-            const rendered = this.render(result);
+            const items = await this.transformPublications(publications);
+            const rendered = this.render(items);
 
             await this.workflowReportService.write(this.workflowReport.id, {
                 timestamp: new Date(),
                 level: WorkflowReportItemLevel.INFO,
-                message: `Export rendered as ${this.resolveFormat()} with disposition ${this.resolveDisposition()}`
+                message: `${items.length} export items rendered as ${this.resolveFormat()} with disposition ${this.resolveDisposition()}`
             });
 
             this.progress = 0;
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Successful export',
                 summary: {
-                    count_export: publications.length,
+                    count_source: publications.length,
+                    count_export: items.length,
                     format: this.resolveFormat(),
                     disposition: this.resolveDisposition(),
                 }
@@ -181,37 +160,66 @@ export class JSONataExportService extends AbstractExportService {
         return this.exportDefinition?.strategy ?? {};
     }
 
-    private render(value: unknown): string | Buffer {
+    private async transformPublications(
+        publications: Publication[]
+    ): Promise<unknown[]> {
+        const expression = jsonata(this.exportDefinition!.mapping!);
+        const items: unknown[] = [];
+
+        for (const publication of publications) {
+            const context = this.buildItemContext(publication);
+            const item = await expression.evaluate(context);
+            if (item === undefined || item === null) continue;
+            items.push(item);
+        }
+
+        return items;
+    }
+
+    private buildItemContext(
+        publication: Publication
+    ): Publication & { params: { cfg: Record<string, unknown> } } {
+        return {
+            ...publication,
+            params: {
+                cfg: this.config,
+            }
+        };
+    }
+
+    private render(items: unknown[]): string | Buffer {
         switch (this.resolveFormat()) {
             case 'xml':
-                return this.renderXml(value);
+                return this.renderXml(items);
             case 'csv':
-                return this.renderCsv(value);
+                return this.renderCsv(items);
             case 'xlsx':
-                return this.renderXlsx(value);
+                return this.renderXlsx(items);
             case 'json':
             default:
-                return this.renderJson(value);
+                return this.renderJson(items);
         }
     }
 
-    private renderJson(value: unknown): string {
-        if (typeof value === 'string') return value;
-        return JSON.stringify(value, null, 2);
+    private renderJson(items: unknown[]): string {
+        return JSON.stringify(items, null, 2);
     }
 
-    private renderXml(value: unknown): string {
-        if (typeof value === 'string') return value;
+    private renderXml(items: unknown[]): string {
         const strategy = this.getStrategy();
         const rootName = strategy.root_name ?? 'export';
-        return xmljs.js2xml({ [rootName]: value }, { compact: true, spaces: 2 });
+        const itemName = typeof strategy.item_name === 'string' && strategy.item_name.trim() ? strategy.item_name.trim() : 'item';
+
+        return xmljs.js2xml({
+            [rootName]: {
+                [itemName]: items,
+            }
+        }, { compact: true, spaces: 2 });
     }
 
-    private renderCsv(value: unknown): string {
-        if (typeof value === 'string') return value;
-
+    private renderCsv(items: unknown[]): string {
         const strategy = this.getStrategy();
-        const rows = this.toTabularRows(value);
+        const rows = this.toTabularRows(items);
 
         return Papa.unparse(rows, {
             delimiter: strategy.delimiter ?? ';',
@@ -220,10 +228,10 @@ export class JSONataExportService extends AbstractExportService {
         });
     }
 
-    private renderXlsx(value: unknown): Buffer {
+    private renderXlsx(items: unknown[]): Buffer {
         const strategy = this.getStrategy();
         const sheetName = strategy.sheet_name ?? 'Export';
-        const rows = this.toTabularRows(value);
+        const rows = this.toTabularRows(items);
 
         const workbook = XLSX.utils.book_new();
         const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -232,16 +240,8 @@ export class JSONataExportService extends AbstractExportService {
         return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     }
 
-    private toTabularRows(value: unknown): Record<string, unknown>[] {
-        if (Array.isArray(value)) {
-            return value.map((entry) => this.toRow(entry));
-        }
-
-        if (value && typeof value === 'object') {
-            return [this.toRow(value)];
-        }
-
-        return [{ value }];
+    private toTabularRows(items: unknown[]): Record<string, unknown>[] {
+        return items.map((entry) => this.toRow(entry));
     }
 
     private toRow(value: unknown): Record<string, unknown> {

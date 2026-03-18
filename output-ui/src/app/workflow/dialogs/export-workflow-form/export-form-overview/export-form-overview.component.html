@@ -1,0 +1,31 @@
+<mat-card>
+    <mat-card-title>Ueberblick</mat-card-title>
+    <mat-card-content>
+        <div class="reports-container">
+            <h3>Zugehoerige Workflow-Logs</h3>
+            <p class="report-name" *ngIf="entity">Workflow: {{ entity.label }} v{{ entity.version }}</p>
+
+            @if (associatedReports.length === 0) {
+            <p>Keine Workflow-Logs fuer diesen Workflow vorhanden.</p>
+            } @else {
+            <ul class="report-list">
+                <li *ngFor="let report of associatedReports" class="report-list-item">
+                    <div class="report-meta">
+                        <strong>Run #{{ report.id }}</strong>
+                        <span>{{ report.started_at | date:'dd.MM.yyyy HH:mm:ss' }}</span>
+                        <span class="report-status">{{ report.status || 'unbekannt' }}</span>
+                    </div>
+                    <div class="report-actions">
+                        <button mat-raised-button class="primary-button" (click)="openReport(report.id)">
+                            Logs anzeigen
+                        </button>
+                        <button mat-icon-button (click)="deleteReport(report.id)" class="delete-button" matTooltip="Log loeschen">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                </li>
+            </ul>
+            }
+        </div>
+    </mat-card-content>
+</mat-card>

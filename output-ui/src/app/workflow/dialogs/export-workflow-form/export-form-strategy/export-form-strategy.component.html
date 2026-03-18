@@ -1,0 +1,65 @@
+<form [formGroup]="selectionForm" style="display: flex;justify-content: center;">
+    <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-label>Strategie</mat-label>
+        <mat-select formControlName="strategy">
+            <mat-option *ngFor="let s of strategies" [value]="s.value">
+                {{ s.label }}
+            </mat-option>
+        </mat-select>
+    </mat-form-field>
+</form>
+<mat-card class="content">
+    <mat-card-content>
+        <form class="form" [formGroup]="strategyForm">
+            <mat-form-field appearance="fill">
+                <mat-label>Format</mat-label>
+                <mat-select formControlName="format">
+                    <mat-option *ngFor="let format of exportFormats" [value]="format.value">
+                        {{ format.label }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Disposition</mat-label>
+                <mat-select formControlName="disposition">
+                    <mat-option *ngFor="let disposition of dispositions" [value]="disposition.value">
+                        {{ disposition.label }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            @if (selectedFormat === 'csv') {
+            <mat-form-field appearance="fill">
+                <mat-label>Trennzeichen</mat-label>
+                <input matInput formControlName="delimiter">
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Anfuehrungszeichen</mat-label>
+                <input matInput formControlName="quote_char">
+            </mat-form-field>
+            }
+
+            @if (selectedFormat === 'xml') {
+            <mat-form-field appearance="fill">
+                <mat-label>XML Root-Element</mat-label>
+                <input matInput formControlName="root_name">
+            </mat-form-field>
+            }
+
+            @if (selectedFormat === 'xlsx') {
+            <mat-form-field appearance="fill">
+                <mat-label>Tabellenblattname</mat-label>
+                <input matInput formControlName="sheet_name">
+            </mat-form-field>
+            }
+        </form>
+    </mat-card-content>
+    @if (!this.entity?.published_at && !this.entity?.deleted_at) {
+    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+        <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
+        <button mat-raised-button class="secondary-button" (click)="this.reset()">Zuruecksetzen</button>
+    </mat-card-actions>
+    }
+</mat-card>
