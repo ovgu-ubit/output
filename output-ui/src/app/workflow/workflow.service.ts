@@ -2,7 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
-import { ImportWorkflow, ImportWorkflowTestResult, Workflow, WorkflowReport } from '../../../../output-interfaces/Workflow';
+import { SearchFilter } from '../../../../output-interfaces/Config';
+import { ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, Workflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
 import { UpdateMapping } from '../../../../output-interfaces/Config';
 
@@ -44,8 +45,14 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public test(id: number, pos = 1) {
     return this.http.get<ImportWorkflowTestResult>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/test?pos='+pos, { withCredentials: true });
   }
-  public getWorkflowReports(id: number) {
-    return this.http.get<WorkflowReport[]>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/workflow-reports', { withCredentials: true });
+  public getWorkflowReports(id: number, workflowType: WorkflowType = WorkflowType.IMPORT) {
+    return this.http.get<WorkflowReport[]>(
+      this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/workflow-reports`,
+      { withCredentials: true }
+    );
+  }
+  public getExportWorkflowReports(id: number) {
+    return this.getWorkflowReports(id, WorkflowType.EXPORT);
   }
   public getWorkflowReport(reportId: number) {
     return this.http.get<WorkflowReport>(this.runtimeConfigService.getValue("api") + 'workflow/workflow-report/' + reportId, { withCredentials: true });
@@ -71,20 +78,45 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       { withCredentials: true }
     );
   }
-  async isRunning(id: number) {
+  public runExport(id: number, filter?: { filter: SearchFilter, paths: string[] }, withMasterData = false) {
+    return this.http.post(
+      this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/run',
+      { filter, withMasterData },
+      { withCredentials: true, observe: 'response', responseType: 'blob' as const }
+    );
+  }
+  async isRunning(id: number, workflowType: WorkflowType = WorkflowType.IMPORT) {
     if (!id) return false;
-    let resp = await firstValueFrom(this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true }))
+    let resp = await firstValueFrom(this.http.get<{ progress: number, status: string }>(
+      this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/run`,
+      { withCredentials: true }
+    ))
     return resp?.progress != 0
   }
-  getProgress(id: number): Observable<{ progress: number, status: string }> {
+  async isExportRunning(id: number) {
+    return this.isRunning(id, WorkflowType.EXPORT);
+  }
+  getProgress(id: number, workflowType: WorkflowType = WorkflowType.IMPORT): Observable<{ progress: number, status: string }> {
     let timer = interval(500);
     return timer.pipe(concatMap(data => {
       //console.log(new Date())
-      return this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true })
+      return this.http.get<{ progress: number, status: string }>(
+        this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/run`,
+        { withCredentials: true }
+      )
     }))
   }
-  getStatus(id: number): Observable<{ progress: number, status: string }> {
-    return this.http.get<{ progress: number, status: string }>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/run', { withCredentials: true })
+  getExportProgress(id: number): Observable<{ progress: number, status: string }> {
+    return this.getProgress(id, WorkflowType.EXPORT);
+  }
+  getStatus(id: number, workflowType: WorkflowType = WorkflowType.IMPORT): Observable<{ progress: number, status: string }> {
+    return this.http.get<{ progress: number, status: string }>(
+      this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/run`,
+      { withCredentials: true }
+    )
+  }
+  getExportStatus(id: number): Observable<{ progress: number, status: string }> {
+    return this.getStatus(id, WorkflowType.EXPORT);
   }
 
   public add(ge: ImportWorkflow) {
@@ -106,8 +138,50 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       { withCredentials: true }
     );
   }
+  public getAllExports() {
+    return this.http.get<ExportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/export', { withCredentials: true })
+      .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.EXPORT, '/workflow/publication_export')));
+  }
+  public getExports(options?: { type: 'draft' | 'published' | 'archived' }) {
+    if (options) {
+      return this.http.get<ExportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/export?type=' + options.type, { withCredentials: true })
+        .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.EXPORT, '/workflow/publication_export')));
+    }
+    return this.getAllExports();
+  }
+  public getOneExport(id: number) {
+    return this.http.get<ExportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id, { withCredentials: true });
+  }
+  public isExportLocked(id: number) {
+    return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/locked', { withCredentials: true });
+  }
+  public exportWorkflow(id: number) {
+    return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });
+  }
+  public addExport(ge: ExportWorkflow) {
+    return this.http.post<ExportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/export', ge, { withCredentials: true });
+  }
+  public updateExport(ge: ExportWorkflow) {
+    return this.http.post<ExportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/export', ge, { withCredentials: true });
+  }
+  public deleteExports(ids: number[]) {
+    return this.http.delete<ExportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/export', { withCredentials: true, body: ids.map(e => ({ id: e })) });
+  }
+  public importExportWorkflow(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ExportWorkflow>(
+      this.runtimeConfigService.getValue("api") + 'workflow/export/import',
+      formData,
+      { withCredentials: true }
+    );
+  }
 
-  private attachLatestReports(workflows: ImportWorkflow[]): Observable<ImportWorkflow[]> {
+  private attachLatestReports<T extends Workflow>(
+    workflows: T[],
+    workflowType: WorkflowType = WorkflowType.IMPORT,
+    logBasePath = '/workflow/publication_import'
+  ): Observable<T[]> {
     if (!workflows?.length) return of([]);
 
     return forkJoin(workflows.map((workflow) => {
@@ -116,14 +190,14 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       // the workflow and can set a draft lock as a side effect.
       if (!workflow.id || !workflow.published_at || !!workflow.deleted_at) return of(workflow);
 
-      return this.getWorkflowReports(workflow.id).pipe(map((reports) => {
+      return this.getWorkflowReports(workflow.id, workflowType).pipe(map((reports) => {
         const lastReport = reports?.[0];
         return {
           ...workflow,
           last_run_status: lastReport?.status,
           last_run_finished_at: lastReport?.finished_at,
           last_run_report_id: lastReport?.id,
-          last_run_log_link: lastReport?.id ? `/workflow/publication_import/${workflow.id}/logs/${lastReport.id}` : undefined,
+          last_run_log_link: lastReport?.id ? `${logBasePath}/${workflow.id}/logs/${lastReport.id}` : undefined,
         };
       }));
     }));

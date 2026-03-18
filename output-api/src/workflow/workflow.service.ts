@@ -1,11 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, Not, Repository } from 'typeorm';
-import { UpdateMapping } from '../../../output-interfaces/Config';
+import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowType } from '../../../output-interfaces/Workflow';
+import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
+import { Publication } from '../publication/core/Publication.entity';
 import { validateImportWorkflow } from './import-workflow.schema';
 import { ExportWorkflow } from './ExportWorkflow.entity';
+import { JSONataExportService } from './export/jsonata-export.service';
+import { AbstractFilterService } from './filter/abstract-filter.service';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
@@ -19,6 +23,8 @@ export class WorkflowService {
         @InjectRepository(ExportWorkflow) private exportRepository: Repository<ExportWorkflow>,
         private configService: AppConfigService,
         private importService: JSONataImportService,
+        private exportService: JSONataExportService,
+        @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[],
         private workflowReportService: WorkflowReportService) { }
 
 
@@ -211,6 +217,18 @@ export class WorkflowService {
         return await this.importService.test(pos);
     }
 
+    async startExport(id: number, filter?: { filter: SearchFilter, paths: string[] }, user?: string, withMasterData?: boolean) {
+        const exportDef = await this.exportRepository.findOneBy({ id });
+
+        if (!exportDef) throw new BadRequestException('Error: workflow not found');
+        if (!exportDef.published_at || exportDef.deleted_at) {
+            throw new BadRequestException('Error: only published workflows can be executed');
+        }
+
+        await this.exportService.setUp(exportDef);
+        return this.exportService.export(filter, this.filterServices, user, withMasterData);
+    }
+
     async isLocked(id: number): Promise<boolean> {
         return this.isWorkflowLocked(this.importRepository, id);
     }
@@ -229,6 +247,10 @@ export class WorkflowService {
 
     async status(_id: number) {
         return this.importService.status();
+    }
+
+    async exportStatus(_id: number) {
+        return this.exportService.status();
     }
 
     getUpdateMapping(id: number) {

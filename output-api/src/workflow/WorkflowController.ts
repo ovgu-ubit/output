@@ -2,8 +2,8 @@ import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPip
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
-import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowType } from "../../../output-interfaces/Workflow";
+import { SearchFilter, UpdateMapping } from "../../../output-interfaces/Config";
+import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowType } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
@@ -105,11 +105,54 @@ export class WorkflowController {
     return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
   }
 
+  @Post("export/:id/run")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async run_export(
+    @Param('id') id: number,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req,
+    @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
+    @Body('withMasterData') withMasterData?: boolean
+  ) {
+    const workflow = await this.workflowService.getExport(id);
+    const result = await this.workflowService.startExport(id, filter, req.user?.username, withMasterData);
+    const strategy = workflow.strategy ?? {};
+    const format = (strategy.format ?? 'json') as ExportFormat;
+    const disposition = (strategy.disposition ?? (format === 'xlsx' ? 'attachment' : 'inline')) as ExportDisposition;
+    const contentType = this.getExportContentType(format);
+
+    res.setHeader('Content-Type', contentType);
+
+    if (disposition === 'attachment') {
+      const filename = this.buildExportFilename(workflow.label, workflow.version, format);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+
+    if (Buffer.isBuffer(result)) {
+      return new StreamableFile(result, {
+        type: contentType,
+        disposition: disposition === 'attachment'
+          ? `attachment; filename="${this.buildExportFilename(workflow.label, workflow.version, format)}"`
+          : undefined
+      });
+    }
+
+    return result;
+  }
+
   @Get('import/:id/run')
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   status(@Param('id') id: number) {
     return this.workflowService.status(id);
+  }
+
+  @Get('export/:id/run')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  exportStatus(@Param('id') id: number) {
+    return this.workflowService.exportStatus(id);
   }
 
   @Delete("import")
@@ -328,5 +371,24 @@ export class WorkflowController {
             cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
         };*/
     return this.workflowService.setUpdateMapping(id, mapping);
+  }
+
+  private getExportContentType(format: ExportFormat) {
+    switch (format) {
+      case 'xml':
+        return 'application/xml; charset=utf-8';
+      case 'csv':
+        return 'text/csv; charset=utf-8';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'json':
+      default:
+        return 'application/json; charset=utf-8';
+    }
+  }
+
+  private buildExportFilename(label?: string, version?: number, format: ExportFormat = 'json') {
+    const safeLabel = (label ?? 'Export').replace(/[^\w.-]+/g, '_');
+    return `${safeLabel}_v${version ?? 1}.${format}`;
   }
 }

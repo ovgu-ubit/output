@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ExportStrategy, ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { ExportWorkflow } from './ExportWorkflow.entity';
+import { JSONataExportService } from './export/jsonata-export.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { JSONataImportService } from './import/jsonata-import';
 import { WorkflowReportService } from './workflow-report.service';
@@ -18,6 +19,11 @@ describe('WorkflowService', () => {
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
     let workflowReportService: { deleteReportsForWorkflow: jest.Mock };
+    let exportService: {
+        setUp: jest.Mock;
+        export: jest.Mock;
+        status: jest.Mock;
+    };
     let importService: {
         getUpdateMapping: jest.Mock;
         setReportingYear: jest.Mock;
@@ -46,6 +52,11 @@ describe('WorkflowService', () => {
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
         };
+        exportService = {
+            setUp: jest.fn(),
+            export: jest.fn(),
+            status: jest.fn(),
+        };
         importService = {
             getUpdateMapping: jest.fn(),
             setReportingYear: jest.fn(),
@@ -63,6 +74,8 @@ describe('WorkflowService', () => {
                 { provide: getRepositoryToken(ExportWorkflow), useValue: exportRepository },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
                 { provide: JSONataImportService, useValue: importService },
+                { provide: JSONataExportService, useValue: exportService },
+                { provide: 'Filters', useValue: [] },
                 { provide: WorkflowReportService, useValue: workflowReportService },
             ],
         }).compile();
@@ -174,6 +187,31 @@ describe('WorkflowService', () => {
             version: 1,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
         });
+    });
+
+    it('starts published export workflows via JSONata export service', async () => {
+        const publishedWorkflow = {
+            id: 52,
+            workflow_id: 'wf-52',
+            label: 'JSON export',
+            version: 1,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping: '$',
+            published_at: new Date('2026-03-16T10:00:00.000Z'),
+            deleted_at: null,
+        } as ExportWorkflow;
+        const filter = { filter: { expr: [] } as any, paths: ['recent'] };
+
+        exportRepository.findOneBy!.mockResolvedValue(publishedWorkflow);
+        exportService.setUp.mockResolvedValue(undefined);
+        exportService.export.mockResolvedValue('{"ok":true}');
+
+        const result = await service.startExport(52, filter, 'tester', true);
+
+        expect(exportService.setUp).toHaveBeenCalledWith(publishedWorkflow);
+        expect(exportService.export).toHaveBeenCalledWith(filter, [], 'tester', true);
+        expect(result).toBe('{"ok":true}');
     });
 
     it('deletes only draft export workflows', async () => {
