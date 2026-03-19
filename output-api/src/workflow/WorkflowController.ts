@@ -55,7 +55,7 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async export_import(@Param('id') id: number, @Res({ passthrough: true }) res) {
-    const wf = await this.workflowService.getImport(id);
+    const wf = await this.workflowService.getImport(id, false);
     const json = JSON.stringify(wf, null, 2);
     const filename = 'Import_' + wf.label + '_' + wf.version + '_' + wf.published_at;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -67,7 +67,7 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async export_export(@Param('id') id: number, @Res({ passthrough: true }) res) {
-    const wf = await this.workflowService.getExport(id);
+    const wf = await this.workflowService.getExport(id, false);
     const json = JSON.stringify(wf, null, 2);
     const filename = 'Export_' + wf.label + '_' + wf.version + '_' + wf.published_at;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -317,7 +317,7 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async workflowReports(@Param('id') id: number) {
-    await this.workflowService.getImport(id);
+    await this.workflowService.getImport(id, false);
     return this.workflowReportService.getReports(id, WorkflowType.IMPORT);
   }
 
@@ -325,7 +325,7 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async exportWorkflowReports(@Param('id') id: number) {
-    await this.workflowService.getExport(id);
+    await this.workflowService.getExport(id, false);
     return this.workflowReportService.getReports(id, WorkflowType.EXPORT);
   }
 
