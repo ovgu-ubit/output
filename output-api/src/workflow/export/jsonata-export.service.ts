@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportDisposition, ExportFormat, ExportWorkflow, ExportWorkflowStrategy, WorkflowReportItemLevel, WorkflowType } from '../../../../output-interfaces/Workflow';
+import { ExportDisposition, ExportFormat, ExportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -22,6 +22,16 @@ import { WorkflowReportService } from '../workflow-report.service';
 import { AbstractExportService } from './abstract-export.service';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
+
+type ExportStrategyData = {
+    format?: ExportFormat;
+    disposition?: ExportDisposition;
+    delimiter?: string;
+    quote_char?: string;
+    root_name?: string;
+    item_name?: string;
+    sheet_name?: string;
+};
 
 @Injectable()
 export class JSONataExportService extends AbstractExportService {
@@ -172,8 +182,8 @@ export class JSONataExportService extends AbstractExportService {
         return this.getStrategy().disposition ?? (this.resolveFormat() === 'xlsx' ? 'attachment' : 'inline');
     }
 
-    private getStrategy(): ExportWorkflowStrategy {
-        return this.exportDefinition?.strategy ?? {};
+    private getStrategy(): ExportStrategyData {
+        return (this.exportDefinition?.strategy ?? {}) as ExportStrategyData;
     }
 
     private async transformPublications(

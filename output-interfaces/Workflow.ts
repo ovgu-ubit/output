@@ -25,18 +25,7 @@ export interface ImportWorkflow extends Workflow {
 
 export interface ExportWorkflow extends Workflow {
     strategy_type?: ExportStrategy;
-    strategy?: ExportWorkflowStrategy;
-}
-
-export interface ExportWorkflowStrategy {
-    format?: ExportFormat;
-    disposition?: ExportDisposition;
-    delimiter?: string;
-    quote_char?: string;
-    root_name?: string;
-    item_name?: string;
-    sheet_name?: string;
-    [key: string]: unknown;
+    strategy?: any;
 }
 
 export type ExportFormat = 'json' | 'xml' | 'csv' | 'xlsx';

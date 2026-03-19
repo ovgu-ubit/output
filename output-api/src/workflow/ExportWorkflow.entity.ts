@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import { ExportStrategy, ExportWorkflow as IExportWorkflow, ExportWorkflowStrategy } from "../../../output-interfaces/Workflow";
+import { ExportStrategy, ExportWorkflow as IExportWorkflow } from "../../../output-interfaces/Workflow";
 import { WorkflowReport } from "./WorkflowReport.entity";
 import { OneToMany } from "typeorm";
 
@@ -38,7 +38,7 @@ export class ExportWorkflow implements IExportWorkflow {
     strategy_type?: ExportStrategy;
 
     @Column({ nullable: true, type: 'jsonb' })
-    strategy?: ExportWorkflowStrategy;
+    strategy?: any;
 
     @Column({ nullable: true })
     mapping?: string;

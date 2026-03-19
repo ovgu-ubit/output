@@ -6,6 +6,7 @@ import { ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestRe
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
+import { validateExportWorkflow } from './export-workflow.schema';
 import { validateImportWorkflow } from './import-workflow.schema';
 import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataExportService } from './export/jsonata-export.service';
@@ -133,7 +134,7 @@ export class WorkflowService {
             mapping: workflow.mapping,
         };
 
-        return this.exportRepository.save(obj);
+        return this.saveExport(obj);
     }
 
     async saveExport(workflow: ExportWorkflow) {
@@ -167,6 +168,8 @@ export class WorkflowService {
                 modified_at: undefined,
             };
         }
+
+        validateExportWorkflow(toSave);
 
         const saved = await this.exportRepository.save(toSave);
         if (shouldDeleteArchivedWorkflowReports && saved.id) {

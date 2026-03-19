@@ -1,0 +1,241 @@
+import { BadRequestException } from '@nestjs/common';
+import { ExportStrategy } from '../../../output-interfaces/Workflow';
+import { validateExportWorkflow } from './export-workflow.schema';
+
+describe('validateExportWorkflow', () => {
+    it('accepts JSON HTTP_RESPONSE workflows', () => {
+        const workflow = {
+            workflow_id: 'wf-json',
+            label: 'JSON export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'json',
+                disposition: 'inline',
+            },
+        } as any;
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy_type: 'HTTP_RESPONSE',
+            strategy: expect.objectContaining({
+                format: 'json',
+                disposition: 'inline',
+            }),
+        });
+    });
+
+    it('accepts XML workflows with root and item names', () => {
+        const workflow = {
+            workflow_id: 'wf-xml',
+            label: 'XML export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'xml',
+                disposition: 'attachment',
+                root_name: 'records',
+                item_name: 'record',
+            },
+        } as any;
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy: expect.objectContaining({
+                format: 'xml',
+                root_name: 'records',
+                item_name: 'record',
+            }),
+        });
+    });
+
+    it('accepts CSV workflows with delimiter and quote character', () => {
+        const workflow = {
+            workflow_id: 'wf-csv',
+            label: 'CSV export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'csv',
+                disposition: 'attachment',
+                delimiter: ';',
+                quote_char: '"',
+            },
+        } as any;
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy: expect.objectContaining({
+                format: 'csv',
+                delimiter: ';',
+                quote_char: '"',
+            }),
+        });
+    });
+
+    it('accepts XLSX workflows with sheet names', () => {
+        const workflow = {
+            workflow_id: 'wf-xlsx',
+            label: 'XLSX export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'xlsx',
+                disposition: 'attachment',
+                sheet_name: 'Export',
+            },
+        } as any;
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy: expect.objectContaining({
+                format: 'xlsx',
+                sheet_name: 'Export',
+            }),
+        });
+    });
+
+    it('rejects XML workflows without item_name', () => {
+        const workflow = {
+            workflow_id: 'wf-xml',
+            label: 'XML export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'xml',
+                disposition: 'inline',
+                root_name: 'records',
+            },
+        } as any;
+
+        try {
+            validateExportWorkflow(workflow);
+            fail('validateExportWorkflow should throw for incomplete XML strategy');
+        } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.getResponse()).toMatchObject({
+                message: 'Validation failed',
+                details: expect.arrayContaining([
+                    expect.objectContaining({
+                        path: 'strategy.item_name',
+                    }),
+                ]),
+            });
+        }
+    });
+
+    it('rejects CSV workflows without delimiter', () => {
+        const workflow = {
+            workflow_id: 'wf-csv',
+            label: 'CSV export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'csv',
+                disposition: 'inline',
+                quote_char: '"',
+            },
+        } as any;
+
+        try {
+            validateExportWorkflow(workflow);
+            fail('validateExportWorkflow should throw for incomplete CSV strategy');
+        } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.getResponse()).toMatchObject({
+                message: 'Validation failed',
+                details: expect.arrayContaining([
+                    expect.objectContaining({
+                        path: 'strategy.delimiter',
+                    }),
+                ]),
+            });
+        }
+    });
+
+    it('rejects format-incompatible strategy fields', () => {
+        const workflow = {
+            workflow_id: 'wf-json',
+            label: 'JSON export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'json',
+                disposition: 'inline',
+                delimiter: ';',
+            },
+        } as any;
+
+        try {
+            validateExportWorkflow(workflow);
+            fail('validateExportWorkflow should throw for format-incompatible fields');
+        } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.getResponse()).toMatchObject({
+                message: 'Validation failed',
+                details: expect.arrayContaining([
+                    expect.objectContaining({
+                        path: 'strategy',
+                        code: 'unrecognized_keys',
+                    }),
+                ]),
+            });
+        }
+    });
+
+    it('rejects blank XML names after trimming', () => {
+        const workflow = {
+            workflow_id: 'wf-xml',
+            label: 'XML export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'xml',
+                disposition: 'inline',
+                root_name: '   ',
+                item_name: 'record',
+            },
+        } as any;
+
+        try {
+            validateExportWorkflow(workflow);
+            fail('validateExportWorkflow should throw for blank XML names');
+        } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.getResponse()).toMatchObject({
+                message: 'Validation failed',
+                details: expect.arrayContaining([
+                    expect.objectContaining({
+                        path: 'strategy.root_name',
+                    }),
+                ]),
+            });
+        }
+    });
+
+    it('rejects inline xlsx exports', () => {
+        const workflow = {
+            workflow_id: 'wf-xlsx',
+            label: 'XLSX export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'xlsx',
+                disposition: 'inline',
+                sheet_name: 'Export',
+            },
+        } as any;
+
+        try {
+            validateExportWorkflow(workflow);
+            fail('validateExportWorkflow should throw for inline XLSX strategy');
+        } catch (error) {
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect(error.getResponse()).toMatchObject({
+                message: 'Validation failed',
+                details: expect.arrayContaining([
+                    expect.objectContaining({
+                        path: 'strategy.disposition',
+                        message: 'disposition must be attachment when format is xlsx',
+                    }),
+                ]),
+            });
+        }
+    });
+});

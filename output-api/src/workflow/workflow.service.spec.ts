@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ExportStrategy, ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
@@ -188,6 +189,21 @@ describe('WorkflowService', () => {
             version: 1,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
         });
+    });
+
+    it('rejects invalid export strategies before persisting', async () => {
+        await expect(service.saveExport({
+            label: 'Broken export',
+            mapping: '$',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: {
+                format: 'xml',
+                disposition: 'inline',
+                root_name: 'records',
+            },
+        } as unknown as ExportWorkflow)).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(exportRepository.save).not.toHaveBeenCalled();
     });
 
     it('starts published export workflows via JSONata export service', async () => {
