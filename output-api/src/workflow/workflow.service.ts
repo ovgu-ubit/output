@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, Not, Repository } from 'typeorm';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class WorkflowService {
+    private readonly activeExecutionKeys = new Set<string>();
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
@@ -179,57 +180,73 @@ export class WorkflowService {
     }
 
     async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {
-        const importDef = await this.importRepository.findOneBy({ id });
+        return this.startDetachedExecution('workflow-import-service', async () => {
+            const importDef = await this.importRepository.findOneBy({ id });
 
-        if (!importDef) throw new BadRequestException('Error: workflow not found');
-        if (!importDef.published_at || importDef.deleted_at) {
-            throw new BadRequestException('Error: only published workflows can be executed');
-        }
-        if (importDef.strategy_type === ImportStrategy.URL_QUERY_OFFSET) {
-            await this.importService.setReportingYear(reporting_year + "");
-            await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-            await this.importService.import(update, user, dryRun);
-        } else if (importDef.strategy_type === ImportStrategy.URL_LOOKUP_AND_RETRIEVE) {
-            await this.importService.setReportingYear(reporting_year + "");
-            await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-            await this.importService.importLookupAndRetrieve(update, user, dryRun)
-        } else if (importDef.strategy_type === ImportStrategy.URL_DOI) {
-            await this.importService.setUp(importDef, importDef.update_config);
-            if (ids && ids.length > 0) {
-                this.importService.enrich_whereClause = { where: { id: In(ids) } };
-            } else if (reporting_year) {
-                const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-                const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-                this.importService.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
-                this.importService.setReportingYear(reporting_year + "")
-            } else throw new BadRequestException('neither reporting_year nor ids are given')
-            await this.importService.enrich(user, dryRun);
-        } else if (importDef.strategy_type === ImportStrategy.FILE_UPLOAD) {
-            await this.importService.setUp(importDef, importDef.update_config);
-            if (file) await this.importService.loadFile(update, file, user, dryRun);
-            else throw new BadRequestException('no file supported')
-        }
+            if (!importDef) throw new BadRequestException('Error: workflow not found');
+            if (!importDef.published_at || importDef.deleted_at) {
+                throw new BadRequestException('Error: only published workflows can be executed');
+            }
+            if (importDef.strategy_type === ImportStrategy.URL_QUERY_OFFSET) {
+                await this.importService.setReportingYear(reporting_year + "");
+                await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
+                const reportId = this.getImportExecutionReportId();
+                await this.importService.import(update, user, dryRun);
+                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+            } else if (importDef.strategy_type === ImportStrategy.URL_LOOKUP_AND_RETRIEVE) {
+                await this.importService.setReportingYear(reporting_year + "");
+                await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
+                const reportId = this.getImportExecutionReportId();
+                await this.importService.importLookupAndRetrieve(update, user, dryRun);
+                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+            } else if (importDef.strategy_type === ImportStrategy.URL_DOI) {
+                await this.importService.setUp(importDef, importDef.update_config);
+                const reportId = this.getImportExecutionReportId();
+                if (ids && ids.length > 0) {
+                    this.importService.enrich_whereClause = { where: { id: In(ids) } };
+                } else if (reporting_year) {
+                    const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+                    const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+                    this.importService.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
+                    this.importService.setReportingYear(reporting_year + "")
+                } else throw new BadRequestException('neither reporting_year nor ids are given')
+                await this.importService.enrich(user, dryRun);
+                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+            } else if (importDef.strategy_type === ImportStrategy.FILE_UPLOAD) {
+                await this.importService.setUp(importDef, importDef.update_config);
+                const reportId = this.getImportExecutionReportId();
+                if (file) await this.importService.loadFile(update, file, user, dryRun);
+                else throw new BadRequestException('no file supported')
+                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+            }
+
+            return {};
+        });
     }
 
     async testImport(id: number, pos = 1): Promise<ImportWorkflowTestResult> {
-        const importDef = await this.importRepository.findOneBy({ id });
-        if (!importDef) throw new NotFoundException();
+        return this.runExclusive('workflow-import-service', async () => {
+            const importDef = await this.importRepository.findOneBy({ id });
+            if (!importDef) throw new NotFoundException();
 
-        await this.importService.setReportingYear("2024");
-        await this.importService.setUp(importDef, importDef.update_config);
-        return await this.importService.test(pos);
+            await this.importService.setReportingYear("2024");
+            await this.importService.setUp(importDef, importDef.update_config);
+            return await this.importService.test(pos);
+        });
     }
 
     async startExport(id: number, filter?: { filter: SearchFilter, paths: string[] }, user?: string, withMasterData?: boolean) {
-        const exportDef = await this.exportRepository.findOneBy({ id });
+        return this.runExclusive('workflow-export-service', async () => {
+            const exportDef = await this.exportRepository.findOneBy({ id });
 
-        if (!exportDef) throw new BadRequestException('Error: workflow not found');
-        if (!exportDef.published_at || exportDef.deleted_at) {
-            throw new BadRequestException('Error: only published workflows can be executed');
-        }
+            if (!exportDef) throw new BadRequestException('Error: workflow not found');
+            if (!exportDef.published_at || exportDef.deleted_at) {
+                throw new BadRequestException('Error: only published workflows can be executed');
+            }
 
-        await this.exportService.setUp(exportDef);
-        return this.exportService.export(filter, this.filterServices, user, withMasterData);
+            await this.exportService.setUp(exportDef);
+            return this.exportService.export(filter, this.filterServices, user, withMasterData);
+        });
     }
 
     async isLocked(id: number): Promise<boolean> {
@@ -316,5 +333,43 @@ export class WorkflowService {
             throw new BadRequestException('Error: only draft workflows can be deleted');
         }
         return repository.remove(workflows);
+    }
+
+    private async runExclusive<T>(key: string, action: () => Promise<T>): Promise<T> {
+        this.ensureExecutionIsAvailable(key);
+        this.activeExecutionKeys.add(key);
+        try {
+            return await action();
+        } finally {
+            this.activeExecutionKeys.delete(key);
+        }
+    }
+
+    private async startDetachedExecution(key: string, action: () => Promise<{ completion?: Promise<unknown> | void }>): Promise<void> {
+        this.ensureExecutionIsAvailable(key);
+        this.activeExecutionKeys.add(key);
+        try {
+            const { completion } = await action();
+            void Promise.resolve(completion)
+                .catch(() => undefined)
+                .finally(() => {
+                    this.activeExecutionKeys.delete(key);
+                });
+        } catch (error) {
+            this.activeExecutionKeys.delete(key);
+            throw error;
+        }
+    }
+
+    private ensureExecutionIsAvailable(key: string) {
+        if (this.activeExecutionKeys.has(key)) {
+            throw new ConflictException('A workflow execution is already running for this service.');
+        }
+    }
+
+    private getImportExecutionReportId(): number {
+        const reportId = this.importService.getCurrentWorkflowReportId();
+        if (!reportId) throw new NotFoundException('Workflow report not initialized');
+        return reportId;
     }
 }

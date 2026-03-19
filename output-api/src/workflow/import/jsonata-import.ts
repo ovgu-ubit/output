@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
@@ -669,7 +669,6 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     public async loadFile(update: boolean, file: Express.Multer.File, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
         await this.startWorkflowRun(by_user, dryRun, {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -831,7 +830,6 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
         if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
             throw new BadRequestException('Import cannot be run due to missing parameters.')
@@ -916,7 +914,6 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     public async enrich(by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         if (!this.url_doi || !this.importDefinition.strategy.get_doi_item)
             throw new BadRequestException('Enrich cannot be run due to missing parameters.')

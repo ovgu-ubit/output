@@ -160,6 +160,22 @@ export class WorkflowReportService {
         return this.hydrateWorkflowReference(report);
     }
 
+    async waitForCompletion(workflowReportId: number, pollIntervalMs = 500): Promise<WorkflowReport> {
+        const staleTimeoutMs = await this.getStaleTimeoutMs();
+
+        while (true) {
+            const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+            if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+
+            const hydratedReport = this.hydrateWorkflowReference(report);
+            if (hydratedReport.finished_at || this.isReportStale(hydratedReport, staleTimeoutMs)) {
+                return hydratedReport;
+            }
+
+            await this.sleep(pollIntervalMs);
+        }
+    }
+
     async getReportText(workflowReportId: number): Promise<string> {
         const report = await this.getReport(workflowReportId);
         const lines = report.items?.map((item) => {
@@ -257,6 +273,10 @@ export class WorkflowReportService {
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+    }
+
+    private async sleep(ms: number): Promise<void> {
+        await new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     private normalizeLevel(level?: WorkflowReportItemLevel | string): WorkflowReportItemLevel {

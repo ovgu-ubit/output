@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ExportStrategy, ImportStrategy } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
@@ -19,7 +19,7 @@ describe('WorkflowService', () => {
     let service: WorkflowService;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
-    let workflowReportService: { deleteReportsForWorkflow: jest.Mock, getStatusForWorkflow: jest.Mock };
+    let workflowReportService: { deleteReportsForWorkflow: jest.Mock, getStatusForWorkflow: jest.Mock, waitForCompletion: jest.Mock };
     let exportService: {
         setUp: jest.Mock;
         export: jest.Mock;
@@ -33,6 +33,8 @@ describe('WorkflowService', () => {
         importLookupAndRetrieve: jest.Mock;
         enrich: jest.Mock;
         loadFile: jest.Mock;
+        test: jest.Mock;
+        getCurrentWorkflowReportId: jest.Mock;
     };
 
     beforeEach(async () => {
@@ -53,6 +55,7 @@ describe('WorkflowService', () => {
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
             getStatusForWorkflow: jest.fn(),
+            waitForCompletion: jest.fn(),
         };
         exportService = {
             setUp: jest.fn(),
@@ -67,6 +70,8 @@ describe('WorkflowService', () => {
             importLookupAndRetrieve: jest.fn(),
             enrich: jest.fn(),
             loadFile: jest.fn(),
+            test: jest.fn(),
+            getCurrentWorkflowReportId: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -162,12 +167,15 @@ describe('WorkflowService', () => {
         importService.setReportingYear.mockResolvedValue(undefined);
         importService.setUp.mockResolvedValue(undefined);
         importService.importLookupAndRetrieve.mockResolvedValue(undefined);
+        importService.getCurrentWorkflowReportId.mockReturnValue(7001);
+        workflowReportService.waitForCompletion.mockResolvedValue(undefined);
 
         await service.startImport(33, 2024, [], null, true, 'tester', false);
 
         expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
         expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
         expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
+        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(7001);
     });
 
     it('defaults new export workflows to HTTP_RESPONSE', async () => {
@@ -229,6 +237,55 @@ describe('WorkflowService', () => {
         expect(exportService.setUp).toHaveBeenCalledWith(publishedWorkflow);
         expect(exportService.export).toHaveBeenCalledWith(filter, [], 'tester', true);
         expect(result).toBe('{"ok":true}');
+    });
+
+    it('rejects concurrent workflow import starts while the import service is busy', async () => {
+        const publishedWorkflow = {
+            id: 61,
+            workflow_id: 'wf-61',
+            label: 'Concurrent import',
+            version: 1,
+            strategy_type: ImportStrategy.URL_QUERY_OFFSET,
+            strategy: {
+                url_items: 'https://example.org/items',
+                url_count: 'https://example.org/count',
+                max_res: 50,
+                max_res_name: 'rows',
+                request_mode: 'offset',
+                offset_name: 'offset',
+                offset_count: 0,
+                offset_start: 0,
+                get_count: '$.count',
+                get_items: '$.items',
+                format: 'json',
+            },
+            mapping: '$',
+            published_at: new Date('2026-03-16T10:00:00.000Z'),
+            deleted_at: null,
+            update_config: {},
+        } as unknown as ImportWorkflow;
+        let releaseCompletion: () => void;
+        const completionPromise = new Promise<void>((resolve) => {
+            releaseCompletion = resolve;
+        });
+
+        importRepository.findOneBy!.mockResolvedValue(publishedWorkflow);
+        importService.setReportingYear.mockResolvedValue(undefined);
+        importService.setUp.mockResolvedValue(undefined);
+        importService.getCurrentWorkflowReportId.mockReturnValue(9001);
+        importService.import.mockResolvedValue(undefined);
+        workflowReportService.waitForCompletion.mockReturnValue(completionPromise);
+
+        const firstStart = service.startImport(61, 2024, [], null, false, 'tester', false);
+        await firstStart;
+
+        await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).rejects.toBeInstanceOf(ConflictException);
+
+        releaseCompletion!();
+        await completionPromise;
+        await Promise.resolve();
+
+        await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).resolves.toBeUndefined();
     });
 
     it('deletes only draft export workflows', async () => {
