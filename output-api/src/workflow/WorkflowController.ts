@@ -115,7 +115,7 @@ export class WorkflowController {
     @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
     @Body('withMasterData') withMasterData?: boolean
   ) {
-    const workflow = await this.workflowService.getExport(id);
+    const workflow = await this.workflowService.getExport(id, false);
     const result = await this.workflowService.startExport(id, filter, req.user?.username, withMasterData);
     const strategy = workflow.strategy ?? {};
     const format = (strategy.format ?? 'json') as ExportFormat;

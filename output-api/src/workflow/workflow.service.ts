@@ -38,12 +38,12 @@ export class WorkflowService {
         return this.exportRepository.find(this.getWorkflowOptions(type));
     }
 
-    async getImport(id?: number) {
-        return this.getWorkflow(this.importRepository, id, (workflow) => this.saveImport(workflow));
+    async getImport(id?: number, lock = true) {
+        return this.getWorkflow(this.importRepository, id, (workflow) => lock ? this.saveImport(workflow) : undefined);
     }
 
-    async getExport(id?: number) {
-        return this.getWorkflow(this.exportRepository, id, (workflow) => this.saveExport(workflow));
+    async getExport(id?: number, lock = true) {
+        return this.getWorkflow(this.exportRepository, id, (workflow) => lock ? this.saveExport(workflow) : undefined);
     }
 
     async importImport(file: Express.Multer.File) {
