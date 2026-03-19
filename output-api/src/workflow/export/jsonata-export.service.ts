@@ -3,9 +3,18 @@ import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { ExportDisposition, ExportFormat, ExportWorkflow, ExportWorkflowStrategy, WorkflowReportItemLevel, WorkflowType } from '../../../../output-interfaces/Workflow';
+import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { ContractService } from '../../contract/contract.service';
+import { FunderService } from '../../funder/funder.service';
+import { GreaterEntityService } from '../../greater_entity/greater-entitiy.service';
+import { InstituteService } from '../../institute/institute.service';
+import { InvoiceService } from '../../invoice/invoice.service';
+import { OACategoryService } from '../../oa_category/oa-category.service';
 import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationTypeService } from '../../pub_type/publication-type.service';
+import { PublisherService } from '../../publisher/publisher.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { WorkflowReport } from '../WorkflowReport.entity';
@@ -26,6 +35,15 @@ export class JSONataExportService extends AbstractExportService {
         private publicationService: PublicationService,
         private configService: AppConfigService,
         private workflowReportService: WorkflowReportService,
+        private invoiceService: InvoiceService,
+        private authorService: AuthorService,
+        private instService: InstituteService,
+        private geService: GreaterEntityService,
+        private publService: PublisherService,
+        private contractService: ContractService,
+        private funderService: FunderService,
+        private oaService: OACategoryService,
+        private ptService: PublicationTypeService,
     ) {
         super();
     }
@@ -106,7 +124,7 @@ export class JSONataExportService extends AbstractExportService {
                 message: `${publications.length} publications selected for export`
             });
             const items = await this.transformPublications(publications);
-            const rendered = this.render(items);
+            const rendered = await this.render(items, !!withMasterData);
 
             await this.workflowReportService.write(this.workflowReport.id, {
                 timestamp: new Date(),
@@ -187,14 +205,14 @@ export class JSONataExportService extends AbstractExportService {
         };
     }
 
-    private render(items: unknown[]): string | Buffer {
+    private render(items: unknown[], withMasterData = false): Promise<string | Buffer> | string | Buffer {
         switch (this.resolveFormat()) {
             case 'xml':
                 return this.renderXml(items);
             case 'csv':
                 return this.renderCsv(items);
             case 'xlsx':
-                return this.renderXlsx(items);
+                return this.renderXlsx(items, withMasterData);
             case 'json':
             default:
                 return this.renderJson(items);
@@ -228,7 +246,7 @@ export class JSONataExportService extends AbstractExportService {
         });
     }
 
-    private renderXlsx(items: unknown[]): Buffer {
+    private async renderXlsx(items: unknown[], withMasterData = false): Promise<Buffer> {
         const strategy = this.getStrategy();
         const sheetName = strategy.sheet_name ?? 'Export';
         const rows = this.toTabularRows(items);
@@ -236,6 +254,10 @@ export class JSONataExportService extends AbstractExportService {
         const workbook = XLSX.utils.book_new();
         const worksheet = XLSX.utils.json_to_sheet(rows);
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+        if (withMasterData) {
+            await this.appendMasterDataSheets(workbook);
+        }
 
         return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     }
@@ -259,6 +281,97 @@ export class JSONataExportService extends AbstractExportService {
         if (value instanceof Date) return value.toISOString();
         if (Array.isArray(value) || (value && typeof value === 'object')) return JSON.stringify(value);
         return value;
+    }
+
+    private async appendMasterDataSheets(workbook: XLSX.WorkBook) {
+        const authors = await this.authorService.get();
+        this.appendSheet(workbook, "Personen", authors.map((author) => ({
+            id: author.id,
+            title: author.title,
+            first_name: author.first_name,
+            last_name: author.last_name,
+            orcid: author.orcid,
+            gnd_id: author.gnd_id,
+            institutes: author.institutes?.map((entry) => entry.label).join(' | '),
+        })));
+
+        const institutes = await this.instService.get();
+        this.appendSheet(workbook, "Institute", institutes.map((inst) => ({
+            id: inst.id,
+            label: inst.label,
+            short_label: inst.short_label,
+            super_institute: inst.super_institute?.short_label,
+        })));
+
+        const greaterEntities = await this.geService.get();
+        this.appendSheet(workbook, "Größere Einheiten", greaterEntities.map((ge) => ({
+            id: ge.id,
+            label: ge.label,
+            doaj_since: ge.doaj_since,
+            doaj_until: ge.doaj_until,
+            identifiers: ge.identifiers?.map((entry) => entry.value).join(' | '),
+        })));
+
+        const publishers = await this.publService.get();
+        this.appendSheet(workbook, "Verlage", publishers.map((publisher) => ({
+            id: publisher.id,
+            label: publisher.label,
+            doi_prefixes: publisher.doi_prefixes?.map((entry) => entry.doi_prefix).join(' | '),
+        })));
+
+        const contracts = await this.contractService.get();
+        this.appendSheet(workbook, "Verträge", contracts.map((contract) => ({
+            id: contract.id,
+            label: contract.label,
+            publisher: contract.publisher?.label,
+            start_date: contract.start_date,
+            end_date: contract.end_date,
+            internal_number: contract.internal_number,
+            invoice_amount: contract.invoice_amount,
+            invoice_information: contract.invoice_information,
+            gold_option: contract.gold_option,
+            verification_method: contract.verification_method,
+        })));
+
+        const funders = await this.funderService.get();
+        this.appendSheet(workbook, "Förderer", funders.map((funder) => ({
+            id: funder.id,
+            label: funder.label,
+            doi: funder.doi,
+            ror_id: funder.ror_id,
+        })));
+
+        const oaCategories = await this.oaService.get();
+        this.appendSheet(workbook, "OA-Kategorien", oaCategories.map((oa) => ({
+            id: oa.id,
+            label: oa.label,
+            is_oa: oa.is_oa,
+        })));
+
+        const publicationTypes = await this.ptService.get();
+        this.appendSheet(workbook, "Publikationsarten", publicationTypes.map((pt) => ({
+            id: pt.id,
+            label: pt.label,
+            review: pt.review,
+        })));
+
+        const costCenters = await this.invoiceService.getCostCenters();
+        this.appendSheet(workbook, "Kostenstellen", costCenters.map((costCenter) => ({
+            id: costCenter.id,
+            label: costCenter.label,
+            number: costCenter.number,
+        })));
+
+        const costTypes = await this.invoiceService.getCostTypes();
+        this.appendSheet(workbook, "Kostenarten", costTypes.map((costType) => ({
+            id: costType.id,
+            label: costType.label,
+        })));
+    }
+
+    private appendSheet(workbook: XLSX.WorkBook, name: string, rows: Record<string, unknown>[]) {
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(workbook, worksheet, name);
     }
 
     private async updateRuntimeStatus(
