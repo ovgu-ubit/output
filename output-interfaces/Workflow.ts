@@ -34,6 +34,7 @@ export interface ExportWorkflowStrategy {
     delimiter?: string;
     quote_char?: string;
     root_name?: string;
+    item_name?: string;
     sheet_name?: string;
     [key: string]: unknown;
 }

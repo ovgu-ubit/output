@@ -47,6 +47,7 @@ export class ExportFormStrategyComponent implements OnInit {
       delimiter: [';'],
       quote_char: ['"'],
       root_name: ['export'],
+      item_name: ['item'],
       sheet_name: ['Export'],
     });
 
@@ -61,6 +62,7 @@ export class ExportFormStrategyComponent implements OnInit {
           delimiter: e.strategy?.delimiter ?? ';',
           quote_char: e.strategy?.quote_char ?? '"',
           root_name: e.strategy?.root_name ?? 'export',
+          item_name: e.strategy?.item_name ?? 'item',
           sheet_name: e.strategy?.sheet_name ?? 'Export',
         }, { emitEvent: false });
 
@@ -104,6 +106,7 @@ export class ExportFormStrategyComponent implements OnInit {
       delimiter: this.entity.strategy?.delimiter ?? ';',
       quote_char: this.entity.strategy?.quote_char ?? '"',
       root_name: this.entity.strategy?.root_name ?? 'export',
+      item_name: this.entity.strategy?.item_name ?? 'item',
       sheet_name: this.entity.strategy?.sheet_name ?? 'Export',
     }, { emitEvent: false });
   }
