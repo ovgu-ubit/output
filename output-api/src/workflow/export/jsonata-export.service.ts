@@ -56,6 +56,7 @@ export class JSONataExportService extends AbstractExportService {
             workflow_type: WorkflowType.EXPORT,
             workflow: this.exportDefinition,
             status: 'initialized',
+            progress: 0,
             params: {
                 format: this.resolveFormat(),
                 disposition: this.resolveDisposition(),
@@ -76,13 +77,10 @@ export class JSONataExportService extends AbstractExportService {
             throw new BadRequestException('JSONata export workflow report is not configured.');
         }
 
-        this.status_text = 'Started on ' + new Date();
-        this.progress = -1;
-        this.workflowReport = await this.workflowReportService.save({
-            id: this.workflowReport.id,
+        const startedAt = new Date();
+        await this.updateRuntimeStatus(-1, `Started on ${startedAt}`, {
             by_user,
-            status: 'started',
-            started_at: new Date(),
+            started_at: startedAt,
             params: {
                 ...this.workflowReport.params as Record<string, unknown>,
                 filter: filter?.filter,
@@ -116,7 +114,6 @@ export class JSONataExportService extends AbstractExportService {
                 message: `${items.length} export items rendered as ${this.resolveFormat()} with disposition ${this.resolveDisposition()}`
             });
 
-            this.progress = 0;
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Successful export',
                 summary: {
@@ -127,10 +124,10 @@ export class JSONataExportService extends AbstractExportService {
                 }
             });
             this.status_text = 'Successfull export on ' + new Date();
+            this.progress = 0;
 
             return rendered;
         } catch (error) {
-            this.progress = 0;
             await this.workflowReportService.write(this.workflowReport.id, {
                 timestamp: new Date(),
                 level: WorkflowReportItemLevel.ERROR,
@@ -144,6 +141,7 @@ export class JSONataExportService extends AbstractExportService {
                 }
             });
             this.status_text = 'Error while exporting on ' + new Date();
+            this.progress = 0;
             throw error;
         }
     }
@@ -261,5 +259,27 @@ export class JSONataExportService extends AbstractExportService {
         if (value instanceof Date) return value.toISOString();
         if (Array.isArray(value) || (value && typeof value === 'object')) return JSON.stringify(value);
         return value;
+    }
+
+    private async updateRuntimeStatus(
+        progress: number,
+        status?: string,
+        extra?: {
+            by_user?: string;
+            started_at?: Date;
+            params?: unknown;
+        }
+    ) {
+        this.progress = progress;
+        if (status !== undefined) this.status_text = status;
+        if (!this.workflowReport?.id) return;
+
+        this.workflowReport = await this.workflowReportService.updateStatus(this.workflowReport.id, {
+            progress,
+            status,
+            by_user: extra?.by_user,
+            started_at: extra?.started_at,
+            params: extra?.params,
+        });
     }
 }

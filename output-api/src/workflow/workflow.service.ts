@@ -246,11 +246,11 @@ export class WorkflowService {
     }
 
     async status(_id: number) {
-        return this.importService.status();
+        return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.IMPORT);
     }
 
     async exportStatus(_id: number) {
-        return this.exportService.status();
+        return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.EXPORT);
     }
 
     getUpdateMapping(id: number) {

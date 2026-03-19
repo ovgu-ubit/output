@@ -6,7 +6,7 @@ import { JSONataExportService } from './jsonata-export.service';
 describe('JSONataExportService', () => {
     let service: JSONataExportService;
     let publicationService: { getAll: jest.Mock };
-    let workflowReportService: { createReport: jest.Mock, save: jest.Mock, write: jest.Mock, finish: jest.Mock };
+    let workflowReportService: { createReport: jest.Mock, updateStatus: jest.Mock, write: jest.Mock, finish: jest.Mock };
     let configService: { listDatabaseConfig: jest.Mock, listEnvConfig: jest.Mock, get: jest.Mock };
 
     beforeEach(() => {
@@ -33,7 +33,7 @@ describe('JSONataExportService', () => {
         };
         workflowReportService = {
             createReport: jest.fn(async (report) => ({ id: 41, ...report })),
-            save: jest.fn(async (report) => report),
+            updateStatus: jest.fn(async (_id, report) => ({ id: 41, ...report })),
             write: jest.fn(async () => undefined),
             finish: jest.fn(async () => undefined),
         };
@@ -83,11 +83,12 @@ describe('JSONataExportService', () => {
         ], null, 2));
         expect(workflowReportService.createReport).toHaveBeenCalledWith(expect.objectContaining({
             workflow_type: WorkflowType.EXPORT,
+            progress: 0,
         }));
-        expect(workflowReportService.save).toHaveBeenCalledWith(expect.objectContaining({
-            id: 41,
+        expect(workflowReportService.updateStatus).toHaveBeenCalledWith(41, expect.objectContaining({
             by_user: 'tester',
-            status: 'started',
+            progress: -1,
+            status: expect.stringContaining('Started on '),
         }));
         expect(workflowReportService.write).toHaveBeenCalledTimes(2);
         expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({

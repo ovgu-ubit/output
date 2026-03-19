@@ -34,6 +34,9 @@ export class WorkflowReport implements IWorkflowReport {
     @Column({ nullable: true })
     status?: string;
 
+    @Column({ type: 'double precision', default: 0 })
+    progress?: number;
+
     @Column({ type: 'timestamptz' })
     started_at?: Date;
 

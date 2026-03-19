@@ -197,6 +197,7 @@ export class JSONataImportService extends AbstractImportService {
 
         this.workflowReport = await this.workflowReportService.createReport({
             status: 'initialized',
+            progress: 0,
             workflow: this.importDefinition,
             params: {
                 reporting_year: this.reporting_year ?? undefined,
@@ -670,16 +671,10 @@ export class JSONataImportService extends AbstractImportService {
     public async loadFile(update: boolean, file: Express.Multer.File, by_user?: string, dryRun = false) {
         if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
-        this.progress = -1;
-        this.status_text = 'Started on ' + new Date();
-        this.workflowReport = await this.workflowReportService.save({
-            id: this.workflowReport.id,
-            status: 'started',
-            started_at: new Date(),
-            dry_run: dryRun,
-            by_user,
+        await this.startWorkflowRun(by_user, dryRun, {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            params: {...this.workflowReport.params as any, file_name: file.originalname}
+            ...this.workflowReport.params as any,
+            file_name: file.originalname
         });
 
         this.file = file;
@@ -740,25 +735,23 @@ export class JSONataImportService extends AbstractImportService {
                 }
                 // Update Progress Value
                 this.processedPublications++;
-                if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+                if (this.progress !== 0) {
+                    await this.updateRuntimeStatus((this.processedPublications) / this.numberOfPublications);
+                }
             }
             //finalize
-            this.progress = 0;
-            this.workflowReportService.finish(this.workflowReport.id, {
-                status: 'Successfull import',
+            await this.finishWorkflowRun('Successfull import', 'Successfull import on ' + new Date(), {
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length
-            })
+            });
 
         } catch (err) {
-            this.progress = 0;
             this.status_text = 'Error while importing on ' + new Date();
             console.log(err.stack);
-            this.workflowReportService.finish(this.workflowReport.id, {
-                status: 'Error while importing',
+            await this.finishWorkflowRun('Error while importing', this.status_text, {
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length
-            })
+            });
         }
     }
 
@@ -772,15 +765,7 @@ export class JSONataImportService extends AbstractImportService {
         }
 
         this.dryRun = dryRun;
-        this.progress = -1;
-        this.status_text = 'Started on ' + new Date();
-        this.workflowReport = await this.workflowReportService.save({
-            id: this.workflowReport.id,
-            status: 'started',
-            started_at: new Date(),
-            dry_run: dryRun,
-            by_user
-        });
+        await this.startWorkflowRun(by_user, dryRun);
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -796,13 +781,10 @@ export class JSONataImportService extends AbstractImportService {
         });
 
         if (this.numberOfPublications <= 0) {
-            this.progress = 0;
-            await this.workflowReportService.finish(this.workflowReport.id, {
-                status: 'Nothing to import',
+            await this.finishWorkflowRun('Nothing to import', 'Nothing to import on ' + new Date(), {
                 count_import: 0,
                 count_update: 0
             });
-            this.status_text = 'Nothing to import on ' + new Date();
             return;
         }
 
@@ -827,23 +809,20 @@ export class JSONataImportService extends AbstractImportService {
                         message: `Error while processing data chunk: ${e}`
                     });
                 } finally {
-                    if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+                    if (this.progress !== 0) {
+                        await this.updateRuntimeStatus((this.processedPublications) / this.numberOfPublications);
+                    }
                     if (this.progress === 1) {
-                        this.progress = 0;
-                        await this.workflowReportService.finish(this.workflowReport.id, {
-                            status: 'Successfull import',
+                        await this.finishWorkflowRun('Successfull import', 'Successfull import on ' + new Date(), {
                             count_import: this.newPublications.length,
                             count_update: this.publicationsUpdate.length
                         });
-                        this.status_text = 'Successfull import on ' + new Date();
                     }
                 }
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
-                this.progress = 0;
-                await this.workflowReportService.finish(this.workflowReport.id, {
-                    status: 'Error while importing',
+                await this.finishWorkflowRun('Error while importing', 'Error while importing on ' + new Date(), {
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
                 });
@@ -856,15 +835,7 @@ export class JSONataImportService extends AbstractImportService {
         this.dryRun = dryRun;
         if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
             throw new BadRequestException('Import cannot be run due to missing parameters.')
-        this.progress = -1;
-        this.status_text = 'Started on ' + new Date();
-        this.workflowReport = await this.workflowReportService.save({
-            id: this.workflowReport.id,
-            status: 'started',
-            started_at: new Date(),
-            dry_run: dryRun,
-            by_user
-        });
+        await this.startWorkflowRun(by_user, dryRun);
 
         this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
@@ -883,13 +854,10 @@ export class JSONataImportService extends AbstractImportService {
             });
             if (this.numberOfPublications <= 0) {
                 //finalize
-                this.progress = 0;
-                await this.workflowReportService.finish(this.workflowReport.id, {
-                    status: 'Nothing to import',
+                await this.finishWorkflowRun('Nothing to import', 'Nothing to import on ' + new Date(), {
                     count_import: 0,
                     count_update: 0
                 });
-                this.status_text = 'Nothing to import on ' + new Date();
             }
 
             //collect observables
@@ -925,24 +893,21 @@ export class JSONataImportService extends AbstractImportService {
                         message: `Error while processing data chunk: ${e}`
                     });
                 } finally {
-                    if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+                    if (this.progress !== 0) {
+                        await this.updateRuntimeStatus((this.processedPublications) / this.numberOfPublications);
+                    }
                     if (this.progress === 1) {
                         //finalize
-                        this.progress = 0;
-                        await this.workflowReportService.finish(this.workflowReport.id, {
-                            status: 'Successfull import',
+                        await this.finishWorkflowRun('Successfull import', 'Successfull import on ' + new Date(), {
                             count_import: this.newPublications.length,
                             count_update: this.publicationsUpdate.length
                         });
-                        this.status_text = 'Successfull import on ' + new Date();
                     }
                 }
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
-                this.progress = 0;
-                await this.workflowReportService.finish(this.workflowReport.id, {
-                    status: 'Error while importing',
+                await this.finishWorkflowRun('Error while importing', 'Error while importing on ' + new Date(), {
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
                 });
@@ -955,22 +920,11 @@ export class JSONataImportService extends AbstractImportService {
         this.dryRun = dryRun;
         if (!this.url_doi || !this.importDefinition.strategy.get_doi_item)
             throw new BadRequestException('Enrich cannot be run due to missing parameters.')
-        this.progress = -1;
-        this.status_text = 'Started on ' + new Date();
-        this.workflowReport = await this.workflowReportService.save({
-            id: this.workflowReport.id,
-            status: 'started',
-            started_at: new Date(),
-            dry_run: dryRun,
-            by_user
-        });
+        await this.startWorkflowRun(by_user, dryRun);
 
         const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
-            this.progress = 0;
-            this.status_text = 'Nothing to enrich on ' + new Date();
-            await this.workflowReportService.finish(this.workflowReport.id, {
-                status: 'Nothing to enrich',
+            await this.finishWorkflowRun('Nothing to enrich', 'Nothing to enrich on ' + new Date(), {
                 count_import: 0,
                 count_update: 0
             });
@@ -1028,24 +982,21 @@ export class JSONataImportService extends AbstractImportService {
                         message: `Error while processing data chunk: ${e}`
                     });
                 } finally {
-                    if (this.progress !== 0) this.progress = (this.processedPublications + errors) / publications.length;
+                    if (this.progress !== 0) {
+                        await this.updateRuntimeStatus((this.processedPublications + errors) / publications.length);
+                    }
                     if (this.progress === 1) {
                         //finalize
-                        this.progress = 0;
-                        await this.workflowReportService.finish(this.workflowReport.id, {
-                            status: 'Successfull enrich',
+                        await this.finishWorkflowRun('Successfull enrich', 'Successfull enrich on ' + new Date(), {
                             count_import: 0,
                             count_update: this.publicationsUpdate.length
                         });
-                        this.status_text = 'Successfull enrich on ' + new Date();
                     }
                 }
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
-                this.progress = 0;
-                await this.workflowReportService.finish(this.workflowReport.id, {
-                    status: 'Error while enriching',
+                await this.finishWorkflowRun('Error while enriching', 'Error while enriching on ' + new Date(), {
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
                 });
@@ -1166,6 +1117,65 @@ export class JSONataImportService extends AbstractImportService {
     protected getCostApproachCurrency(element: JSONataParsedObject): string {
         return element.cost_approach_currency;
     }
+
+    private async startWorkflowRun(by_user?: string, dryRun = false, params?: unknown) {
+        const startedAt = new Date();
+        await this.updateRuntimeStatus(-1, 'Started on ' + startedAt, {
+            by_user,
+            dry_run: dryRun,
+            started_at: startedAt,
+            finished_at: null,
+            params,
+        });
+    }
+
+    private async updateRuntimeStatus(
+        progress: number,
+        status?: string,
+        extra?: {
+            started_at?: Date;
+            finished_at?: Date | null;
+            by_user?: string;
+            params?: unknown;
+            dry_run?: boolean;
+        }
+    ) {
+        this.progress = progress;
+        if (status !== undefined) this.status_text = status;
+        if (!this.workflowReport?.id) return;
+
+        this.workflowReport = await this.workflowReportService.updateStatus(this.workflowReport.id, {
+            progress,
+            status,
+            started_at: extra?.started_at,
+            finished_at: extra?.finished_at,
+            by_user: extra?.by_user,
+            params: extra?.params,
+            dry_run: extra?.dry_run,
+        });
+    }
+
+    private async finishWorkflowRun(
+        status: string,
+        statusText: string,
+        content: {
+            count_import?: number;
+            count_update?: number;
+            summary?: unknown;
+        }
+    ) {
+        this.progress = 0;
+        this.status_text = statusText;
+        if (!this.workflowReport?.id) return;
+
+        this.workflowReport = await this.workflowReportService.finish(this.workflowReport.id, {
+            status,
+            count_import: content.count_import,
+            count_update: content.count_update,
+            summary: content.summary,
+        });
+    }
+
     collectKeys(
         obj: unknown,
         depth = 3,

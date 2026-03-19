@@ -18,7 +18,7 @@ describe('WorkflowService', () => {
     let service: WorkflowService;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
-    let workflowReportService: { deleteReportsForWorkflow: jest.Mock };
+    let workflowReportService: { deleteReportsForWorkflow: jest.Mock, getStatusForWorkflow: jest.Mock };
     let exportService: {
         setUp: jest.Mock;
         export: jest.Mock;
@@ -51,6 +51,7 @@ describe('WorkflowService', () => {
         };
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
+            getStatusForWorkflow: jest.fn(),
         };
         exportService = {
             setUp: jest.fn(),
@@ -225,5 +226,35 @@ describe('WorkflowService', () => {
         expect(exportRepository.remove).toHaveBeenCalledWith([
             expect.objectContaining({ id: 4 }),
         ]);
+    });
+
+    it('returns workflow-scoped import status from workflow reports', async () => {
+        workflowReportService.getStatusForWorkflow.mockResolvedValue({
+            progress: -1,
+            status: 'Started on Tue Mar 19 2026 08:00:00 GMT+0100',
+        });
+
+        const status = await service.status(33);
+
+        expect(status).toEqual({
+            progress: -1,
+            status: 'Started on Tue Mar 19 2026 08:00:00 GMT+0100',
+        });
+        expect(workflowReportService.getStatusForWorkflow).toHaveBeenCalledWith(33, 'import');
+    });
+
+    it('returns workflow-scoped export status from workflow reports', async () => {
+        workflowReportService.getStatusForWorkflow.mockResolvedValue({
+            progress: 0,
+            status: 'Successful export',
+        });
+
+        const status = await service.exportStatus(77);
+
+        expect(status).toEqual({
+            progress: 0,
+            status: 'Successful export',
+        });
+        expect(workflowReportService.getStatusForWorkflow).toHaveBeenCalledWith(77, 'export');
     });
 });

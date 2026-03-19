@@ -52,6 +52,7 @@ export interface WorkflowReport {
     params?: unknown;
     by_user?: string;
     status?: string;
+    progress?: number;
     started_at?: Date;
     finished_at?: Date;
     summary?: unknown;

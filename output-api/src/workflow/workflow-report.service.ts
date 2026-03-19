@@ -14,6 +14,17 @@ export interface FinishWorkflowReportOptions {
     finished_at?: Date;
 }
 
+export interface UpdateWorkflowReportStatusOptions {
+    status?: string;
+    progress?: number;
+    started_at?: Date;
+    finished_at?: Date | null;
+    by_user?: string;
+    params?: unknown;
+    dry_run?: boolean;
+    summary?: unknown;
+}
+
 @Injectable()
 export class WorkflowReportService {
 
@@ -31,6 +42,7 @@ export class WorkflowReportService {
             params: options.params ?? {},
             by_user: options.by_user,
             status: options.status ?? 'started',
+            progress: options.progress ?? 0,
             started_at: options.started_at ?? new Date(),
             finished_at: options.finished_at,
             summary: options.summary,
@@ -56,18 +68,48 @@ export class WorkflowReportService {
         });
     }
 
+    async updateStatus(workflowReportId: number, content: UpdateWorkflowReportStatusOptions): Promise<WorkflowReport> {
+        const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+        if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+
+        if (content.status !== undefined) report.status = content.status;
+        if (content.progress !== undefined) report.progress = content.progress;
+        if (content.started_at !== undefined) report.started_at = content.started_at;
+        if (content.finished_at !== undefined) report.finished_at = content.finished_at ?? undefined;
+        if (content.by_user !== undefined) report.by_user = content.by_user;
+        if (content.params !== undefined) report.params = content.params;
+        if (content.dry_run !== undefined) report.dry_run = content.dry_run;
+        if (content.summary !== undefined) report.summary = content.summary;
+
+        return this.hydrateWorkflowReference(await this.workflowReportRepository.save(report));
+    }
+
     async finish(workflowReportId: number, content: FinishWorkflowReportOptions): Promise<WorkflowReport> {
         const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
         if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
 
         report.status = content.status;
+        report.progress = 0;
         report.finished_at = content.finished_at ?? new Date();
         report.summary = content.summary ?? {
             count_import: content.count_import ?? 0,
             count_update: content.count_update ?? 0,
         };
 
-        return this.workflowReportRepository.save(report);
+        return this.hydrateWorkflowReference(await this.workflowReportRepository.save(report));
+    }
+
+    async getStatusForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<{ progress: number, status: string }> {
+        const reports = await this.getReports(workflowId, workflowType);
+        if (reports.length === 0) {
+            return { progress: 0, status: 'initialized' };
+        }
+
+        const activeReport = reports.find((report) => !report.finished_at) ?? reports[0];
+        return {
+            progress: activeReport.progress ?? 0,
+            status: activeReport.status ?? 'initialized',
+        };
     }
 
     async getReports(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowReport[]> {
