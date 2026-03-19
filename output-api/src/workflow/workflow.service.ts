@@ -79,15 +79,15 @@ export class WorkflowService {
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at; // optional: plus equality checks
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, deleted_at: new Date() };
+                toSave = { ...db, deleted_at: new Date(), locked_at: workflow.locked_at };
                 shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
                 //does another published version exist?
                 const other = await this.importRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) })
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = { ...db, published_at: new Date() }
+                else toSave = { ...db, published_at: new Date(), locked_at: workflow.locked_at }
             } else {
-                toSave = { ...db, ...workflow };
+                toSave = { ...db, ...workflow, locked_at: workflow.locked_at };
             }
         } else {
             toSave = {
@@ -146,14 +146,14 @@ export class WorkflowService {
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at;
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, deleted_at: new Date() };
+                toSave = { ...db, deleted_at: new Date(), locked_at: workflow.locked_at };
                 shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
                 const other = await this.exportRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) });
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = { ...db, published_at: new Date() };
+                else toSave = { ...db, published_at: new Date(), locked_at: workflow.locked_at };
             } else {
-                toSave = { ...db, ...workflow };
+                toSave = { ...db, ...workflow, locked_at: workflow.locked_at};
             }
         } else {
             toSave = {

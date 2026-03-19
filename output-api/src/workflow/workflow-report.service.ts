@@ -105,7 +105,7 @@ export class WorkflowReportService {
             return { progress: 0, status: 'initialized' };
         }
 
-        const activeReport = reports.find((report) => !report.finished_at) ?? reports[0];
+        const activeReport = reports[0]; //last started report is considered active, even if it has a finished_at timestamp (to cover cases where a report was not properly finished)
         return {
             progress: activeReport.progress ?? 0,
             status: activeReport.status ?? 'initialized',
