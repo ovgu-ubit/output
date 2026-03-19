@@ -44,6 +44,7 @@ export interface WorkflowReport {
     status?: string;
     progress?: number;
     started_at?: Date;
+    updated_at?: Date;
     finished_at?: Date;
     summary?: unknown;
     dry_run?: boolean;

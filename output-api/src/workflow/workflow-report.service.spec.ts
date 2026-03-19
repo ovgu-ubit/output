@@ -5,6 +5,7 @@ describe('WorkflowReportService', () => {
     let service: WorkflowReportService;
     let workflowReportRepository: any;
     let workflowReportItemRepository: any;
+    let configService: any;
 
     beforeEach(() => {
         workflowReportRepository = {
@@ -13,10 +14,14 @@ describe('WorkflowReportService', () => {
             findOneBy: jest.fn(),
         };
         workflowReportItemRepository = {};
+        configService = {
+            get: jest.fn(async () => 5),
+        };
 
         service = new WorkflowReportService(
             workflowReportRepository,
             workflowReportItemRepository,
+            configService,
             { getPublicationChangesForReport: jest.fn() } as any,
         );
     });
@@ -102,6 +107,7 @@ describe('WorkflowReportService', () => {
     });
 
     it('prefers the latest unfinished workflow report for status', async () => {
+        const now = new Date();
         const queryBuilder = {
             leftJoinAndSelect: jest.fn().mockReturnThis(),
             where: jest.fn().mockReturnThis(),
@@ -115,6 +121,7 @@ describe('WorkflowReportService', () => {
                     importWorkflow: { id: 3, label: 'Import WF', version: 2 },
                     status: 'Successful import',
                     progress: 0,
+                    updated_at: now,
                     finished_at: new Date('2026-03-19T06:00:00.000Z'),
                 },
                 {
@@ -123,6 +130,7 @@ describe('WorkflowReportService', () => {
                     importWorkflow: { id: 3, label: 'Import WF', version: 2 },
                     status: 'Started on Thu Mar 19 2026 07:00:00 GMT+0100',
                     progress: -1,
+                    updated_at: now,
                     finished_at: null,
                 },
             ]),
@@ -134,6 +142,83 @@ describe('WorkflowReportService', () => {
         expect(status).toEqual({
             progress: -1,
             status: 'Started on Thu Mar 19 2026 07:00:00 GMT+0100',
+            stale: false,
+            reportId: 7,
+        });
+    });
+
+    it('falls back to the latest finished workflow report when the unfinished one is stale', async () => {
+        const now = new Date();
+        const staleTimestamp = new Date(now.getTime() - 6 * 60 * 1000);
+        const queryBuilder = {
+            leftJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(),
+            addOrderBy: jest.fn().mockReturnThis(),
+            getMany: jest.fn(async () => [
+                {
+                    id: 12,
+                    workflow_type: WorkflowType.IMPORT,
+                    importWorkflow: { id: 4, label: 'Import WF', version: 2 },
+                    status: 'Started on Thu Mar 19 2026 07:00:00 GMT+0100',
+                    progress: -1,
+                    updated_at: staleTimestamp,
+                    finished_at: null,
+                },
+                {
+                    id: 11,
+                    workflow_type: WorkflowType.IMPORT,
+                    importWorkflow: { id: 4, label: 'Import WF', version: 2 },
+                    status: 'Successful import',
+                    progress: 0,
+                    updated_at: now,
+                    finished_at: now,
+                },
+            ]),
+        };
+        workflowReportRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        const status = await service.getStatusForWorkflow(4, WorkflowType.IMPORT);
+
+        expect(status).toEqual({
+            progress: 0,
+            status: 'Successful import',
+            stale: false,
+            reportId: 11,
+        });
+        expect(configService.get).toHaveBeenCalledWith('lock_timeout');
+    });
+
+    it('returns a stale status when only stale unfinished workflow reports exist', async () => {
+        const staleTimestamp = new Date(Date.now() - 6 * 60 * 1000);
+        const queryBuilder = {
+            leftJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(),
+            addOrderBy: jest.fn().mockReturnThis(),
+            getMany: jest.fn(async () => [
+                {
+                    id: 15,
+                    workflow_type: WorkflowType.IMPORT,
+                    importWorkflow: { id: 5, label: 'Import WF', version: 2 },
+                    status: 'Started on Thu Mar 19 2026 07:00:00 GMT+0100',
+                    progress: -1,
+                    updated_at: staleTimestamp,
+                    finished_at: null,
+                },
+            ]),
+        };
+        workflowReportRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        const status = await service.getStatusForWorkflow(5, WorkflowType.IMPORT);
+
+        expect(status).toEqual({
+            progress: 0,
+            status: 'Started on Thu Mar 19 2026 07:00:00 GMT+0100 [stale]',
+            stale: true,
+            reportId: 15,
         });
     });
 });

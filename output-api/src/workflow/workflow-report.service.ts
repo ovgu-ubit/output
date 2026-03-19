@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExportWorkflow, ImportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { AppConfigService } from '../config/app-config.service';
 import { PublicationChangeService } from '../publication/core/publication-change.service';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
@@ -25,12 +26,20 @@ export interface UpdateWorkflowReportStatusOptions {
     summary?: unknown;
 }
 
+export interface WorkflowRunStatus {
+    progress: number;
+    status: string;
+    stale?: boolean;
+    reportId?: number;
+}
+
 @Injectable()
 export class WorkflowReportService {
 
     constructor(
         @InjectRepository(WorkflowReport) private workflowReportRepository: Repository<WorkflowReport>,
         @InjectRepository(WorkflowReportItem) private workflowReportItemRepository: Repository<WorkflowReportItem>,
+        private configService: AppConfigService,
         private publicationChangeService: PublicationChangeService,
     ) { }
 
@@ -59,6 +68,7 @@ export class WorkflowReportService {
     async write(workflowReportId: number, content: WorkflowReportItem): Promise<WorkflowReportItem> {
         const workflowReport = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
         if (!workflowReport) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        await this.workflowReportRepository.save(workflowReport);
         return this.workflowReportItemRepository.save({
             workflowReport,
             timestamp: content.timestamp ?? new Date(),
@@ -99,17 +109,21 @@ export class WorkflowReportService {
         return this.hydrateWorkflowReference(await this.workflowReportRepository.save(report));
     }
 
-    async getStatusForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<{ progress: number, status: string }> {
+    async getStatusForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowRunStatus> {
         const reports = await this.getReports(workflowId, workflowType);
         if (reports.length === 0) {
             return { progress: 0, status: 'initialized' };
         }
 
-        const activeReport = reports[0]; //last started report is considered active, even if it has a finished_at timestamp (to cover cases where a report was not properly finished)
-        return {
-            progress: activeReport.progress ?? 0,
-            status: activeReport.status ?? 'initialized',
-        };
+        const staleTimeoutMs = await this.getStaleTimeoutMs();
+        const unfinishedReports = reports.filter((report) => !report.finished_at);
+        const activeReport = unfinishedReports.find((report) => !this.isReportStale(report, staleTimeoutMs));
+        if (activeReport) return this.toRunStatus(activeReport);
+
+        const latestFinishedReport = reports.find((report) => !!report.finished_at);
+        if (latestFinishedReport) return this.toRunStatus(latestFinishedReport);
+
+        return this.toRunStatus(unfinishedReports[0] ?? reports[0], true);
     }
 
     async getReports(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowReport[]> {
@@ -205,6 +219,39 @@ export class WorkflowReportService {
         report.workflow = report.workflow_type === WorkflowType.EXPORT ? report.exportWorkflow : report.importWorkflow;
         report.workflowId = report.workflow?.id;
         return report;
+    }
+
+    private toRunStatus(report: WorkflowReport, stale = false): WorkflowRunStatus {
+        return {
+            progress: stale ? 0 : (report.progress ?? 0),
+            status: stale ? this.buildStaleStatus(report.status) : (report.status ?? 'initialized'),
+            stale,
+            reportId: report.id,
+        };
+    }
+
+    private buildStaleStatus(status?: string): string {
+        return status && status.trim().length > 0 ? `${status} [stale]` : 'stale';
+    }
+
+    private isReportStale(report: WorkflowReport, staleTimeoutMs: number): boolean {
+        if (report.finished_at) return false;
+        const activityAt = this.getActivityTimestamp(report);
+        if (!activityAt) return true;
+        return (Date.now() - activityAt.getTime()) > staleTimeoutMs;
+    }
+
+    private getActivityTimestamp(report: WorkflowReport): Date | undefined {
+        if (report.updated_at instanceof Date) return report.updated_at;
+        if (report.updated_at) return new Date(report.updated_at);
+        if (report.started_at instanceof Date) return report.started_at;
+        if (report.started_at) return new Date(report.started_at);
+        return undefined;
+    }
+
+    private async getStaleTimeoutMs(): Promise<number> {
+        const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
+        return (Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5) * 60 * 1000;
     }
 
     private async ensureReportExists(workflowReportId: number) {

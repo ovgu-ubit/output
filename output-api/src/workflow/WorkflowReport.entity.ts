@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { WorkflowReport as IWorkflowReport, WorkflowType } from "../../../output-interfaces/Workflow";
 import { PublicationChange } from "../publication/core/PublicationChange.entity";
 import { ExportWorkflow } from "./ExportWorkflow.entity";
@@ -39,6 +39,9 @@ export class WorkflowReport implements IWorkflowReport {
 
     @Column({ type: 'timestamptz' })
     started_at?: Date;
+
+    @UpdateDateColumn({ type: 'timestamptz' })
+    updated_at?: Date;
 
     @Column({ nullable: true, type: 'timestamptz' })
     finished_at?: Date;
