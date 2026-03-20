@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
-import { Strategy } from '../../../../../../../output-interfaces/Workflow';
+import { ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
 
 import { ImportFormStrategyComponent } from './import-form-strategy.component';
@@ -33,7 +33,7 @@ describe('ImportFormStrategyComponent', () => {
   });
 
   it('builds lookup-and-retrieve strategy forms', () => {
-    component.selectionForm.controls.strategy.setValue(Strategy.URL_LOOKUP_AND_RETRIEVE);
+    component.selectionForm.controls.strategy.setValue(ImportStrategy.URL_LOOKUP_AND_RETRIEVE);
 
     expect(component.selectedStrategyId).toBe('lookup');
     expect(component.strategyForm.contains('url_lookup')).toBeTrue();

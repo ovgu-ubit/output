@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, IsNull, Not, Repository } from 'typeorm';
+import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
@@ -39,11 +39,11 @@ export class WorkflowService {
     }
 
     async getImport(id?: number, lock = true) {
-        return this.getWorkflow(this.importRepository, id, (workflow) => lock ? this.saveImport(workflow) : undefined);
+        return this.getWorkflow(this.importRepository, id, lock);
     }
 
     async getExport(id?: number, lock = true) {
-        return this.getWorkflow(this.exportRepository, id, (workflow) => lock ? this.saveExport(workflow) : undefined);
+        return this.getWorkflow(this.exportRepository, id, lock);
     }
 
     async importImport(file: Express.Multer.File) {
@@ -68,7 +68,7 @@ export class WorkflowService {
             update_config: workflow.update_config
         }
 
-        return this.importRepository.save(obj);
+        return this.saveImport(obj);
     }
 
     async saveImport(workflow: ImportWorkflow) {
@@ -260,7 +260,20 @@ export class WorkflowService {
     }
 
     async deleteImports(ids: number[]) {
-        return this.deleteWorkflows(this.importRepository, ids);
+        const workflows = await this.importRepository.findBy(ids.map(id => ({ id })) as never);
+        if (workflows.length !== ids.length) {
+            throw new BadRequestException('Error: at least one workflow ID does not exist');
+        }
+        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
+            throw new BadRequestException('Error: only draft workflows can be deleted');
+        }
+
+        await Promise.all(workflows
+            .map((workflow) => workflow.id)
+            .filter((id): id is number => !!id)
+            .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.IMPORT)));
+
+        return this.importRepository.remove(workflows);
     }
 
     async deleteExports(ids: number[]) {
@@ -308,46 +321,44 @@ export class WorkflowService {
         return options;
     }
 
-    private async getWorkflow<T extends { id?: number; published_at?: Date; deleted_at?: Date; locked_at?: Date }>(
+    private async getWorkflow<T extends { id?: number; published_at?: Date | null; deleted_at?: Date | null; locked_at?: Date | null }>(
         repository: Repository<T>,
         id: number,
-        save: (workflow: Partial<T>) => Promise<unknown>,
+        lock = true,
     ) {
         const res = await repository.findOne({ where: { id } as never, withDeleted: true });
         if (!res) throw new NotFoundException();
-        if (res.published_at || res.deleted_at) return res;
-        else if (!res.locked_at) {
-            await save({
-                id: res.id,
-                locked_at: new Date()
-            } as Partial<T>);
-        } else if ((new Date().getTime() - res.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await save({
-                id: res.id,
-                locked_at: null
-            } as Partial<T>);
-            return repository.findOneBy({ id } as never);
+        if (!lock || res.published_at || res.deleted_at) return res;
+
+        const timeoutMs = await this.getLockTimeoutMs();
+        const now = new Date();
+        const isExpired = !!res.locked_at && (now.getTime() - res.locked_at.getTime()) > timeoutMs;
+
+        if (res.locked_at && !isExpired) {
+            throw new ConflictException('Workflow is currently locked.');
         }
-        return res;
+
+        const lockCriteria = !res.locked_at
+            ? { id: res.id, published_at: IsNull(), deleted_at: IsNull(), locked_at: IsNull() }
+            : { id: res.id, published_at: IsNull(), deleted_at: IsNull(), locked_at: LessThan(new Date(now.getTime() - timeoutMs)) };
+
+        const updateResult = await repository.update(lockCriteria as never, { locked_at: now } as never);
+        if (!updateResult.affected) {
+            throw new ConflictException('Workflow is currently locked.');
+        }
+
+        return {
+            ...res,
+            locked_at: undefined,
+        };
     }
 
     private async isWorkflowLocked<T extends { locked_at?: Date; deleted_at?: Date }>(repository: Repository<T>, id: number): Promise<boolean> {
         const db = await repository.findOne({ where: { id } as never, withDeleted: true });
         if (!db) throw new NotFoundException();
         if (!db.locked_at || db.deleted_at) return false;
-        else if ((new Date().getTime() - db.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) return false;
+        else if ((new Date().getTime() - db.locked_at.getTime()) > await this.getLockTimeoutMs()) return false;
         else return true;
-    }
-
-    private async deleteWorkflows<T extends { id?: number; published_at?: Date; deleted_at?: Date }>(repository: Repository<T>, ids: number[]) {
-        const workflows = await repository.findBy(ids.map(id => ({ id })) as never);
-        if (workflows.length !== ids.length) {
-            throw new BadRequestException('Error: at least one workflow ID does not exist');
-        }
-        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
-            throw new BadRequestException('Error: only draft workflows can be deleted');
-        }
-        return repository.remove(workflows);
     }
 
     private async runExclusive<T>(key: string, action: () => Promise<T>): Promise<T> {
@@ -434,6 +445,12 @@ export class WorkflowService {
     private async getImportWatchdogTimeoutMs(): Promise<number> {
         const timeoutInMinutes = Number(await this.configService.get('workflow_import_watchdog_timeout'));
         const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 1 ? timeoutInMinutes : 60;
+        return resolvedMinutes * 60 * 1000;
+    }
+
+    private async getLockTimeoutMs(): Promise<number> {
+        const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
+        const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5;
         return resolvedMinutes * 60 * 1000;
     }
 

@@ -63,7 +63,18 @@ export class ExportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
         return this.facade.load(Number(id));
       }),
       takeUntil(this.facade.destroy$)
-    ).subscribe();
+    ).subscribe({
+      error: (err) => {
+        if (err?.status === 409) {
+          this.snackBar.open('Workflow wird gerade bearbeitet, bitte warten.', 'OK', {
+            duration: 4500,
+            verticalPosition: 'top',
+            panelClass: ['danger-snackbar'],
+          });
+          void this.router.navigateByUrl('/workflow/publication_export');
+        }
+      }
+    });
   }
 
   ngAfterViewInit(): void {

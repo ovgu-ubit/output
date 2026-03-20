@@ -49,6 +49,7 @@ describe('WorkflowService', () => {
             findOneBy: jest.fn(),
             findBy: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             remove: jest.fn(),
         };
         exportRepository = {
@@ -56,6 +57,7 @@ describe('WorkflowService', () => {
             findOneBy: jest.fn(),
             findBy: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             remove: jest.fn(),
         };
         workflowReportService = {
@@ -144,6 +146,44 @@ describe('WorkflowService', () => {
         await service.saveImport({ id: 21, description: 'updated' } as ImportWorkflow);
 
         expect(workflowReportService.deleteReportsForWorkflow).not.toHaveBeenCalled();
+    });
+
+    it('validates uploaded import workflows before persisting', async () => {
+        const file = {
+            buffer: Buffer.from(JSON.stringify({
+                workflow_id: 'wf-invalid-import',
+                label: 'Invalid import',
+                strategy_type: ImportStrategy.URL_QUERY_OFFSET,
+                strategy: {},
+                mapping: '$',
+            })),
+        } as Express.Multer.File;
+
+        importRepository.findOne!.mockResolvedValue(null);
+
+        await expect(service.importImport(file)).rejects.toBeInstanceOf(BadRequestException);
+        expect(importRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('validates uploaded export workflows before persisting', async () => {
+        const file = {
+            buffer: Buffer.from(JSON.stringify({
+                workflow_id: 'wf-invalid-export',
+                label: 'Invalid export',
+                strategy_type: ExportStrategy.HTTP_RESPONSE,
+                strategy: {
+                    format: 'xml',
+                    disposition: 'inline',
+                    root_name: 'items',
+                },
+                mapping: '$',
+            })),
+        } as Express.Multer.File;
+
+        exportRepository.findOne!.mockResolvedValue(null);
+
+        await expect(service.importExport(file)).rejects.toBeInstanceOf(BadRequestException);
+        expect(exportRepository.save).not.toHaveBeenCalled();
     });
 
     it('starts URL_LOOKUP_AND_RETRIEVE workflows via JSONata import service', async () => {
@@ -317,6 +357,64 @@ describe('WorkflowService', () => {
         expect(exportService.export).not.toHaveBeenCalled();
     });
 
+    it('reacquires expired workflow locks and hides the lock in the response', async () => {
+        const staleLockedWorkflow = {
+            id: 58,
+            workflow_id: 'wf-58',
+            label: 'Stale draft',
+            version: 1,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: new Date(Date.now() - 10 * 60 * 1000),
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow;
+
+        importRepository.findOne!.mockResolvedValue(staleLockedWorkflow);
+        (importRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+
+        const workflow = await service.getImport(58);
+
+        expect(importRepository.update).toHaveBeenCalledWith(expect.objectContaining({
+            id: 58,
+            published_at: expect.anything(),
+            deleted_at: expect.anything(),
+            locked_at: expect.anything(),
+        }), expect.objectContaining({
+            locked_at: expect.any(Date),
+        }));
+        expect(workflow).toMatchObject({
+            id: 58,
+            workflow_id: 'wf-58',
+        });
+        expect(workflow.locked_at).toBeUndefined();
+    });
+
+    it('rejects opening a draft when another request acquires the lock first', async () => {
+        const unlockedWorkflow = {
+            id: 59,
+            workflow_id: 'wf-59',
+            label: 'Draft',
+            version: 1,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: null,
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow;
+
+        importRepository.findOne!.mockResolvedValue(unlockedWorkflow);
+        (importRepository.update as jest.Mock).mockResolvedValue({ affected: 0 });
+
+        await expect(service.getImport(59)).rejects.toBeInstanceOf(ConflictException);
+    });
+
     it('rejects concurrent workflow import starts while the import service is busy', async () => {
         const publishedWorkflow = {
             id: 61,
@@ -429,6 +527,21 @@ describe('WorkflowService', () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+
+    it('deletes workflow reports before deleting draft import workflows', async () => {
+        importRepository.findBy!.mockResolvedValue([
+            { id: 3, published_at: null, deleted_at: null } as ImportWorkflow,
+        ]);
+        workflowReportService.deleteReportsForWorkflow.mockResolvedValue(undefined);
+        (importRepository.remove as jest.Mock).mockResolvedValue([{ id: 3 }]);
+
+        await service.deleteImports([3]);
+
+        expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(3, WorkflowType.IMPORT);
+        expect(importRepository.remove).toHaveBeenCalledWith([
+            expect.objectContaining({ id: 3 }),
+        ]);
     });
 
     it('deletes only draft export workflows', async () => {

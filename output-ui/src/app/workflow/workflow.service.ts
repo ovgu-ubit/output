@@ -4,7 +4,7 @@ import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, Workflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
-import { concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
+import { catchError, concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
 import { UpdateMapping } from '../../../../output-interfaces/Config';
 
 @Injectable({
@@ -190,16 +190,19 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       // the workflow and can set a draft lock as a side effect.
       if (!workflow.id || !workflow.published_at || !!workflow.deleted_at) return of(workflow);
 
-      return this.getWorkflowReports(workflow.id, workflowType).pipe(map((reports) => {
-        const lastReport = reports?.[0];
-        return {
-          ...workflow,
-          last_run_status: lastReport?.status,
-          last_run_finished_at: lastReport?.finished_at,
-          last_run_report_id: lastReport?.id,
-          last_run_log_link: lastReport?.id ? `${logBasePath}/${workflow.id}/logs/${lastReport.id}` : undefined,
-        };
-      }));
+      return this.getWorkflowReports(workflow.id, workflowType).pipe(
+        map((reports) => {
+          const lastReport = reports?.[0];
+          return {
+            ...workflow,
+            last_run_status: lastReport?.status,
+            last_run_finished_at: lastReport?.finished_at,
+            last_run_report_id: lastReport?.id,
+            last_run_log_link: lastReport?.id ? `${logBasePath}/${workflow.id}/logs/${lastReport.id}` : undefined,
+          };
+        }),
+        catchError(() => of(workflow))
+      );
     }));
   }
 }
