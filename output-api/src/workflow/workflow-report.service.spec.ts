@@ -55,6 +55,8 @@ describe('WorkflowReportService', () => {
             andWhere: jest.fn().mockReturnThis(),
             orderBy: jest.fn().mockReturnThis(),
             addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
             getMany: jest.fn(async () => [{
                 id: 5,
                 workflow_type: WorkflowType.EXPORT,
@@ -67,6 +69,25 @@ describe('WorkflowReportService', () => {
 
         expect(reports[0].workflow).toMatchObject({ id: 9, label: 'Exported', version: 1 });
         expect(reports[0].workflowId).toBe(9);
+    });
+
+    it('applies limit and offset when loading paged workflow reports', async () => {
+        const queryBuilder = {
+            leftJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(),
+            addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
+            getMany: jest.fn(async () => []),
+        };
+        workflowReportRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.getReports(12, WorkflowType.IMPORT, { limit: 5, offset: 10 });
+
+        expect(queryBuilder.skip).toHaveBeenCalledWith(10);
+        expect(queryBuilder.take).toHaveBeenCalledWith(5);
     });
 
     it('updates workflow report progress and status explicitly', async () => {
@@ -127,6 +148,8 @@ describe('WorkflowReportService', () => {
             andWhere: jest.fn().mockReturnThis(),
             orderBy: jest.fn().mockReturnThis(),
             addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
             getMany: jest.fn(async () => []),
         };
         workflowReportRepository.createQueryBuilder.mockReturnValue(queryBuilder);
@@ -147,6 +170,8 @@ describe('WorkflowReportService', () => {
             andWhere: jest.fn().mockReturnThis(),
             orderBy: jest.fn().mockReturnThis(),
             addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
             getMany: jest.fn(async () => [
                 {
                     id: 8,
@@ -189,6 +214,8 @@ describe('WorkflowReportService', () => {
             andWhere: jest.fn().mockReturnThis(),
             orderBy: jest.fn().mockReturnThis(),
             addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
             getMany: jest.fn(async () => [
                 {
                     id: 12,
@@ -231,6 +258,8 @@ describe('WorkflowReportService', () => {
             andWhere: jest.fn().mockReturnThis(),
             orderBy: jest.fn().mockReturnThis(),
             addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
             getMany: jest.fn(async () => [
                 {
                     id: 15,

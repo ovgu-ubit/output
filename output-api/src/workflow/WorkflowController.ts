@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
@@ -316,17 +316,25 @@ export class WorkflowController {
   @Get("import/:id/workflow-reports")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async workflowReports(@Param('id') id: number) {
+  async workflowReports(
+    @Param('id') id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number
+  ) {
     await this.workflowService.getImport(id, false);
-    return this.workflowReportService.getReports(id, WorkflowType.IMPORT);
+    return this.workflowReportService.getReports(id, WorkflowType.IMPORT, { limit, offset });
   }
 
   @Get("export/:id/workflow-reports")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  async exportWorkflowReports(@Param('id') id: number) {
+  async exportWorkflowReports(
+    @Param('id') id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number
+  ) {
     await this.workflowService.getExport(id, false);
-    return this.workflowReportService.getReports(id, WorkflowType.EXPORT);
+    return this.workflowReportService.getReports(id, WorkflowType.EXPORT, { limit, offset });
   }
 
   @Get("workflow-report/:reportId")

@@ -26,6 +26,12 @@
                 </li>
             </ul>
             }
+
+            @if (canLoadMoreReports) {
+            <button mat-stroked-button type="button" (click)="loadMoreReports()" [disabled]="loadingReports">
+                Weitere Reports laden
+            </button>
+            }
         </div>
     </mat-card-content>
 </mat-card>

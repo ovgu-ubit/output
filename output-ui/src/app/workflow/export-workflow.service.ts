@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportWorkflow, WorkflowReport } from '../../../../output-interfaces/Workflow';
+import { ExportWorkflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { WorkflowService } from './workflow.service';
 
 @Injectable({
@@ -63,8 +63,8 @@ export class ExportWorkflowService implements EntityService<ExportWorkflow, Expo
     return this.api.getExportStatus(id);
   }
 
-  getWorkflowReports(id: number): Observable<WorkflowReport[]> {
-    return this.api.getExportWorkflowReports(id);
+  getWorkflowReports(id: number, options?: { limit?: number; offset?: number }): Observable<WorkflowReport[]> {
+    return this.api.getWorkflowReports(id, WorkflowType.EXPORT, options);
   }
 
   getWorkflowReport(reportId: number): Observable<WorkflowReport> {

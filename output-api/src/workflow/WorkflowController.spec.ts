@@ -58,23 +58,29 @@ describe('WorkflowController', () => {
         expect(workflowService.getExport).toHaveBeenCalledWith(52, false);
     });
 
-    it('loads import workflow reports without locking the workflow', async () => {
+    it('loads import workflow reports without locking the workflow and forwards paging', async () => {
         workflowService.getImport.mockResolvedValue({ id: 61 });
         workflowReportService.getReports.mockResolvedValue([]);
 
-        await controller.workflowReports(61);
+        await controller.workflowReports(61, 5, 10);
 
         expect(workflowService.getImport).toHaveBeenCalledWith(61, false);
-        expect(workflowReportService.getReports).toHaveBeenCalledWith(61, WorkflowType.IMPORT);
+        expect(workflowReportService.getReports).toHaveBeenCalledWith(61, WorkflowType.IMPORT, {
+            limit: 5,
+            offset: 10,
+        });
     });
 
-    it('loads export workflow reports without locking the workflow', async () => {
+    it('loads export workflow reports without locking the workflow and forwards paging', async () => {
         workflowService.getExport.mockResolvedValue({ id: 71 });
         workflowReportService.getReports.mockResolvedValue([]);
 
-        await controller.exportWorkflowReports(71);
+        await controller.exportWorkflowReports(71, 5, 10);
 
         expect(workflowService.getExport).toHaveBeenCalledWith(71, false);
-        expect(workflowReportService.getReports).toHaveBeenCalledWith(71, WorkflowType.EXPORT);
+        expect(workflowReportService.getReports).toHaveBeenCalledWith(71, WorkflowType.EXPORT, {
+            limit: 5,
+            offset: 10,
+        });
     });
 });

@@ -45,9 +45,17 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public test(id: number, pos = 1) {
     return this.http.get<ImportWorkflowTestResult>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/test?pos='+pos, { withCredentials: true });
   }
-  public getWorkflowReports(id: number, workflowType: WorkflowType = WorkflowType.IMPORT) {
+  public getWorkflowReports(
+    id: number,
+    workflowType: WorkflowType = WorkflowType.IMPORT,
+    options?: { limit?: number, offset?: number }
+  ) {
+    const query = new URLSearchParams();
+    if (options?.limit !== undefined) query.set('limit', `${options.limit}`);
+    if (options?.offset !== undefined) query.set('offset', `${options.offset}`);
+    const suffix = query.size ? `?${query.toString()}` : '';
     return this.http.get<WorkflowReport[]>(
-      this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/workflow-reports`,
+      this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/workflow-reports${suffix}`,
       { withCredentials: true }
     );
   }
@@ -190,7 +198,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       // the workflow and can set a draft lock as a side effect.
       if (!workflow.id || !workflow.published_at || !!workflow.deleted_at) return of(workflow);
 
-      return this.getWorkflowReports(workflow.id, workflowType).pipe(
+      return this.getWorkflowReports(workflow.id, workflowType, { limit: 1 }).pipe(
         map((reports) => {
           const lastReport = reports?.[0];
           return {

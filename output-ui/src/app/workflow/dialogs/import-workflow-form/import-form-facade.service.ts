@@ -33,8 +33,8 @@ export class ImportFormFacade {
     return wf;
   }
 
-  getReports(workflowId: number): Observable<WorkflowReport[]> {
-    return this.api.getWorkflowReports(workflowId);
+  getReports(workflowId: number, options?: { limit?: number; offset?: number }): Observable<WorkflowReport[]> {
+    return this.api.getWorkflowReports(workflowId, undefined, options);
   }
 
   destroy() {

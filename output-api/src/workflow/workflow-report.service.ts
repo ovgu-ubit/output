@@ -133,16 +133,28 @@ export class WorkflowReportService {
         return this.toRunStatus(unfinishedReports[0] ?? reports[0], true);
     }
 
-    async getReports(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowReport[]> {
-        const reports = await this.workflowReportRepository
+    async getReports(
+        workflowId: number,
+        workflowType: WorkflowType = WorkflowType.IMPORT,
+        options?: { limit?: number; offset?: number }
+    ): Promise<WorkflowReport[]> {
+        const query = this.workflowReportRepository
             .createQueryBuilder('report')
             .leftJoinAndSelect('report.importWorkflow', 'importWorkflow')
             .leftJoinAndSelect('report.exportWorkflow', 'exportWorkflow')
             .where('report.workflow_type = :workflowType', { workflowType })
             .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
             .orderBy('report.started_at', 'DESC')
-            .addOrderBy('report.id', 'DESC')
-            .getMany();
+            .addOrderBy('report.id', 'DESC');
+
+        if (options?.offset !== undefined && options.offset >= 0) {
+            query.skip(options.offset);
+        }
+        if (options?.limit !== undefined && options.limit >= 0) {
+            query.take(options.limit);
+        }
+
+        const reports = await query.getMany();
         return reports.map((report) => this.hydrateWorkflowReference(report));
     }
 

@@ -19,12 +19,18 @@
                         <button mat-raised-button class="primary-button" (click)="openReport(report.id)">
                             Logs anzeigen
                         </button>
-                        <button mat-icon-button (click)="deleteReport(report.id)" class="delete-button" matTooltip="Log loeschen">
+                        <button mat-icon-button (click)="deleteReport(report.id)" class="delete-button" matTooltip="Log löschen">
                             <mat-icon>delete</mat-icon>
                         </button>
                     </div>
                 </li>
             </ul>
+            }
+
+            @if (canLoadMoreReports) {
+            <button mat-stroked-button type="button" (click)="loadMoreReports()" [disabled]="loadingReports">
+                Weitere Reports laden
+            </button>
             }
         </div>
     </mat-card-content>
