@@ -162,7 +162,7 @@ export class WorkflowService {
                 ...toSave,
                 workflow_id: workflow.workflow_id ?? uuidv4(),
                 version: workflow.version ?? 1,
-                strategy_type: workflow.strategy_type ?? ExportStrategy.HTTP_RESPONSE,
+                strategy_type: workflow.strategy_type,
                 id: undefined,
                 created_at: undefined,
                 published_at: undefined,
