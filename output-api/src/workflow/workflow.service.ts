@@ -386,21 +386,34 @@ export class WorkflowService {
         const timeoutMs = await this.getImportWatchdogTimeoutMs();
         let timeoutReached = false;
         let timer: ReturnType<typeof setTimeout> | undefined;
+        const abortController = new AbortController();
 
         const watchdogPromise = new Promise<void>((resolve) => {
             timer = setTimeout(() => {
                 timeoutReached = true;
+                abortController.abort('workflow-import-watchdog-timeout');
                 void this.writeImportWatchdogWarning(reportId, timeoutMs).finally(resolve);
             }, timeoutMs);
         });
 
+        const completionPromise = this.workflowReportService
+            .waitForCompletion(reportId, 500, { allowStale: false, signal: abortController.signal })
+            .then(() => undefined)
+            .catch((error) => {
+                if (this.isAbortError(error)) return;
+                throw error;
+            });
+
         try {
             await Promise.race([
-                this.workflowReportService.waitForCompletion(reportId, 500, { allowStale: false }).then(() => undefined),
+                completionPromise,
                 watchdogPromise,
             ]);
         } finally {
-            if (!timeoutReached && timer) clearTimeout(timer);
+            if (!timeoutReached && timer) {
+                clearTimeout(timer);
+                abortController.abort('workflow-import-completed');
+            }
         }
     }
 
@@ -422,6 +435,10 @@ export class WorkflowService {
         const timeoutInMinutes = Number(await this.configService.get('workflow_import_watchdog_timeout'));
         const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 1 ? timeoutInMinutes : 60;
         return resolvedMinutes * 60 * 1000;
+    }
+
+    private isAbortError(error: unknown): boolean {
+        return error instanceof Error && error.name === 'AbortError';
     }
 
     private getImportExecutionReportId(): number {

@@ -267,4 +267,27 @@ describe('WorkflowReportService', () => {
         expect(sleepSpy).toHaveBeenCalledTimes(1);
         expect(report.finished_at).toBe(finishedAt);
     });
+
+    it('aborts waitForCompletion when the abort signal is triggered', async () => {
+        const staleTimestamp = new Date(Date.now() - 6 * 60 * 1000);
+        const controller = new AbortController();
+        workflowReportRepository.findOneBy.mockResolvedValue({
+            id: 23,
+            workflow_type: WorkflowType.IMPORT,
+            status: 'Started',
+            progress: -1,
+            updated_at: staleTimestamp,
+            finished_at: null,
+        });
+
+        const completionPromise = service.waitForCompletion(23, 50, {
+            allowStale: false,
+            signal: controller.signal,
+        });
+        controller.abort('test-abort');
+
+        await expect(completionPromise).rejects.toMatchObject({
+            name: 'AbortError',
+        });
+    });
 });

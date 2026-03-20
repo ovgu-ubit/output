@@ -185,7 +185,11 @@ describe('WorkflowService', () => {
         expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
         expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
         expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
-        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(7001, 500, { allowStale: false });
+        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(
+            7001,
+            500,
+            expect.objectContaining({ allowStale: false }),
+        );
     });
 
     it('keeps strategy_type undefined until explicitly set', async () => {
@@ -354,7 +358,11 @@ describe('WorkflowService', () => {
         await firstStart;
 
         await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).rejects.toBeInstanceOf(ConflictException);
-        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(9001, 500, { allowStale: false });
+        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(
+            9001,
+            500,
+            expect.objectContaining({ allowStale: false }),
+        );
 
         releaseCompletion!();
         await completionPromise;

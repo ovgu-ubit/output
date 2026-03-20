@@ -35,6 +35,7 @@ export interface WorkflowRunStatus {
 
 export interface WaitForCompletionOptions {
     allowStale?: boolean;
+    signal?: AbortSignal;
 }
 
 @Injectable()
@@ -171,8 +172,10 @@ export class WorkflowReportService {
     ): Promise<WorkflowReport> {
         const staleTimeoutMs = await this.getStaleTimeoutMs();
         const allowStale = options.allowStale ?? true;
+        const signal = options.signal;
 
         while (true) {
+            this.throwIfAborted(signal);
             const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
             if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
 
@@ -181,7 +184,7 @@ export class WorkflowReportService {
                 return hydratedReport;
             }
 
-            await this.sleep(pollIntervalMs);
+            await this.sleep(pollIntervalMs, signal);
         }
     }
 
@@ -284,8 +287,34 @@ export class WorkflowReportService {
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
     }
 
-    private async sleep(ms: number): Promise<void> {
-        await new Promise((resolve) => setTimeout(resolve, ms));
+    private async sleep(ms: number, signal?: AbortSignal): Promise<void> {
+        this.throwIfAborted(signal);
+        await new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => {
+                if (signal) signal.removeEventListener('abort', onAbort);
+                resolve();
+            }, ms);
+
+            const onAbort = () => {
+                clearTimeout(timer);
+                if (signal) signal.removeEventListener('abort', onAbort);
+                reject(this.toAbortError(signal?.reason));
+            };
+
+            if (signal) signal.addEventListener('abort', onAbort, { once: true });
+        });
+    }
+
+    private throwIfAborted(signal?: AbortSignal): void {
+        if (!signal?.aborted) return;
+        throw this.toAbortError(signal.reason);
+    }
+
+    private toAbortError(reason: unknown): Error {
+        if (reason instanceof Error) return reason;
+        const abortError = new Error(typeof reason === 'string' ? reason : 'Operation aborted');
+        abortError.name = 'AbortError';
+        return abortError;
     }
 
     private normalizeLevel(level?: WorkflowReportItemLevel | string): WorkflowReportItemLevel {
