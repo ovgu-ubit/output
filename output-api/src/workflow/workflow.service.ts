@@ -100,6 +100,7 @@ export class WorkflowService {
                 published_at: undefined,
                 deleted_at: undefined,
                 modified_at: undefined,
+                locked_at: undefined,
                 update_config: workflow.update_config ?? this.importService.getUpdateMapping()
             }
         }
@@ -167,6 +168,7 @@ export class WorkflowService {
                 published_at: undefined,
                 deleted_at: undefined,
                 modified_at: undefined,
+                locked_at: undefined,
             };
         }
 
