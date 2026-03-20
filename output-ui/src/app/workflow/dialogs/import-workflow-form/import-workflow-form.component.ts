@@ -168,7 +168,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
       'Sollen die durchgeführten Änderungen zunächst gespeichert werden?'
     );
     const shouldSave = !!(await firstValueFrom(
-      this.dialog.open(ConfirmDialogComponent, { maxWidth: '500px', data: dialogData }).afterClosed()
+      this.dialog.open(ConfirmDialogComponent, { maxWidth: '500px', disableClose: true, data: dialogData }).afterClosed()
     ));
 
     if (shouldSave) {
