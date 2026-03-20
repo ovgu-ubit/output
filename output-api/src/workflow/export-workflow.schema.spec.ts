@@ -16,7 +16,28 @@ describe('validateExportWorkflow', () => {
         } as any;
 
         expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: expect.objectContaining({
+                format: 'json',
+                disposition: 'inline',
+            }),
+        });
+    });
+
+    it('accepts string strategy_type and normalizes it to enum value', () => {
+        const workflow = {
+            workflow_id: 'wf-json-string',
+            label: 'JSON export',
             strategy_type: 'HTTP_RESPONSE',
+            mapping: '$',
+            strategy: {
+                format: 'json',
+                disposition: 'inline',
+            },
+        } as any;
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
             strategy: expect.objectContaining({
                 format: 'json',
                 disposition: 'inline',

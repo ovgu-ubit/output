@@ -172,7 +172,7 @@ export class WorkflowService {
             };
         }
 
-        validateExportWorkflow(toSave);
+        toSave = validateExportWorkflow(toSave);
 
         const saved = await this.exportRepository.save(toSave);
         if (shouldDeleteArchivedWorkflowReports && saved.id) {

@@ -209,6 +209,26 @@ describe('WorkflowService', () => {
         });
     });
 
+    it('normalizes string strategy_type values before persisting export workflows', async () => {
+        exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
+
+        const saved = await service.saveExport({
+            label: 'Export',
+            mapping: '$',
+            strategy_type: 'HTTP_RESPONSE' as unknown as ExportStrategy,
+            strategy: { format: 'json', disposition: 'inline' },
+        } as ExportWorkflow);
+
+        expect(exportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'test-uuid',
+            version: 1,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+        }));
+        expect(saved).toMatchObject({
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+        });
+    });
+
     it('rejects invalid export strategies before persisting', async () => {
         await expect(service.saveExport({
             label: 'Broken export',

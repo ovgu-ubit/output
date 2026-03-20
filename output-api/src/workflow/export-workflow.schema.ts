@@ -16,6 +16,13 @@ const StrategyTypeFromNumber = (value: unknown) => {
   }
 };
 
+const StrategyTypeToEnum = (value: unknown): ExportStrategy | unknown => {
+  if (value === "HTTP_RESPONSE" || value === ExportStrategy.HTTP_RESPONSE) {
+    return ExportStrategy.HTTP_RESPONSE;
+  }
+  return value;
+};
+
 const JsonataExpr = z.string().min(1, "JSONata expression must not be empty");
 const DispositionSchema = z.enum(["inline", "attachment"]);
 const XmlNameSchema = z.string().trim().min(1);
@@ -90,11 +97,16 @@ export const ExportWorkflowSourceSchema = z.preprocess((obj) => {
 
 export type ExportWorkflowSourceInput = z.infer<typeof ExportWorkflowSourceSchema>;
 
-export function validateExportWorkflow(workflow: ExportWorkflow) {
-  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return true;
+export function validateExportWorkflow(workflow: ExportWorkflow): ExportWorkflow {
+  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return workflow;
 
   try {
-    return ExportWorkflowSourceSchema.parse(workflow);
+    const parsed = ExportWorkflowSourceSchema.parse(workflow);
+    return {
+      ...workflow,
+      ...parsed,
+      strategy_type: StrategyTypeToEnum(parsed.strategy_type) as ExportStrategy,
+    };
   } catch (error) {
     if (error instanceof ZodError) {
       const details = error.issues.map((issue) => ({
