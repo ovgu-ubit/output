@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { WorkflowType } from '../../../output-interfaces/Workflow';
 import { WorkflowReportService } from './workflow-report.service';
 
@@ -13,6 +14,8 @@ describe('WorkflowReportService', () => {
             update: jest.fn(async () => ({ affected: 1 })),
             createQueryBuilder: jest.fn(),
             findOneBy: jest.fn(),
+            existsBy: jest.fn(),
+            delete: jest.fn(),
         };
         workflowReportItemRepository = {
             save: jest.fn(async (value) => value),
@@ -160,9 +163,10 @@ describe('WorkflowReportService', () => {
             progress: 0,
             status: 'initialized',
         });
+        expect(queryBuilder.take).toHaveBeenCalledWith(1);
     });
 
-    it('prefers the latest unfinished workflow report for status', async () => {
+    it('uses only the latest workflow report for status polling', async () => {
         const now = new Date();
         const queryBuilder = {
             leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -173,15 +177,6 @@ describe('WorkflowReportService', () => {
             skip: jest.fn().mockReturnThis(),
             take: jest.fn().mockReturnThis(),
             getMany: jest.fn(async () => [
-                {
-                    id: 8,
-                    workflow_type: WorkflowType.IMPORT,
-                    importWorkflow: { id: 3, label: 'Import WF', version: 2 },
-                    status: 'Successful import',
-                    progress: 0,
-                    updated_at: now,
-                    finished_at: new Date('2026-03-19T06:00:00.000Z'),
-                },
                 {
                     id: 7,
                     workflow_type: WorkflowType.IMPORT,
@@ -203,9 +198,10 @@ describe('WorkflowReportService', () => {
             stale: false,
             reportId: 7,
         });
+        expect(queryBuilder.take).toHaveBeenCalledWith(1);
     });
 
-    it('falls back to the latest finished workflow report when the unfinished one is stale', async () => {
+    it('marks the latest workflow report as stale when it timed out', async () => {
         const now = new Date();
         const staleTimestamp = new Date(now.getTime() - 6 * 60 * 1000);
         const queryBuilder = {
@@ -226,15 +222,6 @@ describe('WorkflowReportService', () => {
                     updated_at: staleTimestamp,
                     finished_at: null,
                 },
-                {
-                    id: 11,
-                    workflow_type: WorkflowType.IMPORT,
-                    importWorkflow: { id: 4, label: 'Import WF', version: 2 },
-                    status: 'Successful import',
-                    progress: 0,
-                    updated_at: now,
-                    finished_at: now,
-                },
             ]),
         };
         workflowReportRepository.createQueryBuilder.mockReturnValue(queryBuilder);
@@ -243,11 +230,12 @@ describe('WorkflowReportService', () => {
 
         expect(status).toEqual({
             progress: 0,
-            status: 'Successful import',
-            stale: false,
-            reportId: 11,
+            status: 'Started on Thu Mar 19 2026 07:00:00 GMT+0100 [stale]',
+            stale: true,
+            reportId: 12,
         });
         expect(configService.get).toHaveBeenCalledWith('lock_timeout');
+        expect(queryBuilder.take).toHaveBeenCalledWith(1);
     });
 
     it('returns a stale status when only stale unfinished workflow reports exist', async () => {
@@ -351,5 +339,12 @@ describe('WorkflowReportService', () => {
         await expect(completionPromise).rejects.toMatchObject({
             name: 'AbortError',
         });
+    });
+
+    it('rejects deleting a workflow report while completion waiting is active', async () => {
+        service.registerCompletionWait(44);
+
+        await expect(service.deleteReport(44)).rejects.toBeInstanceOf(ConflictException);
+        expect(workflowReportRepository.delete).not.toHaveBeenCalled();
     });
 });

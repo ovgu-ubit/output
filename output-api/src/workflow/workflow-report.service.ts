@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExportWorkflow, ImportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
@@ -40,6 +40,7 @@ export interface WaitForCompletionOptions {
 
 @Injectable()
 export class WorkflowReportService {
+    private readonly pendingCompletionWaits = new Map<number, number>();
 
     constructor(
         @InjectRepository(WorkflowReport) private workflowReportRepository: Repository<WorkflowReport>,
@@ -117,20 +118,17 @@ export class WorkflowReportService {
     }
 
     async getStatusForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowRunStatus> {
-        const reports = await this.getReports(workflowId, workflowType);
-        if (reports.length === 0) {
+        const latestReport = await this.getLatestReport(workflowId, workflowType);
+        if (!latestReport) {
             return { progress: 0, status: 'initialized' };
         }
 
         const staleTimeoutMs = await this.getStaleTimeoutMs();
-        const unfinishedReports = reports.filter((report) => !report.finished_at);
-        const activeReport = unfinishedReports.find((report) => !this.isReportStale(report, staleTimeoutMs));
-        if (activeReport) return this.toRunStatus(activeReport);
+        if (!latestReport.finished_at && this.isReportStale(latestReport, staleTimeoutMs)) {
+            return this.toRunStatus(latestReport, true);
+        }
 
-        const latestFinishedReport = reports.find((report) => !!report.finished_at);
-        if (latestFinishedReport) return this.toRunStatus(latestFinishedReport);
-
-        return this.toRunStatus(unfinishedReports[0] ?? reports[0], true);
+        return this.toRunStatus(latestReport);
     }
 
     async getReports(
@@ -225,8 +223,26 @@ export class WorkflowReportService {
     }
 
     async deleteReport(workflowReportId: number) {
+        if (this.isDeletionBlocked(workflowReportId)) {
+            throw new ConflictException(`Workflow report ${workflowReportId} is still active`);
+        }
         await this.ensureReportExists(workflowReportId);
         return this.workflowReportRepository.delete({ id: workflowReportId });
+    }
+
+    registerCompletionWait(workflowReportId: number): void {
+        const activeWaits = this.pendingCompletionWaits.get(workflowReportId) ?? 0;
+        this.pendingCompletionWaits.set(workflowReportId, activeWaits + 1);
+    }
+
+    releaseCompletionWait(workflowReportId: number): void {
+        const activeWaits = this.pendingCompletionWaits.get(workflowReportId);
+        if (!activeWaits || activeWaits <= 1) {
+            this.pendingCompletionWaits.delete(workflowReportId);
+            return;
+        }
+
+        this.pendingCompletionWaits.set(workflowReportId, activeWaits - 1);
     }
 
     async deleteReportsForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<void> {
@@ -251,6 +267,14 @@ export class WorkflowReportService {
         if (options.exportWorkflow) return WorkflowType.EXPORT;
         if (options.importWorkflow) return WorkflowType.IMPORT;
         return WorkflowType.IMPORT;
+    }
+
+    private async getLatestReport(
+        workflowId: number,
+        workflowType: WorkflowType = WorkflowType.IMPORT
+    ): Promise<WorkflowReport | undefined> {
+        const reports = await this.getReports(workflowId, workflowType, { limit: 1 });
+        return reports[0];
     }
 
     private getWorkflowColumn(workflowType: WorkflowType) {
@@ -299,6 +323,10 @@ export class WorkflowReportService {
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+    }
+
+    private isDeletionBlocked(workflowReportId: number): boolean {
+        return (this.pendingCompletionWaits.get(workflowReportId) ?? 0) > 0;
     }
 
     private async sleep(ms: number, signal?: AbortSignal): Promise<void> {

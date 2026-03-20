@@ -27,6 +27,21 @@ const JsonataExpr = z.string().min(1, "JSONata expression must not be empty");
 const DispositionSchema = z.enum(["inline", "attachment"]);
 const XmlNameSchema = z.string().trim().min(1);
 const SheetNameSchema = z.string().trim().min(1);
+const KnownStrategyKeys = new Set([
+  "format",
+  "disposition",
+  "delimiter",
+  "quote_char",
+  "root_name",
+  "item_name",
+  "sheet_name",
+]);
+const AllowedStrategyKeysByFormat: Record<string, Set<string>> = {
+  json: new Set(["format", "disposition"]),
+  xml: new Set(["format", "disposition", "root_name", "item_name"]),
+  csv: new Set(["format", "disposition", "delimiter", "quote_char"]),
+  xlsx: new Set(["format", "disposition", "sheet_name"]),
+};
 
 const HttpResponseStrategyBaseSchema = z.object({
   disposition: DispositionSchema.optional(),
@@ -79,12 +94,26 @@ const Base = ExportMeta.extend({
   strategy: z.unknown(),
 });
 
+const sanitizeStrategyForFormat = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+
+  const strategy = value as Record<string, unknown>;
+  const format = typeof strategy.format === "string" ? strategy.format : undefined;
+  if (!format || !AllowedStrategyKeysByFormat[format]) return value;
+
+  const allowedKeys = AllowedStrategyKeysByFormat[format];
+  return Object.fromEntries(
+    Object.entries(strategy).filter(([key]) => allowedKeys.has(key) || !KnownStrategyKeys.has(key))
+  );
+};
+
 export const ExportWorkflowSourceSchema = z.preprocess((obj) => {
   if (obj && typeof obj === "object") {
     const workflow = obj as Record<string, unknown>;
     return {
       ...workflow,
       strategy_type: StrategyTypeFromNumber(workflow.strategy_type),
+      strategy: sanitizeStrategyForFormat(workflow.strategy),
     };
   }
   return obj;

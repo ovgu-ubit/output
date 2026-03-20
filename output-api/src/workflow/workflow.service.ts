@@ -55,8 +55,7 @@ export class WorkflowService {
             throw new BadRequestException('invalid json');
         }
 
-        const lastVersion = await this.importRepository.findOne({ where: { workflow_id: workflow.workflow_id }, order: { version: 'DESC' } })
-        const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+        const nextVersion = await this.getNextDraftVersion(this.importRepository, workflow.workflow_id);
 
         const obj: ImportWorkflow = {
             workflow_id: workflow.workflow_id,
@@ -94,10 +93,11 @@ export class WorkflowService {
                 toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }
         } else {
+            const workflowId = workflow.workflow_id ?? uuidv4();
             toSave = {
                 ...toSave,
-                workflow_id: workflow.workflow_id ?? uuidv4(),
-                version: workflow.version ?? 1,
+                workflow_id: workflowId,
+                version: await this.getNextDraftVersion(this.importRepository, workflowId),
                 id: undefined,
                 created_at: undefined,
                 published_at: undefined,
@@ -127,8 +127,7 @@ export class WorkflowService {
             throw new BadRequestException('invalid json');
         }
 
-        const lastVersion = await this.exportRepository.findOne({ where: { workflow_id: workflow.workflow_id }, order: { version: 'DESC' } });
-        const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+        const nextVersion = await this.getNextDraftVersion(this.exportRepository, workflow.workflow_id);
 
         const obj: ExportWorkflow = {
             workflow_id: workflow.workflow_id,
@@ -164,10 +163,11 @@ export class WorkflowService {
                 toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }
         } else {
+            const workflowId = workflow.workflow_id ?? uuidv4();
             toSave = {
                 ...toSave,
-                workflow_id: workflow.workflow_id ?? uuidv4(),
-                version: workflow.version ?? 1,
+                workflow_id: workflowId,
+                version: await this.getNextDraftVersion(this.exportRepository, workflowId),
                 strategy_type: workflow.strategy_type,
                 id: undefined,
                 created_at: undefined,
@@ -419,6 +419,7 @@ export class WorkflowService {
     }
 
     private async waitForImportCompletionOrWatchdog(reportId: number): Promise<void> {
+        this.workflowReportService.registerCompletionWait(reportId);
         const timeoutMs = await this.getImportWatchdogTimeoutMs();
         let timeoutReached = false;
         let timer: ReturnType<typeof setTimeout> | undefined;
@@ -446,6 +447,7 @@ export class WorkflowService {
                 watchdogPromise,
             ]);
         } finally {
+            this.workflowReportService.releaseCompletionWait(reportId);
             if (!timeoutReached && timer) {
                 clearTimeout(timer);
                 abortController.abort('workflow-import-completed');
@@ -552,5 +554,20 @@ export class WorkflowService {
         const reportId = this.importService.getCurrentWorkflowReportId();
         if (!reportId) throw new NotFoundException('Workflow report not initialized');
         return reportId;
+    }
+
+    private async getNextDraftVersion<T extends { workflow_id?: string; version?: number }>(
+        repository: Repository<T>,
+        workflowId?: string,
+    ): Promise<number> {
+        if (!workflowId) return 1;
+
+        const latestWorkflow = await repository.findOne({
+            where: { workflow_id: workflowId } as never,
+            order: { version: 'DESC' } as never,
+            withDeleted: true,
+        });
+
+        return latestWorkflow?.version ? latestWorkflow.version + 1 : 1;
     }
 }

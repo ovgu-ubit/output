@@ -30,7 +30,7 @@ export class ImportFormGeneralComponent implements OnInit, WorkflowFormPage {
       id: [{ value: '', disabled: true }],
       workflow_id: [{ value: '', disabled: true }],
       label: [''],
-      version: [''],
+      version: [{ value: '', disabled: true }],
       created_at: [{ value: new Date(), disabled: true }],
       modified_at: [{ value: new Date(), disabled: true }],
       published_at: [{ value: new Date(), disabled: true }],
@@ -64,7 +64,6 @@ export class ImportFormGeneralComponent implements OnInit, WorkflowFormPage {
     const res = {
       id: this.form.get('id')?.value,
       label: this.form.get('label')?.value,
-      version: this.form.get('version')?.value,
       description: this.form.get('description')?.value,
     };
     this.facade.patch(res);

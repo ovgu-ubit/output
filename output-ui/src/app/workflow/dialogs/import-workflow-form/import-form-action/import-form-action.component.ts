@@ -127,7 +127,7 @@ export class ImportFormActionComponent implements OnInit {
       ...this.entity,
       id: undefined,
       workflow_id: this.entity.workflow_id,
-      version: (this.entity.version ?? 0) + 1,
+      version: undefined,
       published_at: null,
       deleted_at: null,
       created_at: null,

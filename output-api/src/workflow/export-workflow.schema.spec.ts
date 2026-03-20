@@ -170,7 +170,7 @@ describe('validateExportWorkflow', () => {
         }
     });
 
-    it('rejects format-incompatible strategy fields', () => {
+    it('strips format-incompatible legacy strategy fields before validation', () => {
         const workflow = {
             workflow_id: 'wf-json',
             label: 'JSON export',
@@ -180,12 +180,35 @@ describe('validateExportWorkflow', () => {
                 format: 'json',
                 disposition: 'inline',
                 delimiter: ';',
+                quote_char: '"',
+                root_name: 'records',
+            },
+        } as any;
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy: {
+                format: 'json',
+                disposition: 'inline',
+            },
+        });
+    });
+
+    it('rejects unknown strategy fields that are not part of a legacy format switch', () => {
+        const workflow = {
+            workflow_id: 'wf-json',
+            label: 'JSON export',
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            mapping: '$',
+            strategy: {
+                format: 'json',
+                disposition: 'inline',
+                totally_unknown: 'value',
             },
         } as any;
 
         try {
             validateExportWorkflow(workflow);
-            fail('validateExportWorkflow should throw for format-incompatible fields');
+            fail('validateExportWorkflow should throw for unknown fields');
         } catch (error) {
             expect(error).toBeInstanceOf(BadRequestException);
             expect(error.getResponse()).toMatchObject({

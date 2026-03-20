@@ -22,6 +22,8 @@ describe('WorkflowService', () => {
     let workflowReportService: {
         deleteReportsForWorkflow: jest.Mock;
         getStatusForWorkflow: jest.Mock;
+        registerCompletionWait: jest.Mock;
+        releaseCompletionWait: jest.Mock;
         waitForCompletion: jest.Mock;
         write: jest.Mock;
     };
@@ -63,6 +65,8 @@ describe('WorkflowService', () => {
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
             getStatusForWorkflow: jest.fn(),
+            registerCompletionWait: jest.fn(),
+            releaseCompletionWait: jest.fn(),
             waitForCompletion: jest.fn(),
             write: jest.fn(),
         };
@@ -304,6 +308,54 @@ describe('WorkflowService', () => {
 
         await expect(service.importExport(file)).rejects.toBeInstanceOf(BadRequestException);
         expect(exportRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('assigns the next persisted import version when creating a draft', async () => {
+        importRepository.findOne!.mockResolvedValue({
+            id: 26,
+            workflow_id: 'wf-26',
+            version: 4,
+        } as ImportWorkflow);
+        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
+
+        const saved = await service.saveImport({
+            workflow_id: 'wf-26',
+            label: 'Draft import',
+            mapping: '$',
+        } as ImportWorkflow);
+
+        expect(importRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'wf-26',
+            version: 5,
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'wf-26',
+            version: 5,
+        });
+    });
+
+    it('assigns the next persisted export version when creating a draft', async () => {
+        exportRepository.findOne!.mockResolvedValue({
+            id: 27,
+            workflow_id: 'wf-27',
+            version: 2,
+        } as ExportWorkflow);
+        exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
+
+        const saved = await service.saveExport({
+            workflow_id: 'wf-27',
+            label: 'Draft export',
+            mapping: '$',
+        } as ExportWorkflow);
+
+        expect(exportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'wf-27',
+            version: 3,
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'wf-27',
+            version: 3,
+        });
     });
 
     it('starts URL_LOOKUP_AND_RETRIEVE workflows via JSONata import service', async () => {
