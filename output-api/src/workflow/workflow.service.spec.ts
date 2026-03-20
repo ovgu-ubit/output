@@ -178,7 +178,7 @@ describe('WorkflowService', () => {
         expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(7001);
     });
 
-    it('defaults new export workflows to HTTP_RESPONSE', async () => {
+    it('keeps strategy_type undefined until explicitly set', async () => {
         exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
 
         const saved = await service.saveExport({
@@ -190,12 +190,12 @@ describe('WorkflowService', () => {
         expect(exportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
             workflow_id: 'test-uuid',
             version: 1,
-            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy_type: undefined,
         }));
         expect(saved).toMatchObject({
             workflow_id: 'test-uuid',
             version: 1,
-            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy_type: undefined,
         });
     });
 
