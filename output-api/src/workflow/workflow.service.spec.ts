@@ -239,6 +239,50 @@ describe('WorkflowService', () => {
         expect(result).toBe('{"ok":true}');
     });
 
+    it('starts draft export workflows via JSONata export service', async () => {
+        const draftWorkflow = {
+            id: 53,
+            workflow_id: 'wf-53',
+            label: 'Draft export',
+            version: 1,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping: '$',
+            published_at: null,
+            deleted_at: null,
+        } as ExportWorkflow;
+
+        exportRepository.findOneBy!.mockResolvedValue(draftWorkflow);
+        exportService.setUp.mockResolvedValue(undefined);
+        exportService.export.mockResolvedValue('{"draft":true}');
+
+        const result = await service.startExport(53, undefined, 'tester', false);
+
+        expect(exportService.setUp).toHaveBeenCalledWith(draftWorkflow);
+        expect(exportService.export).toHaveBeenCalledWith(undefined, [], 'tester', false);
+        expect(result).toBe('{"draft":true}');
+    });
+
+    it('rejects archived export workflows', async () => {
+        const archivedWorkflow = {
+            id: 54,
+            workflow_id: 'wf-54',
+            label: 'Archived export',
+            version: 2,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping: '$',
+            published_at: new Date('2026-03-16T10:00:00.000Z'),
+            deleted_at: new Date('2026-03-18T10:00:00.000Z'),
+        } as ExportWorkflow;
+
+        exportRepository.findOneBy!.mockResolvedValue(archivedWorkflow);
+
+        await expect(service.startExport(54)).rejects.toThrow('Error: archived workflows cannot be executed');
+        expect(exportService.setUp).not.toHaveBeenCalled();
+        expect(exportService.export).not.toHaveBeenCalled();
+    });
+
     it('rejects concurrent workflow import starts while the import service is busy', async () => {
         const publishedWorkflow = {
             id: 61,

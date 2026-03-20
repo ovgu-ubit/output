@@ -242,8 +242,8 @@ export class WorkflowService {
             const exportDef = await this.exportRepository.findOneBy({ id });
 
             if (!exportDef) throw new BadRequestException('Error: workflow not found');
-            if (!exportDef.published_at || exportDef.deleted_at) {
-                throw new BadRequestException('Error: only published workflows can be executed');
+            if (exportDef.deleted_at) {
+                throw new BadRequestException('Error: archived workflows cannot be executed');
             }
 
             await this.exportService.setUp(exportDef);
