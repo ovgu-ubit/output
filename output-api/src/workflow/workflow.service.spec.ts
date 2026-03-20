@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { ExportStrategy, ImportStrategy, WorkflowType } from '../../../output-interfaces/Workflow';
+import { ExportStrategy, ImportStrategy, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataExportService } from './export/jsonata-export.service';
@@ -19,7 +19,13 @@ describe('WorkflowService', () => {
     let service: WorkflowService;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
-    let workflowReportService: { deleteReportsForWorkflow: jest.Mock, getStatusForWorkflow: jest.Mock, waitForCompletion: jest.Mock };
+    let workflowReportService: {
+        deleteReportsForWorkflow: jest.Mock;
+        getStatusForWorkflow: jest.Mock;
+        waitForCompletion: jest.Mock;
+        write: jest.Mock;
+    };
+    let configService: { get: jest.Mock };
     let exportService: {
         setUp: jest.Mock;
         export: jest.Mock;
@@ -56,6 +62,10 @@ describe('WorkflowService', () => {
             deleteReportsForWorkflow: jest.fn(),
             getStatusForWorkflow: jest.fn(),
             waitForCompletion: jest.fn(),
+            write: jest.fn(),
+        };
+        configService = {
+            get: jest.fn(async () => undefined),
         };
         exportService = {
             setUp: jest.fn(),
@@ -79,7 +89,7 @@ describe('WorkflowService', () => {
                 WorkflowService,
                 { provide: getRepositoryToken(ImportWorkflow), useValue: importRepository },
                 { provide: getRepositoryToken(ExportWorkflow), useValue: exportRepository },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
                 { provide: JSONataImportService, useValue: importService },
                 { provide: JSONataExportService, useValue: exportService },
                 { provide: 'Filters', useValue: [] },
@@ -175,7 +185,7 @@ describe('WorkflowService', () => {
         expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
         expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
         expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
-        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(7001);
+        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(7001, 500, { allowStale: false });
     });
 
     it('keeps strategy_type undefined until explicitly set', async () => {
@@ -324,12 +334,73 @@ describe('WorkflowService', () => {
         await firstStart;
 
         await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).rejects.toBeInstanceOf(ConflictException);
+        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(9001, 500, { allowStale: false });
 
         releaseCompletion!();
         await completionPromise;
         await Promise.resolve();
+        await new Promise((resolve) => setImmediate(resolve));
 
         await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).resolves.toBeUndefined();
+    });
+
+    it('releases the import lock via watchdog timeout and writes a warning', async () => {
+        jest.useFakeTimers();
+        try {
+            const publishedWorkflow = {
+                id: 62,
+                workflow_id: 'wf-62',
+                label: 'Watchdog import',
+                version: 1,
+                strategy_type: ImportStrategy.URL_QUERY_OFFSET,
+                strategy: {
+                    url_items: 'https://example.org/items',
+                    url_count: 'https://example.org/count',
+                    max_res: 50,
+                    max_res_name: 'rows',
+                    request_mode: 'offset',
+                    offset_name: 'offset',
+                    offset_count: 0,
+                    offset_start: 0,
+                    get_count: '$.count',
+                    get_items: '$.items',
+                    format: 'json',
+                },
+                mapping: '$',
+                published_at: new Date('2026-03-16T10:00:00.000Z'),
+                deleted_at: null,
+                update_config: {},
+            } as unknown as ImportWorkflow;
+            const neverCompletion = new Promise<void>(() => undefined);
+
+            configService.get.mockImplementation(async (key: string) => {
+                if (key === 'workflow_import_watchdog_timeout') return 1;
+                return undefined;
+            });
+            importRepository.findOneBy!.mockResolvedValue(publishedWorkflow);
+            importService.setReportingYear.mockResolvedValue(undefined);
+            importService.setUp.mockResolvedValue(undefined);
+            importService.getCurrentWorkflowReportId.mockReturnValue(9002);
+            importService.import.mockResolvedValue(undefined);
+            workflowReportService.waitForCompletion
+                .mockReturnValueOnce(neverCompletion)
+                .mockResolvedValue(undefined);
+            workflowReportService.write.mockResolvedValue(undefined);
+
+            await service.startImport(62, 2024, [], null, false, 'tester', false);
+            await expect(service.startImport(62, 2024, [], null, false, 'tester', false)).rejects.toBeInstanceOf(ConflictException);
+
+            await jest.advanceTimersByTimeAsync(60_000);
+            await Promise.resolve();
+
+            expect(workflowReportService.write).toHaveBeenCalledWith(9002, expect.objectContaining({
+                level: WorkflowReportItemLevel.WARNING,
+                code: 'workflow-import-watchdog',
+            }));
+            await expect(service.startImport(62, 2024, [], null, false, 'tester', false)).resolves.toBeUndefined();
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
     it('deletes only draft export workflows', async () => {

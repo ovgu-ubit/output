@@ -221,4 +221,50 @@ describe('WorkflowReportService', () => {
             reportId: 15,
         });
     });
+
+    it('resolves stale reports by default when waiting for completion', async () => {
+        const staleTimestamp = new Date(Date.now() - 6 * 60 * 1000);
+        workflowReportRepository.findOneBy.mockResolvedValue({
+            id: 21,
+            workflow_type: WorkflowType.IMPORT,
+            status: 'Started',
+            progress: -1,
+            updated_at: staleTimestamp,
+            finished_at: null,
+        });
+
+        const report = await service.waitForCompletion(21, 0);
+
+        expect(report.id).toBe(21);
+        expect(report.finished_at).toBeNull();
+    });
+
+    it('ignores stale reports when allowStale is false and waits for finished_at', async () => {
+        const staleTimestamp = new Date(Date.now() - 6 * 60 * 1000);
+        const finishedAt = new Date();
+        workflowReportRepository.findOneBy
+            .mockResolvedValueOnce({
+                id: 22,
+                workflow_type: WorkflowType.IMPORT,
+                status: 'Started',
+                progress: -1,
+                updated_at: staleTimestamp,
+                finished_at: null,
+            })
+            .mockResolvedValueOnce({
+                id: 22,
+                workflow_type: WorkflowType.IMPORT,
+                status: 'Finished',
+                progress: 0,
+                updated_at: finishedAt,
+                finished_at: finishedAt,
+            });
+        const sleepSpy = jest.spyOn(service as any, 'sleep').mockResolvedValue(undefined);
+
+        const report = await service.waitForCompletion(22, 0, { allowStale: false });
+
+        expect(workflowReportRepository.findOneBy).toHaveBeenCalledTimes(2);
+        expect(sleepSpy).toHaveBeenCalledTimes(1);
+        expect(report.finished_at).toBe(finishedAt);
+    });
 });

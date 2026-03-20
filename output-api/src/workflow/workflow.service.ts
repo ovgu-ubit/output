@@ -4,7 +4,7 @@ import { Between, In, IsNull, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
-import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, WorkflowType } from '../../../output-interfaces/Workflow';
+import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
 import { validateExportWorkflow } from './export-workflow.schema';
@@ -194,13 +194,13 @@ export class WorkflowService {
                 await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
                 const reportId = this.getImportExecutionReportId();
                 await this.importService.import(update, user, dryRun);
-                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
             } else if (importDef.strategy_type === ImportStrategy.URL_LOOKUP_AND_RETRIEVE) {
                 await this.importService.setReportingYear(reporting_year + "");
                 await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
                 const reportId = this.getImportExecutionReportId();
                 await this.importService.importLookupAndRetrieve(update, user, dryRun);
-                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
             } else if (importDef.strategy_type === ImportStrategy.URL_DOI) {
                 await this.importService.setUp(importDef, importDef.update_config);
                 const reportId = this.getImportExecutionReportId();
@@ -213,13 +213,13 @@ export class WorkflowService {
                     this.importService.setReportingYear(reporting_year + "")
                 } else throw new BadRequestException('neither reporting_year nor ids are given')
                 await this.importService.enrich(user, dryRun);
-                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
             } else if (importDef.strategy_type === ImportStrategy.FILE_UPLOAD) {
                 await this.importService.setUp(importDef, importDef.update_config);
                 const reportId = this.getImportExecutionReportId();
                 if (file) await this.importService.loadFile(update, file, user, dryRun);
                 else throw new BadRequestException('no file supported')
-                return { completion: this.workflowReportService.waitForCompletion(reportId) };
+                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
             }
 
             return {};
@@ -380,6 +380,48 @@ export class WorkflowService {
         if (this.activeExecutionKeys.has(key)) {
             throw new ConflictException('A workflow execution is already running for this service.');
         }
+    }
+
+    private async waitForImportCompletionOrWatchdog(reportId: number): Promise<void> {
+        const timeoutMs = await this.getImportWatchdogTimeoutMs();
+        let timeoutReached = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+
+        const watchdogPromise = new Promise<void>((resolve) => {
+            timer = setTimeout(() => {
+                timeoutReached = true;
+                void this.writeImportWatchdogWarning(reportId, timeoutMs).finally(resolve);
+            }, timeoutMs);
+        });
+
+        try {
+            await Promise.race([
+                this.workflowReportService.waitForCompletion(reportId, 500, { allowStale: false }).then(() => undefined),
+                watchdogPromise,
+            ]);
+        } finally {
+            if (!timeoutReached && timer) clearTimeout(timer);
+        }
+    }
+
+    private async writeImportWatchdogWarning(reportId: number, timeoutMs: number): Promise<void> {
+        const timeoutMinutes = Math.round(timeoutMs / 60000);
+        try {
+            await this.workflowReportService.write(reportId, {
+                level: WorkflowReportItemLevel.WARNING,
+                timestamp: new Date(),
+                code: 'workflow-import-watchdog',
+                message: `Import watchdog timeout reached after ${timeoutMinutes} minute(s); lock released while run may still be active.`,
+            });
+        } catch {
+            return;
+        }
+    }
+
+    private async getImportWatchdogTimeoutMs(): Promise<number> {
+        const timeoutInMinutes = Number(await this.configService.get('workflow_import_watchdog_timeout'));
+        const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 1 ? timeoutInMinutes : 60;
+        return resolvedMinutes * 60 * 1000;
     }
 
     private getImportExecutionReportId(): number {

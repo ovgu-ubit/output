@@ -33,6 +33,10 @@ export interface WorkflowRunStatus {
     reportId?: number;
 }
 
+export interface WaitForCompletionOptions {
+    allowStale?: boolean;
+}
+
 @Injectable()
 export class WorkflowReportService {
 
@@ -160,15 +164,20 @@ export class WorkflowReportService {
         return this.hydrateWorkflowReference(report);
     }
 
-    async waitForCompletion(workflowReportId: number, pollIntervalMs = 500): Promise<WorkflowReport> {
+    async waitForCompletion(
+        workflowReportId: number,
+        pollIntervalMs = 500,
+        options: WaitForCompletionOptions = {}
+    ): Promise<WorkflowReport> {
         const staleTimeoutMs = await this.getStaleTimeoutMs();
+        const allowStale = options.allowStale ?? true;
 
         while (true) {
             const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
             if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
 
             const hydratedReport = this.hydrateWorkflowReference(report);
-            if (hydratedReport.finished_at || this.isReportStale(hydratedReport, staleTimeoutMs)) {
+            if (hydratedReport.finished_at || (allowStale && this.isReportStale(hydratedReport, staleTimeoutMs))) {
                 return hydratedReport;
             }
 
