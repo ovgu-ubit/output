@@ -9,6 +9,8 @@ import { ExportWorkflowService } from 'src/app/workflow/export-workflow.service'
 import { ExportWorkflow } from '../../../../../../../output-interfaces/Workflow';
 import { ExportFormFacade } from '../export-form-facade.service';
 
+type InlinePreviewKind = 'json' | 'xml' | 'csv' | 'text';
+
 @Component({
   selector: 'app-export-form-action',
   imports: [SharedModule, MatProgressBarModule],
@@ -22,6 +24,10 @@ export class ExportFormActionComponent implements OnInit {
   ob$: Observable<{ progress: number, status: string }>;
   isRunning = false;
   status: { progress: number, status: string };
+  latestResultBlob: Blob | null = null;
+  latestResultFilename: string | null = null;
+  inlineResult: string | null = null;
+  inlineResultKind: InlinePreviewKind | null = null;
 
   form: FormGroup = this.formBuilder.group({
     withMasterData: [false],
@@ -152,7 +158,11 @@ export class ExportFormActionComponent implements OnInit {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (resp) => {
-          this.downloadResponse(resp.body!, resp.headers.get('content-disposition') || resp.headers.get('Content-Disposition'));
+          void this.handleRunResponse(
+            resp.body!,
+            resp.headers.get('content-disposition') || resp.headers.get('Content-Disposition'),
+            resp.headers.get('content-type') || resp.headers.get('Content-Type')
+          );
           this.snackBar.open('Export erfolgreich erstellt.', 'OK', {
             duration: 4500,
             verticalPosition: 'top',
@@ -169,6 +179,12 @@ export class ExportFormActionComponent implements OnInit {
           void this.update();
         },
       });
+  }
+
+  downloadLatestResult(): void {
+    if (!this.latestResultBlob) return;
+    const filename = this.latestResultFilename ?? `export-${this.entity?.id ?? 'workflow'}`;
+    this.triggerDownload(this.latestResultBlob, filename);
   }
 
   private persistChanges(patch: Partial<ExportWorkflow>, successMessage: string): void {
@@ -196,8 +212,28 @@ export class ExportFormActionComponent implements OnInit {
       });
   }
 
-  private downloadResponse(blob: Blob, contentDisposition: string | null) {
+  private async handleRunResponse(blob: Blob, contentDisposition: string | null, contentTypeHeader: string | null): Promise<void> {
     const filename = this.getFilenameFromContentDisposition(contentDisposition) ?? `export-${this.entity?.id ?? 'workflow'}`;
+    const disposition = this.getDispositionFromContentDisposition(contentDisposition);
+    const contentType = (contentTypeHeader || blob.type || '').toLowerCase();
+    const previewKind = this.getInlinePreviewKind(contentType, filename);
+
+    this.latestResultBlob = blob;
+    this.latestResultFilename = filename;
+
+    if (disposition !== 'attachment' && previewKind) {
+      const text = await blob.text();
+      this.inlineResult = this.formatInlineResult(previewKind, text);
+      this.inlineResultKind = previewKind;
+      return;
+    }
+
+    this.inlineResult = null;
+    this.inlineResultKind = null;
+    this.triggerDownload(blob, filename);
+  }
+
+  private triggerDownload(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -215,5 +251,32 @@ export class ExportFormActionComponent implements OnInit {
 
     const m = cd.match(/filename\s*=\s*("?)([^";]+)\1/i);
     return m?.[2]?.trim() ?? null;
+  }
+
+  private getDispositionFromContentDisposition(cd: string | null): 'inline' | 'attachment' | null {
+    if (!cd) return null;
+    if (/\battachment\b/i.test(cd)) return 'attachment';
+    if (/\binline\b/i.test(cd)) return 'inline';
+    return null;
+  }
+
+  private getInlinePreviewKind(contentType: string, filename: string): InlinePreviewKind | null {
+    const lowerFilename = filename.toLowerCase();
+    if (contentType.includes('json') || lowerFilename.endsWith('.json')) return 'json';
+    if (contentType.includes('xml') || lowerFilename.endsWith('.xml')) return 'xml';
+    if (contentType.includes('csv') || lowerFilename.endsWith('.csv')) return 'csv';
+    if (contentType.startsWith('text/')) return 'text';
+    return null;
+  }
+
+  private formatInlineResult(kind: InlinePreviewKind, value: string): string {
+    if (kind === 'json') {
+      try {
+        return JSON.stringify(JSON.parse(value), null, 2);
+      } catch {
+        return value;
+      }
+    }
+    return value;
   }
 }

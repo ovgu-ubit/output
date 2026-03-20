@@ -34,6 +34,12 @@
                 <mat-icon>play_arrow</mat-icon>
                 Export starten
             </button>
+            @if (latestResultBlob) {
+            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="downloadLatestResult()">
+                <mat-icon>download</mat-icon>
+                Ergebnis herunterladen
+            </button>
+            }
             <button mat-raised-button class="primary-button" [disabled]="loading || !!this.ob$" (click)="duplicate()">
                 <mat-icon>content_copy</mat-icon>
                 Neue Version als Entwurf speichern
@@ -42,6 +48,12 @@
                 <mat-icon>archive</mat-icon>
                 Workflow archivieren
             </button>
+            @if (inlineResult) {
+            <div class="inline-result">
+                <h4>Export-Ausgabe ({{ inlineResultKind?.toUpperCase() }})</h4>
+                <pre>{{ inlineResult }}</pre>
+            </div>
+            }
         </div>
         }
 
