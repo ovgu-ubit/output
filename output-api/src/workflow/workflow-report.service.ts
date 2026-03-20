@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { WorkflowReportItemLevel } from '../../../output-interfaces/Workflow';
+import { ExportWorkflow, ImportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { AppConfigService } from '../config/app-config.service';
 import { PublicationChangeService } from '../publication/core/publication-change.service';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
@@ -14,38 +15,70 @@ export interface FinishWorkflowReportOptions {
     finished_at?: Date;
 }
 
+export interface UpdateWorkflowReportStatusOptions {
+    status?: string;
+    progress?: number;
+    started_at?: Date;
+    finished_at?: Date | null;
+    by_user?: string;
+    params?: unknown;
+    dry_run?: boolean;
+    summary?: unknown;
+}
+
+export interface WorkflowRunStatus {
+    progress: number;
+    status: string;
+    stale?: boolean;
+    reportId?: number;
+}
+
+export interface WaitForCompletionOptions {
+    allowStale?: boolean;
+    signal?: AbortSignal;
+}
+
 @Injectable()
 export class WorkflowReportService {
+    private readonly pendingCompletionWaits = new Map<number, number>();
 
     constructor(
         @InjectRepository(WorkflowReport) private workflowReportRepository: Repository<WorkflowReport>,
         @InjectRepository(WorkflowReportItem) private workflowReportItemRepository: Repository<WorkflowReportItem>,
+        private configService: AppConfigService,
         private publicationChangeService: PublicationChangeService,
     ) { }
 
     async createReport(options: WorkflowReport): Promise<WorkflowReport> {
-        return this.workflowReportRepository.save({
-            workflow: options.workflow,
+        const saved = await this.workflowReportRepository.save({
+            workflow_type: options.workflow_type ?? this.resolveWorkflowType(options),
+            importWorkflow: options.importWorkflow ?? ((options.workflow_type ?? this.resolveWorkflowType(options)) === WorkflowType.IMPORT ? options.workflow as ImportWorkflow : undefined),
+            exportWorkflow: options.exportWorkflow ?? ((options.workflow_type ?? this.resolveWorkflowType(options)) === WorkflowType.EXPORT ? options.workflow as ExportWorkflow : undefined),
             params: options.params ?? {},
             by_user: options.by_user,
             status: options.status ?? 'started',
+            progress: options.progress ?? 0,
             started_at: options.started_at ?? new Date(),
             finished_at: options.finished_at,
             summary: options.summary,
             dry_run: options.dry_run ?? false,
         });
+        return this.hydrateWorkflowReference(saved);
     }
 
     async save(options: WorkflowReport): Promise<WorkflowReport> {
         if (!options.id) throw new BadRequestException('create report first before saving it');
-        return this.workflowReportRepository.save(options);
+        return this.hydrateWorkflowReference(await this.workflowReportRepository.save(options));
     }
 
     async write(workflowReportId: number, content: WorkflowReportItem): Promise<WorkflowReportItem> {
-        const workflowReport = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
-        if (!workflowReport) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        const touchResult = await this.workflowReportRepository.update(
+            { id: workflowReportId },
+            { updated_at: new Date() }
+        );
+        if (!touchResult.affected) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
         return this.workflowReportItemRepository.save({
-            workflowReport,
+            workflowReport: { id: workflowReportId } as WorkflowReport,
             timestamp: content.timestamp ?? new Date(),
             level: this.normalizeLevel(content.level),
             code: content.code,
@@ -53,31 +86,84 @@ export class WorkflowReportService {
         });
     }
 
+    async updateStatus(workflowReportId: number, content: UpdateWorkflowReportStatusOptions): Promise<WorkflowReport> {
+        const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+        if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+
+        if (content.status !== undefined) report.status = content.status;
+        if (content.progress !== undefined) report.progress = content.progress;
+        if (content.started_at !== undefined) report.started_at = content.started_at;
+        if (content.finished_at !== undefined) report.finished_at = content.finished_at ?? undefined;
+        if (content.by_user !== undefined) report.by_user = content.by_user;
+        if (content.params !== undefined) report.params = content.params;
+        if (content.dry_run !== undefined) report.dry_run = content.dry_run;
+        if (content.summary !== undefined) report.summary = content.summary;
+
+        return this.hydrateWorkflowReference(await this.workflowReportRepository.save(report));
+    }
+
     async finish(workflowReportId: number, content: FinishWorkflowReportOptions): Promise<WorkflowReport> {
         const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
         if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
 
         report.status = content.status;
+        report.progress = 0;
         report.finished_at = content.finished_at ?? new Date();
         report.summary = content.summary ?? {
             count_import: content.count_import ?? 0,
             count_update: content.count_update ?? 0,
         };
 
-        return this.workflowReportRepository.save(report);
+        return this.hydrateWorkflowReference(await this.workflowReportRepository.save(report));
     }
 
-    async getReports(workflowId: number): Promise<WorkflowReport[]> {
-        return this.workflowReportRepository
+    async getStatusForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<WorkflowRunStatus> {
+        const latestReport = await this.getLatestReport(workflowId, workflowType);
+        if (!latestReport) {
+            return { progress: 0, status: 'initialized' };
+        }
+
+        const staleTimeoutMs = await this.getStaleTimeoutMs();
+        if (!latestReport.finished_at && this.isReportStale(latestReport, staleTimeoutMs)) {
+            return this.toRunStatus(latestReport, true);
+        }
+
+        return this.toRunStatus(latestReport);
+    }
+
+    async getReports(
+        workflowId: number,
+        workflowType: WorkflowType = WorkflowType.IMPORT,
+        options?: { limit?: number; offset?: number }
+    ): Promise<WorkflowReport[]> {
+        const query = this.workflowReportRepository
             .createQueryBuilder('report')
-            .where('report.workflowId = :workflowId', { workflowId })
+            .leftJoinAndSelect('report.importWorkflow', 'importWorkflow')
+            .leftJoinAndSelect('report.exportWorkflow', 'exportWorkflow')
+            .where('report.workflow_type = :workflowType', { workflowType })
+            .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
             .orderBy('report.started_at', 'DESC')
-            .addOrderBy('report.id', 'DESC')
-            .getMany();
+            .addOrderBy('report.id', 'DESC');
+
+        if (options?.offset !== undefined && options.offset >= 0) {
+            query.skip(options.offset);
+        }
+        if (options?.limit !== undefined && options.limit >= 0) {
+            query.take(options.limit);
+        }
+
+        const reports = await query.getMany();
+        return reports.map((report) => this.hydrateWorkflowReference(report));
     }
 
     async getReport(workflowReportId: number): Promise<WorkflowReport> {
-        const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+        const report = await this.workflowReportRepository.findOne({
+            where: { id: workflowReportId },
+            relations: {
+                importWorkflow: true,
+                exportWorkflow: true,
+            }
+        });
         if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
 
         report.items = await this.workflowReportItemRepository
@@ -88,7 +174,30 @@ export class WorkflowReportService {
             .getMany();
         report.publication_changes = await this.publicationChangeService.getPublicationChangesForReport(workflowReportId);
 
-        return report;
+        return this.hydrateWorkflowReference(report);
+    }
+
+    async waitForCompletion(
+        workflowReportId: number,
+        pollIntervalMs = 500,
+        options: WaitForCompletionOptions = {}
+    ): Promise<WorkflowReport> {
+        const staleTimeoutMs = await this.getStaleTimeoutMs();
+        const allowStale = options.allowStale ?? true;
+        const signal = options.signal;
+
+        while (true) {
+            this.throwIfAborted(signal);
+            const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
+            if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+
+            const hydratedReport = this.hydrateWorkflowReference(report);
+            if (hydratedReport.finished_at || (allowStale && this.isReportStale(hydratedReport, staleTimeoutMs))) {
+                return hydratedReport;
+            }
+
+            await this.sleep(pollIntervalMs, signal);
+        }
     }
 
     async getReportText(workflowReportId: number): Promise<string> {
@@ -114,15 +223,34 @@ export class WorkflowReportService {
     }
 
     async deleteReport(workflowReportId: number) {
+        if (this.isDeletionBlocked(workflowReportId)) {
+            throw new ConflictException(`Workflow report ${workflowReportId} is still active`);
+        }
         await this.ensureReportExists(workflowReportId);
         return this.workflowReportRepository.delete({ id: workflowReportId });
     }
 
-    async deleteReportsForWorkflow(workflowId: number): Promise<void> {
+    registerCompletionWait(workflowReportId: number): void {
+        const activeWaits = this.pendingCompletionWaits.get(workflowReportId) ?? 0;
+        this.pendingCompletionWaits.set(workflowReportId, activeWaits + 1);
+    }
+
+    releaseCompletionWait(workflowReportId: number): void {
+        const activeWaits = this.pendingCompletionWaits.get(workflowReportId);
+        if (!activeWaits || activeWaits <= 1) {
+            this.pendingCompletionWaits.delete(workflowReportId);
+            return;
+        }
+
+        this.pendingCompletionWaits.set(workflowReportId, activeWaits - 1);
+    }
+
+    async deleteReportsForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<void> {
         const reports = await this.workflowReportRepository
             .createQueryBuilder('report')
             .select('report.id', 'id')
-            .where('report.workflowId = :workflowId', { workflowId })
+            .where('report.workflow_type = :workflowType', { workflowType })
+            .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
             .getRawMany<{ id: number }>();
 
         const reportIds = reports
@@ -134,9 +262,101 @@ export class WorkflowReportService {
         await this.workflowReportRepository.delete(reportIds);
     }
 
+    private resolveWorkflowType(options: WorkflowReport): WorkflowType {
+        if (options.workflow_type) return options.workflow_type;
+        if (options.exportWorkflow) return WorkflowType.EXPORT;
+        if (options.importWorkflow) return WorkflowType.IMPORT;
+        return WorkflowType.IMPORT;
+    }
+
+    private async getLatestReport(
+        workflowId: number,
+        workflowType: WorkflowType = WorkflowType.IMPORT
+    ): Promise<WorkflowReport | undefined> {
+        const reports = await this.getReports(workflowId, workflowType, { limit: 1 });
+        return reports[0];
+    }
+
+    private getWorkflowColumn(workflowType: WorkflowType) {
+        return workflowType === WorkflowType.EXPORT ? 'exportWorkflowId' : 'workflowId';
+    }
+
+    private hydrateWorkflowReference(report: WorkflowReport): WorkflowReport {
+        report.workflow = report.workflow_type === WorkflowType.EXPORT ? report.exportWorkflow : report.importWorkflow;
+        report.workflowId = report.workflow?.id;
+        return report;
+    }
+
+    private toRunStatus(report: WorkflowReport, stale = false): WorkflowRunStatus {
+        return {
+            progress: stale ? 0 : (report.progress ?? 0),
+            status: stale ? this.buildStaleStatus(report.status) : (report.status ?? 'initialized'),
+            stale,
+            reportId: report.id,
+        };
+    }
+
+    private buildStaleStatus(status?: string): string {
+        return status && status.trim().length > 0 ? `${status} [stale]` : 'stale';
+    }
+
+    private isReportStale(report: WorkflowReport, staleTimeoutMs: number): boolean {
+        if (report.finished_at) return false;
+        const activityAt = this.getActivityTimestamp(report);
+        if (!activityAt) return true;
+        return (Date.now() - activityAt.getTime()) > staleTimeoutMs;
+    }
+
+    private getActivityTimestamp(report: WorkflowReport): Date | undefined {
+        if (report.updated_at instanceof Date) return report.updated_at;
+        if (report.updated_at) return new Date(report.updated_at);
+        if (report.started_at instanceof Date) return report.started_at;
+        if (report.started_at) return new Date(report.started_at);
+        return undefined;
+    }
+
+    private async getStaleTimeoutMs(): Promise<number> {
+        const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
+        return (Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5) * 60 * 1000;
+    }
+
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
         if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+    }
+
+    private isDeletionBlocked(workflowReportId: number): boolean {
+        return (this.pendingCompletionWaits.get(workflowReportId) ?? 0) > 0;
+    }
+
+    private async sleep(ms: number, signal?: AbortSignal): Promise<void> {
+        this.throwIfAborted(signal);
+        await new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => {
+                if (signal) signal.removeEventListener('abort', onAbort);
+                resolve();
+            }, ms);
+
+            const onAbort = () => {
+                clearTimeout(timer);
+                if (signal) signal.removeEventListener('abort', onAbort);
+                reject(this.toAbortError(signal?.reason));
+            };
+
+            if (signal) signal.addEventListener('abort', onAbort, { once: true });
+        });
+    }
+
+    private throwIfAborted(signal?: AbortSignal): void {
+        if (!signal?.aborted) return;
+        throw this.toAbortError(signal.reason);
+    }
+
+    private toAbortError(reason: unknown): Error {
+        if (reason instanceof Error) return reason;
+        const abortError = new Error(typeof reason === 'string' ? reason : 'Operation aborted');
+        abortError.name = 'AbortError';
+        return abortError;
     }
 
     private normalizeLevel(level?: WorkflowReportItemLevel | string): WorkflowReportItemLevel {

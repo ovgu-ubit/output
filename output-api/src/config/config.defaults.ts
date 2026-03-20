@@ -10,6 +10,7 @@ export const CONFIG_DEFAULTS = {
         "guericke"
     ],
     lock_timeout: 5,
+    workflow_import_watchdog_timeout: 60,
     affiliation_tags: [
         "ovgu",
         "guericke",
@@ -82,6 +83,7 @@ export const CONFIG_SCOPES: Record<keyof typeof CONFIG_DEFAULTS, ConfigScope> = 
     institution_short_label: 'public',
     search_tags: 'user',
     lock_timeout: 'user',
+    workflow_import_watchdog_timeout: 'user',
     affiliation_tags: 'user',
     ror_id: 'user',
     openalex_id: 'user',
@@ -98,6 +100,7 @@ export const CONFIG_DESCRIPTIONS = {
     institution_short_label: "Kurzer Anzeigename der Einrichtung",
     search_tags: "Suchbegriffe, die bei API-Zugriff verwendet werden für das Affiliationsfeld",
     lock_timeout: "Ganze Anzahl an Minuten, für die ein geöffneter Datensatz für die Bearbeitung durch andere Nutzer:innen gesperrt wird",
+    workflow_import_watchdog_timeout: "Ganze Anzahl an Minuten bis der Import-Ausführungs-Lock per Watchdog freigegeben wird",
     affiliation_tags: "Begriffe, von denen in der Affiliation einer Person mindestens einer vorkommen muss, damit sie der Einrichtung zugeordnet wird",
     ror_id: "ROR-ID der Einrichtung als Webadresse",
     openalex_id: "OpenAlex ID der Einrichtung",

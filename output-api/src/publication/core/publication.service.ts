@@ -25,6 +25,10 @@ interface SavePublicationOptions {
     dry_change?: boolean;
 }
 
+interface GetAllPublicationOptions {
+    serializeDates?: boolean;
+}
+
 @Injectable()
 export class PublicationService {
     // eslint-disable-next-line no-useless-escape
@@ -95,7 +99,7 @@ export class PublicationService {
         return this.pubRepository.find(options);
     }
 
-    public async getAll(filter: SearchFilter) {
+    public async getAll(filter: SearchFilter, options?: GetAllPublicationOptions) {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.publisher", 'publisher')
             .leftJoinAndSelect("publication.oa_category", "oa_category")
@@ -133,7 +137,8 @@ export class PublicationService {
         query = await this.filter(filter, query);
 
         const res = await query.getMany();
-        return res;
+        if (!options?.serializeDates) return res;
+        return this.serializeExportPublications(res);
     }
 
     // base object to select a publication index
@@ -974,6 +979,65 @@ export class PublicationService {
 
     private serializeDate(date?: Date) {
         return date ? new Date(date).toISOString() : null;
+    }
+
+    private serializeExportPublications(publications: Publication[]): Publication[] {
+        return publications.map((publication) => this.serializeExportPublication(publication));
+    }
+
+    private serializeExportPublication(publication: Publication): Publication {
+        let hasChanges = false;
+        const serializedPublication: Publication = { ...publication };
+        const serializedPublicationRecord = serializedPublication as Record<string, unknown>;
+
+        const publicationDateFields: (keyof Publication)[] = [
+            'pub_date',
+            'pub_date_submitted',
+            'pub_date_accepted',
+            'pub_date_print',
+            'import_date',
+            'edit_date',
+            'delete_date',
+            'locked_at',
+        ];
+
+        for (const field of publicationDateFields) {
+            const current = publication[field];
+            if (!(current instanceof Date)) continue;
+            serializedPublicationRecord[field as string] = current.toISOString();
+            hasChanges = true;
+        }
+
+        if (publication.invoices?.length) {
+            let invoiceChanges = false;
+            const serializedInvoices = publication.invoices.map((invoice) => {
+                let changed = false;
+                const serializedInvoice = { ...invoice };
+                const serializedInvoiceRecord = serializedInvoice as Record<string, unknown>;
+
+                if (invoice.date instanceof Date) {
+                    serializedInvoiceRecord.date = invoice.date.toISOString();
+                    changed = true;
+                }
+                if (invoice.booking_date instanceof Date) {
+                    serializedInvoiceRecord.booking_date = invoice.booking_date.toISOString();
+                    changed = true;
+                }
+
+                if (changed) {
+                    invoiceChanges = true;
+                    return serializedInvoice;
+                }
+                return invoice;
+            });
+
+            if (invoiceChanges) {
+                serializedPublication.invoices = serializedInvoices;
+                hasChanges = true;
+            }
+        }
+
+        return hasChanges ? serializedPublication : publication;
     }
 
     private shouldCreatePublicationChange(options?: SavePublicationOptions): boolean {

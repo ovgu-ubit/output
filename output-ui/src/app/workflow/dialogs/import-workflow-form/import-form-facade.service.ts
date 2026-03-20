@@ -6,6 +6,7 @@ import { WorkflowService } from "../../workflow.service";
 @Injectable()
 export class ImportFormFacade {
   private readonly importSubject = new BehaviorSubject<ImportWorkflow | null>(null);
+  private persistedSnapshot: string | null = null;
   readonly import$ = this.importSubject.asObservable();
   readonly destroy$ = new Subject<void>();
 
@@ -13,7 +14,10 @@ export class ImportFormFacade {
 
   load(id: number) {
     return this.api.getOne(id).pipe(
-      tap(wf => this.importSubject.next(wf))
+      tap(wf => {
+        this.importSubject.next(wf);
+        this.persistedSnapshot = this.snapshot(wf);
+      })
     );
   }
 
@@ -25,11 +29,12 @@ export class ImportFormFacade {
       published_at: null
     }
     this.importSubject.next(wf)
+    this.persistedSnapshot = this.snapshot(wf);
     return wf;
   }
 
-  getReports(workflowId: number): Observable<WorkflowReport[]> {
-    return this.api.getWorkflowReports(workflowId);
+  getReports(workflowId: number, options?: { limit?: number; offset?: number }): Observable<WorkflowReport[]> {
+    return this.api.getWorkflowReports(workflowId, undefined, options);
   }
 
   destroy() {
@@ -51,15 +56,29 @@ export class ImportFormFacade {
     this.importSubject.next({ ...cur, ...p });
   }
 
+  hasUnsavedChanges(): boolean {
+    return this.snapshot(this.importSubject.value) !== this.persistedSnapshot;
+  }
+
   // optional: persist
   save() {
     const cur = this.importSubject.value;
     if (!cur) return of(null);
     if (cur.id) return this.api.update(cur).pipe(
-      tap(updated => this.importSubject.next(updated))
+      tap(updated => {
+        this.importSubject.next(updated);
+        this.persistedSnapshot = this.snapshot(updated);
+      })
     );
     else return this.api.add(cur).pipe(
-      tap(updated => this.importSubject.next(updated))
+      tap(updated => {
+        this.importSubject.next(updated);
+        this.persistedSnapshot = this.snapshot(updated);
+      })
     );
+  }
+
+  private snapshot(value: ImportWorkflow | null): string | null {
+    return value ? JSON.stringify(value) : null;
   }
 }

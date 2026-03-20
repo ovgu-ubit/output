@@ -145,6 +145,10 @@ export abstract class AbstractImportService {
         return this.name;
     }
 
+    public getCurrentWorkflowReportId(): number | undefined {
+        return this.workflowReport?.id;
+    }
+
     public abstract setReportingYear(year: string): void;
 
     /**

@@ -35,38 +35,38 @@
                         }}</mat-icon></button>
             </div>
             <mat-nav-list class="nav">
-                <a mat-list-item [routerLink]="['overview']" routerLinkActive="active" matTooltip="Protokolle"
+                <a mat-list-item [routerLink]="['overview']" (click)="navigateTo('overview', $event)" routerLinkActive="active" matTooltip="Protokolle"
                     [matTooltipDisabled]="this.opened" matTooltipPosition="right"
                     [routerLinkActiveOptions]="{exact:true}">
                     <mat-icon matListItemIcon>info</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Protokolle</span>
                 </a>
 
-                <a mat-list-item [routerLink]="['general']" routerLinkActive="active" matTooltip="Allgemein"
+                <a mat-list-item [routerLink]="['general']" (click)="navigateTo('general', $event)" routerLinkActive="active" matTooltip="Allgemein"
                     [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>description</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Allgemein</span>
                 </a>
 
-                <a mat-list-item [routerLink]="['strategy']" routerLinkActive="active" matTooltip="Import-Strategie"
+                <a mat-list-item [routerLink]="['strategy']" (click)="navigateTo('strategy', $event)" routerLinkActive="active" matTooltip="Import-Strategie"
                     [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>tune</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Import-Strategie</span>
                 </a>
 
-                <a mat-list-item [routerLink]="['mapping']" routerLinkActive="active" matTooltip="Mapping"
+                <a mat-list-item [routerLink]="['mapping']" (click)="navigateTo('mapping', $event)" routerLinkActive="active" matTooltip="Mapping"
                     [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>code</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Mapping</span>
                 </a>
 
-                <a mat-list-item [routerLink]="['test']" routerLinkActive="active" matTooltip="Test & Debug"
+                <a mat-list-item [routerLink]="['test']" (click)="navigateTo('test', $event)" routerLinkActive="active" matTooltip="Test & Debug"
                     [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>bug_report</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Test & Debug</span>
                 </a>
 
-                <a mat-list-item [routerLink]="['action']" routerLinkActive="active"
+                <a mat-list-item [routerLink]="['action']" (click)="navigateTo('action', $event)" routerLinkActive="active"
                     matTooltip="Aktionen" [matTooltipDisabled]="this.opened" matTooltipPosition="right">
                     <mat-icon matListItemIcon>publish</mat-icon>
                     <span matListItemTitle class="nav-text" [class.hide]="!this.opened">

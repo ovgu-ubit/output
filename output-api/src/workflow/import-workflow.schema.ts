@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { BadRequestException } from "@nestjs/common";
-import { Strategy } from "../../../output-interfaces/Workflow";
+import { ImportStrategy } from "../../../output-interfaces/Workflow";
 
 const StrategyTypeSchema = z.enum([
   "FILE_UPLOAD",
@@ -12,12 +12,12 @@ const StrategyTypeSchema = z.enum([
 
 const StrategyFromApi: Record<
   z.infer<typeof StrategyTypeSchema>,
-  Strategy
+  ImportStrategy
 > = {
-  FILE_UPLOAD: Strategy.FILE_UPLOAD,
-  URL_LOOKUP_AND_RETRIEVE: Strategy.URL_LOOKUP_AND_RETRIEVE,
-  URL_QUERY_OFFSET: Strategy.URL_QUERY_OFFSET,
-  URL_DOI: Strategy.URL_DOI,
+  FILE_UPLOAD: ImportStrategy.FILE_UPLOAD,
+  URL_LOOKUP_AND_RETRIEVE: ImportStrategy.URL_LOOKUP_AND_RETRIEVE,
+  URL_QUERY_OFFSET: ImportStrategy.URL_QUERY_OFFSET,
+  URL_DOI: ImportStrategy.URL_DOI,
 };
 
 const StrategyTypeFromNumber = (v: unknown) => {

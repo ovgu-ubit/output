@@ -94,3 +94,101 @@ describe('JSONataImportService.setVariables', () => {
         jest.useRealTimers();
     });
 });
+
+describe('JSONataImportService workflow report status', () => {
+    let service: JSONataImportService;
+    let workflowReportService: {
+        updateStatus: jest.Mock;
+        finish: jest.Mock;
+        write: jest.Mock;
+    };
+    let http: { get: jest.Mock };
+
+    beforeEach(() => {
+        workflowReportService = {
+            updateStatus: jest.fn(async (_id, report) => ({ id: 11, params: {}, ...report })),
+            finish: jest.fn(async (_id, report) => ({ id: 11, ...report })),
+            write: jest.fn(async () => undefined),
+        };
+        http = {
+            get: jest.fn(),
+        };
+
+        service = new JSONataImportService(
+            {
+                checkDOIorTitleAlreadyExists: jest.fn(async () => false),
+            } as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {
+                get: jest.fn(async () => null),
+            } as any,
+            workflowReportService as any,
+            http as any,
+        );
+
+        (service as any).workflowReport = { id: 11, params: {} };
+        (service as any).importDefinition = {
+            strategy: {
+                get_count: '$.count',
+                get_items: '$.items',
+            },
+        };
+        (service as any).url = 'https://example.test/items';
+        (service as any).url_count = 'https://example.test/count';
+        (service as any).max_res_name = 'rows';
+        (service as any).max_res = 20;
+        (service as any).offset_count = 0;
+        (service as any).offset_name = 'offset';
+        (service as any).offset_start = 0;
+        (service as any).mode = 'offset';
+    });
+
+    it('persists started and terminal DB status when no items are found', async () => {
+        jest.spyOn(service as any, 'retrieveCountRequest').mockReturnValue(of({ data: { count: 0 } } as any));
+        jest.spyOn(service as any, 'getNumber').mockResolvedValue(0);
+        jest.spyOn(service as any, 'request').mockReturnValue(of({ data: { items: [] } } as any));
+        jest.spyOn(service as any, 'getData').mockResolvedValue([]);
+
+        await service.import(false, 'tester', true);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        expect(workflowReportService.updateStatus).toHaveBeenCalledWith(11, expect.objectContaining({
+            by_user: 'tester',
+            dry_run: true,
+            progress: -1,
+            status: expect.stringContaining('Started on '),
+        }));
+        expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
+            status: 'Nothing to import',
+        }));
+    });
+
+    it('persists live import progress before finishing', async () => {
+        jest.spyOn(service as any, 'retrieveCountRequest').mockReturnValue(of({ data: { count: 1 } } as any));
+        jest.spyOn(service as any, 'getNumber').mockResolvedValue(1);
+        jest.spyOn(service as any, 'request').mockReturnValue(of({ data: { items: [{ title: 'First' }] } } as any));
+        jest.spyOn(service as any, 'getData').mockResolvedValue([{ title: 'First', doi: '10.1/test' }]);
+        jest.spyOn(service as any, 'processImportItem').mockResolvedValue(undefined);
+
+        await service.import(false, 'tester', false);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        expect(workflowReportService.updateStatus).toHaveBeenCalledWith(11, expect.objectContaining({
+            progress: 1,
+        }));
+        expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
+            status: 'Successfull import',
+        }));
+    });
+});

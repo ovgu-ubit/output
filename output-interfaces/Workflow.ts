@@ -12,25 +12,39 @@ export interface Workflow {
     description?: string;
     mapping?: string;
     locked_at?: Date;
-}
-
-export interface ImportWorkflow extends Workflow {
-    strategy_type?: Strategy;
-    strategy?: any;
     last_run_status?: string;
     last_run_finished_at?: Date;
     last_run_report_id?: number;
     last_run_log_link?: string;
 }
 
+export interface ImportWorkflow extends Workflow {
+    strategy_type?: ImportStrategy;
+    strategy?: any;
+}
+
+export interface ExportWorkflow extends Workflow {
+    strategy_type?: ExportStrategy;
+    strategy?: any;
+}
+
+export type ExportFormat = 'json' | 'xml' | 'csv' | 'xlsx';
+
+export type ExportDisposition = 'inline' | 'attachment';
+
 export interface WorkflowReport {
     id?: number;
-    workflow?: ImportWorkflow;
+    workflow_type?: WorkflowType;
+    workflow?: ImportWorkflow | ExportWorkflow;
+    importWorkflow?: ImportWorkflow;
+    exportWorkflow?: ExportWorkflow;
     workflowId?: number;
     params?: unknown;
     by_user?: string;
     status?: string;
+    progress?: number;
     started_at?: Date;
+    updated_at?: Date;
     finished_at?: Date;
     summary?: unknown;
     dry_run?: boolean;
@@ -62,7 +76,7 @@ export interface PublicationChange {
 export interface ImportWorkflowTestResult {
     meta: {
         workflow_id: string;
-        strategy_type: Strategy;
+        strategy_type: ImportStrategy;
         pos: number;
         strategy: any;
         timestamp: Date;
@@ -83,11 +97,15 @@ export interface ImportWorkflowTestResult {
     }
 }
 
-export enum Strategy {
+export enum ImportStrategy {
     FILE_UPLOAD,
     URL_LOOKUP_AND_RETRIEVE,
     URL_QUERY_OFFSET,
     URL_DOI
+}
+
+export enum ExportStrategy {
+    HTTP_RESPONSE
 }
 
 export enum WorkflowReportItemLevel {
@@ -95,4 +113,9 @@ export enum WorkflowReportItemLevel {
     WARNING = 'warning',
     INFO = 'info',
     DEBUG = 'debug',
+}
+
+export enum WorkflowType {
+    IMPORT = 'import',
+    EXPORT = 'export',
 }

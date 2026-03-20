@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { Strategy } from '../../../output-interfaces/Workflow';
+import { ImportStrategy } from '../../../output-interfaces/Workflow';
 import { validateImportWorkflow } from './import-workflow.schema';
 
 describe('validateImportWorkflow', () => {
@@ -7,7 +7,7 @@ describe('validateImportWorkflow', () => {
         const workflow = {
             workflow_id: 'wf-lookup',
             label: 'Lookup import',
-            strategy_type: Strategy.URL_LOOKUP_AND_RETRIEVE,
+            strategy_type: ImportStrategy.URL_LOOKUP_AND_RETRIEVE,
             mapping: '$',
             strategy: {
                 url_lookup: 'https://example.org/search?term=[search_tags]',
@@ -44,7 +44,7 @@ describe('validateImportWorkflow', () => {
         const workflow = {
             workflow_id: 'wf-lookup',
             label: 'Lookup import',
-            strategy_type: Strategy.URL_LOOKUP_AND_RETRIEVE,
+            strategy_type: ImportStrategy.URL_LOOKUP_AND_RETRIEVE,
             mapping: '$',
             strategy: {
                 url_lookup: 'https://example.org/search',
