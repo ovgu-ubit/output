@@ -264,7 +264,20 @@ export class WorkflowService {
     }
 
     async deleteExports(ids: number[]) {
-        return this.deleteWorkflows(this.exportRepository, ids);
+        const workflows = await this.exportRepository.findBy(ids.map(id => ({ id })) as never);
+        if (workflows.length !== ids.length) {
+            throw new BadRequestException('Error: at least one workflow ID does not exist');
+        }
+        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
+            throw new BadRequestException('Error: only draft workflows can be deleted');
+        }
+
+        await Promise.all(workflows
+            .map((workflow) => workflow.id)
+            .filter((id): id is number => !!id)
+            .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.EXPORT)));
+
+        return this.exportRepository.remove(workflows);
     }
 
     async status(_id: number) {

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { ExportStrategy, ImportStrategy } from '../../../output-interfaces/Workflow';
+import { ExportStrategy, ImportStrategy, WorkflowType } from '../../../output-interfaces/Workflow';
 import { AppConfigService } from '../config/app-config.service';
 import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataExportService } from './export/jsonata-export.service';
@@ -336,10 +336,12 @@ describe('WorkflowService', () => {
         exportRepository.findBy!.mockResolvedValue([
             { id: 4, published_at: null, deleted_at: null } as ExportWorkflow,
         ]);
+        workflowReportService.deleteReportsForWorkflow.mockResolvedValue(undefined);
         (exportRepository.remove as jest.Mock).mockResolvedValue([{ id: 4 }]);
 
         await service.deleteExports([4]);
 
+        expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(4, WorkflowType.EXPORT);
         expect(exportRepository.remove).toHaveBeenCalledWith([
             expect.objectContaining({ id: 4 }),
         ]);
