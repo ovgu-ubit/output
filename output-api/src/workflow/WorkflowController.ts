@@ -40,15 +40,15 @@ export class WorkflowController {
   @Get("import/:id")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  get_import(@Param('id') id: number) {
-    return this.workflowService.getImport(id);
+  get_import(@Param('id') id: number, @Req() req) {
+    return this.workflowService.getImport(id, true, req.user?.username);
   }
 
   @Get("export/:id")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  get_export(@Param('id') id: number) {
-    return this.workflowService.getExport(id);
+  get_export(@Param('id') id: number, @Req() req) {
+    return this.workflowService.getExport(id, true, req.user?.username);
   }
 
   @Get("import/:id/export")
@@ -242,8 +242,8 @@ export class WorkflowController {
       }
     }
   })
-  save_import(@Body() body: ImportWorkflow) {
-    return this.workflowService.saveImport(body);
+  save_import(@Body() body: ImportWorkflow, @Req() req) {
+    return this.workflowService.saveImport(body, req.user?.username);
   }
 
   @Post("export")
@@ -265,8 +265,8 @@ export class WorkflowController {
       } satisfies IExportWorkflow
     }
   })
-  save_export(@Body() body: ExportWorkflow) {
-    return this.workflowService.saveExport(body);
+  save_export(@Body() body: ExportWorkflow, @Req() req) {
+    return this.workflowService.saveExport(body, req.user?.username);
   }
 
   @Get("reports")

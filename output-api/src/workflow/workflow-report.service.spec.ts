@@ -10,10 +10,13 @@ describe('WorkflowReportService', () => {
     beforeEach(() => {
         workflowReportRepository = {
             save: jest.fn(async (value) => value),
+            update: jest.fn(async () => ({ affected: 1 })),
             createQueryBuilder: jest.fn(),
             findOneBy: jest.fn(),
         };
-        workflowReportItemRepository = {};
+        workflowReportItemRepository = {
+            save: jest.fn(async (value) => value),
+        };
         configService = {
             get: jest.fn(async () => 5),
         };
@@ -85,6 +88,36 @@ describe('WorkflowReportService', () => {
         }));
         expect(report.progress).toBe(-1);
         expect(report.status).toBe('Started on Thu Mar 19 2026 08:00:00 GMT+0100');
+    });
+
+    it('touches only updated_at when writing report log items', async () => {
+        const timestamp = new Date('2026-03-20T10:00:00.000Z');
+
+        const item = await service.write(31, {
+            timestamp,
+            level: 'warning' as any,
+            code: 'warn-code',
+            message: 'Something happened',
+        } as any);
+
+        expect(workflowReportRepository.update).toHaveBeenCalledWith(
+            { id: 31 },
+            { updated_at: expect.any(Date) }
+        );
+        expect(workflowReportRepository.save).not.toHaveBeenCalled();
+        expect(workflowReportItemRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflowReport: { id: 31 },
+            timestamp,
+            level: 'warning',
+            code: 'warn-code',
+            message: 'Something happened',
+        }));
+        expect(item).toMatchObject({
+            workflowReport: { id: 31 },
+            timestamp,
+            code: 'warn-code',
+            message: 'Something happened',
+        });
     });
 
     it('returns initialized when a workflow has no reports', async () => {

@@ -71,11 +71,13 @@ export class WorkflowReportService {
     }
 
     async write(workflowReportId: number, content: WorkflowReportItem): Promise<WorkflowReportItem> {
-        const workflowReport = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
-        if (!workflowReport) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
-        await this.workflowReportRepository.save(workflowReport);
+        const touchResult = await this.workflowReportRepository.update(
+            { id: workflowReportId },
+            { updated_at: new Date() }
+        );
+        if (!touchResult.affected) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
         return this.workflowReportItemRepository.save({
-            workflowReport,
+            workflowReport: { id: workflowReportId } as WorkflowReport,
             timestamp: content.timestamp ?? new Date(),
             level: this.normalizeLevel(content.level),
             code: content.code,

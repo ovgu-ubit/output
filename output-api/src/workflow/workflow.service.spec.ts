@@ -148,6 +148,126 @@ describe('WorkflowService', () => {
         expect(workflowReportService.deleteReportsForWorkflow).not.toHaveBeenCalled();
     });
 
+    it('allows saving a locked draft for the same user who acquired the lock', async () => {
+        const draftWorkflow = {
+            id: 22,
+            workflow_id: 'wf-22',
+            label: 'Draft',
+            version: 3,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: null,
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow;
+
+        importRepository.findOne!.mockResolvedValue(draftWorkflow);
+        (importRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        importRepository.findOneBy!.mockResolvedValue({
+            ...draftWorkflow,
+            locked_at: new Date(),
+        } as ImportWorkflow);
+        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+
+        await service.getImport(22, true, 'alice');
+        await service.saveImport({
+            id: 22,
+            workflow_id: 'tampered-id',
+            version: 99,
+            description: 'updated',
+        } as ImportWorkflow, 'alice');
+
+        expect(importRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            id: 22,
+            workflow_id: 'wf-22',
+            version: 3,
+            description: 'updated',
+        }));
+    });
+
+    it('rejects saving a locked draft for another user', async () => {
+        importRepository.findOneBy!.mockResolvedValue({
+            id: 23,
+            workflow_id: 'wf-23',
+            label: 'Draft',
+            version: 1,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow);
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+
+        await expect(service.saveImport({ id: 23, description: 'blocked' } as ImportWorkflow, 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(importRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('allows unlock-only requests even while a draft is locked', async () => {
+        importRepository.findOneBy!.mockResolvedValue({
+            id: 24,
+            workflow_id: 'wf-24',
+            label: 'Draft',
+            version: 1,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow);
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
+
+        await expect(service.saveImport({ id: 24, locked_at: null } as ImportWorkflow, 'mallory')).resolves.toBeDefined();
+    });
+
+    it('checks published workflow uniqueness against the stored workflow_id', async () => {
+        const draftWorkflow = {
+            id: 25,
+            workflow_id: 'wf-25',
+            label: 'Draft',
+            version: 2,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: null,
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow;
+
+        importRepository.findOneBy!
+            .mockResolvedValueOnce(draftWorkflow)
+            .mockResolvedValueOnce({
+                id: 99,
+                workflow_id: 'wf-25',
+                published_at: new Date(),
+            } as ImportWorkflow);
+
+        await expect(service.saveImport({
+            id: 25,
+            workflow_id: 'fake-client-id',
+            published_at: new Date(),
+        } as ImportWorkflow, 'alice')).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(importRepository.findOneBy).toHaveBeenNthCalledWith(2, expect.objectContaining({
+            workflow_id: 'wf-25',
+        }));
+    });
+
     it('validates uploaded import workflows before persisting', async () => {
         const file = {
             buffer: Buffer.from(JSON.stringify({
@@ -378,7 +498,7 @@ describe('WorkflowService', () => {
             return undefined;
         });
 
-        const workflow = await service.getImport(58);
+        const workflow = await service.getImport(58, true, 'alice');
 
         expect(importRepository.update).toHaveBeenCalledWith(expect.objectContaining({
             id: 58,

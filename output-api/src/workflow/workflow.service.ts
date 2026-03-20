@@ -19,6 +19,7 @@ import { WorkflowReportService } from './workflow-report.service';
 @Injectable()
 export class WorkflowService {
     private readonly activeExecutionKeys = new Set<string>();
+    private readonly editLockOwners = new Map<string, string>();
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
@@ -38,12 +39,12 @@ export class WorkflowService {
         return this.exportRepository.find(this.getWorkflowOptions(type));
     }
 
-    async getImport(id?: number, lock = true) {
-        return this.getWorkflow(this.importRepository, id, lock);
+    async getImport(id?: number, lock = true, user?: string) {
+        return this.getWorkflow(this.importRepository, id, WorkflowType.IMPORT, lock, user);
     }
 
-    async getExport(id?: number, lock = true) {
-        return this.getWorkflow(this.exportRepository, id, lock);
+    async getExport(id?: number, lock = true, user?: string) {
+        return this.getWorkflow(this.exportRepository, id, WorkflowType.EXPORT, lock, user);
     }
 
     async importImport(file: Express.Multer.File) {
@@ -71,24 +72,26 @@ export class WorkflowService {
         return this.saveImport(obj);
     }
 
-    async saveImport(workflow: ImportWorkflow) {
+    async saveImport(workflow: ImportWorkflow, user?: string) {
         let toSave = workflow;
         let shouldDeleteArchivedWorkflowReports = false;
         if (workflow.id) { //update
             const db = await this.importRepository.findOneBy({ id: workflow.id })
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
+            await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.IMPORT, user);
+            const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at; // optional: plus equality checks
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, deleted_at: new Date(), locked_at: workflow.locked_at };
+                toSave = { ...db, workflow_id: db.workflow_id, version: db.version, deleted_at: new Date(), locked_at: nextLockedAt };
                 shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
                 //does another published version exist?
-                const other = await this.importRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) })
+                const other = await this.importRepository.findOneBy({ workflow_id: db.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) })
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = { ...db, published_at: new Date(), locked_at: workflow.locked_at }
+                else toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt }
             } else {
-                toSave = { ...db, ...workflow, locked_at: workflow.locked_at };
+                toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }
         } else {
             toSave = {
@@ -108,6 +111,7 @@ export class WorkflowService {
         if (!validated) return;
 
         const saved = await this.importRepository.save(toSave);
+        this.syncEditLockOwner(saved, WorkflowType.IMPORT, user);
         if (shouldDeleteArchivedWorkflowReports && saved.id) {
             await this.workflowReportService.deleteReportsForWorkflow(saved.id);
         }
@@ -139,23 +143,25 @@ export class WorkflowService {
         return this.saveExport(obj);
     }
 
-    async saveExport(workflow: ExportWorkflow) {
+    async saveExport(workflow: ExportWorkflow, user?: string) {
         let toSave = workflow;
         let shouldDeleteArchivedWorkflowReports = false;
         if (workflow.id) {
             const db = await this.exportRepository.findOneBy({ id: workflow.id });
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
+            await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.EXPORT, user);
+            const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at;
                 if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, deleted_at: new Date(), locked_at: workflow.locked_at };
+                toSave = { ...db, workflow_id: db.workflow_id, version: db.version, deleted_at: new Date(), locked_at: nextLockedAt };
                 shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
-                const other = await this.exportRepository.findOneBy({ workflow_id: workflow.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) });
+                const other = await this.exportRepository.findOneBy({ workflow_id: db.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) });
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = { ...db, published_at: new Date(), locked_at: workflow.locked_at };
+                else toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt };
             } else {
-                toSave = { ...db, ...workflow, locked_at: workflow.locked_at};
+                toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }
         } else {
             toSave = {
@@ -175,6 +181,7 @@ export class WorkflowService {
         toSave = validateExportWorkflow(toSave);
 
         const saved = await this.exportRepository.save(toSave);
+        this.syncEditLockOwner(saved, WorkflowType.EXPORT, user);
         if (shouldDeleteArchivedWorkflowReports && saved.id) {
             await this.workflowReportService.deleteReportsForWorkflow(saved.id, WorkflowType.EXPORT);
         }
@@ -272,6 +279,9 @@ export class WorkflowService {
             .map((workflow) => workflow.id)
             .filter((id): id is number => !!id)
             .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.IMPORT)));
+        workflows.forEach((workflow) => {
+            if (workflow.id) this.releaseEditLock(WorkflowType.IMPORT, workflow.id);
+        });
 
         return this.importRepository.remove(workflows);
     }
@@ -289,6 +299,9 @@ export class WorkflowService {
             .map((workflow) => workflow.id)
             .filter((id): id is number => !!id)
             .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.EXPORT)));
+        workflows.forEach((workflow) => {
+            if (workflow.id) this.releaseEditLock(WorkflowType.EXPORT, workflow.id);
+        });
 
         return this.exportRepository.remove(workflows);
     }
@@ -324,7 +337,9 @@ export class WorkflowService {
     private async getWorkflow<T extends { id?: number; published_at?: Date | null; deleted_at?: Date | null; locked_at?: Date | null }>(
         repository: Repository<T>,
         id: number,
+        workflowType: WorkflowType,
         lock = true,
+        user?: string,
     ) {
         const res = await repository.findOne({ where: { id } as never, withDeleted: true });
         if (!res) throw new NotFoundException();
@@ -333,8 +348,15 @@ export class WorkflowService {
         const timeoutMs = await this.getLockTimeoutMs();
         const now = new Date();
         const isExpired = !!res.locked_at && (now.getTime() - res.locked_at.getTime()) > timeoutMs;
+        const lockKey = this.getEditLockKey(workflowType, res.id);
 
         if (res.locked_at && !isExpired) {
+            if (user && this.editLockOwners.get(lockKey) === user) {
+                return {
+                    ...res,
+                    locked_at: undefined,
+                };
+            }
             throw new ConflictException('Workflow is currently locked.');
         }
 
@@ -345,6 +367,9 @@ export class WorkflowService {
         const updateResult = await repository.update(lockCriteria as never, { locked_at: now } as never);
         if (!updateResult.affected) {
             throw new ConflictException('Workflow is currently locked.');
+        }
+        if (user && res.id) {
+            this.editLockOwners.set(lockKey, user);
         }
 
         return {
@@ -452,6 +477,71 @@ export class WorkflowService {
         const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
         const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5;
         return resolvedMinutes * 60 * 1000;
+    }
+
+    private async ensureDraftWorkflowCanBeSaved<T extends { id?: number; published_at?: Date | null; deleted_at?: Date | null; locked_at?: Date | null }>(
+        db: T,
+        workflow: T,
+        workflowType: WorkflowType,
+        user?: string,
+    ): Promise<void> {
+        if (db.published_at || db.deleted_at || !db.id) return;
+
+        if (this.isUnlockOnlyRequest(workflow)) {
+            this.releaseEditLock(workflowType, db.id);
+            return;
+        }
+
+        if (!db.locked_at) {
+            this.releaseEditLock(workflowType, db.id);
+            return;
+        }
+
+        const timeoutMs = await this.getLockTimeoutMs();
+        if ((Date.now() - db.locked_at.getTime()) > timeoutMs) {
+            this.releaseEditLock(workflowType, db.id);
+            return;
+        }
+
+        const owner = this.editLockOwners.get(this.getEditLockKey(workflowType, db.id));
+        if (!user || owner !== user) {
+            throw new ConflictException('Workflow is currently locked.');
+        }
+    }
+
+    private isUnlockOnlyRequest<T extends { id?: number; locked_at?: Date | null }>(workflow: T): boolean {
+        return !!workflow?.id
+            && workflow.locked_at === null
+            && Object.keys(workflow).every((key) => key === 'id' || key === 'locked_at');
+    }
+
+    private syncEditLockOwner<T extends { id?: number; locked_at?: Date | null; published_at?: Date | null; deleted_at?: Date | null }>(
+        workflow: T,
+        workflowType: WorkflowType,
+        user?: string,
+    ): void {
+        if (!workflow.id) return;
+        if (!workflow.locked_at || workflow.published_at || workflow.deleted_at) {
+            this.releaseEditLock(workflowType, workflow.id);
+            return;
+        }
+        if (user) {
+            this.editLockOwners.set(this.getEditLockKey(workflowType, workflow.id), user);
+        }
+    }
+
+    private resolveNextLockState(currentLockedAt?: Date | null, requestedLockedAt?: Date | null): Date | null {
+        if (requestedLockedAt === null) return null;
+        if (requestedLockedAt instanceof Date) return requestedLockedAt;
+        return currentLockedAt ?? null;
+    }
+
+    private releaseEditLock(workflowType: WorkflowType, workflowId: number): void {
+        this.editLockOwners.delete(this.getEditLockKey(workflowType, workflowId));
+    }
+
+    private getEditLockKey(workflowType: WorkflowType, workflowId?: number): string {
+        return `${workflowType}:${workflowId ?? 'unknown'}`;
     }
 
     private isAbortError(error: unknown): boolean {
