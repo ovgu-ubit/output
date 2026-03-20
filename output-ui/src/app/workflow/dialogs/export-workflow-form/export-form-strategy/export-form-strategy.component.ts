@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { filter, takeUntil } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';
 
 type ExportStrategyData = {
@@ -17,14 +19,16 @@ type ExportStrategyData = {
 
 @Component({
   selector: 'app-export-form-strategy',
-  imports: [
-    SharedModule
-  ],
+  imports: [SharedModule],
   templateUrl: './export-form-strategy.component.html',
   styleUrl: './export-form-strategy.component.css',
 })
-export class ExportFormStrategyComponent implements OnInit {
-  constructor(private formBuilder: FormBuilder, private facade: ExportFormFacade) { }
+export class ExportFormStrategyComponent implements OnInit, WorkflowFormPage {
+  constructor(
+    private formBuilder: FormBuilder,
+    private facade: ExportFormFacade,
+    private snackBar: MatSnackBar,
+  ) { }
 
   selectionForm: FormGroup;
   strategyForm: FormGroup;
@@ -76,6 +80,8 @@ export class ExportFormStrategyComponent implements OnInit {
           item_name: strategy.item_name ?? 'item',
           sheet_name: strategy.sheet_name ?? 'Export',
         }, { emitEvent: false });
+        this.selectionForm.markAsPristine();
+        this.strategyForm.markAsPristine();
 
         if (this.entity.published_at || this.entity.deleted_at) {
           this.selectionForm.disable();
@@ -97,19 +103,42 @@ export class ExportFormStrategyComponent implements OnInit {
     return this.strategyForm.controls.format.value;
   }
 
-  action() {
+  async action() {
+    await this.persistFormToBackend();
+  }
+
+  reset() {
+    this.resetFormToFacade();
+  }
+
+  hasPendingChanges(): boolean {
+    return (this.selectionForm?.dirty ?? false) || (this.strategyForm?.dirty ?? false);
+  }
+
+  async persistFormToBackend(): Promise<boolean> {
     if (this.selectionForm.invalid || this.strategyForm.invalid) {
       this.selectionForm.markAllAsTouched();
       this.strategyForm.markAllAsTouched();
-      return;
+      return false;
     }
+
     this.facade.patch({
       strategy_type: this.selectionForm.controls.strategy.value,
       strategy: this.buildStrategyPayload(this.strategyForm.getRawValue())
     });
+
+    try {
+      await firstValueFrom(this.facade.save());
+      this.selectionForm.markAsPristine();
+      this.strategyForm.markAsPristine();
+      return true;
+    } catch {
+      this.showSaveError();
+      return false;
+    }
   }
 
-  reset() {
+  resetFormToFacade(): void {
     const strategy = this.getStrategy(this.entity);
     this.selectionForm.patchValue({ strategy: this.entity.strategy_type ?? ExportStrategy.HTTP_RESPONSE }, { emitEvent: false });
     this.strategyForm.patchValue({
@@ -121,6 +150,8 @@ export class ExportFormStrategyComponent implements OnInit {
       item_name: strategy.item_name ?? 'item',
       sheet_name: strategy.sheet_name ?? 'Export',
     }, { emitEvent: false });
+    this.selectionForm.markAsPristine();
+    this.strategyForm.markAsPristine();
   }
 
   private buildStrategyPayload(value: Record<string, unknown>): Record<string, unknown> {
@@ -159,5 +190,13 @@ export class ExportFormStrategyComponent implements OnInit {
 
   private getStrategy(entity: ExportWorkflow) {
     return (entity.strategy ?? {}) as ExportStrategyData;
+  }
+
+  private showSaveError() {
+    this.snackBar.open(
+      'Speichern fehlgeschlagen. Bitte Pflichtfelder Bezeichnung und Version pruefen.',
+      'OK',
+      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
+    );
   }
 }

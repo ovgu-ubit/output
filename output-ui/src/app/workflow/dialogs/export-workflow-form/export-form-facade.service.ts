@@ -6,6 +6,7 @@ import { ExportWorkflowService } from "../../export-workflow.service";
 @Injectable()
 export class ExportFormFacade {
   private readonly exportSubject = new BehaviorSubject<ExportWorkflow | null>(null);
+  private persistedSnapshot: string | null = null;
   readonly export$ = this.exportSubject.asObservable();
   readonly destroy$ = new Subject<void>();
 
@@ -13,7 +14,10 @@ export class ExportFormFacade {
 
   load(id: number) {
     return this.api.getOne(id).pipe(
-      tap(wf => this.exportSubject.next(wf))
+      tap(wf => {
+        this.exportSubject.next(wf);
+        this.persistedSnapshot = this.snapshot(wf);
+      })
     );
   }
 
@@ -25,6 +29,7 @@ export class ExportFormFacade {
       published_at: null
     };
     this.exportSubject.next(wf);
+    this.persistedSnapshot = this.snapshot(wf);
     return wf;
   }
 
@@ -51,14 +56,28 @@ export class ExportFormFacade {
     this.exportSubject.next({ ...cur, ...p });
   }
 
+  hasUnsavedChanges(): boolean {
+    return this.snapshot(this.exportSubject.value) !== this.persistedSnapshot;
+  }
+
   save() {
     const cur = this.exportSubject.value;
     if (!cur) return of(null);
     if (cur.id) return this.api.update(cur).pipe(
-      tap(updated => this.exportSubject.next(updated))
+      tap(updated => {
+        this.exportSubject.next(updated);
+        this.persistedSnapshot = this.snapshot(updated);
+      })
     );
     return this.api.add(cur).pipe(
-      tap(updated => this.exportSubject.next(updated))
+      tap(updated => {
+        this.exportSubject.next(updated);
+        this.persistedSnapshot = this.snapshot(updated);
+      })
     );
+  }
+
+  private snapshot(value: ExportWorkflow | null): string | null {
+    return value ? JSON.stringify(value) : null;
   }
 }
