@@ -31,11 +31,12 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return { identifiers: true };
     }
 
-    public async save(pub: GreaterEntity) {
-        return this.update(pub);
+    public async save(pub: GreaterEntity, user?: string) {
+        return this.update(pub, user);
     }
 
-    public async update(ge: any) {
+    public async update(ge: any, user?: string) {
+        await this.ensureEntityCanBeSaved(ge, user);
         let orig: GreaterEntity = null;
         if (ge.id) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
         if (ge.identifiers) {
@@ -192,4 +193,3 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return await this.repository.delete(insts.map(p => p.id));
     }
 }
-

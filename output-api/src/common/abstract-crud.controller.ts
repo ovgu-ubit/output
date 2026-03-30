@@ -19,7 +19,7 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     @UseGuards(AccessGuard)
     @ApiResponse({ type: Object })
     async one(@Query('id') id: number, @Req() request: Request): Promise<TEntity> {
-        return this.getSingleEntity(id, this.isWriter(request));
+        return this.getSingleEntity(id, this.isWriter(request), this.getUsername(request));
     }
 
     @Post()
@@ -48,8 +48,8 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
             },
         },
     })
-    async update(@Body() body: TEntity) {
-        return this.updateEntity(body);
+    async update(@Body() body: TEntity, @Req() request: Request) {
+        return this.updateEntity(body, this.getUsername(request));
     }
 
     @Delete()
@@ -67,8 +67,8 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
         return this.service.save(body);
     }
 
-    protected updateEntity(body: TEntity) {
-        return this.service.update(body);
+    protected updateEntity(body: TEntity, user?: string) {
+        return this.service.update(body, user);
     }
 
     protected deleteEntities(body: TEntity[]) {
@@ -79,11 +79,15 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
         return this.service.get();
     }
 
-    protected getSingleEntity(id: number, writer: boolean) {
-        return this.service.one(id, writer);
+    protected getSingleEntity(id: number, writer: boolean, user?: string) {
+        return this.service.one(id, writer, user);
     }
 
     protected isWriter(request: Request): boolean {
         return request?.['user']?.['write'] ?? false;
+    }
+
+    protected getUsername(request: Request): string | undefined {
+        return request?.['user']?.['username'];
     }
 }
