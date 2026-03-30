@@ -489,11 +489,6 @@ export class WorkflowService {
     ): Promise<void> {
         if (db.published_at || db.deleted_at || !db.id) return;
 
-        if (this.isUnlockOnlyRequest(workflow)) {
-            this.releaseEditLock(workflowType, db.id);
-            return;
-        }
-
         if (!db.locked_at) {
             this.releaseEditLock(workflowType, db.id);
             return;
@@ -506,6 +501,14 @@ export class WorkflowService {
         }
 
         const owner = this.editLockOwners.get(this.getEditLockKey(workflowType, db.id));
+        if (this.isUnlockOnlyRequest(workflow)) {
+            if (user && owner === user) {
+                this.releaseEditLock(workflowType, db.id);
+                return;
+            }
+            throw new ConflictException('Workflow is currently locked.');
+        }
+
         if (!user || owner !== user) {
             throw new ConflictException('Workflow is currently locked.');
         }

@@ -217,10 +217,48 @@ describe('WorkflowService', () => {
         expect(importRepository.save).not.toHaveBeenCalled();
     });
 
-    it('allows unlock-only requests even while a draft is locked', async () => {
+    it('allows unlock-only requests for the user who owns the lock', async () => {
+        const lockedAt = new Date();
+
         importRepository.findOneBy!.mockResolvedValue({
             id: 24,
             workflow_id: 'wf-24',
+            label: 'Draft',
+            version: 1,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: lockedAt,
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow);
+        importRepository.findOne!.mockResolvedValue({
+            id: 24,
+            workflow_id: 'wf-24',
+            label: 'Draft',
+            version: 1,
+            strategy_type: ImportStrategy.FILE_UPLOAD,
+            strategy: {},
+            mapping: '$',
+            locked_at: null,
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow);
+        (importRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
+
+        await service.getImport(24, true, 'alice');
+        await expect(service.saveImport({ id: 24, locked_at: null } as ImportWorkflow, 'alice')).resolves.toBeDefined();
+    });
+
+    it('rejects unlock-only requests for another user while a draft is locked', async () => {
+        importRepository.findOneBy!.mockResolvedValue({
+            id: 25,
+            workflow_id: 'wf-25',
             label: 'Draft',
             version: 1,
             strategy_type: ImportStrategy.FILE_UPLOAD,
@@ -234,15 +272,16 @@ describe('WorkflowService', () => {
             if (key === 'lock_timeout') return 5;
             return undefined;
         });
-        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
 
-        await expect(service.saveImport({ id: 24, locked_at: null } as ImportWorkflow, 'mallory')).resolves.toBeDefined();
+        await expect(service.saveImport({ id: 25, locked_at: null } as ImportWorkflow, 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(importRepository.save).not.toHaveBeenCalled();
     });
 
     it('checks published workflow uniqueness against the stored workflow_id', async () => {
         const draftWorkflow = {
-            id: 25,
-            workflow_id: 'wf-25',
+            id: 26,
+            workflow_id: 'wf-26',
             label: 'Draft',
             version: 2,
             strategy_type: ImportStrategy.FILE_UPLOAD,
@@ -257,18 +296,18 @@ describe('WorkflowService', () => {
             .mockResolvedValueOnce(draftWorkflow)
             .mockResolvedValueOnce({
                 id: 99,
-                workflow_id: 'wf-25',
+                workflow_id: 'wf-26',
                 published_at: new Date(),
             } as ImportWorkflow);
 
         await expect(service.saveImport({
-            id: 25,
+            id: 26,
             workflow_id: 'fake-client-id',
             published_at: new Date(),
         } as ImportWorkflow, 'alice')).rejects.toBeInstanceOf(BadRequestException);
 
         expect(importRepository.findOneBy).toHaveBeenNthCalledWith(2, expect.objectContaining({
-            workflow_id: 'wf-25',
+            workflow_id: 'wf-26',
         }));
     });
 
@@ -356,6 +395,29 @@ describe('WorkflowService', () => {
             workflow_id: 'wf-27',
             version: 3,
         });
+    });
+
+    it('rejects export unlock-only requests for another user while a draft is locked', async () => {
+        exportRepository.findOneBy!.mockResolvedValue({
+            id: 28,
+            workflow_id: 'wf-28',
+            label: 'Draft export',
+            version: 1,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping: '$',
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ExportWorkflow);
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+
+        await expect(service.saveExport({ id: 28, locked_at: null } as ExportWorkflow, 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(exportRepository.save).not.toHaveBeenCalled();
     });
 
     it('starts URL_LOOKUP_AND_RETRIEVE workflows via JSONata import service', async () => {
