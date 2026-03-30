@@ -1,20 +1,22 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
-import { ILike, Repository } from 'typeorm';
+import { Observable } from 'rxjs';
+import { Repository } from 'typeorm';
 import { Invoice } from './Invoice.entity';
 import { CostType } from './CostType.entity';
 import { CostCenter } from './CostCenter.entity';
 import { Publication } from '../publication/core/Publication.entity';
 import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
-import { AppConfigService } from '../config/app-config.service';
+import { CostTypeService } from './cost-type.service';
+import { CostCenterService } from './cost-center.service';
 
 @Injectable()
 export class InvoiceService {
-
-    constructor(@InjectRepository(Invoice) private repository: Repository<Invoice>, private configService: AppConfigService,
-        @InjectRepository(CostType) private ctRepository: Repository<CostType>,
-        @InjectRepository(CostCenter) private ccRepository: Repository<CostCenter>) { }
+    constructor(
+        @InjectRepository(Invoice) private repository: Repository<Invoice>,
+        private costTypeService: CostTypeService,
+        private costCenterService: CostCenterService,
+    ) { }
 
     public get(id: number) {
         return this.repository.findOne({ where: { id } });
@@ -36,120 +38,50 @@ export class InvoiceService {
     }
 
     public getCostTypes() {
-        return this.ctRepository.find();
+        return this.costTypeService.get();
     }
 
-    public getCostTypeIndex(reporting_year: number) {
-        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-
-        const query = this.ctRepository.createQueryBuilder("cost_type")
-            .leftJoin("cost_item", "cost_item", "cost_item.\"costTypeId\"=cost_type.id")
-            .leftJoin("invoice", "invoice", "cost_item.\"invoiceId\"=invoice.id")
-            .leftJoin("invoice.publication", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
-            .select("cost_type.id", "id")
-            .addSelect("cost_type.label", "label")
-            .addSelect("COUNT(DISTINCT publication.id)", "pub_count")
-            .groupBy("cost_type.id")
-            .addGroupBy("cost_type.label")
-
-        return query.getRawMany() as Promise<CostTypeIndex[]>;
+    public getCostTypeIndex(reporting_year: number): Promise<CostTypeIndex[]> {
+        return this.costTypeService.getCostTypeIndex(reporting_year);
     }
 
-    public async getCostType(id: number, writer: boolean) {
-        const ct = await this.ctRepository.findOneBy({ id });
-
-        if (writer && !ct.locked_at) {
-            await this.saveCT([{
-                id: ct.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.saveCT([{
-                id: ct.id,
-                locked_at: null
-            }]);
-            return this.getCostType(id, writer);
-        }
-        return ct;
+    public getCostType(id: number, writer: boolean, user?: string) {
+        return this.costTypeService.one(id, writer, user);
     }
 
-    public saveCT(ct: any[]) {
-        return this.ctRepository.save(ct).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    public saveCT(ct: CostType, user?: string) {
+        return this.costTypeService.save(ct, user);
     }
 
     public deleteCT(cts: CostType[]) {
-        return this.ctRepository.delete(cts.map(p => p.id));
+        return this.costTypeService.delete(cts);
     }
 
     public findOrSaveCT(title: string, dryRun = false): Observable<CostType> {
-        if (!title) return of(null);
-        return from(this.ctRepository.findOne({ where: { label: ILike(title) } })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(dryRun? of(null): this.ctRepository.save({ label: title }))));
-        }));
+        return this.costTypeService.findOrSave(title, dryRun);
     }
 
     public findOrSaveCC(title: string, dryRun = false): Observable<CostCenter> {
-        if (!title) return of(null);
-        return from(this.ccRepository.findOne({ where: [{ label: ILike(title) }, { number: ILike(title) }] })).pipe(concatMap(ge => {
-            return iif(() => !!ge, of(ge), defer(() => from(dryRun ? of(null) : this.ccRepository.save({ label: title }))));
-        }));
+        return this.costCenterService.findOrSave(title, dryRun);
     }
 
     public getCostCenters() {
-        return this.ccRepository.find();
+        return this.costCenterService.get();
     }
 
     public async getCostCenterIndex(reporting_year: number): Promise<CostCenterIndex[]> {
-        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.configService.get('reporting_year'));
-        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        const query = this.ccRepository.createQueryBuilder("cost_center")
-            .leftJoin("invoice", "invoice", "invoice.\"costCenterId\"=cost_center.id")
-            .leftJoin("invoice.publication", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
-            .select("cost_center.id", "id")
-            .addSelect("cost_center.label", "label")
-            .addSelect("cost_center.number", "number")
-            .addSelect("COUNT(DISTINCT publication.id)", "pub_count")
-            .groupBy("cost_center.id")
-            .addGroupBy("cost_center.label")
-            .addGroupBy("cost_center.number")
-
-        //console.log(query.getSql());
-
-        return query.getRawMany() as Promise<CostCenterIndex[]>;
+        return this.costCenterService.getCostCenterIndex(reporting_year);
     }
 
-    public async getCostCenter(id: number, writer: boolean) {
-        const cc = await this.ccRepository.findOne({ where: { id } });
-
-        if (writer && !cc.locked_at) {
-            await this.saveCC([{
-                id: cc.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - cc.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.saveCC([{
-                id: cc.id,
-                locked_at: null
-            }]);
-            return this.getCostCenter(id, writer);
-        }
-        return cc;
+    public getCostCenter(id: number, writer: boolean, user?: string) {
+        return this.costCenterService.one(id, writer, user);
     }
 
-    public saveCC(cc: any[]) {
-        return this.ccRepository.save(cc).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
+    public saveCC(cc: CostCenter, user?: string) {
+        return this.costCenterService.save(cc, user);
     }
 
     public deleteCC(ccs: CostCenter[]) {
-        return this.ccRepository.delete(ccs.map(p => p.id));
+        return this.costCenterService.delete(ccs);
     }
 }
-

@@ -7,6 +7,8 @@ import { CostType } from './CostType.entity';
 import { Invoice } from './Invoice.entity';
 import { InvoiceController } from './InvoiceController';
 import { InvoiceService } from './invoice.service';
+import { CostTypeService } from './cost-type.service';
+import { CostCenterService } from './cost-center.service';
 
 @Module({
   imports: [
@@ -14,7 +16,7 @@ import { InvoiceService } from './invoice.service';
     AppConfigModule
   ],
   controllers: [InvoiceController],
-  providers: [InvoiceService],
-  exports: [InvoiceService, TypeOrmModule]
+  providers: [InvoiceService, CostTypeService, CostCenterService],
+  exports: [InvoiceService, CostTypeService, CostCenterService, TypeOrmModule]
 })
 export class InvoiceModule { }
