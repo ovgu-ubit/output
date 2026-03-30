@@ -1,52 +1,23 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Role } from './Role.entity';
 import { AppConfigService } from '../../config/app-config.service';
+import { AbstractEntityService } from '../../common/abstract-entity.service';
 
 @Injectable()
-export class RoleService {
-
-    constructor(@InjectRepository(Role) private repository: Repository<Role>, private configService:AppConfigService) { }
-
-    public save(pub: any[]) {
-        return this.repository.save(pub).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
-        });
-    }
-
-    public get() {
-        return this.repository.find();
-    }
-
-    public async one(id:number, writer:boolean) {
-        const ct = await this.repository.findOne({where:{id}});
-        if (writer && !ct.locked_at) {
-            await this.save([{
-                id: ct.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - ct.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: ct.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }        
-        return ct;
+export class RoleService extends AbstractEntityService<Role> {
+    constructor(
+        @InjectRepository(Role) repository: Repository<Role>,
+        configService: AppConfigService,
+    ) {
+        super(repository, configService);
     }
 
     public async findOrSave(label: string, dryRun = false): Promise<Role> {
         if (!label) return null;
-        let funder: Role;
-        funder = await this.repository.findOne({ where: { label: ILike('%'+label+'%') } });
-        if (funder || dryRun) return funder;
+        const role:Role = await this.repository.findOne({ where: { label: ILike('%'+label+'%') } });
+        if (role || dryRun) return role;
         else return await this.repository.save({ label }).catch(e => { throw { origin: 'role-service', text: `Role ${label} could not be inserted` }; });
     }
-
-    public delete(insts:Role[]) {
-        return this.repository.delete(insts.map(p => p.id));
-    }
 }
-
