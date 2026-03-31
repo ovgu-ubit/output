@@ -192,11 +192,7 @@ export class StatisticsService {
         query = query.select(field + "::int", "pub_year")
         query = query.groupBy("pub_year")
         if (reporting_years && reporting_years.length > 0) {
-            let clauses = "(";
-            for (const reporting_year of reporting_years) {
-                clauses += field + " =" + reporting_year + " or ";
-            }
-            query = query.where(clauses.substring(0, clauses.length - 4) + ")")
+            query = query.where(`${field}::int IN (:...reportingYears)`, { reportingYears: reporting_years })
         }
         query = query.orderBy("pub_year")
         return query;
@@ -250,111 +246,139 @@ export class StatisticsService {
         if (filterOptions?.publisherId !== undefined) {
             if (filterOptions.publisherId.findIndex(e => e === null) !== -1) {
                 filterOptions.publisherId = filterOptions.publisherId.filter(e => e != null);
-                where='(publication.\"publisherId\" IS NULL';
+                where='(publication."publisherId" IS NULL';
             }
             if (filterOptions.publisherId.length > 0) {
-                if (where) where+=" OR publication.\"publisherId\" IN (:...publisherId))"
-                else where = "publication.\"publisherId\" IN (:...publisherId)"
+                if (where) where+=' OR publication."publisherId" IN (:...publisherId))'
+                else where = 'publication."publisherId" IN (:...publisherId)'
             } else where = where.substring(1,where.length)
             query = query.andWhere(where, { publisherId: filterOptions.publisherId })
         }
         if (filterOptions?.notPublisherId !== undefined) {
             if (filterOptions.notPublisherId.findIndex(e => e === null) !== -1) {
                 filterOptions.notPublisherId = filterOptions.notPublisherId.filter(e => e != null);
-                query = query.andWhere('publication.\"publisherId\" IS NOT NULL')
+                query = query.andWhere('publication."publisherId" IS NOT NULL')
             }
-            if (filterOptions.notPublisherId.length > 0) query = query.andWhere('(publication.\"publisherId\" NOT IN (:...notPublisherId) OR publication.\"publisherId\" IS NULL)', { notPublisherId: filterOptions.notPublisherId })
+            if (filterOptions.notPublisherId.length > 0) query = query.andWhere('(publication."publisherId" NOT IN (:...notPublisherId) OR publication."publisherId" IS NULL)', { notPublisherId: filterOptions.notPublisherId })
         }
         where = "";
         if (filterOptions?.contractId !== undefined) {
             if (filterOptions.contractId.findIndex(e => e === null) !== -1) {
                 filterOptions.contractId = filterOptions.contractId.filter(e => e != null);
-                where = '(publication.\"contractId\" IS NULL'
+                where = '(publication."contractId" IS NULL'
             }
             if (filterOptions.contractId.length > 0) {
-                if (where) where+=" OR publication.\"contractId\" IN (:...contractId))"
-                else where="publication.\"contractId\" IN (:...contractId)"
+                if (where) where+=' OR publication."contractId" IN (:...contractId))'
+                else where='publication."contractId" IN (:...contractId)'
             } else where = where.substring(1,where.length)
             query = query.andWhere(where, { contractId: filterOptions.contractId })
         }
         if (filterOptions?.notContractId !== undefined) {
             if (filterOptions.notContractId.findIndex(e => e === null) !== -1) {
                 filterOptions.notContractId = filterOptions.notContractId.filter(e => e != null);
-                query = query.andWhere('publication.\"contractId\" IS NOT NULL')
+                query = query.andWhere('publication."contractId" IS NOT NULL')
             }
-            if (filterOptions.notContractId.length > 0) query = query.andWhere('(publication.\"contractId\" NOT IN (:...notContractId) OR publication.\"contractId\" IS NULL)', { notContractId: filterOptions.notContractId })
+            if (filterOptions.notContractId.length > 0) query = query.andWhere('(publication."contractId" NOT IN (:...notContractId) OR publication."contractId" IS NULL)', { notContractId: filterOptions.notContractId })
         }
         where = "";
         if (filterOptions?.pubTypeId !== undefined) {
             if (filterOptions.pubTypeId.findIndex(e => e === null) !== -1) {
                 filterOptions.pubTypeId = filterOptions.pubTypeId.filter(e => e != null);
-                where = '(publication.\"pubTypeId\" IS NULL'
+                where = '(publication."pubTypeId" IS NULL'
             }
             if (filterOptions.pubTypeId.length > 0) {
-                if (where) where+=" OR publication.\"pubTypeId\" IN (:...pubTypeId))"
-                else where="publication.\"pubTypeId\" IN (:...pubTypeId)"
+                if (where) where+=' OR publication."pubTypeId" IN (:...pubTypeId))'
+                else where='publication."pubTypeId" IN (:...pubTypeId)'
             } else where = where.substring(1,where.length)
             query = query.andWhere(where, { pubTypeId: filterOptions.pubTypeId })
         }
         if (filterOptions?.notPubTypeId !== undefined) {
             if (filterOptions.notPubTypeId.findIndex(e => e === null) !== -1) {
                 filterOptions.notPubTypeId = filterOptions.notPubTypeId.filter(e => e != null);
-                query = query.andWhere('publication.\"pubTypeId\" IS NOT NULL')
+                query = query.andWhere('publication."pubTypeId" IS NOT NULL')
             }
-            if (filterOptions.notPubTypeId.length > 0) query = query.andWhere('(publication.\"pubTypeId\" NOT IN (:...notPubTypeId) OR publication.\"pubTypeId\" IS NULL)', { notPubTypeId: filterOptions.notPubTypeId })
+            if (filterOptions.notPubTypeId.length > 0) query = query.andWhere('(publication."pubTypeId" NOT IN (:...notPubTypeId) OR publication."pubTypeId" IS NULL)', { notPubTypeId: filterOptions.notPubTypeId })
         }
         where = "";
         if (filterOptions?.oaCatId !== undefined) {
             if (filterOptions.oaCatId.findIndex(e => e === null) !== -1) {
                 filterOptions.oaCatId = filterOptions.oaCatId.filter(e => e != null);
-                where = '(publication.\"oaCategoryId\" IS NULL'
+                where = '(publication."oaCategoryId" IS NULL'
             }
             if (filterOptions.oaCatId.length > 0) {
-                if (where) where+=" OR publication.\"oaCategoryId\" IN (:...oaCatId))"
-                else where="publication.\"oaCategoryId\" IN (:...oaCatId)"
+                if (where) where+=' OR publication."oaCategoryId" IN (:...oaCatId))'
+                else where='publication."oaCategoryId" IN (:...oaCatId)'
             } else where = where.substring(1,where.length)
             query = query.andWhere(where, { oaCatId: filterOptions.oaCatId })
         }
         if (filterOptions?.notOaCatId !== undefined) {
             if (filterOptions.notOaCatId.findIndex(e => e === null) !== -1) {
                 filterOptions.notOaCatId = filterOptions.notOaCatId.filter(e => e != null);
-                query = query.andWhere('publication.\"oaCategoryId\" IS NOT NULL')
+                query = query.andWhere('publication."oaCategoryId" IS NOT NULL')
             }
-            if (filterOptions.notOaCatId.length > 0) query = query.andWhere('(publication.\"oaCategoryId\" NOT IN (:...notOaCatId) OR publication.\"oaCategoryId\" IS NULL)', { notOaCatId: filterOptions.notOaCatId })
+            if (filterOptions.notOaCatId.length > 0) query = query.andWhere('(publication."oaCategoryId" NOT IN (:...notOaCatId) OR publication."oaCategoryId" IS NULL)', { notOaCatId: filterOptions.notOaCatId })
         }
 
-        let highlight = '';
+        const highlightClauses: string[] = [];
+        const highlightParameters: Record<string, unknown> = {};
         if (highlightOptions?.corresponding) {
             autPub = true;
-            highlight += 'array_position(corresponding, true) is not null and '
+            highlightClauses.push('array_position(corresponding, true) is not null')
         }
         if (highlightOptions?.locked) {
             autPub = true;
-            highlight += 'publication.locked AND '
+            highlightClauses.push('publication.locked')
         }
         if (highlightOptions?.instituteId !== undefined) {
             autPub = true;
-            if (highlightInstituteIds?.length) highlight += 'tmp.institute_id::integer[] && ARRAY[' + highlightInstituteIds.join(',') + ']::integer[] AND '
-            else highlight += '(array_length(array_remove(tmp.institute_id, NULL), 1) is null or array_length(tmp.institute_id, 1) > array_length(array_remove(tmp.institute_id, NULL), 1)) AND '
+            if (highlightInstituteIds?.length) {
+                highlightClauses.push('tmp.institute_id::integer[] && ARRAY[:...highlightInstituteIds]::integer[]');
+                highlightParameters.highlightInstituteIds = highlightInstituteIds;
+            }
+            else highlightClauses.push('(array_length(array_remove(tmp.institute_id, NULL), 1) is null or array_length(tmp.institute_id, 1) > array_length(array_remove(tmp.institute_id, NULL), 1))')
         }
         if (highlightOptions?.publisherId !== undefined) {
-            if (highlightOptions?.publisherId) highlight += 'publication.\"publisherId\" = ' + highlightOptions?.publisherId + ' AND '
-            else highlight += 'publication.\"publisherId\" IS NULL AND '
+            this.addHighlightIdClause(
+                highlightClauses,
+                highlightParameters,
+                'publication."publisherId"',
+                'highlightPublisherId',
+                highlightOptions.publisherId
+            );
         }
         if (highlightOptions?.contractId !== undefined) {
-            if (highlightOptions?.contractId) highlight += 'publication.\"contractId\" = ' + highlightOptions?.contractId + ' AND '
-            else highlight += 'publication.\"contractId\" IS NULL AND '
+            this.addHighlightIdClause(
+                highlightClauses,
+                highlightParameters,
+                'publication."contractId"',
+                'highlightContractId',
+                highlightOptions.contractId
+            );
         }
         if (highlightOptions?.pubTypeId !== undefined) {
-            if (highlightOptions?.pubTypeId) highlight += 'publication.\"pubTypeId\" = ' + highlightOptions?.pubTypeId + ' AND '
-            else highlight += 'publication.\"pubTypeId\" IS NULL AND '
+            this.addHighlightIdClause(
+                highlightClauses,
+                highlightParameters,
+                'publication."pubTypeId"',
+                'highlightPubTypeId',
+                highlightOptions.pubTypeId
+            );
         }
         if (highlightOptions?.oaCatId !== undefined) {
-            if (highlightOptions?.oaCatId) highlight += 'publication.\"oaCategoryId\" = ' + highlightOptions?.oaCatId + ' AND '
-            else highlight += 'publication.\"oaCategoryId\" IS NULL AND '
+            this.addHighlightIdClause(
+                highlightClauses,
+                highlightParameters,
+                'publication."oaCategoryId"',
+                'highlightOaCatId',
+                highlightOptions.oaCatId
+            );
         }
 
-        if (highlight) query = query.addSelect('count(distinct CASE WHEN ' + highlight.slice(0, highlight.length - 5) + ' THEN publication.id ELSE NULL END)', 'highlight')
+        if (highlightClauses.length > 0) {
+            query = query
+                .addSelect(`count(distinct CASE WHEN ${highlightClauses.join(' AND ')} THEN publication.id ELSE NULL END)`, 'highlight')
+                .setParameters(highlightParameters);
+        }
 
         if (autPub) {
             if (!innerJoin) query = query
@@ -364,5 +388,21 @@ export class StatisticsService {
         }
 
         return query;
+    }
+
+    private addHighlightIdClause(
+        highlightClauses: string[],
+        highlightParameters: Record<string, unknown>,
+        field: string,
+        parameterName: string,
+        value?: number | null,
+    ) {
+        if (value !== undefined && value !== null) {
+            highlightClauses.push(`${field} = :${parameterName}`);
+            highlightParameters[parameterName] = value;
+            return;
+        }
+
+        highlightClauses.push(`${field} IS NULL`);
     }
 }

@@ -24,6 +24,7 @@ describe('StatisticsService', () => {
             addOrderBy: jest.fn().mockReturnThis(),
             where: jest.fn().mockReturnThis(),
             andWhere: jest.fn().mockReturnThis(),
+            setParameters: jest.fn().mockReturnThis(),
             getRawMany: jest.fn().mockResolvedValue([]),
         };
 
@@ -72,8 +73,56 @@ describe('StatisticsService', () => {
 
         expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([21]);
         expect(queryBuilder.addSelect).toHaveBeenCalledWith(
-            expect.stringContaining('tmp.institute_id::integer[] && ARRAY[21,22]::integer[]'),
+            expect.stringContaining('tmp.institute_id::integer[] && ARRAY[:...highlightInstituteIds]::integer[]'),
             'highlight'
         );
+        expect(queryBuilder.setParameters).toHaveBeenCalledWith({ highlightInstituteIds: [21, 22] });
+    });
+
+    it('filters three-year reports via a bound reporting year array', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.THREE_YEAR_REPORT);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            expect.stringContaining('IN (:...reportingYears)'),
+            { reportingYears: [2025, 2024, 2023] }
+        );
+    });
+
+    it('keeps publisher null-values when publisher filters explicitly include null', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, { publisherId: [7, null] as any });
+
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            '(publication."publisherId" IS NULL OR publication."publisherId" IN (:...publisherId))',
+            { publisherId: [7] }
+        );
+    });
+
+    it('uses the corresponding=false filter with an author-publication inner join', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, { corresponding: false });
+
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith('array_position(corresponding, true) is null');
+        expect(queryBuilder.innerJoin).toHaveBeenCalledWith(service.autPubSubQuery, 'tmp', 'tmp.p_id = publication.id');
+    });
+
+    it('binds publisher highlight ids instead of embedding them directly', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, undefined, { publisherId: 14 } as any);
+
+        expect(queryBuilder.addSelect).toHaveBeenCalledWith(
+            expect.stringContaining('publication."publisherId" = :highlightPublisherId'),
+            'highlight'
+        );
+        expect(queryBuilder.setParameters).toHaveBeenCalledWith({ highlightPublisherId: 14 });
     });
 });

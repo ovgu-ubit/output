@@ -199,8 +199,9 @@ export class AuthorService {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .addSelect("SUM(CASE WHEN b.pub_date >= '" + beginDate.toISOString() + "' and b.pub_date <= '" + endDate.toISOString() + "' and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
-                .addSelect("SUM(CASE WHEN b.pub_date >= '" + beginDate.toISOString() + "' and b.pub_date <= '" + endDate.toISOString() + "' THEN 1 ELSE 0 END)", "pub_count")
+                .addSelect('SUM(CASE WHEN b.pub_date >= :beginDate and b.pub_date <= :endDate and b."corresponding" THEN 1 ELSE 0 END)', "pub_count_corr")
+                .addSelect('SUM(CASE WHEN b.pub_date >= :beginDate and b.pub_date <= :endDate THEN 1 ELSE 0 END)', "pub_count")
+                .setParameters({ beginDate, endDate })
         }
         else {
             query = query

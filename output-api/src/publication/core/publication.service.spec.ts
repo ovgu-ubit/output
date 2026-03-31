@@ -1,8 +1,9 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
@@ -15,6 +16,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
 import { PublicationChangeService } from './publication-change.service';
+
 describe('PublicationService combine', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
@@ -29,6 +31,7 @@ describe('PublicationService combine', () => {
         deletePublicationChangesForPublications: jest.Mock;
     };
     let configService: { get: jest.Mock };
+
     beforeEach(async () => {
         EditLockOwnerStore.clear();
         pubRepository = {
@@ -393,5 +396,249 @@ describe('PublicationService combine', () => {
         expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+});
+
+describe('PublicationService filter', () => {
+    let service: PublicationService;
+    let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
+
+    const createQueryBuilderMock = () => ({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+    });
+
+    beforeEach(() => {
+        instituteService = {
+            findInstituteIdsIncludingSubInstitutes: jest.fn(),
+        };
+
+        service = new PublicationService(
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            instituteService as any,
+            {} as any,
+        );
+        service.filter_joins = new Set();
+    });
+
+    it('binds string filter values as query parameters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'title',
+                comp: CompareOperation.INCLUDES,
+                value: `%' OR 1=1 --`,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.title ILIKE :filter_0',
+            { filter_0: `%%' OR 1=1 --%` }
+        );
+    });
+
+    it('expands institute filters and binds the resulting ids', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        instituteService.findInstituteIdsIncludingSubInstitutes.mockResolvedValue([11, 12, 13]);
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id',
+                comp: CompareOperation.EQUALS,
+                value: 11,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11]);
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."instituteId" IN (:...filter_0))',
+            { filter_0: [11, 12, 13] }
+        );
+    });
+
+    it('filters author membership via EXISTS so joined metadata rows stay intact', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'author_id',
+                comp: CompareOperation.EQUALS,
+                value: 42,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" = :filter_0)',
+            { filter_0: 42 }
+        );
+    });
+
+    it('filters institutional author names via EXISTS without relying on outer author joins', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'inst_authors',
+                comp: CompareOperation.INCLUDES,
+                value: 'Miller',
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :filter_0)`,
+            { filter_0: '%Miller%' }
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
+    it('filters institute names via EXISTS without shrinking joined institute metadata', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute',
+                comp: CompareOperation.STARTS_WITH,
+                value: 'Central',
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND institute_filter.label ILIKE :filter_0)',
+            { filter_0: 'Central%' }
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
+    it('rejects unsupported filter keys instead of passing them into SQL', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'title) OR 1=1 --',
+                comp: CompareOperation.EQUALS,
+                value: 'anything',
+            }]
+        };
+
+        await expect(service.filter(filter, queryBuilder as any)).rejects.toBeInstanceOf(BadRequestException);
+        expect(queryBuilder.where).not.toHaveBeenCalled();
+    });
+
+    it('adds relation joins for publisher and invoice year filters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'publisher',
+                    comp: CompareOperation.EQUALS,
+                    value: 'Test Publisher',
+                },
+                {
+                    op: JoinOperation.AND,
+                    key: 'invoice_year',
+                    comp: CompareOperation.EQUALS,
+                    value: 2024,
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publisher.label = :filter_0',
+            { filter_0: 'Test Publisher' }
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'invoice.date > :filter_1_beginDate AND invoice.date < :filter_1_endDate',
+            {
+                filter_1_beginDate: new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0)),
+                filter_1_endDate: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)),
+            }
+        );
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.publisher', 'publisher');
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.invoices', 'invoice');
+    });
+
+    it('uses the null-date fallback and negates filters for AND_NOT expressions', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'pub_date',
+                    comp: CompareOperation.EQUALS,
+                    value: '',
+                },
+                {
+                    op: JoinOperation.AND_NOT,
+                    key: 'locked',
+                    comp: CompareOperation.EQUALS,
+                    value: true as any,
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.pub_date IS NULL AND publication.pub_date_print IS NULL AND publication.pub_date_accepted IS NULL AND publication.pub_date_submitted IS NULL',
+            undefined
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT (publication.locked = :filter_1)',
+            { filter_1: true }
+        );
+    });
+
+    it('uses OR for subsequent alternative filters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'title',
+                    comp: CompareOperation.STARTS_WITH,
+                    value: 'Alpha',
+                },
+                {
+                    op: JoinOperation.OR,
+                    key: 'doi',
+                    comp: CompareOperation.EQUALS,
+                    value: '10.1000/example',
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.title ILIKE :filter_0',
+            { filter_0: 'Alpha%' }
+        );
+        expect(queryBuilder.orWhere).toHaveBeenCalledWith(
+            'publication.doi = :filter_1',
+            { filter_1: '10.1000/example' }
+        );
     });
 });

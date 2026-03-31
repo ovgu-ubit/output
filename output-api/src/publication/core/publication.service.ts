@@ -31,7 +31,56 @@ interface GetAllPublicationOptions {
     serializeDates?: boolean;
 }
 
+interface FilterPredicate {
+    clause: string;
+    parameters?: Record<string, unknown>;
+}
+
 const PUBLICATION_LOCK_SCOPE = 'publication';
+const PUBLICATION_FILTER_FIELDS = new Set<string>([
+    'id',
+    'authors',
+    'title',
+    'doi',
+    'pub_date',
+    'pub_date_submitted',
+    'pub_date_accepted',
+    'pub_date_print',
+    'link',
+    'dataSource',
+    'second_pub',
+    'add_info',
+    'import_date',
+    'edit_date',
+    'delete_date',
+    'locked',
+    'locked_author',
+    'locked_biblio',
+    'locked_finance',
+    'locked_oa',
+    'status',
+    'is_oa',
+    'oa_status',
+    'is_journal_oa',
+    'best_oa_host',
+    'best_oa_license',
+    'locked_at',
+    'abstract',
+    'volume',
+    'issue',
+    'first_page',
+    'last_page',
+    'publisher_location',
+    'edition',
+    'article_number',
+    'page_count',
+    'peer_reviewed',
+    'cost_approach',
+    'cost_approach_currency',
+    'not_budget_relevant',
+    'grant_number',
+    'contract_year',
+]);
 
 @Injectable()
 export class PublicationService {
@@ -40,6 +89,7 @@ export class PublicationService {
 
     funder = false;
     author = false;
+    languageRelation = false;
     identifiers = false;
     pub_type = false;
     cost_center = false;
@@ -541,6 +591,7 @@ export class PublicationService {
     async filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): Promise<SelectQueryBuilder<Publication>> {
         this.funder = false;
         this.author = false;
+        this.languageRelation = false;
         this.identifiers = false;
         this.pub_type = false;
         this.cost_center = false;
@@ -551,52 +602,43 @@ export class PublicationService {
         this.cost_type = false;
         this.invoice = false;
 
-        //let indexQuery = this.indexQuery();
-        const first = false;
+        let first = true;
+        let filterIndex = 0;
         if (filter) for (const expr of filter.expressions) {
+            let compareOperation = expr.comp;
+            let filterValue: string | number | Array<string | number> = expr.value;
+
             if (expr.key.includes("institute_id")) {
-                expr.comp = CompareOperation.IN;
-                const ids = await this.instService.findInstituteIdsIncludingSubInstitutes([expr.value as number]);
-                expr.value = '(' + ids.join(',') + ')';
+                const instituteId = Number(expr.value);
+                if (!Number.isInteger(instituteId)) {
+                    throw new BadRequestException(`Invalid institute filter value for ${expr.key}`);
+                }
+                compareOperation = CompareOperation.IN;
+                filterValue = await this.instService.findInstituteIdsIncludingSubInstitutes([instituteId]);
             }
 
-            let compareString;
-            switch (expr.comp) {
-                case CompareOperation.INCLUDES:
-                    compareString = this.getWhereStringIncludes(expr.key, expr.value)
-                    break;
-                case CompareOperation.EQUALS:
-                    compareString = this.getWhereStringEquals(expr.key, expr.value)
-                    break;
-                case CompareOperation.STARTS_WITH:
-                    compareString = this.getWhereStringStartsWith(expr.key, expr.value)
-                    break;
-                case CompareOperation.GREATER_THAN:
-                    compareString = "publication." + expr.key + " > '" + expr.value + "'";
-                    break;
-                case CompareOperation.SMALLER_THAN:
-                    compareString = "publication." + expr.key + " < '" + expr.value + "'";
-                    break;
-                case CompareOperation.IN:
-                    compareString = this.getWhereStringIn(expr.key, expr.value)
-                    break;
+            const predicate = this.buildFilterPredicate(expr.key, compareOperation, filterValue, `filter_${filterIndex}`);
+            filterIndex++;
+            const clause = expr.op === JoinOperation.AND_NOT ? `NOT (${predicate.clause})` : predicate.clause;
+
+            if (first) {
+                indexQuery = indexQuery.where(clause, predicate.parameters);
+                first = false;
+                continue;
             }
+
             switch (expr.op) {
                 case JoinOperation.AND:
-                    if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.andWhere(compareString);
+                case JoinOperation.AND_NOT:
+                    indexQuery = indexQuery.andWhere(clause, predicate.parameters);
                     break;
                 case JoinOperation.OR:
-                    if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.orWhere(compareString);
-                    break;
-                case JoinOperation.AND_NOT:
-                    if (first) indexQuery = indexQuery.where(compareString);
-                    else indexQuery = indexQuery.andWhere("NOT " + compareString);
+                    indexQuery = indexQuery.orWhere(clause, predicate.parameters);
                     break;
             }
         }
         if (this.funder && !this.filter_joins.has("funder")) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
+        if (this.languageRelation && !this.filter_joins.has("language")) indexQuery = indexQuery.leftJoin('publication.language', 'language')
         if (this.identifiers && !this.filter_joins.has("identifier")) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
         if (this.pub_type && !this.filter_joins.has("publication_type")) indexQuery = indexQuery.leftJoin('publication.pub_type', 'publication_type')
         if (this.ge && !this.filter_joins.has("greater_entity")) indexQuery = indexQuery.leftJoin('publication.greater_entity', 'greater_entity')
@@ -614,202 +656,280 @@ export class PublicationService {
         return indexQuery;
     }
 
-    getWhereStringEquals(key: string, value: string | number) {
-        let where = '';
-        let beginDate, endDate;
+    private buildFilterPredicate(key: string, compareOperation: CompareOperation, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
+        switch (compareOperation) {
+            case CompareOperation.EQUALS:
+                return this.buildEqualsPredicate(key, value, parameterPrefix);
+            case CompareOperation.INCLUDES:
+                return this.buildLikePredicate(key, value, parameterPrefix, 'contains');
+            case CompareOperation.STARTS_WITH:
+                return this.buildLikePredicate(key, value, parameterPrefix, 'startsWith');
+            case CompareOperation.GREATER_THAN:
+                return this.buildComparablePredicate(key, value, parameterPrefix, '>');
+            case CompareOperation.SMALLER_THAN:
+                return this.buildComparablePredicate(key, value, parameterPrefix, '<');
+            case CompareOperation.IN:
+                return this.buildInPredicate(key, value, parameterPrefix);
+            default:
+                throw new BadRequestException(`Unsupported compare operation for ${key}`);
+        }
+    }
+
+    private buildEqualsPredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
+        if (key === 'invoice_year') {
+            const year = Number(Array.isArray(value) ? value[0] : value);
+            if (!Number.isInteger(year)) {
+                throw new BadRequestException('invoice_year must be an integer');
+            }
+            const beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+            this.invoice = true;
+            return {
+                clause: `invoice.date > :${parameterPrefix}_beginDate AND invoice.date < :${parameterPrefix}_endDate`,
+                parameters: {
+                    [`${parameterPrefix}_beginDate`]: beginDate,
+                    [`${parameterPrefix}_endDate`]: endDate,
+                }
+            };
+        }
+
+        if (key === 'pub_date' && !value) {
+            return {
+                clause: 'publication.pub_date IS NULL AND publication.pub_date_print IS NULL AND publication.pub_date_accepted IS NULL AND publication.pub_date_submitted IS NULL'
+            };
+        }
+
+        if (key === 'inst_authors') {
+            return this.buildAuthorNameExistsPredicate(
+                `concat(author_filter.last_name, ', ' ,author_filter.first_name) = :${parameterPrefix}`,
+                { [parameterPrefix]: String(Array.isArray(value) ? value[0] ?? '' : value ?? '') }
+            );
+        }
+
+        if (key === 'institute') {
+            return this.buildInstituteExistsPredicate(
+                `institute_filter.label = :${parameterPrefix}`,
+                { [parameterPrefix]: String(Array.isArray(value) ? value[0] ?? '' : value ?? '') }
+            );
+        }
+
+        if (key === 'author_id') {
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."authorId" = :${parameterPrefix}`],
+                { [parameterPrefix]: value }
+            );
+        }
+
+        if (key === 'author_id_corr') {
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."authorId" = :${parameterPrefix}`, 'ap."corresponding" = true'],
+                { [parameterPrefix]: value }
+            );
+        }
+
+        if (key === 'institute_id') {
+            return this.buildAuthorPublicationExistsInPredicate('ap."instituteId"', value, parameterPrefix);
+        }
+
+        if (key === 'institute_id_corr') {
+            return this.buildAuthorPublicationExistsInPredicate(
+                'ap."instituteId"',
+                value,
+                parameterPrefix,
+                ['ap."corresponding" = true']
+            );
+        }
+
+        const expression = this.resolveFilterExpression(key);
+        return {
+            clause: `${expression} = :${parameterPrefix}`,
+            parameters: { [parameterPrefix]: Array.isArray(value) ? value[0] : value }
+        };
+    }
+
+    private buildLikePredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string, mode: 'contains' | 'startsWith'): FilterPredicate {
+        const rawValue = String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
+        const parameterValue = mode === 'contains' ? `%${rawValue}%` : `${rawValue}%`;
+
+        if (key === 'inst_authors') {
+            return this.buildAuthorNameExistsPredicate(
+                `concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :${parameterPrefix}`,
+                { [parameterPrefix]: parameterValue }
+            );
+        }
+
+        if (key === 'institute') {
+            return this.buildInstituteExistsPredicate(
+                `institute_filter.label ILIKE :${parameterPrefix}`,
+                { [parameterPrefix]: parameterValue }
+            );
+        }
+
+        const expression = this.resolveFilterExpression(key);
+        return {
+            clause: `${expression} ILIKE :${parameterPrefix}`,
+            parameters: { [parameterPrefix]: parameterValue }
+        };
+    }
+
+    private buildComparablePredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string, operator: '>' | '<'): FilterPredicate {
+        const expression = this.resolveFilterExpression(key);
+        return {
+            clause: `${expression} ${operator} :${parameterPrefix}`,
+            parameters: { [parameterPrefix]: Array.isArray(value) ? value[0] : value }
+        };
+    }
+
+    private buildInPredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
+        const values = this.normalizeInValues(value);
+        if (values.length === 0) return { clause: '1 = 0' };
+
+        if (key === 'inst_authors') {
+            return this.buildAuthorNameExistsPredicate(
+                `concat(author_filter.last_name, ', ' ,author_filter.first_name) IN (:...${parameterPrefix})`,
+                { [parameterPrefix]: values.map((entry) => String(entry)) }
+            );
+        }
+
+        if (key === 'institute') {
+            return this.buildInstituteExistsPredicate(
+                `institute_filter.label IN (:...${parameterPrefix})`,
+                { [parameterPrefix]: values.map((entry) => String(entry)) }
+            );
+        }
+
+        if (key === 'institute_id') {
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."instituteId" IN (:...${parameterPrefix})`],
+                { [parameterPrefix]: values }
+            );
+        }
+
+        if (key === 'institute_id_corr') {
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."instituteId" IN (:...${parameterPrefix})`, 'ap."corresponding" = true'],
+                { [parameterPrefix]: values }
+            );
+        }
+
+        const expression = this.resolveFilterExpression(key);
+        return {
+            clause: `${expression} IN (:...${parameterPrefix})`,
+            parameters: { [parameterPrefix]: values }
+        };
+    }
+
+    private normalizeInValues(value: string | number | Array<string | number>) {
+        if (Array.isArray(value)) return value.filter((entry) => entry !== undefined && entry !== null);
+        return value === undefined || value === null ? [] : [value];
+    }
+
+    private buildAuthorPublicationExistsInPredicate(
+        field: string,
+        value: string | number | Array<string | number>,
+        parameterPrefix: string,
+        extraConditions: string[] = [],
+    ): FilterPredicate {
+        const values = this.normalizeInValues(value);
+        if (values.length === 0) return { clause: '1 = 0' };
+
+        return this.buildAuthorPublicationExistsPredicate(
+            [`${field} IN (:...${parameterPrefix})`, ...extraConditions],
+            { [parameterPrefix]: values }
+        );
+    }
+
+    private buildAuthorPublicationExistsPredicate(
+        conditions: string[],
+        parameters: Record<string, unknown>,
+    ): FilterPredicate {
+        return {
+            clause: `EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ${conditions.join(' AND ')})`,
+            parameters,
+        };
+    }
+
+    private buildAuthorNameExistsPredicate(condition: string, parameters: Record<string, unknown>): FilterPredicate {
+        return {
+            clause: `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND ${condition})`,
+            parameters,
+        };
+    }
+
+    private buildInstituteExistsPredicate(condition: string, parameters: Record<string, unknown>): FilterPredicate {
+        return {
+            clause: `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND ${condition})`,
+            parameters,
+        };
+    }
+
+    private resolveFilterExpression(key: string) {
         switch (key) {
             case 'greater_entity':
-            case 'oa_category':
-            case 'pub_type':
-            case 'publisher':
-            case 'contract':
-            case 'funder':
-            case 'institute':
-            case 'cost_center':
-            case 'cost_type':
-                where = key + ".label = '" + value + "'";
-                if (key == 'funder') this.funder = true;
-                if (key == 'cost_center') this.cost_center = true;
-                if (key == 'greater_entity') this.ge = true;
-                if (key == 'oa_category') this.oa_cat = true;
-                if (key == 'contract') this.contract = true;
-                if (key == 'publisher') this.publisher = true;
-                if (key == 'cost_type') this.cost_type = true;
-                break;
-            case 'author_id':
-                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."authorId" = ' + value + ')'
-                break;
-            case 'author_id_corr':
-                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap.corresponding and ap."authorId" = ' + value + ')'
-                break;
-            case 'institute_id':
-                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap."instituteId" = ' + value + ')'
-                break;
-            case 'institute_id_corr':
-                where = '"authorPublications"."publicationId" in (select "publicationId" from author_publication ap where ap.corresponding and ap."instituteId" = ' + value + ')'
-                break;
-            case 'inst_authors':
-                this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  = '" + value + "'";
-                break;
-            case 'contract_id':
-                where = 'contract.id=' + value;
-                this.contract = true;
-                break;
-            case 'funder_id':
-                where = 'funder.id=' + value;
-                this.funder = true;
-                break;
-            case 'greater_entity_id':
-                where = 'greater_entity.id=' + value;
                 this.ge = true;
-                break;
-            case 'oa_category_id':
-                where = 'oa_category.id=' + value;
+                return 'greater_entity.label';
+            case 'oa_category':
                 this.oa_cat = true;
-                break;
-            case 'pub_type_id':
-                where = 'publication_type.id=' + value;
+                return 'oa_category.label';
+            case 'pub_type':
                 this.pub_type = true;
-                break;
-            case 'publisher_id':
-                where = 'publisher.id=' + value;
+                return 'publication_type.label';
+            case 'publisher':
                 this.publisher = true;
-                break;
-            case 'other_ids':
-                where = "identifier.value='" + value + "'";
-                this.identifiers = true;
-                break;
-            case 'cost_center_id':
-                where = "cost_center.id=" + value;
+                return 'publisher.label';
+            case 'contract':
+                this.contract = true;
+                return 'contract.label';
+            case 'funder':
+                this.funder = true;
+                return 'funder.label';
+            case 'institute':
+                return 'institute.label';
+            case 'cost_center':
                 this.cost_center = true;
                 this.invoice = true;
-                break;
+                return 'cost_center.label';
+            case 'cost_type':
+                this.cost_type = true;
+                return 'cost_type.label';
+            case 'language':
+                this.languageRelation = true;
+                return 'language.label';
+            case 'other_ids':
+                this.identifiers = true;
+                return 'identifier.value';
+            case 'contract_id':
+                this.contract = true;
+                return 'contract.id';
+            case 'funder_id':
+                this.funder = true;
+                return 'funder.id';
+            case 'greater_entity_id':
+                this.ge = true;
+                return 'greater_entity.id';
+            case 'oa_category_id':
+                this.oa_cat = true;
+                return 'oa_category.id';
+            case 'pub_type_id':
+                this.pub_type = true;
+                return 'publication_type.id';
+            case 'publisher_id':
+                this.publisher = true;
+                return 'publisher.id';
+            case 'cost_center_id':
+                this.cost_center = true;
+                this.invoice = true;
+                return 'cost_center.id';
             case 'cost_type_id':
-                where = "cost_type.id=" + value;
                 this.cost_type = true;
                 this.invoice = true;
-                break;
-            case 'invoice_year':
-                beginDate = new Date(Date.UTC(Number(value), 0, 1, 0, 0, 0, 0));
-                endDate = new Date(Date.UTC(Number(value), 11, 31, 23, 59, 59, 999));
-                where = "invoice.date > '" + beginDate.toISOString() + "' and invoice.date < '" + endDate.toISOString() + "'";
-                this.invoice = true;
-                break;
-            case 'pub_date':
-                if (value) where = "publication.pub_date = '" + value + "'";
-                else where = "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL"
-                break;
+                return 'cost_type.id';
+            case 'secound_pub':
+                return 'publication.second_pub';
             default:
-                where = "publication." + key + " = '" + value + "'";
+                if (PUBLICATION_FILTER_FIELDS.has(key)) return `publication.${key}`;
+                throw new BadRequestException(`Unsupported filter key: ${key}`);
         }
-        return where;
-    }
-
-    getWhereStringIncludes(key: string, value: string | number) {
-        let where = '';
-        switch (key) {
-            case 'greater_entity':
-            case 'oa_category':
-            case 'pub_type':
-            case 'publisher':
-            case 'contract':
-            case 'funder':
-            case 'institute':
-            case 'cost_center':
-            case 'cost_type':
-                if (key == 'funder') this.funder = true;
-                if (key == 'pub_type') this.pub_type = true;
-                if (key == 'cost_center') this.cost_center = true;
-                if (key == 'greater_entity') this.ge = true;
-                if (key == 'oa_category') this.oa_cat = true;
-                if (key == 'contract') this.contract = true;
-                if (key == 'publisher') this.publisher = true;
-                if (key == 'cost_type') this.cost_type = true;
-                where = key + ".label ILIKE '%" + value + "%'";
-                break;
-            case 'inst_authors':
-                this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '%" + value + "%'";
-                break;
-            case 'other_ids':
-                where = "identifier.value ILIKE '%" + value + "%'";
-                this.identifiers = true;
-                break;
-            default:
-                where = "publication." + key + " ILIKE '%" + value + "%'";
-        }
-        return where;
-    }
-
-    getWhereStringStartsWith(key: string, value: string | number) {
-        let where = '';
-        switch (key) {
-            case 'greater_entity':
-            case 'oa_category':
-            case 'pub_type':
-            case 'publisher':
-            case 'contract':
-            case 'funder':
-            case 'institute':
-            case 'cost_center':
-            case 'cost_type':
-                if (key == 'funder') this.funder = true;
-                if (key == 'pub_type') this.pub_type = true;
-                if (key == 'cost_center') this.cost_center = true;
-                if (key == 'greater_entity') this.ge = true;
-                if (key == 'oa_category') this.oa_cat = true;
-                if (key == 'contract') this.contract = true;
-                if (key == 'publisher') this.publisher = true;
-                if (key == 'cost_type') this.cost_type = true;
-                where = key + ".label ILIKE '" + value + "%'";
-                break;
-            case 'inst_authors':
-                this.author = true;
-                where = "concat(author.last_name, ', ' ,author.first_name)  ILIKE '" + value + "%'";
-                break;
-            case 'other_ids':
-                where = "identifier.value ILIKE '" + value + "%'";
-                this.identifiers = true;
-                break;
-            default:
-                where = "publication." + key + " ILIKE '" + value + "%'";
-        }
-        return where;
-    }
-
-    getWhereStringIn(key: string, value: string | number) {
-        let where = '';
-        switch (key) {
-            case 'greater_entity':
-            case 'oa_category':
-            case 'pub_type':
-            case 'publisher':
-            case 'contract':
-            case 'funder':
-            case 'institute':
-            case 'cost_center':
-            case 'cost_type':
-                if (key == 'funder') this.funder = true;
-                if (key == 'pub_type') this.pub_type = true;
-                if (key == 'cost_center') this.cost_center = true;
-                if (key == 'greater_entity') this.ge = true;
-                if (key == 'oa_category') this.oa_cat = true;
-                if (key == 'contract') this.contract = true;
-                if (key == 'publisher') this.publisher = true;
-                if (key == 'cost_type') this.cost_type = true;
-                where = key + ".label IN " + value;
-                break;
-            case 'institute_id':
-                where = '"authorPublications"."instituteId" IN ' + value;
-                break;
-            case 'institute_id_corr':
-                where = '"authorPublications"."instituteId" IN ' + value + ' and "authorPublications".corresponding';
-                break;
-            default:
-                where = "publication." + key + " IN " + value;
-        }
-        return where;
     }
 
     private async loadPublicationsForChangeLog(pubs: Publication[]): Promise<Map<number, Publication>> {
