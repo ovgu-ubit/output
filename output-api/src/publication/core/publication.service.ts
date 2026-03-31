@@ -700,31 +700,30 @@ export class PublicationService {
         }
 
         if (key === 'author_id') {
-            return {
-                clause: `"authorPublications"."authorId" = :${parameterPrefix}`,
-                parameters: { [parameterPrefix]: value }
-            };
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."authorId" = :${parameterPrefix}`],
+                { [parameterPrefix]: value }
+            );
         }
 
         if (key === 'author_id_corr') {
-            return {
-                clause: `"authorPublications"."authorId" = :${parameterPrefix} AND "authorPublications"."corresponding" = true`,
-                parameters: { [parameterPrefix]: value }
-            };
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."authorId" = :${parameterPrefix}`, 'ap."corresponding" = true'],
+                { [parameterPrefix]: value }
+            );
         }
 
         if (key === 'institute_id') {
-            return {
-                clause: `"authorPublications"."instituteId" IN (:...${parameterPrefix})`,
-                parameters: { [parameterPrefix]: this.normalizeInValues(value) }
-            };
+            return this.buildAuthorPublicationExistsInPredicate('ap."instituteId"', value, parameterPrefix);
         }
 
         if (key === 'institute_id_corr') {
-            return {
-                clause: `"authorPublications"."instituteId" IN (:...${parameterPrefix}) AND "authorPublications"."corresponding" = true`,
-                parameters: { [parameterPrefix]: this.normalizeInValues(value) }
-            };
+            return this.buildAuthorPublicationExistsInPredicate(
+                'ap."instituteId"',
+                value,
+                parameterPrefix,
+                ['ap."corresponding" = true']
+            );
         }
 
         const expression = this.resolveFilterExpression(key);
@@ -757,17 +756,17 @@ export class PublicationService {
         if (values.length === 0) return { clause: '1 = 0' };
 
         if (key === 'institute_id') {
-            return {
-                clause: `"authorPublications"."instituteId" IN (:...${parameterPrefix})`,
-                parameters: { [parameterPrefix]: values }
-            };
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."instituteId" IN (:...${parameterPrefix})`],
+                { [parameterPrefix]: values }
+            );
         }
 
         if (key === 'institute_id_corr') {
-            return {
-                clause: `"authorPublications"."instituteId" IN (:...${parameterPrefix}) AND "authorPublications"."corresponding" = true`,
-                parameters: { [parameterPrefix]: values }
-            };
+            return this.buildAuthorPublicationExistsPredicate(
+                [`ap."instituteId" IN (:...${parameterPrefix})`, 'ap."corresponding" = true'],
+                { [parameterPrefix]: values }
+            );
         }
 
         const expression = this.resolveFilterExpression(key);
@@ -780,6 +779,31 @@ export class PublicationService {
     private normalizeInValues(value: string | number | Array<string | number>) {
         if (Array.isArray(value)) return value.filter((entry) => entry !== undefined && entry !== null);
         return value === undefined || value === null ? [] : [value];
+    }
+
+    private buildAuthorPublicationExistsInPredicate(
+        field: string,
+        value: string | number | Array<string | number>,
+        parameterPrefix: string,
+        extraConditions: string[] = [],
+    ): FilterPredicate {
+        const values = this.normalizeInValues(value);
+        if (values.length === 0) return { clause: '1 = 0' };
+
+        return this.buildAuthorPublicationExistsPredicate(
+            [`${field} IN (:...${parameterPrefix})`, ...extraConditions],
+            { [parameterPrefix]: values }
+        );
+    }
+
+    private buildAuthorPublicationExistsPredicate(
+        conditions: string[],
+        parameters: Record<string, unknown>,
+    ): FilterPredicate {
+        return {
+            clause: `EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ${conditions.join(' AND ')})`,
+            parameters,
+        };
     }
 
     private resolveFilterExpression(key: string) {

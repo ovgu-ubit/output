@@ -465,8 +465,27 @@ describe('PublicationService filter', () => {
 
         expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11]);
         expect(queryBuilder.where).toHaveBeenCalledWith(
-            '"authorPublications"."instituteId" IN (:...filter_0)',
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."instituteId" IN (:...filter_0))',
             { filter_0: [11, 12, 13] }
+        );
+    });
+
+    it('filters author membership via EXISTS so joined metadata rows stay intact', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'author_id',
+                comp: CompareOperation.EQUALS,
+                value: 42,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" = :filter_0)',
+            { filter_0: 42 }
         );
     });
 
