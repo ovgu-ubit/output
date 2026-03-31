@@ -1,0 +1,12 @@
+.contract-components-card {
+  margin-top: 16px;
+}
+
+.contract-components-table {
+  width: 100%;
+}
+
+.contract-components-empty {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.6);
+}
