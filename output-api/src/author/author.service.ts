@@ -1,18 +1,18 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { ILike, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
-import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
-import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
-import { Author } from './Author.entity';
-import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
-import { InstituteService } from '../institute/institute.service';
-import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
+import { AppConfigService } from '../config/app-config.service';
+import { InstituteService } from '../institute/institute.service';
+import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
+import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
+import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
+import { Author } from './Author.entity';
 
 const AUTHOR_LOCK_SCOPE = 'author';
 
@@ -27,7 +27,7 @@ export class AuthorService {
         private configService: AppConfigService,
         private aliasLookupService: AliasLookupService) { }
 
-    public async save(aut: any[], user?: string) {
+    public async save(aut: Partial<Author>[], user?: string) {
         await this.ensureAuthorsCanBeSaved(aut, user);
         const result = [];
         for (const auth of aut) {
@@ -42,7 +42,7 @@ export class AuthorService {
         return result;
     }
 
-    public get(id?: number) {
+    public get() {
         return this.repository.find({ relations: { institutes: true } });
     }
 
@@ -93,7 +93,7 @@ export class AuthorService {
             if (authors.length > 1) {
                 //assign first author and give warning
                 author = authors[0];
-                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v, c, i, a) => { return v + ', ' + c.id }, '')}` } as AppError;
+                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v, c, _i, _a) => { return v + ', ' + c.id }, '')}` } as AppError;
             } else if (authors.length > 0) author = authors[0];
             else {
                 //find via alias
@@ -252,7 +252,7 @@ export class AuthorService {
         return { ...author, locked_at: undefined };
     }
 
-    private async ensureAuthorsCanBeSaved(authors: Author[], user?: string): Promise<void> {
+    private async ensureAuthorsCanBeSaved(authors: Partial<Author>[], user?: string): Promise<void> {
         const ids = authors.map((author) => author.id).filter((id): id is number => !!id);
         if (ids.length === 0) return;
 
