@@ -489,6 +489,46 @@ describe('PublicationService filter', () => {
         );
     });
 
+    it('filters institutional author names via EXISTS without relying on outer author joins', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'inst_authors',
+                comp: CompareOperation.INCLUDES,
+                value: 'Miller',
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :filter_0)`,
+            { filter_0: '%Miller%' }
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
+    it('filters institute names via EXISTS without shrinking joined institute metadata', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute',
+                comp: CompareOperation.STARTS_WITH,
+                value: 'Central',
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND institute_filter.label ILIKE :filter_0)',
+            { filter_0: 'Central%' }
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
     it('rejects unsupported filter keys instead of passing them into SQL', async () => {
         const queryBuilder = createQueryBuilderMock();
         const filter: SearchFilter = {

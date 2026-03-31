@@ -699,6 +699,20 @@ export class PublicationService {
             };
         }
 
+        if (key === 'inst_authors') {
+            return this.buildAuthorNameExistsPredicate(
+                `concat(author_filter.last_name, ', ' ,author_filter.first_name) = :${parameterPrefix}`,
+                { [parameterPrefix]: String(Array.isArray(value) ? value[0] ?? '' : value ?? '') }
+            );
+        }
+
+        if (key === 'institute') {
+            return this.buildInstituteExistsPredicate(
+                `institute_filter.label = :${parameterPrefix}`,
+                { [parameterPrefix]: String(Array.isArray(value) ? value[0] ?? '' : value ?? '') }
+            );
+        }
+
         if (key === 'author_id') {
             return this.buildAuthorPublicationExistsPredicate(
                 [`ap."authorId" = :${parameterPrefix}`],
@@ -734,9 +748,24 @@ export class PublicationService {
     }
 
     private buildLikePredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string, mode: 'contains' | 'startsWith'): FilterPredicate {
-        const expression = this.resolveFilterExpression(key);
         const rawValue = String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
         const parameterValue = mode === 'contains' ? `%${rawValue}%` : `${rawValue}%`;
+
+        if (key === 'inst_authors') {
+            return this.buildAuthorNameExistsPredicate(
+                `concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :${parameterPrefix}`,
+                { [parameterPrefix]: parameterValue }
+            );
+        }
+
+        if (key === 'institute') {
+            return this.buildInstituteExistsPredicate(
+                `institute_filter.label ILIKE :${parameterPrefix}`,
+                { [parameterPrefix]: parameterValue }
+            );
+        }
+
+        const expression = this.resolveFilterExpression(key);
         return {
             clause: `${expression} ILIKE :${parameterPrefix}`,
             parameters: { [parameterPrefix]: parameterValue }
@@ -754,6 +783,20 @@ export class PublicationService {
     private buildInPredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
         const values = this.normalizeInValues(value);
         if (values.length === 0) return { clause: '1 = 0' };
+
+        if (key === 'inst_authors') {
+            return this.buildAuthorNameExistsPredicate(
+                `concat(author_filter.last_name, ', ' ,author_filter.first_name) IN (:...${parameterPrefix})`,
+                { [parameterPrefix]: values.map((entry) => String(entry)) }
+            );
+        }
+
+        if (key === 'institute') {
+            return this.buildInstituteExistsPredicate(
+                `institute_filter.label IN (:...${parameterPrefix})`,
+                { [parameterPrefix]: values.map((entry) => String(entry)) }
+            );
+        }
 
         if (key === 'institute_id') {
             return this.buildAuthorPublicationExistsPredicate(
@@ -806,6 +849,20 @@ export class PublicationService {
         };
     }
 
+    private buildAuthorNameExistsPredicate(condition: string, parameters: Record<string, unknown>): FilterPredicate {
+        return {
+            clause: `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND ${condition})`,
+            parameters,
+        };
+    }
+
+    private buildInstituteExistsPredicate(condition: string, parameters: Record<string, unknown>): FilterPredicate {
+        return {
+            clause: `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND ${condition})`,
+            parameters,
+        };
+    }
+
     private resolveFilterExpression(key: string) {
         switch (key) {
             case 'greater_entity':
@@ -838,9 +895,6 @@ export class PublicationService {
             case 'language':
                 this.languageRelation = true;
                 return 'language.label';
-            case 'inst_authors':
-                this.author = true;
-                return "concat(author.last_name, ', ' ,author.first_name)";
             case 'other_ids':
                 this.identifiers = true;
                 return 'identifier.value';
