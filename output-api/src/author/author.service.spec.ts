@@ -294,6 +294,16 @@ describe('AuthorService', () => {
         expect(repository.save).not.toHaveBeenCalled();
     });
 
+    it('rejects saving an author with id 0 when that record is locked by another user', async () => {
+        EditLockOwnerStore.setOwner('author', 0, 'alice');
+        repository.find.mockResolvedValue([{ id: 0, locked_at: new Date(), institutes: [] } as Author]);
+        configService.get.mockResolvedValue(5);
+
+        await expect(service.save([{ id: 0, first_name: 'Mallory' } as Author], 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(repository.save).not.toHaveBeenCalled();
+    });
+
     it('allows the author lock owner to release an active lock', async () => {
         repository.findOne.mockResolvedValueOnce({ id: 6, locked_at: null, institutes: [] } as Author);
         repository.update!.mockResolvedValue({ affected: 1 } as any);

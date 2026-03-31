@@ -1,9 +1,10 @@
-import { BadRequestException, Body, Delete, Get, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Delete, Get, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AccessGuard } from '../authorization/access.guard';
 import { Permissions } from '../authorization/permission.decorator';
 import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
+import { assertCreateRequestHasNoId } from './entity-id';
 
 export abstract class AbstractCrudController<TEntity extends LockableEntity, TService extends AbstractEntityService<TEntity>> {
     protected constructor(protected readonly service: TService) { }
@@ -60,9 +61,7 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     }
 
     protected normalizeBodyForCreate(body: TEntity): TEntity {
-        if (body?.id) {
-            throw new BadRequestException('id must not be provided for create requests');
-        }
+        assertCreateRequestHasNoId(body);
         return this.service.normalizeForCreate(body);
     }
 

@@ -1,10 +1,11 @@
-import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InstituteService } from "./institute.service";
 import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
 import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("institute")
 @ApiTags("institute")
@@ -48,7 +49,7 @@ export class InstituteController {
         }
     })
     async save(@Body() body: Institute, @Req() request: Request) {
-        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
+        assertCreateRequestHasNoId(body);
         return this.instService.save([body], request['user']?.['username'])
     }
 

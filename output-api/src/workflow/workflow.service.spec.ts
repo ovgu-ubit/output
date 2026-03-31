@@ -154,6 +154,16 @@ describe('WorkflowService', () => {
         expect(workflowReportService.deleteReportsForWorkflow).not.toHaveBeenCalled();
     });
 
+    it('treats import workflow id 0 as an update id instead of creating a new draft', async () => {
+        importRepository.findOneBy!.mockResolvedValue(null);
+
+        await expect(service.saveImport({ id: 0, label: 'Broken update' } as ImportWorkflow))
+            .rejects.toBeInstanceOf(BadRequestException);
+
+        expect(importRepository.findOneBy).toHaveBeenCalledWith({ id: 0 });
+        expect(importRepository.save).not.toHaveBeenCalled();
+    });
+
     it('allows saving a locked draft for the same user who acquired the lock', async () => {
         const draftWorkflow = {
             id: 22,

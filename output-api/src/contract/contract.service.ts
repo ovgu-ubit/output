@@ -8,6 +8,7 @@ import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
 
 @Injectable()
@@ -31,10 +32,12 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public override async save(contract: Contract) {
-        const orig: Contract = await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
+        const orig: Contract = hasProvidedEntityId(contract.id)
+            ? await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
+            : null;
         if (contract.identifiers) {
             for (const id of contract.identifiers) {
-                if (!id.id) {
+                if (!hasProvidedEntityId(id.id)) {
                     id.value = id.value.toUpperCase();
                     id.type = id.type.toLowerCase();
                     id.id = (await this.idRepository.save(id).catch(err => {
@@ -128,4 +131,3 @@ export class ContractService extends AbstractEntityService<Contract> {
         return await this.repository.delete(insts.map(p => p.id));
     }
 }
-

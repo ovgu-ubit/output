@@ -256,6 +256,15 @@ describe('PublicationService combine', () => {
         expect(pubRepository.save).not.toHaveBeenCalled();
     });
 
+    it('rejects saving a publication with id 0 when that record is locked by another user', async () => {
+        EditLockOwnerStore.setOwner('publication', 0, 'alice');
+        pubRepository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Publication] as never);
+
+        await expect(service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' }))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(pubRepository.save).not.toHaveBeenCalled();
+    });
+
     it('allows the lock owner to release an active publication lock', async () => {
         const lockedAt = new Date();
 

@@ -16,6 +16,7 @@ import { validateImportWorkflow } from './import-workflow.schema';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class WorkflowService {
@@ -74,7 +75,7 @@ export class WorkflowService {
     async saveImport(workflow: ImportWorkflow, user?: string) {
         let toSave = workflow;
         let shouldDeleteArchivedWorkflowReports = false;
-        if (workflow.id) { //update
+        if (hasProvidedEntityId(workflow.id)) { //update
             const db = await this.importRepository.findOneBy({ id: workflow.id })
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.IMPORT, user);
@@ -112,7 +113,7 @@ export class WorkflowService {
 
         const saved = await this.importRepository.save(toSave);
         this.syncEditLockOwner(saved, WorkflowType.IMPORT, user);
-        if (shouldDeleteArchivedWorkflowReports && saved.id) {
+        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id)) {
             await this.workflowReportService.deleteReportsForWorkflow(saved.id);
         }
 
@@ -145,7 +146,7 @@ export class WorkflowService {
     async saveExport(workflow: ExportWorkflow, user?: string) {
         let toSave = workflow;
         let shouldDeleteArchivedWorkflowReports = false;
-        if (workflow.id) {
+        if (hasProvidedEntityId(workflow.id)) {
             const db = await this.exportRepository.findOneBy({ id: workflow.id });
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.EXPORT, user);
@@ -182,7 +183,7 @@ export class WorkflowService {
 
         const saved = await this.exportRepository.save(toSave);
         this.syncEditLockOwner(saved, WorkflowType.EXPORT, user);
-        if (shouldDeleteArchivedWorkflowReports && saved.id) {
+        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id)) {
             await this.workflowReportService.deleteReportsForWorkflow(saved.id, WorkflowType.EXPORT);
         }
         return saved;
@@ -277,10 +278,10 @@ export class WorkflowService {
 
         await Promise.all(workflows
             .map((workflow) => workflow.id)
-            .filter((id): id is number => !!id)
+            .filter((id): id is number => hasProvidedEntityId(id))
             .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.IMPORT)));
         workflows.forEach((workflow) => {
-            if (workflow.id) this.releaseEditLock(WorkflowType.IMPORT, workflow.id);
+            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(WorkflowType.IMPORT, workflow.id);
         });
 
         return this.importRepository.remove(workflows);
@@ -297,10 +298,10 @@ export class WorkflowService {
 
         await Promise.all(workflows
             .map((workflow) => workflow.id)
-            .filter((id): id is number => !!id)
+            .filter((id): id is number => hasProvidedEntityId(id))
             .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.EXPORT)));
         workflows.forEach((workflow) => {
-            if (workflow.id) this.releaseEditLock(WorkflowType.EXPORT, workflow.id);
+            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(WorkflowType.EXPORT, workflow.id);
         });
 
         return this.exportRepository.remove(workflows);
@@ -366,7 +367,7 @@ export class WorkflowService {
         if (!updateResult.affected) {
             throw new ConflictException('Workflow is currently locked.');
         }
-        if (user && res.id) {
+        if (user && hasProvidedEntityId(res.id)) {
             EditLockOwnerStore.setOwner(workflowType, res.id, user);
         }
 
@@ -485,7 +486,7 @@ export class WorkflowService {
         workflowType: WorkflowType,
         user?: string,
     ): Promise<void> {
-        if (db.published_at || db.deleted_at || !db.id) return;
+        if (db.published_at || db.deleted_at || !hasProvidedEntityId(db.id)) return;
 
         if (!db.locked_at) {
             this.releaseEditLock(workflowType, db.id);
@@ -513,7 +514,7 @@ export class WorkflowService {
     }
 
     private isUnlockOnlyRequest<T extends { id?: number; locked_at?: Date | null }>(workflow: T): boolean {
-        return !!workflow?.id
+        return hasProvidedEntityId(workflow?.id)
             && workflow.locked_at === null
             && Object.keys(workflow).every((key) => key === 'id' || key === 'locked_at');
     }
@@ -523,7 +524,7 @@ export class WorkflowService {
         workflowType: WorkflowType,
         user?: string,
     ): void {
-        if (!workflow.id) return;
+        if (!hasProvidedEntityId(workflow.id)) return;
         if (!workflow.locked_at || workflow.published_at || workflow.deleted_at) {
             this.releaseEditLock(workflowType, workflow.id);
             return;

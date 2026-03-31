@@ -12,6 +12,7 @@ import { AuthorPublication } from '../publication/relations/AuthorPublication.en
 import { AliasInstitute } from './AliasInstitute.entity';
 import { Institute } from './Institute.entity';
 import { LockableEntity } from '../common/abstract-entity.service';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 const INSTITUTE_LOCK_SCOPE = 'institute';
 
@@ -191,7 +192,7 @@ export class InstituteService {
             return (await this.repository.findOne({ where: { id: institute.id }, relations: { super_institute: true, sub_institutes: true, aliases: true } })) ?? institute;
         }
 
-        if (user && institute.id) {
+        if (user && hasProvidedEntityId(institute.id)) {
             EditLockOwnerStore.setOwner(INSTITUTE_LOCK_SCOPE, institute.id, user);
         }
 
@@ -199,14 +200,14 @@ export class InstituteService {
     }
 
     private async ensureInstitutesCanBeSaved(institutes: (Institute | LockableEntity)[], user?: string): Promise<void> {
-        const ids = institutes.map((institute) => institute.id).filter((id): id is number => !!id);
+        const ids = institutes.map((institute) => institute.id).filter((id): id is number => hasProvidedEntityId(id));
         if (ids.length === 0) return;
 
         const existing = await this.repository.find({ where: { id: In(ids) } as never }) ?? [];
         const instituteMap = new Map(existing.map((institute) => [institute.id, institute]));
 
         for (const institute of institutes) {
-            if (!institute.id) continue;
+            if (!hasProvidedEntityId(institute.id)) continue;
             await this.ensureScopedEntityEditable(instituteMap.get(institute.id), institute, user);
         }
     }
@@ -216,7 +217,7 @@ export class InstituteService {
         entity: Pick<Institute, 'id' | 'locked_at'>,
         user?: string,
     ): Promise<void> {
-        if (!dbEntity?.id) return;
+        if (!hasProvidedEntityId(dbEntity?.id)) return;
 
         if (!dbEntity.locked_at) {
             EditLockOwnerStore.release(INSTITUTE_LOCK_SCOPE, dbEntity.id);
@@ -244,7 +245,7 @@ export class InstituteService {
     }
 
     private syncInstituteLockOwner(institute: Pick<LockableEntity, 'id' | 'locked_at'>, user?: string): void {
-        if (!institute?.id) return;
+        if (!hasProvidedEntityId(institute?.id)) return;
 
         const hasExplicitLockState = Object.prototype.hasOwnProperty.call(institute, 'locked_at');
         if (hasExplicitLockState && !institute.locked_at) {
@@ -259,7 +260,7 @@ export class InstituteService {
 
     private isUnlockOnlyRequest(institute: Pick<LockableEntity, 'id' | 'locked_at'>): boolean {
         const keys = Object.keys(institute).filter((key) => institute[key] !== undefined);
-        return !!institute?.id
+        return hasProvidedEntityId(institute?.id)
             && institute.locked_at === null
             && keys.length > 0
             && keys.every((key) => key === 'id' || key === 'locked_at');

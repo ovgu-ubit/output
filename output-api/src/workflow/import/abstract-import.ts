@@ -24,6 +24,7 @@ import { Invoice } from '../../invoice/Invoice.entity';
 import { Role } from '../../publication/relations/Role.entity';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
 
@@ -96,7 +97,7 @@ export abstract class AbstractImportService {
         if (this.report) {
             this.reportService.write(this.report, content);
         }
-        if (this.workflowReport?.id) {
+        if (hasProvidedEntityId(this.workflowReport?.id)) {
             await this.workflowReportService.write(this.workflowReport.id, {
                 timestamp: content.timestamp,
                 level: this.toWorkflowReportLevel(content.type),

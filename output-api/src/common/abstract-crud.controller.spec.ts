@@ -46,8 +46,8 @@ describe('AbstractCrudController', () => {
         expect(service.update).toHaveBeenCalledWith(entity, 'alice');
     });
 
-    it('rejects create requests that already provide an id', async () => {
-        await expect(controller.save({ id: 4, label: 'Existing' })).rejects.toBeInstanceOf(BadRequestException);
+    it.each([4, 0])('rejects create requests that already provide an id (%s)', async (id) => {
+        await expect(controller.save({ id, label: 'Existing' })).rejects.toBeInstanceOf(BadRequestException);
         expect(service.save).not.toHaveBeenCalled();
     });
 });

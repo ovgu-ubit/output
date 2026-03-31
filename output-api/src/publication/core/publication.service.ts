@@ -6,6 +6,7 @@ import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
 import { Author } from '../../author/Author.entity';
 import { EditLockableEntity, EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../../common/edit-lock';
+import { hasProvidedEntityId } from '../../common/entity-id';
 import { mergeEntities } from '../../common/merge';
 import { AppConfigService } from '../../config/app-config.service';
 import { Institute } from '../../institute/Institute.entity';
@@ -78,8 +79,8 @@ export class PublicationService {
             for (let i = 0; i < saved.length; i++) {
                 const savedPub = saved[i];
                 if (this.isLockOnlyPayload(pub[i])) continue;
-                const before = savedPub.id ? beforeMap.get(savedPub.id) : null;
-                const after = savedPub.id ? afterMap.get(savedPub.id) ?? savedPub : savedPub;
+                const before = hasProvidedEntityId(savedPub.id) ? beforeMap.get(savedPub.id) : null;
+                const after = hasProvidedEntityId(savedPub.id) ? afterMap.get(savedPub.id) ?? savedPub : savedPub;
                 const patch = this.buildPublicationChangePatch(before, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
@@ -274,7 +275,7 @@ export class PublicationService {
                 : await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } });
             if (pub.identifiers) {
                 for (const id of pub.identifiers) {
-                    if (!id.id) {
+                    if (!hasProvidedEntityId(id.id)) {
                         id.value = id.value.toUpperCase();
                         id.type = id.type.toLowerCase();
                         id.id = (await this.idRepository.save(id).catch(err => {
@@ -286,7 +287,7 @@ export class PublicationService {
             }
             if (pub.supplements) {
                 for (const suppl of pub.supplements) {
-                    if (!suppl.id) {
+                    if (!hasProvidedEntityId(suppl.id)) {
                         suppl.id = (await this.supplRepository.save(suppl).catch(err => {
                             if (err.constraint) throw new BadRequestException(err.detail)
                             else throw new InternalServerErrorException(err);
@@ -310,7 +311,7 @@ export class PublicationService {
             if (savedPub) i++;
             this.syncPublicationLockOwner(pub, options?.by_user);
             if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
-                const after = savedPub.id ? await this.loadPublicationForChangeLog(savedPub.id) : savedPub;
+                const after = hasProvidedEntityId(savedPub.id) ? await this.loadPublicationForChangeLog(savedPub.id) : savedPub;
                 const patch = this.buildPublicationChangePatch(orig, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
@@ -331,7 +332,7 @@ export class PublicationService {
     }
 
     public async delete(pubs: Publication[], soft?: boolean) {
-        const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => !!id);
+        const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
         for (const pub of pubs) {
             const pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
             for (const autPub of pubE.authorPublications) {
@@ -812,7 +813,7 @@ export class PublicationService {
     }
 
     private async loadPublicationsForChangeLog(pubs: Publication[]): Promise<Map<number, Publication>> {
-        const ids = pubs.map((publication) => publication.id).filter((id): id is number => !!id);
+        const ids = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
         if (ids.length === 0) return new Map<number, Publication>();
 
         const existing = await this.pubRepository.find({
@@ -1019,7 +1020,7 @@ export class PublicationService {
     }
 
     private shouldCreatePublicationChange(options?: SavePublicationOptions): boolean {
-        return !!options?.workflowReport?.id || !!options?.by_user;
+        return hasProvidedEntityId(options?.workflowReport?.id) || !!options?.by_user;
     }
 
     private isLockOnlyPayload(publication?: Publication): boolean {
@@ -1029,7 +1030,7 @@ export class PublicationService {
     }
 
     public async ensureScopedEntityEditable(scope: string, entity: EditLockableEntity | null | undefined, user?: string): Promise<void> {
-        if (!entity?.id) return;
+        if (!hasProvidedEntityId(entity?.id)) return;
 
         if (!entity.locked_at) {
             EditLockOwnerStore.release(scope, entity.id);
@@ -1051,7 +1052,7 @@ export class PublicationService {
     }
 
     private async ensurePublicationsCanBeSaved(publications: Publication[], user?: string): Promise<void> {
-        const ids = publications.map((publication) => publication.id).filter((id): id is number => !!id);
+        const ids = publications.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
         if (ids.length === 0) return;
 
         const existing = await this.pubRepository.find({
@@ -1061,7 +1062,7 @@ export class PublicationService {
         const publicationMap = new Map(existing.map((publication) => [publication.id, publication]));
 
         for (const publication of publications) {
-            if (!publication.id) continue;
+            if (!hasProvidedEntityId(publication.id)) continue;
             await this.ensureScopedEntityEditable(PUBLICATION_LOCK_SCOPE, publicationMap.get(publication.id), user);
         }
     }
@@ -1087,7 +1088,7 @@ export class PublicationService {
             return (await this.findPublication(pub.id, reader)) ?? pub;
         }
 
-        if (user && pub.id) {
+        if (user && hasProvidedEntityId(pub.id)) {
             EditLockOwnerStore.setOwner(PUBLICATION_LOCK_SCOPE, pub.id, user);
         }
 
@@ -1095,7 +1096,7 @@ export class PublicationService {
     }
 
     private syncPublicationLockOwner(publication: Publication, user?: string): void {
-        if (!publication?.id) return;
+        if (!hasProvidedEntityId(publication?.id)) return;
 
         const hasExplicitLockState = Object.prototype.hasOwnProperty.call(publication, 'locked_at');
         if (hasExplicitLockState && !publication.locked_at) {

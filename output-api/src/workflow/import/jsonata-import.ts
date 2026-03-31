@@ -26,6 +26,7 @@ import { LanguageService } from '../../publication/lookups/language.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { Publisher } from '../../publisher/Publisher.entity';
 import { PublisherService } from '../../publisher/publisher.service';
+import { hasProvidedEntityId } from '../../common/entity-id';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 import { WorkflowReportService } from '../workflow-report.service';
@@ -1139,7 +1140,7 @@ export class JSONataImportService extends AbstractImportService {
     ) {
         this.progress = progress;
         if (status !== undefined) this.status_text = status;
-        if (!this.workflowReport?.id) return;
+        if (!hasProvidedEntityId(this.workflowReport?.id)) return;
 
         this.workflowReport = await this.workflowReportService.updateStatus(this.workflowReport.id, {
             progress,
@@ -1163,7 +1164,7 @@ export class JSONataImportService extends AbstractImportService {
     ) {
         this.progress = 0;
         this.status_text = statusText;
-        if (!this.workflowReport?.id) return;
+        if (!hasProvidedEntityId(this.workflowReport?.id)) return;
 
         this.workflowReport = await this.workflowReportService.finish(this.workflowReport.id, {
             status,

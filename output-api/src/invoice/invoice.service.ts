@@ -11,6 +11,7 @@ import { CostTypeService } from './cost-type.service';
 import { CostCenterService } from './cost-center.service';
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 const PUBLICATION_LOCK_SCOPE = 'publication';
 type LockAnnotatedInvoice = Invoice & { locked_at?: Date };
@@ -140,7 +141,7 @@ export class InvoiceService {
             return this.attachInvoiceLockFromPublication(refreshed, refreshed.publication);
         }
 
-        if (user && publication.id) {
+        if (user && hasProvidedEntityId(publication.id)) {
             EditLockOwnerStore.setOwner(PUBLICATION_LOCK_SCOPE, publication.id, user);
         }
 
@@ -150,7 +151,7 @@ export class InvoiceService {
     private async ensureInvoicesCanBeSaved(invoices: Invoice[], user?: string): Promise<void> {
         if (!invoices.length) return;
 
-        const existingIds = invoices.map((invoice) => invoice.id).filter((id): id is number => !!id);
+        const existingIds = invoices.map((invoice) => invoice.id).filter((id): id is number => hasProvidedEntityId(id));
         const existingInvoices = existingIds.length > 0
             ? await this.repository.find({
                 where: existingIds.map((id) => ({ id })),
@@ -162,7 +163,7 @@ export class InvoiceService {
         const publicationIds = new Set<number>();
         for (const invoice of invoices) {
             const publicationId = invoice.publication?.id ?? existingMap.get(invoice.id)?.publication?.id;
-            if (publicationId) publicationIds.add(publicationId);
+            if (hasProvidedEntityId(publicationId)) publicationIds.add(publicationId);
         }
 
         const publications = publicationIds.size > 0
@@ -174,14 +175,14 @@ export class InvoiceService {
 
         for (const invoice of invoices) {
             const publicationId = invoice.publication?.id ?? existingMap.get(invoice.id)?.publication?.id;
-            if (!publicationId) continue;
+            if (!hasProvidedEntityId(publicationId)) continue;
             const publication = publicationMap.get(publicationId);
             await this.ensurePublicationEditable(publication, user);
         }
     }
 
     private async ensurePublicationEditable(publication: Publication | undefined, user?: string): Promise<void> {
-        if (!publication?.id) return;
+        if (!hasProvidedEntityId(publication?.id)) return;
 
         if (publication.locked_finance) {
             throw new ConflictException('Entity is currently locked.');

@@ -67,6 +67,15 @@ describe('InvoiceService', () => {
         expect(invoiceRepository.save).not.toHaveBeenCalled();
     });
 
+    it('blocks saving an invoice with id 0 when its parent publication id 0 is locked by another user', async () => {
+        EditLockOwnerStore.setOwner('publication', 0, 'alice');
+        invoiceRepository.find!.mockResolvedValue([{ id: 0, publication: { id: 0 } as Publication } as Invoice] as any);
+        publicationRepository.find!.mockResolvedValue([{ id: 0, locked_at: new Date(), locked_finance: false } as Publication] as any);
+
+        await expect(service.save([{ id: 0 } as Invoice], 'mallory')).rejects.toBeInstanceOf(ConflictException);
+        expect(invoiceRepository.save).not.toHaveBeenCalled();
+    });
+
     it('allows the publication lock owner to save an invoice', async () => {
         EditLockOwnerStore.setOwner('publication', 7, 'alice');
         invoiceRepository.find!.mockResolvedValue([{ id: 1, publication: { id: 7 } as Publication } as Invoice] as any);

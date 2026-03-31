@@ -164,4 +164,10 @@ describe('AbstractEntityService', () => {
             label: 'Updated again',
         });
     });
+
+    it('keeps numeric id 0 intact while normalizing omitted ids for create requests', () => {
+        expect(service.normalizeForCreate({ id: 0, label: 'Existing' })).toMatchObject({ id: 0 });
+        expect(service.normalizeForCreate({ id: '' as any, label: 'Draft' })).toMatchObject({ id: undefined });
+        expect(service.normalizeForCreate({ id: null as any, label: 'Draft' })).toMatchObject({ id: undefined });
+    });
 });

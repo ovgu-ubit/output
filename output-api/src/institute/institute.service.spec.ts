@@ -176,6 +176,16 @@ describe('InstituteService', () => {
         expect(repository.save).not.toHaveBeenCalled();
     });
 
+    it('rejects saving an institute with id 0 when that record is locked by another user', async () => {
+        EditLockOwnerStore.setOwner('institute', 0, 'alice');
+        repository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Institute]);
+        configService.get.mockResolvedValue(5);
+
+        await expect(service.save([{ id: 0, label: 'Blocked zero' } as Institute], 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(repository.save).not.toHaveBeenCalled();
+    });
+
     it('allows the institute lock owner to release an active lock', async () => {
         repository.findOne.mockResolvedValueOnce({ id: 11, locked_at: null } as Institute);
         repository.update!.mockResolvedValue({ affected: 1 } as any);

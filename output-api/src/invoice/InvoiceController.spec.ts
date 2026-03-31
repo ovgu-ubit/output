@@ -63,6 +63,12 @@ describe('InvoiceController', () => {
         expect(invoiceService.save).not.toHaveBeenCalled();
     });
 
+    it('rejects invoice create requests that provide id 0', async () => {
+        await expect(controller.save({ id: 0 } as any, { user: { username: 'alice' } } as any))
+            .rejects.toBeInstanceOf(BadRequestException);
+        expect(invoiceService.save).not.toHaveBeenCalled();
+    });
+
     it('forwards writer flag and username when loading one cost type', async () => {
         await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
 

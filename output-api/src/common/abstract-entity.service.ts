@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, InternalServerErrorException } 
 import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, IsNull, LessThan, Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
+import { hasProvidedEntityId } from './entity-id';
 
 export interface LockableEntity {
     id?: number;
@@ -81,7 +82,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
             return (await this.findEntity(id)) ?? entity;
         }
 
-        if (user && entity.id) {
+        if (user && hasProvidedEntityId(entity.id)) {
             EditLockOwnerStore.setOwner(this.getEditLockScope(), entity.id, user);
         }
 
@@ -96,8 +97,8 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
     }
 
     public normalizeForCreate(entity: TEntity): TEntity {
-        const normalized = entity as unknown as { id?: number | null };
-        if (normalized && !normalized.id) {
+        const normalized = entity as unknown as { id?: number | null | '' };
+        if (normalized && !hasProvidedEntityId(normalized.id)) {
             normalized.id = undefined;
         }
         return entity;
@@ -112,12 +113,12 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
     }
 
     protected async ensureEntityCanBeSaved(entity: DeepPartial<TEntity>, user?: string): Promise<void> {
-        if (!entity?.id) return;
+        if (!hasProvidedEntityId(entity?.id)) return;
 
         const dbEntity = await this.repository.findOne({
             where: { id: entity.id } as FindOptionsWhere<TEntity>,
         });
-        if (!dbEntity?.id) return;
+        if (!hasProvidedEntityId(dbEntity?.id)) return;
 
         if (!dbEntity.locked_at) {
             this.releaseEditLock(dbEntity.id);
@@ -164,14 +165,14 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
 
     private isUnlockOnlyRequest(entity: DeepPartial<TEntity>): boolean {
         const keys = Object.keys(entity).filter((key) => entity[key] !== undefined);
-        return !!entity?.id
+        return hasProvidedEntityId(entity?.id)
             && entity.locked_at === null
             && keys.length > 0
             && keys.every((key) => key === 'id' || key === 'locked_at');
     }
 
     private syncLockOwner(entity: DeepPartial<TEntity>, user?: string): void {
-        if (!entity?.id) return;
+        if (!hasProvidedEntityId(entity?.id)) return;
         const hasExplicitLockState = Object.prototype.hasOwnProperty.call(entity, 'locked_at');
         if (hasExplicitLockState && !entity.locked_at) {
             this.releaseEditLock(entity.id);

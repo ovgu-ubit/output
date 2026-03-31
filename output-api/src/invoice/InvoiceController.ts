@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
@@ -9,6 +9,7 @@ import { CostType } from "./CostType.entity";
 import { CostCenter } from "./CostCenter.entity";
 import { CostTypeService } from "./cost-type.service";
 import { CostCenterService } from "./cost-center.service";
+import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("invoice")
 @ApiTags("invoice")
@@ -53,7 +54,7 @@ export class InvoiceController {
         }
     })
     async save(@Body() body: Invoice, @Req() request: Request) {
-        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
+        assertCreateRequestHasNoId(body);
         return this.invoiceService.save([body], request['user']?.['username'])
     }
     
@@ -116,7 +117,7 @@ export class InvoiceController {
         }
     })
     async saveCT(@Body() body: CostType) {
-        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
+        assertCreateRequestHasNoId(body);
         return this.costTypeService.save(body)
     }
     
@@ -173,7 +174,7 @@ export class InvoiceController {
         }
     })
     async saveCC(@Body() body: CostCenter) {
-        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
+        assertCreateRequestHasNoId(body);
         return this.costCenterService.save(body)
     }
     

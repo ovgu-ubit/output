@@ -4,6 +4,7 @@ import { Language } from "./Language.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { Permissions } from "../../authorization/permission.decorator";
 import { LanguageService } from "./language.service";
+import { assertCreateRequestHasNoId } from "../../common/entity-id";
 
 @Controller("language")
 @ApiTags("language")
@@ -40,7 +41,7 @@ export class LanguageController {
         }
     })
     async save(@Body() body: Language) {
-        if (!body.id) body.id = undefined;
+        assertCreateRequestHasNoId(body);
         return this.languageService.save([body])
     }
     
