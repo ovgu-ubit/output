@@ -12,6 +12,7 @@ import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { AbstractFilterService, getFilterServiceMeta } from "../../workflow/filter/abstract-filter.service";
+import { assertCreateRequestHasNoId, hasProvidedEntityId } from "../../common/entity-id";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -85,8 +86,13 @@ export class PublicationController {
         type: Publication
     })
     async one(@Query('id') id: number, @Req() request: Request) {
-        if (!id) throw new BadRequestException('id must be given')
-        return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write_publication'] : false);
+        if (!hasProvidedEntityId(id)) throw new BadRequestException('id must be given')
+        return await this.publicationService.getPublication(
+            id,
+            request['user'] ? request['user']['read'] : false,
+            request['user'] ? request['user']['write_publication'] : false,
+            request['user']?.['username'],
+        );
     }
 
     @Get('changes')
@@ -100,7 +106,7 @@ export class PublicationController {
         example: "3"
     })
     async changes(@Query('id') id: number) {
-        if (!id) throw new BadRequestException('id must be given');
+        if (!hasProvidedEntityId(id)) throw new BadRequestException('id must be given');
         return this.publicationChangeService.getPublicationChangesForPublication(id);
     }
 
@@ -138,6 +144,7 @@ export class PublicationController {
         }
     })
     async save(@Body() body: Publication, @Req() request: Request) {
+        assertCreateRequestHasNoId(body);
         return this.publicationService.save([body], { by_user: request['user']?.['username'] });
     }
 
@@ -228,7 +235,7 @@ export class PublicationController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
-        if (id) return this.publicationService.getDuplicates(id);
+        if (hasProvidedEntityId(id)) return this.publicationService.getDuplicates(id);
         else return this.publicationService.getAllDuplicates(soft);
     }
 

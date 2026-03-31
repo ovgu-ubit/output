@@ -9,6 +9,7 @@ import { Publication } from '../publication/core/Publication.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
 
 @Injectable()
@@ -31,16 +32,17 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return { identifiers: true };
     }
 
-    public async save(pub: GreaterEntity) {
-        return this.update(pub);
+    public async save(pub: GreaterEntity, user?: string) {
+        return this.update(pub, user);
     }
 
-    public async update(ge: any) {
+    public async update(ge: any, user?: string) {
+        await this.ensureEntityCanBeSaved(ge, user);
         let orig: GreaterEntity = null;
-        if (ge.id) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
+        if (hasProvidedEntityId(ge.id)) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
         if (ge.identifiers) {
             for (const id of ge.identifiers) {
-                if (!id.id) {
+                if (!hasProvidedEntityId(id.id)) {
                     id.value = id.value.toUpperCase();
                     id.type = id.type.toLowerCase();
                     id.id = (await this.idRepository.save(id).catch(err => {
@@ -74,7 +76,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
                 });
                 //if you find it, you got the entity
                 if (result && id && id.entity.id !== result.id) throw { origin: 'GE-Service', text: 'amibiguous id ' + id.value + ': ge ' + result.label + ' or ' + id.entity.label } as AppError;
-                if (id) result = id.entity;
+                if (hasProvidedEntityId(id?.entity?.id)) result = id.entity;
                 else ids2save.push({ type, value });
             }
         }
@@ -192,4 +194,3 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return await this.repository.delete(insts.map(p => p.id));
     }
 }
-

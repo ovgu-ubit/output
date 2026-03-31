@@ -1,16 +1,20 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
-import { EntityManager, ILike, Repository, TreeRepository } from 'typeorm';
+import { EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author.entity';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
 import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
 import { AliasInstitute } from './AliasInstitute.entity';
 import { Institute } from './Institute.entity';
 import { LockableEntity } from '../common/abstract-entity.service';
+import { hasProvidedEntityId } from '../common/entity-id';
+
+const INSTITUTE_LOCK_SCOPE = 'institute';
 
 @Injectable()
 export class InstituteService {
@@ -25,33 +29,23 @@ export class InstituteService {
         this.repository = this.manager.getTreeRepository(Institute);
     }
 
-    public save(inst: Institute[] | LockableEntity[]) {
-        return this.repository.save(inst).catch(err => {
+    public async save(inst: Institute[] | LockableEntity[], user?: string) {
+        await this.ensureInstitutesCanBeSaved(inst, user);
+        const saved = await this.repository.save(inst).catch(err => {
             if (err.constraint) throw new BadRequestException(err.detail)
             else throw new InternalServerErrorException(err);
         });
+        inst.forEach((institute) => this.syncInstituteLockOwner(institute, user));
+        return saved;
     }
 
     public get() {
         return this.repository.find({ relations: { aliases: true, super_institute: true, sub_institutes: true } });
     }
-    public async one(id: number, writer: boolean) {
+    public async one(id: number, writer: boolean, user?: string) {
         const inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
-
-        if (writer && !inst.locked_at) {
-            await this.save([{
-                id: inst.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - inst.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: inst.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-
-        return inst;
+        if (!inst || !writer) return inst;
+        return this.acquireInstituteEditLock(inst, user);
     }
 
     public async delete(insts: Institute[]) {
@@ -175,5 +169,106 @@ export class InstituteService {
             result = result.concat(newSubs);
         }
         return result;
+    }
+
+    private async acquireInstituteEditLock(institute: Institute, user?: string): Promise<Institute> {
+        const lockTimeoutMs = await this.getLockTimeoutMs();
+        const lockedAt = normalizeEditLockDate(institute.locked_at);
+
+        if (lockedAt && !isExpiredEditLock(lockedAt, lockTimeoutMs)) {
+            if (user && EditLockOwnerStore.getOwner(INSTITUTE_LOCK_SCOPE, institute.id) === user) {
+                return { ...institute, locked_at: undefined };
+            }
+            return institute;
+        }
+
+        const now = new Date();
+        const lockCriteria = !lockedAt
+            ? { id: institute.id, locked_at: IsNull() }
+            : { id: institute.id, locked_at: LessThan(new Date(now.getTime() - lockTimeoutMs)) };
+
+        const updateResult = await this.repository.update(lockCriteria as never, { locked_at: now } as never);
+        if (!updateResult.affected) {
+            return (await this.repository.findOne({ where: { id: institute.id }, relations: { super_institute: true, sub_institutes: true, aliases: true } })) ?? institute;
+        }
+
+        if (user && hasProvidedEntityId(institute.id)) {
+            EditLockOwnerStore.setOwner(INSTITUTE_LOCK_SCOPE, institute.id, user);
+        }
+
+        return { ...institute, locked_at: undefined };
+    }
+
+    private async ensureInstitutesCanBeSaved(institutes: (Institute | LockableEntity)[], user?: string): Promise<void> {
+        const ids = institutes.map((institute) => institute.id).filter((id): id is number => hasProvidedEntityId(id));
+        if (ids.length === 0) return;
+
+        const existing = await this.repository.find({ where: { id: In(ids) } as never }) ?? [];
+        const instituteMap = new Map(existing.map((institute) => [institute.id, institute]));
+
+        for (const institute of institutes) {
+            if (!hasProvidedEntityId(institute.id)) continue;
+            await this.ensureScopedEntityEditable(instituteMap.get(institute.id), institute, user);
+        }
+    }
+
+    private async ensureScopedEntityEditable(
+        dbEntity: Pick<Institute, 'id' | 'locked_at'> | undefined,
+        entity: Pick<Institute, 'id' | 'locked_at'>,
+        user?: string,
+    ): Promise<void> {
+        if (!hasProvidedEntityId(dbEntity?.id)) return;
+
+        if (!dbEntity.locked_at) {
+            EditLockOwnerStore.release(INSTITUTE_LOCK_SCOPE, dbEntity.id);
+            return;
+        }
+
+        const lockTimeoutMs = await this.getLockTimeoutMs();
+        if (isExpiredEditLock(dbEntity.locked_at, lockTimeoutMs)) {
+            EditLockOwnerStore.release(INSTITUTE_LOCK_SCOPE, dbEntity.id);
+            return;
+        }
+
+        const owner = EditLockOwnerStore.getOwner(INSTITUTE_LOCK_SCOPE, dbEntity.id);
+        if (this.isUnlockOnlyRequest(entity)) {
+            if (user && owner === user) {
+                EditLockOwnerStore.release(INSTITUTE_LOCK_SCOPE, dbEntity.id);
+                return;
+            }
+            throw new ConflictException('Entity is currently locked.');
+        }
+
+        if (!user || owner !== user) {
+            throw new ConflictException('Entity is currently locked.');
+        }
+    }
+
+    private syncInstituteLockOwner(institute: Pick<LockableEntity, 'id' | 'locked_at'>, user?: string): void {
+        if (!hasProvidedEntityId(institute?.id)) return;
+
+        const hasExplicitLockState = Object.prototype.hasOwnProperty.call(institute, 'locked_at');
+        if (hasExplicitLockState && !institute.locked_at) {
+            EditLockOwnerStore.release(INSTITUTE_LOCK_SCOPE, institute.id);
+            return;
+        }
+
+        if (user) {
+            EditLockOwnerStore.setOwner(INSTITUTE_LOCK_SCOPE, institute.id, user);
+        }
+    }
+
+    private isUnlockOnlyRequest(institute: Pick<LockableEntity, 'id' | 'locked_at'>): boolean {
+        const keys = Object.keys(institute).filter((key) => institute[key] !== undefined);
+        return hasProvidedEntityId(institute?.id)
+            && institute.locked_at === null
+            && keys.length > 0
+            && keys.every((key) => key === 'id' || key === 'locked_at');
+    }
+
+    private async getLockTimeoutMs(): Promise<number> {
+        const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
+        const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5;
+        return resolvedMinutes * 60 * 1000;
     }
 }

@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
 import { validateExportWorkflow } from './export-workflow.schema';
@@ -15,11 +16,11 @@ import { validateImportWorkflow } from './import-workflow.schema';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class WorkflowService {
     private readonly activeExecutionKeys = new Set<string>();
-    private readonly editLockOwners = new Map<string, string>();
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
@@ -74,7 +75,7 @@ export class WorkflowService {
     async saveImport(workflow: ImportWorkflow, user?: string) {
         let toSave = workflow;
         let shouldDeleteArchivedWorkflowReports = false;
-        if (workflow.id) { //update
+        if (hasProvidedEntityId(workflow.id)) { //update
             const db = await this.importRepository.findOneBy({ id: workflow.id })
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.IMPORT, user);
@@ -112,7 +113,7 @@ export class WorkflowService {
 
         const saved = await this.importRepository.save(toSave);
         this.syncEditLockOwner(saved, WorkflowType.IMPORT, user);
-        if (shouldDeleteArchivedWorkflowReports && saved.id) {
+        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id)) {
             await this.workflowReportService.deleteReportsForWorkflow(saved.id);
         }
 
@@ -145,7 +146,7 @@ export class WorkflowService {
     async saveExport(workflow: ExportWorkflow, user?: string) {
         let toSave = workflow;
         let shouldDeleteArchivedWorkflowReports = false;
-        if (workflow.id) {
+        if (hasProvidedEntityId(workflow.id)) {
             const db = await this.exportRepository.findOneBy({ id: workflow.id });
             if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
             await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.EXPORT, user);
@@ -182,7 +183,7 @@ export class WorkflowService {
 
         const saved = await this.exportRepository.save(toSave);
         this.syncEditLockOwner(saved, WorkflowType.EXPORT, user);
-        if (shouldDeleteArchivedWorkflowReports && saved.id) {
+        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id)) {
             await this.workflowReportService.deleteReportsForWorkflow(saved.id, WorkflowType.EXPORT);
         }
         return saved;
@@ -277,10 +278,10 @@ export class WorkflowService {
 
         await Promise.all(workflows
             .map((workflow) => workflow.id)
-            .filter((id): id is number => !!id)
+            .filter((id): id is number => hasProvidedEntityId(id))
             .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.IMPORT)));
         workflows.forEach((workflow) => {
-            if (workflow.id) this.releaseEditLock(WorkflowType.IMPORT, workflow.id);
+            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(WorkflowType.IMPORT, workflow.id);
         });
 
         return this.importRepository.remove(workflows);
@@ -297,10 +298,10 @@ export class WorkflowService {
 
         await Promise.all(workflows
             .map((workflow) => workflow.id)
-            .filter((id): id is number => !!id)
+            .filter((id): id is number => hasProvidedEntityId(id))
             .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.EXPORT)));
         workflows.forEach((workflow) => {
-            if (workflow.id) this.releaseEditLock(WorkflowType.EXPORT, workflow.id);
+            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(WorkflowType.EXPORT, workflow.id);
         });
 
         return this.exportRepository.remove(workflows);
@@ -348,10 +349,8 @@ export class WorkflowService {
         const timeoutMs = await this.getLockTimeoutMs();
         const now = new Date();
         const isExpired = !!res.locked_at && (now.getTime() - res.locked_at.getTime()) > timeoutMs;
-        const lockKey = this.getEditLockKey(workflowType, res.id);
-
         if (res.locked_at && !isExpired) {
-            if (user && this.editLockOwners.get(lockKey) === user) {
+            if (user && EditLockOwnerStore.getOwner(workflowType, res.id) === user) {
                 return {
                     ...res,
                     locked_at: undefined,
@@ -368,8 +367,8 @@ export class WorkflowService {
         if (!updateResult.affected) {
             throw new ConflictException('Workflow is currently locked.');
         }
-        if (user && res.id) {
-            this.editLockOwners.set(lockKey, user);
+        if (user && hasProvidedEntityId(res.id)) {
+            EditLockOwnerStore.setOwner(workflowType, res.id, user);
         }
 
         return {
@@ -487,12 +486,7 @@ export class WorkflowService {
         workflowType: WorkflowType,
         user?: string,
     ): Promise<void> {
-        if (db.published_at || db.deleted_at || !db.id) return;
-
-        if (this.isUnlockOnlyRequest(workflow)) {
-            this.releaseEditLock(workflowType, db.id);
-            return;
-        }
+        if (db.published_at || db.deleted_at || !hasProvidedEntityId(db.id)) return;
 
         if (!db.locked_at) {
             this.releaseEditLock(workflowType, db.id);
@@ -505,14 +499,22 @@ export class WorkflowService {
             return;
         }
 
-        const owner = this.editLockOwners.get(this.getEditLockKey(workflowType, db.id));
+        const owner = EditLockOwnerStore.getOwner(workflowType, db.id);
+        if (this.isUnlockOnlyRequest(workflow)) {
+            if (user && owner === user) {
+                this.releaseEditLock(workflowType, db.id);
+                return;
+            }
+            throw new ConflictException('Workflow is currently locked.');
+        }
+
         if (!user || owner !== user) {
             throw new ConflictException('Workflow is currently locked.');
         }
     }
 
     private isUnlockOnlyRequest<T extends { id?: number; locked_at?: Date | null }>(workflow: T): boolean {
-        return !!workflow?.id
+        return hasProvidedEntityId(workflow?.id)
             && workflow.locked_at === null
             && Object.keys(workflow).every((key) => key === 'id' || key === 'locked_at');
     }
@@ -522,13 +524,13 @@ export class WorkflowService {
         workflowType: WorkflowType,
         user?: string,
     ): void {
-        if (!workflow.id) return;
+        if (!hasProvidedEntityId(workflow.id)) return;
         if (!workflow.locked_at || workflow.published_at || workflow.deleted_at) {
             this.releaseEditLock(workflowType, workflow.id);
             return;
         }
         if (user) {
-            this.editLockOwners.set(this.getEditLockKey(workflowType, workflow.id), user);
+            EditLockOwnerStore.setOwner(workflowType, workflow.id, user);
         }
     }
 
@@ -539,11 +541,7 @@ export class WorkflowService {
     }
 
     private releaseEditLock(workflowType: WorkflowType, workflowId: number): void {
-        this.editLockOwners.delete(this.getEditLockKey(workflowType, workflowId));
-    }
-
-    private getEditLockKey(workflowType: WorkflowType, workflowId?: number): string {
-        return `${workflowType}:${workflowId ?? 'unknown'}`;
+        EditLockOwnerStore.release(workflowType, workflowId);
     }
 
     private isAbortError(error: unknown): boolean {

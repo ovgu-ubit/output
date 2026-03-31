@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
+import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
 import { PublicationChangeService } from './publication-change.service';
 describe('PublicationService combine', () => {
@@ -26,11 +28,14 @@ describe('PublicationService combine', () => {
         createPublicationChange: jest.Mock;
         deletePublicationChangesForPublications: jest.Mock;
     };
+    let configService: { get: jest.Mock };
     beforeEach(async () => {
+        EditLockOwnerStore.clear();
         pubRepository = {
             find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             delete: jest.fn(),
             softDelete: jest.fn(),
         };
@@ -60,6 +65,9 @@ describe('PublicationService combine', () => {
             createPublicationChange: jest.fn(),
             deletePublicationChangesForPublications: jest.fn(),
         };
+        configService = {
+            get: jest.fn(async () => 5),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -71,7 +79,7 @@ describe('PublicationService combine', () => {
                 { provide: getRepositoryToken(PublicationIdentifier), useValue: idRepository },
                 { provide: getRepositoryToken(PublicationSupplement), useValue: supplRepository },
                 { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
                 { provide: PublicationChangeService, useValue: publicationChangeService },
             ],
@@ -214,6 +222,66 @@ describe('PublicationService combine', () => {
         expect(result).toBeNull();
     });
 
+    it('keeps a locked publication editable for the same user', async () => {
+        const lockedAt = new Date();
+
+        pubRepository.findOne
+            .mockResolvedValueOnce({ id: 41, locked_at: null } as Publication)
+            .mockResolvedValueOnce({ id: 41, locked_at: lockedAt } as Publication);
+        pubRepository.update!.mockResolvedValue({ affected: 1 } as never);
+
+        const first = await service.getPublication(41, false, true, 'alice');
+        const second = await service.getPublication(41, false, true, 'alice');
+
+        expect(pubRepository.update).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 41, locked_at: expect.any(Object) }),
+            expect.objectContaining({ locked_at: expect.any(Date) }),
+        );
+        expect(first?.locked_at).toBeUndefined();
+        expect(second?.locked_at).toBeUndefined();
+    });
+
+    it('rejects saving a publication locked by another user', async () => {
+        const lockedAt = new Date();
+
+        pubRepository.findOne.mockResolvedValueOnce({ id: 42, locked_at: null } as Publication);
+        pubRepository.update!.mockResolvedValue({ affected: 1 } as never);
+
+        await service.getPublication(42, false, true, 'alice');
+
+        pubRepository.find.mockResolvedValue([{ id: 42, locked_at: lockedAt } as Publication] as never);
+
+        await expect(service.save([{ id: 42, title: 'Blocked' } as Publication], { by_user: 'mallory' }))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(pubRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects saving a publication with id 0 when that record is locked by another user', async () => {
+        EditLockOwnerStore.setOwner('publication', 0, 'alice');
+        pubRepository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Publication] as never);
+
+        await expect(service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' }))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(pubRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('allows the lock owner to release an active publication lock', async () => {
+        const lockedAt = new Date();
+
+        pubRepository.findOne
+            .mockResolvedValueOnce({ id: 43, locked_at: null } as Publication)
+            .mockResolvedValueOnce({ id: 43, locked_at: lockedAt, identifiers: [], supplements: [] } as Publication);
+        pubRepository.update!.mockResolvedValue({ affected: 1 } as never);
+        pubRepository.find.mockResolvedValue([{ id: 43, locked_at: lockedAt } as Publication] as never);
+        pubRepository.save.mockResolvedValue({ id: 43, locked_at: null } as never);
+
+        await service.getPublication(43, false, true, 'alice');
+
+        await expect(service.update([{ id: 43, locked_at: null } as Publication], { by_user: 'alice' }))
+            .resolves.toBe(1);
+        expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 43, locked_at: null }));
+    });
+
     it('checks DOI or title existence using case-insensitive matching', async () => {
         pubRepository.findOne.mockResolvedValue({ id: 42 } as Publication);
 
@@ -291,6 +359,7 @@ describe('PublicationService combine', () => {
         } as Publication;
 
         pubRepository.find
+            .mockResolvedValueOnce([{ id: 7, locked_at: null } as Publication] as never)
             .mockResolvedValueOnce([before])
             .mockResolvedValueOnce([after]);
         pubRepository.save.mockResolvedValue([{ id: 7, title: 'After' } as Publication] as any);

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExportWorkflow, ImportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { hasProvidedEntityId } from '../common/entity-id';
 import { AppConfigService } from '../config/app-config.service';
 import { PublicationChangeService } from '../publication/core/publication-change.service';
 import { WorkflowReport } from './WorkflowReport.entity';
@@ -67,7 +68,7 @@ export class WorkflowReportService {
     }
 
     async save(options: WorkflowReport): Promise<WorkflowReport> {
-        if (!options.id) throw new BadRequestException('create report first before saving it');
+        if (!hasProvidedEntityId(options.id)) throw new BadRequestException('create report first before saving it');
         return this.hydrateWorkflowReference(await this.workflowReportRepository.save(options));
     }
 

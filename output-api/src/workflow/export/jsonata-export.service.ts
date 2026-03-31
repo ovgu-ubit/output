@@ -16,6 +16,7 @@ import { PublicationService } from '../../publication/core/publication.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { hasProvidedEntityId } from '../../common/entity-id';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
@@ -101,7 +102,7 @@ export class JSONataExportService extends AbstractExportService {
         if (!this.exportDefinition?.mapping) {
             throw new BadRequestException('JSONata export workflow is not configured.');
         }
-        if (!this.workflowReport?.id) {
+        if (!hasProvidedEntityId(this.workflowReport?.id)) {
             throw new BadRequestException('JSONata export workflow report is not configured.');
         }
 
@@ -395,7 +396,7 @@ export class JSONataExportService extends AbstractExportService {
     ) {
         this.progress = progress;
         if (status !== undefined) this.status_text = status;
-        if (!this.workflowReport?.id) return;
+        if (!hasProvidedEntityId(this.workflowReport?.id)) return;
 
         this.workflowReport = await this.workflowReportService.updateStatus(this.workflowReport.id, {
             progress,

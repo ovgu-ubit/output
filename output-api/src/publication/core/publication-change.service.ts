@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
 import { PublicationChange } from './PublicationChange.entity';
 
@@ -13,7 +14,7 @@ export class PublicationChangeService {
     ) { }
 
     async createPublicationChange(options: PublicationChange): Promise<PublicationChange> {
-        if (options.workflowReport?.id) {
+        if (hasProvidedEntityId(options.workflowReport?.id)) {
             await this.ensureReportExists(options.workflowReport.id);
         }
 

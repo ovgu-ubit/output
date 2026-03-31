@@ -5,6 +5,7 @@ import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
 import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("institute")
 @ApiTags("institute")
@@ -33,7 +34,7 @@ export class InstituteController {
         type: Institute
     })
     async one(@Param('id') id: number, @Req() request: Request): Promise<Institute> {
-        return await this.instService.one(id, request['user']? request['user']['write'] : false);
+        return await this.instService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
     }
 
     @Post()
@@ -47,8 +48,9 @@ export class InstituteController {
             }
         }
     })
-    async save(@Body() body: Institute) {
-        return this.instService.save([body])
+    async save(@Body() body: Institute, @Req() request: Request) {
+        assertCreateRequestHasNoId(body);
+        return this.instService.save([body], request['user']?.['username'])
     }
 
     @Put()
@@ -62,8 +64,8 @@ export class InstituteController {
             }
         }
     })
-    async update(@Body() body: Institute) {
-        return this.instService.save([body])
+    async update(@Body() body: Institute, @Req() request: Request) {
+        return this.instService.save([body], request['user']?.['username'])
     }
 
     @Delete()

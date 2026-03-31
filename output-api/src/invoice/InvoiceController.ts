@@ -7,12 +7,19 @@ import { InvoiceService } from "./invoice.service";
 import { Invoice } from "./Invoice.entity";
 import { CostType } from "./CostType.entity";
 import { CostCenter } from "./CostCenter.entity";
+import { CostTypeService } from "./cost-type.service";
+import { CostCenterService } from "./cost-center.service";
+import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("invoice")
 @ApiTags("invoice")
 export class InvoiceController {
 
-    constructor(private invoiceService:InvoiceService) { }
+    constructor(
+        private invoiceService:InvoiceService,
+        private costTypeService: CostTypeService,
+        private costCenterService: CostCenterService,
+    ) { }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -31,8 +38,8 @@ export class InvoiceController {
     @ApiResponse({
         type: Invoice
     })
-    async one(@Query('id') id:number) : Promise<Invoice> {
-        return await this.invoiceService.get(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<Invoice> {
+        return await this.invoiceService.get(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
     }
 
     @Post()
@@ -46,9 +53,9 @@ export class InvoiceController {
             }
         }
     })
-    async save(@Body() body: Invoice) {
-        if (!body.id) body.id = undefined;
-        return this.invoiceService.save([body])
+    async save(@Body() body: Invoice, @Req() request: Request) {
+        assertCreateRequestHasNoId(body);
+        return this.invoiceService.save([body], request['user']?.['username'])
     }
     
     @Put()
@@ -62,15 +69,15 @@ export class InvoiceController {
             }
         }
     })
-    async update(@Body() body: Invoice) {
-        return this.invoiceService.save([body])
+    async update(@Body() body: Invoice, @Req() request: Request) {
+        return this.invoiceService.save([body], request['user']?.['username'])
     }
 
     @Delete()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async remove(@Body() body: Invoice[]) {
-        return this.invoiceService.delete(body);
+    async remove(@Body() body: Invoice[], @Req() request: Request) {
+        return this.invoiceService.delete(body, request['user']?.['username']);
     }
 
     @Get('cost_type')
@@ -78,7 +85,7 @@ export class InvoiceController {
         type: Invoice
     })
     async cost_type() : Promise<CostType[]> {
-        return await this.invoiceService.getCostTypes();
+        return await this.costTypeService.get();
     }
     
     @Get('cost_type_index')
@@ -86,7 +93,7 @@ export class InvoiceController {
         type: Invoice
     })
     async cost_type_index(@Query('reporting_year') reporting_year: number) : Promise<CostTypeIndex[]> {
-        return await this.invoiceService.getCostTypeIndex(reporting_year);
+        return await this.costTypeService.getCostTypeIndex(reporting_year);
     }
     
     @Get('cost_type/:id')
@@ -95,7 +102,7 @@ export class InvoiceController {
         type: Invoice
     })
     async cost_type_one(@Param('id') id:number, @Req() request: Request) : Promise<CostType> {
-        return await this.invoiceService.getCostType(id, request['user']? request['user']['write'] : false);
+        return await this.costTypeService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
     }
 
     @Post('cost_type')
@@ -110,8 +117,8 @@ export class InvoiceController {
         }
     })
     async saveCT(@Body() body: CostType) {
-        if (!body.id) body.id = undefined;
-        return this.invoiceService.saveCT([body])
+        assertCreateRequestHasNoId(body);
+        return this.costTypeService.save(body)
     }
     
     @Put('cost_type')
@@ -125,34 +132,34 @@ export class InvoiceController {
             }
         }
     })
-    async updateCT(@Body() body: CostType) {
-        return this.invoiceService.saveCT([body])
+    async updateCT(@Body() body: CostType, @Req() request: Request) {
+        return this.costTypeService.update(body, request['user']?.['username'])
     }
 
     @Delete('cost_type')
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }])
     async removeCT(@Body() body: CostType[]) {
-        return this.invoiceService.deleteCT(body);
+        return this.costTypeService.delete(body);
     }
     
 
     @Get('cost_center')
     async cost_center() : Promise<CostCenter[]> {
-        return await this.invoiceService.getCostCenters();
+        return await this.costCenterService.get();
     } 
 
     @Get('cost_center/index')
     @ApiResponse({ status: 200, description: 'Author index is returned.' })
     async ccIndex(@Query('reporting_year') reporting_year: number) {
-        return await this.invoiceService.getCostCenterIndex(reporting_year);
+        return await this.costCenterService.getCostCenterIndex(reporting_year);
     }
 
     
     @Get('cost_center/:id')
     @UseGuards(AccessGuard)
     async cost_center_one(@Param('id') id:number, @Req() request: Request) : Promise<CostCenter> {
-        return await this.invoiceService.getCostCenter(id, request['user']? request['user']['write'] : false);
+        return await this.costCenterService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
     }
 
     @Post('cost_center')
@@ -167,8 +174,8 @@ export class InvoiceController {
         }
     })
     async saveCC(@Body() body: CostCenter) {
-        if (!body.id) body.id = undefined;
-        return this.invoiceService.saveCC([body])
+        assertCreateRequestHasNoId(body);
+        return this.costCenterService.save(body)
     }
     
     @Put('cost_center')
@@ -182,14 +189,14 @@ export class InvoiceController {
             }
         }
     })
-    async updateCC(@Body() body: CostCenter) {
-        return this.invoiceService.saveCC([body])
+    async updateCC(@Body() body: CostCenter, @Req() request: Request) {
+        return this.costCenterService.update(body, request['user']?.['username'])
     }
 
     @Delete('cost_center')
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async removeCC(@Body() body: CostCenter[]) {
-        return this.invoiceService.deleteCC(body);
+        return this.costCenterService.delete(body);
     }
 }

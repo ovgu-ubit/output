@@ -15,8 +15,8 @@ export class GreaterEntityController extends AbstractCrudController<GreaterEntit
         super(geService);
     }
 
-    protected override updateEntity(body: GreaterEntity) {
-        return this.service.update(body);
+    protected override updateEntity(body: GreaterEntity, user?: string) {
+        return this.service.update(body, user);
     }
 
     @Get("index")

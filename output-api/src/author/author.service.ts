@@ -1,17 +1,21 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
-import { ILike, In, Repository } from 'typeorm';
+import { ILike, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
-import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
-import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
-import { Author } from './Author.entity';
-import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
-import { InstituteService } from '../institute/institute.service';
-import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
+import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
+import { AppConfigService } from '../config/app-config.service';
+import { InstituteService } from '../institute/institute.service';
+import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
+import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
+import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
+import { Author } from './Author.entity';
+
+const AUTHOR_LOCK_SCOPE = 'author';
 
 @Injectable()
 export class AuthorService {
@@ -24,36 +28,29 @@ export class AuthorService {
         private configService: AppConfigService,
         private aliasLookupService: AliasLookupService) { }
 
-    public async save(aut: any[]) {
+    public async save(aut: Partial<Author>[], user?: string) {
+        await this.ensureAuthorsCanBeSaved(aut, user);
         const result = [];
         for (const auth of aut) {
             const obj = { ...auth, institutes: undefined }
             let authEnt = await this.repository.save(obj).catch(err => { console.log(err) });
-            if (authEnt) authEnt = await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
+            if (authEnt && Object.prototype.hasOwnProperty.call(auth, 'institutes')) {
+                authEnt = await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
+            }
             result.push(authEnt);
         }
+        aut.forEach((author) => this.syncAuthorLockOwner(author, user));
         return result;
     }
 
-    public get(id?: number) {
+    public get() {
         return this.repository.find({ relations: { institutes: true } });
     }
 
-    public async one(id: number, writer: boolean) {
+    public async one(id: number, writer: boolean, user?: string) {
         const aut = await this.repository.findOne({ where: { id }, relations: { institutes: true, aliases_first_name: true, aliases_last_name: true } });
-        if (writer && !aut.locked_at) {
-            await this.save([{
-                id: aut.id,
-                locked_at: new Date()
-            }]);
-        } else if (writer && (new Date().getTime() - aut.locked_at.getTime()) > await this.configService.get('lock_timeout') * 60 * 1000) {
-            await this.save([{
-                id: aut.id,
-                locked_at: null
-            }]);
-            return this.one(id, writer);
-        }
-        return aut;
+        if (!aut || !writer) return aut;
+        return this.acquireAuthorEditLock(aut, user);
     }
 
     public async identifyAuthor(last_name: string, first_name: string): Promise<Author> {
@@ -63,7 +60,7 @@ export class AuthorService {
         if (aliasL && aliasL.length > 0 && aliasF && aliasF.length > 0) {
             //both alias in the same entity
             const id = aliasL.find(e => aliasF.find(f => f.elementId === e.elementId)).elementId;
-            if (id) return this.repository.findOne({ where: { id }, relations: { institutes: true } })
+            if (hasProvidedEntityId(id)) return this.repository.findOne({ where: { id }, relations: { institutes: true } })
         }
         if (aliasL.length > 0) {
             for (const alias of aliasL) {
@@ -86,6 +83,7 @@ export class AuthorService {
         //1. find an existing entity
         let author: Author;
         //replace points from initials
+        // eslint-disable-next-line no-useless-escape
         first_name = first_name.replace('\.', '').trim();
         last_name = last_name.trim();
         //find via orcid
@@ -96,7 +94,7 @@ export class AuthorService {
             if (authors.length > 1) {
                 //assign first author and give warning
                 author = authors[0];
-                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v, c, i, a) => { return v + ', ' + c.id }, '')}` } as AppError;
+                error = { origin: 'authorService', text: `mehrdeutiger Autor ${last_name}, ${first_name} wurde ${authors.length} mal gefunden in DB mit IDs: ${authors.reduce<string>((v, c, _i, _a) => { return v + ', ' + c.id }, '')}` } as AppError;
             } else if (authors.length > 0) author = authors[0];
             else {
                 //find via alias
@@ -139,7 +137,9 @@ export class AuthorService {
                     aliases_last_name
                 },
                     afterSave: async ({ duplicateIds, defaultDelete }) => {
-                        await this.aliasFirstNameRepository.delete({ elementId: In(duplicateIds) }) && await this.aliasLastNameRepository.delete({ elementId: In(duplicateIds) }) 
+                        if (await this.aliasFirstNameRepository.delete({ elementId: In(duplicateIds) })) {
+                             await this.aliasLastNameRepository.delete({ elementId: In(duplicateIds) }) 
+                        }
                         await this.pubAutRepository.delete({ authorId: In(duplicateIds) })
     
                         await defaultDelete();
@@ -224,5 +224,105 @@ export class AuthorService {
         }
         return await this.repository.delete(auts.map(p => p.id));
     }
-}
 
+    private async acquireAuthorEditLock(author: Author, user?: string): Promise<Author> {
+        const lockTimeoutMs = await this.getLockTimeoutMs();
+        const lockedAt = normalizeEditLockDate(author.locked_at);
+
+        if (lockedAt && !isExpiredEditLock(lockedAt, lockTimeoutMs)) {
+            if (user && EditLockOwnerStore.getOwner(AUTHOR_LOCK_SCOPE, author.id) === user) {
+                return { ...author, locked_at: undefined };
+            }
+            return author;
+        }
+
+        const now = new Date();
+        const lockCriteria = !lockedAt
+            ? { id: author.id, locked_at: IsNull() }
+            : { id: author.id, locked_at: LessThan(new Date(now.getTime() - lockTimeoutMs)) };
+
+        const updateResult = await this.repository.update(lockCriteria as never, { locked_at: now } as never);
+        if (!updateResult.affected) {
+            return (await this.repository.findOne({ where: { id: author.id }, relations: { institutes: true, aliases_first_name: true, aliases_last_name: true } })) ?? author;
+        }
+
+        if (user && hasProvidedEntityId(author.id)) {
+            EditLockOwnerStore.setOwner(AUTHOR_LOCK_SCOPE, author.id, user);
+        }
+
+        return { ...author, locked_at: undefined };
+    }
+
+    private async ensureAuthorsCanBeSaved(authors: Partial<Author>[], user?: string): Promise<void> {
+        const ids = authors.map((author) => author.id).filter((id): id is number => hasProvidedEntityId(id));
+        if (ids.length === 0) return;
+
+        const existing = await this.repository.find({ where: { id: In(ids) } }) ?? [];
+        const authorMap = new Map(existing.map((author) => [author.id, author]));
+
+        for (const author of authors) {
+            if (!hasProvidedEntityId(author.id)) continue;
+            await this.ensureScopedEntityEditable(authorMap.get(author.id), author, user);
+        }
+    }
+
+    private async ensureScopedEntityEditable(
+        dbEntity: Pick<Author, 'id' | 'locked_at'> | undefined,
+        entity: Pick<Author, 'id' | 'locked_at'>,
+        user?: string,
+    ): Promise<void> {
+        if (!hasProvidedEntityId(dbEntity?.id)) return;
+
+        if (!dbEntity.locked_at) {
+            EditLockOwnerStore.release(AUTHOR_LOCK_SCOPE, dbEntity.id);
+            return;
+        }
+
+        const lockTimeoutMs = await this.getLockTimeoutMs();
+        if (isExpiredEditLock(dbEntity.locked_at, lockTimeoutMs)) {
+            EditLockOwnerStore.release(AUTHOR_LOCK_SCOPE, dbEntity.id);
+            return;
+        }
+
+        const owner = EditLockOwnerStore.getOwner(AUTHOR_LOCK_SCOPE, dbEntity.id);
+        if (this.isUnlockOnlyRequest(entity)) {
+            if (user && owner === user) {
+                EditLockOwnerStore.release(AUTHOR_LOCK_SCOPE, dbEntity.id);
+                return;
+            }
+            throw new ConflictException('Entity is currently locked.');
+        }
+
+        if (!user || owner !== user) {
+            throw new ConflictException('Entity is currently locked.');
+        }
+    }
+
+    private syncAuthorLockOwner(author: Pick<Author, 'id' | 'locked_at'>, user?: string): void {
+        if (!hasProvidedEntityId(author?.id)) return;
+
+        const hasExplicitLockState = Object.prototype.hasOwnProperty.call(author, 'locked_at');
+        if (hasExplicitLockState && !author.locked_at) {
+            EditLockOwnerStore.release(AUTHOR_LOCK_SCOPE, author.id);
+            return;
+        }
+
+        if (user) {
+            EditLockOwnerStore.setOwner(AUTHOR_LOCK_SCOPE, author.id, user);
+        }
+    }
+
+    private isUnlockOnlyRequest(author: Pick<Author, 'id' | 'locked_at'>): boolean {
+        const keys = Object.keys(author).filter((key) => author[key] !== undefined);
+        return hasProvidedEntityId(author?.id)
+            && author.locked_at === null
+            && keys.length > 0
+            && keys.every((key) => key === 'id' || key === 'locked_at');
+    }
+
+    private async getLockTimeoutMs(): Promise<number> {
+        const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
+        const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5;
+        return resolvedMinutes * 60 * 1000;
+    }
+}
