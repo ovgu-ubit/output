@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ExportStrategy, ImportStrategy, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataExportService } from './export/jsonata-export.service';
@@ -46,6 +47,7 @@ describe('WorkflowService', () => {
     };
 
     beforeEach(async () => {
+        EditLockOwnerStore.clear();
         importRepository = {
             findOne: jest.fn(),
             findOneBy: jest.fn(),

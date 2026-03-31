@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
 import { validateExportWorkflow } from './export-workflow.schema';
@@ -19,7 +20,6 @@ import { WorkflowReportService } from './workflow-report.service';
 @Injectable()
 export class WorkflowService {
     private readonly activeExecutionKeys = new Set<string>();
-    private readonly editLockOwners = new Map<string, string>();
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
@@ -348,10 +348,8 @@ export class WorkflowService {
         const timeoutMs = await this.getLockTimeoutMs();
         const now = new Date();
         const isExpired = !!res.locked_at && (now.getTime() - res.locked_at.getTime()) > timeoutMs;
-        const lockKey = this.getEditLockKey(workflowType, res.id);
-
         if (res.locked_at && !isExpired) {
-            if (user && this.editLockOwners.get(lockKey) === user) {
+            if (user && EditLockOwnerStore.getOwner(workflowType, res.id) === user) {
                 return {
                     ...res,
                     locked_at: undefined,
@@ -369,7 +367,7 @@ export class WorkflowService {
             throw new ConflictException('Workflow is currently locked.');
         }
         if (user && res.id) {
-            this.editLockOwners.set(lockKey, user);
+            EditLockOwnerStore.setOwner(workflowType, res.id, user);
         }
 
         return {
@@ -500,7 +498,7 @@ export class WorkflowService {
             return;
         }
 
-        const owner = this.editLockOwners.get(this.getEditLockKey(workflowType, db.id));
+        const owner = EditLockOwnerStore.getOwner(workflowType, db.id);
         if (this.isUnlockOnlyRequest(workflow)) {
             if (user && owner === user) {
                 this.releaseEditLock(workflowType, db.id);
@@ -531,7 +529,7 @@ export class WorkflowService {
             return;
         }
         if (user) {
-            this.editLockOwners.set(this.getEditLockKey(workflowType, workflow.id), user);
+            EditLockOwnerStore.setOwner(workflowType, workflow.id, user);
         }
     }
 
@@ -542,11 +540,7 @@ export class WorkflowService {
     }
 
     private releaseEditLock(workflowType: WorkflowType, workflowId: number): void {
-        this.editLockOwners.delete(this.getEditLockKey(workflowType, workflowId));
-    }
-
-    private getEditLockKey(workflowType: WorkflowType, workflowId?: number): string {
-        return `${workflowType}:${workflowId ?? 'unknown'}`;
+        EditLockOwnerStore.release(workflowType, workflowId);
     }
 
     private isAbortError(error: unknown): boolean {
