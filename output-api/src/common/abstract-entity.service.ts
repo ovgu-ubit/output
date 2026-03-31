@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, IsNull, LessThan, Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
+import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 
 export interface LockableEntity {
     id?: number;
@@ -8,8 +9,6 @@ export interface LockableEntity {
 }
 
 export abstract class AbstractEntityService<TEntity extends LockableEntity> {
-    private readonly editLockOwners = new Map<string, string>();
-
     protected constructor(
         protected readonly repository: Repository<TEntity>,
         private readonly configService: AppConfigService,
@@ -56,11 +55,10 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
 
         const lockTimeoutMs = await this.getLockTimeoutMs();
         const lockedAt = this.normalizeDate(entity.locked_at);
-        const lockKey = this.getEditLockKey(entity.id);
         const isExpired = !!lockedAt && (Date.now() - lockedAt.getTime()) > lockTimeoutMs;
 
         if (lockedAt && !isExpired) {
-            if (user && this.editLockOwners.get(lockKey) === user) {
+            if (user && EditLockOwnerStore.getOwner(this.getEditLockScope(), entity.id) === user) {
                 return {
                     ...entity,
                     locked_at: undefined,
@@ -84,7 +82,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         }
 
         if (user && entity.id) {
-            this.editLockOwners.set(lockKey, user);
+            EditLockOwnerStore.setOwner(this.getEditLockScope(), entity.id, user);
         }
 
         return {
@@ -133,7 +131,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
             return;
         }
 
-        const owner = this.editLockOwners.get(this.getEditLockKey(dbEntity.id));
+        const owner = EditLockOwnerStore.getOwner(this.getEditLockScope(), dbEntity.id);
         if (this.isUnlockOnlyRequest(entity)) {
             if (user && owner === user) {
                 this.releaseEditLock(dbEntity.id);
@@ -161,8 +159,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
     }
 
     private normalizeDate(value?: Date | null): Date | null {
-        if (!value) return null;
-        return value instanceof Date ? value : new Date(value);
+        return normalizeEditLockDate(value);
     }
 
     private isUnlockOnlyRequest(entity: DeepPartial<TEntity>): boolean {
@@ -181,16 +178,15 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
             return;
         }
         if (user) {
-            this.editLockOwners.set(this.getEditLockKey(entity.id), user);
+            EditLockOwnerStore.setOwner(this.getEditLockScope(), entity.id, user);
         }
     }
 
     private releaseEditLock(id: number): void {
-        this.editLockOwners.delete(this.getEditLockKey(id));
+        EditLockOwnerStore.release(this.getEditLockScope(), id);
     }
 
-    private getEditLockKey(id?: number): string {
-        const tableName = (this.repository as { metadata?: { tableName?: string } }).metadata?.tableName ?? 'entity';
-        return `${tableName}:${id ?? 'unknown'}`;
+    private getEditLockScope(): string {
+        return (this.repository as { metadata?: { tableName?: string } }).metadata?.tableName ?? 'entity';
     }
 }

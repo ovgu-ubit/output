@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { of } from 'rxjs';
@@ -11,6 +12,7 @@ import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
 import { InstituteService } from '../institute/institute.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { EditLockOwnerStore } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 
 jest.mock('../common/merge', () => ({
@@ -29,10 +31,12 @@ describe('AuthorService', () => {
     const mergeEntitiesMock = mergeEntities as jest.Mock;
 
     beforeEach(async () => {
+        EditLockOwnerStore.clear();
         repository = {
             save: jest.fn(),
             find: jest.fn(),
             findOne: jest.fn(),
+            update: jest.fn(),
             delete: jest.fn(),
         };
         pubAutRepository = {
@@ -257,26 +261,49 @@ describe('AuthorService', () => {
         expect(result).toEqual({ id: 1 });
     });
 
-    it('respects lock timeout logic when fetching a writer instance', async () => {
-        const now = Date.now();
-        const oldLock = new Date(now - 10 * 60 * 1000);
-        const refreshedAuthor = { id: 4, locked_at: new Date(now - 60 * 1000) } as Author;
-        const initialAuthor = { id: 4, locked_at: oldLock, institutes: [] } as Author;
+    it('keeps an author editable for the same lock owner', async () => {
+        const lockedAt = new Date();
 
         repository.findOne
-            .mockResolvedValueOnce(initialAuthor)
-            .mockResolvedValueOnce(refreshedAuthor);
+            .mockResolvedValueOnce({ id: 4, locked_at: null, institutes: [] } as Author)
+            .mockResolvedValueOnce({ id: 4, locked_at: lockedAt, institutes: [] } as Author);
+        repository.update!.mockResolvedValue({ affected: 1 } as any);
         configService.get.mockResolvedValue(5);
 
-        const saveSpy = jest.spyOn(service, 'save').mockResolvedValue([]);
+        const first = await service.one(4, true, 'alice');
+        const second = await service.one(4, true, 'alice');
 
-        const result = await service.one(4, true);
+        expect(repository.update).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 4, locked_at: expect.any(Object) }),
+            expect.objectContaining({ locked_at: expect.any(Date) }),
+        );
+        expect(first?.locked_at).toBeUndefined();
+        expect(second?.locked_at).toBeUndefined();
+    });
 
-        expect(configService.get).toHaveBeenCalledWith('lock_timeout');
-        expect(saveSpy).toHaveBeenCalledWith([{ id: 4, locked_at: null }]);
-        expect(repository.findOne).toHaveBeenCalledTimes(2);
-        expect(result).toBe(refreshedAuthor);
+    it('rejects saving an author locked by another user', async () => {
+        repository.findOne.mockResolvedValueOnce({ id: 5, locked_at: null, institutes: [] } as Author);
+        repository.update!.mockResolvedValue({ affected: 1 } as any);
+        repository.find.mockResolvedValue([{ id: 5, locked_at: new Date(), institutes: [] } as Author]);
+        configService.get.mockResolvedValue(5);
 
-        saveSpy.mockRestore();
+        await service.one(5, true, 'alice');
+
+        await expect(service.save([{ id: 5, first_name: 'Mallory' } as Author], 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('allows the author lock owner to release an active lock', async () => {
+        repository.findOne.mockResolvedValueOnce({ id: 6, locked_at: null, institutes: [] } as Author);
+        repository.update!.mockResolvedValue({ affected: 1 } as any);
+        repository.find.mockResolvedValue([{ id: 6, locked_at: new Date(), institutes: [] } as Author]);
+        repository.save.mockResolvedValue({ id: 6, locked_at: null } as Author);
+        configService.get.mockResolvedValue(5);
+
+        await service.one(6, true, 'alice');
+
+        await expect(service.save([{ id: 6, locked_at: null } as Author], 'alice'))
+            .resolves.toEqual([{ id: 6, locked_at: null }]);
     });
 });

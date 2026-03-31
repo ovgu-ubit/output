@@ -86,7 +86,12 @@ export class PublicationController {
     })
     async one(@Query('id') id: number, @Req() request: Request) {
         if (!id) throw new BadRequestException('id must be given')
-        return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write_publication'] : false);
+        return await this.publicationService.getPublication(
+            id,
+            request['user'] ? request['user']['read'] : false,
+            request['user'] ? request['user']['write_publication'] : false,
+            request['user']?.['username'],
+        );
     }
 
     @Get('changes')

@@ -2,6 +2,7 @@ import { ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
+import { EditLockOwnerStore } from './edit-lock';
 
 interface TestEntity extends LockableEntity {
     label?: string;
@@ -27,6 +28,7 @@ describe('AbstractEntityService', () => {
     let configService: { get: jest.Mock };
 
     beforeEach(() => {
+        EditLockOwnerStore.clear();
         repository = {
             findOne: jest.fn(),
             save: jest.fn(),
