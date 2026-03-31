@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { Author } from "./Author.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Body, Controller, Delete, Get, InternalServerErrorException, Param, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, Param, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthorService } from "./author.service";
 import { Permissions } from "../authorization/permission.decorator";
@@ -46,6 +46,7 @@ export class AuthorController {
     })
     @ApiResponse({ status: 201, description: 'Saved objects are returned.' })
     async save(@Req() request: Request) {
+        if (request.body?.id) throw new BadRequestException('id must not be provided for create requests');
         return this.authorService.save([request.body], request['user']?.['username']);
     }
 

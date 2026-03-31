@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { InvoiceController } from './InvoiceController';
 
 describe('InvoiceController', () => {
@@ -42,6 +43,26 @@ describe('InvoiceController', () => {
         expect(result).toEqual([{ id: 1, label: 'APC' }]);
     });
 
+    it('forwards writer flag and username when loading one invoice', async () => {
+        await controller.one(5, { user: { write: true, username: 'alice' } } as any);
+
+        expect(invoiceService.get).toHaveBeenCalledWith(5, true, 'alice');
+    });
+
+    it('forwards username when saving one invoice', async () => {
+        const body = { publication: { id: 7 } };
+
+        await controller.save(body as any, { user: { username: 'alice' } } as any);
+
+        expect(invoiceService.save).toHaveBeenCalledWith([body], 'alice');
+    });
+
+    it('rejects invoice create requests that provide an id', async () => {
+        await expect(controller.save({ id: 8 } as any, { user: { username: 'alice' } } as any))
+            .rejects.toBeInstanceOf(BadRequestException);
+        expect(invoiceService.save).not.toHaveBeenCalled();
+    });
+
     it('forwards writer flag and username when loading one cost type', async () => {
         await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
 
@@ -56,6 +77,11 @@ describe('InvoiceController', () => {
         expect(costTypeService.update).toHaveBeenCalledWith(body, 'alice');
     });
 
+    it('rejects cost type create requests that provide an id', async () => {
+        await expect(controller.saveCT({ id: 11, label: 'APC' } as any)).rejects.toBeInstanceOf(BadRequestException);
+        expect(costTypeService.save).not.toHaveBeenCalled();
+    });
+
     it('forwards writer flag and username when loading one cost center', async () => {
         await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);
 
@@ -68,5 +94,10 @@ describe('InvoiceController', () => {
         await controller.updateCC(body as any, { user: { username: 'alice' } } as any);
 
         expect(costCenterService.update).toHaveBeenCalledWith(body, 'alice');
+    });
+
+    it('rejects cost center create requests that provide an id', async () => {
+        await expect(controller.saveCC({ id: 12, label: 'Cost Center' } as any)).rejects.toBeInstanceOf(BadRequestException);
+        expect(costCenterService.save).not.toHaveBeenCalled();
     });
 });

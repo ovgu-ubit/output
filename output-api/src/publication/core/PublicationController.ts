@@ -143,6 +143,7 @@ export class PublicationController {
         }
     })
     async save(@Body() body: Publication, @Req() request: Request) {
+        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
         return this.publicationService.save([body], { by_user: request['user']?.['username'] });
     }
 

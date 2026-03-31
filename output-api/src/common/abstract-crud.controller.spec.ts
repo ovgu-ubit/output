@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { AbstractCrudController } from './abstract-crud.controller';
 import { LockableEntity } from './abstract-entity.service';
 
@@ -43,5 +44,10 @@ describe('AbstractCrudController', () => {
         await controller.update(entity, { user: { username: 'alice' } } as any);
 
         expect(service.update).toHaveBeenCalledWith(entity, 'alice');
+    });
+
+    it('rejects create requests that already provide an id', async () => {
+        await expect(controller.save({ id: 4, label: 'Existing' })).rejects.toBeInstanceOf(BadRequestException);
+        expect(service.save).not.toHaveBeenCalled();
     });
 });

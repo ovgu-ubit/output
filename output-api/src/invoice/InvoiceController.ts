@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
@@ -37,8 +37,8 @@ export class InvoiceController {
     @ApiResponse({
         type: Invoice
     })
-    async one(@Query('id') id:number) : Promise<Invoice> {
-        return await this.invoiceService.get(id);
+    async one(@Query('id') id:number, @Req() request: Request) : Promise<Invoice> {
+        return await this.invoiceService.get(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
     }
 
     @Post()
@@ -52,9 +52,9 @@ export class InvoiceController {
             }
         }
     })
-    async save(@Body() body: Invoice) {
-        if (!body.id) body.id = undefined;
-        return this.invoiceService.save([body])
+    async save(@Body() body: Invoice, @Req() request: Request) {
+        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
+        return this.invoiceService.save([body], request['user']?.['username'])
     }
     
     @Put()
@@ -68,15 +68,15 @@ export class InvoiceController {
             }
         }
     })
-    async update(@Body() body: Invoice) {
-        return this.invoiceService.save([body])
+    async update(@Body() body: Invoice, @Req() request: Request) {
+        return this.invoiceService.save([body], request['user']?.['username'])
     }
 
     @Delete()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async remove(@Body() body: Invoice[]) {
-        return this.invoiceService.delete(body);
+    async remove(@Body() body: Invoice[], @Req() request: Request) {
+        return this.invoiceService.delete(body, request['user']?.['username']);
     }
 
     @Get('cost_type')
@@ -116,7 +116,7 @@ export class InvoiceController {
         }
     })
     async saveCT(@Body() body: CostType) {
-        if (!body.id) body.id = undefined;
+        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
         return this.costTypeService.save(body)
     }
     
@@ -173,7 +173,7 @@ export class InvoiceController {
         }
     })
     async saveCC(@Body() body: CostCenter) {
-        if (!body.id) body.id = undefined;
+        if (body?.id) throw new BadRequestException('id must not be provided for create requests');
         return this.costCenterService.save(body)
     }
     
