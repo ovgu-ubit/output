@@ -129,4 +129,37 @@ describe('AbstractEntityService', () => {
         await expect(service.update({ id: 1, locked_at: null }, 'mallory')).rejects.toBeInstanceOf(ConflictException);
         expect(repository.save).not.toHaveBeenCalled();
     });
+
+    it('keeps the same user as lock owner across regular updates without locked_at in the payload', async () => {
+        const lockedAt = new Date();
+
+        repository.findOne
+            .mockResolvedValueOnce({
+                id: 1,
+                label: 'Entity',
+                locked_at: null,
+            } as TestEntity)
+            .mockResolvedValueOnce({
+                id: 1,
+                label: 'Entity',
+                locked_at: lockedAt,
+            } as TestEntity)
+            .mockResolvedValueOnce({
+                id: 1,
+                label: 'Entity',
+                locked_at: lockedAt,
+            } as TestEntity);
+        repository.update.mockResolvedValue({ affected: 1 } as any);
+        repository.save.mockImplementation(async (entity) => entity);
+
+        await service.one(1, true, 'alice');
+        await expect(service.update({ id: 1, label: 'Updated' }, 'alice')).resolves.toMatchObject({
+            id: 1,
+            label: 'Updated',
+        });
+        await expect(service.update({ id: 1, label: 'Updated again' }, 'alice')).resolves.toMatchObject({
+            id: 1,
+            label: 'Updated again',
+        });
+    });
 });

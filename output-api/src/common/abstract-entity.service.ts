@@ -35,7 +35,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
     public async update(entity: DeepPartial<TEntity>, user?: string) {
         await this.ensureEntityCanBeSaved(entity, user);
         const saved = await this.save(entity, user);
-        this.syncLockOwner(saved as DeepPartial<TEntity>, user);
+        this.syncLockOwner(entity, user);
         return saved;
     }
 
@@ -175,7 +175,8 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
 
     private syncLockOwner(entity: DeepPartial<TEntity>, user?: string): void {
         if (!entity?.id) return;
-        if (!entity.locked_at) {
+        const hasExplicitLockState = Object.prototype.hasOwnProperty.call(entity, 'locked_at');
+        if (hasExplicitLockState && !entity.locked_at) {
             this.releaseEditLock(entity.id);
             return;
         }
