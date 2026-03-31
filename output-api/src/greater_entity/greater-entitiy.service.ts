@@ -36,7 +36,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return this.update(pub, user);
     }
 
-    public async update(ge: any, user?: string) {
+    public async update(ge: Partial<GreaterEntity>, user?: string) {
         await this.ensureEntityCanBeSaved(ge, user);
         let orig: GreaterEntity = null;
         if (hasProvidedEntityId(ge.id)) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
@@ -143,7 +143,8 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .addSelect("SUM(CASE WHEN publication.pub_date >= '" + beginDate.toISOString() + "' and publication.pub_date <= '" + endDate.toISOString() + "' THEN 1 ELSE 0 END)", "pub_count")
+                .addSelect('SUM(CASE WHEN publication.pub_date >= :beginDate and publication.pub_date <= :endDate THEN 1 ELSE 0 END)', "pub_count")
+                .setParameters({ beginDate, endDate })
         }
         else {
             query = query

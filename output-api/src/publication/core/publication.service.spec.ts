@@ -1,8 +1,9 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
@@ -15,6 +16,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
 import { PublicationChangeService } from './publication-change.service';
+
 describe('PublicationService combine', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
@@ -29,6 +31,7 @@ describe('PublicationService combine', () => {
         deletePublicationChangesForPublications: jest.Mock;
     };
     let configService: { get: jest.Mock };
+
     beforeEach(async () => {
         EditLockOwnerStore.clear();
         pubRepository = {
@@ -393,5 +396,92 @@ describe('PublicationService combine', () => {
         expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+});
+
+describe('PublicationService filter', () => {
+    let service: PublicationService;
+    let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
+
+    const createQueryBuilderMock = () => ({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+    });
+
+    beforeEach(() => {
+        instituteService = {
+            findInstituteIdsIncludingSubInstitutes: jest.fn(),
+        };
+
+        service = new PublicationService(
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            instituteService as any,
+            {} as any,
+        );
+        service.filter_joins = new Set();
+    });
+
+    it('binds string filter values as query parameters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'title',
+                comp: CompareOperation.INCLUDES,
+                value: `%' OR 1=1 --`,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.title ILIKE :filter_0',
+            { filter_0: `%%' OR 1=1 --%` }
+        );
+    });
+
+    it('expands institute filters and binds the resulting ids', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        instituteService.findInstituteIdsIncludingSubInstitutes.mockResolvedValue([11, 12, 13]);
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id',
+                comp: CompareOperation.EQUALS,
+                value: 11,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11]);
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            '"authorPublications"."instituteId" IN (:...filter_0)',
+            { filter_0: [11, 12, 13] }
+        );
+    });
+
+    it('rejects unsupported filter keys instead of passing them into SQL', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'title) OR 1=1 --',
+                comp: CompareOperation.EQUALS,
+                value: 'anything',
+            }]
+        };
+
+        await expect(service.filter(filter, queryBuilder as any)).rejects.toBeInstanceOf(BadRequestException);
+        expect(queryBuilder.where).not.toHaveBeenCalled();
     });
 });

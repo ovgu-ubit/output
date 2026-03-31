@@ -142,9 +142,10 @@ export class WorkflowReportService {
             .leftJoinAndSelect('report.importWorkflow', 'importWorkflow')
             .leftJoinAndSelect('report.exportWorkflow', 'exportWorkflow')
             .where('report.workflow_type = :workflowType', { workflowType })
-            .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
             .orderBy('report.started_at', 'DESC')
             .addOrderBy('report.id', 'DESC');
+
+        this.applyWorkflowIdFilter(query, workflowType, workflowId);
 
         if (options?.offset !== undefined && options.offset >= 0) {
             query.skip(options.offset);
@@ -247,12 +248,14 @@ export class WorkflowReportService {
     }
 
     async deleteReportsForWorkflow(workflowId: number, workflowType: WorkflowType = WorkflowType.IMPORT): Promise<void> {
-        const reports = await this.workflowReportRepository
+        const query = this.workflowReportRepository
             .createQueryBuilder('report')
             .select('report.id', 'id')
-            .where('report.workflow_type = :workflowType', { workflowType })
-            .andWhere(`report.${this.getWorkflowColumn(workflowType)} = :workflowId`, { workflowId })
-            .getRawMany<{ id: number }>();
+            .where('report.workflow_type = :workflowType', { workflowType });
+
+        this.applyWorkflowIdFilter(query, workflowType, workflowId);
+
+        const reports = await query.getRawMany<{ id: number }>();
 
         const reportIds = reports
             .map((report) => Number(report.id))
@@ -278,14 +281,24 @@ export class WorkflowReportService {
         return reports[0];
     }
 
-    private getWorkflowColumn(workflowType: WorkflowType) {
-        return workflowType === WorkflowType.EXPORT ? 'exportWorkflowId' : 'workflowId';
-    }
-
     private hydrateWorkflowReference(report: WorkflowReport): WorkflowReport {
         report.workflow = report.workflow_type === WorkflowType.EXPORT ? report.exportWorkflow : report.importWorkflow;
         report.workflowId = report.workflow?.id;
         return report;
+    }
+
+    private applyWorkflowIdFilter<T extends { andWhere: (condition: string, parameters?: object) => T }>(
+        query: T,
+        workflowType: WorkflowType,
+        workflowId: number,
+    ) {
+        if (workflowType === WorkflowType.EXPORT) {
+            query.andWhere('report.exportWorkflowId = :workflowId', { workflowId });
+            return query;
+        }
+
+        query.andWhere('report.workflowId = :workflowId', { workflowId });
+        return query;
     }
 
     private toRunStatus(report: WorkflowReport, stale = false): WorkflowRunStatus {

@@ -24,6 +24,7 @@ describe('StatisticsService', () => {
             addOrderBy: jest.fn().mockReturnThis(),
             where: jest.fn().mockReturnThis(),
             andWhere: jest.fn().mockReturnThis(),
+            setParameters: jest.fn().mockReturnThis(),
             getRawMany: jest.fn().mockResolvedValue([]),
         };
 
@@ -72,8 +73,9 @@ describe('StatisticsService', () => {
 
         expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([21]);
         expect(queryBuilder.addSelect).toHaveBeenCalledWith(
-            expect.stringContaining('tmp.institute_id::integer[] && ARRAY[21,22]::integer[]'),
+            expect.stringContaining('tmp.institute_id::integer[] && ARRAY[:...highlightInstituteIds]::integer[]'),
             'highlight'
         );
+        expect(queryBuilder.setParameters).toHaveBeenCalledWith({ highlightInstituteIds: [21, 22] });
     });
 });
