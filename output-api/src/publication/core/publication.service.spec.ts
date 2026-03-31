@@ -484,4 +484,102 @@ describe('PublicationService filter', () => {
         await expect(service.filter(filter, queryBuilder as any)).rejects.toBeInstanceOf(BadRequestException);
         expect(queryBuilder.where).not.toHaveBeenCalled();
     });
+
+    it('adds relation joins for publisher and invoice year filters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'publisher',
+                    comp: CompareOperation.EQUALS,
+                    value: 'Test Publisher',
+                },
+                {
+                    op: JoinOperation.AND,
+                    key: 'invoice_year',
+                    comp: CompareOperation.EQUALS,
+                    value: 2024,
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publisher.label = :filter_0',
+            { filter_0: 'Test Publisher' }
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'invoice.date > :filter_1_beginDate AND invoice.date < :filter_1_endDate',
+            {
+                filter_1_beginDate: new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0)),
+                filter_1_endDate: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)),
+            }
+        );
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.publisher', 'publisher');
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.invoices', 'invoice');
+    });
+
+    it('uses the null-date fallback and negates filters for AND_NOT expressions', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'pub_date',
+                    comp: CompareOperation.EQUALS,
+                    value: '',
+                },
+                {
+                    op: JoinOperation.AND_NOT,
+                    key: 'locked',
+                    comp: CompareOperation.EQUALS,
+                    value: true as any,
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.pub_date IS NULL AND publication.pub_date_print IS NULL AND publication.pub_date_accepted IS NULL AND publication.pub_date_submitted IS NULL',
+            undefined
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT (publication.locked = :filter_1)',
+            { filter_1: true }
+        );
+    });
+
+    it('uses OR for subsequent alternative filters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'title',
+                    comp: CompareOperation.STARTS_WITH,
+                    value: 'Alpha',
+                },
+                {
+                    op: JoinOperation.OR,
+                    key: 'doi',
+                    comp: CompareOperation.EQUALS,
+                    value: '10.1000/example',
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.title ILIKE :filter_0',
+            { filter_0: 'Alpha%' }
+        );
+        expect(queryBuilder.orWhere).toHaveBeenCalledWith(
+            'publication.doi = :filter_1',
+            { filter_1: '10.1000/example' }
+        );
+    });
 });
