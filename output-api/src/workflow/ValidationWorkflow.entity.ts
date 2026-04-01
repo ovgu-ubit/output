@@ -46,7 +46,7 @@ export class ValidationWorkflow implements IValidationWorkflow {
     @Column({ nullable: true, type: 'jsonb' })
     target_filter?: SearchFilter;
 
-    @Column({ type: 'jsonb', array: true, default: () => 'ARRAY[]::jsonb[]' })
+    @Column({ type: 'jsonb', default: () => `'[]'::jsonb` })
     rules?: ValidationRule[];
 
     @OneToMany(() => WorkflowReport, (report) => report.validationWorkflow)

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, Workflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import { ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, ValidationWorkflow, Workflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { catchError, concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
 import { UpdateMapping } from '../../../../output-interfaces/Config';
 
@@ -183,6 +183,48 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       formData,
       { withCredentials: true }
     );
+  }
+  public getAllValidations() {
+    return this.http.get<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation', { withCredentials: true })
+      .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.VALIDATION, '/workflow/publication_validation')));
+  }
+  public getValidations(options?: { type: 'draft' | 'published' | 'archived' }) {
+    if (options) {
+      return this.http.get<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation?type=' + options.type, { withCredentials: true })
+        .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.VALIDATION, '/workflow/publication_validation')));
+    }
+    return this.getAllValidations();
+  }
+  public getOneValidation(id: number) {
+    return this.http.get<ValidationWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id, { withCredentials: true });
+  }
+  public isValidationLocked(id: number) {
+    return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/locked', { withCredentials: true });
+  }
+  public runValidation(id: number) {
+    return this.http.post<{ status: string }>(
+      this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/run',
+      {},
+      { withCredentials: true }
+    );
+  }
+  public addValidation(obj: ValidationWorkflow) {
+    return this.http.post<ValidationWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/validation', obj, { withCredentials: true });
+  }
+  public updateValidation(obj: ValidationWorkflow) {
+    return this.http.post<ValidationWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/validation', obj, { withCredentials: true });
+  }
+  public deleteValidations(ids: number[]) {
+    return this.http.delete<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation', { withCredentials: true, body: ids.map(e => ({ id: e })) });
+  }
+  async isValidationRunning(id: number) {
+    return this.isRunning(id, WorkflowType.VALIDATION);
+  }
+  getValidationProgress(id: number): Observable<{ progress: number, status: string }> {
+    return this.getProgress(id, WorkflowType.VALIDATION);
+  }
+  getValidationStatus(id: number): Observable<{ progress: number, status: string }> {
+    return this.getStatus(id, WorkflowType.VALIDATION);
   }
 
   private attachLatestReports<T extends Workflow>(
