@@ -64,6 +64,7 @@ import { ImportWorkflow } from './ImportWorkflow.entity';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
 import { WorkflowController } from './WorkflowController';
+import { ValidationService } from './validation.service';
 import { WorkflowReportService } from './workflow-report.service';
 
 @Module({
@@ -102,7 +103,7 @@ import { WorkflowReportService } from './workflow-report.service';
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JSONataExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService, WorkflowService, WorkflowReportService,
+    DiscoveryService, WorkflowService, WorkflowReportService, ValidationService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],
@@ -165,6 +166,6 @@ import { WorkflowReportService } from './workflow-report.service';
         return instances as AbstractExportService[];
       }
     },],
-  exports: ['Imports', 'Enrichs', 'Exports', 'Checks', WorkflowReportService]
+  exports: ['Imports', 'Enrichs', 'Exports', 'Checks', WorkflowReportService, ValidationService]
 })
 export class WorkflowModule { }

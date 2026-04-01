@@ -13,6 +13,8 @@ describe('WorkflowController', () => {
         getValidations: jest.Mock;
         getValidation: jest.Mock;
         deleteValidations: jest.Mock;
+        startValidation: jest.Mock;
+        validationStatus: jest.Mock;
         startExport: jest.Mock;
     };
     let workflowReportService: {
@@ -26,6 +28,8 @@ describe('WorkflowController', () => {
             getValidations: jest.fn(),
             getValidation: jest.fn(),
             deleteValidations: jest.fn(),
+            startValidation: jest.fn(),
+            validationStatus: jest.fn(),
             startExport: jest.fn(),
         };
         workflowReportService = {
@@ -125,5 +129,22 @@ describe('WorkflowController', () => {
             limit: 3,
             offset: 6,
         });
+    });
+
+    it('starts validation workflow runs for the current user', async () => {
+        workflowService.startValidation.mockResolvedValue(undefined);
+
+        await controller.run_validation(33, { user: { username: 'alice' } });
+
+        expect(workflowService.startValidation).toHaveBeenCalledWith(33, 'alice');
+    });
+
+    it('reads validation workflow status via the workflow service', async () => {
+        workflowService.validationStatus.mockResolvedValue({ progress: -1, status: 'Started' });
+
+        const status = await controller.validationStatus(44);
+
+        expect(status).toEqual({ progress: -1, status: 'Started' });
+        expect(workflowService.validationStatus).toHaveBeenCalledWith(44);
     });
 });

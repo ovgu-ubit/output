@@ -16,6 +16,7 @@ import { validateImportWorkflow } from './import-workflow.schema';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { validateValidationWorkflow } from './validation-workflow.schema';
+import { ValidationService } from './validation.service';
 import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { hasProvidedEntityId } from '../common/entity-id';
@@ -45,6 +46,7 @@ export class WorkflowService {
         private configService: AppConfigService,
         private importService: JSONataImportService,
         private exportService: JSONataExportService,
+        private validationService: ValidationService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[],
         private workflowReportService: WorkflowReportService) { }
 
@@ -226,6 +228,22 @@ export class WorkflowService {
         });
     }
 
+    async startValidation(id: number, user?: string) {
+        return this.startDetachedExecution('workflow-validation-service', async () => {
+            const validationDef = await this.validationRepository.findOneBy({ id });
+
+            if (!validationDef) throw new BadRequestException('Error: workflow not found');
+            if (validationDef.deleted_at) {
+                throw new BadRequestException('Error: archived workflows cannot be executed');
+            }
+
+            await this.validationService.setUp(validationDef);
+            return {
+                completion: this.validationService.validate(user).catch(() => undefined),
+            };
+        });
+    }
+
     async isLocked(id: number): Promise<boolean> {
         return this.isWorkflowLocked(this.importRepository, id);
     }
@@ -268,6 +286,10 @@ export class WorkflowService {
 
     async exportStatus(_id: number) {
         return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.EXPORT);
+    }
+
+    async validationStatus(_id: number) {
+        return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.VALIDATION);
     }
 
     getUpdateMapping(id: number) {

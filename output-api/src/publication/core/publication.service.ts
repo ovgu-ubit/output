@@ -155,7 +155,7 @@ export class PublicationService {
         return this.pubRepository.find(options);
     }
 
-    public async getAll(filter: SearchFilter, options?: GetAllPublicationOptions) {
+    public async getAll(filter?: SearchFilter, options?: GetAllPublicationOptions) {
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoinAndSelect("publication.publisher", 'publisher')
             .leftJoinAndSelect("publication.oa_category", "oa_category")

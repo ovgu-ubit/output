@@ -9,6 +9,7 @@ import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataExportService } from './export/jsonata-export.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { JSONataImportService } from './import/jsonata-import';
+import { ValidationService } from './validation.service';
 import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { WorkflowService } from './workflow.service';
@@ -35,6 +36,11 @@ describe('WorkflowService', () => {
         setUp: jest.Mock;
         export: jest.Mock;
         status: jest.Mock;
+    };
+    let validationService: {
+        setUp: jest.Mock;
+        validate: jest.Mock;
+        getCurrentWorkflowReportId: jest.Mock;
     };
     let importService: {
         getUpdateMapping: jest.Mock;
@@ -90,6 +96,11 @@ describe('WorkflowService', () => {
             export: jest.fn(),
             status: jest.fn(),
         };
+        validationService = {
+            setUp: jest.fn(),
+            validate: jest.fn(),
+            getCurrentWorkflowReportId: jest.fn(),
+        };
         importService = {
             getUpdateMapping: jest.fn(),
             setReportingYear: jest.fn(),
@@ -111,6 +122,7 @@ describe('WorkflowService', () => {
                 { provide: AppConfigService, useValue: configService },
                 { provide: JSONataImportService, useValue: importService },
                 { provide: JSONataExportService, useValue: exportService },
+                { provide: ValidationService, useValue: validationService },
                 { provide: 'Filters', useValue: [] },
                 { provide: WorkflowReportService, useValue: workflowReportService },
             ],
@@ -686,6 +698,54 @@ describe('WorkflowService', () => {
         expect(exportService.export).not.toHaveBeenCalled();
     });
 
+    it('starts draft validation workflows via validation service', async () => {
+        const draftWorkflow = {
+            id: 55,
+            workflow_id: 'wf-55',
+            label: 'Draft validation',
+            version: 1,
+            target: 'publication',
+            rules: [{ type: 'required', result: 'error', path: 'doi' }],
+            published_at: null,
+            deleted_at: null,
+        } as unknown as ValidationWorkflow;
+
+        validationRepository.findOneBy!.mockResolvedValue(draftWorkflow);
+        validationService.setUp.mockResolvedValue(undefined);
+        validationService.validate.mockResolvedValue({
+            target: 'publication',
+            checked: 10,
+            findings: 1,
+            info: 0,
+            warning: 0,
+            error: 1,
+        });
+
+        await expect(service.startValidation(55, 'tester')).resolves.toBeUndefined();
+
+        expect(validationService.setUp).toHaveBeenCalledWith(draftWorkflow);
+        expect(validationService.validate).toHaveBeenCalledWith('tester');
+    });
+
+    it('rejects archived validation workflows', async () => {
+        const archivedWorkflow = {
+            id: 56,
+            workflow_id: 'wf-56',
+            label: 'Archived validation',
+            version: 1,
+            target: 'publication',
+            rules: [],
+            published_at: new Date('2026-03-16T10:00:00.000Z'),
+            deleted_at: new Date('2026-03-18T10:00:00.000Z'),
+        } as ValidationWorkflow;
+
+        validationRepository.findOneBy!.mockResolvedValue(archivedWorkflow);
+
+        await expect(service.startValidation(56, 'tester')).rejects.toThrow('Error: archived workflows cannot be executed');
+        expect(validationService.setUp).not.toHaveBeenCalled();
+        expect(validationService.validate).not.toHaveBeenCalled();
+    });
+
     it('reacquires expired workflow locks and hides the lock in the response', async () => {
         const staleLockedWorkflow = {
             id: 58,
@@ -931,5 +991,20 @@ describe('WorkflowService', () => {
             status: 'Successful export',
         });
         expect(workflowReportService.getStatusForWorkflow).toHaveBeenCalledWith(77, 'export');
+    });
+
+    it('returns workflow-scoped validation status from workflow reports', async () => {
+        workflowReportService.getStatusForWorkflow.mockResolvedValue({
+            progress: 0,
+            status: 'Successful validation',
+        });
+
+        const status = await service.validationStatus(88);
+
+        expect(status).toEqual({
+            progress: 0,
+            status: 'Successful validation',
+        });
+        expect(workflowReportService.getStatusForWorkflow).toHaveBeenCalledWith(88, 'validation');
     });
 });

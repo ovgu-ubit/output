@@ -163,6 +163,13 @@ export class WorkflowController {
     return result;
   }
 
+  @Post("validation/:id/run")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  run_validation(@Param('id') id: number, @Req() req) {
+    return this.workflowService.startValidation(id, req.user?.username);
+  }
+
   @Get('import/:id/run')
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -175,6 +182,13 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   exportStatus(@Param('id') id: number) {
     return this.workflowService.exportStatus(id);
+  }
+
+  @Get('validation/:id/run')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  validationStatus(@Param('id') id: number) {
+    return this.workflowService.validationStatus(id);
   }
 
   @Delete("import")
