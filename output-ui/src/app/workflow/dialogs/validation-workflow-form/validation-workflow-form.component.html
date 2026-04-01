@@ -1,0 +1,72 @@
+<app-breadcrump [path]="getLink()"
+    [label]="getLabel()"></app-breadcrump>
+<div class="validation-workflow-layout">
+    <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
+        <div style="display: flex;gap: 10px">
+            @if ((this.facade.validation$ | async)?.id) {
+            <h1>{{(this.facade.validation$ | async)?.label}}, Version {{(this.facade.validation$ | async)?.version}}</h1>
+            } @else {
+                <h1>Neue Validation</h1>
+            }
+            <mat-chip-set>
+                <mat-chip class="status-chip status-draft"
+                    *ngIf="!(this.facade.validation$ | async)?.published_at">Entwurf</mat-chip>
+                <mat-chip class="status-chip status-active"
+                    *ngIf="(this.facade.validation$ | async)?.published_at && !(this.facade.validation$ | async)?.deleted_at">Aktiv</mat-chip>
+                <mat-chip class="status-chip status-archived"
+                    *ngIf="(this.facade.validation$ | async)?.deleted_at">Archiviert</mat-chip>
+            </mat-chip-set>
+        </div>
+        <div style="display: flex;justify-content: flex-end;">
+            <button mat-icon-button (click)="this.save()" matTooltip="Speichern"
+                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+            <button mat-icon-button (click)="this.abort()" matTooltip="Schliessen"
+                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+        </div>
+    </mat-toolbar>
+    <mat-sidenav-container autosize class="validation-sidenav-container">
+        <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.collapsed]="!this.opened">
+            <div class="nav-header">
+                <button mat-icon-button (click)="this.toggle()" matTooltip="Navigation umschalten"
+                    matTooltipPosition="right"><mat-icon>{{ this.opened ? 'chevron_left' : 'chevron_right'
+                        }}</mat-icon></button>
+            </div>
+            <mat-nav-list class="nav">
+                <a mat-list-item [routerLink]="['overview']" (click)="navigateTo('overview', $event)" routerLinkActive="active" matTooltip="Protokolle"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right"
+                    [routerLinkActiveOptions]="{exact:true}">
+                    <mat-icon matListItemIcon>info</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Protokolle</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['general']" (click)="navigateTo('general', $event)" routerLinkActive="active" matTooltip="Allgemein"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>description</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Allgemein</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['rules']" (click)="navigateTo('rules', $event)" routerLinkActive="active" matTooltip="Regeln"
+                    [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>rule</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">Regeln</span>
+                </a>
+
+                <a mat-list-item [routerLink]="['action']" (click)="navigateTo('action', $event)" routerLinkActive="active"
+                    matTooltip="Aktionen" [matTooltipDisabled]="this.opened" matTooltipPosition="right">
+                    <mat-icon matListItemIcon>play_arrow</mat-icon>
+                    <span matListItemTitle class="nav-text" [class.hide]="!this.opened">
+                        Aktionen
+                    </span>
+                </a>
+            </mat-nav-list>
+        </mat-sidenav>
+        <mat-sidenav-content>
+            <div class="content-wrap">
+                <div class="content">
+                    <router-outlet></router-outlet>
+                </div>
+            </div>
+
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</div>

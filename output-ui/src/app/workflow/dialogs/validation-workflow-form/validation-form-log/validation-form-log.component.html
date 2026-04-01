@@ -1,0 +1,94 @@
+<mat-card *ngIf="report; else loadingState">
+    <mat-card-title>Workflow-Log #{{ report.id }}</mat-card-title>
+    <mat-card-content>
+        <div class="log-header">
+            <div>
+                <div class="eyebrow">Workflow</div>
+                <div>{{ workflow?.label }} v{{ workflow?.version }}</div>
+            </div>
+            <div>
+                <div class="eyebrow">Status</div>
+                <div>{{ report.status || 'unbekannt' }}</div>
+            </div>
+            <div>
+                <div class="eyebrow">Zeitraum</div>
+                <div>{{ report.started_at | date:'dd.MM.yyyy HH:mm:ss' }}</div>
+                <div>{{ report.finished_at | date:'dd.MM.yyyy HH:mm:ss' }}</div>
+            </div>
+            <div>
+                <div class="eyebrow">Dry Run</div>
+                <div>{{ report.dry_run ? 'Ja' : 'Nein' }}</div>
+            </div>
+            <div>
+                <div class="eyebrow">Ausgeloest von</div>
+                <div>{{ report.by_user || 'unbekannt' }}</div>
+            </div>
+        </div>
+
+        <div class="summary-card" *ngIf="report.params">
+            <div class="eyebrow">Parameter</div>
+            <pre>{{ report.params | json }}</pre>
+        </div>
+
+        <div class="summary-card" *ngIf="report.summary">
+            <div class="eyebrow">Zusammenfassung</div>
+            <pre>{{ report.summary | json }}</pre>
+        </div>
+
+        <div class="log-section">
+            <div class="section-header">
+                <h3>Log-Eintraege</h3>
+                <div class="filter-controls">
+                    <mat-form-field appearance="outline" class="filter-input">
+                        <mat-label>Textfilter</mat-label>
+                        <input matInput [(ngModel)]="messageFilter" placeholder="Nachricht durchsuchen">
+                    </mat-form-field>
+                    <mat-checkbox [(ngModel)]="hideInfoItems">Info-Eintraege ausblenden</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="collapseLogEntries">Log-Eintraege einklappen</mat-checkbox>
+                </div>
+            </div>
+            @if (!report.items || report.items.length === 0) {
+            <p>Keine Log-Eintraege vorhanden.</p>
+            } @else if (filteredItems.length === 0) {
+            <p>Mit dem aktuellen Filter sind keine Log-Eintraege sichtbar.</p>
+            } @else if (collapseLogEntries) {
+            <p>{{ filteredItems.length }} Log-Eintraege eingeklappt.</p>
+            } @else {
+            <div class="log-list">
+                <div *ngFor="let item of filteredItems" class="log-row" [ngClass]="getLevelClass(item.level)">
+                    <div class="log-meta">
+                        <span class="log-level">{{ item.level || workflowReportItemLevel.INFO }}</span>
+                        <span>{{ item.timestamp | date:'dd.MM.yyyy HH:mm:ss' }}</span>
+                        <span *ngIf="item.code">{{ item.code }}</span>
+                    </div>
+                    <div class="log-message">{{ item.message }}</div>
+                </div>
+            </div>
+            }
+        </div>
+
+        <div class="log-section">
+            <div class="section-header">
+                <h3>Publikationsaenderungen</h3>
+                <div class="filter-controls">
+                    <mat-checkbox [(ngModel)]="collapsePublicationChanges">Publikationsaenderungen einklappen</mat-checkbox>
+                </div>
+            </div>
+            @if (collapsePublicationChanges && report.publication_changes && report.publication_changes.length > 0) {
+            <p>{{ report.publication_changes.length }} Publikationsaenderungen eingeklappt.</p>
+            } @else {
+            <app-publication-change-log
+                [changes]="report.publication_changes ?? []"
+                emptyMessage="Keine Publikationsaenderungen vorhanden.">
+            </app-publication-change-log>
+            }
+        </div>
+    </mat-card-content>
+</mat-card>
+
+<ng-template #loadingState>
+    <mat-card>
+        <mat-card-title>Workflow-Log</mat-card-title>
+        <mat-card-content>Log wird geladen...</mat-card-content>
+    </mat-card>
+</ng-template>
