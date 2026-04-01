@@ -10,6 +10,9 @@ describe('WorkflowController', () => {
     let workflowService: {
         getImport: jest.Mock;
         getExport: jest.Mock;
+        getValidations: jest.Mock;
+        getValidation: jest.Mock;
+        deleteValidations: jest.Mock;
         startExport: jest.Mock;
     };
     let workflowReportService: {
@@ -20,6 +23,9 @@ describe('WorkflowController', () => {
         workflowService = {
             getImport: jest.fn(),
             getExport: jest.fn(),
+            getValidations: jest.fn(),
+            getValidation: jest.fn(),
+            deleteValidations: jest.fn(),
             startExport: jest.fn(),
         };
         workflowReportService = {
@@ -81,6 +87,43 @@ describe('WorkflowController', () => {
         expect(workflowReportService.getReports).toHaveBeenCalledWith(71, WorkflowType.EXPORT, {
             limit: 5,
             offset: 10,
+        });
+    });
+
+    it('forwards validation list requests including the type filter', async () => {
+        workflowService.getValidations.mockResolvedValue([]);
+
+        await controller.get_validations('draft');
+
+        expect(workflowService.getValidations).toHaveBeenCalledWith('draft');
+    });
+
+    it('loads validation workflows with locking enabled for the current user', async () => {
+        workflowService.getValidation.mockResolvedValue({ id: 91 });
+
+        await controller.get_validation(91, { user: { username: 'alice' } });
+
+        expect(workflowService.getValidation).toHaveBeenCalledWith(91, true, 'alice');
+    });
+
+    it('deletes validation workflows by mapped ids', async () => {
+        workflowService.deleteValidations.mockResolvedValue([{ id: 14 }]);
+
+        await controller.delete_validations([{ id: 14 }, { id: 15 }]);
+
+        expect(workflowService.deleteValidations).toHaveBeenCalledWith([14, 15]);
+    });
+
+    it('loads validation workflow reports without locking the workflow and forwards paging', async () => {
+        workflowService.getValidation.mockResolvedValue({ id: 81 });
+        workflowReportService.getReports.mockResolvedValue([]);
+
+        await controller.validationWorkflowReports(81, 3, 6);
+
+        expect(workflowService.getValidation).toHaveBeenCalledWith(81, false);
+        expect(workflowReportService.getReports).toHaveBeenCalledWith(81, WorkflowType.VALIDATION, {
+            limit: 3,
+            offset: 6,
         });
     });
 });

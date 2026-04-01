@@ -173,13 +173,18 @@ export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
 
 export type ImportWorkflowSourceInput = z.infer<typeof ImportWorkflowSourceSchema>;
 
-export function validateImportWorkflow(workflow: ImportWorkflow) {
-  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return true;
+export function validateImportWorkflow(workflow: ImportWorkflow): ImportWorkflow {
+  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return workflow;
   const schema = ImportWorkflowSourceSchema;
 
-  if (!schema) return; // unbekannter Key → dito
+  if (!schema) return workflow; // unbekannter Key → dito
   try {
-    return schema.parse(workflow);
+    const parsed = schema.parse(workflow);
+    return {
+      ...workflow,
+      ...parsed,
+      strategy_type: StrategyFromApi[parsed.strategy_type],
+    };
   } catch (e) {
     if (e instanceof ZodError) {
       // UI-freundliches Fehlerformat

@@ -28,6 +28,12 @@ export interface ExportWorkflow extends Workflow {
     strategy?: any;
 }
 
+export interface ValidationWorkflow extends Workflow {
+    target?: string;
+    target_filter?: unknown;
+    rules?: unknown[];
+}
+
 export type ExportFormat = 'json' | 'xml' | 'csv' | 'xlsx';
 
 export type ExportDisposition = 'inline' | 'attachment';
@@ -35,9 +41,10 @@ export type ExportDisposition = 'inline' | 'attachment';
 export interface WorkflowReport {
     id?: number;
     workflow_type?: WorkflowType;
-    workflow?: ImportWorkflow | ExportWorkflow;
+    workflow?: ImportWorkflow | ExportWorkflow | ValidationWorkflow;
     importWorkflow?: ImportWorkflow;
     exportWorkflow?: ExportWorkflow;
+    validationWorkflow?: ValidationWorkflow;
     workflowId?: number;
     params?: unknown;
     by_user?: string;
@@ -118,4 +125,5 @@ export enum WorkflowReportItemLevel {
 export enum WorkflowType {
     IMPORT = 'import',
     EXPORT = 'export',
+    VALIDATION = 'validation',
 }

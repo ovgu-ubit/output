@@ -9,6 +9,7 @@ import { ExportWorkflow } from './ExportWorkflow.entity';
 import { JSONataExportService } from './export/jsonata-export.service';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { JSONataImportService } from './import/jsonata-import';
+import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { WorkflowService } from './workflow.service';
 
@@ -20,6 +21,7 @@ describe('WorkflowService', () => {
     let service: WorkflowService;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
+    let validationRepository: jest.Mocked<Partial<Repository<ValidationWorkflow>>>;
     let workflowReportService: {
         deleteReportsForWorkflow: jest.Mock;
         getStatusForWorkflow: jest.Mock;
@@ -64,6 +66,14 @@ describe('WorkflowService', () => {
             update: jest.fn(),
             remove: jest.fn(),
         };
+        validationRepository = {
+            findOne: jest.fn(),
+            findOneBy: jest.fn(),
+            findBy: jest.fn(),
+            save: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+        };
         workflowReportService = {
             deleteReportsForWorkflow: jest.fn(),
             getStatusForWorkflow: jest.fn(),
@@ -97,6 +107,7 @@ describe('WorkflowService', () => {
                 WorkflowService,
                 { provide: getRepositoryToken(ImportWorkflow), useValue: importRepository },
                 { provide: getRepositoryToken(ExportWorkflow), useValue: exportRepository },
+                { provide: getRepositoryToken(ValidationWorkflow), useValue: validationRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: JSONataImportService, useValue: importService },
                 { provide: JSONataExportService, useValue: exportService },
@@ -130,7 +141,7 @@ describe('WorkflowService', () => {
             id: 14,
             deleted_at: expect.any(Date),
         }));
-        expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(14);
+        expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(14, WorkflowType.IMPORT);
     });
 
     it('does not delete workflow reports for non-archiving saves', async () => {
@@ -407,6 +418,78 @@ describe('WorkflowService', () => {
             workflow_id: 'wf-27',
             version: 3,
         });
+    });
+
+    it('assigns the next persisted validation version when creating a draft', async () => {
+        validationRepository.findOne!.mockResolvedValue({
+            id: 31,
+            workflow_id: 'wf-31',
+            version: 7,
+        } as ValidationWorkflow);
+        validationRepository.save!.mockImplementation(async (workflow) => workflow as ValidationWorkflow);
+
+        const saved = await service.saveValidation({
+            workflow_id: 'wf-31',
+            label: 'Draft validation',
+            target: 'publication',
+        } as ValidationWorkflow);
+
+        expect(validationRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'wf-31',
+            version: 8,
+            rules: [],
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'wf-31',
+            version: 8,
+            rules: [],
+        });
+    });
+
+    it('rejects saving a locked validation draft for another user', async () => {
+        validationRepository.findOneBy!.mockResolvedValue({
+            id: 32,
+            workflow_id: 'wf-32',
+            label: 'Locked validation',
+            version: 1,
+            target: 'publication',
+            rules: [],
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ValidationWorkflow);
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+
+        await expect(service.saveValidation({ id: 32, label: 'blocked' } as ValidationWorkflow, 'mallory'))
+            .rejects.toBeInstanceOf(ConflictException);
+        expect(validationRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('deletes validation workflow reports after archiving a published workflow', async () => {
+        const publishedWorkflow = {
+            id: 34,
+            workflow_id: 'wf-34',
+            label: 'Validation',
+            version: 2,
+            target: 'publication',
+            rules: [],
+            published_at: new Date('2026-03-16T10:00:00.000Z'),
+            deleted_at: null,
+        } as ValidationWorkflow;
+        validationRepository.findOneBy!.mockResolvedValue(publishedWorkflow);
+        validationRepository.save!.mockImplementation(async (workflow) => workflow as ValidationWorkflow);
+        workflowReportService.deleteReportsForWorkflow.mockResolvedValue(undefined);
+
+        await service.saveValidation({ id: 34, deleted_at: new Date('2026-03-16T11:00:00.000Z') } as ValidationWorkflow);
+
+        expect(validationRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            id: 34,
+            deleted_at: expect.any(Date),
+        }));
+        expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(34, WorkflowType.VALIDATION);
     });
 
     it('rejects export unlock-only requests for another user while a draft is locked', async () => {
@@ -802,6 +885,21 @@ describe('WorkflowService', () => {
         expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(4, WorkflowType.EXPORT);
         expect(exportRepository.remove).toHaveBeenCalledWith([
             expect.objectContaining({ id: 4 }),
+        ]);
+    });
+
+    it('deletes only draft validation workflows', async () => {
+        validationRepository.findBy!.mockResolvedValue([
+            { id: 5, published_at: null, deleted_at: null } as ValidationWorkflow,
+        ]);
+        workflowReportService.deleteReportsForWorkflow.mockResolvedValue(undefined);
+        (validationRepository.remove as jest.Mock).mockResolvedValue([{ id: 5 }]);
+
+        await service.deleteValidations([5]);
+
+        expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(5, WorkflowType.VALIDATION);
+        expect(validationRepository.remove).toHaveBeenCalledWith([
+            expect.objectContaining({ id: 5 }),
         ]);
     });
 

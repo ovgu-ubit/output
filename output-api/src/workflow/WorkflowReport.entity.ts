@@ -3,6 +3,7 @@ import { WorkflowReport as IWorkflowReport, WorkflowType } from "../../../output
 import { PublicationChange } from "../publication/core/PublicationChange.entity";
 import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
+import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { WorkflowReportItem } from "./WorkflowReportItem.entity";
 
 @Entity("workflow_report")
@@ -22,7 +23,11 @@ export class WorkflowReport implements IWorkflowReport {
     @JoinColumn({ name: 'exportWorkflowId' })
     exportWorkflow?: ExportWorkflow;
 
-    workflow?: ImportWorkflow | ExportWorkflow;
+    @ManyToOne(() => ValidationWorkflow, (workflow) => workflow.reports, { nullable: true })
+    @JoinColumn({ name: 'validationWorkflowId' })
+    validationWorkflow?: ValidationWorkflow;
+
+    workflow?: ImportWorkflow | ExportWorkflow | ValidationWorkflow;
     workflowId?: number;
 
     @Column({ type: 'jsonb' })

@@ -3,13 +3,14 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { SearchFilter, UpdateMapping } from "../../../output-interfaces/Config";
-import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowType } from "../../../output-interfaces/Workflow";
+import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
 import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
+import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowReportService } from "./workflow-report.service";
 
@@ -37,6 +38,13 @@ export class WorkflowController {
     return this.workflowService.getExports(type)
   }
 
+  @Get("validation")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_validations(@Query('type') type?: 'draft' | 'published' | 'archived') {
+    return this.workflowService.getValidations(type)
+  }
+
   @Get("import/:id")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -49,6 +57,13 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   get_export(@Param('id') id: number, @Req() req) {
     return this.workflowService.getExport(id, true, req.user?.username);
+  }
+
+  @Get("validation/:id")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_validation(@Param('id') id: number, @Req() req) {
+    return this.workflowService.getValidation(id, true, req.user?.username);
   }
 
   @Get("import/:id/export")
@@ -94,6 +109,13 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   isExportLocked(@Param('id') id: number): Promise<boolean> {
     return this.workflowService.isExportLocked(id);
+  }
+
+  @Get("validation/:id/locked")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  isValidationLocked(@Param('id') id: number): Promise<boolean> {
+    return this.workflowService.isValidationLocked(id);
   }
 
   @Post("import/:id/run")
@@ -167,6 +189,13 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   delete_exports(@Body() body: { id: number }[]) {
     return this.workflowService.deleteExports(body.map((entry) => entry.id));
+  }
+
+  @Delete("validation")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  delete_validations(@Body() body: { id: number }[]) {
+    return this.workflowService.deleteValidations(body.map((entry) => entry.id));
   }
 
   @Post("import/import")
@@ -269,6 +298,33 @@ export class WorkflowController {
     return this.workflowService.saveExport(body, req.user?.username);
   }
 
+  @Post("validation")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiBody({
+    description: '<p>JSON Request:</p>',
+    schema: {
+      example: {
+        workflow_id: 'validation-workflow-id',
+        version: 1,
+        label: 'Publikations-Validierung',
+        target: 'publication',
+        target_filter: {
+          reporting_year: 2025,
+          oa_category: ['gold', 'hybrid']
+        },
+        rules: [
+          { type: 'required-field', field: 'doi' },
+          { type: 'duplicate-check', fields: ['doi', 'title'] }
+        ],
+        mapping: '$'
+      } satisfies IValidationWorkflow
+    }
+  })
+  save_validation(@Body() body: ValidationWorkflow, @Req() req) {
+    return this.workflowService.saveValidation(body, req.user?.username);
+  }
+
   @Get("reports")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -335,6 +391,18 @@ export class WorkflowController {
   ) {
     await this.workflowService.getExport(id, false);
     return this.workflowReportService.getReports(id, WorkflowType.EXPORT, { limit, offset });
+  }
+
+  @Get("validation/:id/workflow-reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async validationWorkflowReports(
+    @Param('id') id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number
+  ) {
+    await this.workflowService.getValidation(id, false);
+    return this.workflowReportService.getReports(id, WorkflowType.VALIDATION, { limit, offset });
   }
 
   @Get("workflow-report/:reportId")

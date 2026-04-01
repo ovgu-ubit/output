@@ -57,6 +57,7 @@ import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
 import { JSONataImportService } from './import/jsonata-import';
 import { ExportWorkflow } from './ExportWorkflow.entity';
+import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowService } from './workflow.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportWorkflow } from './ImportWorkflow.entity';
@@ -84,7 +85,7 @@ import { WorkflowReportService } from './workflow-report.service';
     }),
     ScheduleModule.forRoot(),
     DiscoveryModule,
-    TypeOrmModule.forFeature([ImportWorkflow, ExportWorkflow, WorkflowReport, WorkflowReportItem])
+    TypeOrmModule.forFeature([ImportWorkflow, ExportWorkflow, ValidationWorkflow, WorkflowReport, WorkflowReportItem])
   ],
   controllers: [
     ImportController,

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ExportWorkflow, ImportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { ExportWorkflow, ImportWorkflow, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { AppConfigService } from '../config/app-config.service';
 import { PublicationChangeService } from '../publication/core/publication-change.service';
@@ -51,10 +51,12 @@ export class WorkflowReportService {
     ) { }
 
     async createReport(options: WorkflowReport): Promise<WorkflowReport> {
+        const workflowType = options.workflow_type ?? this.resolveWorkflowType(options);
         const saved = await this.workflowReportRepository.save({
-            workflow_type: options.workflow_type ?? this.resolveWorkflowType(options),
-            importWorkflow: options.importWorkflow ?? ((options.workflow_type ?? this.resolveWorkflowType(options)) === WorkflowType.IMPORT ? options.workflow as ImportWorkflow : undefined),
-            exportWorkflow: options.exportWorkflow ?? ((options.workflow_type ?? this.resolveWorkflowType(options)) === WorkflowType.EXPORT ? options.workflow as ExportWorkflow : undefined),
+            workflow_type: workflowType,
+            importWorkflow: options.importWorkflow ?? (workflowType === WorkflowType.IMPORT ? options.workflow as ImportWorkflow : undefined),
+            exportWorkflow: options.exportWorkflow ?? (workflowType === WorkflowType.EXPORT ? options.workflow as ExportWorkflow : undefined),
+            validationWorkflow: options.validationWorkflow ?? (workflowType === WorkflowType.VALIDATION ? options.workflow as ValidationWorkflow : undefined),
             params: options.params ?? {},
             by_user: options.by_user,
             status: options.status ?? 'started',
@@ -141,6 +143,7 @@ export class WorkflowReportService {
             .createQueryBuilder('report')
             .leftJoinAndSelect('report.importWorkflow', 'importWorkflow')
             .leftJoinAndSelect('report.exportWorkflow', 'exportWorkflow')
+            .leftJoinAndSelect('report.validationWorkflow', 'validationWorkflow')
             .where('report.workflow_type = :workflowType', { workflowType })
             .orderBy('report.started_at', 'DESC')
             .addOrderBy('report.id', 'DESC');
@@ -164,6 +167,7 @@ export class WorkflowReportService {
             relations: {
                 importWorkflow: true,
                 exportWorkflow: true,
+                validationWorkflow: true,
             }
         });
         if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
@@ -269,6 +273,7 @@ export class WorkflowReportService {
     private resolveWorkflowType(options: WorkflowReport): WorkflowType {
         if (options.workflow_type) return options.workflow_type;
         if (options.exportWorkflow) return WorkflowType.EXPORT;
+        if (options.validationWorkflow) return WorkflowType.VALIDATION;
         if (options.importWorkflow) return WorkflowType.IMPORT;
         return WorkflowType.IMPORT;
     }
@@ -282,7 +287,18 @@ export class WorkflowReportService {
     }
 
     private hydrateWorkflowReference(report: WorkflowReport): WorkflowReport {
-        report.workflow = report.workflow_type === WorkflowType.EXPORT ? report.exportWorkflow : report.importWorkflow;
+        switch (report.workflow_type) {
+            case WorkflowType.EXPORT:
+                report.workflow = report.exportWorkflow;
+                break;
+            case WorkflowType.VALIDATION:
+                report.workflow = report.validationWorkflow;
+                break;
+            case WorkflowType.IMPORT:
+            default:
+                report.workflow = report.importWorkflow;
+                break;
+        }
         report.workflowId = report.workflow?.id;
         return report;
     }
@@ -294,6 +310,10 @@ export class WorkflowReportService {
     ) {
         if (workflowType === WorkflowType.EXPORT) {
             query.andWhere('report.exportWorkflowId = :workflowId', { workflowId });
+            return query;
+        }
+        if (workflowType === WorkflowType.VALIDATION) {
+            query.andWhere('report.validationWorkflowId = :workflowId', { workflowId });
             return query;
         }
 
