@@ -1,3 +1,4 @@
+import { CompareOperation, SearchFilter, SearchFilterValue } from "./Config";
 import { Publication } from "./Publication";
 
 export interface Workflow {
@@ -28,10 +29,44 @@ export interface ExportWorkflow extends Workflow {
     strategy?: any;
 }
 
+export type ValidationTarget = 'publication';
+export type ValidationRuleResult = 'info' | 'warning' | 'error';
+
+export interface ValidationRequiredCondition {
+    type: 'required';
+    path: string;
+}
+
+export interface ValidationCompareCondition {
+    type: 'compare';
+    path: string;
+    comp: CompareOperation;
+    value: SearchFilterValue;
+}
+
+export type ValidationCondition = ValidationRequiredCondition | ValidationCompareCondition;
+
+export interface ValidationRequiredRule extends ValidationRequiredCondition {
+    result: ValidationRuleResult;
+}
+
+export interface ValidationCompareRule extends ValidationCompareCondition {
+    result: ValidationRuleResult;
+}
+
+export interface ValidationConditionalRule {
+    type: 'conditional';
+    result: ValidationRuleResult;
+    if: ValidationCondition | ValidationCondition[];
+    then: ValidationCondition | ValidationCondition[];
+}
+
+export type ValidationRule = ValidationRequiredRule | ValidationCompareRule | ValidationConditionalRule;
+
 export interface ValidationWorkflow extends Workflow {
-    target?: string;
-    target_filter?: unknown;
-    rules?: unknown[];
+    target?: ValidationTarget;
+    target_filter?: SearchFilter;
+    rules?: ValidationRule[];
 }
 
 export type ExportFormat = 'json' | 'xml' | 'csv' | 'xlsx';

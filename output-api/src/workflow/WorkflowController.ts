@@ -310,12 +310,24 @@ export class WorkflowController {
         label: 'Publikations-Validierung',
         target: 'publication',
         target_filter: {
-          reporting_year: 2025,
-          oa_category: ['gold', 'hybrid']
+          expressions: [
+            {
+              op: 0,
+              key: 'reporting_year',
+              comp: 1,
+              value: 2025
+            }
+          ]
         },
         rules: [
-          { type: 'required-field', field: 'doi' },
-          { type: 'duplicate-check', fields: ['doi', 'title'] }
+          { type: 'required', result: 'error', path: 'doi' },
+          { type: 'compare', result: 'warning', path: 'status', comp: 1, value: 1 },
+          {
+            type: 'conditional',
+            result: 'warning',
+            if: { type: 'compare', path: 'oa_category', comp: 1, value: 'gold' },
+            then: { type: 'required', path: 'license' }
+          }
         ],
         mapping: '$'
       } satisfies IValidationWorkflow

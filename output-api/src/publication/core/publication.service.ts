@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { CompareOperation, JoinOperation, SearchFilter, SearchFilterValue } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
 import { Author } from '../../author/Author.entity';
@@ -606,7 +606,7 @@ export class PublicationService {
         let filterIndex = 0;
         if (filter) for (const expr of filter.expressions) {
             let compareOperation = expr.comp;
-            let filterValue: string | number | Array<string | number> = expr.value;
+            let filterValue: SearchFilterValue = expr.value;
 
             if (expr.key.includes("institute_id")) {
                 const instituteId = Number(expr.value);
@@ -656,7 +656,7 @@ export class PublicationService {
         return indexQuery;
     }
 
-    private buildFilterPredicate(key: string, compareOperation: CompareOperation, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
+    private buildFilterPredicate(key: string, compareOperation: CompareOperation, value: SearchFilterValue, parameterPrefix: string): FilterPredicate {
         switch (compareOperation) {
             case CompareOperation.EQUALS:
                 return this.buildEqualsPredicate(key, value, parameterPrefix);
@@ -675,7 +675,7 @@ export class PublicationService {
         }
     }
 
-    private buildEqualsPredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
+    private buildEqualsPredicate(key: string, value: SearchFilterValue, parameterPrefix: string): FilterPredicate {
         if (key === 'invoice_year') {
             const year = Number(Array.isArray(value) ? value[0] : value);
             if (!Number.isInteger(year)) {
@@ -747,7 +747,7 @@ export class PublicationService {
         };
     }
 
-    private buildLikePredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string, mode: 'contains' | 'startsWith'): FilterPredicate {
+    private buildLikePredicate(key: string, value: SearchFilterValue, parameterPrefix: string, mode: 'contains' | 'startsWith'): FilterPredicate {
         const rawValue = String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
         const parameterValue = mode === 'contains' ? `%${rawValue}%` : `${rawValue}%`;
 
@@ -772,7 +772,7 @@ export class PublicationService {
         };
     }
 
-    private buildComparablePredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string, operator: '>' | '<'): FilterPredicate {
+    private buildComparablePredicate(key: string, value: SearchFilterValue, parameterPrefix: string, operator: '>' | '<'): FilterPredicate {
         const expression = this.resolveFilterExpression(key);
         return {
             clause: `${expression} ${operator} :${parameterPrefix}`,
@@ -780,7 +780,7 @@ export class PublicationService {
         };
     }
 
-    private buildInPredicate(key: string, value: string | number | Array<string | number>, parameterPrefix: string): FilterPredicate {
+    private buildInPredicate(key: string, value: SearchFilterValue, parameterPrefix: string): FilterPredicate {
         const values = this.normalizeInValues(value);
         if (values.length === 0) return { clause: '1 = 0' };
 
@@ -819,14 +819,14 @@ export class PublicationService {
         };
     }
 
-    private normalizeInValues(value: string | number | Array<string | number>) {
+    private normalizeInValues(value: SearchFilterValue) {
         if (Array.isArray(value)) return value.filter((entry) => entry !== undefined && entry !== null);
         return value === undefined || value === null ? [] : [value];
     }
 
     private buildAuthorPublicationExistsInPredicate(
         field: string,
-        value: string | number | Array<string | number>,
+        value: SearchFilterValue,
         parameterPrefix: string,
         extraConditions: string[] = [],
     ): FilterPredicate {

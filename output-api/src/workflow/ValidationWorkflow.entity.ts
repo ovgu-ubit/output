@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import { ValidationWorkflow as IValidationWorkflow } from "../../../output-interfaces/Workflow";
+import { ValidationRule, ValidationTarget, ValidationWorkflow as IValidationWorkflow } from "../../../output-interfaces/Workflow";
+import { SearchFilter } from "../../../output-interfaces/Config";
 import { WorkflowReport } from "./WorkflowReport.entity";
 
 @Entity("workflow_validation")
@@ -40,13 +41,13 @@ export class ValidationWorkflow implements IValidationWorkflow {
     locked_at?: Date;
 
     @Column({ nullable: true })
-    target?: string;
+    target?: ValidationTarget;
 
     @Column({ nullable: true, type: 'jsonb' })
-    target_filter?: unknown;
+    target_filter?: SearchFilter;
 
     @Column({ type: 'jsonb', array: true, default: () => 'ARRAY[]::jsonb[]' })
-    rules?: unknown[];
+    rules?: ValidationRule[];
 
     @OneToMany(() => WorkflowReport, (report) => report.validationWorkflow)
     reports?: WorkflowReport[];
