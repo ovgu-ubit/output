@@ -2,6 +2,10 @@
    "name": "output",
    "version": "2.0.0-dev",
    "description": "Publication management for universities.",
+   "overrides": {
+      "picomatch": "4.0.4",
+      "path-to-regexp": "8.4.1"
+   },
    "devDependencies": {
       "@eslint/js": "^10.0.1",
       "@nestjs/testing": "^11.1.17",
