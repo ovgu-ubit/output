@@ -622,6 +622,42 @@ describe('WorkflowService', () => {
         });
     });
 
+    it('normalizes string strategy_type values before persisting import workflows', async () => {
+        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
+
+        const saved = await service.saveImport({
+            label: 'Import',
+            mapping: '$',
+            strategy_type: 'URL_QUERY_OFFSET' as unknown as ImportStrategy,
+            strategy: {
+                url_count: 'https://example.org/count',
+                url_items: 'https://example.org/items',
+                max_res: 100,
+                max_res_name: 'retmax',
+                request_mode: 'offset',
+                offset_name: 'retstart',
+                offset_start: 0,
+                delayInMs: 0,
+                parallelCalls: 1,
+                get_count: '$.count',
+                get_items: '$.items',
+                search_text_combiner: '+',
+                exclusion_criteria: 'false',
+                only_import_if_authors_inst: false,
+                format: 'json',
+            },
+        } as ImportWorkflow);
+
+        expect(importRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'test-uuid',
+            version: 1,
+            strategy_type: ImportStrategy.URL_QUERY_OFFSET,
+        }));
+        expect(saved).toMatchObject({
+            strategy_type: ImportStrategy.URL_QUERY_OFFSET,
+        });
+    });
+
     it('normalizes string strategy_type values before persisting export workflows', async () => {
         exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
 

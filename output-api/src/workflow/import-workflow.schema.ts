@@ -1,6 +1,7 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { BadRequestException } from "@nestjs/common";
+import { ImportStrategy } from "../../../output-interfaces/Workflow";
 
 const StrategyTypeSchema = z.enum([
   "FILE_UPLOAD",
@@ -18,6 +19,25 @@ const StrategyTypeFromNumber = (v: unknown) => {
     case 2: return "URL_QUERY_OFFSET";
     case 3: return "URL_DOI";
     default: return v; // damit Zod sauber "invalid_enum_value" o.ä. wirft
+  }
+};
+
+const StrategyTypeToEnum = (value: unknown): ImportStrategy | unknown => {
+  switch (value) {
+    case "FILE_UPLOAD":
+    case ImportStrategy.FILE_UPLOAD:
+      return ImportStrategy.FILE_UPLOAD;
+    case "URL_LOOKUP_AND_RETRIEVE":
+    case ImportStrategy.URL_LOOKUP_AND_RETRIEVE:
+      return ImportStrategy.URL_LOOKUP_AND_RETRIEVE;
+    case "URL_QUERY_OFFSET":
+    case ImportStrategy.URL_QUERY_OFFSET:
+      return ImportStrategy.URL_QUERY_OFFSET;
+    case "URL_DOI":
+    case ImportStrategy.URL_DOI:
+      return ImportStrategy.URL_DOI;
+    default:
+      return value;
   }
 };
 
@@ -172,7 +192,8 @@ export function validateImportWorkflow(workflow: ImportWorkflow): ImportWorkflow
     return {
       ...workflow,
       ...parsed,
-    } as unknown as ImportWorkflow;
+      strategy_type: StrategyTypeToEnum(parsed.strategy_type) as ImportStrategy,
+    };
   } catch (e) {
     if (e instanceof ZodError) {
       // UI-freundliches Fehlerformat
