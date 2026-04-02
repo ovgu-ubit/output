@@ -1,7 +1,6 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { BadRequestException } from "@nestjs/common";
-import { ImportStrategy } from "../../../output-interfaces/Workflow";
 
 const StrategyTypeSchema = z.enum([
   "FILE_UPLOAD",
@@ -9,16 +8,6 @@ const StrategyTypeSchema = z.enum([
   "URL_QUERY_OFFSET",
   "URL_DOI",
 ]);
-
-const StrategyFromApi: Record<
-  z.infer<typeof StrategyTypeSchema>,
-  ImportStrategy
-> = {
-  FILE_UPLOAD: ImportStrategy.FILE_UPLOAD,
-  URL_LOOKUP_AND_RETRIEVE: ImportStrategy.URL_LOOKUP_AND_RETRIEVE,
-  URL_QUERY_OFFSET: ImportStrategy.URL_QUERY_OFFSET,
-  URL_DOI: ImportStrategy.URL_DOI,
-};
 
 const StrategyTypeFromNumber = (v: unknown) => {
   if (typeof v !== "number" || !Number.isInteger(v)) return v;
@@ -183,8 +172,7 @@ export function validateImportWorkflow(workflow: ImportWorkflow): ImportWorkflow
     return {
       ...workflow,
       ...parsed,
-      strategy_type: StrategyFromApi[parsed.strategy_type],
-    };
+    } as unknown as ImportWorkflow;
   } catch (e) {
     if (e instanceof ZodError) {
       // UI-freundliches Fehlerformat
