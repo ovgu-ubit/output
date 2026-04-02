@@ -24,6 +24,7 @@ export type ValidationSummary = {
 
 @Injectable()
 export class ValidationService {
+    private readonly validationHeartbeatIntervalMs = 30_000;
     private validationDefinition?: ValidationWorkflow;
     private workflowReport?: WorkflowReport;
     protected progress = 0;
@@ -96,6 +97,7 @@ export class ValidationService {
                 code: 'validation.selection',
                 message: `${subjects.length} ${this.validationDefinition.target} objects selected for validation`,
             });
+            let lastReportActivityAt = Date.now();
 
             const summary: ValidationSummary = {
                 target: this.validationDefinition.target,
@@ -111,6 +113,11 @@ export class ValidationService {
                 const findings = this.evaluateRules(subject);
                 summary.findings += findings.length;
 
+                if (findings.length === 0) {
+                    lastReportActivityAt = await this.heartbeatIfNeeded(lastReportActivityAt);
+                    continue;
+                }
+
                 for (const finding of findings) {
                     summary[finding.level]++;
                     await this.workflowReportService.write(this.workflowReport.id, {
@@ -119,6 +126,7 @@ export class ValidationService {
                         code: finding.code,
                         message: finding.message,
                     });
+                    lastReportActivityAt = Date.now();
                 }
             }
 
@@ -367,5 +375,15 @@ export class ValidationService {
             started_at: extra?.started_at,
             params: extra?.params,
         });
+    }
+
+    private async heartbeatIfNeeded(lastReportActivityAt: number): Promise<number> {
+        const now = Date.now();
+        if ((now - lastReportActivityAt) < this.validationHeartbeatIntervalMs) {
+            return lastReportActivityAt;
+        }
+
+        await this.updateRuntimeStatus(-1);
+        return now;
     }
 }

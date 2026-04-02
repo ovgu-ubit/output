@@ -164,4 +164,46 @@ describe('ValidationService', () => {
         }));
         expect(summary.findings).toBe(0);
     });
+
+    it('heartbeats clean validation runs during iteration to keep the report active', async () => {
+        publicationService.getAll.mockResolvedValue([
+            {
+                id: 4,
+                title: 'Clean A',
+                doi: '10.1000/clean-a',
+                status: 1,
+            },
+            {
+                id: 5,
+                title: 'Clean B',
+                doi: '10.1000/clean-b',
+                status: 1,
+            },
+        ]);
+
+        const dateNowSpy = jest.spyOn(Date, 'now')
+            .mockReturnValueOnce(0)
+            .mockReturnValueOnce(31_000)
+            .mockReturnValueOnce(31_000);
+
+        await service.setUp({
+            id: 10,
+            label: 'Validation',
+            workflow_id: 'validation-4',
+            target: 'publication',
+            rules: [
+                { type: 'required', result: 'error', path: 'doi' },
+                { type: 'compare', result: 'warning', path: 'status', comp: CompareOperation.EQUALS, value: 1 },
+            ],
+        } as any);
+
+        await service.validate('alice');
+
+        expect(workflowReportService.updateStatus).toHaveBeenCalledTimes(2);
+        expect(workflowReportService.updateStatus).toHaveBeenNthCalledWith(2, 91, expect.objectContaining({
+            progress: -1,
+        }));
+
+        dateNowSpy.mockRestore();
+    });
 });
