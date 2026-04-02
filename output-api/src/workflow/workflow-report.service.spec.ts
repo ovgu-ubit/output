@@ -51,6 +51,26 @@ describe('WorkflowReportService', () => {
         expect(report.workflowId).toBe(17);
     });
 
+    it('stores validation workflow references with workflow_type', async () => {
+        const validationWorkflow = { id: 19, label: 'Validation WF', version: 1 };
+
+        const report = await service.createReport({
+            workflow_type: WorkflowType.VALIDATION,
+            workflow: validationWorkflow as any,
+            params: { foo: 'bar' },
+        } as any);
+
+        expect(workflowReportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_type: WorkflowType.VALIDATION,
+            validationWorkflow,
+            importWorkflow: undefined,
+            exportWorkflow: undefined,
+            progress: 0,
+        }));
+        expect(report.workflow).toBe(validationWorkflow);
+        expect(report.workflowId).toBe(19);
+    });
+
     it('hydrates workflow references for export report lists', async () => {
         const queryBuilder = {
             leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -72,6 +92,29 @@ describe('WorkflowReportService', () => {
 
         expect(reports[0].workflow).toMatchObject({ id: 9, label: 'Exported', version: 1 });
         expect(reports[0].workflowId).toBe(9);
+    });
+
+    it('hydrates workflow references for validation report lists', async () => {
+        const queryBuilder = {
+            leftJoinAndSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(),
+            addOrderBy: jest.fn().mockReturnThis(),
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
+            getMany: jest.fn(async () => [{
+                id: 6,
+                workflow_type: WorkflowType.VALIDATION,
+                validationWorkflow: { id: 11, label: 'Validation', version: 1 },
+            }]),
+        };
+        workflowReportRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        const reports = await service.getReports(11, WorkflowType.VALIDATION);
+
+        expect(reports[0].workflow).toMatchObject({ id: 11, label: 'Validation', version: 1 });
+        expect(reports[0].workflowId).toBe(11);
     });
 
     it('applies limit and offset when loading paged workflow reports', async () => {

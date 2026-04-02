@@ -1,0 +1,25 @@
+.rules-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.example-block {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f7f9fc;
+  border-radius: 12px;
+}
+
+.example-block pre {
+  margin: 0.75rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.eyebrow {
+  color: #5f6368;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}

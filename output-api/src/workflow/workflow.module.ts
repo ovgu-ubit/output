@@ -57,12 +57,14 @@ import { PlausibilityController } from './PlausibilityController';
 import { ReportItemService } from './report-item.service';
 import { JSONataImportService } from './import/jsonata-import';
 import { ExportWorkflow } from './ExportWorkflow.entity';
+import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowService } from './workflow.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportWorkflow } from './ImportWorkflow.entity';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
 import { WorkflowController } from './WorkflowController';
+import { ValidationService } from './validation.service';
 import { WorkflowReportService } from './workflow-report.service';
 
 @Module({
@@ -84,7 +86,7 @@ import { WorkflowReportService } from './workflow-report.service';
     }),
     ScheduleModule.forRoot(),
     DiscoveryModule,
-    TypeOrmModule.forFeature([ImportWorkflow, ExportWorkflow, WorkflowReport, WorkflowReportItem])
+    TypeOrmModule.forFeature([ImportWorkflow, ExportWorkflow, ValidationWorkflow, WorkflowReport, WorkflowReportItem])
   ],
   controllers: [
     ImportController,
@@ -101,7 +103,7 @@ import { WorkflowReportService } from './workflow-report.service';
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JSONataExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService, WorkflowService, WorkflowReportService,
+    DiscoveryService, WorkflowService, WorkflowReportService, ValidationService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],
@@ -164,6 +166,6 @@ import { WorkflowReportService } from './workflow-report.service';
         return instances as AbstractExportService[];
       }
     },],
-  exports: ['Imports', 'Enrichs', 'Exports', 'Checks', WorkflowReportService]
+  exports: ['Imports', 'Enrichs', 'Exports', 'Checks', WorkflowReportService, ValidationService]
 })
 export class WorkflowModule { }

@@ -2,8 +2,10 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginGuard } from '../security/login.guard';
 import { ExportWorkflowFormComponent } from './dialogs/export-workflow-form/export-workflow-form.component';
+import { ValidationWorkflowFormComponent } from './dialogs/validation-workflow-form/validation-workflow-form.component';
 import { PublicationImportComponent } from './pages/publication-import/publication-import.component';
 import { PublicationExportComponent } from './pages/publication-export/publication-export.component';
+import { PublicationValidationComponent } from './pages/publication-validation/publication-validation.component';
 import { ImportWorkflowFormComponent } from './dialogs/import-workflow-form/import-workflow-form.component';
 
 const routes: Routes = [
@@ -12,6 +14,8 @@ const routes: Routes = [
   { path: 'publication_import', component: PublicationImportComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },
   { path: 'publication_export/:id', component: ExportWorkflowFormComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },
   { path: 'publication_export', component: PublicationExportComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },
+  { path: 'publication_validation/:id', component: ValidationWorkflowFormComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },
+  { path: 'publication_validation', component: PublicationValidationComponent, canActivate: [LoginGuard], data: { roles: ['admin'] }, },
   {
     path: 'publication_import/:id', loadComponent: () => import('./dialogs/import-workflow-form/import-workflow-form.component').then(m => m.ImportWorkflowFormComponent), 
     canActivate: [LoginGuard], data: { roles: ['admin'] },
@@ -47,6 +51,22 @@ const routes: Routes = [
       { path: 'mapping', loadComponent: () => import('./dialogs/export-workflow-form/export-form-mapping/export-form-mapping.component').then(m => m.ExportFormMappingComponent),
     canActivate: [LoginGuard], data: { roles: ['admin'] } },
       { path: 'action', loadComponent: () => import('./dialogs/export-workflow-form/export-form-action/export-form-action.component').then(m => m.ExportFormActionComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] } },
+    ]
+  },
+  {
+    path: 'publication_validation/:id', loadComponent: () => import('./dialogs/validation-workflow-form/validation-workflow-form.component').then(m => m.ValidationWorkflowFormComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] },
+    children: [
+      { path: 'overview', loadComponent: () => import('./dialogs/validation-workflow-form/validation-form-overview/validation-form-overview.component').then(m => m.ValidationFormOverviewComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] } },
+      { path: 'logs/:reportId', loadComponent: () => import('./dialogs/validation-workflow-form/validation-form-log/validation-form-log.component').then(m => m.ValidationFormLogComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] } },
+      { path: 'general', loadComponent: () => import('./dialogs/validation-workflow-form/validation-form-general/validation-form-general.component').then(m => m.ValidationFormGeneralComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] } },
+      { path: 'rules', loadComponent: () => import('./dialogs/validation-workflow-form/validation-form-rules/validation-form-rules.component').then(m => m.ValidationFormRulesComponent),
+    canActivate: [LoginGuard], data: { roles: ['admin'] } },
+      { path: 'action', loadComponent: () => import('./dialogs/validation-workflow-form/validation-form-action/validation-form-action.component').then(m => m.ValidationFormActionComponent),
     canActivate: [LoginGuard], data: { roles: ['admin'] } },
     ]
   }

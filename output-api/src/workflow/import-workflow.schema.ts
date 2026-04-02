@@ -10,16 +10,6 @@ const StrategyTypeSchema = z.enum([
   "URL_DOI",
 ]);
 
-const StrategyFromApi: Record<
-  z.infer<typeof StrategyTypeSchema>,
-  ImportStrategy
-> = {
-  FILE_UPLOAD: ImportStrategy.FILE_UPLOAD,
-  URL_LOOKUP_AND_RETRIEVE: ImportStrategy.URL_LOOKUP_AND_RETRIEVE,
-  URL_QUERY_OFFSET: ImportStrategy.URL_QUERY_OFFSET,
-  URL_DOI: ImportStrategy.URL_DOI,
-};
-
 const StrategyTypeFromNumber = (v: unknown) => {
   if (typeof v !== "number" || !Number.isInteger(v)) return v;
 
@@ -29,6 +19,25 @@ const StrategyTypeFromNumber = (v: unknown) => {
     case 2: return "URL_QUERY_OFFSET";
     case 3: return "URL_DOI";
     default: return v; // damit Zod sauber "invalid_enum_value" o.ä. wirft
+  }
+};
+
+const StrategyTypeToEnum = (value: unknown): ImportStrategy | unknown => {
+  switch (value) {
+    case "FILE_UPLOAD":
+    case ImportStrategy.FILE_UPLOAD:
+      return ImportStrategy.FILE_UPLOAD;
+    case "URL_LOOKUP_AND_RETRIEVE":
+    case ImportStrategy.URL_LOOKUP_AND_RETRIEVE:
+      return ImportStrategy.URL_LOOKUP_AND_RETRIEVE;
+    case "URL_QUERY_OFFSET":
+    case ImportStrategy.URL_QUERY_OFFSET:
+      return ImportStrategy.URL_QUERY_OFFSET;
+    case "URL_DOI":
+    case ImportStrategy.URL_DOI:
+      return ImportStrategy.URL_DOI;
+    default:
+      return value;
   }
 };
 
@@ -173,13 +182,18 @@ export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
 
 export type ImportWorkflowSourceInput = z.infer<typeof ImportWorkflowSourceSchema>;
 
-export function validateImportWorkflow(workflow: ImportWorkflow) {
-  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return true;
+export function validateImportWorkflow(workflow: ImportWorkflow): ImportWorkflow {
+  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return workflow;
   const schema = ImportWorkflowSourceSchema;
 
-  if (!schema) return; // unbekannter Key → dito
+  if (!schema) return workflow; // unbekannter Key → dito
   try {
-    return schema.parse(workflow);
+    const parsed = schema.parse(workflow);
+    return {
+      ...workflow,
+      ...parsed,
+      strategy_type: StrategyTypeToEnum(parsed.strategy_type) as ImportStrategy,
+    };
   } catch (e) {
     if (e instanceof ZodError) {
       // UI-freundliches Fehlerformat

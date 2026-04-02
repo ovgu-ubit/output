@@ -4,7 +4,7 @@ import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
-import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, Workflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
@@ -15,8 +15,26 @@ import { AbstractFilterService } from './filter/abstract-filter.service';
 import { validateImportWorkflow } from './import-workflow.schema';
 import { JSONataImportService } from './import/jsonata-import';
 import { ImportWorkflow } from './ImportWorkflow.entity';
+import { validateValidationWorkflow } from './validation-workflow.schema';
+import { ValidationService } from './validation.service';
+import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { hasProvidedEntityId } from '../common/entity-id';
+
+type SaveWorkflowOptions<TWorkflow extends Workflow> = {
+    repository: Repository<TWorkflow>;
+    workflowType: WorkflowType;
+    validate?: (workflow: TWorkflow) => TWorkflow | Promise<TWorkflow>;
+    createDefaults?: (workflow: TWorkflow) => Partial<TWorkflow> | Promise<Partial<TWorkflow>>;
+    ensureCanPublish?: (workflow: TWorkflow) => void | Promise<void>;
+    reportWorkflowType?: WorkflowType;
+};
+
+type DeleteWorkflowOptions<TWorkflow extends Workflow> = {
+    repository: Repository<TWorkflow>;
+    workflowType: WorkflowType;
+    reportWorkflowType?: WorkflowType;
+};
 
 @Injectable()
 export class WorkflowService {
@@ -25,9 +43,11 @@ export class WorkflowService {
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
         @InjectRepository(ExportWorkflow) private exportRepository: Repository<ExportWorkflow>,
+        @InjectRepository(ValidationWorkflow) private validationRepository: Repository<ValidationWorkflow>,
         private configService: AppConfigService,
         private importService: JSONataImportService,
         private exportService: JSONataExportService,
+        private validationService: ValidationService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[],
         private workflowReportService: WorkflowReportService) { }
 
@@ -40,12 +60,20 @@ export class WorkflowService {
         return this.exportRepository.find(this.getWorkflowOptions(type));
     }
 
+    getValidations(type?: 'draft' | 'published' | 'archived') {
+        return this.validationRepository.find(this.getWorkflowOptions(type));
+    }
+
     async getImport(id?: number, lock = true, user?: string) {
         return this.getWorkflow(this.importRepository, id, WorkflowType.IMPORT, lock, user);
     }
 
     async getExport(id?: number, lock = true, user?: string) {
         return this.getWorkflow(this.exportRepository, id, WorkflowType.EXPORT, lock, user);
+    }
+
+    async getValidation(id?: number, lock = true, user?: string) {
+        return this.getWorkflow(this.validationRepository, id, WorkflowType.VALIDATION, lock, user);
     }
 
     async importImport(file: Express.Multer.File) {
@@ -73,51 +101,15 @@ export class WorkflowService {
     }
 
     async saveImport(workflow: ImportWorkflow, user?: string) {
-        let toSave = workflow;
-        let shouldDeleteArchivedWorkflowReports = false;
-        if (hasProvidedEntityId(workflow.id)) { //update
-            const db = await this.importRepository.findOneBy({ id: workflow.id })
-            if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
-            await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.IMPORT, user);
-            const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
-            if (db.published_at) {
-                const isArchiving = !!workflow.deleted_at; // optional: plus equality checks
-                if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, workflow_id: db.workflow_id, version: db.version, deleted_at: new Date(), locked_at: nextLockedAt };
-                shouldDeleteArchivedWorkflowReports = !db.deleted_at;
-            } else if (!db.published_at && workflow.published_at) {
-                //does another published version exist?
-                const other = await this.importRepository.findOneBy({ workflow_id: db.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) })
-                if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt }
-            } else {
-                toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
-            }
-        } else {
-            const workflowId = workflow.workflow_id ?? uuidv4();
-            toSave = {
-                ...toSave,
-                workflow_id: workflowId,
-                version: await this.getNextDraftVersion(this.importRepository, workflowId),
-                id: undefined,
-                created_at: undefined,
-                published_at: undefined,
-                deleted_at: undefined,
-                modified_at: undefined,
-                locked_at: undefined,
-                update_config: workflow.update_config ?? this.importService.getUpdateMapping()
-            }
-        }
-        const validated = validateImportWorkflow(toSave);
-        if (!validated) return;
-
-        const saved = await this.importRepository.save(toSave);
-        this.syncEditLockOwner(saved, WorkflowType.IMPORT, user);
-        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id)) {
-            await this.workflowReportService.deleteReportsForWorkflow(saved.id);
-        }
-
-        return saved;
+        return this.saveWorkflow(workflow, user, {
+            repository: this.importRepository,
+            workflowType: WorkflowType.IMPORT,
+            validate: validateImportWorkflow,
+            createDefaults: (draft) => ({
+                update_config: draft.update_config ?? this.importService.getUpdateMapping(),
+            }),
+            reportWorkflowType: WorkflowType.IMPORT,
+        });
     }
 
     async importExport(file: Express.Multer.File) {
@@ -144,49 +136,31 @@ export class WorkflowService {
     }
 
     async saveExport(workflow: ExportWorkflow, user?: string) {
-        let toSave = workflow;
-        let shouldDeleteArchivedWorkflowReports = false;
-        if (hasProvidedEntityId(workflow.id)) {
-            const db = await this.exportRepository.findOneBy({ id: workflow.id });
-            if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
-            await this.ensureDraftWorkflowCanBeSaved(db, workflow, WorkflowType.EXPORT, user);
-            const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
-            if (db.published_at) {
-                const isArchiving = !!workflow.deleted_at;
-                if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
-                toSave = { ...db, workflow_id: db.workflow_id, version: db.version, deleted_at: new Date(), locked_at: nextLockedAt };
-                shouldDeleteArchivedWorkflowReports = !db.deleted_at;
-            } else if (!db.published_at && workflow.published_at) {
-                const other = await this.exportRepository.findOneBy({ workflow_id: db.workflow_id, published_at: Not(IsNull()), id: Not(workflow.id) });
-                if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
-                else toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt };
-            } else {
-                toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
-            }
-        } else {
-            const workflowId = workflow.workflow_id ?? uuidv4();
-            toSave = {
-                ...toSave,
-                workflow_id: workflowId,
-                version: await this.getNextDraftVersion(this.exportRepository, workflowId),
-                strategy_type: workflow.strategy_type,
-                id: undefined,
-                created_at: undefined,
-                published_at: undefined,
-                deleted_at: undefined,
-                modified_at: undefined,
-                locked_at: undefined,
-            };
-        }
+        return this.saveWorkflow(workflow, user, {
+            repository: this.exportRepository,
+            workflowType: WorkflowType.EXPORT,
+            validate: validateExportWorkflow,
+            createDefaults: (draft) => ({
+                strategy_type: draft.strategy_type,
+            }),
+            reportWorkflowType: WorkflowType.EXPORT,
+        });
+    }
 
-        toSave = validateExportWorkflow(toSave);
-
-        const saved = await this.exportRepository.save(toSave);
-        this.syncEditLockOwner(saved, WorkflowType.EXPORT, user);
-        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id)) {
-            await this.workflowReportService.deleteReportsForWorkflow(saved.id, WorkflowType.EXPORT);
-        }
-        return saved;
+    async saveValidation(workflow: ValidationWorkflow, user?: string) {
+        return this.saveWorkflow(workflow, user, {
+            repository: this.validationRepository,
+            workflowType: WorkflowType.VALIDATION,
+            validate: validateValidationWorkflow,
+            createDefaults: (draft) => ({
+                rules: draft.rules ?? [],
+            }),
+            ensureCanPublish: (draft) => {
+                if (draft.rules?.length) return;
+                throw new BadRequestException('Error: validation workflows must define at least one rule before publishing');
+            },
+            reportWorkflowType: WorkflowType.VALIDATION,
+        });
     }
 
     async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {
@@ -259,6 +233,22 @@ export class WorkflowService {
         });
     }
 
+    async startValidation(id: number, user?: string) {
+        return this.startDetachedExecution('workflow-validation-service', async () => {
+            const validationDef = await this.validationRepository.findOneBy({ id });
+
+            if (!validationDef) throw new BadRequestException('Error: workflow not found');
+            if (validationDef.deleted_at) {
+                throw new BadRequestException('Error: archived workflows cannot be executed');
+            }
+
+            await this.validationService.setUp(validationDef);
+            return {
+                completion: this.validationService.validate(user).catch(() => undefined),
+            };
+        });
+    }
+
     async isLocked(id: number): Promise<boolean> {
         return this.isWorkflowLocked(this.importRepository, id);
     }
@@ -267,44 +257,32 @@ export class WorkflowService {
         return this.isWorkflowLocked(this.exportRepository, id);
     }
 
+    async isValidationLocked(id: number): Promise<boolean> {
+        return this.isWorkflowLocked(this.validationRepository, id);
+    }
+
     async deleteImports(ids: number[]) {
-        const workflows = await this.importRepository.findBy(ids.map(id => ({ id })) as never);
-        if (workflows.length !== ids.length) {
-            throw new BadRequestException('Error: at least one workflow ID does not exist');
-        }
-        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
-            throw new BadRequestException('Error: only draft workflows can be deleted');
-        }
-
-        await Promise.all(workflows
-            .map((workflow) => workflow.id)
-            .filter((id): id is number => hasProvidedEntityId(id))
-            .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.IMPORT)));
-        workflows.forEach((workflow) => {
-            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(WorkflowType.IMPORT, workflow.id);
+        return this.deleteWorkflows(ids, {
+            repository: this.importRepository,
+            workflowType: WorkflowType.IMPORT,
+            reportWorkflowType: WorkflowType.IMPORT,
         });
-
-        return this.importRepository.remove(workflows);
     }
 
     async deleteExports(ids: number[]) {
-        const workflows = await this.exportRepository.findBy(ids.map(id => ({ id })) as never);
-        if (workflows.length !== ids.length) {
-            throw new BadRequestException('Error: at least one workflow ID does not exist');
-        }
-        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
-            throw new BadRequestException('Error: only draft workflows can be deleted');
-        }
-
-        await Promise.all(workflows
-            .map((workflow) => workflow.id)
-            .filter((id): id is number => hasProvidedEntityId(id))
-            .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, WorkflowType.EXPORT)));
-        workflows.forEach((workflow) => {
-            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(WorkflowType.EXPORT, workflow.id);
+        return this.deleteWorkflows(ids, {
+            repository: this.exportRepository,
+            workflowType: WorkflowType.EXPORT,
+            reportWorkflowType: WorkflowType.EXPORT,
         });
+    }
 
-        return this.exportRepository.remove(workflows);
+    async deleteValidations(ids: number[]) {
+        return this.deleteWorkflows(ids, {
+            repository: this.validationRepository,
+            workflowType: WorkflowType.VALIDATION,
+            reportWorkflowType: WorkflowType.VALIDATION,
+        });
     }
 
     async status(_id: number) {
@@ -313,6 +291,10 @@ export class WorkflowService {
 
     async exportStatus(_id: number) {
         return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.EXPORT);
+    }
+
+    async validationStatus(_id: number) {
+        return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.VALIDATION);
     }
 
     getUpdateMapping(id: number) {
@@ -542,6 +524,95 @@ export class WorkflowService {
 
     private releaseEditLock(workflowType: WorkflowType, workflowId: number): void {
         EditLockOwnerStore.release(workflowType, workflowId);
+    }
+
+    private async saveWorkflow<TWorkflow extends Workflow>(
+        workflow: TWorkflow,
+        user: string | undefined,
+        options: SaveWorkflowOptions<TWorkflow>,
+    ): Promise<TWorkflow> {
+        let toSave = workflow;
+        let shouldDeleteArchivedWorkflowReports = false;
+
+        if (hasProvidedEntityId(workflow.id)) {
+            const db = await options.repository.findOneBy({ id: workflow.id } as never);
+            if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
+            await this.ensureDraftWorkflowCanBeSaved(db, workflow, options.workflowType, user);
+            const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
+
+            if (db.published_at) {
+                const isArchiving = !!workflow.deleted_at;
+                if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
+                toSave = { ...db, workflow_id: db.workflow_id, version: db.version, deleted_at: new Date(), locked_at: nextLockedAt };
+                shouldDeleteArchivedWorkflowReports = !db.deleted_at;
+            } else if (!db.published_at && workflow.published_at) {
+                const other = await options.repository.findOneBy({
+                    workflow_id: db.workflow_id,
+                    published_at: Not(IsNull()),
+                    id: Not(workflow.id),
+                } as never);
+                if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
+                toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt };
+                if (options.ensureCanPublish) {
+                    await options.ensureCanPublish(toSave);
+                }
+            } else {
+                toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
+            }
+        } else {
+            const workflowId = workflow.workflow_id ?? uuidv4();
+            const createDefaults = options.createDefaults ? await options.createDefaults(workflow) : {};
+            toSave = {
+                ...toSave,
+                ...createDefaults,
+                workflow_id: workflowId,
+                version: await this.getNextDraftVersion(options.repository, workflowId),
+                id: undefined,
+                created_at: undefined,
+                published_at: undefined,
+                deleted_at: undefined,
+                modified_at: undefined,
+                locked_at: undefined,
+            };
+        }
+
+        if (options.validate) {
+            toSave = await options.validate(toSave);
+        }
+
+        const saved = await options.repository.save(toSave);
+        this.syncEditLockOwner(saved, options.workflowType, user);
+        if (shouldDeleteArchivedWorkflowReports && hasProvidedEntityId(saved.id) && options.reportWorkflowType) {
+            await this.workflowReportService.deleteReportsForWorkflow(saved.id, options.reportWorkflowType);
+        }
+
+        return saved;
+    }
+
+    private async deleteWorkflows<TWorkflow extends Workflow>(
+        ids: number[],
+        options: DeleteWorkflowOptions<TWorkflow>,
+    ): Promise<TWorkflow[]> {
+        const workflows = await options.repository.findBy(ids.map((id) => ({ id })) as never);
+        if (workflows.length !== ids.length) {
+            throw new BadRequestException('Error: at least one workflow ID does not exist');
+        }
+        if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
+            throw new BadRequestException('Error: only draft workflows can be deleted');
+        }
+
+        if (options.reportWorkflowType) {
+            await Promise.all(workflows
+                .map((workflow) => workflow.id)
+                .filter((id): id is number => hasProvidedEntityId(id))
+                .map((id) => this.workflowReportService.deleteReportsForWorkflow(id, options.reportWorkflowType!)));
+        }
+
+        workflows.forEach((workflow) => {
+            if (hasProvidedEntityId(workflow.id)) this.releaseEditLock(options.workflowType, workflow.id);
+        });
+
+        return options.repository.remove(workflows);
     }
 
     private isAbortError(error: unknown): boolean {

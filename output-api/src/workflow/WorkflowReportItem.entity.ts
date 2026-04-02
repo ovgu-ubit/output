@@ -1,4 +1,4 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { WorkflowReportItem as IWorkflowReportItem, WorkflowReportItemLevel } from "../../../output-interfaces/Workflow";
 import { WorkflowReport } from "./WorkflowReport.entity";
 
