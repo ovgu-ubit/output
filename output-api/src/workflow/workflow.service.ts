@@ -26,6 +26,7 @@ type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     workflowType: WorkflowType;
     validate?: (workflow: TWorkflow) => TWorkflow | Promise<TWorkflow>;
     createDefaults?: (workflow: TWorkflow) => Partial<TWorkflow> | Promise<Partial<TWorkflow>>;
+    ensureCanPublish?: (workflow: TWorkflow) => void | Promise<void>;
     reportWorkflowType?: WorkflowType;
 };
 
@@ -154,6 +155,10 @@ export class WorkflowService {
             createDefaults: (draft) => ({
                 rules: draft.rules ?? [],
             }),
+            ensureCanPublish: (draft) => {
+                if (draft.rules?.length) return;
+                throw new BadRequestException('Error: validation workflows must define at least one rule before publishing');
+            },
             reportWorkflowType: WorkflowType.VALIDATION,
         });
     }
@@ -548,6 +553,9 @@ export class WorkflowService {
                 } as never);
                 if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
                 toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt };
+                if (options.ensureCanPublish) {
+                    await options.ensureCanPublish(toSave);
+                }
             } else {
                 toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }

@@ -480,6 +480,34 @@ describe('WorkflowService', () => {
         expect(validationRepository.save).not.toHaveBeenCalled();
     });
 
+    it('rejects publishing validation workflows without any rules while still allowing empty-rule drafts', async () => {
+        const draftWorkflow = {
+            id: 33,
+            workflow_id: 'wf-33',
+            label: 'Draft validation',
+            version: 1,
+            target: 'publication',
+            rules: [],
+            locked_at: null,
+            published_at: null,
+            deleted_at: null,
+        } as ValidationWorkflow;
+
+        validationRepository.findOneBy!
+            .mockResolvedValueOnce(draftWorkflow)
+            .mockResolvedValueOnce(null);
+        validationRepository.save!.mockImplementation(async (workflow) => workflow as ValidationWorkflow);
+
+        await expect(service.saveValidation({
+            id: 33,
+            published_at: new Date('2026-04-02T09:00:00.000Z'),
+        } as ValidationWorkflow, 'alice')).rejects.toThrow(
+            'Error: validation workflows must define at least one rule before publishing'
+        );
+
+        expect(validationRepository.save).not.toHaveBeenCalled();
+    });
+
     it('deletes validation workflow reports after archiving a published workflow', async () => {
         const publishedWorkflow = {
             id: 34,
