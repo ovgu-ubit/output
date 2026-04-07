@@ -1,6 +1,28 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { firstValueFrom, of } from 'rxjs';
+import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
 import { JSONataImportService } from './jsonata-import';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
 
 describe('JSONataImportService.setVariables', () => {
     let service: JSONataImportService;
@@ -57,7 +79,11 @@ describe('JSONataImportService.setVariables', () => {
     });
 
     it('keeps throwing for missing unescaped placeholders', async () => {
-        await expect(service.setVariables('https://example.test/[missing]')).rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(service.setVariables('https://example.test/[missing]'), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'value for missing is not available',
+        });
     });
 
     it('delays the actual lookup request by delayInMs', async () => {

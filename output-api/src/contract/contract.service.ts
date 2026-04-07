@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
@@ -8,6 +8,7 @@ import { PublicationService } from '../publication/core/publication.service';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
+import { createPersistenceHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
 
@@ -40,9 +41,8 @@ export class ContractService extends AbstractEntityService<Contract> {
                 if (!hasProvidedEntityId(id.id)) {
                     id.value = id.value.toUpperCase();
                     id.type = id.type.toLowerCase();
-                    id.id = (await this.idRepository.save(id).catch(err => {
-                        if (err.constraint) throw new BadRequestException(err.detail)
-                        else throw new InternalServerErrorException(err);
+                    id.id = (await this.idRepository.save(id).catch((error: unknown) => {
+                        throw createPersistenceHttpException(error);
                     })).id;
                 }
             }
@@ -51,9 +51,8 @@ export class ContractService extends AbstractEntityService<Contract> {
             if (!contract.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
         })
 
-        return await this.repository.save(contract).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
+        return await this.repository.save(contract).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
         });
     }
 

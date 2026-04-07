@@ -1,6 +1,21 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { CompareOperation, JoinOperation } from '../../../output-interfaces/Config';
 import { validateValidationWorkflow } from './validation-workflow.schema';
+
+const expectValidationFailure = (action: () => unknown) => {
+    try {
+        action();
+        fail('Expected validation workflow parser to throw');
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: 400,
+            code: ApiErrorCode.VALIDATION_FAILED,
+            message: 'Validation failed',
+        });
+    }
+};
 
 describe('validateValidationWorkflow', () => {
     it('accepts a validation workflow with required, compare and conditional rules', () => {
@@ -63,16 +78,16 @@ describe('validateValidationWorkflow', () => {
     });
 
     it('rejects unknown validation targets', () => {
-        expect(() => validateValidationWorkflow({
+        expectValidationFailure(() => validateValidationWorkflow({
             workflow_id: 'validation-2',
             label: 'Validation',
             target: 'greater_entity',
             rules: [],
-        } as any)).toThrow(BadRequestException);
+        } as any));
     });
 
     it('rejects invalid target filters', () => {
-        expect(() => validateValidationWorkflow({
+        expectValidationFailure(() => validateValidationWorkflow({
             workflow_id: 'validation-3',
             label: 'Validation',
             target: 'publication',
@@ -83,11 +98,11 @@ describe('validateValidationWorkflow', () => {
                 }]
             },
             rules: [],
-        } as any)).toThrow(BadRequestException);
+        } as any));
     });
 
     it('rejects malformed validation rules', () => {
-        expect(() => validateValidationWorkflow({
+        expectValidationFailure(() => validateValidationWorkflow({
             workflow_id: 'validation-4',
             label: 'Validation',
             target: 'publication',
@@ -96,6 +111,6 @@ describe('validateValidationWorkflow', () => {
                 result: 'warning',
                 path: 'status',
             }],
-        } as any)).toThrow(BadRequestException);
+        } as any));
     });
 });

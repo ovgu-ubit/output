@@ -65,6 +65,10 @@ export function createNotFoundHttpException(message = 'Resource not found.'): Ht
     return createApiHttpException(HttpStatus.NOT_FOUND, ApiErrorCode.NOT_FOUND, { message });
 }
 
+export function createForbiddenHttpException(message = 'Forbidden.'): HttpException {
+    return createApiHttpException(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN, { message });
+}
+
 export function createUniqueConstraintHttpException(
     message = 'Unique constraint violated.',
     details?: ApiErrorDetail[],

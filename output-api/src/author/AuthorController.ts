@@ -6,7 +6,7 @@ import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthorService } from "./author.service";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
-import { createInternalErrorHttpException, createNotFoundHttpException } from "../common/api-error";
+import { createNotFoundHttpException } from "../common/api-error";
 import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("authors")
@@ -91,9 +91,6 @@ export class AuthorController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
-        const res = await this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
-        if (res['error'] && res['error'] === 'update') throw createInternalErrorHttpException()
-        else if (res['error'] && res['error'] === 'delete') throw createInternalErrorHttpException()
-        else return res;
+        return this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
     }
 }

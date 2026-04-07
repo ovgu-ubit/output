@@ -528,7 +528,7 @@ export class PublicationService {
             },
             validate: ({ primary, duplicates }) => {
                 if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
-                    return 'find';
+                    throw createEntityLockedHttpException();
                 }
             },
             mergeContext: {

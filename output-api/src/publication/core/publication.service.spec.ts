@@ -18,6 +18,27 @@ import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
 import { PublicationChangeService } from './publication-change.service';
 
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
+
 describe('PublicationService combine', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
@@ -190,25 +211,45 @@ describe('PublicationService combine', () => {
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
-    it('returns a find error when the primary publication does not exist during combine', async () => {
+    it('returns a structured not-found error when the primary publication does not exist during combine', async () => {
         duplRepository.find.mockResolvedValue([]);
         pubRepository.findOne.mockResolvedValue(null);
 
-        const result = await service.combine(999, [62]);
-
-        expect(result).toEqual({ error: 'find' });
+        await expectApiError(service.combine(999, [62]), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
         expect(pubRepository.save).not.toHaveBeenCalled();
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
 
-    it('returns a find error when a duplicate publication does not exist during combine', async () => {
+    it('returns a structured not-found error when a duplicate publication does not exist during combine', async () => {
         duplRepository.find.mockResolvedValue([]);
         const primary = { id: 61, locked: false } as Publication;
         pubRepository.findOne.mockImplementation(async ({ where }: any) => where.id === 61 ? primary : null);
 
-        const result = await service.combine(61, [999]);
+        await expectApiError(service.combine(61, [999]), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
 
-        expect(result).toEqual({ error: 'find' });
+    it('returns a structured lock error when one of the publications is locked during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        const primary = { id: 61, locked: true } as Publication;
+        const duplicate = { id: 62, locked: false } as Publication;
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => {
+            if (where.id === 61) return primary;
+            if (where.id === 62) return duplicate;
+            return null;
+        });
+
+        await expectApiError(service.combine(61, [62]), {
+            statusCode: 409,
+            code: ApiErrorCode.ENTITY_LOCKED,
+        });
         expect(pubRepository.save).not.toHaveBeenCalled();
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });

@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AbstractExportService, ExportService } from './abstract-export.service';
 import { SearchFilter } from '../../../../output-interfaces/Config';
 import { Publication } from '../../publication/core/Publication.entity';
@@ -17,6 +17,7 @@ import { PublicationService } from '../../publication/core/publication.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { createInternalErrorHttpException } from '../../common/api-error';
 
 @ExportService({path: 'excel'})
 @Injectable()
@@ -104,7 +105,7 @@ export class ExcelExportService extends AbstractExportService {
             worksheet["AC" + i].z = "DD.MM.YYYY HH:MM:SS"; //import date
             worksheet["AD" + i].z = "DD.MM.YYYY HH:MM:SS"; //edit date
             const columns = ["AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU"]
-            if (cost_types.length > columns.length) throw new InternalServerErrorException('too many cost types, please report to developer')
+            if (cost_types.length > columns.length) throw createInternalErrorHttpException()
             for (let j = 0; j < cost_types.length; j++) {
                 if (worksheet[columns[j] + "" + i]) worksheet[columns[j] + "" + i].z = '#,##0.00 "€"';
             }

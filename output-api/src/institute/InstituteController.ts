@@ -5,7 +5,7 @@ import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
 import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { createInternalErrorHttpException, createNotFoundHttpException } from "../common/api-error";
+import { createNotFoundHttpException } from "../common/api-error";
 import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("institute")
@@ -90,10 +90,7 @@ export class InstituteController {
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
-        const res = await this.instService.combine(id1, ids, aliases);
-        if (res['error'] && res['error'] === 'update') throw createInternalErrorHttpException()
-        else if (res['error'] && res['error'] === 'delete') throw createInternalErrorHttpException()
-        else return res;
+        return this.instService.combine(id1, ids, aliases);
     }
 
     @Get('subs/:id')

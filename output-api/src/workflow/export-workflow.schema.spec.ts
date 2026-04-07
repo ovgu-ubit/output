@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { ExportStrategy } from '../../../output-interfaces/Workflow';
 import { validateExportWorkflow } from './export-workflow.schema';
 
@@ -129,8 +130,10 @@ describe('validateExportWorkflow', () => {
             validateExportWorkflow(workflow);
             fail('validateExportWorkflow should throw for incomplete XML strategy');
         } catch (error) {
-            expect(error).toBeInstanceOf(BadRequestException);
-            expect(error.getResponse()).toMatchObject({
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.VALIDATION_FAILED,
                 message: 'Validation failed',
                 details: expect.arrayContaining([
                     expect.objectContaining({
@@ -158,8 +161,10 @@ describe('validateExportWorkflow', () => {
             validateExportWorkflow(workflow);
             fail('validateExportWorkflow should throw for incomplete CSV strategy');
         } catch (error) {
-            expect(error).toBeInstanceOf(BadRequestException);
-            expect(error.getResponse()).toMatchObject({
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.VALIDATION_FAILED,
                 message: 'Validation failed',
                 details: expect.arrayContaining([
                     expect.objectContaining({
@@ -210,8 +215,10 @@ describe('validateExportWorkflow', () => {
             validateExportWorkflow(workflow);
             fail('validateExportWorkflow should throw for unknown fields');
         } catch (error) {
-            expect(error).toBeInstanceOf(BadRequestException);
-            expect(error.getResponse()).toMatchObject({
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.VALIDATION_FAILED,
                 message: 'Validation failed',
                 details: expect.arrayContaining([
                     expect.objectContaining({
@@ -241,8 +248,10 @@ describe('validateExportWorkflow', () => {
             validateExportWorkflow(workflow);
             fail('validateExportWorkflow should throw for blank XML names');
         } catch (error) {
-            expect(error).toBeInstanceOf(BadRequestException);
-            expect(error.getResponse()).toMatchObject({
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.VALIDATION_FAILED,
                 message: 'Validation failed',
                 details: expect.arrayContaining([
                     expect.objectContaining({
@@ -270,8 +279,10 @@ describe('validateExportWorkflow', () => {
             validateExportWorkflow(workflow);
             fail('validateExportWorkflow should throw for inline XLSX strategy');
         } catch (error) {
-            expect(error).toBeInstanceOf(BadRequestException);
-            expect(error.getResponse()).toMatchObject({
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.VALIDATION_FAILED,
                 message: 'Validation failed',
                 details: expect.arrayContaining([
                     expect.objectContaining({

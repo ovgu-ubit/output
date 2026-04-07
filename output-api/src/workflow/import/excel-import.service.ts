@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as moment from 'moment';
 import * as XLSX from 'xlsx';
@@ -24,6 +24,7 @@ import { AbstractImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { WorkflowReportService } from '../workflow-report.service';
+import { createWorkflowRunningHttpException } from '../../common/api-error';
 
 @Injectable()
 /**
@@ -92,7 +93,7 @@ export class ExcelImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();

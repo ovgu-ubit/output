@@ -1,7 +1,29 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import * as XLSX from 'xlsx';
+import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
 import { ExportStrategy, WorkflowType } from '../../../../output-interfaces/Workflow';
 import { JSONataExportService } from './jsonata-export.service';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
 
 describe('JSONataExportService', () => {
     let service: JSONataExportService;
@@ -97,7 +119,11 @@ describe('JSONataExportService', () => {
     });
 
     it('requires setup before export', async () => {
-        await expect(service.export()).rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(service.export(), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'JSONata export workflow is not configured.',
+        });
     });
 
     it('renders mapped JSON output', async () => {

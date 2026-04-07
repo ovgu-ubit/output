@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { SearchFilter } from "../../../output-interfaces/Config";
@@ -10,6 +10,7 @@ import { AbstractExportService, getExportServiceMeta } from "./export/abstract-e
 import { AbstractFilterService } from "./filter/abstract-filter.service";
 import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
+import { createNotFoundHttpException } from "../common/api-error";
 
 @Controller("export")
 @ApiTags("export")
@@ -86,7 +87,7 @@ export class ExportController {
   @Body('withMasterData') withMasterData?: boolean) {
     //res.setHeader('Content-type', 'text/plain')
     const so = this.list().findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Export service not found.');
 
     if (this.exportServices[so].isExcelResponse()) {
       return new StreamableFile(await this.exportServices[so].export(filter, this.filterServices, request['user']['id'], withMasterData), {
@@ -101,7 +102,7 @@ export class ExportController {
   @Permissions([{ role: 'reader', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async exportMasterStatus(@Param('path') path: string) {
     const so = this.list().findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Export service not found.');
     return this.exportServices[so].status();
   }
 }

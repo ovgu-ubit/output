@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { ImportStrategy } from '../../../output-interfaces/Workflow';
 import { validateImportWorkflow } from './import-workflow.schema';
 
@@ -104,8 +105,10 @@ describe('validateImportWorkflow', () => {
             validateImportWorkflow(workflow);
             fail('validateImportWorkflow should throw for incomplete lookup strategy');
         } catch (error) {
-            expect(error).toBeInstanceOf(BadRequestException);
-            expect(error.getResponse()).toMatchObject({
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.VALIDATION_FAILED,
                 message: 'Validation failed',
                 details: expect.arrayContaining([
                     expect.objectContaining({

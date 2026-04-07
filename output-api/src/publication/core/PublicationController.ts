@@ -183,10 +183,7 @@ export class PublicationController {
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        const res = await this.publicationService.combine(id1, ids);
-        if (res['error'] && res['error'] === 'update') throw createInternalErrorHttpException()
-        else if (res['error'] && res['error'] === 'delete') throw createInternalErrorHttpException()
-        else return res;
+        return this.publicationService.combine(id1, ids);
     }
 
     @Post('filter')

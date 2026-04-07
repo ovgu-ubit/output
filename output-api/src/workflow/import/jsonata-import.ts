@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
@@ -26,6 +26,7 @@ import { LanguageService } from '../../publication/lookups/language.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { Publisher } from '../../publisher/Publisher.entity';
 import { PublisherService } from '../../publisher/publisher.service';
+import { createInternalErrorHttpException, createInvalidRequestHttpException } from '../../common/api-error';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
@@ -232,7 +233,7 @@ export class JSONataImportService extends AbstractImportService {
             else value = values[i] ?? ""; // oder Fehler werfen
 
             if (value) result = result.replace(`[${key}]`, value);
-            else if (!safe) throw new BadRequestException(`value for ${key} is not available`);
+            else if (!safe) throw createInvalidRequestHttpException(`value for ${key} is not available`);
         }
         return result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
     }
@@ -705,7 +706,7 @@ export class JSONataImportService extends AbstractImportService {
         try {
             data = await Promise.all(jsonData.map(e => this.transform(e)))
         } catch (err) {
-            throw new InternalServerErrorException(err, "JSONata mapping could not be applied")
+            throw createInternalErrorHttpException()
         }
         this.numberOfPublications = data.length;
         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `${this.numberOfPublications} elements found` })
@@ -761,7 +762,7 @@ export class JSONataImportService extends AbstractImportService {
      */
     public async importLookupAndRetrieve(update: boolean, by_user?: string, dryRun = false) {
         if (!this.lookupURL || !this.retrieveURL || !this.max_res_name || !this.max_res || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_lookup_ids || !this.importDefinition.strategy.get_retrieve_item) {
-            throw new BadRequestException('Import cannot be run due to missing parameters.')
+            throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         }
 
         this.dryRun = dryRun;
@@ -833,7 +834,7 @@ export class JSONataImportService extends AbstractImportService {
     public async import(update: boolean, by_user?: string, dryRun = false) {
         this.dryRun = dryRun;
         if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
-            throw new BadRequestException('Import cannot be run due to missing parameters.')
+            throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
 
         this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
@@ -917,7 +918,7 @@ export class JSONataImportService extends AbstractImportService {
     public async enrich(by_user?: string, dryRun = false) {
         this.dryRun = dryRun;
         if (!this.url_doi || !this.importDefinition.strategy.get_doi_item)
-            throw new BadRequestException('Enrich cannot be run due to missing parameters.')
+            throw createInvalidRequestHttpException('Enrich cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
 
         const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
