@@ -3,44 +3,51 @@ import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms'
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { concat, concatMap, delay, firstValueFrom, map, merge, of } from 'rxjs';
-import { AuthorizationService } from 'src/app/security/authorization.service';
+import { concat, concatMap, delay, firstValueFrom, map, merge } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { AuthorshipFormComponent } from 'src/app/form/authorship-form/authorship-form.component';
+import { ContractFormComponent } from 'src/app/form/contract-form/contract-form.component';
+import { DoiFormComponent } from 'src/app/form/doi-form/doi-form.component';
+import { FunderFormComponent } from 'src/app/form/funder-form/funder-form.component';
+import { GreaterEntityFormComponent } from 'src/app/form/greater-entity-form/greater-entity-form.component';
+import { InvoiceFormComponent } from 'src/app/form/invoice-form/invoice-form.component';
+import { OaCategoryFormComponent } from 'src/app/form/oa-category-form/oa-category-form.component';
+import { PubTypeFormComponent } from 'src/app/form/pub-type-form/pub-type-form.component';
+import { PublisherFormComponent } from 'src/app/form/publisher-form/publisher-form.component';
+import { AuthorizationService } from 'src/app/security/authorization.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { FunderService } from 'src/app/services/entities/funder.service';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
-import { InvoiceService } from 'src/app/services/entities/invoice.service';
 import { LanguageService } from 'src/app/services/entities/language.service';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
-import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
-import { AuthorPublication, Invoice, Publication, PublicationSupplement, Status } from '../../../../../../output-interfaces/Publication';
-import { PublisherFormComponent } from 'src/app/form/publisher-form/publisher-form.component';
-import { ContractFormComponent } from 'src/app/form/contract-form/contract-form.component';
-import { FunderFormComponent } from 'src/app/form/funder-form/funder-form.component';
-import { GreaterEntityFormComponent } from 'src/app/form/greater-entity-form/greater-entity-form.component';
-import { OaCategoryFormComponent } from 'src/app/form/oa-category-form/oa-category-form.component';
-import { PubTypeFormComponent } from 'src/app/form/pub-type-form/pub-type-form.component';
-import { DoiFormComponent } from 'src/app/form/doi-form/doi-form.component';
-import { InvoiceFormComponent } from 'src/app/form/invoice-form/invoice-form.component';
-import { AuthorshipFormComponent } from 'src/app/form/authorship-form/authorship-form.component';
 import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
+import { AuthorPublication, Invoice, Publication, PublicationSupplement, Status } from '../../../../../../output-interfaces/Publication';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
   public pubValidator(): ValidatorFn {
     return (formGroup: FormGroup) => {
-      let t1, t2 = null;
-      if (!(formGroup.get('biblio_info').get('pub_date').value || formGroup.get('biblio_info').get('pub_date_print').value || formGroup.get('biblio_info').get('pub_date_accepted').value || formGroup.get('biblio_info').get('pub_date_submitted').value))
-        t1 = { no_pub_date: true }
-      if (!formGroup.get('title').value && !formGroup.get('doi').value)
-        t2 = { no_title_or_doi: true }
+      let t1;
+      let t2 = null;
+      if (!(formGroup.get('biblio_info').get('pub_date').value
+        || formGroup.get('biblio_info').get('pub_date_print').value
+        || formGroup.get('biblio_info').get('pub_date_accepted').value
+        || formGroup.get('biblio_info').get('pub_date_submitted').value)) {
+        t1 = { no_pub_date: true };
+      }
+      if (!formGroup.get('title').value && !formGroup.get('doi').value) {
+        t2 = { no_title_or_doi: true };
+      }
       if (!t1 && !t2) return null;
-      else return { ...t1, ...t2 };
+      return { ...t1, ...t2 };
     };
   }
 }
@@ -57,13 +64,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   public supplForm: FormGroup;
   submitted = false;
   isMaximized = false;
+  saving = false;
 
-  edit: boolean = false;
+  edit = false;
   loading: boolean;
   pub: Publication;
 
   doi_import_service: string;
-
   statuses: Status[];
 
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
@@ -76,7 +83,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   today = new Date();
   disabled = false;
-  licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige']
+  licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige'];
   currencies = ['EUR', 'USD', 'CHF'];
   private readonly defaultDialogWidth: string;
   private readonly defaultDialogHeight = '800px';
@@ -95,14 +102,56 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   geForm = GreaterEntityFormComponent;
   oaForm = OaCategoryFormComponent;
   ptForm = PubTypeFormComponent;
+  private readonly apiFieldPathMap: Record<string, string> = {
+    authors: 'author_info.authors',
+    peer_reviewed: 'biblio_info.peer_reviewed',
+    pub_date: 'biblio_info.pub_date',
+    pub_date_print: 'biblio_info.pub_date_print',
+    pub_date_submitted: 'biblio_info.pub_date_submitted',
+    pub_date_accepted: 'biblio_info.pub_date_accepted',
+    abstract: 'biblio_info.abstract',
+    volume: 'biblio_info.volume',
+    issue: 'biblio_info.issue',
+    first_page: 'biblio_info.first_page',
+    last_page: 'biblio_info.last_page',
+    publisher_location: 'biblio_info.publisher_location',
+    edition: 'biblio_info.edition',
+    article_number: 'biblio_info.article_number',
+    page_count: 'biblio_info.page_count',
+    second_pub: 'oa_info.second_pub',
+    is_oa: 'oa_info.is_oa',
+    oa_status: 'oa_info.oa_status',
+    is_journal_oa: 'oa_info.is_journal_oa',
+    best_oa_host: 'oa_info.best_oa_host',
+    best_oa_license: 'oa_info.best_oa_license',
+    cost_approach: 'finance_info.cost_approach',
+    cost_approach_currency: 'finance_info.cost_approach_currency',
+    grant_number: 'finance_info.grant_number',
+    not_budget_relevant: 'finance_info.not_budget_relevant',
+    contract_year: 'finance_info.contract_year',
+  };
 
-  constructor(public dialogRef: MatDialogRef<PublicationFormComponent>, public tokenService: AuthorizationService, private pubValidator: PubValidator,
-    @Inject(MAT_DIALOG_DATA) public data: any, private formBuilder: FormBuilder, private publicationService: PublicationService,
-    private dialog: MatDialog, public pubTypeService: PublicationTypeService, private _snackBar: MatSnackBar,
-    public oaService: OACategoryService, public geService: GreaterEntityService, public publisherService: PublisherService, public contractService: ContractService,
-    public funderService: FunderService, public languageService: LanguageService, private invoiceService: InvoiceService,
+  constructor(
+    public dialogRef: MatDialogRef<PublicationFormComponent>,
+    public tokenService: AuthorizationService,
+    private pubValidator: PubValidator,
+    @Inject(MAT_DIALOG_DATA) public data: any,
+    private formBuilder: FormBuilder,
+    private publicationService: PublicationService,
+    private dialog: MatDialog,
+    public pubTypeService: PublicationTypeService,
+    private _snackBar: MatSnackBar,
+    public oaService: OACategoryService,
+    public geService: GreaterEntityService,
+    public publisherService: PublisherService,
+    public contractService: ContractService,
+    public funderService: FunderService,
+    public languageService: LanguageService,
     private configService: ConfigService,
-    private statusService: StatusService, private enrichService: EnrichService) {
+    private statusService: StatusService,
+    private enrichService: EnrichService,
+    private errorPresentation: ErrorPresentationService,
+  ) {
     this.defaultDialogWidth = this.data?.entity?.id ? '1000px' : '800px';
     this.form = this.formBuilder.group({
       id: [''],
@@ -160,20 +209,20 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
     this.supplForm = this.formBuilder.group({
       link: ['', Validators.required],
-    })
+    });
   }
 
   ngOnInit(): void {
-    let ob$ = this.configService.get("optional_fields").pipe(map(data => {
+    let ob$ = this.configService.get('optional_fields').pipe(map(data => {
       this.optional_fields = data.value;
     }));
-    ob$ = merge(ob$, this.configService.get("institution_short_label").pipe(map(data => {
+    ob$ = merge(ob$, this.configService.get('institution_short_label').pipe(map(data => {
       this.institution = data.value;
-    }
-    )));
-    ob$ = merge(ob$, this.configService.get("doi_import_service").pipe(map(data => {
+    })));
+    ob$ = merge(ob$, this.configService.get('doi_import_service').pipe(map(data => {
       this.doi_import_service = data?.value;
-    })))
+    })));
+
     if (this.data.entity?.id) {
       this.edit = true;
       this.loading = true;
@@ -185,48 +234,53 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         identifiers: [],
         cost_approach_currency: 'EUR'
       };
-      let dialogRef = this.dialog.open(DoiFormComponent, {
+      const dialogRef = this.dialog.open(DoiFormComponent, {
         width: '800px',
         maxHeight: '800px',
-        data: {
-        },
+        data: {},
         disableClose: true
       });
       ob$ = concat(ob$, dialogRef.afterClosed().pipe(map(result => {
-        if (!result) return;
-        if (result.doi) {
-          this.pub.doi = result.doi;
-          this.pub.dataSource = 'Manuell per DOI hinzugefügt'
-          this.publicationService.add(this.pub).pipe(concatMap(data => {
-            if (!Array.isArray(data)) return of(null);
-            this.pub.id = data[0].id
-            /*this.filter = {
-              filter: {
-                expressions: [
-                  {
-                    op: JoinOperation.AND,
-                    key: 'id',
-                    comp: CompareOperation.EQUALS,
-                    value: id[0]
-                  }
-                ]
-              }
-            }*/
-            this.loading = true;
-            return this.enrichService.startID(this.doi_import_service, [this.pub.id], false).pipe(delay(2000))//wait for 2 seconds to complete enrich
-          })).pipe(concatMap(data => {
+        if (!result?.doi) return;
+
+        this.pub.doi = result.doi;
+        this.pub.dataSource = 'Manuell per DOI hinzugefuegt';
+        this.form.patchValue({
+          doi: this.pub.doi,
+          dataSource: this.pub.dataSource,
+        });
+
+        this.loading = true;
+        this.publicationService.add(this.pub).pipe(
+          concatMap(data => {
+            const createdPublication = this.normalizeSavedPublication(data, this.pub);
+            this.pub.id = createdPublication.id;
+            return this.enrichService.startID(this.doi_import_service, [this.pub.id], false).pipe(delay(2000));
+          }),
+          concatMap(() => {
             this.edit = true;
             return this.loadPub(this.pub.id);
-          })).subscribe()
-        }
+          })
+        ).subscribe({
+          error: (error) => {
+            this.loading = false;
+            this.errorPresentation.present(error, { action: 'create', entity: 'Publikation' });
+          }
+        });
       })));
     }
+
     ob$ = merge(ob$, this.loadMasterData());
 
     ob$.subscribe({
       complete: () => {
+      },
+      error: (error) => {
+        this.loading = false;
+        this.errorPresentation.present(error, { action: 'load', entity: 'Publikation' });
+        this.dialogRef.close(null);
       }
-    })
+    });
   }
 
   loadPub(id: number) {
@@ -240,10 +294,13 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       if (!this.form.get('finance_info').get('cost_approach_currency').value) {
         this.form.get('finance_info').get('cost_approach_currency').setValue('EUR');
       }
-      if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) this.form.get('oa_info').get('best_oa_license').setValue('Sonstige')
+      if (this.pub.best_oa_license && !this.licenses.find(e => e === this.pub.best_oa_license)) {
+        this.form.get('oa_info').get('best_oa_license').setValue('Sonstige');
+      }
 
-      if (this.pub?.locked) this.setLock(true);
-      else {
+      if (this.pub?.locked) {
+        this.setLock(true);
+      } else {
         if (this.pub?.locked_author) this.form.get('author_info').disable();
         if (this.pub?.locked_biblio) this.form.get('biblio_info').disable();
         if (this.pub?.locked_oa) this.form.get('oa_info').disable();
@@ -254,9 +311,9 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         this.disable();
         this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
           duration: 5000,
-          panelClass: [`warning-snackbar`],
+          panelClass: ['warning-snackbar'],
           verticalPosition: 'top'
-        })
+        });
       } else if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
         this.disable();
       }
@@ -267,7 +324,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   loadMasterData() {
     return this.statusService.getAll().pipe(map(data => {
       this.statuses = data.sort((a, b) => a.label.localeCompare(b.label));
-    }))
+    }));
   }
 
   ngAfterViewInit(): void {
@@ -280,48 +337,48 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   setPublisher(event) {
     this.pub.publisher = event;
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   setContract(event) {
     this.pub.contract = event;
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   setFunder(event) {
     if (!this.pub.funders) this.pub.funders = [];
     this.pub.funders.push(event);
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   removeFunder(funder) {
     if (this.disabled) return;
-    this.pub.funders = this.pub.funders.filter(ap => ap.id !== funder.id)
-    this.form.markAsDirty()
+    this.pub.funders = this.pub.funders.filter(ap => ap.id !== funder.id);
+    this.form.markAsDirty();
   }
 
   setGE(event) {
     this.pub.greater_entity = event;
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   setOA(event) {
     this.pub.oa_category = event;
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   setLang(event) {
     this.pub.language = event;
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   setPubType(event) {
     this.pub.pub_type = event;
-    this.form.markAsDirty()
+    this.form.markAsDirty();
   }
 
   close() {
-    this.dialogRef.close(null)
+    this.dialogRef.close(null);
   }
 
   toggleMaximize() {
@@ -341,84 +398,86 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   abort(): void {
     if (this.form.dirty) {
-      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?`);
+      const dialogData = new ConfirmDialogModel('Ungesicherte Aenderungen', 'Es gibt ungespeicherte Aenderungen, moechten Sie diese zunaechst speichern?');
 
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: '400px',
         data: dialogData
       });
 
       dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) { //save
+        if (dialogResult) {
           this.action();
-        } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
-        else this.close()
+        } else if (this.pub.id) {
+          this.dialogRef.close({ id: this.pub.id, locked_at: null });
+        } else {
+          this.close();
+        }
       });
-    } else if (this.pub.id) this.dialogRef.close({ id: this.pub.id, locked_at: null })
-    else this.close()
+    } else if (this.pub.id) {
+      this.dialogRef.close({ id: this.pub.id, locked_at: null });
+    } else {
+      this.close();
+    }
   }
 
   async action() {
+    if (this.saving) return;
+
     this.submitted = true;
-    if (this.form.invalid) return;
-
-    let formValue = {
-      ...this.form.get('author_info').getRawValue(),
-      ...this.form.get('biblio_info').getRawValue(),
-      ...this.form.get('oa_info').getRawValue(),
-      ...this.form.get('finance_info').getRawValue(),
-      id: this.form.get('id').getRawValue(),
-      title: this.form.get('title').getRawValue(),
-      doi: this.form.get('doi').getRawValue(),
-      link: this.form.get('link').getRawValue(),
-      add_info: this.form.get('add_info').getRawValue(),
-      dataSource: this.form.get('dataSource').getRawValue(),
-      status: this.form.get('status').getRawValue(),
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
     }
 
-    if (this.edit) {
-      this.pub = { ...this.pub, ...formValue, locked_at: null };
-    } else { //new publication
-      this.pub = {
-        ...this.pub, ...formValue,
-        dataSource: this.form.get('dataSource').value || 'Manuell hinzugefügt',
-        pub_date: this.form.get('biblio_info').get('pub_date').value ? this.form.get('biblio_info').get('pub_date').value.format() : undefined,
-        pub_date_print: this.form.get('biblio_info').get('pub_date_print').value ? this.form.get('biblio_info').get('pub_date_print').value.format() : undefined,
-        pub_date_accepted: this.form.get('biblio_info').get('pub_date_accepted').value ? this.form.get('biblio_info').get('pub_date_accepted').value.format() : undefined,
-        pub_date_submitted: this.form.get('biblio_info').get('pub_date_submitted').value ? this.form.get('biblio_info').get('pub_date_submitted').value.format() : undefined,
-      }
-      for (let key of Object.keys(this.pub)) {
-        if (!this.pub[key]) this.pub[key] = undefined;
-      }
-    }
-    for (let key of Object.keys(this.pub)) {
-      if (this.pub[key] === '') this.pub[key] = null;
-    }
-    if (!this.pub.cost_approach_currency) this.pub.cost_approach_currency = 'EUR';
     if (this.idTable && this.idTable.isDirty()) {
-      let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Identifier, möchten Sie diesen zunächst speichern?`);
+      const dialogData = new ConfirmDialogModel('Ungesicherte Aenderungen', 'Es gibt einen ungespeicherten Identifier, moechten Sie diesen zunaechst speichern?');
 
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: '400px',
         data: dialogData
       });
 
-      let dialogResult = await firstValueFrom(dialogRef.afterClosed())
-      if (dialogResult) { //save
+      const dialogResult = await firstValueFrom(dialogRef.afterClosed());
+      if (dialogResult) {
         this.idTable.addId();
       }
     }
 
-    this.dialogRef.close({ ...this.pub, updated: true });
+    this.pub = this.buildPublicationPayload();
+    this.saving = true;
+    this.errorPresentation.clearFieldErrors(this.form);
+
+    try {
+      const response = await firstValueFrom(this.edit
+        ? this.publicationService.update(this.pub)
+        : this.publicationService.add(this.pub));
+      const savedPublication = this.normalizeSavedPublication(response, this.pub);
+      this.dialogRef.close({
+        persisted: true,
+        mode: this.edit ? 'update' : 'create',
+        entity: savedPublication,
+      });
+    } catch (error) {
+      this.errorPresentation.applyFieldErrors(this.form, error, {
+        pathMap: this.apiFieldPathMap,
+      });
+      this.errorPresentation.present(error, {
+        action: this.edit ? 'save' : 'create',
+        entity: 'Publikation',
+      });
+    } finally {
+      this.saving = false;
+    }
   }
 
   getAuthorInfo() {
-    if (this.pub?.authorPublications) return this.pub.authorPublications.length + " " + this.institution + " Person(en)";
-    else return "kein(e) " + this.institution + " Person(en)";
+    if (this.pub?.authorPublications) return `${this.pub.authorPublications.length} ${this.institution} Person(en)`;
+    return `kein(e) ${this.institution} Person(en)`;
   }
 
   enter(event) {
-    if (event.keyCode == 13 && event.srcElement.localName !== 'textarea') return false;
+    if (event.keyCode === 13 && event.srcElement.localName !== 'textarea') return false;
     return true;
   }
 
@@ -450,7 +509,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       else this.form.get('finance_info').enable();
     } else {
       this.pub.locked = !this.pub.locked;
-      this.setLock(this.pub.locked)
+      this.setLock(this.pub.locked);
     }
     this.form.get('id').disable();
     this.form.get('oa_info').get('is_oa').disable();
@@ -483,38 +542,40 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   getCosts(invoice: Invoice) {
     if (!invoice) return '';
     if (invoice.booking_amount) return invoice.booking_amount;
-    else {
-      if (!invoice.cost_items) return '';
-      let sum = 0;
-      for (let ci of invoice.cost_items) sum += ci.euro_value;
-      return sum;
-    }
+    if (!invoice.cost_items) return '';
+    let sum = 0;
+    for (const ci of invoice.cost_items) sum += ci.euro_value;
+    return sum;
   }
 
   deleteInvoice(elem) {
-    if (elem.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== elem.id)
-    else this.pub.invoices = this.pub.invoices.filter(e => e !== elem)
+    if (elem.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== elem.id);
+    else this.pub.invoices = this.pub.invoices.filter(e => e !== elem);
   }
 
   addInvoice(invoice?: Invoice) {
     if (!this.pub.invoices) this.pub.invoices = [];
-    let dialogRef = this.dialog.open(InvoiceFormComponent, {
-      width: "800px",
+    const dialogRef = this.dialog.open(InvoiceFormComponent, {
+      width: '800px',
       data: {
         entity: invoice,
         locked: this.pub.locked || this.pub.locked_finance || this.disabled
       },
       disableClose: true
     });
-    if (invoice && !invoice.id) this.pub.invoices = this.pub.invoices.filter(e => e !== invoice)
+    if (invoice && !invoice.id) this.pub.invoices = this.pub.invoices.filter(e => e !== invoice);
     dialogRef.afterClosed().subscribe({
       next: data => {
-        if (data && data.updated) {
-          if (invoice?.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id)
-          this.pub.invoices.push(data)
+        if (isPersistedEntityDialogResult<Invoice>(data)) {
+          if (invoice?.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.entity.id);
+          this.pub.invoices.push(data.entity);
           if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
-        } else {
-          if (!invoice.id) this.pub.invoices.push(invoice)
+        } else if (data && data.updated) {
+          if (invoice?.id) this.pub.invoices = this.pub.invoices.filter(e => e.id !== data.id);
+          this.pub.invoices.push(data);
+          if (this.table) this.table.dataSource = new MatTableDataSource<Invoice>(this.pub.invoices);
+        } else if (invoice && !invoice.id) {
+          this.pub.invoices.push(invoice);
         }
       }
     });
@@ -522,32 +583,31 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   restore() {
     this.pub.delete_date = null;
-    this.form.get('delete_date').setValue(null)
+    this.form.get('delete_date').setValue(null);
   }
 
   deleteAuthorship(elem) {
     if (this.disabled) return;
-    if (elem.id) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== elem.id)
-    else this.pub.authorPublications = this.pub.authorPublications.filter(e => e !== elem)
+    if (elem.id) this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== elem.id);
+    else this.pub.authorPublications = this.pub.authorPublications.filter(e => e !== elem);
   }
+
   addAuthorship(authorPub?) {
     if (this.disabled || (authorPub && !authorPub.id)) return;
     if (!this.pub.authorPublications) this.pub.authorPublications = [];
-    let data = {};
-    data = { entity: authorPub }
-    let dialogRef = this.dialog.open(AuthorshipFormComponent, {
-      minWidth: "450px",
+    const data = { entity: authorPub };
+    const dialogRef = this.dialog.open(AuthorshipFormComponent, {
+      minWidth: '450px',
       data,
       disableClose: true
     });
     dialogRef.afterClosed().subscribe({
-      next: data => {
-        if (data?.author) {
-          //if edit mode, delete the original version - edit mode only with ID
+      next: result => {
+        if (result?.author) {
           if (authorPub && authorPub.id) {
-            this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== authorPub.id)
+            this.pub.authorPublications = this.pub.authorPublications.filter(e => e.id !== authorPub.id);
           }
-          this.pub.authorPublications = this.pub.authorPublications.concat([data])
+          this.pub.authorPublications = this.pub.authorPublications.concat([result]);
           if (this.table) this.table.dataSource = new MatTableDataSource<AuthorPublication>(this.pub.authorPublications);
         }
       }
@@ -555,28 +615,108 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   showStatusLabel(long: boolean) {
-    let value = this.statuses?.find(e => e.id == this.form.get('status').value)?.label
-    if (!value) return "";
-    if (long) return value
-    else {
-      if (value.length > 27) return value.slice(0, 27) + "...";
-      else return value;
-    }
+    const value = this.statuses?.find(e => e.id == this.form.get('status').value)?.label;
+    if (!value) return '';
+    if (long) return value;
+    if (value.length > 27) return `${value.slice(0, 27)}...`;
+    return value;
   }
-
 
   deleteSuppl(elem) {
     if (this.disabled) return;
-    if (elem.id) this.pub.supplements = this.pub.supplements.filter(e => e.id !== elem.id)
-    else this.pub.supplements = this.pub.supplements.filter(e => e.link !== elem.link)
+    if (elem.id) this.pub.supplements = this.pub.supplements.filter(e => e.id !== elem.id);
+    else this.pub.supplements = this.pub.supplements.filter(e => e.link !== elem.link);
   }
+
   addSuppl() {
     if (this.disabled || this.supplForm.invalid) return;
     if (!this.pub.supplements) this.pub.supplements = [];
     this.pub.supplements.push({
       link: this.supplForm.get('link').value,
-    })
+    });
     this.supplForm.reset();
     if (this.supplTable) this.supplTable.dataSource = new MatTableDataSource<PublicationSupplement>(this.pub.supplements);
+  }
+
+  getFieldError(path: string, fallback?: string): string | null {
+    const control = this.form?.get(path);
+    if (!control) return null;
+    if (typeof control.errors?.['apiMessage'] === 'string') return control.errors['apiMessage'];
+    if (!(this.submitted || control.touched || control.dirty)) return null;
+    if ((path === 'title' || path === 'doi') && this.form.errors?.['no_title_or_doi']) {
+      return 'Titel oder DOI muss angegeben werden.';
+    }
+    if (path === 'biblio_info.pub_date' && this.form.errors?.['no_pub_date']) {
+      return 'Mindestens ein Publikationsdatum muss angegeben werden.';
+    }
+    if (control.hasError('required')) return `${fallback ?? path} ist erforderlich.`;
+    if (control.hasError('pattern')) return `${fallback ?? path} hat ein ungueltiges Format.`;
+    return null;
+  }
+
+  getFormSummaryErrors(): string[] {
+    const summary: string[] = [];
+    if (this.submitted || this.form?.touched || this.form?.dirty) {
+      if (this.form?.errors?.['no_title_or_doi']) summary.push('Titel oder DOI muss angegeben werden.');
+      if (this.form?.errors?.['no_pub_date']) summary.push('Mindestens ein Publikationsdatum muss angegeben werden.');
+    }
+
+    const apiSummary = this.form?.errors?.['apiSummary'];
+    if (Array.isArray(apiSummary)) {
+      summary.push(...apiSummary.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0));
+    }
+
+    return summary;
+  }
+
+  private buildPublicationPayload(): Publication {
+    const formValue = {
+      ...this.form.get('author_info').getRawValue(),
+      ...this.form.get('biblio_info').getRawValue(),
+      ...this.form.get('oa_info').getRawValue(),
+      ...this.form.get('finance_info').getRawValue(),
+      id: this.form.get('id').getRawValue(),
+      title: this.form.get('title').getRawValue(),
+      doi: this.form.get('doi').getRawValue(),
+      link: this.form.get('link').getRawValue(),
+      add_info: this.form.get('add_info').getRawValue(),
+      dataSource: this.form.get('dataSource').getRawValue(),
+      status: this.form.get('status').getRawValue(),
+    };
+
+    let publication: Publication & Record<string, unknown>;
+    if (this.edit) {
+      publication = { ...this.pub, ...formValue, locked_at: null };
+    } else {
+      publication = {
+        ...this.pub,
+        ...formValue,
+        dataSource: this.form.get('dataSource').value || 'Manuell hinzugefuegt',
+        pub_date: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date').value),
+        pub_date_print: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date_print').value),
+        pub_date_accepted: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date_accepted').value),
+        pub_date_submitted: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date_submitted').value),
+      };
+      for (const key of Object.keys(publication)) {
+        if (!publication[key]) publication[key] = undefined;
+      }
+    }
+    for (const key of Object.keys(publication)) {
+      if (publication[key] === '') publication[key] = null;
+    }
+    if (!publication.cost_approach_currency) publication.cost_approach_currency = 'EUR';
+    return publication as Publication;
+  }
+
+  private normalizeDateValue(value: any): any {
+    if (!value) return undefined;
+    return typeof value.format === 'function' ? value.format() : value;
+  }
+
+  private normalizeSavedPublication(response: unknown, fallback: Publication): Publication {
+    if (Array.isArray(response)) {
+      return (response[0] ?? fallback) as Publication;
+    }
+    return (response ?? fallback) as Publication;
   }
 }
