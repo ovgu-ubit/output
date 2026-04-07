@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -6,6 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
 import { ImportConfigComponent } from 'src/app/administration/components/import-config/import-config.component';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
 import { ImportWorkflow, ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
@@ -24,7 +25,7 @@ export class ImportFormActionComponent implements OnInit {
   ob$: Observable<{ progress: number, status: string }>;
   isRunning = false;
   status: { progress: number, status: string };
-  file: File;
+  file?: File;
 
   form: FormGroup = this.formBuilder.group({
     reporting_year: ['', Validators.required],
@@ -38,17 +39,18 @@ export class ImportFormActionComponent implements OnInit {
     private snackBar: MatSnackBar,
     private router: Router,
     private formBuilder: FormBuilder,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   async ngOnInit() {
     this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$)).subscribe((workflow) => {
       this.entity = workflow;
       if (this.entity.strategy_type === ImportStrategy.URL_DOI) {
-        this.form.controls.update.setValue(true)
+        this.form.controls.update.setValue(true);
         this.form.controls.update.disable();
       }
-      this.update()
+      void this.update();
     });
   }
 
@@ -58,9 +60,9 @@ export class ImportFormActionComponent implements OnInit {
     if (this.isRunning) {
       this.form.disable();
       this.ob$ = this.workflowService.getProgress(this.entity.id).pipe(takeUntil(this.subject), map(data => {
-        if (data.progress === 0 || data.progress >= 1) {//finish signal
+        if (data.progress === 0 || data.progress >= 1) {
           this.isRunning = false;
-          this.ob$ = undefined;
+          this.ob$ = undefined as never;
           this.form.enable();
           this.subject.next('');
         }
@@ -89,7 +91,7 @@ export class ImportFormActionComponent implements OnInit {
 
   publish(): void {
     if (!this.entity || !this.entity.id || this.loading) return;
-    this.persistChanges({ published_at: new Date(), deleted_at: null, locked_at: null }, 'Workflow veröffentlicht.');
+    this.persistChanges({ published_at: new Date(), deleted_at: null, locked_at: null }, 'Workflow veroeffentlicht.');
   }
 
   archive(): void {
@@ -99,7 +101,7 @@ export class ImportFormActionComponent implements OnInit {
 
   deleteDraft(): void {
     if (!this.entity?.id || this.loading) return;
-    if (!window.confirm('Möchten Sie diesen Entwurf wirklich löschen?')) return;
+    if (!window.confirm('Moechten Sie diesen Entwurf wirklich loeschen?')) return;
 
     this.loading = true;
     this.workflowService
@@ -107,15 +109,11 @@ export class ImportFormActionComponent implements OnInit {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: () => {
-          this.snackBar.open('Entwurf wurde gelöscht.', 'OK', { duration: 3500, verticalPosition: 'top' });
+          this.snackBar.open('Entwurf wurde geloescht.', 'OK', { duration: 3500, verticalPosition: 'top' });
           this.router.navigateByUrl('/workflow/publication_import');
         },
-        error: () => {
-          this.snackBar.open('Der Entwurf konnte nicht gelöscht werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'delete', entity: 'Workflow' });
         },
       });
   }
@@ -143,12 +141,8 @@ export class ImportFormActionComponent implements OnInit {
           this.snackBar.open('Neue Entwurfsversion erstellt.', 'OK', { duration: 3500, verticalPosition: 'top', panelClass: ['success-snackbar'] });
           this.router.navigateByUrl(`/workflow/publication_import/${created.id}/overview`);
         },
-        error: () => {
-          this.snackBar.open('Neue Entwurfsversion konnte nicht erstellt werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'create', entity: 'Workflow' });
         },
       });
   }
@@ -173,21 +167,19 @@ export class ImportFormActionComponent implements OnInit {
             'OK',
             { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
           );
-          this.update();
+          void this.update();
         },
-        error: () => {
-          this.snackBar.open('Der Workflow konnte nicht gestartet werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
-          this.update();
+        error: (error) => {
+          this.errorPresentation.applyFieldErrors(this.form, error);
+          this.errorPresentation.present(error, { action: 'run', entity: 'Workflow' });
+          void this.update();
         },
       });
   }
 
-  setFile(event) {
-    this.file = event.target.files[0];
+  setFile(event: Event) {
+    const target = event.target as HTMLInputElement | null;
+    this.file = target?.files?.[0];
   }
 
   private persistChanges(patch: Partial<ImportWorkflow>, successMessage: string): void {
@@ -204,27 +196,20 @@ export class ImportFormActionComponent implements OnInit {
           this.facade.patch(saved);
           this.snackBar.open(successMessage, 'OK', { duration: 3500, verticalPosition: 'top', panelClass: ['success-snackbar'] });
         },
-        error: err => {
-          this.snackBar.open('Änderung konnte nicht gespeichert werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
-          console.log(err)
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
         },
       });
   }
 
   configureImport() {
-    let dialogRef = this.dialog.open(ImportConfigComponent, {
+    const dialogRef = this.dialog.open(ImportConfigComponent, {
       width: '800px',
       maxHeight: '800px',
       data: {
         workflow: this.entity
       }
     });
-    dialogRef.afterClosed().subscribe(result => {
-
-    });
+    dialogRef.afterClosed().subscribe();
   }
 }

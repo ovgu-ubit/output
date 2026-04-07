@@ -1,5 +1,6 @@
-import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
+import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 import { validateConfigValue } from './config.schema';
+import { createValidationHttpException } from '../common/api-error';
 
 @Injectable()
 export class ConfigValueValidationPipe implements PipeTransform {
@@ -12,7 +13,13 @@ export class ConfigValueValidationPipe implements PipeTransform {
       }
       return value;
     } catch (e: any) {
-      throw new BadRequestException(`Validation failed for ${value.key}: ${e.message}`);
+      throw createValidationHttpException([
+        {
+          path: 'value',
+          code: 'invalid_config_value',
+          message: `${value.key}: ${e.message}`,
+        },
+      ]);
     }
   }
 }

@@ -1,7 +1,7 @@
-import { BadRequestException } from "@nestjs/common";
 import { z, ZodError } from "zod";
 import { ExportStrategy } from "../../../output-interfaces/Workflow";
 import { ExportWorkflow } from "./ExportWorkflow.entity";
+import { createValidationHttpException } from "../common/api-error";
 
 const StrategyTypeSchema = z.enum(["HTTP_RESPONSE"]);
 
@@ -143,10 +143,7 @@ export function validateExportWorkflow(workflow: ExportWorkflow): ExportWorkflow
         message: issue.message,
         code: issue.code,
       }));
-      throw new BadRequestException({
-        message: "Validation failed",
-        details,
-      });
+      throw createValidationHttpException(details);
     }
 
     throw error;

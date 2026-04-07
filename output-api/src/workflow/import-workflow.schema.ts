@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
-import { BadRequestException } from "@nestjs/common";
 import { ImportStrategy } from "../../../output-interfaces/Workflow";
+import { createValidationHttpException } from "../common/api-error";
 
 const StrategyTypeSchema = z.enum([
   "FILE_UPLOAD",
@@ -196,16 +196,12 @@ export function validateImportWorkflow(workflow: ImportWorkflow): ImportWorkflow
     };
   } catch (e) {
     if (e instanceof ZodError) {
-      // UI-freundliches Fehlerformat
       const details = e.issues.map((iss) => ({
         path: iss.path.join("."),
         message: iss.message,
         code: iss.code,
       }));
-      throw new BadRequestException({
-        message: "Validation failed",
-        details,
-      });
+      throw createValidationHttpException(details);
     }
     throw e;
   }

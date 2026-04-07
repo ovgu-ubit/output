@@ -10,6 +10,8 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
 import { AppModule } from './app.module';
+import { ApiExceptionFilter } from './common/api-exception.filter';
+import { createValidationException } from './common/validation-exception.factory';
 
 async function bootstrap() {
     const server = express();
@@ -58,7 +60,11 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config, options);
     SwaggerModule.setup(swagger_path, app, document);
 
-    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    app.useGlobalPipes(new ValidationPipe({
+        transform: true,
+        exceptionFactory: createValidationException,
+    }));
+    app.useGlobalFilters(new ApiExceptionFilter());
     app.enableCors({
         origin: processedCORS,
         methods: 'GET, PUT, POST, DELETE',
@@ -94,4 +100,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

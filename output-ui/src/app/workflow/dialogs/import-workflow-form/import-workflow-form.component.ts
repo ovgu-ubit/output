@@ -6,6 +6,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule, RouterOutlet } from '@angular/router';
 import { EMPTY, filter, firstValueFrom, map, of, switchMap, takeUntil } from 'rxjs';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
@@ -38,6 +39,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
     private router: Router,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   id: any;
@@ -66,14 +68,8 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
       takeUntil(this.facade.destroy$)
     ).subscribe({
       error: (err) => {
-        if (err?.status === 409) {
-          this.snackBar.open('Workflow wird gerade bearbeitet, bitte warten.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
-          void this.router.navigateByUrl('/workflow/publication_import');
-        }
+        this.errorPresentation.present(err, { action: 'load', entity: 'Workflow' });
+        if (err?.status === 409) void this.router.navigateByUrl('/workflow/publication_import');
       }
     });
   }
@@ -204,8 +200,8 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
 
       if (showSuccess) this.showSaveSuccess(data.id);
       return data;
-    } catch {
-      this.showSaveError();
+    } catch (error) {
+      this.showSaveError(error);
       return null;
     }
   }
@@ -218,11 +214,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
     );
   }
 
-  private showSaveError() {
-    this.snackBar.open(
-      'Speichern fehlgeschlagen. Bitte Pflichtfelder Bezeichnung und Version pruefen.',
-      'OK',
-      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
-    );
+  private showSaveError(error: unknown) {
+    this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
   }
 }

@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ImportFormFacade } from '../import-form-facade.service';
@@ -15,14 +15,13 @@ import { ImportFormFacade } from '../import-form-facade.service';
   imports: [SharedModule]
 })
 export class ImportFormGeneralComponent implements OnInit, WorkflowFormPage {
-
   public form: FormGroup;
   entity: ImportWorkflow;
 
   constructor(
     private formBuilder: FormBuilder,
     private facade: ImportFormFacade,
-    private snackBar: MatSnackBar,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   ngOnInit(): void {
@@ -72,8 +71,8 @@ export class ImportFormGeneralComponent implements OnInit, WorkflowFormPage {
       await firstValueFrom(this.facade.save());
       this.form.markAsPristine();
       return true;
-    } catch {
-      this.showSaveError();
+    } catch (error) {
+      this.showSaveError(error);
       return false;
     }
   }
@@ -83,11 +82,8 @@ export class ImportFormGeneralComponent implements OnInit, WorkflowFormPage {
     this.form.markAsPristine();
   }
 
-  private showSaveError() {
-    this.snackBar.open(
-      'Speichern fehlgeschlagen. Bitte Pflichtfelder Bezeichnung und Version prüfen.',
-      'OK',
-      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
-    );
+  private showSaveError(error: unknown) {
+    this.errorPresentation.applyFieldErrors(this.form, error);
+    this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
   }
 }

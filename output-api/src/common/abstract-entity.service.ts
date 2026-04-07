@@ -3,6 +3,7 @@ import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, I
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 import { hasProvidedEntityId } from './entity-id';
+import { createEntityLockedHttpException } from './api-error';
 
 export interface LockableEntity {
     id?: number;
@@ -138,11 +139,11 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
                 this.releaseEditLock(dbEntity.id);
                 return;
             }
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
 
         if (!user || owner !== user) {
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
     }
 

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,6 +20,7 @@ import { ValidationService } from './validation.service';
 import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { hasProvidedEntityId } from '../common/entity-id';
+import { createEntityLockedHttpException, createWorkflowRunningHttpException } from '../common/api-error';
 
 type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     repository: Repository<TWorkflow>;
@@ -344,7 +345,7 @@ export class WorkflowService {
                     locked_at: undefined,
                 };
             }
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
 
         const lockCriteria = !res.locked_at
@@ -353,7 +354,7 @@ export class WorkflowService {
 
         const updateResult = await repository.update(lockCriteria as never, { locked_at: now } as never);
         if (!updateResult.affected) {
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
         if (user && hasProvidedEntityId(res.id)) {
             EditLockOwnerStore.setOwner(workflowType, res.id, user);
@@ -401,7 +402,7 @@ export class WorkflowService {
 
     private ensureExecutionIsAvailable(key: string) {
         if (this.activeExecutionKeys.has(key)) {
-            throw new ConflictException('A workflow execution is already running for this service.');
+            throw createWorkflowRunningHttpException();
         }
     }
 
@@ -493,11 +494,11 @@ export class WorkflowService {
                 this.releaseEditLock(workflowType, db.id);
                 return;
             }
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
 
         if (!user || owner !== user) {
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
     }
 

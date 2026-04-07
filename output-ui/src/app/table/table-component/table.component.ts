@@ -11,6 +11,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
@@ -95,7 +96,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
     public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
-    private configService:ConfigService, private store: Store) { }
+    private configService:ConfigService, private store: Store, private errorPresentation: ErrorPresentationService) { }
 
   public ngOnInit(): void {
     this.loading = true;
@@ -136,11 +137,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.dataSource.paginator = this.paginator;
 
     ob$.pipe(catchError(err => {
-      this._snackBar.open(`Unerwarter Fehler (siehe Konsole)`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-      console.log(err)
+      this.errorPresentation.present(err, { action: 'load', entity: this.name });
       return of(null)
     }), takeUntil(this.destroy$)).subscribe();
 
@@ -295,12 +292,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         return this.serviceClass.update(result);
       } else return of(null)
     })).pipe(catchError(err => {
-      this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
-        duration: 5000,
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-      console.log(err);
+      this.errorPresentation.present(err, { action: 'update', entity: this.nameSingle });
       return of(null)
     })).subscribe();
   }
@@ -328,20 +320,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }))
       } else return of(null)
     }), catchError(err => {
-      if (err.status === 400) {
-        this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-      } else {
-        this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
-      }
+      this.errorPresentation.present(err, { action: 'create', entity: this.nameSingle });
       return of(null)
     })).subscribe();
   }
@@ -373,12 +352,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       } else return of(null)
     }),
       catchError(err => {
-        this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
+        this.errorPresentation.present(err, { action: 'delete', entityPlural: this.name });
         return of(null)
       })).subscribe()
   }
@@ -414,12 +388,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
             }))
         } else return of(null)
       }), catchError(err => {
-        this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
+        this.errorPresentation.present(err, { action: 'combine', entityPlural: this.name });
         return of(null)
       })).subscribe();
     }
