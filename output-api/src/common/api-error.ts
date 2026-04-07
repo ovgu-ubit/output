@@ -61,6 +61,45 @@ export function createInvalidRequestHttpException(
     return createApiHttpException(HttpStatus.BAD_REQUEST, ApiErrorCode.INVALID_REQUEST, { message, details });
 }
 
+export function createNotFoundHttpException(message = 'Resource not found.'): HttpException {
+    return createApiHttpException(HttpStatus.NOT_FOUND, ApiErrorCode.NOT_FOUND, { message });
+}
+
+export function createUniqueConstraintHttpException(
+    message = 'Unique constraint violated.',
+    details?: ApiErrorDetail[],
+): HttpException {
+    const normalizedDetails = details && details.length > 0 ? details : parseUniqueConstraintDetails(message);
+    return createApiHttpException(HttpStatus.CONFLICT, ApiErrorCode.UNIQUE_CONSTRAINT, {
+        message,
+        details: normalizedDetails,
+    });
+}
+
+export function createInternalErrorHttpException(): HttpException {
+    return createApiHttpException(HttpStatus.INTERNAL_SERVER_ERROR, ApiErrorCode.INTERNAL_ERROR);
+}
+
+export function createPersistenceHttpException(error: unknown): HttpException {
+    const errorRecord = asRecord(error);
+    const message = typeof errorRecord?.detail === 'string'
+        ? errorRecord.detail
+        : typeof errorRecord?.message === 'string'
+            ? errorRecord.message
+            : 'Persistence operation failed.';
+    const dbCode = typeof errorRecord?.code === 'string' ? errorRecord.code : undefined;
+
+    if (dbCode === '23505' || parseUniqueConstraintDetails(message).length > 0) {
+        return createUniqueConstraintHttpException(message);
+    }
+
+    if (typeof errorRecord?.constraint === 'string') {
+        return createInvalidRequestHttpException(message);
+    }
+
+    return createInternalErrorHttpException();
+}
+
 export function createEntityLockedHttpException(message = 'Entity is currently locked.'): HttpException {
     return createApiHttpException(HttpStatus.CONFLICT, ApiErrorCode.ENTITY_LOCKED, { message });
 }

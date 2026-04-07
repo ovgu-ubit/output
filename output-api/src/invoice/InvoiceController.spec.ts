@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { InvoiceController } from './InvoiceController';
 
 describe('InvoiceController', () => {
@@ -58,14 +59,30 @@ describe('InvoiceController', () => {
     });
 
     it('rejects invoice create requests that provide an id', async () => {
-        await expect(controller.save({ id: 8 } as any, { user: { username: 'alice' } } as any))
-            .rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.save({ id: 8 } as any, { user: { username: 'alice' } } as any);
+            fail('controller.save should reject invoice create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(invoiceService.save).not.toHaveBeenCalled();
     });
 
     it('rejects invoice create requests that provide id 0', async () => {
-        await expect(controller.save({ id: 0 } as any, { user: { username: 'alice' } } as any))
-            .rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.save({ id: 0 } as any, { user: { username: 'alice' } } as any);
+            fail('controller.save should reject invoice create requests with id 0');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(invoiceService.save).not.toHaveBeenCalled();
     });
 
@@ -84,7 +101,16 @@ describe('InvoiceController', () => {
     });
 
     it('rejects cost type create requests that provide an id', async () => {
-        await expect(controller.saveCT({ id: 11, label: 'APC' } as any)).rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.saveCT({ id: 11, label: 'APC' } as any);
+            fail('controller.saveCT should reject cost type create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(costTypeService.save).not.toHaveBeenCalled();
     });
 
@@ -103,7 +129,16 @@ describe('InvoiceController', () => {
     });
 
     it('rejects cost center create requests that provide an id', async () => {
-        await expect(controller.saveCC({ id: 12, label: 'Cost Center' } as any)).rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.saveCC({ id: 12, label: 'Cost Center' } as any);
+            fail('controller.saveCC should reject cost center create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(costCenterService.save).not.toHaveBeenCalled();
     });
 });

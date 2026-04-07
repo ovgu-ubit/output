@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { assertCreateRequestHasNoId, hasProvidedEntityId } from './entity-id';
 
 describe('entity-id', () => {
@@ -11,6 +12,18 @@ describe('entity-id', () => {
     });
 
     it('rejects create requests when id is 0', () => {
-        expect(() => assertCreateRequestHasNoId({ id: 0 })).toThrow(BadRequestException);
+        try {
+            assertCreateRequestHasNoId({ id: 0 });
+            fail('assertCreateRequestHasNoId should throw for create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'id', code: 'forbidden_id' }),
+                ]),
+            });
+        }
     });
 });

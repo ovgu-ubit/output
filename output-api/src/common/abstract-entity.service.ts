@@ -1,9 +1,8 @@
-import { BadRequestException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, IsNull, LessThan, Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 import { hasProvidedEntityId } from './entity-id';
-import { createEntityLockedHttpException } from './api-error';
+import { createEntityLockedHttpException, createPersistenceHttpException } from './api-error';
 
 export interface LockableEntity {
     id?: number;
@@ -26,10 +25,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
 
     public async save(entity: DeepPartial<TEntity>, _user?: string) {
         return this.repository.save(entity).catch(err => {
-            if (err.constraint) {
-                throw new BadRequestException(err.detail);
-            }
-            throw new InternalServerErrorException(err);
+            throw createPersistenceHttpException(err);
         });
     }
     

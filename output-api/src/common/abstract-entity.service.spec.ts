@@ -1,4 +1,5 @@
-import { ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
@@ -128,7 +129,9 @@ describe('AbstractEntityService', () => {
 
         await service.one(1, true, 'alice');
 
-        await expect(service.update({ id: 1, locked_at: null }, 'mallory')).rejects.toBeInstanceOf(ConflictException);
+        await expect(service.update({ id: 1, locked_at: null }, 'mallory')).rejects.toEqual(expect.objectContaining({
+            getResponse: expect.any(Function),
+        }));
         expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -169,5 +172,27 @@ describe('AbstractEntityService', () => {
         expect(service.normalizeForCreate({ id: 0, label: 'Existing' })).toMatchObject({ id: 0 });
         expect(service.normalizeForCreate({ id: '' as any, label: 'Draft' })).toMatchObject({ id: undefined });
         expect(service.normalizeForCreate({ id: null as any, label: 'Draft' })).toMatchObject({ id: undefined });
+    });
+
+    it('wraps unique constraint violations in the shared API error format', async () => {
+        repository.save.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (label)=(Existing) already exists.',
+            constraint: 'uq_test_entity_label',
+        });
+
+        try {
+            await service.save({ label: 'Existing' });
+            fail('service.save should throw for duplicate values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'label', code: 'unique' }),
+                ]),
+            });
+        }
     });
 });
