@@ -515,7 +515,7 @@ describe('WorkflowService', () => {
             label: 'Validation',
             version: 2,
             target: 'publication',
-            rules: [],
+            rules: [{ type: 'required', result: 'error', path: 'doi' }],
             published_at: new Date('2026-03-16T10:00:00.000Z'),
             deleted_at: null,
         } as ValidationWorkflow;
@@ -530,6 +530,29 @@ describe('WorkflowService', () => {
             deleted_at: expect.any(Date),
         }));
         expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(34, WorkflowType.VALIDATION);
+    });
+
+    it('rejects publishing validation workflows without rules', async () => {
+        validationRepository.findOneBy!
+            .mockResolvedValueOnce({
+                id: 35,
+                workflow_id: 'wf-35',
+                label: 'Validation',
+                version: 1,
+                target: 'publication',
+                rules: [],
+                published_at: null,
+                deleted_at: null,
+                locked_at: null,
+            } as ValidationWorkflow)
+            .mockResolvedValueOnce(null);
+
+        await expect(service.saveValidation({
+            id: 35,
+            published_at: new Date('2026-04-01T13:00:00.000Z'),
+        } as ValidationWorkflow, 'alice')).rejects.toThrow('validation workflow must define at least one rule before publication');
+
+        expect(validationRepository.save).not.toHaveBeenCalled();
     });
 
     it('rejects export unlock-only requests for another user while a draft is locked', async () => {

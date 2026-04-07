@@ -151,7 +151,13 @@ export class WorkflowService {
         return this.saveWorkflow(workflow, user, {
             repository: this.validationRepository,
             workflowType: WorkflowType.VALIDATION,
-            validate: validateValidationWorkflow,
+            validate: (draft) => {
+                const validated = validateValidationWorkflow(draft);
+                if (validated.published_at && !validated.rules?.length) {
+                    throw new BadRequestException('Error: validation workflow must define at least one rule before publication');
+                }
+                return validated;
+            },
             createDefaults: (draft) => ({
                 rules: draft.rules ?? [],
             }),
