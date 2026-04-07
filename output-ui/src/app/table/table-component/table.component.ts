@@ -14,7 +14,7 @@ import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subjec
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
+import { EntityFormComponent, EntityService, isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
@@ -278,7 +278,15 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.location.replaceState(this.router.url.split('?')[0])
       this.id = null;
       // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
-      if (result && result.updated) {
+      if (isPersistedEntityDialogResult(result)) {
+        this._snackBar.open(`${this.nameSingle} geÃ¤ndert`, 'Super!', {
+          duration: 5000,
+          panelClass: [`success-snackbar`],
+          verticalPosition: 'top'
+        })
+        this.loading = true;
+        return this.updateData();
+      } else if (result && result.updated) {
         return this.serviceClass.update(result).pipe(concatMap(data => {
           this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
             duration: 5000,
@@ -309,7 +317,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       disableClose: true
     });
     dialogRef.afterClosed().pipe(concatMap(result => {
-      if (result) {
+      if (isPersistedEntityDialogResult(result)) {
+        this._snackBar.open(`${this.nameSingle} wurde angelegt`, 'Super!', {
+          duration: 5000,
+          panelClass: [`success-snackbar`],
+          verticalPosition: 'top'
+        })
+        return this.updateData();
+      } else if (result) {
         return this.serviceClass.add(result).pipe(concatMap(data => {
           this._snackBar.open(`${this.nameSingle} wurde angelegt`, 'Super!', {
             duration: 5000,
