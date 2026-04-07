@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Config } from '../../../../../output-interfaces/Config';
+import { Config, HealthState } from '../../../../../output-interfaces/Config';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Injectable({
@@ -16,6 +16,10 @@ export class ConfigService {
 
   get(key: string) {
     return this.http.get<Config>(this.runtimeConfigService.getValue("api") + 'config?key=' + key, { withCredentials: true });
+  }
+
+  health() {
+    return this.http.get<HealthState>(this.runtimeConfigService.getValue("api") + 'config/health', { withCredentials: true });
   }
 
   set(key: string, value: any) {

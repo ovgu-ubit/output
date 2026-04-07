@@ -21,4 +21,5 @@ export interface UiErrorContext {
   entity?: string;
   entityPlural?: string;
   fallbackMessage?: string;
+  bypassBackendUnavailableSuppression?: boolean;
 }

@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription, take } from 'rxjs';
 import { ApiErrorCode, ApiErrorDetail } from '../../../../../output-interfaces/ApiError';
 import { ApiErrorParser } from './api-error-parser.service';
+import { BackendAvailabilityService } from './backend-availability.service';
 import { ErrorMessageService } from './error-message.service';
 import { UiError, UiErrorContext } from './ui-error';
 
@@ -17,10 +18,14 @@ export class ErrorPresentationService {
     private snackBar: MatSnackBar,
     private parser: ApiErrorParser,
     private messages: ErrorMessageService,
+    private backendAvailability: BackendAvailabilityService,
   ) { }
 
   present(error: unknown, context: UiErrorContext = {}): UiError {
     const parsed = this.parser.parse(error);
+    if (this.backendAvailability.isUnavailable() && !context.bypassBackendUnavailableSuppression) {
+      return parsed;
+    }
     const baseMessage = this.messages.getMessage(parsed, context);
     const detailSummary = parsed.code === ApiErrorCode.VALIDATION_FAILED
       ? this.messages.getDetailSummary(parsed, 2)
