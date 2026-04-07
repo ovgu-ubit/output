@@ -1,10 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
 import { EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author.entity';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
@@ -31,9 +32,8 @@ export class InstituteService {
 
     public async save(inst: Institute[] | LockableEntity[], user?: string) {
         await this.ensureInstitutesCanBeSaved(inst, user);
-        const saved = await this.repository.save(inst).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
+        const saved = await this.repository.save(inst).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
         });
         inst.forEach((institute) => this.syncInstituteLockOwner(institute, user));
         return saved;
@@ -236,11 +236,11 @@ export class InstituteService {
                 EditLockOwnerStore.release(INSTITUTE_LOCK_SCOPE, dbEntity.id);
                 return;
             }
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
 
         if (!user || owner !== user) {
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
     }
 

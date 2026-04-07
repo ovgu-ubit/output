@@ -1,9 +1,10 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
@@ -225,6 +226,28 @@ describe('PublicationService combine', () => {
         expect(result).toBeNull();
     });
 
+    it('wraps duplicate publication save errors in the shared API error format', async () => {
+        pubRepository.save.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (doi)=(10.1234/example) already exists.',
+            constraint: 'uq_publication_doi',
+        });
+
+        try {
+            await service.save([{ doi: '10.1234/example' } as Publication]);
+            fail('service.save should throw for duplicate publication values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'doi', code: 'unique' }),
+                ]),
+            });
+        }
+    });
+
     it('keeps a locked publication editable for the same user', async () => {
         const lockedAt = new Date();
 
@@ -254,8 +277,16 @@ describe('PublicationService combine', () => {
 
         pubRepository.find.mockResolvedValue([{ id: 42, locked_at: lockedAt } as Publication] as never);
 
-        await expect(service.save([{ id: 42, title: 'Blocked' } as Publication], { by_user: 'mallory' }))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 42, title: 'Blocked' } as Publication], { by_user: 'mallory' });
+            fail('service.save should reject publication updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(pubRepository.save).not.toHaveBeenCalled();
     });
 
@@ -263,8 +294,16 @@ describe('PublicationService combine', () => {
         EditLockOwnerStore.setOwner('publication', 0, 'alice');
         pubRepository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Publication] as never);
 
-        await expect(service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' }))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' });
+            fail('service.save should reject publication id 0 updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(pubRepository.save).not.toHaveBeenCalled();
     });
 
@@ -540,7 +579,16 @@ describe('PublicationService filter', () => {
             }]
         };
 
-        await expect(service.filter(filter, queryBuilder as any)).rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await service.filter(filter, queryBuilder as any);
+            fail('service.filter should reject unsupported filter keys');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(queryBuilder.where).not.toHaveBeenCalled();
     });
 

@@ -1,11 +1,12 @@
 import { Request } from "express";
 import { Author } from "./Author.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Body, Controller, Delete, Get, InternalServerErrorException, Param, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthorService } from "./author.service";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
+import { createInternalErrorHttpException, createNotFoundHttpException } from "../common/api-error";
 import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("authors")
@@ -31,7 +32,9 @@ export class AuthorController {
     @UseGuards(AccessGuard)
     @ApiParam({ name: 'id', description: 'id for which author object should be obtained' })
     async one(@Param('id') id: number, @Req() request: Request) {
-        return this.authorService.one(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
+        const author = await this.authorService.one(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
+        if (!author) throw createNotFoundHttpException('Author not found.');
+        return author;
     }
 
     @Post()
@@ -89,8 +92,8 @@ export class AuthorController {
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
         const res = await this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author')
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting other authors')
+        if (res['error'] && res['error'] === 'update') throw createInternalErrorHttpException()
+        else if (res['error'] && res['error'] === 'delete') throw createInternalErrorHttpException()
         else return res;
     }
 }

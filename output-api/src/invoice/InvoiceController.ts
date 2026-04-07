@@ -3,6 +3,7 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { CostTypeIndex } from "../../../output-interfaces/PublicationIndex";
+import { createNotFoundHttpException } from "../common/api-error";
 import { InvoiceService } from "./invoice.service";
 import { Invoice } from "./Invoice.entity";
 import { CostType } from "./CostType.entity";
@@ -39,7 +40,9 @@ export class InvoiceController {
         type: Invoice
     })
     async one(@Query('id') id:number, @Req() request: Request) : Promise<Invoice> {
-        return await this.invoiceService.get(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
+        const invoice = await this.invoiceService.get(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
+        if (!invoice) throw createNotFoundHttpException('Invoice not found.');
+        return invoice;
     }
 
     @Post()
@@ -102,7 +105,9 @@ export class InvoiceController {
         type: Invoice
     })
     async cost_type_one(@Param('id') id:number, @Req() request: Request) : Promise<CostType> {
-        return await this.costTypeService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
+        const costType = await this.costTypeService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
+        if (!costType) throw createNotFoundHttpException('Cost type not found.');
+        return costType;
     }
 
     @Post('cost_type')
@@ -159,7 +164,9 @@ export class InvoiceController {
     @Get('cost_center/:id')
     @UseGuards(AccessGuard)
     async cost_center_one(@Param('id') id:number, @Req() request: Request) : Promise<CostCenter> {
-        return await this.costCenterService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
+        const costCenter = await this.costCenterService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
+        if (!costCenter) throw createNotFoundHttpException('Cost center not found.');
+        return costCenter;
     }
 
     @Post('cost_center')

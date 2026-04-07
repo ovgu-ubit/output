@@ -1,8 +1,9 @@
-import { ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { InstituteService } from './institute.service';
 import { Institute } from './Institute.entity';
 import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
@@ -143,6 +144,28 @@ describe('InstituteService', () => {
         expect(ids).toEqual([1, 2, 3, 4]);
     });
 
+    it('wraps duplicate institute save errors in the shared API error format', async () => {
+        repository.save.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (label)=(Central) already exists.',
+            constraint: 'uq_institute_label',
+        });
+
+        try {
+            await service.save([{ label: 'Central' } as Institute]);
+            fail('service.save should throw for duplicate institute values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'label', code: 'unique' }),
+                ]),
+            });
+        }
+    });
+
     it('keeps an institute editable for the same lock owner', async () => {
         const lockedAt = new Date();
 
@@ -171,8 +194,16 @@ describe('InstituteService', () => {
 
         await service.one(10, true, 'alice');
 
-        await expect(service.save([{ id: 10, label: 'Blocked' } as Institute], 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 10, label: 'Blocked' } as Institute], 'mallory');
+            fail('service.save should reject institute updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -181,8 +212,16 @@ describe('InstituteService', () => {
         repository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Institute]);
         configService.get.mockResolvedValue(5);
 
-        await expect(service.save([{ id: 0, label: 'Blocked zero' } as Institute], 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 0, label: 'Blocked zero' } as Institute], 'mallory');
+            fail('service.save should reject institute id 0 updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(repository.save).not.toHaveBeenCalled();
     });
 

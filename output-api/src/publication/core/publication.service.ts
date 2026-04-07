@@ -1,10 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterValue } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
 import { Author } from '../../author/Author.entity';
+import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from '../../common/api-error';
 import { EditLockableEntity, EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../../common/edit-lock';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { mergeEntities } from '../../common/merge';
@@ -118,9 +119,8 @@ export class PublicationService {
         const shouldLogChanges = this.shouldCreatePublicationChange(options);
         const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub) : new Map<number, Publication>();
 
-        const saved = await this.pubRepository.save(pub).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
+        const saved = await this.pubRepository.save(pub).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
         });
         const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved) : new Map<number, Publication>();
         pub.forEach((publication) => this.syncPublicationLockOwner(publication, options?.by_user));
@@ -328,9 +328,8 @@ export class PublicationService {
                     if (!hasProvidedEntityId(id.id)) {
                         id.value = id.value.toUpperCase();
                         id.type = id.type.toLowerCase();
-                        id.id = (await this.idRepository.save(id).catch(err => {
-                            if (err.constraint) throw new BadRequestException(err.detail)
-                            else throw new InternalServerErrorException(err);
+                        id.id = (await this.idRepository.save(id).catch((error: unknown) => {
+                            throw createPersistenceHttpException(error);
                         })).id;
                     }
                 }
@@ -338,9 +337,8 @@ export class PublicationService {
             if (pub.supplements) {
                 for (const suppl of pub.supplements) {
                     if (!hasProvidedEntityId(suppl.id)) {
-                        suppl.id = (await this.supplRepository.save(suppl).catch(err => {
-                            if (err.constraint) throw new BadRequestException(err.detail)
-                            else throw new InternalServerErrorException(err);
+                        suppl.id = (await this.supplRepository.save(suppl).catch((error: unknown) => {
+                            throw createPersistenceHttpException(error);
                         })).id;
                     }
                 }
@@ -357,7 +355,9 @@ export class PublicationService {
                 pub.authorPublications = autPub;
                 await this.resetAuthorPublication(pub);
             }
-            const savedPub = await this.pubRepository.save(pub);
+            const savedPub = await this.pubRepository.save(pub).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
             if (savedPub) i++;
             this.syncPublicationLockOwner(pub, options?.by_user);
             if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
@@ -417,7 +417,9 @@ export class PublicationService {
     }
 
     public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?: Role) {
-        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role });
+        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role }).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
     }
 
     public getAuthorsPublication(pub: Publication) {
@@ -569,7 +571,11 @@ export class PublicationService {
 
     async saveDuplicate(id_first: number, id_second: number, description?: string) {
         const check = await this.duplRepository.findOne({ where: { id_first, id_second }, withDeleted: true })
-        if (!check) return this.duplRepository.save({ id_first, id_second, description })
+        if (!check) {
+            return this.duplRepository.save({ id_first, id_second, description }).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
+        }
         else return null;
     }
 
@@ -611,7 +617,7 @@ export class PublicationService {
             if (expr.key.includes("institute_id")) {
                 const instituteId = Number(expr.value);
                 if (!Number.isInteger(instituteId)) {
-                    throw new BadRequestException(`Invalid institute filter value for ${expr.key}`);
+                    throw createInvalidRequestHttpException(`Invalid institute filter value for ${expr.key}`);
                 }
                 compareOperation = CompareOperation.IN;
                 filterValue = await this.instService.findInstituteIdsIncludingSubInstitutes([instituteId]);
@@ -671,7 +677,7 @@ export class PublicationService {
             case CompareOperation.IN:
                 return this.buildInPredicate(key, value, parameterPrefix);
             default:
-                throw new BadRequestException(`Unsupported compare operation for ${key}`);
+                throw createInvalidRequestHttpException(`Unsupported compare operation for ${key}`);
         }
     }
 
@@ -679,7 +685,7 @@ export class PublicationService {
         if (key === 'invoice_year') {
             const year = Number(Array.isArray(value) ? value[0] : value);
             if (!Number.isInteger(year)) {
-                throw new BadRequestException('invoice_year must be an integer');
+                throw createInvalidRequestHttpException('invoice_year must be an integer');
             }
             const beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
@@ -928,7 +934,7 @@ export class PublicationService {
                 return 'publication.second_pub';
             default:
                 if (PUBLICATION_FILTER_FIELDS.has(key)) return `publication.${key}`;
-                throw new BadRequestException(`Unsupported filter key: ${key}`);
+                throw createInvalidRequestHttpException(`Unsupported filter key: ${key}`);
         }
     }
 
@@ -1168,7 +1174,7 @@ export class PublicationService {
             return;
         }
 
-        throw new ConflictException('Entity is currently locked.');
+        throw createEntityLockedHttpException();
     }
 
     private async ensurePublicationsCanBeSaved(publications: Publication[], user?: string): Promise<void> {

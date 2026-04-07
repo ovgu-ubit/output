@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, InternalServerErrorException, NotFoundException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
@@ -12,6 +12,7 @@ import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { AbstractFilterService, getFilterServiceMeta } from "../../workflow/filter/abstract-filter.service";
+import { createInternalErrorHttpException, createInvalidRequestHttpException, createNotFoundHttpException } from "../../common/api-error";
 import { assertCreateRequestHasNoId, hasProvidedEntityId } from "../../common/entity-id";
 
 @Controller("publications")
@@ -69,7 +70,7 @@ export class PublicationController {
             }
         }).catch(err => {
             console.log(err);
-            throw new InternalServerErrorException('Failure while selecting');
+            throw createInternalErrorHttpException();
         });
     }
 
@@ -86,13 +87,15 @@ export class PublicationController {
         type: Publication
     })
     async one(@Query('id') id: number, @Req() request: Request) {
-        if (!hasProvidedEntityId(id)) throw new BadRequestException('id must be given')
-        return await this.publicationService.getPublication(
+        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given')
+        const publication = await this.publicationService.getPublication(
             id,
             request['user'] ? request['user']['read'] : false,
             request['user'] ? request['user']['write_publication'] : false,
             request['user']?.['username'],
         );
+        if (!publication) throw createNotFoundHttpException('Publication not found.');
+        return publication;
     }
 
     @Get('changes')
@@ -106,7 +109,7 @@ export class PublicationController {
         example: "3"
     })
     async changes(@Query('id') id: number) {
-        if (!hasProvidedEntityId(id)) throw new BadRequestException('id must be given');
+        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given');
         return this.publicationChangeService.getPublicationChangesForPublication(id);
     }
 
@@ -119,7 +122,7 @@ export class PublicationController {
         example: "2022"
     })
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
-        if ((yop === null || yop === undefined) && !soft) throw new BadRequestException('reporting year or soft has to be given');
+        if ((yop === null || yop === undefined) && !soft) throw createInvalidRequestHttpException('reporting year or soft has to be given');
 
         if (!soft) {
             if (Number.isNaN(yop)) return await this.publicationService.index(null);
@@ -181,8 +184,8 @@ export class PublicationController {
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
         const res = await this.publicationService.combine(id1, ids);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publication')
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publication')
+        if (res['error'] && res['error'] === 'update') throw createInternalErrorHttpException()
+        else if (res['error'] && res['error'] === 'delete') throw createInternalErrorHttpException()
         else return res;
     }
 
@@ -208,7 +211,7 @@ export class PublicationController {
         let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (const path of paths) {
             const so = this.list().findIndex(e => e.path === path)
-            if (so === -1) throw new NotFoundException();
+            if (so === -1) throw createNotFoundHttpException('Filter not found.');
             res = await this.filterServices[so].filter(res)
         }
         return res;

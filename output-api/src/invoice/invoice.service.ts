@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Observable } from 'rxjs';
 import { IsNull, LessThan, Repository } from 'typeorm';
@@ -10,6 +10,7 @@ import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/Publi
 import { CostTypeService } from './cost-type.service';
 import { CostCenterService } from './cost-center.service';
 import { AppConfigService } from '../config/app-config.service';
+import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { hasProvidedEntityId } from '../common/entity-id';
 
@@ -45,9 +46,8 @@ export class InvoiceService {
 
     public async save(inv: Invoice[], user?: string) {
         await this.ensureInvoicesCanBeSaved(inv, user);
-        return this.repository.save(inv).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
+        return this.repository.save(inv).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
         });
     }
 
@@ -185,7 +185,7 @@ export class InvoiceService {
         if (!hasProvidedEntityId(publication?.id)) return;
 
         if (publication.locked_finance) {
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
 
         if (!publication.locked_at) {
@@ -201,7 +201,7 @@ export class InvoiceService {
 
         const owner = EditLockOwnerStore.getOwner(PUBLICATION_LOCK_SCOPE, publication.id);
         if (!user || owner !== user) {
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
     }
 

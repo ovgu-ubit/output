@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, InternalServerErrorException, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InstituteService } from "./institute.service";
 import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
 import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
+import { createInternalErrorHttpException, createNotFoundHttpException } from "../common/api-error";
 import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("institute")
@@ -34,7 +35,9 @@ export class InstituteController {
         type: Institute
     })
     async one(@Param('id') id: number, @Req() request: Request): Promise<Institute> {
-        return await this.instService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
+        const institute = await this.instService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
+        if (!institute) throw createNotFoundHttpException('Institute not found.');
+        return institute;
     }
 
     @Post()
@@ -88,8 +91,8 @@ export class InstituteController {
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
         const res = await this.instService.combine(id1, ids, aliases);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author')
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second author')
+        if (res['error'] && res['error'] === 'update') throw createInternalErrorHttpException()
+        else if (res['error'] && res['error'] === 'delete') throw createInternalErrorHttpException()
         else return res;
     }
 
