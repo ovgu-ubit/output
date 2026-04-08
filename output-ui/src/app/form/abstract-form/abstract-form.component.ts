@@ -128,6 +128,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       this.form.markAllAsTouched();
       return;
     }
+    if (this.saving) return;
     if (this.aliasTable && this.aliasTable.isDirty() || (this['aliasForm'] && this['aliasForm'].dirty)) {
       let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Alias, möchten Sie diesen zunächst speichern?`);
 
