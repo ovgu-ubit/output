@@ -91,6 +91,7 @@ export class AuthorshipFormComponent extends AbstractFormComponent<any> implemen
         let inst = this.entity.institute;
         if (result && result.length > 0) {
           inst = this.institutes.find(e => e.id === this.entity.institute.id)
+          if (!inst.aliases) inst.aliases = [];
           inst.aliases.push({ elementId: this.entity.institute.id, alias: result[0] });
           this.instService.update(inst).subscribe()
         }
