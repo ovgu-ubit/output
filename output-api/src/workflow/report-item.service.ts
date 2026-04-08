@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { Cron } from '@nestjs/schedule';
 import { AppConfigService } from '../config/app-config.service';
@@ -81,4 +81,3 @@ export class ReportItemService {
     }
 
 }
-

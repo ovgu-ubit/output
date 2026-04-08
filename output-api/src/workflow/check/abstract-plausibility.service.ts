@@ -1,7 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ReportItemService } from '../report-item.service';
 import { PublicationService } from '../../publication/core/publication.service';
 import { Publication } from '../../publication/core/Publication.entity';
+import { createWorkflowRunningHttpException } from '../../common/api-error';
 
 export function PlausibilityService(meta: {path: string}): ClassDecorator {
   return (target) => Reflect.defineMetadata("check_service", meta, target);
@@ -25,7 +26,7 @@ export abstract class AbstractPlausibilityService {
     publications: Publication[];
 
     public async check(by_user?: string) {
-        if (this.progress !== 0) throw new ConflictException('The check is already running, check status for further information.');
+        if (this.progress !== 0) throw createWorkflowRunningHttpException('The check is already running, check status for further information.');
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Check', this.name, by_user);

@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CompareOperation, SearchFilterValue } from '../../../output-interfaces/Config';
 import { ValidationCompareCondition, ValidationCondition, ValidationConditionalRule, ValidationRule, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import { createInvalidRequestHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { Publication } from '../publication/core/Publication.entity';
 import { PublicationService } from '../publication/core/publication.service';
@@ -37,10 +38,10 @@ export class ValidationService {
 
     async setUp(validationDefinition: ValidationWorkflow) {
         if (!validationDefinition?.target) {
-            throw new BadRequestException('Validation workflow target is required.');
+            throw createInvalidRequestHttpException('Validation workflow target is required.');
         }
         if (!validationDefinition.rules?.length) {
-            throw new BadRequestException('Validation workflow must define at least one rule.');
+            throw createInvalidRequestHttpException('Validation workflow must define at least one rule.');
         }
 
         this.validationDefinition = validationDefinition;
@@ -73,10 +74,10 @@ export class ValidationService {
 
     async validate(by_user?: string): Promise<ValidationSummary> {
         if (!this.validationDefinition?.rules?.length) {
-            throw new BadRequestException('Validation workflow is not configured.');
+            throw createInvalidRequestHttpException('Validation workflow is not configured.');
         }
         if (!hasProvidedEntityId(this.workflowReport?.id)) {
-            throw new BadRequestException('Validation workflow report is not configured.');
+            throw createInvalidRequestHttpException('Validation workflow report is not configured.');
         }
 
         const startedAt = new Date();
@@ -170,7 +171,7 @@ export class ValidationService {
             case 'publication':
                 return this.publicationService.getAll(this.validationDefinition.target_filter, { serializeDates: true }) as Promise<Publication[]>;
             default:
-                throw new BadRequestException(`Unsupported validation target: ${this.validationDefinition?.target}`);
+                throw createInvalidRequestHttpException(`Unsupported validation target: ${this.validationDefinition?.target}`);
         }
     }
 

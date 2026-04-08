@@ -3,6 +3,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ValidationWorkflow } from '../../../../../../../output-interfaces/Workflow';
 import { ValidationWorkflowService } from 'src/app/workflow/validation-workflow.service';
@@ -27,6 +28,7 @@ export class ValidationFormActionComponent implements OnInit {
     private validationWorkflowService: ValidationWorkflowService,
     private snackBar: MatSnackBar,
     private router: Router,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   async ngOnInit() {
@@ -88,12 +90,8 @@ export class ValidationFormActionComponent implements OnInit {
           this.snackBar.open('Entwurf wurde geloescht.', 'OK', { duration: 3500, verticalPosition: 'top' });
           this.router.navigateByUrl('/workflow/publication_validation');
         },
-        error: () => {
-          this.snackBar.open('Der Entwurf konnte nicht geloescht werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'delete', entity: 'Workflow' });
         },
       });
   }
@@ -121,12 +119,8 @@ export class ValidationFormActionComponent implements OnInit {
           this.snackBar.open('Neue Entwurfsversion erstellt.', 'OK', { duration: 3500, verticalPosition: 'top', panelClass: ['success-snackbar'] });
           this.router.navigateByUrl(`/workflow/publication_validation/${created.id}/overview`);
         },
-        error: () => {
-          this.snackBar.open('Neue Entwurfsversion konnte nicht erstellt werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'create', entity: 'Workflow' });
         },
       });
   }
@@ -148,12 +142,8 @@ export class ValidationFormActionComponent implements OnInit {
           });
           void this.update();
         },
-        error: () => {
-          this.snackBar.open('Die Validierung konnte nicht gestartet werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'run', entity: 'Workflow' });
           void this.update();
         },
       });
@@ -173,12 +163,8 @@ export class ValidationFormActionComponent implements OnInit {
           this.facade.patch(saved);
           this.snackBar.open(successMessage, 'OK', { duration: 3500, verticalPosition: 'top', panelClass: ['success-snackbar'] });
         },
-        error: () => {
-          this.snackBar.open('Aenderung konnte nicht gespeichert werden.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
         },
       });
   }

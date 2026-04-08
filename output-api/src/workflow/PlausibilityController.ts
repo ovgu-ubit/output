@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, Query, Res, Inject, NotFoundException, Param, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Post, Query, Res, Inject, Param, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { ReportItemService } from "./report-item.service";
 import { Response } from "express";
@@ -6,6 +6,7 @@ import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AbstractPlausibilityService, getPlausibilityServiceMeta } from "./check/abstract-plausibility.service";
 import { AppConfigService } from "../config/app-config.service";
+import { createNotFoundHttpException } from "../common/api-error";
 
 @Controller("check")
 @ApiTags("check")
@@ -78,7 +79,7 @@ export class PlausibilityController {
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async start(@Param('path') path: string) {
     const so = this.list().findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Check service not found.');
     return this.checkServices[so].check();
   }
   @Get(":path")
@@ -86,7 +87,7 @@ export class PlausibilityController {
   @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
   async status(@Param('path') path: string) {
     const so = this.list().findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Check service not found.');
     return this.checkServices[so].status();
   }
 }

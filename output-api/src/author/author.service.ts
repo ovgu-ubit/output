@@ -1,10 +1,11 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { ILike, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
@@ -33,9 +34,13 @@ export class AuthorService {
         const result = [];
         for (const auth of aut) {
             const obj = { ...auth, institutes: undefined }
-            let authEnt = await this.repository.save(obj).catch(err => { console.log(err) });
+            let authEnt = await this.repository.save(obj).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
             if (authEnt && Object.prototype.hasOwnProperty.call(auth, 'institutes')) {
-                authEnt = await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch(err => { console.log(err) });
+                authEnt = await this.repository.save({ id: authEnt.id, institutes: auth.institutes }).catch((error: unknown) => {
+                    throw createPersistenceHttpException(error);
+                });
             }
             result.push(authEnt);
         }
@@ -116,9 +121,23 @@ export class AuthorService {
                 flag = true;
             }
 
-            if (flag && !dryRun) return { author: await this.repository.save(author), error };
+            if (flag && !dryRun) {
+                return {
+                    author: await this.repository.save(author).catch((saveError: unknown) => {
+                        throw createPersistenceHttpException(saveError);
+                    }),
+                    error,
+                };
+            }
             else return { author, error };
-        } else if (!dryRun) return { author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }), error };
+        } else if (!dryRun) {
+            return {
+                author: await this.repository.save({ last_name, first_name, orcid, institutes: [inst] }).catch((saveError: unknown) => {
+                    throw createPersistenceHttpException(saveError);
+                }),
+                error,
+            };
+        }
         else return {author, error}
         //3. if not found, save
     }
@@ -291,11 +310,11 @@ export class AuthorService {
                 EditLockOwnerStore.release(AUTHOR_LOCK_SCOPE, dbEntity.id);
                 return;
             }
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
 
         if (!user || owner !== user) {
-            throw new ConflictException('Entity is currently locked.');
+            throw createEntityLockedHttpException();
         }
     }
 

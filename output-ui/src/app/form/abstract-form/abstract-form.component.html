@@ -3,6 +3,14 @@
     [disabled]="this.disabled"
     [parent]="this"></app-window-toolbar>
 <mat-dialog-content>
+    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
+        <mat-card-header>
+            <mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
+        </mat-card-content>
+    </mat-card>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
         <ng-container *ngFor="let field of this.fields; let i = index;">
@@ -67,6 +75,7 @@
                     <mat-datepicker-toggle matIconSuffix [for]="i"></mat-datepicker-toggle>
                     <mat-datepicker #i [startAt]="this.entity && this.entity[field.key]? this.entity[field.key] : today"
                         startView="year"></mat-datepicker>
+                    <mat-error *ngIf="getFieldError(field.key, field.title) as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field *ngSwitchCase="'select'">
@@ -74,6 +83,7 @@
                     <mat-select [formControlName]="field.key">
                         <mat-option *ngFor="let cc of field.select" [value]="cc">{{cc}}</mat-option>
                     </mat-select>
+                    <mat-error *ngIf="getFieldError(field.key, field.title) as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field *ngSwitchDefault>
@@ -95,6 +105,7 @@
                     <textarea *ngIf="field.type=='text'" matInput [placeholder]="field.title"
                         [formControlName]="field.key"></textarea>
                     <input *ngIf="!field.type" matInput [placeholder]="field.title" [formControlName]="field.key" />
+                    <mat-error *ngIf="field.type !== 'status' && getFieldError(field.key, field.title) as error">{{error}}</mat-error>
                 </mat-form-field>
             </div>
         </ng-container>

@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { EMPTY, Observable, concatMap, concatWith, delay, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import * as xmljs from 'xml-js';
 import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
@@ -23,6 +23,7 @@ import { AbstractImportService, ImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { WorkflowReportService } from '../workflow-report.service';
+import { createWorkflowRunningHttpException } from '../../common/api-error';
 
 @ImportService({ path: 'pubmed' })
 @Injectable()
@@ -118,7 +119,7 @@ export class PubMedImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         const tags = await this.configService.get('search_tags');
         this.searchText = '('

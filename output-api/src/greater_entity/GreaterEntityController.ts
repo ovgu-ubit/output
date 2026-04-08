@@ -1,4 +1,4 @@
-import { Body, Controller, Get, InternalServerErrorException, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { GreaterEntityService } from "./greater-entitiy.service";
 import { GreaterEntityIndex } from "../../../output-interfaces/PublicationIndex";
@@ -36,9 +36,6 @@ export class GreaterEntityController extends AbstractCrudController<GreaterEntit
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        const res = await this.service.combine(id1,ids);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publisher') 
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publisher') 
-        else return res;
+        return this.service.combine(id1,ids);
     }
 }

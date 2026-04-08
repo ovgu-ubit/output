@@ -14,6 +14,12 @@
     </div>
 </mat-toolbar>
 <mat-dialog-content>
+    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
+        <mat-card-header><mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
+        <mat-card-content>
+            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
+        </mat-card-content>
+    </mat-card>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
         <mat-form-field *ngIf="this.entity?.id" appearance="fill">
@@ -24,6 +30,7 @@
         <mat-form-field appearance="fill">
             <mat-label>Rechnungsnummer</mat-label>
             <input matInput placeholder="Rechnungsnummer" formControlName="number" />
+            <mat-error *ngIf="getFieldError('number', 'Rechnungsnummer') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <app-select-entity name="Kostenstelle"
@@ -38,6 +45,7 @@
             <mat-hint>T.M.JJJJ</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-datepicker #picker [startAt]="this.entity?.date? this.entity.date : today" startView="month"></mat-datepicker>
+            <mat-error *ngIf="getFieldError('date', 'Rechnungsdatum') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -47,11 +55,13 @@
             <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
             <mat-datepicker #picker1 [startAt]="this.entity?.booking_date? this.entity.booking_date : today"
                 startView="month"></mat-datepicker>
+            <mat-error *ngIf="getFieldError('booking_date', 'Buchungsdatum') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>Buchungsbetrag in EUR</mat-label>
             <input matInput type="number" placeholder="Buchungsbetrag" formControlName="booking_amount" />
+            <mat-error *ngIf="getFieldError('booking_amount', 'Buchungsbetrag in EUR') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-card>

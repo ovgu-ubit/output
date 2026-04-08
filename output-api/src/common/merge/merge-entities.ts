@@ -1,9 +1,8 @@
 import { DeepPartial, FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Author } from '../../author/Author.entity';
+import { createInternalErrorHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../api-error';
 import { PublicationService } from '../../publication/core/publication.service';
 import { AuthorPublication } from '../../publication/relations/AuthorPublication.entity';
-
-export type MergeError = 'find' | 'update' | 'delete';
 
 export interface MergeValidationContext<TEntity extends { id?: number | null }> {
     primary: TEntity;
@@ -42,9 +41,10 @@ export interface MergeOptions<TEntity extends { id?: number | null }, TAccumulat
     duplicateIds: number[];
     primaryOptions?: FindOneOptions<TEntity>;
     duplicateOptions?: FindOneOptions<TEntity>;
+    notFoundMessage?: string;
     mergeContext: MergeDuplicateContext<TEntity, TAccumulator>;
     afterSave?: (context: MergeAfterSaveContext<TEntity, TAccumulator>) => Promise<void> | void;
-    validate?: (context: MergeValidationContext<TEntity>) => Promise<MergeError | void> | MergeError | void;
+    validate?: (context: MergeValidationContext<TEntity>) => Promise<void> | void;
 }
 
 export async function mergeEntities<TEntity extends { id?: number | null }, TAccumulator = TEntity>(options: MergeOptions<TEntity, TAccumulator>) {
@@ -54,6 +54,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         duplicateIds,
         primaryOptions,
         duplicateOptions,
+        notFoundMessage = 'Resource to merge not found.',
         mergeContext,
         afterSave,
         validate,
@@ -62,27 +63,26 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
     const primaryFindOptions = {...primaryOptions, where: { id: primaryId } as FindOptionsWhere<TEntity>}
     const primary = await repository.findOne(primaryFindOptions);
     if (!primary) {
-        return { error: 'find' as MergeError };
+        throw createNotFoundHttpException(notFoundMessage);
     }
 
     const presentDuplicates = await Promise.all(
         duplicateIds.map(id => {
             let duplicateFindOptions = {...duplicateOptions};
-            if (!duplicateFindOptions.relations) duplicateFindOptions = {relations: primaryOptions.relations}
+            if (!duplicateFindOptions.relations && primaryOptions?.relations) {
+                duplicateFindOptions = { relations: primaryOptions.relations };
+            }
             duplicateFindOptions.where = { id } as FindOptionsWhere<TEntity>;
             return repository.findOne(duplicateFindOptions);
         }),
     ) as TEntity[];
 
     if (presentDuplicates.some(duplicate => !duplicate)) {
-        return { error: 'find' as MergeError };
+        throw createNotFoundHttpException(notFoundMessage);
     }
 
     if (validate) {
-        const validationError = await validate({ primary, duplicates: presentDuplicates, duplicateIds });
-        if (validationError) {
-            return { error: validationError };
-        }
+        await validate({ primary, duplicates: presentDuplicates, duplicateIds });
     }
 
     const accumulator = (structuredClone(primary) as unknown as Record<string, unknown> as TAccumulator);
@@ -153,8 +153,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
     try {
         saved = await repository.save(accumulator as DeepPartial<TEntity>);
     } catch (error) {
-        console.log(error)
-        return { error: 'update' as MergeError };
+        throw createPersistenceHttpException(error);
     }
 
     const defaultDelete = async () => {
@@ -171,8 +170,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
             await defaultDelete();
         }
     } catch (error) {
-        console.log(error)
-        return { error: 'delete' as MergeError };
+        throw createInternalErrorHttpException();
     }
 
     return saved;

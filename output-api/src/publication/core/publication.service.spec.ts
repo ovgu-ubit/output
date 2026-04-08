@@ -1,9 +1,10 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
@@ -16,6 +17,27 @@ import { AppConfigService } from '../../config/app-config.service';
 import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
 import { PublicationChangeService } from './publication-change.service';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
 
 describe('PublicationService combine', () => {
     let service: PublicationService;
@@ -189,25 +211,45 @@ describe('PublicationService combine', () => {
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
-    it('returns a find error when the primary publication does not exist during combine', async () => {
+    it('returns a structured not-found error when the primary publication does not exist during combine', async () => {
         duplRepository.find.mockResolvedValue([]);
         pubRepository.findOne.mockResolvedValue(null);
 
-        const result = await service.combine(999, [62]);
-
-        expect(result).toEqual({ error: 'find' });
+        await expectApiError(service.combine(999, [62]), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
         expect(pubRepository.save).not.toHaveBeenCalled();
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
 
-    it('returns a find error when a duplicate publication does not exist during combine', async () => {
+    it('returns a structured not-found error when a duplicate publication does not exist during combine', async () => {
         duplRepository.find.mockResolvedValue([]);
         const primary = { id: 61, locked: false } as Publication;
         pubRepository.findOne.mockImplementation(async ({ where }: any) => where.id === 61 ? primary : null);
 
-        const result = await service.combine(61, [999]);
+        await expectApiError(service.combine(61, [999]), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
 
-        expect(result).toEqual({ error: 'find' });
+    it('returns a structured lock error when one of the publications is locked during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        const primary = { id: 61, locked: true } as Publication;
+        const duplicate = { id: 62, locked: false } as Publication;
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => {
+            if (where.id === 61) return primary;
+            if (where.id === 62) return duplicate;
+            return null;
+        });
+
+        await expectApiError(service.combine(61, [62]), {
+            statusCode: 409,
+            code: ApiErrorCode.ENTITY_LOCKED,
+        });
         expect(pubRepository.save).not.toHaveBeenCalled();
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
@@ -223,6 +265,28 @@ describe('PublicationService combine', () => {
         }));
         expect(pubRepository.save).not.toHaveBeenCalled();
         expect(result).toBeNull();
+    });
+
+    it('wraps duplicate publication save errors in the shared API error format', async () => {
+        pubRepository.save.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (doi)=(10.1234/example) already exists.',
+            constraint: 'uq_publication_doi',
+        });
+
+        try {
+            await service.save([{ doi: '10.1234/example' } as Publication]);
+            fail('service.save should throw for duplicate publication values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'doi', code: 'unique' }),
+                ]),
+            });
+        }
     });
 
     it('keeps a locked publication editable for the same user', async () => {
@@ -254,8 +318,16 @@ describe('PublicationService combine', () => {
 
         pubRepository.find.mockResolvedValue([{ id: 42, locked_at: lockedAt } as Publication] as never);
 
-        await expect(service.save([{ id: 42, title: 'Blocked' } as Publication], { by_user: 'mallory' }))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 42, title: 'Blocked' } as Publication], { by_user: 'mallory' });
+            fail('service.save should reject publication updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(pubRepository.save).not.toHaveBeenCalled();
     });
 
@@ -263,8 +335,16 @@ describe('PublicationService combine', () => {
         EditLockOwnerStore.setOwner('publication', 0, 'alice');
         pubRepository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Publication] as never);
 
-        await expect(service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' }))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' });
+            fail('service.save should reject publication id 0 updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(pubRepository.save).not.toHaveBeenCalled();
     });
 
@@ -540,7 +620,16 @@ describe('PublicationService filter', () => {
             }]
         };
 
-        await expect(service.filter(filter, queryBuilder as any)).rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await service.filter(filter, queryBuilder as any);
+            fail('service.filter should reject unsupported filter keys');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(queryBuilder.where).not.toHaveBeenCalled();
     });
 

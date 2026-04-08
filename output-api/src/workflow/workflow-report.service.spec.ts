@@ -1,6 +1,23 @@
-import { ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { WorkflowType } from '../../../output-interfaces/Workflow';
 import { WorkflowReportService } from './workflow-report.service';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject(expected);
+    }
+};
 
 describe('WorkflowReportService', () => {
     let service: WorkflowReportService;
@@ -387,7 +404,10 @@ describe('WorkflowReportService', () => {
     it('rejects deleting a workflow report while completion waiting is active', async () => {
         service.registerCompletionWait(44);
 
-        await expect(service.deleteReport(44)).rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(service.deleteReport(44), {
+            statusCode: 409,
+            code: ApiErrorCode.WORKFLOW_RUNNING,
+        });
         expect(workflowReportRepository.delete).not.toHaveBeenCalled();
     });
 });

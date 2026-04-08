@@ -1,9 +1,10 @@
-import { ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { of } from 'rxjs';
 import { Repository, FindOperator } from 'typeorm';
 
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { AuthorService } from './author.service';
 import { Author } from './Author.entity';
 import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
@@ -101,6 +102,28 @@ describe('AuthorService', () => {
             institutes: authorData[0].institutes,
         });
         expect(result).toEqual(authorData);
+    });
+
+    it('wraps duplicate author save errors in the shared API error format', async () => {
+        repository.save.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (last_name)=(Smith) already exists.',
+            constraint: 'uq_author_last_name',
+        });
+
+        try {
+            await service.save([{ last_name: 'Smith' } as Author]);
+            fail('service.save should throw for duplicate author values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'last_name', code: 'unique' }),
+                ]),
+            });
+        }
     });
 
     it('identifies authors via aliases', async () => {
@@ -289,8 +312,16 @@ describe('AuthorService', () => {
 
         await service.one(5, true, 'alice');
 
-        await expect(service.save([{ id: 5, first_name: 'Mallory' } as Author], 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 5, first_name: 'Mallory' } as Author], 'mallory');
+            fail('service.save should reject author updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -299,8 +330,16 @@ describe('AuthorService', () => {
         repository.find.mockResolvedValue([{ id: 0, locked_at: new Date(), institutes: [] } as Author]);
         configService.get.mockResolvedValue(5);
 
-        await expect(service.save([{ id: 0, first_name: 'Mallory' } as Author], 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 0, first_name: 'Mallory' } as Author], 'mallory');
+            fail('service.save should reject author id 0 updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(repository.save).not.toHaveBeenCalled();
     });
 

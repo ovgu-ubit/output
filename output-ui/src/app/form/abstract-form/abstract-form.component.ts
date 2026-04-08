@@ -4,6 +4,7 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { concatMap, firstValueFrom, map, Observable, of } from 'rxjs';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
@@ -35,6 +36,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
   entity: T;
   disabled: boolean;
+  saving = false;
   today = new Date();
 
   publisherForm = PublisherFormComponent;
@@ -50,6 +52,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   public publisherService = inject(PublisherService)
   public ctService = inject(CostTypeService)
   dialog = inject(MatDialog)
+  errorPresentation = inject(ErrorPresentationService)
 
   prefixForm = this.formBuilder.group({
     doi_prefix: ['', Validators.required],
@@ -93,7 +96,12 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         } else this.entity = {} as any
         return of(null)
       }
-    }), concatMap(data => {return this.postProcessing})).subscribe();
+    }), concatMap(data => {return this.postProcessing})).subscribe({
+      error: (error) => {
+        this.errorPresentation.present(error, { action: 'load', entity: this.name });
+        this.dialogRef.close(null);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -116,13 +124,18 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   }
 
   async action() {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    if (this.saving) return;
     if (this.aliasTable && this.aliasTable.isDirty() || (this['aliasForm'] && this['aliasForm'].dirty)) {
       let dialogData = new ConfirmDialogModel("Ungesicherte Änderungen", `Es gibt einen ungespeicherten Alias, möchten Sie diesen zunächst speichern?`);
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       let dialogResult = await firstValueFrom(dialogRef.afterClosed())
@@ -136,7 +149,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       let dialogResult = await firstValueFrom(dialogRef.afterClosed())
@@ -149,7 +163,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       let dialogResult = await firstValueFrom(dialogRef.afterClosed())
@@ -157,11 +172,36 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         this.addPrefix();
       }
     }
-    this.entity = { ...this.entity, ...this.form.getRawValue() }
-    //doaj_since: this.form.get('doaj_since').value ? this.form.get('doaj_since').value.format() : undefined
-    for (let field of this.fields) if (this.entity[field.key] === '') this.entity[field.key] = null;
-    if (!this.entity.id) this.entity.id = undefined;
-    this.dialogRef.close({ ...this.entity, updated: true })
+    const isUpdate = !!this.entity?.id;
+    this.entity = this.buildEntityPayload(isUpdate);
+
+    if (!this.shouldPersistOnSave()) {
+      this.dialogRef.close({ ...this.entity, updated: true })
+      return;
+    }
+
+    this.saving = true;
+    this.errorPresentation.clearFieldErrors(this.form);
+
+    try {
+      const response = await firstValueFrom(isUpdate
+        ? this.service.update(this.entity)
+        : this.service.add(this.entity));
+      const savedEntity = this.normalizeSavedEntity(response, this.entity);
+      this.dialogRef.close({
+        persisted: true,
+        mode: isUpdate ? 'update' : 'create',
+        entity: savedEntity,
+      });
+    } catch (error) {
+      this.errorPresentation.applyFieldErrors(this.form, error);
+      this.errorPresentation.present(error, {
+        action: isUpdate ? 'save' : 'create',
+        entity: this.name,
+      });
+    } finally {
+      this.saving = false;
+    }
   }
 
   close() {
@@ -174,7 +214,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       dialogRef.afterClosed().subscribe(dialogResult => {
@@ -223,5 +264,47 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       return false;
     }
     return true;
+  }
+
+  getFieldError(key: string, fallback?: string): string | null {
+    const control = this.form?.get(key);
+    if (!control || (!control.touched && !control.dirty)) return null;
+    if (typeof control.errors?.['apiMessage'] === 'string') return control.errors['apiMessage'];
+    if (control.hasError('required')) return `${fallback ?? key} ist erforderlich.`;
+    if (control.hasError('pattern')) return `${fallback ?? key} hat ein ungueltiges Format.`;
+    return null;
+  }
+
+  getFormSummaryErrors(): string[] {
+    const summary = this.form?.errors?.['apiSummary'];
+    return Array.isArray(summary)
+      ? summary.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
+      : [];
+  }
+
+  protected buildEntityPayload(isUpdate: boolean): T {
+    const entity = {
+      ...this.entity,
+      ...this.form.getRawValue(),
+    } as T & { id?: number; locked_at?: Date | null };
+
+    for (const field of this.fields) {
+      if (entity[field.key] === '') entity[field.key] = null as never;
+    }
+    if (!entity.id) entity.id = undefined;
+    if (isUpdate) entity.locked_at = null;
+
+    return entity as T;
+  }
+
+  private shouldPersistOnSave(): boolean {
+    return !!this.service && this.data?.persistOnSave === true;
+  }
+
+  protected normalizeSavedEntity(response: unknown, fallback: T): T {
+    if (Array.isArray(response)) {
+      return (response[0] ?? fallback) as T;
+    }
+    return (response ?? fallback) as T;
   }
 }

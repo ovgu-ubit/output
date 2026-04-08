@@ -1,7 +1,8 @@
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { ExportStrategy, ImportStrategy, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
@@ -17,6 +18,27 @@ import { WorkflowService } from './workflow.service';
 jest.mock('uuid', () => ({
     v4: jest.fn(() => 'test-uuid'),
 }));
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
 
 describe('WorkflowService', () => {
     let service: WorkflowService;
@@ -180,8 +202,10 @@ describe('WorkflowService', () => {
     it('treats import workflow id 0 as an update id instead of creating a new draft', async () => {
         importRepository.findOneBy!.mockResolvedValue(null);
 
-        await expect(service.saveImport({ id: 0, label: 'Broken update' } as ImportWorkflow))
-            .rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(
+            service.saveImport({ id: 0, label: 'Broken update' } as ImportWorkflow),
+            { statusCode: 400, code: ApiErrorCode.INVALID_REQUEST },
+        );
 
         expect(importRepository.findOneBy).toHaveBeenCalledWith({ id: 0 });
         expect(importRepository.save).not.toHaveBeenCalled();
@@ -247,8 +271,10 @@ describe('WorkflowService', () => {
             return undefined;
         });
 
-        await expect(service.saveImport({ id: 23, description: 'blocked' } as ImportWorkflow, 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(
+            service.saveImport({ id: 23, description: 'blocked' } as ImportWorkflow, 'mallory'),
+            { statusCode: 409, code: ApiErrorCode.ENTITY_LOCKED },
+        );
         expect(importRepository.save).not.toHaveBeenCalled();
     });
 
@@ -308,8 +334,10 @@ describe('WorkflowService', () => {
             return undefined;
         });
 
-        await expect(service.saveImport({ id: 25, locked_at: null } as ImportWorkflow, 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(
+            service.saveImport({ id: 25, locked_at: null } as ImportWorkflow, 'mallory'),
+            { statusCode: 409, code: ApiErrorCode.ENTITY_LOCKED },
+        );
         expect(importRepository.save).not.toHaveBeenCalled();
     });
 
@@ -335,11 +363,14 @@ describe('WorkflowService', () => {
                 published_at: new Date(),
             } as ImportWorkflow);
 
-        await expect(service.saveImport({
-            id: 26,
-            workflow_id: 'fake-client-id',
-            published_at: new Date(),
-        } as ImportWorkflow, 'alice')).rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(
+            service.saveImport({
+                id: 26,
+                workflow_id: 'fake-client-id',
+                published_at: new Date(),
+            } as ImportWorkflow, 'alice'),
+            { statusCode: 400, code: ApiErrorCode.INVALID_REQUEST },
+        );
 
         expect(importRepository.findOneBy).toHaveBeenNthCalledWith(2, expect.objectContaining({
             workflow_id: 'wf-26',
@@ -359,7 +390,10 @@ describe('WorkflowService', () => {
 
         importRepository.findOne!.mockResolvedValue(null);
 
-        await expect(service.importImport(file)).rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(service.importImport(file), {
+            statusCode: 400,
+            code: ApiErrorCode.VALIDATION_FAILED,
+        });
         expect(importRepository.save).not.toHaveBeenCalled();
     });
 
@@ -380,7 +414,10 @@ describe('WorkflowService', () => {
 
         exportRepository.findOne!.mockResolvedValue(null);
 
-        await expect(service.importExport(file)).rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(service.importExport(file), {
+            statusCode: 400,
+            code: ApiErrorCode.VALIDATION_FAILED,
+        });
         expect(exportRepository.save).not.toHaveBeenCalled();
     });
 
@@ -475,8 +512,10 @@ describe('WorkflowService', () => {
             return undefined;
         });
 
-        await expect(service.saveValidation({ id: 32, label: 'blocked' } as ValidationWorkflow, 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(
+            service.saveValidation({ id: 32, label: 'blocked' } as ValidationWorkflow, 'mallory'),
+            { statusCode: 409, code: ApiErrorCode.ENTITY_LOCKED },
+        );
         expect(validationRepository.save).not.toHaveBeenCalled();
     });
 
@@ -498,11 +537,16 @@ describe('WorkflowService', () => {
             .mockResolvedValueOnce(null);
         validationRepository.save!.mockImplementation(async (workflow) => workflow as ValidationWorkflow);
 
-        await expect(service.saveValidation({
-            id: 33,
-            published_at: new Date('2026-04-02T09:00:00.000Z'),
-        } as ValidationWorkflow, 'alice')).rejects.toThrow(
-            'Error: validation workflows must define at least one rule before publishing'
+        await expectApiError(
+            service.saveValidation({
+                id: 33,
+                published_at: new Date('2026-04-02T09:00:00.000Z'),
+            } as ValidationWorkflow, 'alice'),
+            {
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: 'Error: validation workflows must define at least one rule before publishing',
+            },
         );
 
         expect(validationRepository.save).not.toHaveBeenCalled();
@@ -515,7 +559,7 @@ describe('WorkflowService', () => {
             label: 'Validation',
             version: 2,
             target: 'publication',
-            rules: [],
+            rules: [{ type: 'required', result: 'error', path: 'doi' }],
             published_at: new Date('2026-03-16T10:00:00.000Z'),
             deleted_at: null,
         } as ValidationWorkflow;
@@ -530,6 +574,36 @@ describe('WorkflowService', () => {
             deleted_at: expect.any(Date),
         }));
         expect(workflowReportService.deleteReportsForWorkflow).toHaveBeenCalledWith(34, WorkflowType.VALIDATION);
+    });
+
+    it('rejects publishing validation workflows without rules', async () => {
+        validationRepository.findOneBy!
+            .mockResolvedValueOnce({
+                id: 35,
+                workflow_id: 'wf-35',
+                label: 'Validation',
+                version: 1,
+                target: 'publication',
+                rules: [],
+                published_at: null,
+                deleted_at: null,
+                locked_at: null,
+            } as ValidationWorkflow)
+            .mockResolvedValueOnce(null);
+
+        await expectApiError(
+            service.saveValidation({
+                id: 35,
+                published_at: new Date('2026-04-01T13:00:00.000Z'),
+            } as ValidationWorkflow, 'alice'),
+            {
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: 'Error: validation workflows must define at least one rule before publishing',
+            },
+        );
+
+        expect(validationRepository.save).not.toHaveBeenCalled();
     });
 
     it('rejects export unlock-only requests for another user while a draft is locked', async () => {
@@ -550,8 +624,10 @@ describe('WorkflowService', () => {
             return undefined;
         });
 
-        await expect(service.saveExport({ id: 28, locked_at: null } as ExportWorkflow, 'mallory'))
-            .rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(
+            service.saveExport({ id: 28, locked_at: null } as ExportWorkflow, 'mallory'),
+            { statusCode: 409, code: ApiErrorCode.ENTITY_LOCKED },
+        );
         expect(exportRepository.save).not.toHaveBeenCalled();
     });
 
@@ -679,16 +755,19 @@ describe('WorkflowService', () => {
     });
 
     it('rejects invalid export strategies before persisting', async () => {
-        await expect(service.saveExport({
-            label: 'Broken export',
-            mapping: '$',
-            strategy_type: ExportStrategy.HTTP_RESPONSE,
-            strategy: {
-                format: 'xml',
-                disposition: 'inline',
-                root_name: 'records',
-            },
-        } as unknown as ExportWorkflow)).rejects.toBeInstanceOf(BadRequestException);
+        await expectApiError(
+            service.saveExport({
+                label: 'Broken export',
+                mapping: '$',
+                strategy_type: ExportStrategy.HTTP_RESPONSE,
+                strategy: {
+                    format: 'xml',
+                    disposition: 'inline',
+                    root_name: 'records',
+                },
+            } as unknown as ExportWorkflow),
+            { statusCode: 400, code: ApiErrorCode.VALIDATION_FAILED },
+        );
 
         expect(exportRepository.save).not.toHaveBeenCalled();
     });
@@ -757,7 +836,11 @@ describe('WorkflowService', () => {
 
         exportRepository.findOneBy!.mockResolvedValue(archivedWorkflow);
 
-        await expect(service.startExport(54)).rejects.toThrow('Error: archived workflows cannot be executed');
+        await expectApiError(service.startExport(54), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'Error: archived workflows cannot be executed',
+        });
         expect(exportService.setUp).not.toHaveBeenCalled();
         expect(exportService.export).not.toHaveBeenCalled();
     });
@@ -805,7 +888,11 @@ describe('WorkflowService', () => {
 
         validationRepository.findOneBy!.mockResolvedValue(archivedWorkflow);
 
-        await expect(service.startValidation(56, 'tester')).rejects.toThrow('Error: archived workflows cannot be executed');
+        await expectApiError(service.startValidation(56, 'tester'), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'Error: archived workflows cannot be executed',
+        });
         expect(validationService.setUp).not.toHaveBeenCalled();
         expect(validationService.validate).not.toHaveBeenCalled();
     });
@@ -865,7 +952,10 @@ describe('WorkflowService', () => {
         importRepository.findOne!.mockResolvedValue(unlockedWorkflow);
         (importRepository.update as jest.Mock).mockResolvedValue({ affected: 0 });
 
-        await expect(service.getImport(59)).rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(service.getImport(59), {
+            statusCode: 409,
+            code: ApiErrorCode.ENTITY_LOCKED,
+        });
     });
 
     it('rejects concurrent workflow import starts while the import service is busy', async () => {
@@ -908,7 +998,10 @@ describe('WorkflowService', () => {
         const firstStart = service.startImport(61, 2024, [], null, false, 'tester', false);
         await firstStart;
 
-        await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).rejects.toBeInstanceOf(ConflictException);
+        await expectApiError(
+            service.startImport(61, 2024, [], null, false, 'tester', false),
+            { statusCode: 409, code: ApiErrorCode.WORKFLOW_RUNNING },
+        );
         expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(
             9001,
             500,
@@ -967,7 +1060,10 @@ describe('WorkflowService', () => {
             workflowReportService.write.mockResolvedValue(undefined);
 
             await service.startImport(62, 2024, [], null, false, 'tester', false);
-            await expect(service.startImport(62, 2024, [], null, false, 'tester', false)).rejects.toBeInstanceOf(ConflictException);
+            await expectApiError(
+                service.startImport(62, 2024, [], null, false, 'tester', false),
+                { statusCode: 409, code: ApiErrorCode.WORKFLOW_RUNNING },
+            );
 
             await jest.advanceTimersByTimeAsync(60_000);
             await Promise.resolve();

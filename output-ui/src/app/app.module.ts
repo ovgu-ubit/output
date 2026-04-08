@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { APP_INITIALIZER, LOCALE_ID, NgModule } from '@angular/core';
 import { MAT_MOMENT_DATE_ADAPTER_OPTIONS } from '@angular/material-moment-adapter';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
@@ -19,6 +19,7 @@ import { provideHighcharts } from 'highcharts-angular';
 import { RuntimeConfigService } from './services/runtime-config.service';
 import { registerLocaleData } from '@angular/common';
 import localeDe from '@angular/common/locales/de';
+import { ApiErrorInterceptor } from './core/errors/api-error.interceptor';
 import 'moment/locale/de';
 
 registerLocaleData(localeDe);
@@ -54,6 +55,7 @@ export function initRuntimeConfig(rc: RuntimeConfigService) {
         { provide: LOCALE_ID, useValue: 'de-DE' },
         { provide: MAT_MOMENT_DATE_ADAPTER_OPTIONS, useValue: { useUtc: true } },
         { provide: AuthorizationService, useClass: environment.authorization_service },
+        { provide: HTTP_INTERCEPTORS, useClass: ApiErrorInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi()),
         provideHighcharts({
             modules: () => {

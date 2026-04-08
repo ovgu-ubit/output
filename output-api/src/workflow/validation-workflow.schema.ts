@@ -1,7 +1,7 @@
-import { BadRequestException } from "@nestjs/common";
 import { z, ZodError } from "zod";
 import { CompareOperation, JoinOperation } from "../../../output-interfaces/Config";
 import { ValidationWorkflow } from "./ValidationWorkflow.entity";
+import { createValidationHttpException } from "../common/api-error";
 
 const NonEmptyStringSchema = z.string().trim().min(1);
 const ValidationResultSchema = z.enum(["info", "warning", "error"]);
@@ -90,10 +90,7 @@ export function validateValidationWorkflow(workflow: ValidationWorkflow): Valida
         message: issue.message,
         code: issue.code,
       }));
-      throw new BadRequestException({
-        message: "Validation failed",
-        details,
-      });
+      throw createValidationHttpException(details);
     }
 
     throw error;

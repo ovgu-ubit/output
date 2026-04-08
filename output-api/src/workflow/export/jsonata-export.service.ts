@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
 import { SearchFilter } from '../../../../output-interfaces/Config';
@@ -16,6 +16,7 @@ import { PublicationService } from '../../publication/core/publication.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import { createInvalidRequestHttpException } from '../../common/api-error';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { WorkflowReport } from '../WorkflowReport.entity';
@@ -61,7 +62,7 @@ export class JSONataExportService extends AbstractExportService {
 
     public async setUp(exportDefinition: ExportWorkflow) {
         if (!exportDefinition?.mapping) {
-            throw new BadRequestException('Export workflow mapping is required.');
+            throw createInvalidRequestHttpException('Export workflow mapping is required.');
         }
 
         this.exportDefinition = exportDefinition;
@@ -100,10 +101,10 @@ export class JSONataExportService extends AbstractExportService {
         withMasterData?: boolean,
     ) {
         if (!this.exportDefinition?.mapping) {
-            throw new BadRequestException('JSONata export workflow is not configured.');
+            throw createInvalidRequestHttpException('JSONata export workflow is not configured.');
         }
         if (!hasProvidedEntityId(this.workflowReport?.id)) {
-            throw new BadRequestException('JSONata export workflow report is not configured.');
+            throw createInvalidRequestHttpException('JSONata export workflow report is not configured.');
         }
 
         const startedAt = new Date();

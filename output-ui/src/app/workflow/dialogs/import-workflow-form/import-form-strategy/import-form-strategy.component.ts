@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, firstValueFrom, takeUntil, tap } from 'rxjs';
 import { ImportStrategy, ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ImportFormFacade } from '../import-form-facade.service';
@@ -18,7 +18,7 @@ export class ImportFormStrategyComponent implements OnInit, WorkflowFormPage {
   constructor(
     private formBuilder: FormBuilder,
     private facade: ImportFormFacade,
-    private snackBar: MatSnackBar,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   selectionForm: FormGroup;
@@ -125,8 +125,8 @@ export class ImportFormStrategyComponent implements OnInit, WorkflowFormPage {
       this.selectionForm.markAsPristine();
       this.strategyForm.markAsPristine();
       return true;
-    } catch {
-      this.showSaveError();
+    } catch (error) {
+      this.showSaveError(error);
       return false;
     }
   }
@@ -141,7 +141,7 @@ export class ImportFormStrategyComponent implements OnInit, WorkflowFormPage {
   }
 
   getLabel(s: ImportStrategy) {
-    return this.strategies.find(e => e.value === s)
+    return this.strategies.find(e => e.value === s);
   }
 
   private buildForm(key: ImportStrategy): FormGroup {
@@ -224,11 +224,8 @@ export class ImportFormStrategyComponent implements OnInit, WorkflowFormPage {
     );
   }
 
-  private showSaveError() {
-    this.snackBar.open(
-      'Speichern fehlgeschlagen. Bitte Pflichtfelder Bezeichnung und Version pruefen.',
-      'OK',
-      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
-    );
+  private showSaveError(error: unknown) {
+    this.errorPresentation.applyFieldErrors(this.strategyForm, error, { pathPrefixes: ['strategy.'] });
+    this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
   }
 }

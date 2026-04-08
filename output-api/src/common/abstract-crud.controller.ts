@@ -3,6 +3,7 @@ import { ApiBody, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AccessGuard } from '../authorization/access.guard';
 import { Permissions } from '../authorization/permission.decorator';
+import { createNotFoundHttpException } from './api-error';
 import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
 import { assertCreateRequestHasNoId } from './entity-id';
 
@@ -81,8 +82,12 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
         return this.service.get();
     }
 
-    protected getSingleEntity(id: number, writer: boolean, user?: string) {
-        return this.service.one(id, writer, user);
+    protected async getSingleEntity(id: number, writer: boolean, user?: string) {
+        const entity = await this.service.one(id, writer, user);
+        if (!entity) {
+            throw createNotFoundHttpException();
+        }
+        return entity;
     }
 
     protected isWriter(request: Request): boolean {

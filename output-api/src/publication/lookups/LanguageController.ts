@@ -3,6 +3,7 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Language } from "./Language.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { Permissions } from "../../authorization/permission.decorator";
+import { createNotFoundHttpException } from "../../common/api-error";
 import { LanguageService } from "./language.service";
 import { assertCreateRequestHasNoId } from "../../common/entity-id";
 
@@ -26,7 +27,9 @@ export class LanguageController {
         type: Language
     })
     async one(@Query('id') id:number) : Promise<Language> {
-        return await this.languageService.one(id);
+        const language = await this.languageService.one(id);
+        if (!language) throw createNotFoundHttpException('Language not found.');
+        return language;
     }
 
     @Post()

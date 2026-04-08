@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
@@ -13,6 +13,7 @@ import { AppConfigService } from "../config/app-config.service";
 import { WorkflowService } from "./workflow.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ImportStrategy } from "../../../output-interfaces/Workflow";
+import { createInvalidRequestHttpException, createNotFoundHttpException } from "../common/api-error";
 
 @Controller("import")
 @ApiTags("import")
@@ -112,7 +113,7 @@ export class ImportController {
   })
   @UseInterceptors(FileInterceptor('file'))
   importCSV(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
-    if (!file || !file.originalname.endsWith('.csv')) throw new BadRequestException('valid csv file required');
+    if (!file || !file.originalname.endsWith('.csv')) throw createInvalidRequestHttpException('valid csv file required');
     this.csvService.setUp(file, format);
     return this.csvService.import(update, request["user"]["username"], dryRun);
   }
@@ -192,7 +193,7 @@ export class ImportController {
   })
   @UseInterceptors(FileInterceptor('file'))
   importExcel(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
-    if (!file || !file.originalname.endsWith('.xlsx')) throw new BadRequestException('valid excel file required');
+    if (!file || !file.originalname.endsWith('.xlsx')) throw createInvalidRequestHttpException('valid excel file required');
     this.excelService.setUp(file, format);
     return this.excelService.import(update, request["user"]["username"], dryRun);
   }
@@ -229,9 +230,9 @@ export class ImportController {
     },
   })
   async importStart(@Req() request, @Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean, @Body('dry_run') dryRun: boolean) {
-    if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw new BadRequestException('reporting year is mandatory');
+    if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw createInvalidRequestHttpException('reporting year is mandatory');
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Import service not found.');
     await this.importServices[so].setReportingYear(reporting_year);
     return this.importServices[so].import(update, request["user"]["username"], dryRun);
   }
@@ -241,7 +242,7 @@ export class ImportController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async importStatus(@Param('path') path: string) {
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Import service not found.');
     return this.importServices[so].status();
   }
 
@@ -250,7 +251,7 @@ export class ImportController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async importConfig(@Param('path') path: string) {
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Import service not found.');
     return this.importServices[so].getUpdateMapping();
   }
   @Post(":path/config")
@@ -258,7 +259,7 @@ export class ImportController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async importConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Import service not found.');
     return this.importServices[so].setUpdateMapping(mapping);
   }
 }

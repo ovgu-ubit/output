@@ -1,4 +1,4 @@
-import { Body, Controller, Get, InternalServerErrorException, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { ContractService } from "./contract.service";
 import { Contract } from "./Contract.entity";
@@ -32,10 +32,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        const res = await this.service.combine(id1,ids);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first contract') 
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second contract') 
-        else return res;
+        return this.service.combine(id1,ids);
     }
 
 }

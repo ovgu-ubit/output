@@ -1,7 +1,8 @@
 import { HttpService } from "@nestjs/axios";
-import { ExecutionContext, Injectable, InternalServerErrorException, Req } from "@nestjs/common";
+import { ExecutionContext, Injectable, Req } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
+import { createInternalErrorHttpException } from "../common/api-error";
 import { AppConfigService } from "../config/app-config.service";
 import { AuthorizationService } from "./authorization.service";
 import { PermissionDecoration } from "./permission.decorator";
@@ -62,11 +63,10 @@ export class TokenAuthorizationService extends AuthorizationService {
                         }
                     }, error: err => {
                         console.log(err)
-                        throw new InternalServerErrorException();
+                        throw createInternalErrorHttpException();
                     }
                 });
             } else resolve(false);
         });
     }
 }
-

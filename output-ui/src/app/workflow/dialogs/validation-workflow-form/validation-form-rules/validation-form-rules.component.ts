@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SearchFilter } from '../../../../../../../output-interfaces/Config';
 import { ValidationRule, ValidationWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ValidationFormFacade } from '../validation-form-facade.service';
@@ -33,6 +34,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     private formBuilder: FormBuilder,
     private facade: ValidationFormFacade,
     private snackBar: MatSnackBar,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   ngOnInit(): void {
@@ -97,8 +99,8 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
       }, { emitEvent: false });
       this.form.markAsPristine();
       return true;
-    } catch {
-      this.showSaveError();
+    } catch (error) {
+      this.showSaveError(error);
       return false;
     }
   }
@@ -132,11 +134,13 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     return JSON.stringify(value, null, 2);
   }
 
-  private showSaveError() {
-    this.snackBar.open(
-      'Speichern fehlgeschlagen. Bitte Target, Filter und Regeln pruefen.',
-      'OK',
-      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
-    );
+  private showSaveError(error: unknown) {
+    this.errorPresentation.applyFieldErrors(this.form, error, {
+      pathMap: {
+        'target_filter': 'target_filter_json',
+        'rules': 'rules_json',
+      },
+    });
+    this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
   }
 }

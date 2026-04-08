@@ -1,7 +1,8 @@
-import { ConflictException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
@@ -58,12 +59,44 @@ describe('InvoiceService', () => {
         expect((result as any)?.locked_at).toBeUndefined();
     });
 
+    it('wraps duplicate invoice save errors in the shared API error format', async () => {
+        publicationRepository.find!.mockResolvedValue([{ id: 7, locked_at: null, locked_finance: false } as Publication] as any);
+        invoiceRepository.save!.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (number)=(INV-1) already exists.',
+            constraint: 'uq_invoice_number',
+        });
+
+        try {
+            await service.save([{ publication: { id: 7 } as Publication, number: 'INV-1' } as Invoice], 'alice');
+            fail('service.save should throw for duplicate invoice values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'number', code: 'unique' }),
+                ]),
+            });
+        }
+    });
+
     it('blocks saving an invoice whose parent publication is locked by another user', async () => {
         EditLockOwnerStore.setOwner('publication', 7, 'alice');
         invoiceRepository.find!.mockResolvedValue([{ id: 1, publication: { id: 7 } as Publication } as Invoice] as any);
         publicationRepository.find!.mockResolvedValue([{ id: 7, locked_at: new Date(), locked_finance: false } as Publication] as any);
 
-        await expect(service.save([{ id: 1 } as Invoice], 'mallory')).rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 1 } as Invoice], 'mallory');
+            fail('service.save should reject invoice updates while parent publication is locked');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(invoiceRepository.save).not.toHaveBeenCalled();
     });
 
@@ -72,7 +105,16 @@ describe('InvoiceService', () => {
         invoiceRepository.find!.mockResolvedValue([{ id: 0, publication: { id: 0 } as Publication } as Invoice] as any);
         publicationRepository.find!.mockResolvedValue([{ id: 0, locked_at: new Date(), locked_finance: false } as Publication] as any);
 
-        await expect(service.save([{ id: 0 } as Invoice], 'mallory')).rejects.toBeInstanceOf(ConflictException);
+        try {
+            await service.save([{ id: 0 } as Invoice], 'mallory');
+            fail('service.save should reject invoice id 0 updates while parent publication is locked');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
         expect(invoiceRepository.save).not.toHaveBeenCalled();
     });
 

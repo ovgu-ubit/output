@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Language } from './Language.entity';
+import { createPersistenceHttpException } from '../../common/api-error';
 
 @Injectable()
 export class LanguageService {
@@ -9,9 +10,8 @@ export class LanguageService {
     constructor(@InjectRepository(Language) private repository: Repository<Language>) { }
 
     public save(pub: Language[]) {
-        return this.repository.save(pub).catch(err => {
-            if (err.constraint) throw new BadRequestException(err.detail)
-            else throw new InternalServerErrorException(err);
+        return this.repository.save(pub).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
         });
     }
 
@@ -29,7 +29,11 @@ export class LanguageService {
         let funder: Language;
         funder = await this.repository.findOne({ where: { label: ILike(label) } });
         if (funder || dryRun) return funder;
-        else return await this.repository.save({ label }).catch(e => { throw { origin: 'language-service', text: `Language ${label} could not be inserted` }; });
+        else {
+            return await this.repository.save({ label }).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
+        }
     }
     
     identifyLanguage(label:string) {
@@ -46,4 +50,3 @@ export class LanguageService {
         return this.repository.delete(insts.map(p => p.id));
     }
 }
-

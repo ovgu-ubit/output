@@ -1,4 +1,5 @@
-import { BadRequestException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { InvoiceController } from './InvoiceController';
 
 describe('InvoiceController', () => {
@@ -44,9 +45,26 @@ describe('InvoiceController', () => {
     });
 
     it('forwards writer flag and username when loading one invoice', async () => {
+        invoiceService.get.mockResolvedValue({ id: 5 });
+
         await controller.one(5, { user: { write: true, username: 'alice' } } as any);
 
         expect(invoiceService.get).toHaveBeenCalledWith(5, true, 'alice');
+    });
+
+    it('throws a structured not-found error when one invoice is missing', async () => {
+        invoiceService.get.mockResolvedValue(null);
+
+        try {
+            await controller.one(5, { user: { write: true, username: 'alice' } } as any);
+            fail('controller.one should reject missing invoices');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 404,
+                code: ApiErrorCode.NOT_FOUND,
+            });
+        }
     });
 
     it('forwards username when saving one invoice', async () => {
@@ -58,21 +76,54 @@ describe('InvoiceController', () => {
     });
 
     it('rejects invoice create requests that provide an id', async () => {
-        await expect(controller.save({ id: 8 } as any, { user: { username: 'alice' } } as any))
-            .rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.save({ id: 8 } as any, { user: { username: 'alice' } } as any);
+            fail('controller.save should reject invoice create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(invoiceService.save).not.toHaveBeenCalled();
     });
 
     it('rejects invoice create requests that provide id 0', async () => {
-        await expect(controller.save({ id: 0 } as any, { user: { username: 'alice' } } as any))
-            .rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.save({ id: 0 } as any, { user: { username: 'alice' } } as any);
+            fail('controller.save should reject invoice create requests with id 0');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(invoiceService.save).not.toHaveBeenCalled();
     });
 
     it('forwards writer flag and username when loading one cost type', async () => {
+        costTypeService.one.mockResolvedValue({ id: 7, label: 'APC' });
+
         await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
 
         expect(costTypeService.one).toHaveBeenCalledWith(7, true, 'alice');
+    });
+
+    it('throws a structured not-found error when one cost type is missing', async () => {
+        costTypeService.one.mockResolvedValue(null);
+
+        try {
+            await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
+            fail('controller.cost_type_one should reject missing cost types');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 404,
+                code: ApiErrorCode.NOT_FOUND,
+            });
+        }
     });
 
     it('forwards username when updating a cost type', async () => {
@@ -84,14 +135,40 @@ describe('InvoiceController', () => {
     });
 
     it('rejects cost type create requests that provide an id', async () => {
-        await expect(controller.saveCT({ id: 11, label: 'APC' } as any)).rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.saveCT({ id: 11, label: 'APC' } as any);
+            fail('controller.saveCT should reject cost type create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(costTypeService.save).not.toHaveBeenCalled();
     });
 
     it('forwards writer flag and username when loading one cost center', async () => {
+        costCenterService.one.mockResolvedValue({ id: 9, label: 'Center' });
+
         await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);
 
         expect(costCenterService.one).toHaveBeenCalledWith(9, true, 'alice');
+    });
+
+    it('throws a structured not-found error when one cost center is missing', async () => {
+        costCenterService.one.mockResolvedValue(null);
+
+        try {
+            await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);
+            fail('controller.cost_center_one should reject missing cost centers');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 404,
+                code: ApiErrorCode.NOT_FOUND,
+            });
+        }
     });
 
     it('forwards username when updating a cost center', async () => {
@@ -103,7 +180,16 @@ describe('InvoiceController', () => {
     });
 
     it('rejects cost center create requests that provide an id', async () => {
-        await expect(controller.saveCC({ id: 12, label: 'Cost Center' } as any)).rejects.toBeInstanceOf(BadRequestException);
+        try {
+            await controller.saveCC({ id: 12, label: 'Cost Center' } as any);
+            fail('controller.saveCC should reject cost center create requests with id');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
         expect(costCenterService.save).not.toHaveBeenCalled();
     });
 });

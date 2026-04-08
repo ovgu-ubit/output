@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
@@ -13,6 +13,7 @@ import { ReportItemService } from "./report-item.service";
 import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowReportService } from "./workflow-report.service";
+import { createInvalidRequestHttpException } from "../common/api-error";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -228,7 +229,7 @@ export class WorkflowController {
   })
   @UseInterceptors(FileInterceptor('file'))
   import_import(@UploadedFile() file: Express.Multer.File) {
-    if (!file || !file.originalname.endsWith('.json')) throw new BadRequestException('valid json file required');
+    if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
     return this.workflowService.importImport(file);
   }
 
@@ -248,7 +249,7 @@ export class WorkflowController {
   })
   @UseInterceptors(FileInterceptor('file'))
   import_export(@UploadedFile() file: Express.Multer.File) {
-    if (!file || !file.originalname.endsWith('.json')) throw new BadRequestException('valid json file required');
+    if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
     return this.workflowService.importExport(file);
   }
 

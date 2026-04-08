@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExportWorkflow, ImportWorkflow, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
@@ -7,6 +7,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { PublicationChangeService } from '../publication/core/publication-change.service';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportItem } from './WorkflowReportItem.entity';
+import { createInvalidRequestHttpException, createNotFoundHttpException, createWorkflowRunningHttpException } from '../common/api-error';
 
 export interface FinishWorkflowReportOptions {
     status: string;
@@ -70,7 +71,7 @@ export class WorkflowReportService {
     }
 
     async save(options: WorkflowReport): Promise<WorkflowReport> {
-        if (!hasProvidedEntityId(options.id)) throw new BadRequestException('create report first before saving it');
+        if (!hasProvidedEntityId(options.id)) throw createInvalidRequestHttpException('create report first before saving it');
         return this.hydrateWorkflowReference(await this.workflowReportRepository.save(options));
     }
 
@@ -79,7 +80,7 @@ export class WorkflowReportService {
             { id: workflowReportId },
             { updated_at: new Date() }
         );
-        if (!touchResult.affected) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        if (!touchResult.affected) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
         return this.workflowReportItemRepository.save({
             workflowReport: { id: workflowReportId } as WorkflowReport,
             timestamp: content.timestamp ?? new Date(),
@@ -91,7 +92,7 @@ export class WorkflowReportService {
 
     async updateStatus(workflowReportId: number, content: UpdateWorkflowReportStatusOptions): Promise<WorkflowReport> {
         const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
-        if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        if (!report) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
 
         if (content.status !== undefined) report.status = content.status;
         if (content.progress !== undefined) report.progress = content.progress;
@@ -107,7 +108,7 @@ export class WorkflowReportService {
 
     async finish(workflowReportId: number, content: FinishWorkflowReportOptions): Promise<WorkflowReport> {
         const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
-        if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        if (!report) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
 
         report.status = content.status;
         report.progress = 0;
@@ -170,7 +171,7 @@ export class WorkflowReportService {
                 validationWorkflow: true,
             }
         });
-        if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        if (!report) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
 
         report.items = await this.workflowReportItemRepository
             .createQueryBuilder('item')
@@ -195,7 +196,7 @@ export class WorkflowReportService {
         while (true) {
             this.throwIfAborted(signal);
             const report = await this.workflowReportRepository.findOneBy({ id: workflowReportId });
-            if (!report) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+            if (!report) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
 
             const hydratedReport = this.hydrateWorkflowReference(report);
             if (hydratedReport.finished_at || (allowStale && this.isReportStale(hydratedReport, staleTimeoutMs))) {
@@ -230,7 +231,7 @@ export class WorkflowReportService {
 
     async deleteReport(workflowReportId: number) {
         if (this.isDeletionBlocked(workflowReportId)) {
-            throw new ConflictException(`Workflow report ${workflowReportId} is still active`);
+            throw createWorkflowRunningHttpException(`Workflow report ${workflowReportId} is still active`);
         }
         await this.ensureReportExists(workflowReportId);
         return this.workflowReportRepository.delete({ id: workflowReportId });
@@ -356,7 +357,7 @@ export class WorkflowReportService {
 
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
-        if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        if (!exists) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
     }
 
     private isDeletionBlocked(workflowReportId: number): boolean {

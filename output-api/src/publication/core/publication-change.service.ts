@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { createNotFoundHttpException } from '../../common/api-error';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
 import { PublicationChange } from './PublicationChange.entity';
@@ -68,7 +69,7 @@ export class PublicationChangeService {
 
     private async ensureReportExists(workflowReportId: number) {
         const exists = await this.workflowReportRepository.existsBy({ id: workflowReportId });
-        if (!exists) throw new NotFoundException(`Workflow report ${workflowReportId} not found`);
+        if (!exists) throw createNotFoundHttpException(`Workflow report ${workflowReportId} not found`);
     }
 
     private hydrateWorkflowReport(change: PublicationChange): PublicationChange {

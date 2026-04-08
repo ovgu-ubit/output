@@ -14,6 +14,12 @@
     </div>
 </mat-toolbar>
 <mat-dialog-content>
+    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
+        <mat-card-header><mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
+        <mat-card-content>
+            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
+        </mat-card-content>
+    </mat-card>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()">
         <mat-form-field *ngIf="this.entity?.id" appearance="fill">
@@ -24,16 +30,19 @@
         <mat-form-field appearance="fill">
             <mat-label>Bezeichnung</mat-label>
             <input matInput placeholder="Bezeichnung" formControlName="label" />
+            <mat-error *ngIf="getFieldError('label', 'Bezeichnung') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>Kurzbezeichnung</mat-label>
             <input matInput placeholder="Kurzbezeichnung" formControlName="short_label" />
+            <mat-error *ngIf="getFieldError('short_label', 'Kurzbezeichnung') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>OPUS-ID</mat-label>
             <input matInput placeholder="OPUS-ID" formControlName="opus_id" />
+            <mat-error *ngIf="getFieldError('opus_id', 'OPUS-ID') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <app-select-entity name="Übergeordnetes Institut" [disabled]="this.disabled"

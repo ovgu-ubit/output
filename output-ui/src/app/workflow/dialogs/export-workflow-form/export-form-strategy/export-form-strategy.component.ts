@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow } from '../../../../../../../output-interfaces/Workflow';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';
@@ -27,7 +27,7 @@ export class ExportFormStrategyComponent implements OnInit, WorkflowFormPage {
   constructor(
     private formBuilder: FormBuilder,
     private facade: ExportFormFacade,
-    private snackBar: MatSnackBar,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   selectionForm: FormGroup;
@@ -132,8 +132,8 @@ export class ExportFormStrategyComponent implements OnInit, WorkflowFormPage {
       this.selectionForm.markAsPristine();
       this.strategyForm.markAsPristine();
       return true;
-    } catch {
-      this.showSaveError();
+    } catch (error) {
+      this.showSaveError(error);
       return false;
     }
   }
@@ -192,11 +192,8 @@ export class ExportFormStrategyComponent implements OnInit, WorkflowFormPage {
     return (entity.strategy ?? {}) as ExportStrategyData;
   }
 
-  private showSaveError() {
-    this.snackBar.open(
-      'Speichern fehlgeschlagen. Bitte Pflichtfelder Bezeichnung und Version pruefen.',
-      'OK',
-      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
-    );
+  private showSaveError(error: unknown) {
+    this.errorPresentation.applyFieldErrors(this.strategyForm, error, { pathPrefixes: ['strategy.'] });
+    this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
   }
 }

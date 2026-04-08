@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { Between, In } from "typeorm";
@@ -9,6 +9,7 @@ import { ApiEnrichDOIService, getEnrichServiceMeta } from "./import/api-enrich-d
 import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
 import { JSONataImportService } from "./import/jsonata-import";
+import { createInvalidRequestHttpException, createNotFoundHttpException } from "../common/api-error";
 
 @Controller("enrich")
 @ApiTags("enrich")
@@ -88,9 +89,9 @@ export class EnrichController {
   })
   async enrichUnpaywall(@Req() request: Request, @Param('path') path: string, @Body('reporting_year') reporting_year: number, @Body('ids') ids: number[], @Body('dry_run') dryRun: boolean) {
     if (path === 'jsonata') {
-      if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw new BadRequestException('reporting year or array of IDs is mandatory');
+      if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw createInvalidRequestHttpException('reporting year or array of IDs is mandatory');
       const so = (await this.list()).findIndex(e => e.path === path)
-      if (so === -1) throw new NotFoundException();
+      if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
       if (ids && ids.length >= 0) {
         (this.enrichServices[so] as unknown as JSONataImportService).enrich_whereClause = { where: { id: In(ids) } };
         return (this.enrichServices[so] as unknown as JSONataImportService).enrich(request["user"]["username"], dryRun);
@@ -103,9 +104,9 @@ export class EnrichController {
         return jsonata.enrich(request["user"]["username"], dryRun);
       }
     }
-    if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw new BadRequestException('reporting year or array of IDs is mandatory');
+    if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw createInvalidRequestHttpException('reporting year or array of IDs is mandatory');
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
     if (ids && ids.length >= 0) {
       this.enrichServices[so].setWhereClause({ where: { id: In(ids) } });
       return this.enrichServices[so].import(true, request["user"]["username"], dryRun);
@@ -121,7 +122,7 @@ export class EnrichController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async enrichUnpaywallStatus(@Param('path') path: string) {
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
     return this.enrichServices[so].status();
   }
   @Get(":path/config")
@@ -129,7 +130,7 @@ export class EnrichController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async importUnpaywallConfig(@Param('path') path: string) {
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
     return this.enrichServices[so].getUpdateMapping();
   }
   @Post(":path/config")
@@ -137,7 +138,7 @@ export class EnrichController {
   @Permissions([{ role: 'admin', app: 'output' }])
   async importUnpaywallConfigSet(@Param('path') path: string, @Body('mapping') mapping: UpdateMapping) {
     const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw new NotFoundException();
+    if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
     return this.enrichServices[so].setUpdateMapping(mapping);
   }
 }

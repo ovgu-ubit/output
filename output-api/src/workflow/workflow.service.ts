@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,6 +20,7 @@ import { ValidationService } from './validation.service';
 import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { hasProvidedEntityId } from '../common/entity-id';
+import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createWorkflowRunningHttpException } from '../common/api-error';
 
 type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     repository: Repository<TWorkflow>;
@@ -81,7 +82,7 @@ export class WorkflowService {
         try {
             workflow = JSON.parse(file.buffer.toString('utf-8'));
         } catch {
-            throw new BadRequestException('invalid json');
+            throw createInvalidRequestHttpException('invalid json');
         }
 
         const nextVersion = await this.getNextDraftVersion(this.importRepository, workflow.workflow_id);
@@ -117,7 +118,7 @@ export class WorkflowService {
         try {
             workflow = JSON.parse(file.buffer.toString('utf-8'));
         } catch {
-            throw new BadRequestException('invalid json');
+            throw createInvalidRequestHttpException('invalid json');
         }
 
         const nextVersion = await this.getNextDraftVersion(this.exportRepository, workflow.workflow_id);
@@ -151,13 +152,19 @@ export class WorkflowService {
         return this.saveWorkflow(workflow, user, {
             repository: this.validationRepository,
             workflowType: WorkflowType.VALIDATION,
-            validate: validateValidationWorkflow,
+            validate: (draft) => {
+                const validated = validateValidationWorkflow(draft);
+                if (validated.published_at && !validated.rules?.length) {
+                    throw createInvalidRequestHttpException('Error: validation workflow must define at least one rule before publication');
+                }
+                return validated;
+            },
             createDefaults: (draft) => ({
                 rules: draft.rules ?? [],
             }),
             ensureCanPublish: (draft) => {
                 if (draft.rules?.length) return;
-                throw new BadRequestException('Error: validation workflows must define at least one rule before publishing');
+                throw createInvalidRequestHttpException('Error: validation workflows must define at least one rule before publishing');
             },
             reportWorkflowType: WorkflowType.VALIDATION,
         });
@@ -167,9 +174,9 @@ export class WorkflowService {
         return this.startDetachedExecution('workflow-import-service', async () => {
             const importDef = await this.importRepository.findOneBy({ id });
 
-            if (!importDef) throw new BadRequestException('Error: workflow not found');
+            if (!importDef) throw createNotFoundHttpException('Workflow not found.');
             if (!importDef.published_at || importDef.deleted_at) {
-                throw new BadRequestException('Error: only published workflows can be executed');
+                throw createInvalidRequestHttpException('Error: only published workflows can be executed');
             }
             if (importDef.strategy_type === ImportStrategy.URL_QUERY_OFFSET) {
                 await this.importService.setReportingYear(reporting_year + "");
@@ -193,14 +200,14 @@ export class WorkflowService {
                     const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
                     this.importService.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
                     this.importService.setReportingYear(reporting_year + "")
-                } else throw new BadRequestException('neither reporting_year nor ids are given')
+                } else throw createInvalidRequestHttpException('neither reporting_year nor ids are given')
                 await this.importService.enrich(user, dryRun);
                 return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
             } else if (importDef.strategy_type === ImportStrategy.FILE_UPLOAD) {
                 await this.importService.setUp(importDef, importDef.update_config);
                 const reportId = this.getImportExecutionReportId();
                 if (file) await this.importService.loadFile(update, file, user, dryRun);
-                else throw new BadRequestException('no file supported')
+                else throw createInvalidRequestHttpException('no file supported')
                 return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
             }
 
@@ -211,7 +218,7 @@ export class WorkflowService {
     async testImport(id: number, pos = 1): Promise<ImportWorkflowTestResult> {
         return this.runExclusive('workflow-import-service', async () => {
             const importDef = await this.importRepository.findOneBy({ id });
-            if (!importDef) throw new NotFoundException();
+            if (!importDef) throw createNotFoundHttpException('Workflow not found.');
 
             await this.importService.setReportingYear("2024");
             await this.importService.setUp(importDef, importDef.update_config);
@@ -223,9 +230,9 @@ export class WorkflowService {
         return this.runExclusive('workflow-export-service', async () => {
             const exportDef = await this.exportRepository.findOneBy({ id });
 
-            if (!exportDef) throw new BadRequestException('Error: workflow not found');
+            if (!exportDef) throw createNotFoundHttpException('Workflow not found.');
             if (exportDef.deleted_at) {
-                throw new BadRequestException('Error: archived workflows cannot be executed');
+                throw createInvalidRequestHttpException('Error: archived workflows cannot be executed');
             }
 
             await this.exportService.setUp(exportDef);
@@ -237,9 +244,9 @@ export class WorkflowService {
         return this.startDetachedExecution('workflow-validation-service', async () => {
             const validationDef = await this.validationRepository.findOneBy({ id });
 
-            if (!validationDef) throw new BadRequestException('Error: workflow not found');
+            if (!validationDef) throw createNotFoundHttpException('Workflow not found.');
             if (validationDef.deleted_at) {
-                throw new BadRequestException('Error: archived workflows cannot be executed');
+                throw createInvalidRequestHttpException('Error: archived workflows cannot be executed');
             }
 
             await this.validationService.setUp(validationDef);
@@ -299,13 +306,13 @@ export class WorkflowService {
 
     getUpdateMapping(id: number) {
         return this.importRepository.findOneBy({ id }).then(w => w.update_config).catch(err => {
-            throw new NotFoundException(err.message);
+            throw createNotFoundHttpException(err.message);
         });
     }
 
     async setUpdateMapping(id: number, mapping: UpdateMapping) {
         const w = await this.importRepository.findOneBy({ id });
-        if (!w) throw new NotFoundException();
+        if (!w) throw createNotFoundHttpException('Workflow not found.');
         return this.importRepository.save({ id, update_config: mapping })
     }
 
@@ -325,7 +332,7 @@ export class WorkflowService {
         user?: string,
     ) {
         const res = await repository.findOne({ where: { id } as never, withDeleted: true });
-        if (!res) throw new NotFoundException();
+        if (!res) throw createNotFoundHttpException('Workflow not found.');
         if (!lock || res.published_at || res.deleted_at) return res;
 
         const timeoutMs = await this.getLockTimeoutMs();
@@ -338,7 +345,7 @@ export class WorkflowService {
                     locked_at: undefined,
                 };
             }
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
 
         const lockCriteria = !res.locked_at
@@ -347,7 +354,7 @@ export class WorkflowService {
 
         const updateResult = await repository.update(lockCriteria as never, { locked_at: now } as never);
         if (!updateResult.affected) {
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
         if (user && hasProvidedEntityId(res.id)) {
             EditLockOwnerStore.setOwner(workflowType, res.id, user);
@@ -361,7 +368,7 @@ export class WorkflowService {
 
     private async isWorkflowLocked<T extends { locked_at?: Date; deleted_at?: Date }>(repository: Repository<T>, id: number): Promise<boolean> {
         const db = await repository.findOne({ where: { id } as never, withDeleted: true });
-        if (!db) throw new NotFoundException();
+        if (!db) throw createNotFoundHttpException('Workflow not found.');
         if (!db.locked_at || db.deleted_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.getLockTimeoutMs()) return false;
         else return true;
@@ -395,7 +402,7 @@ export class WorkflowService {
 
     private ensureExecutionIsAvailable(key: string) {
         if (this.activeExecutionKeys.has(key)) {
-            throw new ConflictException('A workflow execution is already running for this service.');
+            throw createWorkflowRunningHttpException();
         }
     }
 
@@ -487,11 +494,11 @@ export class WorkflowService {
                 this.releaseEditLock(workflowType, db.id);
                 return;
             }
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
 
         if (!user || owner !== user) {
-            throw new ConflictException('Workflow is currently locked.');
+            throw createEntityLockedHttpException('Workflow is currently locked.');
         }
     }
 
@@ -536,13 +543,13 @@ export class WorkflowService {
 
         if (hasProvidedEntityId(workflow.id)) {
             const db = await options.repository.findOneBy({ id: workflow.id } as never);
-            if (!db) throw new BadRequestException("Error: ID of workflow to update does not exist");
+            if (!db) throw createInvalidRequestHttpException("Error: ID of workflow to update does not exist");
             await this.ensureDraftWorkflowCanBeSaved(db, workflow, options.workflowType, user);
             const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
 
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at;
-                if (!isArchiving) throw new BadRequestException("Error: workflow to update has already been published");
+                if (!isArchiving) throw createInvalidRequestHttpException("Error: workflow to update has already been published");
                 toSave = { ...db, workflow_id: db.workflow_id, version: db.version, deleted_at: new Date(), locked_at: nextLockedAt };
                 shouldDeleteArchivedWorkflowReports = !db.deleted_at;
             } else if (!db.published_at && workflow.published_at) {
@@ -551,7 +558,7 @@ export class WorkflowService {
                     published_at: Not(IsNull()),
                     id: Not(workflow.id),
                 } as never);
-                if (other) throw new BadRequestException("Error: there is already a published version of this workflow. Archive it first.");
+                if (other) throw createInvalidRequestHttpException("Error: there is already a published version of this workflow. Archive it first.");
                 toSave = { ...db, workflow_id: db.workflow_id, version: db.version, published_at: new Date(), locked_at: nextLockedAt };
                 if (options.ensureCanPublish) {
                     await options.ensureCanPublish(toSave);
@@ -595,10 +602,10 @@ export class WorkflowService {
     ): Promise<TWorkflow[]> {
         const workflows = await options.repository.findBy(ids.map((id) => ({ id })) as never);
         if (workflows.length !== ids.length) {
-            throw new BadRequestException('Error: at least one workflow ID does not exist');
+            throw createInvalidRequestHttpException('Error: at least one workflow ID does not exist');
         }
         if (workflows.some((workflow) => !!workflow.published_at || !!workflow.deleted_at)) {
-            throw new BadRequestException('Error: only draft workflows can be deleted');
+            throw createInvalidRequestHttpException('Error: only draft workflows can be deleted');
         }
 
         if (options.reportWorkflowType) {
@@ -621,7 +628,7 @@ export class WorkflowService {
 
     private getImportExecutionReportId(): number {
         const reportId = this.importService.getCurrentWorkflowReportId();
-        if (!reportId) throw new NotFoundException('Workflow report not initialized');
+        if (!reportId) throw createNotFoundHttpException('Workflow report not initialized');
         return reportId;
     }
 

@@ -7,6 +7,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, Router, RouterModule, RouterOutlet } from '@angular/router';
 import { EMPTY, filter, firstValueFrom, map, of, switchMap, takeUntil } from 'rxjs';
 import { ValidationWorkflow } from '../../../../../../output-interfaces/Workflow';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ValidationWorkflowService } from '../../validation-workflow.service';
@@ -37,6 +38,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
     private router: Router,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   id: any;
@@ -65,14 +67,8 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
       takeUntil(this.facade.destroy$)
     ).subscribe({
       error: (err) => {
-        if (err?.status === 409) {
-          this.snackBar.open('Workflow wird gerade bearbeitet, bitte warten.', 'OK', {
-            duration: 4500,
-            verticalPosition: 'top',
-            panelClass: ['danger-snackbar'],
-          });
-          void this.router.navigateByUrl('/workflow/publication_validation');
-        }
+        this.errorPresentation.present(err, { action: 'load', entity: 'Workflow' });
+        if (err?.status === 409) void this.router.navigateByUrl('/workflow/publication_validation');
       }
     });
   }
@@ -175,8 +171,8 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
 
       if (showSuccess) this.showSaveSuccess(data.id);
       return data;
-    } catch {
-      this.showSaveError();
+    } catch (error) {
+      this.showSaveError(error);
       return null;
     }
   }
@@ -189,11 +185,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
     );
   }
 
-  private showSaveError() {
-    this.snackBar.open(
-      'Speichern fehlgeschlagen. Bitte Bezeichnung, Target und Regeldefinition pruefen.',
-      'OK',
-      { duration: 5000, verticalPosition: 'top', panelClass: ['danger-snackbar'] },
-    );
+  private showSaveError(error: unknown) {
+    this.errorPresentation.present(error, { action: 'save', entity: 'Workflow' });
   }
 }
