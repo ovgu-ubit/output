@@ -135,7 +135,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
         this.dialog.open(this.formComponent, {
           width: '800px',
           data: {
-            entity
+            entity,
+            persistOnSave: true
           },
           disableClose: true
         }).afterClosed().subscribe(createResult => {
@@ -167,7 +168,8 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     this.dialog.open(this.formComponent, {
       width: '800px',
       data: {
-        entity: this.ent
+        entity: this.ent,
+        persistOnSave: true
       },
       disableClose: true
     }).afterClosed().subscribe(updateResult => {

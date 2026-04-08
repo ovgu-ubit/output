@@ -270,7 +270,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       width: '1000px',
       maxHeight: '800px',
       data: {
-        entity: row
+        entity: row,
+        persistOnSave: true
       },
       disableClose: true
     });
@@ -312,7 +313,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       data: {
         entity: {
 
-        }
+        },
+        persistOnSave: true
       },
       disableClose: true
     });

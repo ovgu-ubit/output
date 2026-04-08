@@ -175,7 +175,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     const isUpdate = !!this.entity?.id;
     this.entity = this.buildEntityPayload(isUpdate);
 
-    if (!this.service) {
+    if (!this.shouldPersistOnSave()) {
       this.dialogRef.close({ ...this.entity, updated: true })
       return;
     }
@@ -295,6 +295,10 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     if (isUpdate) entity.locked_at = null;
 
     return entity as T;
+  }
+
+  private shouldPersistOnSave(): boolean {
+    return !!this.service && this.data?.persistOnSave === true;
   }
 
   protected normalizeSavedEntity(response: unknown, fallback: T): T {
