@@ -41,9 +41,6 @@ export class AppComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: data => {
         this.title = 'Output.' + data.value
-      },
-      error: error => {
-        this.handleHeartbeatFailure(error);
       }
     });
     this.startBackendHeartbeat();
