@@ -402,7 +402,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       dialogRef.afterClosed().subscribe(dialogResult => {
@@ -435,7 +436,8 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       const dialogResult = await firstValueFrom(dialogRef.afterClosed());

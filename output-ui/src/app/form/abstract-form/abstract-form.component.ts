@@ -133,7 +133,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       let dialogResult = await firstValueFrom(dialogRef.afterClosed())
@@ -147,7 +148,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       let dialogResult = await firstValueFrom(dialogRef.afterClosed())
@@ -160,7 +162,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       let dialogResult = await firstValueFrom(dialogRef.afterClosed())
@@ -210,7 +213,8 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
 
       let dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: "400px",
-        data: dialogData
+        data: dialogData,
+        disableClose: true
       });
 
       dialogRef.afterClosed().subscribe(dialogResult => {
