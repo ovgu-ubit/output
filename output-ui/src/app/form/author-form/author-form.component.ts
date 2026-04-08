@@ -41,7 +41,7 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
 
   @ViewChild(MatTable) table: MatTable<Institute>;
   @ViewChild('tableAlias') tableAlias: MatTable<{ alias: string, first_name: boolean }>;
-  alias_data: { alias: string, first_name: boolean }[];
+  alias_data: { alias: string, first_name: boolean }[] = [];
 
   override service = inject(AuthorService)
 
@@ -105,9 +105,10 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
   }
 
   updateAlias() {
-    this.alias_data = this.entity.aliases_first_name?.map(e => { return { alias: e.alias, first_name: true } })
-    this.alias_data = this.alias_data.concat(this.entity.aliases_last_name?.map(e => { return { alias: e.alias, first_name: false } }));
+    const aliasesFirstName = this.entity?.aliases_first_name?.map(e => ({ alias: e.alias, first_name: true })) ?? [];
+    const aliasesLastName = this.entity?.aliases_last_name?.map(e => ({ alias: e.alias, first_name: false })) ?? [];
+
+    this.alias_data = [...aliasesFirstName, ...aliasesLastName];
     if (this.tableAlias) this.tableAlias.dataSource = new MatTableDataSource<{ alias: string, first_name: boolean }>(this.alias_data);
   }
 }
-
