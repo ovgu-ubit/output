@@ -37,9 +37,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.user = this.tokenService.getUser();
     this.security = this.runtimeConfigService.getValue<boolean>("security");
     this.configService.get("institution_short_label").pipe(
-      takeUntil(this.destroy$)
+      takeUntil(this.destroy$),
+      catchError(() => of(null))
     ).subscribe({
       next: data => {
+        if (!data?.value) return;
         this.title = 'Output.' + data.value
       }
     });

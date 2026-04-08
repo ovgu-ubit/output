@@ -82,6 +82,20 @@ describe('AppComponent', () => {
     discardPeriodicTasks();
   }));
 
+  it('ignores institution short label lookup failures without surfacing a heartbeat error', fakeAsync(() => {
+    configService.get.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
+
+    fixture.detectChanges();
+    tick();
+
+    expect(component.title).toBe('Output');
+    expect(errorPresentation.present).not.toHaveBeenCalled();
+    discardPeriodicTasks();
+  }));
+
   it('presents a backend heartbeat error when the health check fails', fakeAsync(() => {
     configService.health.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
 
