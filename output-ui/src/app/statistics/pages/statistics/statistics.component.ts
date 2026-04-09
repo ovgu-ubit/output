@@ -14,6 +14,7 @@ import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatisticsService } from 'src/app/statistics/statistics.service';
 import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
 import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
+import { EChartsCoreOption } from 'echarts/core';
 
 @Component({
     selector: 'app-statistics',
@@ -22,6 +23,97 @@ import { FilterOptions, HighlightOptions } from '../../../../../../output-interf
     standalone: false
 })
 export class StatisticsComponent implements OnInit {
+  private readonly chartStyles = window.getComputedStyle(document.body);
+  private readonly chartBackgroundColor = this.chartStyles.getPropertyValue('background-color').trim();
+  private readonly chartTextColor = this.chartStyles.getPropertyValue('color').trim() || '#333333';
+  private readonly eChartColors = ['#7cb5ec', '#434348'];
+  private readonly eChartCountColor = this.eChartColors[0];
+  private readonly eChartHighlightColor = this.eChartColors[1];
+  private readonly eChartTitle = {
+    left: 'center',
+    textStyle: {
+      color: this.chartTextColor,
+      fontSize: 16,
+      fontWeight: 'bold'
+    }
+  };
+  private readonly eChartLegend = {
+    top: 36,
+    textStyle: {
+      color: this.chartTextColor
+    }
+  };
+  private readonly eChartXAxis = {
+    type: 'category' as const,
+    name: 'Erscheinungsjahr',
+    nameLocation: 'middle' as const,
+    nameGap: 36,
+    axisTick: {
+      alignWithLabel: true
+    },
+    axisLine: {
+      lineStyle: {
+        color: '#ccd6eb'
+      }
+    },
+    axisLabel: {
+      color: this.chartTextColor
+    },
+    nameTextStyle: {
+      color: this.chartTextColor
+    }
+  };
+  private readonly eChartYAxis = {
+    type: 'value' as const,
+    name: 'Anzahl',
+    nameLocation: 'middle' as const,
+    nameGap: 55,
+    min: 0,
+    minInterval: 1,
+    axisLabel: {
+      color: this.chartTextColor
+    },
+    nameTextStyle: {
+      color: this.chartTextColor
+    },
+    splitLine: {
+      lineStyle: {
+        color: '#e6e6e6'
+      }
+    }
+  };
+
+  eChartOptionsDefault: EChartsCoreOption = {
+    backgroundColor: this.chartBackgroundColor,
+    color: this.eChartColors,
+    animationDuration: 300,
+    title: this.eChartTitle,
+    legend: this.eChartLegend,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      top: 88,
+      right: 24,
+      bottom: 60,
+      left: 24,
+      containLabel: true
+    },
+    xAxis: this.eChartXAxis,
+    yAxis: this.eChartYAxis,
+    series: []
+  };
+  eChartOptions: EChartsCoreOption = {
+    ...this.eChartOptionsDefault,
+    title: {
+      ...this.eChartTitle,
+      text: 'Anzahl Publikationen nach Jahr'
+    },
+  };
+
   chartConstructor: ChartConstructorType = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
   chartOptionsDefault: Highcharts.Options = {
     chart: {
@@ -203,6 +295,7 @@ export class StatisticsComponent implements OnInit {
     let ob$ = this.statService.countPubByYear(this.filter, this.highlight).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
+        this.eChartOptions = this.createCountEChartOptions(data);
         this.chartOptions.series = [{
           name: 'Anzahl Publikationen',
           type: 'column',
@@ -284,6 +377,15 @@ export class StatisticsComponent implements OnInit {
 
   chooseYear(event) {
     this.router.navigateByUrl('statistics/' + event.point.category)
+  }
+
+  chooseEChartYear(event: { name?: string | number }) {
+    const year = Number(event.name);
+    if (!Number.isFinite(year)) {
+      return;
+    }
+
+    this.router.navigateByUrl('statistics/' + year);
   }
 
   action() {
@@ -392,5 +494,67 @@ export class StatisticsComponent implements OnInit {
 
   getLabel() {
     return '/Berichte'
+  }
+
+  private createCountEChartOptions(data: { pub_year: number, count: number, highlight?: number }[]): EChartsCoreOption {
+    const categories = data.map(entry => entry.pub_year.toString());
+    const totals = data.map(entry => entry.count);
+    const baseSeriesData = data.map(entry => Number.isFinite(entry.highlight) ? entry.count - entry.highlight : entry.count);
+    const hasHighlight = data.some(entry => Number.isFinite(entry.highlight));
+    const series = [];
+
+    if (hasHighlight) {
+      series.push({
+        name: 'Highlight',
+        type: 'bar',
+        stack: 'total',
+        itemStyle: {
+          color: this.eChartHighlightColor
+        },
+        emphasis: {
+          focus: 'series'
+        },
+        data: data.map(entry => Number.isFinite(entry.highlight) ? entry.highlight : 0),
+        label: {
+          show: false
+        }
+      });
+    }
+
+    series.push({
+      name: 'Anzahl Publikationen',
+      type: 'bar',
+      stack: 'total',
+      itemStyle: {
+        color: this.eChartCountColor
+      },
+      emphasis: {
+        focus: 'series'
+      },
+      data: baseSeriesData,
+      label: {
+        show: true,
+        position: 'top',
+        formatter: ({ dataIndex }: { dataIndex: number }) => `${totals[dataIndex]}`
+      }
+    });
+
+    return {
+      ...this.eChartOptionsDefault,
+      title: {
+        ...this.eChartTitle,
+        text: 'Anzahl Publikationen nach Jahr'
+      },
+      legend: {
+        ...this.eChartLegend,
+        data: ['Anzahl Publikationen', 'Highlight'],
+        show: hasHighlight
+      },
+      xAxis: {
+        ...this.eChartXAxis,
+        data: categories
+      },
+      series
+    };
   }
 }
