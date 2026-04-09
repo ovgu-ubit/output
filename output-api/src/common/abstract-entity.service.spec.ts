@@ -195,4 +195,23 @@ describe('AbstractEntityService', () => {
             });
         }
     });
+
+    it('maps non-unique integrity violations to INVALID_REQUEST instead of INTERNAL_ERROR', async () => {
+        repository.save.mockRejectedValue({
+            code: '23502',
+            message: 'null value in column "label" of relation "test_entity" violates not-null constraint',
+        });
+
+        try {
+            await service.save({ label: undefined });
+            fail('service.save should throw for integrity violations');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: 'null value in column "label" of relation "test_entity" violates not-null constraint',
+            });
+        }
+    });
 });

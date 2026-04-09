@@ -97,7 +97,7 @@ export function createPersistenceHttpException(error: unknown): HttpException {
         return createUniqueConstraintHttpException(message);
     }
 
-    if (typeof errorRecord?.constraint === 'string') {
+    if (isIntegrityConstraintViolation(dbCode) || typeof errorRecord?.constraint === 'string') {
         return createInvalidRequestHttpException(message);
     }
 
@@ -282,6 +282,10 @@ function defaultCodeForStatus(statusCode: number): ApiErrorCode {
 function getApiErrorCode(value: unknown): ApiErrorCode | null {
     if (typeof value !== 'string') return null;
     return Object.values(ApiErrorCode).includes(value as ApiErrorCode) ? value as ApiErrorCode : null;
+}
+
+function isIntegrityConstraintViolation(dbCode: string | undefined): boolean {
+    return typeof dbCode === 'string' && dbCode.startsWith('23');
 }
 
 function asRecord(value: unknown): MutableRecord | null {

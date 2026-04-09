@@ -6,6 +6,19 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MetaReducer, StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart, TreemapChart } from 'echarts/charts';
+import {
+  DatasetComponent,
+  GridComponent,
+  LegendComponent,
+  TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  TransformComponent,
+} from 'echarts/components';
+import { LabelLayout, UniversalTransition } from 'echarts/features';
+import { CanvasRenderer } from 'echarts/renderers';
 import { environment } from 'src/environments/environment';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -15,12 +28,28 @@ import { hydrationMetaReducer, viewConfigReducer } from './services/redux';
 import { SharedModule } from './shared/shared.module';
 import { TableModule } from './table/table.module';
 import { FormModule } from './form/form.module';
-import { provideHighcharts } from 'highcharts-angular';
 import { RuntimeConfigService } from './services/runtime-config.service';
 import { registerLocaleData } from '@angular/common';
 import localeDe from '@angular/common/locales/de';
 import { ApiErrorInterceptor } from './core/errors/api-error.interceptor';
+import { provideEchartsCore } from 'ngx-echarts';
 import 'moment/locale/de';
+
+echarts.use([
+    BarChart,
+    PieChart,
+    TreemapChart,
+    DatasetComponent,
+    GridComponent,
+    LegendComponent,
+    TitleComponent,
+    ToolboxComponent,
+    TooltipComponent,
+    TransformComponent,
+    LabelLayout,
+    UniversalTransition,
+    CanvasRenderer,
+]);
 
 registerLocaleData(localeDe);
 
@@ -57,17 +86,7 @@ export function initRuntimeConfig(rc: RuntimeConfigService) {
         { provide: AuthorizationService, useClass: environment.authorization_service },
         { provide: HTTP_INTERCEPTORS, useClass: ApiErrorInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi()),
-        provideHighcharts({
-            modules: () => {
-                return [
-                    import('highcharts/esm/modules/accessibility'),
-                    import('highcharts/esm/modules/exporting'),
-                    //import('highcharts/esm/themes/brand-light'),
-                    import('highcharts/esm/themes/grid-light'),
-                    //import('highcharts/esm/themes/high-contrast-light'),
-                ];
-            }
-        })
+        provideEchartsCore({ echarts }),
     ],
     bootstrap: [AppComponent]
 })

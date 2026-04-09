@@ -68,11 +68,11 @@ export class StatisticsService {
       })))
   }
 
-  locked(year: number, filterOptions?: FilterOptions) {
+  locked(year: number, costs = false, filterOptions?: FilterOptions) {
     return this.http.post<{ locked: boolean, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
       {
         year,
-        statistic: STATISTIC.COUNT,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
         group: [GROUP.LOCK],
         timeframe: TIMEFRAME.CURRENT_YEAR,
         filterOptions

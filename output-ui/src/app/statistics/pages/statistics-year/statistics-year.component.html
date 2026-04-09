@@ -11,6 +11,12 @@
     <button mat-raised-button class="primary-button" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
       wechseln</button>
   </div>
+  <div style="display:flex;flex-flow: row wrap;gap: 10px;">
+    <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'pie'"
+      [class.secondary-button]="this.chartDisplayMode !== 'pie'" (click)="setChartDisplayMode('pie')">Pie</button>
+    <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'treemap'"
+      [class.secondary-button]="this.chartDisplayMode !== 'treemap'" (click)="setChartDisplayMode('treemap')">Treemap</button>
+  </div>
   <mat-card [hidden]="this.hidden()">
     <mat-card-header>
       Filter aktiv
@@ -32,28 +38,10 @@
   
 </div>
 <div style="display: flex;flex-flow: row wrap;">
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsLocked"
-     class="chart" (chartInstance)="onChartInstance('locked', $event)"></highcharts-chart>
-
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions"
-     (chartInstance)="onChartInstance('corresponding',$event)"
-     class="chart"></highcharts-chart>
-
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsInstitute"
-     (chartInstance)="onChartInstance('institute',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsOACat"
-     (chartInstance)="onChartInstance('oa_cat',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPublisher"
-     (chartInstance)="onChartInstance('publisher',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPubType"
-     (chartInstance)="onChartInstance('pub_type',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsContract"
-     (chartInstance)="onChartInstance('contract',$event)"
-     class="chart"></highcharts-chart>
-
+  <div *ngFor="let chart of charts" echarts [options]="chart.options"
+     (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged(chart.legendSeriesName, $event)"
+     class="chart"></div>
 </div>
 </div>

@@ -22,6 +22,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgxEchartsModule } from 'ngx-echarts';
 import { BreadcrumpComponent } from './breadcrump/breadcrump.component';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
 import { SelectEntityComponent } from './select-entity/select-entity.component';
@@ -69,6 +70,7 @@ const DECLARATIONS = [
     ReactiveFormsModule,
     ...MATERIAL_MODULES,
     NgbModule,
+    NgxEchartsModule,
     RouterModule
   ],
   exports: [
@@ -77,6 +79,7 @@ const DECLARATIONS = [
     ReactiveFormsModule,
     ...MATERIAL_MODULES,
     NgbModule,
+    NgxEchartsModule,
     ...DECLARATIONS,
   ],
 })
