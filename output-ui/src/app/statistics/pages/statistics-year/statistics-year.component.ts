@@ -425,7 +425,6 @@ export class StatisticsYearComponent implements OnInit {
       },
       legend: {
         ...this.eChartLegend,
-        data: data.map(entry => entry.name),
         show: data.length > 0
       },
       tooltip: {
@@ -441,6 +440,7 @@ export class StatisticsYearComponent implements OnInit {
       series: [{
         name: seriesName,
         type: 'pie',
+        colorBy: 'data',
         radius: '44%',
         center: ['50%', '36%'],
         minShowLabelAngle: 3,
