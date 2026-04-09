@@ -153,11 +153,11 @@
 <div echarts [options]="eChartOptions" (chartClick)="chooseEChartYear($event)"
   style="width: 100%; height: 400px; display: block;"></div>
 
-<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions" (chartInstance)="onChartInstance('count',$event)"
-   style="width: 100%; height: 400px; display: block;"></highcharts-chart>
+<div echarts [options]="eChartOptions1" (chartClick)="chooseEChartYear($event)"
+  style="width: 100%; height: 400px; display: block;"></div>
 
-<highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions1" (chartInstance)="onChartInstance('oa_cat',$event)"
-  style="width: 100%; height: 400px; display: block;"></highcharts-chart>
+<div echarts [options]="eChartOptions2" (chartClick)="chooseEChartYear($event)"
+  style="width: 100%; height: 400px; display: block;"></div>
 
 <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions2" (chartInstance)="onChartInstance('pub_type',$event)"
   style="width: 100%; height: 400px; display: block;"></highcharts-chart>
