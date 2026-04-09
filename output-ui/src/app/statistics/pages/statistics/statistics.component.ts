@@ -15,6 +15,12 @@ import { Contract, Institute, OA_Category, PublicationType, Publisher } from '..
 import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
 import { EChartsCoreOption } from 'echarts/core';
 
+type PercentageSeriesPoint = {
+  value: number,
+  count: number,
+  percentage: number
+};
+
 @Component({
     selector: 'app-statistics',
     templateUrl: './statistics.component.html',
@@ -161,7 +167,6 @@ export class StatisticsComponent implements OnInit {
   filtered_contracts1: Observable<Contract[]>;
   filter: FilterOptions = {};
   highlight: HighlightOptions = {};
-  highlightName: string;
 
   @ViewChild('select_oa') selectOA: MatSelect;
   @ViewChild('select_PubType') selectPubType: MatSelect;
@@ -249,10 +254,6 @@ export class StatisticsComponent implements OnInit {
         this.eChartOptions2 = this.createPublicationTypeEChartOptions(data);
       })))
     return ob$.pipe(catchError((e, c) => { return of(console.log(e.message)) }));
-  }
-
-  chooseYear(event) {
-    this.router.navigateByUrl('statistics/' + event.point.category)
   }
 
   chooseEChartYear(event: { name?: string | number }) {
@@ -435,84 +436,30 @@ export class StatisticsComponent implements OnInit {
   }
 
   private createOACategoryEChartOptions(data: { pub_year: number, count: number, oa_category: string }[]): EChartsCoreOption {
-    const years = [...new Set(data.map(entry => entry.pub_year))].sort((a, b) => a - b);
-    const categories = years.map(year => year.toString());
-    const totalsByYear = new Map<number, number>();
-
-    for (const year of years) {
-      totalsByYear.set(
-        year,
-        data.filter(entry => entry.pub_year === year).reduce((sum, entry) => sum + Number(entry.count), 0)
-      );
-    }
-
-    const oaCategories = [...new Set(data.map(entry => entry.oa_category))]
-      .sort((left, right) => this.compareOACategories(left, right));
-
-    const series = oaCategories.map(category => ({
-      name: category,
-      type: 'bar',
-      stack: 'total',
-      itemStyle: {
-        color: this.getOACategoryColor(category)
-      },
-      emphasis: {
-        focus: 'series'
-      },
-      label: {
-        show: true,
-        position: 'inside',
-        formatter: ({ data }: { data?: { count?: number } }) => data?.count ? `${data.count}` : ''
-      },
-      data: years.map(year => {
-        const entry = data.find(item => item.pub_year === year && item.oa_category === category);
-        const count = Number(entry?.count ?? 0);
-        const total = totalsByYear.get(year) ?? 0;
-        const percentage = total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0;
-
-        return {
-          value: percentage,
-          count,
-          percentage
-        };
-      })
-    }));
-
-    return {
-      ...this.eChartOptionsDefault,
-      title: {
-        ...this.eChartTitle,
-        text: 'Anteil Publikationen nach Jahr und OA-Kategorie'
-      },
-      legend: {
-        ...this.eChartLegend,
-        data: oaCategories,
-        show: oaCategories.length > 0
-      },
-      tooltip: {
-        trigger: 'item',
-        formatter: (params: {
-          seriesName: string,
-          data?: { count?: number, percentage?: number }
-        }) => {
-          const count = params.data?.count ?? 0;
-          const percentage = params.data?.percentage ?? 0;
-          return `<span style="color:${this.getOACategoryColor(params.seriesName)}">\u25CF</span> ${params.seriesName}: <b>${count}</b> (${percentage.toFixed(1)}%)`;
-        }
-      },
-      xAxis: {
-        ...this.eChartXAxis,
-        data: categories
-      },
-      yAxis: {
-        ...this.eChartYAxis,
-        max: 100
-      },
-      series
-    };
+    return this.createPercentageStackedEChartOptions(
+      'Anteil Publikationen nach Jahr und OA-Kategorie',
+      data,
+      entry => entry.oa_category,
+      (left, right) => this.compareOACategories(left, right),
+      category => this.getOACategoryColor(category)
+    );
   }
 
   private createPublicationTypeEChartOptions(data: { pub_year: number, count: number, pub_type: string }[]): EChartsCoreOption {
+    return this.createPercentageStackedEChartOptions(
+      'Anteil Publikationen nach Jahr und Publikationsart',
+      data,
+      entry => entry.pub_type
+    );
+  }
+
+  private createPercentageStackedEChartOptions<T extends { pub_year: number, count: number }>(
+    title: string,
+    data: T[],
+    getSeriesName: (entry: T) => string,
+    sortSeriesNames?: (left: string, right: string) => number,
+    getColor?: (seriesName: string) => string | undefined
+  ): EChartsCoreOption {
     const years = [...new Set(data.map(entry => entry.pub_year))].sort((a, b) => a - b);
     const categories = years.map(year => year.toString());
     const totalsByYear = new Map<number, number>();
@@ -524,22 +471,26 @@ export class StatisticsComponent implements OnInit {
       );
     }
 
-    const publicationTypes = [...new Set(data.map(entry => entry.pub_type))];
+    const seriesNames = [...new Set(data.map(entry => getSeriesName(entry)))];
+    if (sortSeriesNames) {
+      seriesNames.sort(sortSeriesNames);
+    }
 
-    const series = publicationTypes.map(publicationType => ({
-      name: publicationType,
+    const series = seriesNames.map(seriesName => ({
+      name: seriesName,
       type: 'bar',
       stack: 'total',
+      itemStyle: getColor?.(seriesName) ? { color: getColor(seriesName) } : undefined,
       emphasis: {
         focus: 'series'
       },
       label: {
         show: true,
         position: 'inside',
-        formatter: ({ data }: { data?: { count?: number } }) => data?.count ? `${data.count}` : ''
+        formatter: ({ data: point }: { data?: PercentageSeriesPoint }) => point?.count ? `${point.count}` : ''
       },
       data: years.map(year => {
-        const entry = data.find(item => item.pub_year === year && item.pub_type === publicationType);
+        const entry = data.find(item => item.pub_year === year && getSeriesName(item) === seriesName);
         const count = Number(entry?.count ?? 0);
         const total = totalsByYear.get(year) ?? 0;
         const percentage = total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0;
@@ -556,23 +507,23 @@ export class StatisticsComponent implements OnInit {
       ...this.eChartOptionsDefault,
       title: {
         ...this.eChartTitle,
-        text: 'Anteil Publikationen nach Jahr und Publikationsart'
+        text: title
       },
       legend: {
         ...this.eChartLegend,
-        data: publicationTypes,
-        show: publicationTypes.length > 0
+        data: seriesNames,
+        show: seriesNames.length > 0
       },
       tooltip: {
         trigger: 'item',
         formatter: (params: {
           seriesName: string,
           color?: string,
-          data?: { count?: number, percentage?: number }
+          data?: PercentageSeriesPoint
         }) => {
           const count = params.data?.count ?? 0;
           const percentage = params.data?.percentage ?? 0;
-          const color = params.color ?? this.chartTextColor;
+          const color = getColor?.(params.seriesName) ?? params.color ?? this.chartTextColor;
           return `<span style="color:${color}">\u25CF</span> ${params.seriesName}: <b>${count}</b> (${percentage.toFixed(1)}%)`;
         }
       },

@@ -38,34 +38,10 @@
   
 </div>
 <div style="display: flex;flex-flow: row wrap;">
-  <div echarts [options]="eChartOptionsLocked" (chartClick)="onChartClick($event)"
+  <div *ngFor="let chart of charts" echarts [options]="chart.options"
+     (chartClick)="onChartClick($event)"
      (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged(chart.legendSeriesName, $event)"
      class="chart"></div>
-
-  <div echarts [options]="eChartOptions" (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     class="chart"></div>
-
-  <div echarts [options]="eChartOptionsInstitute" (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     (chartLegendSelectChanged)="onChartLegendSelectChanged('Institut', $event)"
-     class="chart"></div>
-  <div echarts [options]="eChartOptionsOACat" (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     (chartLegendSelectChanged)="onChartLegendSelectChanged('OA-Kategorie', $event)"
-     class="chart"></div>
-  <div echarts [options]="eChartOptionsPublisher" (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     (chartLegendSelectChanged)="onChartLegendSelectChanged('Verlag', $event)"
-     class="chart"></div>
-  <div echarts [options]="eChartOptionsPubType" (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     (chartLegendSelectChanged)="onChartLegendSelectChanged('Publikationsart', $event)"
-     class="chart"></div>
-  <div echarts [options]="eChartOptionsContract" (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     (chartLegendSelectChanged)="onChartLegendSelectChanged('Vertrag', $event)"
-     class="chart"></div>
-
 </div>
 </div>

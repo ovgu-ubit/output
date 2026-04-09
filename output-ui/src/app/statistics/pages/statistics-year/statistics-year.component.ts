@@ -16,6 +16,25 @@ type ChartDatum = {
   }
 };
 
+type LookupOption = {
+  id: number,
+  label: string
+};
+
+type FilterChip = {
+  text: string,
+  key: keyof FilterOptions,
+  id?: number | null
+};
+
+type ChartBinding = {
+  options: EChartsCoreOption,
+  legendSeriesName?: string
+};
+
+type IncludedIdFilterKey = 'instituteId' | 'oaCatId' | 'contractId' | 'pubTypeId' | 'publisherId';
+type ExcludedIdFilterKey = 'notInstituteId' | 'notOaCatId' | 'notContractId' | 'notPubTypeId' | 'notPublisherId';
+
 type ChartClickEvent = {
   seriesName?: string,
   name?: string
@@ -160,6 +179,7 @@ export class StatisticsYearComponent implements OnInit {
     }
   };
 
+  charts: ChartBinding[] = [];
   chartDisplayMode: ChartDisplayMode = 'pie';
   year: number;
   costs = false;
@@ -172,19 +192,19 @@ export class StatisticsYearComponent implements OnInit {
   publicationTypeData: ChartDatum[] = [];
   contractData: ChartDatum[] = [];
 
-  institutes: { id: number, label: string }[] = [];
-  oa_cats: { id: number, label: string }[] = [];
-  publisher: { id: number, label: string }[] = [];
-  constracts: { id: number, label: string }[] = [];
-  pub_types: { id: number, label: string }[] = [];
+  institutes: LookupOption[] = [];
+  oaCategories: LookupOption[] = [];
+  publishers: LookupOption[] = [];
+  contracts: LookupOption[] = [];
+  publicationTypes: LookupOption[] = [];
 
   filter: FilterOptions = {};
-  filterChips: { text: string, key: string, id?: number }[] = [];
+  filterChips: FilterChip[] = [];
 
   constructor(private route: ActivatedRoute, private statService: StatisticsService, private _snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
-    this.year = parseInt(this.route.snapshot.paramMap.get('year'));
+    this.year = Number(this.route.snapshot.paramMap.get('year'));
     this.loadData(this.costs);
   }
 
@@ -220,7 +240,7 @@ export class StatisticsYearComponent implements OnInit {
 
     ob$ = merge(ob$, this.statService.oaCat(this.year, costs, this.filter).pipe(map(
       data => {
-        this.oa_cats = data.map(entry => ({ id: entry.id, label: entry.oa_cat }));
+        this.oaCategories = data.map(entry => ({ id: entry.id, label: entry.oa_cat }));
         this.oaCategoryData = this.sortChartData(data.map(entry => {
           const color = this.getOACategoryColor(entry.oa_cat);
 
@@ -235,7 +255,7 @@ export class StatisticsYearComponent implements OnInit {
 
     ob$ = merge(ob$, this.statService.publisher(this.year, costs, this.filter).pipe(map(
       data => {
-        this.publisher = data.map(entry => ({ id: entry.id, label: entry.publisher }));
+        this.publishers = data.map(entry => ({ id: entry.id, label: entry.publisher }));
         this.publisherData = this.sortChartData(data.map(entry => ({
           name: entry.publisher ? entry.publisher : 'Unbekannt',
           value: Number(entry.value)
@@ -245,7 +265,7 @@ export class StatisticsYearComponent implements OnInit {
 
     ob$ = merge(ob$, this.statService.pub_type(this.year, costs, this.filter).pipe(map(
       data => {
-        this.pub_types = data.map(entry => ({ id: entry.id, label: entry.pub_type }));
+        this.publicationTypes = data.map(entry => ({ id: entry.id, label: entry.pub_type }));
         this.publicationTypeData = this.sortChartData(data.map(entry => ({
           name: entry.pub_type ? entry.pub_type : 'Unbekannt',
           value: Number(entry.value)
@@ -255,7 +275,7 @@ export class StatisticsYearComponent implements OnInit {
 
     ob$ = merge(ob$, this.statService.contract(this.year, costs, this.filter).pipe(map(
       data => {
-        this.constracts = data.map(entry => ({ id: entry.id, label: entry.contract }));
+        this.contracts = data.map(entry => ({ id: entry.id, label: entry.contract }));
         this.contractData = this.sortChartData(data.map(entry => ({
           name: entry.contract ? entry.contract : 'Unbekannt',
           value: Number(entry.value)
@@ -302,8 +322,8 @@ export class StatisticsYearComponent implements OnInit {
     this.applyAntiFilter(event.seriesName, event.name);
   }
 
-  onChartLegendSelectChanged(seriesName: string, event: ChartLegendSelectChangedEvent) {
-    if (this.chartDisplayMode !== 'pie') {
+  onChartLegendSelectChanged(seriesName: string | undefined, event: ChartLegendSelectChangedEvent) {
+    if (!seriesName || this.chartDisplayMode !== 'pie') {
       return;
     }
 
@@ -322,101 +342,37 @@ export class StatisticsYearComponent implements OnInit {
     return '/Berichte/' + this.year;
   }
 
-  applyFilter(series_name: string, cat_name: string) {
-    if (series_name === 'Art' && cat_name === 'sonstige') return;
-    let key = undefined;
-    if (series_name === 'Art') {
-      if (cat_name === 'Corresponding') this.filter = { ...this.filter, corresponding: true };
-      else if (cat_name === 'Keine Person der Einrichtung') this.filter = { ...this.filter, corresponding: false };
-      else return;
-      key = 'corresponding';
+  applyFilter(seriesName: string, categoryName: string) {
+    if (seriesName === 'Art' && categoryName === 'sonstige') {
+      return;
     }
-    if (series_name === 'Gesperrt') {
-      if (cat_name === 'Gesperrt') this.filter = { ...this.filter, locked: true };
-      else this.filter = { ...this.filter, locked: false };
-      key = 'locked';
+
+    const chip = this.applyBooleanFilter(seriesName, categoryName)
+      ?? this.applyIncludedLookupFilter(seriesName, categoryName);
+
+    if (!chip || !this.upsertFilterChip(chip)) {
+      return;
     }
-    if (series_name === 'Institut') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, instituteId: [null] };
-      else this.filter = { ...this.filter, instituteId: [this.institutes.find(e => e.label === cat_name)?.id] };
-      key = 'instituteId';
-    }
-    if (series_name === 'OA-Kategorie') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, oaCatId: [null] };
-      else this.filter = { ...this.filter, oaCatId: [this.oa_cats.find(e => e.label === cat_name)?.id] };
-      key = 'oaCatId';
-    }
-    if (series_name === 'Vertrag') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, contractId: [null] };
-      else this.filter = { ...this.filter, contractId: [this.constracts.find(e => e.label === cat_name)?.id] };
-      key = 'contractId';
-    }
-    if (series_name === 'Publikationsart') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, pubTypeId: [null] };
-      else this.filter = { ...this.filter, pubTypeId: [this.pub_types.find(e => e.label === cat_name)?.id] };
-      key = 'pubTypeId';
-    }
-    if (series_name === 'Verlag') {
-      if (cat_name === 'Unbekannt') this.filter = { ...this.filter, publisherId: [null] };
-      else this.filter = { ...this.filter, publisherId: [this.publisher.find(e => e.label === cat_name)?.id] };
-      key = 'publisherId';
-    }
-    this.filterChips.push({ text: series_name + ': ' + cat_name, key });
+
     this.loadData(this.costs);
   }
 
-  applyAntiFilter(series_name: string, cat_name: string) {
-    if (series_name === 'Art' && cat_name === 'sonstige') return;
-    if (series_name === 'Gesperrt') return;
-    let key = undefined;
-    let id = undefined;
-    if (series_name === 'Art') {
-      if (cat_name.toLowerCase() === 'corresponding') this.filter = { ...this.filter, corresponding: false };
-      else if (cat_name === 'Keine Person der Einrichtung') this.filter = { ...this.filter, corresponding: true };
-      else return;
-      key = 'corresponding';
+  applyAntiFilter(seriesName: string, categoryName: string) {
+    if (seriesName === 'Art' && categoryName === 'sonstige') {
+      return;
     }
-    if (series_name === 'Institut') {
-      const notInstituteId = this.filter?.notInstituteId ? this.filter.notInstituteId : [];
-      if (cat_name === 'Unbekannt') id = null;
-      else id = this.institutes.find(e => e.label === cat_name)?.id;
-      notInstituteId.push(id);
-      this.filter.notInstituteId = notInstituteId;
-      key = 'notInstituteId';
+
+    if (seriesName === 'Gesperrt') {
+      return;
     }
-    if (series_name === 'OA-Kategorie') {
-      const notOaCatId = this.filter?.notOaCatId ? this.filter.notOaCatId : [];
-      if (cat_name === 'Unbekannt') id = null;
-      else id = this.oa_cats.find(e => e.label === cat_name)?.id;
-      notOaCatId.push(id);
-      this.filter.notOaCatId = notOaCatId;
-      key = 'notOaCatId';
+
+    const chip = this.applyBooleanAntiFilter(seriesName, categoryName)
+      ?? this.applyExcludedLookupFilter(seriesName, categoryName);
+
+    if (!chip || !this.upsertFilterChip(chip)) {
+      return;
     }
-    if (series_name === 'Vertrag') {
-      const notContractId = this.filter?.notContractId ? this.filter.notContractId : [];
-      if (cat_name === 'Unbekannt') id = null;
-      else id = this.constracts.find(e => e.label === cat_name)?.id;
-      notContractId.push(id);
-      this.filter.notContractId = notContractId;
-      key = 'notContractId';
-    }
-    if (series_name === 'Publikationsart') {
-      const notPubTypeId = this.filter?.notPubTypeId ? this.filter.notPubTypeId : [];
-      if (cat_name === 'Unbekannt') id = null;
-      else id = this.pub_types.find(e => e.label === cat_name)?.id;
-      notPubTypeId.push(id);
-      this.filter.notPubTypeId = notPubTypeId;
-      key = 'notPubTypeId';
-    }
-    if (series_name === 'Verlag') {
-      const notPublisherId = this.filter?.notPublisherId ? this.filter.notPublisherId : [];
-      if (cat_name === 'Unbekannt') id = null;
-      else id = this.publisher.find(e => e.label === cat_name)?.id;
-      notPublisherId.push(id);
-      this.filter.notPublisherId = notPublisherId;
-      key = 'notPublisherId';
-    }
-    this.filterChips.push({ text: series_name + ': !' + cat_name, key, id });
+
     this.loadData(this.costs);
   }
 
@@ -430,16 +386,193 @@ export class StatisticsYearComponent implements OnInit {
     this.loadData(this.costs);
   }
 
-  removeFilter(elem: { text: string, key: string, id?: number }) {
-    if (elem.key.includes('not')) {
-      this.filter[elem.key] = this.filter[elem.key].filter(e => e !== elem.id);
-      this.filterChips = this.filterChips.filter(e => !(e.key === elem.key && e.id === elem.id));
+  removeFilter(elem: FilterChip) {
+    if (elem.key.toString().startsWith('not')) {
+      const remainingIds = ((this.filter[elem.key] as (number | null)[] | undefined) ?? [])
+        .filter(id => id !== elem.id);
+
+      if (remainingIds.length > 0) {
+        this.filter = { ...this.filter, [elem.key]: remainingIds } as FilterOptions;
+      }
+      else {
+        this.clearFilterKey(elem.key);
+      }
+
+      this.filterChips = this.filterChips.filter(chip => !(chip.key === elem.key && chip.id === elem.id));
+    } else {
+      this.clearFilterKey(elem.key);
+      this.filterChips = this.filterChips.filter(chip => chip.key !== elem.key);
     }
-    else {
-      delete this.filter[elem.key];
-      this.filterChips = this.filterChips.filter(e => e.key !== elem.key);
-    }
+
     this.loadData(this.costs);
+  }
+
+  private applyBooleanFilter(seriesName: string, categoryName: string): FilterChip | undefined {
+    if (seriesName === 'Art') {
+      if (categoryName === 'Corresponding') {
+        this.filter = { ...this.filter, corresponding: true };
+      } else if (categoryName === 'Keine Person der Einrichtung') {
+        this.filter = { ...this.filter, corresponding: false };
+      } else {
+        return undefined;
+      }
+
+      return { text: `${seriesName}: ${categoryName}`, key: 'corresponding' };
+    }
+
+    if (seriesName === 'Gesperrt') {
+      this.filter = { ...this.filter, locked: categoryName === 'Gesperrt' };
+      return { text: `${seriesName}: ${categoryName}`, key: 'locked' };
+    }
+
+    return undefined;
+  }
+
+  private applyBooleanAntiFilter(seriesName: string, categoryName: string): FilterChip | undefined {
+    if (seriesName !== 'Art') {
+      return undefined;
+    }
+
+    if (categoryName.toLowerCase() === 'corresponding') {
+      this.filter = { ...this.filter, corresponding: false };
+    } else if (categoryName === 'Keine Person der Einrichtung') {
+      this.filter = { ...this.filter, corresponding: true };
+    } else {
+      return undefined;
+    }
+
+    return { text: `${seriesName}: !${categoryName}`, key: 'corresponding' };
+  }
+
+  private applyIncludedLookupFilter(seriesName: string, categoryName: string): FilterChip | undefined {
+    const key = this.getIncludedIdFilterKey(seriesName);
+    const lookupOptions = this.getLookupOptions(seriesName);
+    const id = this.findLookupId(lookupOptions, categoryName);
+
+    if (!key || !lookupOptions || (categoryName !== 'Unbekannt' && id === undefined)) {
+      return undefined;
+    }
+
+    this.filter = { ...this.filter, [key]: [id ?? null] } as FilterOptions;
+    return { text: `${seriesName}: ${categoryName}`, key };
+  }
+
+  private applyExcludedLookupFilter(seriesName: string, categoryName: string): FilterChip | undefined {
+    const key = this.getExcludedIdFilterKey(seriesName);
+    const lookupOptions = this.getLookupOptions(seriesName);
+    const id = this.findLookupId(lookupOptions, categoryName);
+
+    if (!key || !lookupOptions || (categoryName !== 'Unbekannt' && id === undefined)) {
+      return undefined;
+    }
+
+    const currentIds = ((this.filter[key] as (number | null)[] | undefined) ?? []);
+    if (currentIds.includes(id ?? null)) {
+      return undefined;
+    }
+
+    this.filter = { ...this.filter, [key]: [...currentIds, id ?? null] } as FilterOptions;
+    return { text: `${seriesName}: !${categoryName}`, key, id: id ?? null };
+  }
+
+  private getLookupOptions(seriesName: string): LookupOption[] | undefined {
+    if (seriesName === 'Institut') {
+      return this.institutes;
+    }
+
+    if (seriesName === 'OA-Kategorie') {
+      return this.oaCategories;
+    }
+
+    if (seriesName === 'Verlag') {
+      return this.publishers;
+    }
+
+    if (seriesName === 'Publikationsart') {
+      return this.publicationTypes;
+    }
+
+    if (seriesName === 'Vertrag') {
+      return this.contracts;
+    }
+
+    return undefined;
+  }
+
+  private getIncludedIdFilterKey(seriesName: string): IncludedIdFilterKey | undefined {
+    if (seriesName === 'Institut') {
+      return 'instituteId';
+    }
+
+    if (seriesName === 'OA-Kategorie') {
+      return 'oaCatId';
+    }
+
+    if (seriesName === 'Verlag') {
+      return 'publisherId';
+    }
+
+    if (seriesName === 'Publikationsart') {
+      return 'pubTypeId';
+    }
+
+    if (seriesName === 'Vertrag') {
+      return 'contractId';
+    }
+
+    return undefined;
+  }
+
+  private getExcludedIdFilterKey(seriesName: string): ExcludedIdFilterKey | undefined {
+    if (seriesName === 'Institut') {
+      return 'notInstituteId';
+    }
+
+    if (seriesName === 'OA-Kategorie') {
+      return 'notOaCatId';
+    }
+
+    if (seriesName === 'Verlag') {
+      return 'notPublisherId';
+    }
+
+    if (seriesName === 'Publikationsart') {
+      return 'notPubTypeId';
+    }
+
+    if (seriesName === 'Vertrag') {
+      return 'notContractId';
+    }
+
+    return undefined;
+  }
+
+  private findLookupId(lookupOptions: LookupOption[] | undefined, categoryName: string): number | null | undefined {
+    if (categoryName === 'Unbekannt') {
+      return null;
+    }
+
+    return lookupOptions?.find(option => option.label === categoryName)?.id;
+  }
+
+  private upsertFilterChip(chip: FilterChip): boolean {
+    if (chip.key.toString().startsWith('not')) {
+      if (this.filterChips.some(existing => existing.key === chip.key && existing.id === chip.id)) {
+        return false;
+      }
+
+      this.filterChips = [...this.filterChips, chip];
+      return true;
+    }
+
+    this.filterChips = [...this.filterChips.filter(existing => existing.key !== chip.key), chip];
+    return true;
+  }
+
+  private clearFilterKey(key: keyof FilterOptions) {
+    const nextFilter = { ...this.filter };
+    delete nextFilter[key];
+    this.filter = nextFilter;
   }
 
   private refreshChartOptions() {
@@ -452,6 +585,15 @@ export class StatisticsYearComponent implements OnInit {
     this.eChartOptionsPublisher = this.createDistributionEChartOptions('Anteil Verlage', 'Verlag', this.publisherData, valueSuffix);
     this.eChartOptionsPubType = this.createDistributionEChartOptions('Anteil Publikationsarten', 'Publikationsart', this.publicationTypeData, valueSuffix);
     this.eChartOptionsContract = this.createDistributionEChartOptions('Anteil Verträge', 'Vertrag', this.contractData, valueSuffix);
+    this.charts = [
+      { options: this.eChartOptionsLocked },
+      { options: this.eChartOptions },
+      { options: this.eChartOptionsInstitute, legendSeriesName: 'Institut' },
+      { options: this.eChartOptionsOACat, legendSeriesName: 'OA-Kategorie' },
+      { options: this.eChartOptionsPublisher, legendSeriesName: 'Verlag' },
+      { options: this.eChartOptionsPubType, legendSeriesName: 'Publikationsart' },
+      { options: this.eChartOptionsContract, legendSeriesName: 'Vertrag' }
+    ];
   }
 
   private createDistributionEChartOptions(title: string, seriesName: string, data: ChartDatum[], valueSuffix = ''): EChartsCoreOption {
