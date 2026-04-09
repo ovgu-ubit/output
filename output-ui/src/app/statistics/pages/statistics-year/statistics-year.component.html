@@ -11,6 +11,12 @@
     <button mat-raised-button class="primary-button" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
       wechseln</button>
   </div>
+  <div style="display:flex;flex-flow: row wrap;gap: 10px;">
+    <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'pie'"
+      [class.secondary-button]="this.chartDisplayMode !== 'pie'" (click)="setChartDisplayMode('pie')">Pie</button>
+    <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'treemap'"
+      [class.secondary-button]="this.chartDisplayMode !== 'treemap'" (click)="setChartDisplayMode('treemap')">Treemap</button>
+  </div>
   <mat-card [hidden]="this.hidden()">
     <mat-card-header>
       Filter aktiv
@@ -32,26 +38,33 @@
   
 </div>
 <div style="display: flex;flex-flow: row wrap;">
-  <div echarts [options]="eChartOptionsLocked" (chartClick)="onPieChartClick($event)"
+  <div echarts [options]="eChartOptionsLocked" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
      class="chart"></div>
 
-  <div echarts [options]="eChartOptions" (chartClick)="onPieChartClick($event)"
+  <div echarts [options]="eChartOptions" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
      class="chart"></div>
 
-  <div echarts [options]="eChartOptionsInstitute" (chartClick)="onPieChartClick($event)"
-     (chartLegendSelectChanged)="onPieLegendSelectChanged('Institut', $event)"
+  <div echarts [options]="eChartOptionsInstitute" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged('Institut', $event)"
      class="chart"></div>
-  <div echarts [options]="eChartOptionsOACat" (chartClick)="onPieChartClick($event)"
-     (chartLegendSelectChanged)="onPieLegendSelectChanged('OA-Kategorie', $event)"
+  <div echarts [options]="eChartOptionsOACat" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged('OA-Kategorie', $event)"
      class="chart"></div>
-  <div echarts [options]="eChartOptionsPublisher" (chartClick)="onPieChartClick($event)"
-     (chartLegendSelectChanged)="onPieLegendSelectChanged('Verlag', $event)"
+  <div echarts [options]="eChartOptionsPublisher" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged('Verlag', $event)"
      class="chart"></div>
-  <div echarts [options]="eChartOptionsPubType" (chartClick)="onPieChartClick($event)"
-     (chartLegendSelectChanged)="onPieLegendSelectChanged('Publikationsart', $event)"
+  <div echarts [options]="eChartOptionsPubType" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged('Publikationsart', $event)"
      class="chart"></div>
-  <div echarts [options]="eChartOptionsContract" (chartClick)="onPieChartClick($event)"
-     (chartLegendSelectChanged)="onPieLegendSelectChanged('Vertrag', $event)"
+  <div echarts [options]="eChartOptionsContract" (chartClick)="onChartClick($event)"
+     (chartContextMenu)="onChartContextMenu($event)"
+     (chartLegendSelectChanged)="onChartLegendSelectChanged('Vertrag', $event)"
      class="chart"></div>
 
 </div>

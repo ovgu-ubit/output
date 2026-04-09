@@ -7,7 +7,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MetaReducer, StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import * as echarts from 'echarts/core';
-import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts';
+import { BarChart, LineChart, PieChart, ScatterChart, TreemapChart } from 'echarts/charts';
 import {
   DatasetComponent,
   GridComponent,
@@ -41,6 +41,7 @@ echarts.use([
     LineChart,
     PieChart,
     ScatterChart,
+    TreemapChart,
     DatasetComponent,
     GridComponent,
     LegendComponent,

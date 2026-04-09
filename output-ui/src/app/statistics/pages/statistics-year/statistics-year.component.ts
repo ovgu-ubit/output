@@ -6,7 +6,9 @@ import { EChartsCoreOption } from 'echarts/core';
 import { StatisticsService } from 'src/app/statistics/statistics.service';
 import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
 
-type PieDatum = {
+type ChartDisplayMode = 'pie' | 'treemap';
+
+type ChartDatum = {
   name: string,
   value: number,
   itemStyle?: {
@@ -14,12 +16,21 @@ type PieDatum = {
   }
 };
 
-type PieClickEvent = {
+type ChartClickEvent = {
   seriesName?: string,
   name?: string
 };
 
-type PieLegendSelectChangedEvent = {
+type ChartContextMenuEvent = ChartClickEvent & {
+  event?: {
+    event?: {
+      preventDefault?: () => void,
+      stopPropagation?: () => void
+    }
+  }
+};
+
+type ChartLegendSelectChangedEvent = {
   name?: string,
   selected?: Record<string, boolean>
 };
@@ -33,6 +44,16 @@ type PieTooltipParams = {
   name?: string,
   value?: number,
   percent?: number,
+  color?: string
+};
+
+type TreemapLabelParams = {
+  name?: string
+};
+
+type TreemapTooltipParams = {
+  name?: string,
+  value?: number,
   color?: string
 };
 
@@ -139,8 +160,17 @@ export class StatisticsYearComponent implements OnInit {
     }
   };
 
+  chartDisplayMode: ChartDisplayMode = 'pie';
   year: number;
   costs = false;
+
+  correspondingData: ChartDatum[] = [];
+  lockedData: ChartDatum[] = [];
+  instituteData: ChartDatum[] = [];
+  oaCategoryData: ChartDatum[] = [];
+  publisherData: ChartDatum[] = [];
+  publicationTypeData: ChartDatum[] = [];
+  contractData: ChartDatum[] = [];
 
   institutes: { id: number, label: string }[] = [];
   oa_cats: { id: number, label: string }[] = [];
@@ -162,44 +192,36 @@ export class StatisticsYearComponent implements OnInit {
     this.costs = costs;
     let ob$: Observable<any> = this.statService.corresponding(this.year, costs, this.filter).pipe(map(
       data => {
-        const chartData = data.map(entry => ({
+        this.correspondingData = data.map(entry => ({
           name: entry.corresponding === null ? 'Unbekannt' : (entry.corresponding ? 'Corresponding' : 'Keine Person der Einrichtung'),
           value: Number(entry.value)
         }));
-
-        this.eChartOptions = this.createPieEChartOptions('Anteil Corresponding', 'Art', chartData);
+        this.refreshChartOptions();
       }));
 
     ob$ = merge(ob$, this.statService.locked(this.year, this.filter).pipe(map(
       data => {
-        const chartData = data.map(entry => ({
+        this.lockedData = data.map(entry => ({
           name: entry.locked ? 'Gesperrt' : 'Nicht gesperrt',
           value: Number(entry.value)
         }));
-
-        this.eChartOptionsLocked = this.createPieEChartOptions('Anteil gesperrt', 'Gesperrt', chartData);
+        this.refreshChartOptions();
       })));
 
     ob$ = merge(ob$, this.statService.institute(this.year, costs, this.filter).pipe(map(
       data => {
         this.institutes = data.map(entry => ({ id: entry.id, label: entry.institute }));
-        const chartData = this.sortPieData(data.map(entry => ({
+        this.instituteData = this.sortChartData(data.map(entry => ({
           name: entry.institute ? entry.institute : 'Unbekannt',
           value: Number(entry.value)
         })));
-
-        this.eChartOptionsInstitute = this.createPieEChartOptions(
-          'Anteil Institute (corresponding)',
-          'Institut',
-          chartData,
-          costs ? ' €' : ''
-        );
+        this.refreshChartOptions();
       })));
 
     ob$ = merge(ob$, this.statService.oaCat(this.year, costs, this.filter).pipe(map(
       data => {
         this.oa_cats = data.map(entry => ({ id: entry.id, label: entry.oa_cat }));
-        const chartData = this.sortPieData(data.map(entry => {
+        this.oaCategoryData = this.sortChartData(data.map(entry => {
           const color = this.getOACategoryColor(entry.oa_cat);
 
           return {
@@ -208,61 +230,37 @@ export class StatisticsYearComponent implements OnInit {
             itemStyle: color ? { color } : undefined
           };
         })).sort((left, right) => this.compareOACategories(left.name, right.name));
-
-        this.eChartOptionsOACat = this.createPieEChartOptions(
-          'Anteil OA-Kategorien',
-          'OA-Kategorie',
-          chartData,
-          costs ? ' €' : ''
-        );
+        this.refreshChartOptions();
       })));
 
     ob$ = merge(ob$, this.statService.publisher(this.year, costs, this.filter).pipe(map(
       data => {
         this.publisher = data.map(entry => ({ id: entry.id, label: entry.publisher }));
-        const chartData = this.sortPieData(data.map(entry => ({
+        this.publisherData = this.sortChartData(data.map(entry => ({
           name: entry.publisher ? entry.publisher : 'Unbekannt',
           value: Number(entry.value)
         })));
-
-        this.eChartOptionsPublisher = this.createPieEChartOptions(
-          'Anteil Verlage',
-          'Verlag',
-          chartData,
-          costs ? ' €' : ''
-        );
+        this.refreshChartOptions();
       })));
 
     ob$ = merge(ob$, this.statService.pub_type(this.year, costs, this.filter).pipe(map(
       data => {
         this.pub_types = data.map(entry => ({ id: entry.id, label: entry.pub_type }));
-        const chartData = this.sortPieData(data.map(entry => ({
+        this.publicationTypeData = this.sortChartData(data.map(entry => ({
           name: entry.pub_type ? entry.pub_type : 'Unbekannt',
           value: Number(entry.value)
         })));
-
-        this.eChartOptionsPubType = this.createPieEChartOptions(
-          'Anteil Publikationsarten',
-          'Publikationsart',
-          chartData,
-          costs ? ' €' : ''
-        );
+        this.refreshChartOptions();
       })));
 
     ob$ = merge(ob$, this.statService.contract(this.year, costs, this.filter).pipe(map(
       data => {
         this.constracts = data.map(entry => ({ id: entry.id, label: entry.contract }));
-        const chartData = this.sortPieData(data.map(entry => ({
+        this.contractData = this.sortChartData(data.map(entry => ({
           name: entry.contract ? entry.contract : 'Unbekannt',
           value: Number(entry.value)
         })));
-
-        this.eChartOptionsContract = this.createPieEChartOptions(
-          'Anteil Verträge',
-          'Vertrag',
-          chartData,
-          costs ? ' €' : ''
-        );
+        this.refreshChartOptions();
       })));
 
     ob$.subscribe({
@@ -276,7 +274,16 @@ export class StatisticsYearComponent implements OnInit {
     });
   }
 
-  onPieChartClick(event: PieClickEvent) {
+  setChartDisplayMode(mode: ChartDisplayMode) {
+    if (this.chartDisplayMode === mode) {
+      return;
+    }
+
+    this.chartDisplayMode = mode;
+    this.refreshChartOptions();
+  }
+
+  onChartClick(event: ChartClickEvent) {
     if (!event.seriesName || !event.name) {
       return;
     }
@@ -284,7 +291,22 @@ export class StatisticsYearComponent implements OnInit {
     this.applyFilter(event.seriesName, event.name);
   }
 
-  onPieLegendSelectChanged(seriesName: string, event: PieLegendSelectChangedEvent) {
+  onChartContextMenu(event: ChartContextMenuEvent) {
+    event.event?.event?.preventDefault?.();
+    event.event?.event?.stopPropagation?.();
+
+    if (!event.seriesName || !event.name) {
+      return;
+    }
+
+    this.applyAntiFilter(event.seriesName, event.name);
+  }
+
+  onChartLegendSelectChanged(seriesName: string, event: ChartLegendSelectChangedEvent) {
+    if (this.chartDisplayMode !== 'pie') {
+      return;
+    }
+
     if (!event.name || event.selected?.[event.name] !== false) {
       return;
     }
@@ -305,6 +327,8 @@ export class StatisticsYearComponent implements OnInit {
     let key = undefined;
     if (series_name === 'Art') {
       if (cat_name === 'Corresponding') this.filter = { ...this.filter, corresponding: true };
+      else if (cat_name === 'Keine Person der Einrichtung') this.filter = { ...this.filter, corresponding: false };
+      else return;
       key = 'corresponding';
     }
     if (series_name === 'Gesperrt') {
@@ -347,7 +371,9 @@ export class StatisticsYearComponent implements OnInit {
     let key = undefined;
     let id = undefined;
     if (series_name === 'Art') {
-      if (cat_name === 'corresponding') this.filter = { ...this.filter, corresponding: false };
+      if (cat_name.toLowerCase() === 'corresponding') this.filter = { ...this.filter, corresponding: false };
+      else if (cat_name === 'Keine Person der Einrichtung') this.filter = { ...this.filter, corresponding: true };
+      else return;
       key = 'corresponding';
     }
     if (series_name === 'Institut') {
@@ -416,7 +442,27 @@ export class StatisticsYearComponent implements OnInit {
     this.loadData(this.costs);
   }
 
-  private createPieEChartOptions(title: string, seriesName: string, data: PieDatum[], valueSuffix = ''): EChartsCoreOption {
+  private refreshChartOptions() {
+    const valueSuffix = this.costs ? ' €' : '';
+
+    this.eChartOptions = this.createDistributionEChartOptions('Anteil Corresponding', 'Art', this.correspondingData);
+    this.eChartOptionsLocked = this.createDistributionEChartOptions('Anteil gesperrt', 'Gesperrt', this.lockedData);
+    this.eChartOptionsInstitute = this.createDistributionEChartOptions('Anteil Institute (corresponding)', 'Institut', this.instituteData, valueSuffix);
+    this.eChartOptionsOACat = this.createDistributionEChartOptions('Anteil OA-Kategorien', 'OA-Kategorie', this.oaCategoryData, valueSuffix);
+    this.eChartOptionsPublisher = this.createDistributionEChartOptions('Anteil Verlage', 'Verlag', this.publisherData, valueSuffix);
+    this.eChartOptionsPubType = this.createDistributionEChartOptions('Anteil Publikationsarten', 'Publikationsart', this.publicationTypeData, valueSuffix);
+    this.eChartOptionsContract = this.createDistributionEChartOptions('Anteil Verträge', 'Vertrag', this.contractData, valueSuffix);
+  }
+
+  private createDistributionEChartOptions(title: string, seriesName: string, data: ChartDatum[], valueSuffix = ''): EChartsCoreOption {
+    if (this.chartDisplayMode === 'treemap') {
+      return this.createTreemapEChartOptions(title, seriesName, data, valueSuffix);
+    }
+
+    return this.createPieEChartOptions(title, seriesName, data, valueSuffix);
+  }
+
+  private createPieEChartOptions(title: string, seriesName: string, data: ChartDatum[], valueSuffix = ''): EChartsCoreOption {
     return {
       ...this.eChartOptionsDefault,
       title: {
@@ -430,7 +476,7 @@ export class StatisticsYearComponent implements OnInit {
       tooltip: {
         trigger: 'item',
         formatter: (params: PieTooltipParams) => {
-          const value = this.formatValue(params.value ?? 0);
+          const value = this.formatValue(Number(params.value ?? 0));
           const percentage = (params.percent ?? 0).toFixed(1);
           const color = params.color ?? this.chartTextColor;
 
@@ -472,7 +518,71 @@ export class StatisticsYearComponent implements OnInit {
     };
   }
 
-  private sortPieData(data: PieDatum[]): PieDatum[] {
+  private createTreemapEChartOptions(title: string, seriesName: string, data: ChartDatum[], valueSuffix = ''): EChartsCoreOption {
+    const total = data.reduce((sum, entry) => sum + entry.value, 0);
+
+    return {
+      ...this.eChartOptionsDefault,
+      title: {
+        ...this.eChartTitle,
+        text: title
+      },
+      legend: {
+        ...this.eChartLegend,
+        show: false
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: TreemapTooltipParams) => {
+          const value = Number(params.value ?? 0);
+          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+          const color = params.color ?? this.chartTextColor;
+
+          return `<span style="color:${color}">\u25CF</span> ${params.name}<br><b>${this.formatValue(value)}${valueSuffix}</b><br>${percentage} %`;
+        }
+      },
+      series: [{
+        name: seriesName,
+        type: 'treemap',
+        roam: false,
+        nodeClick: false,
+        sort: 'desc',
+        breadcrumb: {
+          show: false
+        },
+        top: 48,
+        right: 8,
+        bottom: 8,
+        left: 8,
+        label: {
+          show: true,
+          overflow: 'truncate',
+          formatter: (params: TreemapLabelParams) => params.name ?? ''
+        },
+        upperLabel: {
+          show: false
+        },
+        itemStyle: {
+          borderColor: this.chartBackgroundColor,
+          borderWidth: 2,
+          gapWidth: 2
+        },
+        emphasis: {
+          itemStyle: {
+            borderColor: this.chartTextColor
+          }
+        },
+        data: data.map(entry => ({
+          id: entry.name,
+          name: entry.name,
+          value: entry.value,
+          itemStyle: entry.itemStyle
+        }))
+      }]
+    };
+  }
+
+  private sortChartData(data: ChartDatum[]): ChartDatum[] {
     return data.sort((left, right) => {
       if (left.name === 'Unbekannt') return 1;
       if (right.name === 'Unbekannt') return -1;
