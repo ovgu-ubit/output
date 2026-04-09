@@ -32,28 +32,27 @@
   
 </div>
 <div style="display: flex;flex-flow: row wrap;">
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsLocked"
-     class="chart" (chartInstance)="onChartInstance('locked', $event)"></highcharts-chart>
+  <div echarts [options]="eChartOptionsLocked" (chartClick)="onPieChartClick($event)"
+     class="chart"></div>
 
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptions"
-     (chartInstance)="onChartInstance('corresponding',$event)"
-     class="chart"></highcharts-chart>
+  <div echarts [options]="eChartOptions" (chartClick)="onPieChartClick($event)"
+     class="chart"></div>
 
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsInstitute"
-     (chartInstance)="onChartInstance('institute',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsOACat"
-     (chartInstance)="onChartInstance('oa_cat',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPublisher"
-     (chartInstance)="onChartInstance('publisher',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsPubType"
-     (chartInstance)="onChartInstance('pub_type',$event)"
-     class="chart"></highcharts-chart>
-  <highcharts-chart [constructorType]="chartConstructor" [options]="chartOptionsContract"
-     (chartInstance)="onChartInstance('contract',$event)"
-     class="chart"></highcharts-chart>
+  <div echarts [options]="eChartOptionsInstitute" (chartClick)="onPieChartClick($event)"
+     (chartLegendSelectChanged)="onPieLegendSelectChanged('Institut', $event)"
+     class="chart"></div>
+  <div echarts [options]="eChartOptionsOACat" (chartClick)="onPieChartClick($event)"
+     (chartLegendSelectChanged)="onPieLegendSelectChanged('OA-Kategorie', $event)"
+     class="chart"></div>
+  <div echarts [options]="eChartOptionsPublisher" (chartClick)="onPieChartClick($event)"
+     (chartLegendSelectChanged)="onPieLegendSelectChanged('Verlag', $event)"
+     class="chart"></div>
+  <div echarts [options]="eChartOptionsPubType" (chartClick)="onPieChartClick($event)"
+     (chartLegendSelectChanged)="onPieLegendSelectChanged('Publikationsart', $event)"
+     class="chart"></div>
+  <div echarts [options]="eChartOptionsContract" (chartClick)="onPieChartClick($event)"
+     (chartLegendSelectChanged)="onPieLegendSelectChanged('Vertrag', $event)"
+     class="chart"></div>
 
 </div>
 </div>
