@@ -118,11 +118,35 @@ export class StatisticsYearComponent implements OnInit {
       color: this.chartTextColor
     }
   };
+  private readonly eChartToolbox = {
+    top: 8,
+    right: 12,
+    itemSize: 16,
+    iconStyle: {
+      borderColor: this.chartTextColor
+    },
+    emphasis: {
+      iconStyle: {
+        borderColor: this.chartTextColor
+      }
+    },
+    feature: {
+      saveAsImage: {
+        show: true,
+        title: 'Als Bild speichern',
+        pixelRatio: 2,
+        backgroundColor: this.chartBackgroundColor,
+        connectedBackgroundColor: this.chartBackgroundColor,
+        excludeComponents: ['toolbox']
+      }
+    }
+  };
 
   eChartOptionsDefault: EChartsCoreOption = {
     backgroundColor: this.chartBackgroundColor,
     animationDuration: 300,
     title: this.eChartTitle,
+    toolbox: this.eChartToolbox,
     tooltip: {
       trigger: 'item'
     },

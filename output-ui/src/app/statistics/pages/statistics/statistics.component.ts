@@ -56,6 +56,29 @@ export class StatisticsComponent implements OnInit {
       color: this.chartTextColor
     }
   };
+  private readonly eChartToolbox = {
+    top: 8,
+    right: 12,
+    itemSize: 16,
+    iconStyle: {
+      borderColor: this.chartTextColor
+    },
+    emphasis: {
+      iconStyle: {
+        borderColor: this.chartTextColor
+      }
+    },
+    feature: {
+      saveAsImage: {
+        show: true,
+        title: 'Als Bild speichern',
+        pixelRatio: 2,
+        backgroundColor: this.chartBackgroundColor,
+        connectedBackgroundColor: this.chartBackgroundColor,
+        excludeComponents: ['toolbox']
+      }
+    }
+  };
   private readonly eChartXAxis = {
     type: 'category' as const,
     name: 'Erscheinungsjahr',
@@ -101,6 +124,7 @@ export class StatisticsComponent implements OnInit {
     animationDuration: 300,
     title: this.eChartTitle,
     legend: this.eChartLegend,
+    toolbox: this.eChartToolbox,
     tooltip: {
       trigger: 'axis',
       axisPointer: {
