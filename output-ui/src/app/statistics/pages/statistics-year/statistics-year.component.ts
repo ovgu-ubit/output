@@ -243,7 +243,7 @@ export class StatisticsYearComponent implements OnInit {
         this.refreshChartOptions();
       }));
 
-    ob$ = merge(ob$, this.statService.locked(this.year, this.filter).pipe(map(
+    ob$ = merge(ob$, this.statService.locked(this.year, costs, this.filter).pipe(map(
       data => {
         this.lockedData = data.map(entry => ({
           name: entry.locked ? 'Gesperrt' : 'Nicht gesperrt',
@@ -602,8 +602,8 @@ export class StatisticsYearComponent implements OnInit {
   private refreshChartOptions() {
     const valueSuffix = this.costs ? ' €' : '';
 
-    this.eChartOptions = this.createDistributionEChartOptions('Anteil Corresponding', 'Art', this.correspondingData);
-    this.eChartOptionsLocked = this.createDistributionEChartOptions('Anteil gesperrt', 'Gesperrt', this.lockedData);
+    this.eChartOptions = this.createDistributionEChartOptions('Anteil Corresponding', 'Art', this.correspondingData, valueSuffix);
+    this.eChartOptionsLocked = this.createDistributionEChartOptions('Anteil gesperrt', 'Gesperrt', this.lockedData, valueSuffix);
     this.eChartOptionsInstitute = this.createDistributionEChartOptions('Anteil Institute (corresponding)', 'Institut', this.instituteData, valueSuffix);
     this.eChartOptionsOACat = this.createDistributionEChartOptions('Anteil OA-Kategorien', 'OA-Kategorie', this.oaCategoryData, valueSuffix);
     this.eChartOptionsPublisher = this.createDistributionEChartOptions('Anteil Verlage', 'Verlag', this.publisherData, valueSuffix);
