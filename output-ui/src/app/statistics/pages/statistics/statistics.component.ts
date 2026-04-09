@@ -4,7 +4,6 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { ChartConstructorType } from 'highcharts-angular';
 import { Observable, catchError, map, merge, of, startWith } from 'rxjs';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { InstituteService } from 'src/app/services/entities/institute.service';
@@ -26,9 +25,8 @@ export class StatisticsComponent implements OnInit {
   private readonly chartStyles = window.getComputedStyle(document.body);
   private readonly chartBackgroundColor = this.chartStyles.getPropertyValue('background-color').trim();
   private readonly chartTextColor = this.chartStyles.getPropertyValue('color').trim() || '#333333';
-  private readonly eChartColors = ['#7cb5ec', '#434348'];
-  private readonly eChartCountColor = this.eChartColors[0];
-  private readonly eChartHighlightColor = this.eChartColors[1];
+  private readonly eChartCountColor = '#7cb5ec';
+  private readonly eChartHighlightColor = '#434348';
   private readonly oaCategoryOrder = ['Green', 'Gold', 'Diamond', 'Bronze', 'Closed', 'Hybrid'];
   private readonly oaCategoryColors: Record<string, string> = {
     green: '#2e8b57',
@@ -94,7 +92,6 @@ export class StatisticsComponent implements OnInit {
 
   eChartOptionsDefault: EChartsCoreOption = {
     backgroundColor: this.chartBackgroundColor,
-    color: this.eChartColors,
     animationDuration: 300,
     title: this.eChartTitle,
     legend: this.eChartLegend,
@@ -136,41 +133,6 @@ export class StatisticsComponent implements OnInit {
       text: 'Anteil Publikationen nach Jahr und Publikationsart'
     },
   };
-
-  chartConstructor: ChartConstructorType = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
-  chartOptionsDefault: Highcharts.Options = {
-    chart: {
-      type: 'column',
-      plotBorderWidth: null,
-      plotShadow: false,
-      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
-    }, xAxis: {
-      title: { text: 'Erscheinungsjahr' }
-    }
-  }
-  chartOptions2: Highcharts.Options = {
-    ...this.chartOptionsDefault,
-    tooltip: {
-      shared: false,
-      pointFormat: '<span style="color:{series.color}">\u25CF</span> {series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)<br/>'
-    },
-    title: {
-      text: 'Anteil Publikationen nach Jahr und Publikationsart'
-    },
-    yAxis: {
-      title: { text: 'Anzahl' },
-      min: 0
-    }, plotOptions: {
-      column: {
-        stacking: 'percent',
-        dataLabels: {
-          enabled: true
-        }
-      }
-    }
-  }; // required
-  
-  charts = new Map<string, Highcharts.Chart>();
 
   form: FormGroup = this.formBuilder.group({
     institute: [''],
@@ -270,12 +232,7 @@ export class StatisticsComponent implements OnInit {
     })
   }
 
-  onChartInstance(id: string, chart: Highcharts.Chart) {
-    this.charts.set(id, chart);
-  }
-
   updateChart() {
-    this.chartOptions2.series = []
     let ob$ = this.statService.countPubByYear(this.filter, this.highlight).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
@@ -289,25 +246,7 @@ export class StatisticsComponent implements OnInit {
     ob$ = merge(ob$, this.statService.countPubByYearAndPubType(this.filter).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
-        let oa_cats = [...new Set(data.map(e => e.pub_type))]
-        for (let oaCat of oa_cats) {
-          let series = {
-            name: oaCat,
-            type: 'column' as 'xrange',
-            events: {
-              click: this.chooseYear.bind(this)
-            },
-            data: data.filter(e => e.pub_type === oaCat).map(e => {
-              return {
-                x: e.pub_year,
-                y: e.count
-              }
-            }
-            )
-          }
-          this.chartOptions2.series.push(series)
-        }
-        this.charts.get('pub_type')?.update(this.chartOptions2, true, true);
+        this.eChartOptions2 = this.createPublicationTypeEChartOptions(data);
       })))
     return ob$.pipe(catchError((e, c) => { return of(console.log(e.message)) }));
   }
@@ -559,6 +498,82 @@ export class StatisticsComponent implements OnInit {
           const count = params.data?.count ?? 0;
           const percentage = params.data?.percentage ?? 0;
           return `<span style="color:${this.getOACategoryColor(params.seriesName)}">\u25CF</span> ${params.seriesName}: <b>${count}</b> (${percentage.toFixed(1)}%)`;
+        }
+      },
+      xAxis: {
+        ...this.eChartXAxis,
+        data: categories
+      },
+      yAxis: {
+        ...this.eChartYAxis,
+        max: 100
+      },
+      series
+    };
+  }
+
+  private createPublicationTypeEChartOptions(data: { pub_year: number, count: number, pub_type: string }[]): EChartsCoreOption {
+    const years = [...new Set(data.map(entry => entry.pub_year))].sort((a, b) => a - b);
+    const categories = years.map(year => year.toString());
+    const totalsByYear = new Map<number, number>();
+
+    for (const year of years) {
+      totalsByYear.set(
+        year,
+        data.filter(entry => entry.pub_year === year).reduce((sum, entry) => sum + Number(entry.count), 0)
+      );
+    }
+
+    const publicationTypes = [...new Set(data.map(entry => entry.pub_type))];
+
+    const series = publicationTypes.map(publicationType => ({
+      name: publicationType,
+      type: 'bar',
+      stack: 'total',
+      emphasis: {
+        focus: 'series'
+      },
+      label: {
+        show: true,
+        position: 'inside',
+        formatter: ({ data }: { data?: { count?: number } }) => data?.count ? `${data.count}` : ''
+      },
+      data: years.map(year => {
+        const entry = data.find(item => item.pub_year === year && item.pub_type === publicationType);
+        const count = Number(entry?.count ?? 0);
+        const total = totalsByYear.get(year) ?? 0;
+        const percentage = total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0;
+
+        return {
+          value: percentage,
+          count,
+          percentage
+        };
+      })
+    }));
+
+    return {
+      ...this.eChartOptionsDefault,
+      title: {
+        ...this.eChartTitle,
+        text: 'Anteil Publikationen nach Jahr und Publikationsart'
+      },
+      legend: {
+        ...this.eChartLegend,
+        data: publicationTypes,
+        show: publicationTypes.length > 0
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: {
+          seriesName: string,
+          color?: string,
+          data?: { count?: number, percentage?: number }
+        }) => {
+          const count = params.data?.count ?? 0;
+          const percentage = params.data?.percentage ?? 0;
+          const color = params.color ?? this.chartTextColor;
+          return `<span style="color:${color}">\u25CF</span> ${params.seriesName}: <b>${count}</b> (${percentage.toFixed(1)}%)`;
         }
       },
       xAxis: {
