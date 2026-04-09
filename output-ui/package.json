@@ -28,8 +28,6 @@
     "@popperjs/core": "^2.10.2",
     "bootstrap": "^5.2.3",
     "echarts": "^6.0.0",
-    "highcharts": "^12.4.0",
-    "highcharts-angular": "^5.2.0",
     "moment": "^2.29.4",
     "ngx-cookie-service": "^20.1.0",
     "ngx-echarts": "^20.0.2",

@@ -7,7 +7,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MetaReducer, StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import * as echarts from 'echarts/core';
-import { BarChart, LineChart, PieChart, ScatterChart, TreemapChart } from 'echarts/charts';
+import { BarChart, PieChart, TreemapChart } from 'echarts/charts';
 import {
   DatasetComponent,
   GridComponent,
@@ -28,7 +28,6 @@ import { hydrationMetaReducer, viewConfigReducer } from './services/redux';
 import { SharedModule } from './shared/shared.module';
 import { TableModule } from './table/table.module';
 import { FormModule } from './form/form.module';
-import { provideHighcharts } from 'highcharts-angular';
 import { RuntimeConfigService } from './services/runtime-config.service';
 import { registerLocaleData } from '@angular/common';
 import localeDe from '@angular/common/locales/de';
@@ -38,9 +37,7 @@ import 'moment/locale/de';
 
 echarts.use([
     BarChart,
-    LineChart,
     PieChart,
-    ScatterChart,
     TreemapChart,
     DatasetComponent,
     GridComponent,
@@ -90,17 +87,6 @@ export function initRuntimeConfig(rc: RuntimeConfigService) {
         { provide: HTTP_INTERCEPTORS, useClass: ApiErrorInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi()),
         provideEchartsCore({ echarts }),
-        provideHighcharts({
-            modules: () => {
-                return [
-                    import('highcharts/esm/modules/accessibility'),
-                    import('highcharts/esm/modules/exporting'),
-                    //import('highcharts/esm/themes/brand-light'),
-                    import('highcharts/esm/themes/grid-light'),
-                    //import('highcharts/esm/themes/high-contrast-light'),
-                ];
-            }
-        })
     ],
     bootstrap: [AppComponent]
 })
