@@ -170,6 +170,33 @@ describe('ContractService', () => {
         expect(componentRepository.save).not.toHaveBeenCalled();
     });
 
+    it('returns a structured not-found error when updating a missing contract component', async () => {
+        componentRepository.findOne!.mockResolvedValue(null as never);
+
+        await expectApiError(service.updateComponent({
+            id: 999,
+            label: 'Missing Component',
+        } as ContractComponent), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
+
+        expect(componentRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('returns a structured invalid-request error when creating a contract component with a supplied id', async () => {
+        await expectApiError(service.saveComponent({
+            id: 999,
+            contract: { id: 1 } as Contract,
+            label: 'Should Fail',
+        } as ContractComponent), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+        });
+
+        expect(componentRepository.save).not.toHaveBeenCalled();
+    });
+
     it('creates contracts without requiring an existing row', async () => {
         const contract = {
             label: 'New Contract',

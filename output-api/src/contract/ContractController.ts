@@ -95,6 +95,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     })
     @ApiResponse({ status: 200, description: 'The contract component was updated.' })
     @ApiResponse({ status: 400, description: 'Validation failed for the contract component or its model parameters.' })
+    @ApiResponse({ status: 404, description: 'Contract component was not found.' })
     async updateComponent(@Body() body: ContractComponent) {
         return this.service.updateComponent(body);
     }

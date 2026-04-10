@@ -7,7 +7,7 @@ import { InvoiceKind } from '../../../output-interfaces/Publication';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
-import { hasProvidedEntityId } from '../common/entity-id';
+import { assertCreateRequestHasNoId, hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
 import { Invoice } from '../invoice/Invoice.entity';
@@ -97,6 +97,7 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async saveComponent(component: DeepPartial<ContractComponent>) {
+        assertCreateRequestHasNoId(component);
         const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
 
         if (!normalizedComponent.contract?.id) {
@@ -113,6 +114,13 @@ export class ContractService extends AbstractEntityService<Contract> {
     public async updateComponent(component: DeepPartial<ContractComponent>) {
         if (!component?.id) {
             throw new BadRequestException('id is required to update a contract component');
+        }
+
+        const existingComponent = await this.contractComponentRepository.findOne({
+            where: { id: component.id } as FindOptionsWhere<ContractComponent>,
+        });
+        if (!existingComponent) {
+            throw createNotFoundHttpException(`Contract component ${component.id} not found.`);
         }
 
         const normalizedComponent = this.validateAndNormalizeContractComponent(component);
