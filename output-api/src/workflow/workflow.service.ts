@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../output-interfaces/PublicationIndex';
 import { ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, Workflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
@@ -567,7 +567,7 @@ export class WorkflowService {
                 toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }
         } else {
-            const workflowId = workflow.workflow_id ?? uuidv4();
+            const workflowId = workflow.workflow_id ?? randomUUID();
             const createDefaults = options.createDefaults ? await options.createDefaults(workflow) : {};
             toSave = {
                 ...toSave,
