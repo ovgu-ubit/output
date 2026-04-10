@@ -220,7 +220,7 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        return mergeEntities<Contract>({
+        const merged = await mergeEntities<Contract>({
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -231,14 +231,27 @@ export class ContractService extends AbstractEntityService<Contract> {
                 service: this.publicationService,
                 alias_strings,
             },
-            afterSave: async ({ duplicateIds, defaultDelete }) => {
+            afterSave: async ({ saved, duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
+                    const duplicateComponents = await this.contractComponentRepository.find({
+                        where: { contract: { id: In(duplicateIds) } } as FindOptionsWhere<ContractComponent>,
+                    });
+
+                    if (duplicateComponents.length > 0) {
+                        await this.contractComponentRepository.save(duplicateComponents.map(component => ({
+                            id: component.id,
+                            contract: { id: saved.id } as Contract,
+                        })));
+                    }
+
                     await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
                 }
 
                 await defaultDelete();
             },
         });
+
+        return this.one(merged.id, false);
     }
 
     public async delete(insts: Contract[]) {

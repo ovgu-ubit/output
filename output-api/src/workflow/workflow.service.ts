@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import 'multer';
 import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { SearchFilter, UpdateMapping } from '../../../output-interfaces/Config';

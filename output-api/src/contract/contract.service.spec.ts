@@ -33,7 +33,7 @@ describe('ContractService', () => {
             save: jest.fn(),
         };
         componentRepository = {
-            find: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
@@ -167,23 +167,29 @@ describe('ContractService', () => {
             }],
         } as unknown as Contract;
 
-        repository.findOne!.mockResolvedValue(undefined as never);
+        repository.findOne!.mockResolvedValue({
+            id: 11,
+            identifiers: [],
+            components: [],
+        } as unknown as Contract);
         repository.save!.mockImplementation(async entity => entity as Contract);
         componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
 
         const saved = await service.save(contract);
 
+        expect(componentRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            contract_model_params: {
+                par_fee: 2000,
+                service_fee: 125,
+            },
+            linked_invoices: [
+                expect.objectContaining({ id: 20, invoice_kind: InvoiceKind.INVOICE }),
+                expect.objectContaining({ id: 21, invoice_kind: InvoiceKind.PRE_INVOICE }),
+            ],
+        }));
         expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
-            components: [expect.objectContaining({
-                contract_model_params: {
-                    par_fee: 2000,
-                    service_fee: 125,
-                },
-                linked_invoices: [
-                    expect.objectContaining({ id: 20, invoice_kind: InvoiceKind.INVOICE }),
-                    expect.objectContaining({ id: 21, invoice_kind: InvoiceKind.PRE_INVOICE }),
-                ],
-            })],
+            id: 11,
+            label: 'Contract With Components',
         }));
         expect(saved).toEqual(expect.objectContaining({ id: 11 }));
     });
@@ -301,11 +307,30 @@ describe('ContractService', () => {
             [duplicateB.id, duplicateB],
         ]);
 
-        repository.findOne!.mockImplementation(async ({ where }: any) => byId.get(where.id));
-        repository.save!.mockImplementation(async entity => entity as Contract);
+        repository.findOne!.mockImplementation(async ({ where, relations }: any) => {
+            const entity = byId.get(where.id);
+            if (!entity) {
+                return undefined as never;
+            }
+
+            return {
+                ...entity,
+                ...(relations?.components ? { components: [] } : {}),
+            } as Contract;
+        });
+        repository.save!.mockImplementation(async entity => {
+            const merged = entity as Contract;
+            const next = {
+                ...(byId.get(merged.id) ?? {}),
+                ...merged,
+            } as Contract;
+            byId.set(merged.id, next);
+            return next;
+        });
         repository.delete!.mockResolvedValue(undefined as never);
         publicationService.save.mockResolvedValue(undefined);
         identifierRepository.delete!.mockResolvedValue(undefined as never);
+        componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
 
         const combined = await service.combine(11, [12, 13], ['alias']);
 
@@ -330,5 +355,99 @@ describe('ContractService', () => {
         ]);
         expect(identifierRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([12, 13]);
+    });
+
+    it('reassigns duplicate contract components to the primary contract before deleting duplicates', async () => {
+        const primary: Contract = {
+            id: 11,
+            label: 'Primary Contract',
+            publisher: null,
+            identifiers: [],
+            publications: [],
+        } as Contract;
+        const duplicate: Contract = {
+            id: 12,
+            label: 'Duplicate Contract',
+            publisher: null,
+            identifiers: [],
+            publications: [],
+        } as Contract;
+
+        const byId = new Map<number, Contract>([
+            [primary.id, primary],
+            [duplicate.id, duplicate],
+        ]);
+        const componentsByContract = new Map<number, ContractComponent[]>([
+            [11, [{ id: 1, label: 'Primary Component', contract: { id: 11 } as Contract } as ContractComponent]],
+            [12, [{ id: 2, label: 'Duplicate Component', contract: { id: 12 } as Contract } as ContractComponent]],
+        ]);
+
+        repository.findOne!.mockImplementation(async ({ where, relations }: any) => {
+            const entity = byId.get(where.id);
+            if (!entity) {
+                return undefined as never;
+            }
+
+            return {
+                ...entity,
+                ...(relations?.components ? { components: componentsByContract.get(where.id) ?? [] } : {}),
+            } as Contract;
+        });
+        repository.save!.mockImplementation(async entity => {
+            const merged = entity as Contract;
+            const next = {
+                ...(byId.get(merged.id) ?? {}),
+                ...merged,
+            } as Contract;
+            byId.set(merged.id, next);
+            return next;
+        });
+        repository.delete!.mockImplementation(async ids => {
+            for (const id of ids as number[]) {
+                byId.delete(id);
+                componentsByContract.delete(id);
+            }
+            return undefined as never;
+        });
+        publicationService.save.mockResolvedValue(undefined);
+        identifierRepository.delete!.mockResolvedValue(undefined as never);
+        componentRepository.find!.mockResolvedValue(componentsByContract.get(12) ?? []);
+        componentRepository.save!.mockImplementation(async (entities: any) => {
+            const updates = Array.isArray(entities) ? entities : [entities];
+            for (const update of updates) {
+                for (const [contractId, components] of componentsByContract.entries()) {
+                    const existing = components.find(component => component.id === update.id);
+                    if (!existing) {
+                        continue;
+                    }
+
+                    componentsByContract.set(contractId, components.filter(component => component.id !== update.id));
+                    const targetContractId = update.contract.id;
+                    componentsByContract.set(targetContractId, [
+                        ...(componentsByContract.get(targetContractId) ?? []),
+                        { ...existing, ...update } as ContractComponent,
+                    ]);
+                    break;
+                }
+            }
+            return entities as any;
+        });
+
+        const combined = await service.combine(11, [12]);
+
+        expect(componentRepository.find).toHaveBeenCalled();
+        expect(componentRepository.save).toHaveBeenCalledWith([
+            {
+                id: 2,
+                contract: { id: 11 },
+            },
+        ]);
+        expect(repository.delete).toHaveBeenCalledWith([12]);
+        expect(combined).toEqual(expect.objectContaining({
+            components: expect.arrayContaining([
+                expect.objectContaining({ id: 1, label: 'Primary Component' }),
+                expect.objectContaining({ id: 2, label: 'Duplicate Component' }),
+            ]),
+        }));
     });
 });
