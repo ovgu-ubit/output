@@ -13,6 +13,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { ContractComponent } from './ContractComponent.entity';
 import { InvoiceKind, ContractModel } from '../../../output-interfaces/Publication';
 import { Invoice } from '../invoice/Invoice.entity';
+import { EditLockOwnerStore } from '../common/edit-lock';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -44,6 +45,7 @@ describe('ContractService', () => {
             find: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
+            update: jest.fn(),
             createQueryBuilder: jest.fn(),
         };
         identifierRepository = {
@@ -77,6 +79,7 @@ describe('ContractService', () => {
         }).compile();
 
         service = module.get(ContractService);
+        EditLockOwnerStore.clear();
     });
 
     it('saves a contract component with validated model params', async () => {
@@ -205,6 +208,22 @@ describe('ContractService', () => {
             statusCode: 404,
             code: ApiErrorCode.NOT_FOUND,
         });
+    });
+
+    it('allows releasing a lock after loading a contract for the same user', async () => {
+        repository.findOne!
+            .mockResolvedValueOnce({ id: 11, label: 'Contract', locked_at: null } as Contract)
+            .mockResolvedValueOnce({ id: 11, label: 'Contract', locked_at: new Date('2026-04-10T10:00:00Z') } as Contract)
+            .mockResolvedValueOnce({ id: 11, label: 'Contract', identifiers: [], components: [] } as unknown as Contract);
+        repository.update!.mockResolvedValue({ affected: 1 } as any);
+        repository.save!.mockImplementation(async entity => entity as Contract);
+
+        const loaded = await service.one(11, true, 'alice');
+        const unlocked = await service.update({ id: 11, locked_at: null } as Contract, 'alice');
+
+        expect(repository.update).toHaveBeenCalled();
+        expect(loaded).toEqual(expect.objectContaining({ id: 11, locked_at: undefined }));
+        expect(unlocked).toEqual(expect.objectContaining({ id: 11, locked_at: null }));
     });
 
     it('saves contract components embedded in a contract with validated params', async () => {

@@ -91,8 +91,8 @@ export class ContractService extends AbstractEntityService<Contract> {
         return this.splitContractComponentInvoicesForContract(savedContract);
     }
 
-    public override async one(id: number, writer: boolean) {
-        const contract = await super.one(id, writer);
+    public override async one(id: number, writer: boolean, user?: string) {
+        const contract = await super.one(id, writer, user);
         return this.splitContractComponentInvoicesForContract(contract);
     }
 

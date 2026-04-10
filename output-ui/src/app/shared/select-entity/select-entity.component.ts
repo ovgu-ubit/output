@@ -109,7 +109,17 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
       this.dialog.open(this.formComponent, {
         width: '800px',
         data: {
-          entity: this.ent
+          entity: this.ent,
+          locked: true,
+        },
+        disableClose: true
+      }).afterClosed().subscribe(viewResult => {
+        if (viewResult && viewResult.id) {
+          this.serviceClass.update(viewResult).subscribe({
+            error: (error) => {
+              this.errorPresentation.present(error, { action: 'save', entity: this.name });
+            }
+          });
         }
       });
       return;

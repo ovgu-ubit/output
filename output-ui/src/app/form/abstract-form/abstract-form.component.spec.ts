@@ -86,4 +86,24 @@ describe('AbstractFormComponent', () => {
       entity: { id: 42, label: 'Institute' },
     });
   });
+
+  it('releases the edit lock when a writable read-only form is closed', () => {
+    component.service = jasmine.createSpyObj('EntityService', ['add', 'update']);
+    component.entity = { id: 7, label: 'Contract' };
+    tokenService.hasRole.and.callFake((role: string) => role === 'writer');
+
+    component.close();
+
+    expect(dialogRef.close).toHaveBeenCalledWith({ id: 7, locked_at: null });
+  });
+
+  it('does not release locks on close when the loaded entity is already locked elsewhere', () => {
+    component.service = jasmine.createSpyObj('EntityService', ['add', 'update']);
+    component.entity = { id: 7, label: 'Contract', locked_at: new Date('2026-04-10T10:00:00Z') };
+    tokenService.hasRole.and.callFake((role: string) => role === 'writer');
+
+    component.close();
+
+    expect(dialogRef.close).toHaveBeenCalledWith(null);
+  });
 });

@@ -206,6 +206,10 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   }
 
   close() {
+    if (this.shouldReleaseLockOnClose()) {
+      this.dialogRef.close({ id: this.entity.id, locked_at: null });
+      return;
+    }
     this.dialogRef.close(null)
   }
 
@@ -307,5 +311,13 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       return (response[0] ?? fallback) as T;
     }
     return (response ?? fallback) as T;
+  }
+
+  private shouldReleaseLockOnClose(): boolean {
+    const canWrite = this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin');
+    return !!this.service
+      && !!this.entity?.id
+      && canWrite
+      && !this.entity?.locked_at;
   }
 }
