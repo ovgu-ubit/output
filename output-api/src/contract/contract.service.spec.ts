@@ -1,8 +1,10 @@
 ﻿import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { ContractService } from './contract.service';
 import { Contract } from './Contract.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
@@ -11,6 +13,22 @@ import { AppConfigService } from '../config/app-config.service';
 import { ContractComponent } from './ContractComponent.entity';
 import { InvoiceKind, ContractModel } from '../../../output-interfaces/Publication';
 import { Invoice } from '../invoice/Invoice.entity';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject(expected);
+    }
+};
 
 describe('ContractService', () => {
     let service: ContractService;
@@ -39,7 +57,7 @@ describe('ContractService', () => {
             delete: jest.fn(),
         };
         invoiceRepository = {
-            find: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
             save: jest.fn(),
         };
         publicationService = {
@@ -149,9 +167,48 @@ describe('ContractService', () => {
         expect(componentRepository.save).not.toHaveBeenCalled();
     });
 
+    it('creates contracts without requiring an existing row', async () => {
+        const contract = {
+            label: 'New Contract',
+            publisher: null,
+            identifiers: [{ value: 'abc-1', type: 'LOCAL' }],
+        } as unknown as Contract;
+
+        repository.save!.mockImplementation(async entity => ({
+            ...(entity as Contract),
+            id: 11,
+        }) as Contract);
+
+        const saved = await service.save(contract);
+
+        expect(repository.findOne).not.toHaveBeenCalled();
+        expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
+            label: 'New Contract',
+            identifiers: [
+                expect.objectContaining({
+                    id: undefined,
+                    value: 'ABC-1',
+                    type: 'local',
+                }),
+            ],
+        }));
+        expect(saved).toEqual(expect.objectContaining({ id: 11 }));
+    });
+
+    it('returns a structured not-found error when updating a missing contract', async () => {
+        repository.findOne!.mockResolvedValue(null as never);
+
+        await expectApiError(service.save({
+            id: 999,
+            label: 'Missing Contract',
+        } as Contract), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
+    });
+
     it('saves contract components embedded in a contract with validated params', async () => {
         const contract = {
-            id: 11,
             label: 'Contract With Components',
             publisher: null,
             components: [{
@@ -167,31 +224,41 @@ describe('ContractService', () => {
             }],
         } as unknown as Contract;
 
-        repository.findOne!.mockResolvedValue({
+        repository.save!.mockImplementation(async entity => ({
+            ...(entity as Contract),
             id: 11,
-            identifiers: [],
-            components: [],
-        } as unknown as Contract);
-        repository.save!.mockImplementation(async entity => entity as Contract);
-        componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
+            components: (entity as Contract).components?.map((component, index) => ({
+                ...component,
+                id: index + 1,
+            })) ?? [],
+        }) as Contract);
 
         const saved = await service.save(contract);
 
-        expect(componentRepository.save).toHaveBeenCalledWith(expect.objectContaining({
-            contract_model_params: {
-                par_fee: 2000,
-                service_fee: 125,
-            },
-            linked_invoices: [
-                expect.objectContaining({ id: 20, invoice_kind: InvoiceKind.INVOICE }),
-                expect.objectContaining({ id: 21, invoice_kind: InvoiceKind.PRE_INVOICE }),
-            ],
-        }));
+        expect(componentRepository.save).not.toHaveBeenCalled();
         expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
-            id: 11,
             label: 'Contract With Components',
+            components: [expect.objectContaining({
+                id: undefined,
+                contract_model_params: {
+                    par_fee: 2000,
+                    service_fee: 125,
+                },
+                linked_invoices: [
+                    expect.objectContaining({ id: 20, invoice_kind: InvoiceKind.INVOICE }),
+                    expect.objectContaining({ id: 21, invoice_kind: InvoiceKind.PRE_INVOICE }),
+                ],
+            })],
         }));
-        expect(saved).toEqual(expect.objectContaining({ id: 11 }));
+        expect(saved).toEqual(expect.objectContaining({
+            id: 11,
+            components: [expect.objectContaining({
+                id: 1,
+                invoices: [expect.objectContaining({ id: 20, invoice_kind: InvoiceKind.INVOICE })],
+                pre_invoices: [expect.objectContaining({ id: 21, invoice_kind: InvoiceKind.PRE_INVOICE })],
+                linked_invoices: undefined,
+            })],
+        }));
     });
 
     it('awaits identifier and component deletions when updating a contract', async () => {
@@ -207,7 +274,11 @@ describe('ContractService', () => {
             identifiers: [{ id: 1, value: 'old', type: 'legacy' }],
             components: [{ id: 1, label: 'Old component' }],
         } as unknown as Contract);
-        repository.save!.mockImplementation(async entity => entity as Contract);
+        repository.save!.mockImplementation(async entity => ({
+            ...(entity as Contract),
+            components: [{ id: 2, label: 'Existing component' }],
+            identifiers: [{ id: 2, value: 'new', type: 'local' }],
+        }) as Contract);
 
         let identifierDeleteCompleted = false;
         let componentDeleteCompleted = false;
@@ -225,8 +296,17 @@ describe('ContractService', () => {
 
         await service.save(contract);
 
+        expect(repository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 11 },
+            relations: { identifiers: true, components: true },
+        }));
         expect(identifierRepository.delete).toHaveBeenCalledWith(1);
-        expect(componentRepository.delete).toHaveBeenCalledWith(1);
+        expect(invoiceRepository.find).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({
+                contract_component: expect.any(Object),
+            }),
+        }));
+        expect(componentRepository.delete).toHaveBeenCalledWith([1]);
         expect(identifierDeleteCompleted).toBe(true);
         expect(componentDeleteCompleted).toBe(true);
     });

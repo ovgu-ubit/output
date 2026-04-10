@@ -6,7 +6,7 @@ import { ZodError } from 'zod';
 import { InvoiceKind } from '../../../output-interfaces/Publication';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
 import { AbstractEntityService } from '../common/abstract-entity.service';
-import { createPersistenceHttpException } from '../common/api-error';
+import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
@@ -16,6 +16,11 @@ import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { parseContractModelParams } from './contract-model-params.schema';
+
+type NormalizedContract = DeepPartial<Contract> & {
+    identifiers?: (DeepPartial<ContractIdentifier> & { id?: number | null })[];
+    components?: (DeepPartial<ContractComponent> & { id?: number | null })[];
+};
 
 @Injectable()
 export class ContractService extends AbstractEntityService<Contract> {
@@ -53,48 +58,35 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public override async save(contract: Contract) {
-        const orig: Contract | null = hasProvidedEntityId(contract.id)
-            ? await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true } })
+        const isUpdate = hasProvidedEntityId(contract.id);
+        const orig: Contract | null = isUpdate
+            ? await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true, components: true } })
             : null;
 
-        if (!orig) throw new BadRequestException(`Contract with id ${contract.id} does not exist`);
-        const normalizedContract = this.normalizeContractComponents(contract);
-
-        if (normalizedContract.identifiers) {
-            for (const id of normalizedContract.identifiers) {
-                if (!hasProvidedEntityId(id.id)) {
-                    id.value = id.value.toUpperCase();
-                    id.type = id.type.toLowerCase();
-                    id.id = (await this.idRepository.save(id).catch((error: unknown) => {
-                        throw createPersistenceHttpException(error);
-                    })).id;
-                }
-            }
+        if (isUpdate && !orig) {
+            throw createNotFoundHttpException(`Contract ${contract.id} not found.`);
         }
-        
-        if (normalizedContract.identifiers && orig && orig.identifiers) {
+
+        const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
+        const savedContract = await this.repository.save(normalizedContract).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+
+        if (normalizedContract.identifiers && orig?.identifiers) {
             await Promise.all(orig.identifiers
                 .filter(id => !normalizedContract.identifiers.find(e => e.id === id.id))
                 .map(id => this.idRepository.delete(id.id)));
         }
-        if (normalizedContract.components) {
-            for (const c of normalizedContract.components) {
-                if (!c.id) {
-                    c.id = (await this.contractComponentRepository.save(c).catch(err => {
-                        throw createPersistenceHttpException(err);
-                    })).id;
-                }
+
+        if (normalizedContract.components && orig?.components) {
+            const removedComponents = orig.components
+                .filter(c => !normalizedContract.components.find(e => e.id === c.id))
+                .map(c => ({ id: c.id }));
+
+            if (removedComponents.length > 0) {
+                await this.deleteComponents(removedComponents);
             }
         }
-        if (normalizedContract.components && orig && orig.components) {
-            await Promise.all(orig.components
-                .filter(c => !normalizedContract.components.find(e => e.id === c.id))
-                .map(c => this.contractComponentRepository.delete(c.id)));
-        }
-
-        const savedContract = await this.repository.save(contract).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
 
         return this.splitContractComponentInvoicesForContract(savedContract);
     }
@@ -282,14 +274,43 @@ export class ContractService extends AbstractEntityService<Contract> {
         };
     }
 
-    private normalizeContractComponents(contract: Contract) {
+    private normalizeContractIdentifiers(contract: NormalizedContract): NormalizedContract {
+        if (!contract?.identifiers) {
+            return contract;
+        }
+
+        return {
+            ...contract,
+            identifiers: contract.identifiers.map(identifier => {
+                const normalizedIdentifier = {
+                    ...identifier,
+                } as DeepPartial<ContractIdentifier> & { id?: number | null };
+
+                if (!hasProvidedEntityId(normalizedIdentifier.id)) {
+                    normalizedIdentifier.id = undefined;
+                }
+                if (typeof normalizedIdentifier.value === 'string') {
+                    normalizedIdentifier.value = normalizedIdentifier.value.toUpperCase();
+                }
+                if (typeof normalizedIdentifier.type === 'string') {
+                    normalizedIdentifier.type = normalizedIdentifier.type.toLowerCase();
+                }
+
+                return normalizedIdentifier;
+            }),
+        };
+    }
+
+    private normalizeContractComponents(contract: NormalizedContract): NormalizedContract {
         if (!contract?.components) {
             return contract;
         }
 
         return {
             ...contract,
-            components: contract.components.map(component => this.validateAndNormalizeContractComponent(component)),
+            components: contract.components.map(component =>
+                this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component)),
+            ),
         };
     }
 
