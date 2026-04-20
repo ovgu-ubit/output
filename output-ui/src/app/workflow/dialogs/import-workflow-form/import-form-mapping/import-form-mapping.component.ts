@@ -17,6 +17,7 @@ interface MappingFieldDefinition {
 interface ParsedMapping {
   common: string;
   fields: Record<string, string>;
+  unknownFields: Record<string, string>;
   rawFallback: boolean;
 }
 
@@ -71,6 +72,7 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
   ];
 
   private readonly mappingFieldKeys = new Set(this.mappingFields.map((field) => field.key));
+  private unknownFieldValues: Record<string, string> = {};
   private rawMappingFallback = false;
 
   constructor(
@@ -176,6 +178,7 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
   private patchFormFromMapping(mapping: string): void {
     const parsed = this.parseMapping(mapping);
     this.rawMappingFallback = parsed.rawFallback;
+    this.unknownFieldValues = parsed.unknownFields;
     this.activeFieldKeys = this.mappingFields
       .filter((field) => !!parsed.fields[field.key]?.trim())
       .map((field) => field.key);
@@ -188,37 +191,47 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
   private parseMapping(mapping: string): ParsedMapping {
     const emptyFields = this.emptyFieldValues();
     const trimmed = mapping.trim();
-    if (!trimmed) return { common: '', fields: emptyFields, rawFallback: false };
+    if (!trimmed) return { common: '', fields: emptyFields, unknownFields: {}, rawFallback: false };
 
     const expression = this.unwrapOuterBlock(trimmed);
     const split = this.extractFinalObjectExpression(expression);
-    if (!split) return { common: mapping, fields: emptyFields, rawFallback: true };
+    if (!split) return { common: mapping, fields: emptyFields, unknownFields: {}, rawFallback: true };
 
     const parsedFields = this.parseObjectFields(split.objectBody);
-    if (!parsedFields) return { common: mapping, fields: emptyFields, rawFallback: true };
+    if (!parsedFields) return { common: mapping, fields: emptyFields, unknownFields: {}, rawFallback: true };
 
     const supportedFields = { ...emptyFields };
+    const unknownFields: Record<string, string> = {};
     Object.entries(parsedFields).forEach(([key, value]) => {
-      if (this.mappingFieldKeys.has(key)) supportedFields[key] = value;
+      if (this.mappingFieldKeys.has(key)) {
+        supportedFields[key] = value;
+      } else {
+        unknownFields[key] = value;
+      }
     });
 
     return {
       common: split.common.trim(),
       fields: supportedFields,
+      unknownFields,
       rawFallback: false,
     };
   }
 
   private mappingFromForm(): string {
     const common = `${this.form.controls.common.value ?? ''}`.trim();
-    const fieldEntries = this.mappingFields
+    const knownFieldEntries = this.mappingFields
       .map((field) => ({ key: field.key, value: `${this.fieldsForm.get(field.key)?.value ?? ''}`.trim() }))
       .filter((field) => this.isFieldActive(field.key) && field.value.length > 0);
+    const unknownFieldEntries = Object.entries(this.unknownFieldValues)
+      .map(([key, value]) => ({ key, value: `${value ?? ''}`.trim() }))
+      .filter((field) => field.value.length > 0);
+    const fieldEntries = [...knownFieldEntries, ...unknownFieldEntries];
 
     if (this.rawMappingFallback && fieldEntries.length === 0) return common;
 
     const objectExpression = fieldEntries.length > 0
-      ? `{\n${fieldEntries.map((field) => `  "${field.key}": ${field.value}`).join(',\n')}\n}`
+      ? `{\n${fieldEntries.map((field) => `  ${JSON.stringify(field.key)}: ${field.value}`).join(',\n')}\n}`
       : '{}';
 
     if (!common) return objectExpression;

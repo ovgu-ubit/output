@@ -102,4 +102,16 @@ describe('ImportFormMappingComponent', () => {
       mapping: '{\n  "title": $.title,\n  "add_info": $.remark\n}',
     });
   });
+
+  it('preserves unknown top-level mapping keys when saving parsed mappings', async () => {
+    importSubject.next({
+      mapping: '($cfg := params.cfg;\n{"title": $.title, "custom_field": $.custom, "publisher": {"label": $.publisher}})',
+    });
+
+    await component.persistFormToBackend();
+
+    expect(facadeStub.patch).toHaveBeenCalledWith({
+      mapping: '(\n$cfg := params.cfg;\n{\n  "title": $.title,\n  "publisher": {"label": $.publisher},\n  "custom_field": $.custom\n}\n)',
+    });
+  });
 });
