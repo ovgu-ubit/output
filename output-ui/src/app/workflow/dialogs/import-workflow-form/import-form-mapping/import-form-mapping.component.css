@@ -1,7 +1,32 @@
-.mapping {
-  background: #f5f5f5;
+.mapping-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mapping-general,
+.mapping-field {
+  width: 100%;
+}
+
+.mapping-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mapping-field-panel {
   border-radius: 4px;
-  padding: 1rem;
-  white-space: pre-wrap;
-  word-break: break-word;
+}
+
+.mapping-field textarea,
+.mapping-general textarea {
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+  line-height: 1.4;
+}
+
+.mapping-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
 }
