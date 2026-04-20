@@ -90,4 +90,16 @@ describe('ImportFormMappingComponent', () => {
       mapping: '{\n  "title": $.title\n}',
     });
   });
+
+  it('preserves add_info mappings used by import templates', async () => {
+    importSubject.next({
+      mapping: '{"title": $.title, "add_info": $.remark}',
+    });
+
+    await component.persistFormToBackend();
+
+    expect(facadeStub.patch).toHaveBeenCalledWith({
+      mapping: '{\n  "title": $.title,\n  "add_info": $.remark\n}',
+    });
+  });
 });

@@ -51,6 +51,7 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
     { key: 'license', label: 'OA-Lizenz' },
     { key: 'status', label: 'Status' },
     { key: 'abstract', label: 'Abstract' },
+    { key: 'add_info', label: 'Weitere Informationen' },
     { key: 'page_count', label: 'Seitenzahl' },
     { key: 'peer_reviewed', label: 'Peer reviewed' },
     { key: 'cost_approach', label: 'Kostenansatz' },
