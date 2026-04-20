@@ -13,7 +13,7 @@ WORKDIR /usr/src/app/output-api
 
 RUN mkdir -p /deploy
 # Install the application dependencies
-RUN npm i
+RUN npm ci
 RUN npm audit fix 2>&1 > /deploy/deploy.log || echo "Errors while performing audit fix for api"
 RUN npm upgrade jwa
 
@@ -25,7 +25,7 @@ RUN npm prune --omit=dev
 
 # ---- Frontend ----
 WORKDIR /usr/src/app/output-ui
-RUN npm i
+RUN npm ci
 RUN npm audit fix 2>&1 > /deploy/deploy.log || echo "Errors while performing audit fix for ui"
 
 #RUN sed -i "s|api( )?:( )?'.*/?',|api: 'api/',|g" src/environments/environment.ts
