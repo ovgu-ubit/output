@@ -29,6 +29,7 @@ interface ParsedMapping {
 export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
   form: FormGroup;
   entity: ImportWorkflow;
+  activeFieldKeys: string[] = [];
 
   readonly mappingFields: MappingFieldDefinition[] = [
     { key: 'title', label: 'Titel', placeholder: '$.title' },
@@ -124,6 +125,28 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
     return !!this.fieldsForm.get(key)?.value?.trim();
   }
 
+  isFieldActive(key: string): boolean {
+    return this.activeFieldKeys.includes(key);
+  }
+
+  setFieldActive(key: string, active: boolean, userInput = true): void {
+    if (active === this.isFieldActive(key)) return;
+
+    this.activeFieldKeys = active
+      ? [...this.activeFieldKeys, key]
+      : this.activeFieldKeys.filter((fieldKey) => fieldKey !== key);
+
+    if (userInput) this.form.markAsDirty();
+  }
+
+  get activeMappingFields(): MappingFieldDefinition[] {
+    return this.mappingFields.filter((field) => this.isFieldActive(field.key));
+  }
+
+  get canEdit(): boolean {
+    return !this.entity?.published_at && !this.entity?.deleted_at;
+  }
+
   getRows(field: MappingFieldDefinition): number {
     return field.rows ?? 3;
   }
@@ -152,6 +175,9 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
   private patchFormFromMapping(mapping: string): void {
     const parsed = this.parseMapping(mapping);
     this.rawMappingFallback = parsed.rawFallback;
+    this.activeFieldKeys = this.mappingFields
+      .filter((field) => !!parsed.fields[field.key]?.trim())
+      .map((field) => field.key);
     this.form.patchValue({
       common: parsed.common,
       fields: parsed.fields,
@@ -186,7 +212,7 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
     const common = `${this.form.controls.common.value ?? ''}`.trim();
     const fieldEntries = this.mappingFields
       .map((field) => ({ key: field.key, value: `${this.fieldsForm.get(field.key)?.value ?? ''}`.trim() }))
-      .filter((field) => field.value.length > 0);
+      .filter((field) => this.isFieldActive(field.key) && field.value.length > 0);
 
     if (this.rawMappingFallback && fieldEntries.length === 0) return common;
 

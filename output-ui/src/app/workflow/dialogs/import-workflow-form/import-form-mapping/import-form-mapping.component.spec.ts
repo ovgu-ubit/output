@@ -60,11 +60,14 @@ describe('ImportFormMappingComponent', () => {
     expect(component.form.get('fields.title')?.value).toBe('$.title');
     expect(component.form.get('fields.doi')?.value).toBe('$.DOI');
     expect(component.form.get('fields.publisher')?.value).toBe('{"label": $.publisher}');
+    expect(component.activeMappingFields.map((field) => field.key)).toEqual(['title', 'doi', 'publisher']);
   });
 
   it('compiles field controls back to the workflow mapping', async () => {
     importSubject.next({ mapping: '' });
     component.form.get('common')?.setValue('$cfg := params.cfg;');
+    component.setFieldActive('title', true);
+    component.setFieldActive('doi', true);
     component.form.get('fields.title')?.setValue('$.title');
     component.form.get('fields.doi')?.setValue('$.DOI');
 
@@ -72,6 +75,19 @@ describe('ImportFormMappingComponent', () => {
 
     expect(facadeStub.patch).toHaveBeenCalledWith({
       mapping: '(\n$cfg := params.cfg;\n{\n  "title": $.title,\n  "doi": $.DOI\n}\n)',
+    });
+  });
+
+  it('omits inactive field controls from the compiled mapping', async () => {
+    importSubject.next({
+      mapping: '{"title": $.title, "doi": $.DOI}',
+    });
+
+    component.setFieldActive('doi', false);
+    await component.persistFormToBackend();
+
+    expect(facadeStub.patch).toHaveBeenCalledWith({
+      mapping: '{\n  "title": $.title\n}',
     });
   });
 });

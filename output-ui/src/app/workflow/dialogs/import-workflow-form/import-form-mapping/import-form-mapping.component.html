@@ -12,9 +12,25 @@
         ></textarea>
       </mat-form-field>
 
+      <mat-chip-listbox
+        class="mapping-field-selector"
+        aria-label="Mapping-Felder"
+        multiple
+        [disabled]="!canEdit"
+      >
+        <mat-chip-option
+          *ngFor="let field of mappingFields"
+          [selected]="isFieldActive(field.key)"
+          [disabled]="!canEdit"
+          (selectionChange)="setFieldActive(field.key, $event.selected, $event.isUserInput)"
+        >
+          {{ field.label }}
+        </mat-chip-option>
+      </mat-chip-listbox>
+
       <mat-accordion class="mapping-fields" multi>
         <mat-expansion-panel
-          *ngFor="let field of mappingFields"
+          *ngFor="let field of activeMappingFields"
           class="mapping-field-panel"
           [expanded]="fieldHasValue(field.key)"
         >
