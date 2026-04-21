@@ -36,6 +36,13 @@ import { PublicationDuplicate } from "./publication/core/PublicationDuplicate.en
 import { PublicationSupplement } from "./publication/core/PublicationSupplement.entity";
 import path from "path";
 import { EnvSchemas } from "./config/environment.schema";
+import { ContractComponent } from "./contract/ContractComponent.entity";
+import { PublicationChange } from "./publication/core/PublicationChange.entity";
+import { ImportWorkflow } from "./workflow/ImportWorkflow.entity";
+import { ExportWorkflow } from "./workflow/ExportWorkflow.entity";
+import { ValidationWorkflow } from "./workflow/ValidationWorkflow.entity";
+import { WorkflowReport } from "./workflow/WorkflowReport.entity";
+import { WorkflowReportItem } from "./workflow/WorkflowReportItem.entity";
 
 
 const configDir = process.env.CONFIG_DIR || process.cwd();
@@ -63,15 +70,16 @@ const configDir = process.env.CONFIG_DIR || process.cwd();
     TypeOrmModule.forFeature([
       Author, AliasAuthorFirstName, AliasAuthorLastName,
       Config,
-      Contract, ContractIdentifier,
+      Contract, ContractIdentifier, ContractComponent,
       Funder, AliasFunder,
       GreaterEntity, GEIdentifier,
       Institute, AliasInstitute,
       CostCenter, CostItem, CostType, Invoice,
       OA_Category,
       PublicationType, AliasPubType,
-      Publication, PublicationIdentifier, AuthorPublication, Language, Role, Status, PublicationDuplicate, PublicationSupplement,
+      Publication, PublicationIdentifier, AuthorPublication, Language, Role, Status, PublicationDuplicate, PublicationSupplement, PublicationChange,
       Publisher, PublisherDOI, AliasPublisher,
+      ImportWorkflow, ExportWorkflow, ValidationWorkflow, WorkflowReport, WorkflowReportItem
     ])
   ],
   providers: [
