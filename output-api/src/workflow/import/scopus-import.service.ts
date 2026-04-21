@@ -36,7 +36,7 @@ export class ScopusImportService extends ApiImportOffsetService {
     }
 
     private searchText = '';
-    private affiliation_tags;
+    private affiliation_tags: string[] = [];
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -117,9 +117,12 @@ export class ScopusImportService extends ApiImportOffsetService {
         }
         return false;
     }
-    private async affiliationTagMatch(affiliation: string) {
+    private affiliationTagMatch(affiliation: string): boolean {
+        const normalizedAffiliation = affiliation?.toLowerCase();
+        if (!normalizedAffiliation) return false;
         for (let i = 0; i < this.affiliation_tags.length; i++) {
-            if (affiliation.toLowerCase().includes((await this.configService.get('affiliation_tags'))[i])) return true;
+            const tag = this.affiliation_tags[i]?.toLowerCase();
+            if (tag && normalizedAffiliation.includes(tag)) return true;
         }
         return false;
     }
@@ -185,10 +188,10 @@ export class ScopusImportService extends ApiImportOffsetService {
         return element['dc:description'];
     }
     protected getCitation(element: any): {volume?:string, issue?: string, first_page?: string, last_page?: string, publisher_location?: string, edition?: string, article_number?: string} {
-        let volume, issue,first_page,last_page,article_number;
-        volume = element['prism:volume']
-        issue = element['prism:issueIdentifier']
-        article_number = element['article_number']
+        let first_page,last_page;
+        const volume = element['prism:volume']
+        const issue = element['prism:issueIdentifier']
+        const article_number = element['article_number']
         try {
             const range = element['prism:pageRange']
             const split = range.split('-');

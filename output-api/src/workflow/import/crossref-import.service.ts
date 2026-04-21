@@ -37,7 +37,7 @@ export class CrossrefImportService extends ApiImportOffsetService {
     }
 
     private searchText = '';
-    private affiliation_tags = [];
+    private affiliation_tags: string[] = [];
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -211,9 +211,12 @@ export class CrossrefImportService extends ApiImportOffsetService {
         } else return [];
     }
 
-    private async affiliationIncludesTags(affiliation) {
+    private affiliationIncludesTags(affiliation): boolean {
+        const affiliationName = affiliation.name?.toLowerCase();
+        if (!affiliationName) return false;
         for (let i = 0; i < this.affiliation_tags.length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.affiliation_tags[i])) return true;
+            const tag = this.affiliation_tags[i]?.toLowerCase();
+            if (tag && affiliationName.includes(tag)) return true;
         }
         return false;
     }

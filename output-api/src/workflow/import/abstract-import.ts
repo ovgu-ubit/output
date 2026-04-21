@@ -344,10 +344,10 @@ export abstract class AbstractImportService {
         let oa_status;
         let is_journal_oa;
         let best_oa_host;
-        if (typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun)).catch(async e => {
+        if (oa && typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun)).catch(async e => {
                 await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'OACategoryService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
-        else {
+        else if (oa) {
             oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun)).catch(async e => {
                 await this.writeReport({ type: 'warning', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'OACategoryService', text: e['text'] ? e['text'] + ', must possibly be assigned manually' : 'Unknown error' })
             });
