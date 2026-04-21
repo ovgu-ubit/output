@@ -219,7 +219,7 @@ export class PubMedImportService extends AbstractImportService {
 
     public authorsInstitution(authors) {
         if (authors && Array.isArray(authors)) {
-            const aut = authors.filter(async author =>
+            const aut = authors.filter(author =>
                 this.affiliation_tags.some(e => {
                     if (Array.isArray(author['AffiliationInfo'])) {
                         return author['AffiliationInfo'].some(f => f['Affiliation']['_text'].toLowerCase().includes(e))
