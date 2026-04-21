@@ -1,4 +1,4 @@
-import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
+﻿import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
 
 export interface Entity {
     id?: number;
@@ -7,7 +7,7 @@ export interface Entity {
     label?: string;
 }
 
-export interface Identifiable<T> extends Entity{
+export interface Identifiable<T> extends Entity {
     identifiers?: IIdentifier<T>[]
 }
 
@@ -113,7 +113,32 @@ export interface Contract extends Identifiable<Contract> {
     sec_pub?: string;
     gold_option?: string;
     verification_method?: string;
-	publications?: Publication[];
+    publications?: Publication[];
+    components?: ContractComponent[];
+}
+
+export interface ContractComponent extends Entity {
+    contract?: Contract;
+    invoices?: Invoice[];
+    pre_invoices?: Invoice[];
+    contract_model?: ContractModel;
+    contract_model_version?: number;
+    contract_model_params?: any;
+    oa_categories?: OA_Category[];
+    pub_types?: PublicationType[];
+    greater_entities?: GreaterEntity[];
+    cost_types?: CostType[];
+}
+
+export enum ContractModel {
+    DISCOUNT,
+    PUBLISH_AND_READ,
+    FLATRATE
+}
+
+export enum InvoiceKind {
+    INVOICE = 'invoice',
+    PRE_INVOICE = 'pre_invoice',
 }
 
 export interface CostCenter extends Entity {
@@ -143,7 +168,7 @@ export interface Funder extends Entity, Aliasable<Funder> {
     publications?: Publication[];
 }
 
-export interface GreaterEntity extends Identifiable<GreaterEntity>{
+export interface GreaterEntity extends Identifiable<GreaterEntity> {
     label: string;
     rating?: string;
     doaj_since?: Date;
@@ -168,17 +193,18 @@ export interface ContractIdentifier extends IIdentifier<Contract> {
 
 export interface Institute extends Entity, Aliasable<Institute> {
     super_institute?: Institute
-	sub_institutes?: Institute[]
+    sub_institutes?: Institute[]
     label: string;
     short_label?: string;
-	authors?: Author[];
-	authorPublications?: AuthorPublication[];
+    authors?: Author[];
+    authorPublications?: AuthorPublication[];
 }
 
 export interface Invoice extends Entity {
     cost_center?: CostCenter
     cost_items?: CostItem[]
     publication?: Publication
+    invoice_kind?: InvoiceKind;
     number?: string;
     date?: Date;
     booking_date?: Date;

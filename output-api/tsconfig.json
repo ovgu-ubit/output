@@ -7,15 +7,17 @@
          "es7"
       ],
       "target": "ES2023",
-      "module": "CommonJS",
-      "moduleResolution": "node",
+      "module": "Node16",
+      "moduleResolution": "node16",
       "outDir": "./dist",
+      "rootDir": "../",
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
       "sourceMap": true,
       "incremental": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
-      "skipLibCheck": true
+      "skipLibCheck": true,
+      "strict": false
    }
 }

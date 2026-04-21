@@ -15,8 +15,9 @@ import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { WorkflowService } from './workflow.service';
 
-jest.mock('uuid', () => ({
-    v4: jest.fn(() => 'test-uuid'),
+jest.mock('node:crypto', () => ({
+    ...jest.requireActual('node:crypto'),
+    randomUUID: jest.fn(() => 'test-uuid'),
 }));
 
 const expectApiError = async (
