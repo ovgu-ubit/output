@@ -5,7 +5,6 @@
     "baseUrl": "./",
     "rootDir": "../",
     "outDir": "./dist/out-tsc",
-    "rootDir": "../",
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "strict": false,
