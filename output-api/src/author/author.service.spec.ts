@@ -1,6 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { of } from 'rxjs';
 import { Repository, FindOperator } from 'typeorm';
 
@@ -29,6 +30,7 @@ describe('AuthorService', () => {
     let instService: { findOrSave: jest.Mock };
     let configService: { get: jest.Mock };
     let aliasLookupService: { findAliases: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
     const mergeEntitiesMock = mergeEntities as jest.Mock;
 
     beforeEach(async () => {
@@ -39,6 +41,21 @@ describe('AuthorService', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasAuthorFirstName) return aliasFirstNameRepository;
+                        if (entity === AliasAuthorLastName) return aliasLastNameRepository;
+                        if (entity === AuthorPublication) return pubAutRepository;
+                        if (entity === Author) return repository;
+                        return repository;
+                    })
+                };
+                return cb(manager);
+            })
         };
         pubAutRepository = {
             save: jest.fn(),
@@ -74,6 +91,7 @@ describe('AuthorService', () => {
                 { provide: InstituteService, useValue: instService },
                 { provide: AppConfigService, useValue: configService },
                 { provide: AliasLookupService, useValue: aliasLookupService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -88,20 +106,20 @@ describe('AuthorService', () => {
         const authorData = { id: 1, first_name: 'Alice', institutes: [{ id: 5 }] } as unknown as Author;
         const savedAuthor = { ...authorData, institutes: undefined } as Author;
 
-        repository.save.mockImplementation(async (entity) => {
-            console.log('mock repository.save called with:', entity);
-            if (entity.institutes) return authorData;
+        repository.save.mockImplementation(async (entityOrClass, entity) => {
+            const ent = (entity || entityOrClass) as any;
+            if (ent.institutes) return authorData;
             return savedAuthor;
         });
 
         const result = await service.save(authorData);
 
-        expect(repository.save).toHaveBeenNthCalledWith(1, expect.objectContaining({
+        expect(repository.save).toHaveBeenNthCalledWith(1, Author, expect.objectContaining({
             id: 1,
             first_name: 'Alice',
         }));
-        expect(repository.save.mock.calls[0][0]).not.toHaveProperty('institutes');
-        expect(repository.save).toHaveBeenNthCalledWith(2, {
+        expect(repository.save.mock.calls[0][1]).not.toHaveProperty('institutes');
+        expect(repository.save).toHaveBeenNthCalledWith(2, Author, {
             id: 1,
             institutes: authorData.institutes,
         });

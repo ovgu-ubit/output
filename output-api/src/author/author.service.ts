@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
-import { DeepPartial, ILike, In, Repository } from 'typeorm';
+import { DataSource, DeepPartial, ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
 import { AbstractEntityService } from '../common/abstract-entity.service';
@@ -27,7 +27,8 @@ export class AuthorService extends AbstractEntityService<Author> {
         @InjectRepository(AliasAuthorFirstName) private aliasFirstNameRepository: Repository<AliasAuthorFirstName>,
         @InjectRepository(AliasAuthorLastName) private aliasLastNameRepository: Repository<AliasAuthorLastName>,
         configService: AppConfigService,
-        private aliasLookupService: AliasLookupService) { 
+        private aliasLookupService: AliasLookupService,
+        private dataSource: DataSource) { 
         super(repository, configService);
     }
 
@@ -40,21 +41,28 @@ export class AuthorService extends AbstractEntityService<Author> {
     }
 
     public override async save(entity: DeepPartial<Author>, user?: string) {
-        const aliasesFirstName = entity.aliases_first_name;
-        const aliasesLastName = entity.aliases_last_name;
-        const obj = this.stripOwnedCollections(entity, ['aliases_first_name', 'aliases_last_name', 'authorPublications', 'institutes']);
-        let authEnt = await super.save(obj, user);
-        
-        if (authEnt && Object.prototype.hasOwnProperty.call(entity, 'institutes')) {
-            authEnt = await super.save({ id: authEnt.id, institutes: entity.institutes }, user);
-        }
-        if (authEnt && aliasesFirstName !== undefined) {
-            authEnt.aliases_first_name = await this.replaceAliasCollection(authEnt, aliasesFirstName, this.aliasFirstNameRepository, 'Author');
-        }
-        if (authEnt && aliasesLastName !== undefined) {
-            authEnt.aliases_last_name = await this.replaceAliasCollection(authEnt, aliasesLastName, this.aliasLastNameRepository, 'Author');
-        }
-        return authEnt;
+        return this.dataSource.transaction(async (manager) => {
+            const aliasesFirstName = entity.aliases_first_name;
+            const aliasesLastName = entity.aliases_last_name;
+            const obj = this.stripOwnedCollections(entity, ['aliases_first_name', 'aliases_last_name', 'authorPublications', 'institutes']);
+            
+            let authEnt = await manager.save(Author, obj).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
+            
+            if (authEnt && Object.prototype.hasOwnProperty.call(entity, 'institutes')) {
+                authEnt = await manager.save(Author, { id: authEnt.id, institutes: entity.institutes }).catch((error: unknown) => {
+                    throw createPersistenceHttpException(error);
+                });
+            }
+            if (authEnt && aliasesFirstName !== undefined) {
+                authEnt.aliases_first_name = await this.replaceAliasCollection(authEnt, aliasesFirstName, manager.getRepository(AliasAuthorFirstName), 'Author');
+            }
+            if (authEnt && aliasesLastName !== undefined) {
+                authEnt.aliases_last_name = await this.replaceAliasCollection(authEnt, aliasesLastName, manager.getRepository(AliasAuthorLastName), 'Author');
+            }
+            return authEnt;
+        });
     }
 
     public async identifyAuthor(last_name: string, first_name: string): Promise<Author> {
@@ -233,11 +241,13 @@ export class AuthorService extends AbstractEntityService<Author> {
     }
 
     public override async delete(auts: Author[]) {
-        const authorIds = auts.map(author => author.id).filter((id): id is number => typeof id === 'number');
-        await this.pubAutRepository.delete({ authorId: In(authorIds) });
-        await this.deleteAliasCollection(this.aliasFirstNameRepository, authorIds);
-        await this.deleteAliasCollection(this.aliasLastNameRepository, authorIds);
-        return await this.repository.delete(authorIds);
+        return this.dataSource.transaction(async (manager) => {
+            const authorIds = auts.map(author => author.id).filter((id): id is number => typeof id === 'number');
+            await manager.getRepository(AuthorPublication).delete({ authorId: In(authorIds) });
+            await this.deleteAliasCollection(manager.getRepository(AliasAuthorFirstName), authorIds);
+            await this.deleteAliasCollection(manager.getRepository(AliasAuthorLastName), authorIds);
+            return await manager.getRepository(Author).delete(authorIds);
+        });
     }
 
 }
