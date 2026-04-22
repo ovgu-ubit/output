@@ -1200,16 +1200,13 @@ export class PublicationService {
                 })) ?? []
             })) ?? [],
             identifiers: publication.identifiers?.map((identifier) => ({
-                id: identifier.id,
                 type: identifier.type,
                 value: identifier.value
             })) ?? [],
             supplements: publication.supplements?.map((supplement) => ({
-                id: supplement.id,
                 link: supplement.link
             })) ?? [],
             authorPublications: publication.authorPublications?.map((ap) => ({
-                id: ap.id,
                 author: ap.author ? { id: ap.author.id, last_name: ap.author.last_name, first_name: ap.author.first_name } : { id: ap.authorId },
                 institute: ap.institute ? { id: ap.institute.id, label: ap.institute.label } : null,
                 role: ap.role ? { id: ap.role.id, label: ap.role.label } : null,
@@ -1220,7 +1217,13 @@ export class PublicationService {
     }
 
     private arePublicationChangeValuesEqual(before: unknown, after: unknown): boolean {
+        if (before === after) return true;
+        if (this.isLogicalEmpty(before) && this.isLogicalEmpty(after)) return true;
         return JSON.stringify(before) === JSON.stringify(after);
+    }
+
+    private isLogicalEmpty(value: unknown): boolean {
+        return value === null || value === undefined || value === '';
     }
 
     private hasPublicationChangeValue(value: unknown): boolean {
