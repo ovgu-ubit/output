@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { InstituteService } from './institute.service';
@@ -20,6 +20,7 @@ describe('InstituteService', () => {
     let authorRepository: jest.Mocked<Partial<Repository<Author>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasInstitute>>>;
     let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -46,6 +47,36 @@ describe('InstituteService', () => {
         configService = {
             get: jest.fn(),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const managerMock = {
+                    save: jest.fn().mockImplementation(async (entity, obj) => {
+                        if (entity && obj) {
+                             if (entity === AuthorPublication) return pubAutRepository.save(obj);
+                             if (entity === Author) return authorRepository.save(obj);
+                             if (entity === AliasInstitute) return aliasRepository.save(obj);
+                             return repository.save(obj);
+                        }
+                        return repository.save(entity);
+                    }),
+                    delete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === AliasInstitute) return aliasRepository.delete(criteria);
+                             return repository.delete(criteria);
+                        }
+                        return repository.delete(entity);
+                    }),
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AuthorPublication) return pubAutRepository;
+                        if (entity === Author) return authorRepository;
+                        if (entity === AliasInstitute) return aliasRepository;
+                        return repository;
+                    }),
+                    getTreeRepository: jest.fn().mockReturnValue(repository),
+                };
+                return cb(managerMock);
+            }),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -56,6 +87,7 @@ describe('InstituteService', () => {
                 { provide: getRepositoryToken(AliasInstitute), useValue: aliasRepository },
                 { provide: AliasLookupService, useValue: { findCanonicalElement: jest.fn() } },
                 { provide: AppConfigService, useValue: configService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 

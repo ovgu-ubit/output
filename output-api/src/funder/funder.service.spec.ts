@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { FunderService } from './funder.service';
 import { Funder } from './Funder.entity';
@@ -13,6 +13,7 @@ describe('FunderService', () => {
     let repository: jest.Mocked<Partial<Repository<Funder>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasFunder>>>;
     let publicationService: { save: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         repository = {
@@ -27,6 +28,21 @@ describe('FunderService', () => {
         publicationService = {
             save: jest.fn(),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasFunder) return aliasRepository;
+                        if (entity === Funder) return repository;
+                        return repository;
+                    }),
+                    findOne: repository.findOne,
+                };
+                return cb(manager);
+            }),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -36,6 +52,7 @@ describe('FunderService', () => {
                 { provide: PublicationService, useValue: publicationService },
                 { provide: AliasLookupService, useValue: { findCanonicalElement: jest.fn() } },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -120,7 +137,7 @@ describe('FunderService', () => {
                     expect.objectContaining({ id: 99 }),
                 ]),
             }),
-        ]);
+        ], expect.anything());
         expect(aliasRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([22]);
     });

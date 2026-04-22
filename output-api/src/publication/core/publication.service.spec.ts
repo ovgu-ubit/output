@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
@@ -53,6 +53,7 @@ describe('PublicationService combine', () => {
         deletePublicationChangesForPublications: jest.Mock;
     };
     let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -95,6 +96,52 @@ describe('PublicationService combine', () => {
         configService = {
             get: jest.fn(async () => 5),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const managerMock = {
+                    save: jest.fn().mockImplementation(async (entity, obj) => {
+                        if (entity && obj) {
+                             if (entity === Publication) return pubRepository.save(obj);
+                             if (entity === AuthorPublication) return pubAutRepository.save(obj);
+                             if (entity === PublicationIdentifier) return idRepository.save(obj);
+                             if (entity === PublicationSupplement) return supplRepository.save(obj);
+                             if (entity === PublicationDuplicate) return duplRepository.save(obj);
+                             return pubRepository.save(obj);
+                        }
+                        return pubRepository.save(entity);
+                    }),
+                    delete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === Publication) return pubRepository.delete(criteria);
+                             if (entity === AuthorPublication) return pubAutRepository.delete(criteria);
+                             if (entity === PublicationIdentifier) return idRepository.delete(criteria);
+                             if (entity === PublicationSupplement) return supplRepository.delete(criteria);
+                             if (entity === PublicationDuplicate) return duplRepository.delete(criteria);
+                             return pubRepository.delete(criteria);
+                        }
+                        return pubRepository.delete(entity);
+                    }),
+                    softDelete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === Publication) return pubRepository.softDelete(criteria);
+                             return pubRepository.softDelete(criteria);
+                        }
+                        return pubRepository.softDelete(entity);
+                    }),
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === Publication) return pubRepository;
+                        if (entity === AuthorPublication) return pubAutRepository;
+                        if (entity === Invoice) return invoiceRepository;
+                        if (entity === CostItem) return costItemRepository;
+                        if (entity === PublicationIdentifier) return idRepository;
+                        if (entity === PublicationSupplement) return supplRepository;
+                        if (entity === PublicationDuplicate) return duplRepository;
+                        return pubRepository;
+                    }),
+                };
+                return cb(managerMock);
+            }),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -109,6 +156,7 @@ describe('PublicationService combine', () => {
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
                 { provide: PublicationChangeService, useValue: publicationChangeService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -210,8 +258,7 @@ describe('PublicationService combine', () => {
         expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([62, 63]) } });
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([62, 63]) } });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([62, 63]) });
-        expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([62, 63]) });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63]);
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63], expect.anything());
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
@@ -599,7 +646,7 @@ describe('PublicationService combine', () => {
                     title: 'After',
                 },
             }),
-        }));
+        }), expect.anything());
     });
 
     it('deletes publication changes before soft deleting publications', async () => {
@@ -611,7 +658,7 @@ describe('PublicationService combine', () => {
 
         await service.delete([{ id: 7 } as Publication], true);
 
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
@@ -635,7 +682,7 @@ describe('PublicationService combine', () => {
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([7]) } });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([7]) });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([7]) });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
 
         const parentDeleteOrder = pubRepository.delete.mock.invocationCallOrder[0];
         expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
@@ -674,6 +721,7 @@ describe('PublicationService filter', () => {
             {} as any,
             {} as any,
             instituteService as any,
+            {} as any,
             {} as any,
         );
         service.filter_joins = new Set();

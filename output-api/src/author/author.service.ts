@@ -150,11 +150,12 @@ export class AuthorService extends AbstractEntityService<Author> {
     }
 
     public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
+        return this.dataSource.transaction(async (manager) => {
             return mergeEntities<Author>({
                 repository: this.repository,
                 primaryId: id1,
                 duplicateIds: ids,
-                primaryOptions: {relations: { institutes: true, aliases_first_name: true, aliases_last_name: true }},
+                primaryOptions: { relations: { institutes: true, aliases_first_name: true, aliases_last_name: true } },
                 duplicateOptions: { relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } },
                 mergeContext: {
                     field: 'author',
@@ -162,17 +163,15 @@ export class AuthorService extends AbstractEntityService<Author> {
                     aliases_first_name,
                     aliases_last_name
                 },
-                    afterSave: async ({ duplicateIds, defaultDelete }) => {
-                        if (await this.aliasFirstNameRepository.delete({ elementId: In(duplicateIds) })) {
-                             await this.aliasLastNameRepository.delete({ elementId: In(duplicateIds) }) 
-                        }
-                        await this.pubAutRepository.delete({ authorId: In(duplicateIds) })
-    
-                        await defaultDelete();
-                    },
+                afterSave: async ({ duplicateIds, defaultDelete }) => {
+                    await manager.getRepository(AliasAuthorFirstName).delete({ elementId: In(duplicateIds) });
+                    await manager.getRepository(AliasAuthorLastName).delete({ elementId: In(duplicateIds) });
+                    await manager.getRepository(AuthorPublication).delete({ authorId: In(duplicateIds) });
+                    await defaultDelete();
+                },
+                manager
             });
-
-        
+        });
     }
 
     public async index(reporting_year: number): Promise<AuthorIndex[]> {

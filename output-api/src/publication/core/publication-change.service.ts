@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { createNotFoundHttpException } from '../../common/api-error';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
@@ -14,12 +14,16 @@ export class PublicationChangeService {
         @InjectRepository(WorkflowReport) private workflowReportRepository: Repository<WorkflowReport>,
     ) { }
 
-    async createPublicationChange(options: PublicationChange): Promise<PublicationChange> {
+    async createPublicationChange(options: PublicationChange, manager?: EntityManager): Promise<PublicationChange> {
+        const repo = manager ? manager.getRepository(PublicationChange) : this.publicationChangeRepository;
+        const reportRepo = manager ? manager.getRepository(WorkflowReport) : this.workflowReportRepository;
+
         if (hasProvidedEntityId(options.workflowReport?.id)) {
-            await this.ensureReportExists(options.workflowReport.id);
+            const exists = await reportRepo.existsBy({ id: options.workflowReport.id });
+            if (!exists) throw createNotFoundHttpException(`Workflow report ${options.workflowReport.id} not found`);
         }
 
-        return this.publicationChangeRepository.save({
+        return repo.save({
             publication: options.publication,
             workflowReport: options.workflowReport,
             timestamp: options.timestamp ?? new Date(),
@@ -55,11 +59,12 @@ export class PublicationChangeService {
         return changes.map((change) => this.hydrateWorkflowReport(change));
     }
 
-    async deletePublicationChangesForPublications(publicationIds: number[]): Promise<void> {
+    async deletePublicationChangesForPublications(publicationIds: number[], manager?: EntityManager): Promise<void> {
         const ids = publicationIds.filter((publicationId): publicationId is number => Number.isInteger(publicationId));
         if (ids.length === 0) return;
 
-        await this.publicationChangeRepository
+        const repo = manager ? manager.getRepository(PublicationChange) : this.publicationChangeRepository;
+        await repo
             .createQueryBuilder()
             .delete()
             .from(PublicationChange)

@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
@@ -15,6 +15,7 @@ describe('InvoiceService', () => {
     let service: InvoiceService;
     let invoiceRepository: jest.Mocked<Partial<Repository<Invoice>>>;
     let publicationRepository: jest.Mocked<Partial<Repository<Publication>>>;
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -28,6 +29,33 @@ describe('InvoiceService', () => {
             find: jest.fn(),
             update: jest.fn(),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const managerMock = {
+                    save: jest.fn().mockImplementation(async (entity, obj) => {
+                        if (entity && obj) {
+                             if (entity === Invoice) return invoiceRepository.save(obj);
+                             if (entity === Publication) return publicationRepository.save(obj);
+                             return invoiceRepository.save(obj);
+                        }
+                        return invoiceRepository.save(entity);
+                    }),
+                    delete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === Invoice) return invoiceRepository.delete(criteria);
+                             return invoiceRepository.delete(criteria);
+                        }
+                        return invoiceRepository.delete(entity);
+                    }),
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === Invoice) return invoiceRepository;
+                        if (entity === Publication) return publicationRepository;
+                        return invoiceRepository;
+                    }),
+                };
+                return cb(managerMock);
+            }),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -37,6 +65,7 @@ describe('InvoiceService', () => {
                 { provide: AppConfigService, useValue: { get: jest.fn(async () => 5) } },
                 { provide: CostTypeService, useValue: {} },
                 { provide: CostCenterService, useValue: {} },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
-import { ILike, Repository } from 'typeorm';
+import { DataSource, ILike, Repository } from 'typeorm';
 import { PublicationService } from '../publication/core/publication.service';
 import { OA_Category } from './OA_Category.entity';
 import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
@@ -16,6 +16,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         @InjectRepository(OA_Category) repository: Repository<OA_Category>,
         configService: AppConfigService,
         private publicationService: PublicationService,
+        private dataSource: DataSource
     ) {
         super(repository, configService);
     }
@@ -66,16 +67,18 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
     }
 
     public async delete(insts: OA_Category[]) {
-        for (const inst of insts) {
-            const conE: OA_Category = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { oa_category: true } }, withDeleted: true });
-            const pubs = [];
-            if (conE.publications) for (const pub of conE.publications) {
-                pubs.push({ id: pub.id, oa_category: null });
-            }
+        return this.dataSource.transaction(async (manager) => {
+            for (const inst of insts) {
+                const conE: OA_Category = await manager.getRepository(OA_Category).findOne({ where: { id: inst.id }, relations: { publications: { oa_category: true } }, withDeleted: true });
+                const pubs = [];
+                if (conE.publications) for (const pub of conE.publications) {
+                    pubs.push({ id: pub.id, oa_category: null });
+                }
 
-            await this.publicationService.save(pubs);
-        }
-        return await this.repository.delete(insts.map(p => p.id));
+                await this.publicationService.save(pubs, { manager });
+            }
+            return await manager.getRepository(OA_Category).delete(insts.map(p => p.id));
+        });
     }
 }
 

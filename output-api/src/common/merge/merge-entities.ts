@@ -1,4 +1,4 @@
-import { DeepPartial, FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
+import { DeepPartial, EntityManager, FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Author } from '../../author/Author.entity';
 import { createInternalErrorHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../api-error';
 import { PublicationService } from '../../publication/core/publication.service';
@@ -45,6 +45,7 @@ export interface MergeOptions<TEntity extends { id?: number | null }, TAccumulat
     mergeContext: MergeDuplicateContext<TEntity, TAccumulator>;
     afterSave?: (context: MergeAfterSaveContext<TEntity, TAccumulator>) => Promise<void> | void;
     validate?: (context: MergeValidationContext<TEntity>) => Promise<void> | void;
+    manager?: EntityManager;
 }
 
 export async function mergeEntities<TEntity extends { id?: number | null }, TAccumulator = TEntity>(options: MergeOptions<TEntity, TAccumulator>) {
@@ -58,10 +59,13 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         mergeContext,
         afterSave,
         validate,
+        manager,
     } = options;
 
+    const repo = manager ? manager.getRepository(repository.target) : repository;
+
     const primaryFindOptions = {...primaryOptions, where: { id: primaryId } as FindOptionsWhere<TEntity>}
-    const primary = await repository.findOne(primaryFindOptions);
+    const primary = await repo.findOne(primaryFindOptions);
     if (!primary) {
         throw createNotFoundHttpException(notFoundMessage);
     }
@@ -73,7 +77,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
                 duplicateFindOptions = { relations: primaryOptions.relations };
             }
             duplicateFindOptions.where = { id } as FindOptionsWhere<TEntity>;
-            return repository.findOne(duplicateFindOptions);
+            return repo.findOne(duplicateFindOptions);
         }),
     ) as TEntity[];
 
@@ -107,13 +111,14 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
                     return obj
                 }) ?? [];
                 if (pubs.length > 0) {
-                    await mergeContext.service.save(pubs);
+                    await mergeContext.service.save(pubs, { manager });
                 }
             } else if (key === 'authorPublications') {
                 for (const ap of duplicate[key] ?? []) {
                     const obj = { id: ap['id'] };
                     obj[mergeContext.field] = accumulator;
-                    await mergeContext.pubAutrepository.save(obj);
+                    const apRepo = manager ? manager.getRepository(AuthorPublication) : mergeContext.pubAutrepository;
+                    await apRepo.save(obj);
                 }
             } else if (key === 'authors' && mergeContext.autField === 'institutes') {
                 for (const auth of duplicate[key] ?? []) {
@@ -123,7 +128,8 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
                         institutes.push(primary);
                     }
                     obj[mergeContext.autField] = institutes;
-                    await mergeContext.autRepository.save(obj)
+                    const autRepo = manager ? manager.getRepository(Author) : mergeContext.autRepository;
+                    await autRepo.save(obj)
                 }
             }
             else if (value instanceof Date || typeof value === 'boolean') {
@@ -151,7 +157,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
 
     let saved: TEntity;
     try {
-        saved = await repository.save(accumulator as DeepPartial<TEntity>);
+        saved = await repo.save(accumulator as DeepPartial<TEntity>);
     } catch (error) {
         throw createPersistenceHttpException(error);
     }
@@ -160,7 +166,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
         if (duplicateIds.length === 0) {
             return;
         }
-        await repository.delete(duplicateIds);
+        await repo.delete(duplicateIds);
     };
 
     try {

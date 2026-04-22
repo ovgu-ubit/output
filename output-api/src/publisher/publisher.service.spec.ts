@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 
 import { PublisherService } from './publisher.service';
@@ -14,12 +15,17 @@ describe('PublisherService', () => {
     let repository: jest.Mocked<Partial<Repository<Publisher>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasPublisher>>>;
     let doiRepository: jest.Mocked<Partial<Repository<PublisherDOI>>>;
+    let aliasLookupService: { findAliases: jest.Mock, findCanonicalElement: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let configService: { get: jest.Mock };
 
     beforeEach(async () => {
         repository = {
-            findOne: jest.fn(),
             save: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            update: jest.fn(),
             delete: jest.fn(),
         };
         aliasRepository = {
@@ -33,6 +39,27 @@ describe('PublisherService', () => {
         publicationService = {
             save: jest.fn(),
         };
+        configService = {
+            get: jest.fn(),
+        };
+        aliasLookupService = {
+            findAliases: jest.fn(),
+            findCanonicalElement: jest.fn(),
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasPublisher) return aliasRepository;
+                        if (entity === PublisherDOI) return doiRepository;
+                        return repository;
+                    })
+                };
+                return cb(manager);
+            })
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -41,8 +68,9 @@ describe('PublisherService', () => {
                 { provide: getRepositoryToken(AliasPublisher), useValue: aliasRepository },
                 { provide: getRepositoryToken(PublisherDOI), useValue: doiRepository },
                 { provide: PublicationService, useValue: publicationService },
-                { provide: AliasLookupService, useValue: { findCanonicalElement: jest.fn() } },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
+                { provide: AliasLookupService, useValue: aliasLookupService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -142,10 +170,10 @@ describe('PublisherService', () => {
         expect(publicationService.save).toHaveBeenCalledTimes(2);
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 22, publisher: expect.objectContaining({ id: 5 }) }),
-        ]);
+        ], expect.anything());
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 23, publisher: expect.objectContaining({ id: 5 }) }),
-        ]);
+        ], expect.anything());
         expect(aliasRepository.delete).toHaveBeenCalled();
         expect(doiRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([9, 10]);

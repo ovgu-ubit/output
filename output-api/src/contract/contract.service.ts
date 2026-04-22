@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
-import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
+import { DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
 import { InvoiceKind } from '../../../output-interfaces/Publication';
 import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
@@ -32,6 +32,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>,
         @InjectRepository(ContractComponent) private contractComponentRepository: Repository<ContractComponent>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
+        private dataSource: DataSource,
     ) {
         super(repository, configService);
     }
@@ -58,37 +59,39 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public override async save(contract: Contract) {
-        const isUpdate = hasProvidedEntityId(contract.id);
-        const orig: Contract | null = isUpdate
-            ? await this.repository.findOne({ where: { id: contract.id }, relations: { identifiers: true, components: true } })
-            : null;
+        return this.dataSource.transaction(async (manager) => {
+            const isUpdate = hasProvidedEntityId(contract.id);
+            const orig: Contract | null = isUpdate
+                ? await manager.getRepository(Contract).findOne({ where: { id: contract.id }, relations: { identifiers: true, components: true } })
+                : null;
 
-        if (isUpdate && !orig) {
-            throw createNotFoundHttpException(`Contract ${contract.id} not found.`);
-        }
-
-        const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
-        const savedContract = await this.repository.save(normalizedContract).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-
-        if (normalizedContract.identifiers && orig?.identifiers) {
-            await Promise.all(orig.identifiers
-                .filter(id => !normalizedContract.identifiers.find(e => e.id === id.id))
-                .map(id => this.idRepository.delete(id.id)));
-        }
-
-        if (normalizedContract.components && orig?.components) {
-            const removedComponents = orig.components
-                .filter(c => !normalizedContract.components.find(e => e.id === c.id))
-                .map(c => ({ id: c.id }));
-
-            if (removedComponents.length > 0) {
-                await this.deleteComponents(removedComponents);
+            if (isUpdate && !orig) {
+                throw createNotFoundHttpException(`Contract ${contract.id} not found.`);
             }
-        }
 
-        return this.splitContractComponentInvoicesForContract(savedContract);
+            const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
+            const savedContract = await manager.getRepository(Contract).save(normalizedContract).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
+
+            if (normalizedContract.identifiers && orig?.identifiers) {
+                await Promise.all(orig.identifiers
+                    .filter(id => !normalizedContract.identifiers.find(e => e.id === id.id))
+                    .map(id => manager.getRepository(ContractIdentifier).delete(id.id)));
+            }
+
+            if (normalizedContract.components && orig?.components) {
+                const removedComponents = orig.components
+                    .filter(c => !normalizedContract.components.find(e => e.id === c.id))
+                    .map(c => ({ id: c.id }));
+
+                if (removedComponents.length > 0) {
+                    await this.deleteComponents(removedComponents, manager);
+                }
+            }
+
+            return this.splitContractComponentInvoicesForContract(savedContract);
+        });
     }
 
     public override async one(id: number, writer: boolean, user?: string) {
@@ -97,38 +100,42 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async saveComponent(component: DeepPartial<ContractComponent>) {
-        assertCreateRequestHasNoId(component);
-        const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
+        return this.dataSource.transaction(async (manager) => {
+            assertCreateRequestHasNoId(component);
+            const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
 
-        if (!normalizedComponent.contract?.id) {
-            throw new BadRequestException('contract.id is required to create a contract component');
-        }
+            if (!normalizedComponent.contract?.id) {
+                throw new BadRequestException('contract.id is required to create a contract component');
+            }
 
-        const savedComponent = await this.contractComponentRepository.save(normalizedComponent).catch(err => {
-            throw createPersistenceHttpException(err)
+            const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
+                throw createPersistenceHttpException(err)
+            });
+
+            return this.splitContractComponentInvoices(savedComponent);
         });
-
-        return this.splitContractComponentInvoices(savedComponent);
     }
 
     public async updateComponent(component: DeepPartial<ContractComponent>) {
-        if (!component?.id) {
-            throw new BadRequestException('id is required to update a contract component');
-        }
+        return this.dataSource.transaction(async (manager) => {
+            if (!component?.id) {
+                throw new BadRequestException('id is required to update a contract component');
+            }
 
-        const existingComponent = await this.contractComponentRepository.findOne({
-            where: { id: component.id } as FindOptionsWhere<ContractComponent>,
+            const existingComponent = await manager.getRepository(ContractComponent).findOne({
+                where: { id: component.id } as FindOptionsWhere<ContractComponent>,
+            });
+            if (!existingComponent) {
+                throw createNotFoundHttpException(`Contract component ${component.id} not found.`);
+            }
+
+            const normalizedComponent = this.validateAndNormalizeContractComponent(component);
+            const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
+                throw createPersistenceHttpException(err)
+            });
+
+            return this.splitContractComponentInvoices(savedComponent);
         });
-        if (!existingComponent) {
-            throw createNotFoundHttpException(`Contract component ${component.id} not found.`);
-        }
-
-        const normalizedComponent = this.validateAndNormalizeContractComponent(component);
-        const savedComponent = await this.contractComponentRepository.save(normalizedComponent).catch(err => {
-            throw createPersistenceHttpException(err)
-        });
-
-        return this.splitContractComponentInvoices(savedComponent);
     }
 
     public async getComponents(contractId?: number) {
@@ -153,24 +160,27 @@ export class ContractService extends AbstractEntityService<Contract> {
         return this.splitContractComponentInvoices(component);
     }
 
-    public async deleteComponents(components: Pick<ContractComponent, 'id'>[]) {
+    public async deleteComponents(components: Pick<ContractComponent, 'id'>[], manager?: EntityManager) {
+        if (!manager) {
+            return this.dataSource.transaction(async (m) => this.deleteComponents(components, m));
+        }
         const componentIds = components?.map(component => component.id).filter((id): id is number => !!id);
         if (!components || !componentIds.length) {
             throw new BadRequestException('No valid component ids provided for deletion');
         }
 
-        const linkedInvoices = await this.invoiceRepository.find({
+        const linkedInvoices = await manager.getRepository(Invoice).find({
             where: { contract_component: { id: In(componentIds) } },
         });
 
         if (linkedInvoices.length) {
-            await this.invoiceRepository.save(linkedInvoices.map(invoice => ({
+            await manager.getRepository(Invoice).save(linkedInvoices.map(invoice => ({
                 id: invoice.id,
                 contract_component: null,
             })));
         }
 
-        return this.contractComponentRepository.delete(componentIds);
+        return manager.getRepository(ContractComponent).delete(componentIds);
     }
 
     public normalizeContractComponentForCreate(component: DeepPartial<ContractComponent>) {
@@ -255,18 +265,20 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async delete(insts: Contract[]) {
-        for (const inst of insts) {
-            const conE: Contract = await this.repository.findOne({ where: { id: inst.id }, relations: { publisher: true, publications: true }, withDeleted: true });
-            const pubs = [];
-            if (conE.publications) {
-                for (const pub of conE.publications) {
-                    pubs.push({ id: pub.id, contract: null });
+        return this.dataSource.transaction(async (manager) => {
+            for (const inst of insts) {
+                const conE: Contract = await manager.getRepository(Contract).findOne({ where: { id: inst.id }, relations: { publisher: true, publications: true }, withDeleted: true });
+                const pubs = [];
+                if (conE.publications) {
+                    for (const pub of conE.publications) {
+                        pubs.push({ id: pub.id, contract: null });
+                    }
                 }
-            }
 
-            await this.publicationService.save(pubs);
-        }
-        return await this.repository.delete(insts.map(p => p.id));
+                await this.publicationService.save(pubs, { manager });
+            }
+            return await manager.getRepository(Contract).delete(insts.map(p => p.id));
+        });
     }
 
     private getContractComponentRelations(): FindOptionsRelations<ContractComponent> {

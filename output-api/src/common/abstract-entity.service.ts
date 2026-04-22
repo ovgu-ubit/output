@@ -1,4 +1,4 @@
-import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, In, IsNull, LessThan, Repository } from 'typeorm';
+import { DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 import { hasProvidedEntityId } from './entity-id';
@@ -136,8 +136,9 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         return {};
     }
 
-    public async save(entity: DeepPartial<TEntity>, _user?: string) {
-        return this.repository.save(entity).catch(err => {
+    public async save(entity: DeepPartial<TEntity>, _user?: string, options?: { manager?: EntityManager }) {
+        const repo = options?.manager ? options.manager.getRepository(this.repository.target) : this.repository;
+        return repo.save(entity).catch(err => {
             throw createPersistenceHttpException(err);
         });
     }

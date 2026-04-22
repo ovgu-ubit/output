@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
-import { EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
+import { DataSource, EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author.entity';
 import { deleteAliasCollection, getProvidedOwnedCollection, LockableEntity, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
@@ -26,26 +26,29 @@ export class InstituteService {
         @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
         @InjectRepository(Author) private autRepository: Repository<Author>,
         @InjectRepository(AliasInstitute) private aliasRepository: Repository<AliasInstitute>,
-        private aliasLookupService: AliasLookupService) {
+        private aliasLookupService: AliasLookupService,
+        private dataSource: DataSource) {
         this.repository = this.manager.getTreeRepository(Institute);
     }
 
     public async save(inst: Institute[] | LockableEntity[], user?: string) {
-        await this.ensureInstitutesCanBeSaved(inst, user);
-        const aliasesByIndex = inst.map((institute) => getProvidedOwnedCollection<Institute, AliasInstitute>(institute as Institute, 'aliases'));
-        const institutesToSave = inst.map((institute) => stripOwnedCollections<Institute>(institute as Institute, ['aliases', 'authorPublications']));
-        const saved = await this.repository.save(institutesToSave as Institute[]).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-        const savedInstitutes = Array.isArray(saved) ? saved : [saved];
-        for (let i = 0; i < savedInstitutes.length; i++) {
-            const aliases = aliasesByIndex[i];
-            if (aliases !== undefined) {
-                savedInstitutes[i].aliases = await replaceAliasCollection(savedInstitutes[i], aliases, this.aliasRepository, 'Institute');
+        return this.dataSource.transaction(async (manager) => {
+            await this.ensureInstitutesCanBeSaved(inst, user, manager);
+            const aliasesByIndex = inst.map((institute) => getProvidedOwnedCollection<Institute, AliasInstitute>(institute as Institute, 'aliases'));
+            const institutesToSave = inst.map((institute) => stripOwnedCollections<Institute>(institute as Institute, ['aliases', 'authorPublications']));
+            const saved = await manager.getTreeRepository(Institute).save(institutesToSave as Institute[]).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
+            const savedInstitutes = Array.isArray(saved) ? saved : [saved];
+            for (let i = 0; i < savedInstitutes.length; i++) {
+                const aliases = aliasesByIndex[i];
+                if (aliases !== undefined) {
+                    savedInstitutes[i].aliases = await replaceAliasCollection(savedInstitutes[i], aliases, manager.getRepository(AliasInstitute), 'Institute');
+                }
             }
-        }
-        inst.forEach((institute) => this.syncInstituteLockOwner(institute, user));
-        return saved;
+            inst.forEach((institute) => this.syncInstituteLockOwner(institute, user));
+            return saved;
+        });
     }
 
     public get() {
@@ -58,19 +61,21 @@ export class InstituteService {
     }
 
     public async delete(insts: Institute[]) {
-        const instituteIds = insts.map(institute => institute.id).filter((id): id is number => typeof id === 'number');
-        for (const inst of insts) {
-            const instE = await this.repository.findOne({ where: { id: inst.id }, relations: { authorPublications: { institute: true }, authors: { institutes: true } } });
-            if (instE.authorPublications) for (const autPub of instE.authorPublications) {
-                await this.pubAutRepository.save({ authorId: autPub.authorId, publicationId: autPub.publicationId, institute: null });
+        return this.dataSource.transaction(async (manager) => {
+            const instituteIds = insts.map(institute => institute.id).filter((id): id is number => typeof id === 'number');
+            for (const inst of insts) {
+                const instE = await manager.getTreeRepository(Institute).findOne({ where: { id: inst.id }, relations: { authorPublications: { institute: true }, authors: { institutes: true } } });
+                if (instE.authorPublications) for (const autPub of instE.authorPublications) {
+                    await manager.getRepository(AuthorPublication).save({ authorId: autPub.authorId, publicationId: autPub.publicationId, institute: null });
+                }
+                if (instE.authors) for (const aut of instE.authors) {
+                    aut.institutes = aut.institutes.filter(e => e.id !== inst.id);
+                    await manager.getRepository(Author).save([aut])
+                }
             }
-            if (instE.authors) for (const aut of instE.authors) {
-                aut.institutes = aut.institutes.filter(e => e.id !== inst.id);
-                await this.autRepository.save([aut])
-            }
-        }
-        await deleteAliasCollection(this.aliasRepository, instituteIds);
-        return await this.repository.delete(instituteIds);
+            await deleteAliasCollection(manager.getRepository(AliasInstitute), instituteIds);
+            return await manager.getTreeRepository(Institute).delete(instituteIds);
+        });
     }
 
     public findOrSave(affiliation: string, _dry_run = false): Observable<Institute> {
@@ -116,19 +121,26 @@ export class InstituteService {
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        return mergeEntities<Institute>({
-            repository: this.repository,
-            primaryId: id1,
-            duplicateIds: ids,
-            primaryOptions: {relations: { authors: { institutes: true }, super_institute: true, aliases: true }},
-            duplicateOptions: {relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true }},
-            mergeContext: {
-                field: 'institute',
-                autField: 'institutes',
-                pubAutrepository: this.pubAutRepository,
-                autRepository: this.autRepository,
-                alias_strings
-            },
+        return this.dataSource.transaction(async (manager) => {
+            return mergeEntities<Institute>({
+                repository: this.repository,
+                primaryId: id1,
+                duplicateIds: ids,
+                primaryOptions: { relations: { authors: { institutes: true }, super_institute: true, aliases: true } },
+                duplicateOptions: { relations: { authorPublications: { institute: true }, authors: { institutes: true }, super_institute: true, aliases: true } },
+                mergeContext: {
+                    field: 'institute',
+                    autField: 'institutes',
+                    pubAutrepository: this.pubAutRepository,
+                    autRepository: this.autRepository,
+                    alias_strings
+                },
+                afterSave: async ({ duplicateIds, defaultDelete }) => {
+                    await manager.getRepository(AliasInstitute).delete({ elementId: In(duplicateIds) });
+                    await defaultDelete();
+                },
+                manager
+            });
         });
     }
 
@@ -209,11 +221,12 @@ export class InstituteService {
         return { ...institute, locked_at: undefined };
     }
 
-    private async ensureInstitutesCanBeSaved(institutes: (Institute | LockableEntity)[], user?: string): Promise<void> {
+    private async ensureInstitutesCanBeSaved(institutes: (Institute | LockableEntity)[], user?: string, manager?: EntityManager): Promise<void> {
         const ids = institutes.map((institute) => institute.id).filter((id): id is number => hasProvidedEntityId(id));
         if (ids.length === 0) return;
 
-        const existing = await this.repository.find({ where: { id: In(ids) } as never }) ?? [];
+        const repo = manager ? manager.getTreeRepository(Institute) : this.repository;
+        const existing = await repo.find({ where: { id: In(ids) } as never }) ?? [];
         const instituteMap = new Map(existing.map((institute) => [institute.id, institute]));
 
         for (const institute of institutes) {

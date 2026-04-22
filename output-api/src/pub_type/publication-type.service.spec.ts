@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 
 import { PublicationTypeService } from './publication-type.service';
@@ -9,22 +10,44 @@ import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('PublicationTypeService', () => {
     let service: PublicationTypeService;
-    let repository: jest.Mocked<Partial<Repository<PublicationType>>>;
-    let aliasRepository: jest.Mocked<Partial<Repository<AliasPubType>>>;
+    let repository: { save: jest.Mock, find: jest.Mock, findOne: jest.Mock, delete: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let aliasRepository: { save: jest.Mock, find: jest.Mock, findOne: jest.Mock, delete: jest.Mock, createQueryBuilder: jest.Mock };
+    let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         repository = {
-            findOne: jest.fn(),
             save: jest.fn(),
-            delete: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn()
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasPubType) return aliasRepository;
+                        return repository;
+                    })
+                };
+                return cb(manager);
+            })
         };
         aliasRepository = {
             delete: jest.fn(),
             save: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            createQueryBuilder: jest.fn(),
         };
         publicationService = {
             save: jest.fn(),
+        };
+        configService = {
+            get: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -33,7 +56,8 @@ describe('PublicationTypeService', () => {
                 { provide: getRepositoryToken(PublicationType), useValue: repository },
                 { provide: getRepositoryToken(AliasPubType), useValue: aliasRepository },
                 { provide: PublicationService, useValue: publicationService },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -115,10 +139,10 @@ describe('PublicationTypeService', () => {
         expect(publicationService.save).toHaveBeenCalledTimes(2);
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 5, pub_type: expect.objectContaining({ id: 4 }) }),
-        ]);
+        ], expect.anything());
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 6, pub_type: expect.objectContaining({ id: 4 }) }),
-        ]);
+        ], expect.anything());
         expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: expect.anything() });
         expect(repository.delete).toHaveBeenCalledWith([7, 8]);
     });
