@@ -653,6 +653,41 @@ describe('PublicationService', () => {
         }), expect.anything());
     });
 
+    it('logs changes in authorPublications', async () => {
+        const author = { id: 101, last_name: 'Doe', first_name: 'John' };
+        const before = {
+            id: 7,
+            authorPublications: [{ id: 1, authorId: 101, author, corresponding: false }],
+        } as any;
+        const after = {
+            id: 7,
+            authorPublications: [
+                { id: 1, authorId: 101, author, corresponding: true },
+                { id: 2, authorId: 102, author: { id: 102, last_name: 'Smith', first_name: 'Jane' }, corresponding: false }
+            ],
+        } as any;
+
+        pubRepository.find
+            .mockResolvedValueOnce([{ id: 7, locked_at: null } as Publication] as never)
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 7 } as Publication] as any);
+        pubAutRepository.save.mockResolvedValue([] as any);
+
+        await service.save([{ id: 7, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
+
+        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+            patch_data: expect.objectContaining({
+                after: expect.objectContaining({
+                    authorPublications: expect.arrayContaining([
+                        expect.objectContaining({ author: expect.objectContaining({ id: 101 }), corresponding: true }),
+                        expect.objectContaining({ author: expect.objectContaining({ id: 102 }), corresponding: false }),
+                    ]),
+                }),
+            }),
+        }), expect.anything());
+    });
+
     it('deletes publication changes before soft deleting publications', async () => {
         pubRepository.find.mockResolvedValue([{
             id: 7,

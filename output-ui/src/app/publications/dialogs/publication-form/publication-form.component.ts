@@ -398,7 +398,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   abort(): void {
     if (this.form.dirty) {
-      const dialogData = new ConfirmDialogModel('Ungesicherte Aenderungen', 'Es gibt ungespeicherte Aenderungen, moechten Sie diese zunaechst speichern?');
+      const dialogData = new ConfirmDialogModel('Ungesicherte Änderungen', 'Es gibt ungespeicherte Änderungen, moechten Sie diese zunächst speichern?');
 
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',
@@ -432,7 +432,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
 
     if (this.idTable && this.idTable.isDirty()) {
-      const dialogData = new ConfirmDialogModel('Ungesicherte Aenderungen', 'Es gibt einen ungespeicherten Identifier, moechten Sie diesen zunaechst speichern?');
+      const dialogData = new ConfirmDialogModel('Ungesicherte Änderungen', 'Es gibt einen ungespeicherten Identifier, moechten Sie diesen zunächst speichern?');
 
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',

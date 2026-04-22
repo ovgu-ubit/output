@@ -1095,7 +1095,12 @@ export class PublicationService {
                 },
                 language: true,
                 identifiers: true,
-                supplements: true
+                supplements: true,
+                authorPublications: {
+                    author: true,
+                    institute: true,
+                    role: true
+                }
             },
             withDeleted: true
         });
@@ -1202,6 +1207,14 @@ export class PublicationService {
             supplements: publication.supplements?.map((supplement) => ({
                 id: supplement.id,
                 link: supplement.link
+            })) ?? [],
+            authorPublications: publication.authorPublications?.map((ap) => ({
+                id: ap.id,
+                author: ap.author ? { id: ap.author.id, last_name: ap.author.last_name, first_name: ap.author.first_name } : { id: ap.authorId },
+                institute: ap.institute ? { id: ap.institute.id, label: ap.institute.label } : null,
+                role: ap.role ? { id: ap.role.id, label: ap.role.label } : null,
+                corresponding: ap.corresponding,
+                affiliation: ap.affiliation
             })) ?? []
         };
     }
