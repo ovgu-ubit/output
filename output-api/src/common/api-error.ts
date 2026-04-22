@@ -86,10 +86,10 @@ export function createInternalErrorHttpException(): HttpException {
 
 export function createPersistenceHttpException(error: unknown): HttpException {
     const errorRecord = asRecord(error);
-    const message = typeof errorRecord?.detail === 'string'
-        ? errorRecord.detail
-        : typeof errorRecord?.message === 'string'
-            ? errorRecord.message
+    const message = typeof errorRecord?.message === 'string'
+        ? errorRecord.message
+        : typeof errorRecord?.detail === 'string'
+            ? errorRecord.detail
             : 'Persistence operation failed.';
     const dbCode = typeof errorRecord?.code === 'string' ? errorRecord.code : undefined;
 

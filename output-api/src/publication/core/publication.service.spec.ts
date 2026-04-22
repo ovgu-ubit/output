@@ -289,6 +289,68 @@ describe('PublicationService combine', () => {
         }
     });
 
+    it('saves new publication authorships after the publication id is known', async () => {
+        (pubRepository.save as jest.Mock).mockImplementation(async (entities: Publication[]) =>
+            entities.map((entity, index) => ({ ...entity, id: 90 + index }) as Publication),
+        );
+        pubAutRepository.delete!.mockResolvedValue(undefined as never);
+        (pubAutRepository.save as jest.Mock).mockImplementation(async (entities) => entities as AuthorPublication[]);
+
+        const result = await service.save([{
+            title: 'Publication with author',
+            authorPublications: [{
+                author: { id: 876 } as any,
+                affiliation: 'Center for Intervention and Research',
+                corresponding: false,
+            } as AuthorPublication],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication[];
+        expect(savedPublicationArg[0]).not.toHaveProperty('authorPublications');
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: 90 });
+        expect(pubAutRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                authorId: 876,
+                publicationId: 90,
+                publication: expect.objectContaining({ id: 90 }),
+                affiliation: 'Center for Intervention and Research',
+                corresponding: false,
+            }),
+        ]);
+        expect(result[0].authorPublications).toEqual(expect.arrayContaining([
+            expect.objectContaining({ authorId: 876, publicationId: 90 }),
+        ]));
+    });
+
+    it('updates authorships without cascading rows with a null publication id', async () => {
+        pubRepository.find.mockResolvedValue([{ id: 7, locked_at: null } as Publication] as never);
+        pubRepository.findOne.mockResolvedValue({ id: 7, identifiers: [], supplements: [] } as Publication);
+        pubRepository.save.mockResolvedValue({ id: 7, title: 'Updated' } as never);
+        pubAutRepository.delete!.mockResolvedValue(undefined as never);
+        (pubAutRepository.save as jest.Mock).mockImplementation(async (entities) => entities as AuthorPublication[]);
+
+        await service.update([{
+            id: 7,
+            title: 'Updated',
+            authorPublications: [{
+                author: { id: 876 } as any,
+                affiliation: 'Center for Intervention and Research',
+                corresponding: false,
+            } as AuthorPublication],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication;
+        expect(savedPublicationArg).not.toHaveProperty('authorPublications');
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: 7 });
+        expect(pubAutRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                authorId: 876,
+                publicationId: 7,
+                publication: expect.objectContaining({ id: 7 }),
+            }),
+        ]);
+    });
+
     it('keeps a locked publication editable for the same user', async () => {
         const lockedAt = new Date();
 

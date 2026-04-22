@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, DeepPartial, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterValue } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
@@ -118,10 +118,20 @@ export class PublicationService {
         await this.ensurePublicationsCanBeSaved(pub, options?.by_user);
         const shouldLogChanges = this.shouldCreatePublicationChange(options);
         const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub) : new Map<number, Publication>();
+        const authorPublicationsByIndex = pub.map((publication) => publication.authorPublications);
+        const publicationsToSave = pub.map((publication) => this.withoutAuthorPublications(publication));
 
-        const saved = await this.pubRepository.save(pub).catch((error: unknown) => {
+        const saved = await this.pubRepository.save(publicationsToSave).catch((error: unknown) => {
             throw createPersistenceHttpException(error);
         });
+
+        for (let i = 0; i < saved.length; i++) {
+            const authorPublications = authorPublicationsByIndex[i];
+            if (authorPublications !== undefined) {
+                saved[i].authorPublications = await this.replaceAuthorPublications(saved[i], authorPublications);
+            }
+        }
+
         const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved) : new Map<number, Publication>();
         pub.forEach((publication) => this.syncPublicationLockOwner(publication, options?.by_user));
 
@@ -350,14 +360,14 @@ export class PublicationService {
                 if (!pub.supplements.find(e => e.id === suppl.id)) await this.supplRepository.delete(suppl.id)
             })
 
-            const autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
-            if (autPub) {
-                pub.authorPublications = autPub;
-                await this.resetAuthorPublication(pub);
-            }
-            const savedPub = await this.pubRepository.save(pub).catch((error: unknown) => {
+            const authorPublications = pub.authorPublications;
+            const publicationToSave = this.withoutAuthorPublications(pub);
+            const savedPub = await this.pubRepository.save(publicationToSave).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
+            if (authorPublications !== undefined) {
+                await this.replaceAuthorPublications(savedPub, authorPublications);
+            }
             if (savedPub) i++;
             this.syncPublicationLockOwner(pub, options?.by_user);
             if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
@@ -417,7 +427,25 @@ export class PublicationService {
     }
 
     public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?: Role) {
-        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role }).catch((error: unknown) => {
+        if (!hasProvidedEntityId(author?.id)) {
+            throw createInvalidRequestHttpException('Author id is required to save author publication.');
+        }
+        if (!hasProvidedEntityId(publication?.id)) {
+            throw createInvalidRequestHttpException('Publication id is required to save author publication.');
+        }
+        const authorId = author.id as number;
+        const publicationId = publication.id as number;
+
+        return this.pubAutRepository.save({
+            author: { id: authorId } as Author,
+            authorId,
+            publication: { id: publicationId } as Publication,
+            publicationId,
+            corresponding,
+            affiliation,
+            institute,
+            role
+        }).catch((error: unknown) => {
             throw createPersistenceHttpException(error);
         });
     }
@@ -427,8 +455,66 @@ export class PublicationService {
     }
 
     public async resetAuthorPublication(pub: Publication) {
-        const pub_aut = await this.pubAutRepository.findBy({ publicationId: pub.id });
-        return await this.pubAutRepository.remove(pub_aut);
+        if (!hasProvidedEntityId(pub?.id)) {
+            throw createInvalidRequestHttpException('Publication id is required to reset author publications.');
+        }
+        return this.pubAutRepository.delete({ publicationId: pub.id });
+    }
+
+    private withoutAuthorPublications(publication: Publication): Publication {
+        if (!Object.prototype.hasOwnProperty.call(publication, 'authorPublications')) {
+            return publication;
+        }
+
+        const { authorPublications: _authorPublications, ...publicationToSave } = publication;
+        return publicationToSave as Publication;
+    }
+
+    private async replaceAuthorPublications(publication: Publication, authorPublications: AuthorPublication[]): Promise<AuthorPublication[]> {
+        const publicationId = publication?.id;
+        if (!hasProvidedEntityId(publicationId)) {
+            throw createInvalidRequestHttpException('Publication id is required to save author publications.');
+        }
+        const normalizedPublicationId = publicationId as number;
+
+        await this.resetAuthorPublication({ id: normalizedPublicationId } as Publication);
+        if (authorPublications.length === 0) return [];
+
+        const normalizedAuthorPublications = authorPublications.map((authorPublication, index) =>
+            this.normalizeAuthorPublication(normalizedPublicationId, authorPublication, index),
+        );
+
+        return this.pubAutRepository.save(normalizedAuthorPublications).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private normalizeAuthorPublication(
+        publicationId: number,
+        authorPublication: AuthorPublication,
+        index: number,
+    ): DeepPartial<AuthorPublication> {
+        const authorId = authorPublication?.author?.id ?? authorPublication?.authorId;
+        if (!hasProvidedEntityId(authorId)) {
+            throw createInvalidRequestHttpException('authorPublications entries require author.id or authorId.', [
+                {
+                    path: `authorPublications.${index}.author`,
+                    code: 'required',
+                    message: 'author.id or authorId is required.',
+                },
+            ]);
+        }
+
+        return {
+            author: { id: authorId } as Author,
+            authorId,
+            publication: { id: publicationId } as Publication,
+            publicationId,
+            corresponding: authorPublication.corresponding,
+            affiliation: authorPublication.affiliation,
+            institute: authorPublication.institute,
+            role: authorPublication.role,
+        };
     }
 
     public isDOIvalid(pub: Publication): boolean {
