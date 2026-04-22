@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Observable } from 'rxjs';
-import { IsNull, LessThan, Repository } from 'typeorm';
+import { DataSource, EntityManager, IsNull, LessThan, Repository } from 'typeorm';
 import { Invoice } from './Invoice.entity';
 import { CostType } from './CostType.entity';
 import { CostCenter } from './CostCenter.entity';
@@ -25,6 +25,7 @@ export class InvoiceService {
         private configService: AppConfigService,
         private costTypeService: CostTypeService,
         private costCenterService: CostCenterService,
+        private dataSource: DataSource,
     ) { }
 
     public async get(id: number, writer = false, user?: string) {
@@ -45,15 +46,19 @@ export class InvoiceService {
     }
 
     public async save(inv: Invoice[], user?: string) {
-        await this.ensureInvoicesCanBeSaved(inv, user);
-        return this.repository.save(inv).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
+        return this.dataSource.transaction(async (manager) => {
+            await this.ensureInvoicesCanBeSaved(inv, user, manager);
+            return manager.getRepository(Invoice).save(inv).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
         });
     }
 
     public async delete(insts: Invoice[], user?: string) {
-        await this.ensureInvoicesCanBeSaved(insts, user);
-        return this.repository.delete(insts.map(p => p.id));
+        return this.dataSource.transaction(async (manager) => {
+            await this.ensureInvoicesCanBeSaved(insts, user, manager);
+            return manager.getRepository(Invoice).delete(insts.map(p => p.id));
+        });
     }
 
     public getCostTypes() {
@@ -148,12 +153,15 @@ export class InvoiceService {
         return this.withInvoiceLock(invoice, undefined);
     }
 
-    private async ensureInvoicesCanBeSaved(invoices: Invoice[], user?: string): Promise<void> {
+    private async ensureInvoicesCanBeSaved(invoices: Invoice[], user?: string, manager?: EntityManager): Promise<void> {
         if (!invoices.length) return;
+
+        const invRepo = manager ? manager.getRepository(Invoice) : this.repository;
+        const pubRepo = manager ? manager.getRepository(Publication) : this.publicationRepository;
 
         const existingIds = invoices.map((invoice) => invoice.id).filter((id): id is number => hasProvidedEntityId(id));
         const existingInvoices = existingIds.length > 0
-            ? await this.repository.find({
+            ? await invRepo.find({
                 where: existingIds.map((id) => ({ id })),
                 relations: { publication: true },
             })
@@ -167,7 +175,7 @@ export class InvoiceService {
         }
 
         const publications = publicationIds.size > 0
-            ? await this.publicationRepository.find({
+            ? await pubRepo.find({
                 where: [...publicationIds].map((id) => ({ id })),
             })
             : [];

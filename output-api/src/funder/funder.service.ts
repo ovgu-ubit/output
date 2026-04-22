@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
+import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { AliasFunder } from './AliasFunder.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { Funder } from './Funder.entity';
@@ -19,12 +19,26 @@ export class FunderService extends AbstractEntityService<Funder> {
         configService: AppConfigService,
         private publicationService: PublicationService,
         private aliasLookupService: AliasLookupService,
+        private dataSource: DataSource
     ) {
         super(repository, configService);
     }
 
     protected override getFindOneRelations(): FindOptionsRelations<Funder> {
         return { aliases: true };
+    }
+
+    public override async save(entity: DeepPartial<Funder>, user?: string) {
+        return this.dataSource.transaction(async (manager) => {
+            const aliases = entity.aliases;
+            const saved = await super.save(this.stripOwnedCollections(entity, ['aliases']), user, { manager });
+
+            if (aliases !== undefined) {
+                saved.aliases = await this.replaceAliasCollection(saved, aliases, manager.getRepository(AliasFunder), 'Funder');
+            }
+
+            return saved;
+        });
     }
 
     public async findOrSave(funder: Funder, dryRun = false): Promise<Funder> {
@@ -91,17 +105,20 @@ export class FunderService extends AbstractEntityService<Funder> {
     }
 
     public async delete(insts: Funder[]) {
-        for (const inst of insts) {
-            const conE: Funder = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { funders: true } }, withDeleted: true });
-            const pubs = [];
-            if (conE.publications) for (const pub of conE.publications) {
-                pubs.push({ id: pub.id, funders: pub.funders.filter(e => e.id !== conE.id) });
+        return this.dataSource.transaction(async (manager) => {
+            const funderIds = insts.map(funder => funder.id).filter((id): id is number => typeof id === 'number');
+            for (const inst of insts) {
+                const conE: Funder = await manager.getRepository(Funder).findOne({ where: { id: inst.id }, relations: { publications: { funders: true } }, withDeleted: true });
+                const pubs = [];
+                if (conE.publications) for (const pub of conE.publications) {
+                    pubs.push({ id: pub.id, funders: pub.funders.filter(e => e.id !== conE.id) });
+                }
+
+                await this.publicationService.save(pubs, { manager });
             }
-            await this.aliasRepository.delete({ elementId: conE.id });
-
-            await this.publicationService.save(pubs);
-        }
-        return await this.repository.delete(insts.map(p => p.id));
+            await this.deleteAliasCollection(manager.getRepository(AliasFunder), funderIds);
+            return await manager.getRepository(Funder).delete(funderIds);
+        });
     }
-}
 
+}

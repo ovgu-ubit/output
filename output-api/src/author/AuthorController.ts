@@ -51,7 +51,7 @@ export class AuthorController {
     @ApiResponse({ status: 201, description: 'Saved objects are returned.' })
     async save(@Req() request: Request) {
         assertCreateRequestHasNoId(request.body as Author | undefined);
-        return this.authorService.save([request.body], request['user']?.['username']);
+        return this.authorService.save(request.body, request['user']?.['username']);
     }
 
     @Put()
@@ -67,7 +67,7 @@ export class AuthorController {
         }
     })
     async update(@Body() author: Author, @Req() request: Request) {
-        return this.authorService.save([author], request['user']?.['username'])
+        return this.authorService.update(author, request['user']?.['username'])
     }
 
     @Delete()

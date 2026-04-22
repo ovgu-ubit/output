@@ -1,6 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { of } from 'rxjs';
 import { Repository, FindOperator } from 'typeorm';
 
@@ -29,6 +30,7 @@ describe('AuthorService', () => {
     let instService: { findOrSave: jest.Mock };
     let configService: { get: jest.Mock };
     let aliasLookupService: { findAliases: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
     const mergeEntitiesMock = mergeEntities as jest.Mock;
 
     beforeEach(async () => {
@@ -40,15 +42,32 @@ describe('AuthorService', () => {
             update: jest.fn(),
             delete: jest.fn(),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasAuthorFirstName) return aliasFirstNameRepository;
+                        if (entity === AliasAuthorLastName) return aliasLastNameRepository;
+                        if (entity === AuthorPublication) return pubAutRepository;
+                        if (entity === Author) return repository;
+                        return repository;
+                    })
+                };
+                return cb(manager);
+            })
+        };
         pubAutRepository = {
             save: jest.fn(),
             delete: jest.fn(),
         };
         aliasFirstNameRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         aliasLastNameRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         instService = {
             findOrSave: jest.fn(),
@@ -72,6 +91,7 @@ describe('AuthorService', () => {
                 { provide: InstituteService, useValue: instService },
                 { provide: AppConfigService, useValue: configService },
                 { provide: AliasLookupService, useValue: aliasLookupService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -83,25 +103,72 @@ describe('AuthorService', () => {
     });
 
     it('saves authors with two repository calls for institute mapping', async () => {
-        const authorData = [{ id: 1, first_name: 'Alice', institutes: [{ id: 5 }] } as unknown as Author];
-        const savedAuthor = { ...authorData[0], institutes: undefined } as Author;
+        const authorData = { id: 1, first_name: 'Alice', institutes: [{ id: 5 }] } as unknown as Author;
+        const savedAuthor = { ...authorData, institutes: undefined } as Author;
 
-        repository.save
-            .mockResolvedValueOnce(savedAuthor)
-            .mockResolvedValueOnce(authorData[0]);
+        repository.save.mockImplementation(async (entityOrClass, entity) => {
+            const ent = (entity || entityOrClass) as any;
+            if (ent.institutes) return authorData;
+            return savedAuthor;
+        });
 
         const result = await service.save(authorData);
 
-        expect(repository.save).toHaveBeenNthCalledWith(1, expect.objectContaining({
+        expect(repository.save).toHaveBeenNthCalledWith(1, Author, expect.objectContaining({
             id: 1,
             first_name: 'Alice',
-            institutes: undefined,
         }));
-        expect(repository.save).toHaveBeenNthCalledWith(2, {
+        expect(repository.save.mock.calls[0][1]).not.toHaveProperty('institutes');
+        expect(repository.save).toHaveBeenNthCalledWith(2, Author, {
             id: 1,
-            institutes: authorData[0].institutes,
+            institutes: authorData.institutes,
         });
         expect(result).toEqual(authorData);
+    });
+
+    it('saves author aliases after the author id is known', async () => {
+        const authorData = {
+            first_name: 'Alice',
+            last_name: 'Smith',
+            aliases_first_name: [{ alias: 'Ally' } as AliasAuthorFirstName],
+            aliases_last_name: [{ alias: 'Smyth' } as AliasAuthorLastName],
+            authorPublications: [{ publicationId: 3 } as AuthorPublication],
+        } as Author;
+
+        repository.save.mockResolvedValue({ id: 12, first_name: 'Alice', last_name: 'Smith' } as Author);
+        aliasFirstNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasLastNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        (aliasFirstNameRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+        (aliasLastNameRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save(authorData);
+
+        const savedAuthorPayload = repository.save.mock.calls[0][0] as Author;
+        expect(savedAuthorPayload).not.toHaveProperty('aliases_first_name');
+        expect(savedAuthorPayload).not.toHaveProperty('aliases_last_name');
+        expect(savedAuthorPayload).not.toHaveProperty('authorPublications');
+        expect(aliasFirstNameRepository.delete).toHaveBeenCalledWith({ elementId: 12 });
+        expect(aliasFirstNameRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Ally',
+                elementId: 12,
+                element: expect.objectContaining({ id: 12 }),
+            }),
+        ]);
+        expect(aliasLastNameRepository.delete).toHaveBeenCalledWith({ elementId: 12 });
+        expect(aliasLastNameRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Smyth',
+                elementId: 12,
+                element: expect.objectContaining({ id: 12 }),
+            }),
+        ]);
+        expect(result.aliases_first_name).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Ally', elementId: 12 }),
+        ]));
+        expect(result.aliases_last_name).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Smyth', elementId: 12 }),
+        ]));
     });
 
     it('wraps duplicate author save errors in the shared API error format', async () => {
@@ -112,7 +179,7 @@ describe('AuthorService', () => {
         });
 
         try {
-            await service.save([{ last_name: 'Smith' } as Author]);
+            await service.save({ last_name: 'Smith' } as Author);
             fail('service.save should throw for duplicate author values');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);
@@ -284,6 +351,29 @@ describe('AuthorService', () => {
         expect(result).toEqual({ id: 1 });
     });
 
+    it('deletes author publication rows and aliases before deleting authors', async () => {
+        pubAutRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasFirstNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasLastNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        repository.delete.mockResolvedValue({ affected: 1 } as any);
+
+        await service.delete([{ id: 12 } as Author]);
+
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({
+            authorId: expect.objectContaining({ _type: 'in', _value: [12] }),
+        });
+        expect(aliasFirstNameRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [12] }),
+        });
+        expect(aliasLastNameRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [12] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([12]);
+        expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+        expect(aliasFirstNameRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+        expect(aliasLastNameRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+    });
+
     it('keeps an author editable for the same lock owner', async () => {
         const lockedAt = new Date();
 
@@ -307,14 +397,14 @@ describe('AuthorService', () => {
     it('rejects saving an author locked by another user', async () => {
         repository.findOne.mockResolvedValueOnce({ id: 5, locked_at: null, institutes: [] } as Author);
         repository.update!.mockResolvedValue({ affected: 1 } as any);
-        repository.find.mockResolvedValue([{ id: 5, locked_at: new Date(), institutes: [] } as Author]);
+        repository.findOne.mockResolvedValueOnce({ id: 5, locked_at: new Date(), institutes: [] } as Author);
         configService.get.mockResolvedValue(5);
 
         await service.one(5, true, 'alice');
 
         try {
-            await service.save([{ id: 5, first_name: 'Mallory' } as Author], 'mallory');
-            fail('service.save should reject author updates while locked by another user');
+            await service.update({ id: 5, first_name: 'Mallory' } as Author, 'mallory');
+            fail('service.update should reject author updates while locked by another user');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);
             expect((error as HttpException).getResponse()).toMatchObject({
@@ -327,12 +417,12 @@ describe('AuthorService', () => {
 
     it('rejects saving an author with id 0 when that record is locked by another user', async () => {
         EditLockOwnerStore.setOwner('author', 0, 'alice');
-        repository.find.mockResolvedValue([{ id: 0, locked_at: new Date(), institutes: [] } as Author]);
+        repository.findOne.mockResolvedValueOnce({ id: 0, locked_at: new Date(), institutes: [] } as Author);
         configService.get.mockResolvedValue(5);
 
         try {
-            await service.save([{ id: 0, first_name: 'Mallory' } as Author], 'mallory');
-            fail('service.save should reject author id 0 updates while locked by another user');
+            await service.update({ id: 0, first_name: 'Mallory' } as Author, 'mallory');
+            fail('service.update should reject author id 0 updates while locked by another user');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);
             expect((error as HttpException).getResponse()).toMatchObject({
@@ -352,7 +442,7 @@ describe('AuthorService', () => {
 
         await service.one(6, true, 'alice');
 
-        await expect(service.save([{ id: 6, locked_at: null } as Author], 'alice'))
-            .resolves.toEqual([{ id: 6, locked_at: null }]);
+        await expect(service.update({ id: 6, locked_at: null } as Author, 'alice'))
+            .resolves.toEqual({ id: 6, locked_at: null });
     });
 });

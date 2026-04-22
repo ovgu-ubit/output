@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
@@ -39,7 +39,7 @@ const expectApiError = async (
     }
 };
 
-describe('PublicationService combine', () => {
+describe('PublicationService', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
     let pubAutRepository: jest.Mocked<Partial<Repository<AuthorPublication>>>;
@@ -53,6 +53,7 @@ describe('PublicationService combine', () => {
         deletePublicationChangesForPublications: jest.Mock;
     };
     let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock; getRepository: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -75,10 +76,12 @@ describe('PublicationService combine', () => {
             delete: jest.fn(),
         };
         idRepository = {
+            delete: jest.fn(),
             save: jest.fn(),
         };
         supplRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         duplRepository = {
             find: jest.fn(),
@@ -93,20 +96,71 @@ describe('PublicationService combine', () => {
         configService = {
             get: jest.fn(async () => 5),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const managerMock = {
+                    save: jest.fn().mockImplementation(async (entity, obj) => {
+                        if (entity && obj) {
+                             if (entity === Publication) return pubRepository.save(obj);
+                             if (entity === AuthorPublication) return pubAutRepository.save(obj);
+                             if (entity === PublicationIdentifier) return idRepository.save(obj);
+                             if (entity === PublicationSupplement) return supplRepository.save(obj);
+                             if (entity === PublicationDuplicate) return duplRepository.save(obj);
+                             return pubRepository.save(obj);
+                        }
+                        return pubRepository.save(entity);
+                    }),
+                    delete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === Publication) return pubRepository.delete(criteria);
+                             if (entity === AuthorPublication) return pubAutRepository.delete(criteria);
+                             if (entity === PublicationIdentifier) return idRepository.delete(criteria);
+                             if (entity === PublicationSupplement) return supplRepository.delete(criteria);
+                             if (entity === PublicationDuplicate) return duplRepository.delete(criteria);
+                             return pubRepository.delete(criteria);
+                        }
+                        return pubRepository.delete(entity);
+                    }),
+                    softDelete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === Publication) return pubRepository.softDelete(criteria);
+                             return pubRepository.softDelete(criteria);
+                        }
+                        return pubRepository.softDelete(entity);
+                    }),
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === Publication) return pubRepository;
+                        if (entity === AuthorPublication) return pubAutRepository;
+                        if (entity === Invoice) return invoiceRepository;
+                        if (entity === CostItem) return costItemRepository;
+                        if (entity === PublicationIdentifier) return idRepository;
+                        if (entity === PublicationSupplement) return supplRepository;
+                        if (entity === PublicationDuplicate) return duplRepository;
+                        return pubRepository;
+                    }),
+                };
+                return cb(managerMock);
+            }),
+            getRepository: jest.fn().mockImplementation((entity) => {
+                if (entity === Publication) return pubRepository;
+                if (entity === AuthorPublication) return pubAutRepository;
+                if (entity === Invoice) return invoiceRepository;
+                if (entity === CostItem) return costItemRepository;
+                if (entity === PublicationIdentifier) return idRepository;
+                if (entity === PublicationSupplement) return supplRepository;
+                if (entity === PublicationDuplicate) return duplRepository;
+                return pubRepository;
+            }),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PublicationService,
                 { provide: getRepositoryToken(Publication), useValue: pubRepository },
-                { provide: getRepositoryToken(AuthorPublication), useValue: pubAutRepository },
-                { provide: getRepositoryToken(Invoice), useValue: invoiceRepository },
-                { provide: getRepositoryToken(CostItem), useValue: costItemRepository },
-                { provide: getRepositoryToken(PublicationIdentifier), useValue: idRepository },
-                { provide: getRepositoryToken(PublicationSupplement), useValue: supplRepository },
-                { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
                 { provide: PublicationChangeService, useValue: publicationChangeService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -114,12 +168,6 @@ describe('PublicationService combine', () => {
     });
 
     it('combines publications by preserving locked state and aggregating related records', async () => {
-        const duplicateForward = [{ id: 501 } as PublicationDuplicate];
-        const duplicateReverse = [{ id: 502 } as PublicationDuplicate];
-        duplRepository.find
-            .mockResolvedValueOnce(duplicateForward)
-            .mockResolvedValueOnce(duplicateReverse);
-
         const primary: Publication = {
             id: 61,
             locked: false,
@@ -161,17 +209,22 @@ describe('PublicationService combine', () => {
         ]);
 
         pubRepository.findOne.mockImplementation(async ({ where }: any) => byId.get(where.id));
+        pubRepository.find.mockResolvedValue([
+            { id: 62, invoices: [{ id: 901, cost_items: [{ id: 801 } as CostItem] } as Invoice] } as Publication,
+            { id: 63, invoices: [] } as Publication,
+        ]);
         pubRepository.save.mockImplementation(async entity => entity as Publication);
         pubRepository.delete!.mockResolvedValue(undefined as never);
         pubAutRepository.delete!.mockResolvedValue(undefined as never);
         pubAutRepository.save!.mockResolvedValue(undefined as never);
         invoiceRepository.delete!.mockResolvedValue(undefined as never);
+        costItemRepository.delete!.mockResolvedValue(undefined as never);
+        idRepository.delete!.mockResolvedValue(undefined as never);
         supplRepository.delete!.mockResolvedValue(undefined as never);
         duplRepository.delete!.mockResolvedValue(undefined as never);
 
         const combined = await service.combine(61, [62, 63], ['alias-a']);
 
-        expect(duplRepository.find).toHaveBeenCalledTimes(2);
         expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({
             id: 61,
             doi: '10.primary/doi',
@@ -203,11 +256,13 @@ describe('PublicationService combine', () => {
             id: 802,
             publication: expect.objectContaining({ id: 61 }),
         });
-        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: expect.anything() });
-        expect(invoiceRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
-        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63]);
-        expect(duplRepository.delete).toHaveBeenCalledWith([501, 502]);
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: In([62, 63]) });
+        expect(costItemRepository.delete).toHaveBeenCalledWith([801]);
+        expect(invoiceRepository.delete).toHaveBeenCalledWith([901]);
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([62, 63]) } });
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([62, 63]) } });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([62, 63]) });
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63], expect.anything());
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
@@ -287,6 +342,143 @@ describe('PublicationService combine', () => {
                 ]),
             });
         }
+    });
+
+    it('saves new publication authorships after the publication id is known', async () => {
+        (pubRepository.save as jest.Mock).mockImplementation(async (entities: Publication[]) =>
+            entities.map((entity, index) => ({ ...entity, id: 90 + index }) as Publication),
+        );
+        pubAutRepository.delete!.mockResolvedValue(undefined as never);
+        (pubAutRepository.save as jest.Mock).mockImplementation(async (entities) => entities as AuthorPublication[]);
+
+        const result = await service.save([{
+            title: 'Publication with author',
+            authorPublications: [{
+                author: { id: 876 } as any,
+                affiliation: 'Center for Intervention and Research',
+                corresponding: false,
+            } as AuthorPublication],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication[];
+        expect(savedPublicationArg[0]).not.toHaveProperty('authorPublications');
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: 90 });
+        expect(pubAutRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                authorId: 876,
+                publicationId: 90,
+                publication: expect.objectContaining({ id: 90 }),
+                affiliation: 'Center for Intervention and Research',
+                corresponding: false,
+            }),
+        ]);
+        expect(result[0].authorPublications).toEqual(expect.arrayContaining([
+            expect.objectContaining({ authorId: 876, publicationId: 90 }),
+        ]));
+    });
+
+    it('saves identifiers and supplements after the publication id is known', async () => {
+        (pubRepository.save as jest.Mock).mockImplementation(async (entities: Publication[]) =>
+            entities.map((entity, index) => ({ ...entity, id: 90 + index }) as Publication),
+        );
+        idRepository.delete!.mockResolvedValue(undefined as never);
+        (idRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationIdentifier[]);
+        supplRepository.delete!.mockResolvedValue(undefined as never);
+        (supplRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationSupplement[]);
+
+        const result = await service.save([{
+            title: 'Publication with owned relations',
+            identifiers: [{ type: 'DOI', value: '10.1234/example' } as PublicationIdentifier],
+            supplements: [{ link: 'https://example.test/supplement.pdf' } as PublicationSupplement],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication[];
+        expect(savedPublicationArg[0]).not.toHaveProperty('identifiers');
+        expect(savedPublicationArg[0]).not.toHaveProperty('supplements');
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: 90 } });
+        expect(idRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                type: 'doi',
+                value: '10.1234/EXAMPLE',
+                entity: expect.objectContaining({ id: 90 }),
+            }),
+        ]);
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: 90 } });
+        expect(supplRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                link: 'https://example.test/supplement.pdf',
+                publication: expect.objectContaining({ id: 90 }),
+            }),
+        ]);
+        expect(result[0].identifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: 'doi', value: '10.1234/EXAMPLE' }),
+        ]));
+        expect(result[0].supplements).toEqual(expect.arrayContaining([
+            expect.objectContaining({ link: 'https://example.test/supplement.pdf' }),
+        ]));
+    });
+
+    it('updates authorships without cascading rows with a null publication id', async () => {
+        pubRepository.find.mockResolvedValue([{ id: 7, locked_at: null } as Publication] as never);
+        pubRepository.save.mockResolvedValue({ id: 7, title: 'Updated' } as never);
+        pubAutRepository.delete!.mockResolvedValue(undefined as never);
+        (pubAutRepository.save as jest.Mock).mockImplementation(async (entities) => entities as AuthorPublication[]);
+
+        await service.update([{
+            id: 7,
+            title: 'Updated',
+            authorPublications: [{
+                author: { id: 876 } as any,
+                affiliation: 'Center for Intervention and Research',
+                corresponding: false,
+            } as AuthorPublication],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication;
+        expect(savedPublicationArg).not.toHaveProperty('authorPublications');
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: 7 });
+        expect(pubAutRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                authorId: 876,
+                publicationId: 7,
+                publication: expect.objectContaining({ id: 7 }),
+            }),
+        ]);
+    });
+
+    it('updates identifiers and supplements without cascading rows with a null publication id', async () => {
+        pubRepository.find.mockResolvedValue([{ id: 7, locked_at: null } as Publication] as never);
+        pubRepository.save.mockResolvedValue({ id: 7, title: 'Updated' } as never);
+        idRepository.delete!.mockResolvedValue(undefined as never);
+        (idRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationIdentifier[]);
+        supplRepository.delete!.mockResolvedValue(undefined as never);
+        (supplRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationSupplement[]);
+
+        await service.update([{
+            id: 7,
+            title: 'Updated',
+            identifiers: [{ type: 'ISBN', value: 'abc-123' } as PublicationIdentifier],
+            supplements: [{ link: 'https://example.test/supplement.pdf' } as PublicationSupplement],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication;
+        expect(savedPublicationArg).not.toHaveProperty('identifiers');
+        expect(savedPublicationArg).not.toHaveProperty('supplements');
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: 7 } });
+        expect(idRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                type: 'isbn',
+                value: 'ABC-123',
+                entity: expect.objectContaining({ id: 7 }),
+            }),
+        ]);
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: 7 } });
+        expect(supplRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                link: 'https://example.test/supplement.pdf',
+                publication: expect.objectContaining({ id: 7 }),
+            }),
+        ]);
     });
 
     it('keeps a locked publication editable for the same user', async () => {
@@ -458,57 +650,112 @@ describe('PublicationService combine', () => {
                     title: 'After',
                 },
             }),
-        }));
+        }), expect.anything());
+    });
+
+    it('logs changes in authorPublications', async () => {
+        const author = { id: 101, last_name: 'Doe', first_name: 'John' };
+        const before = {
+            id: 7,
+            authorPublications: [{ id: 1, authorId: 101, author, corresponding: false }],
+        } as any;
+        const after = {
+            id: 7,
+            authorPublications: [
+                { id: 1, authorId: 101, author, corresponding: true },
+                { id: 2, authorId: 102, author: { id: 102, last_name: 'Smith', first_name: 'Jane' }, corresponding: false }
+            ],
+        } as any;
+
+        pubRepository.find
+            .mockResolvedValueOnce([{ id: 7, locked_at: null } as Publication] as never)
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 7 } as Publication] as any);
+        pubAutRepository.save.mockResolvedValue([] as any);
+
+        await service.save([{ id: 7, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
+
+        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+            patch_data: expect.objectContaining({
+                after: expect.objectContaining({
+                    authorPublications: expect.arrayContaining([
+                        expect.objectContaining({ author: expect.objectContaining({ id: 101 }), corresponding: true }),
+                        expect.objectContaining({ author: expect.objectContaining({ id: 102 }), corresponding: false }),
+                    ]),
+                }),
+            }),
+        }), expect.anything());
     });
 
     it('deletes publication changes before soft deleting publications', async () => {
-        pubRepository.findOne.mockResolvedValue({
+        pubRepository.find.mockResolvedValue([{
             id: 7,
-            authorPublications: [],
             invoices: [],
-            identifiers: [],
-            supplements: [],
-        } as unknown as Publication);
+        } as unknown as Publication]);
         pubRepository.softDelete!.mockResolvedValue(undefined as never);
 
         await service.delete([{ id: 7 } as Publication], true);
 
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
-});
 
-describe('PublicationService filter', () => {
-    let service: PublicationService;
-    let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
+    it('deletes publication relation rows before hard deleting publications', async () => {
+        pubRepository.find.mockResolvedValue([{
+            id: 7,
+            invoices: [{
+                id: 11,
+                cost_items: [{ id: 21 } as CostItem],
+            } as Invoice],
+        } as Publication]);
+        pubRepository.delete!.mockResolvedValue(undefined as never);
 
-    const createQueryBuilderMock = () => ({
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orWhere: jest.fn().mockReturnThis(),
-        leftJoin: jest.fn().mockReturnThis(),
+        await service.delete([{ id: 7 } as Publication]);
+
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: In([7]) });
+        expect(costItemRepository.delete).toHaveBeenCalledWith([21]);
+        expect(invoiceRepository.delete).toHaveBeenCalledWith([11]);
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([7]) } });
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([7]) } });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([7]) });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([7]) });
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
+
+        const parentDeleteOrder = pubRepository.delete.mock.invocationCallOrder[0];
+        expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(costItemRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(invoiceRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(idRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(supplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(duplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(publicationChangeService.deletePublicationChangesForPublications.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
     });
+    describe('filter', () => {
+        const createQueryBuilderMock = () => ({
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orWhere: jest.fn().mockReturnThis(),
+            leftJoin: jest.fn().mockReturnThis(),
+        });
 
-    beforeEach(() => {
-        instituteService = {
-            findInstituteIdsIncludingSubInstitutes: jest.fn(),
-        };
+        let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
 
-        service = new PublicationService(
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            instituteService as any,
-            {} as any,
-        );
-        service.filter_joins = new Set();
-    });
+        beforeEach(() => {
+            instituteService = {
+                findInstituteIdsIncludingSubInstitutes: jest.fn(),
+            };
+
+            service = new PublicationService(
+                pubRepository as any,
+                configService as any,
+                instituteService as any,
+                publicationChangeService as any,
+                dataSource as any,
+            );
+            service.filter_joins = new Set();
+        });
 
     it('binds string filter values as query parameters', async () => {
         const queryBuilder = createQueryBuilderMock();
@@ -730,4 +977,5 @@ describe('PublicationService filter', () => {
             { filter_1: '10.1000/example' }
         );
     });
+});
 });

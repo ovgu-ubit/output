@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 
 import { GreaterEntityService } from './greater-entitiy.service';
@@ -9,30 +10,53 @@ import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('GreaterEntityService', () => {
     let service: GreaterEntityService;
-    let repository: jest.Mocked<Partial<Repository<GreaterEntity>>>;
-    let identifierRepository: jest.Mocked<Partial<Repository<GEIdentifier>>>;
+    let repository: { save: jest.Mock, find: jest.Mock, findOne: jest.Mock, delete: jest.Mock };
+    let idRepository: { save: jest.Mock, find: jest.Mock, findOne: jest.Mock, delete: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         repository = {
-            findOne: jest.fn(),
             save: jest.fn(),
-            delete: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn()
         };
-        identifierRepository = {
-            delete: jest.fn(),
+        idRepository = {
+            save: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn()
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === GEIdentifier) return idRepository;
+                        return repository;
+                    })
+                };
+                return cb(manager);
+            })
         };
         publicationService = {
             save: jest.fn(),
+        };
+        configService = {
+            get: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 GreaterEntityService,
                 { provide: getRepositoryToken(GreaterEntity), useValue: repository },
-                { provide: getRepositoryToken(GEIdentifier), useValue: identifierRepository },
+                { provide: getRepositoryToken(GEIdentifier), useValue: idRepository },
                 { provide: PublicationService, useValue: publicationService },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -75,7 +99,7 @@ describe('GreaterEntityService', () => {
         repository.findOne.mockImplementation(async ({ where }: any) => byId.get(where.id));
         repository.save.mockImplementation(async entity => entity as GreaterEntity);
         repository.delete!.mockResolvedValue(undefined as never);
-        identifierRepository.delete!.mockResolvedValue(undefined as never);
+        idRepository.delete!.mockResolvedValue(undefined as never);
         publicationService.save.mockResolvedValue(undefined);
 
         const combined = await service.combine(41, [42, 43]);
@@ -94,11 +118,11 @@ describe('GreaterEntityService', () => {
         expect(combined).toEqual(expect.objectContaining({ doaj_since: new Date('2021-01-01') }));
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 51, greater_entity: expect.objectContaining({ id: 41 }) }),
-        ]);
+        ], expect.anything());
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 52, greater_entity: expect.objectContaining({ id: 41 }) }),
-        ]);
-        expect(identifierRepository.delete).toHaveBeenCalled();
+        ], expect.anything());
+        expect(idRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([42, 43]);
     });
 });

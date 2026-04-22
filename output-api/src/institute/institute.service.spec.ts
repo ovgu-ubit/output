@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { InstituteService } from './institute.service';
@@ -20,6 +20,7 @@ describe('InstituteService', () => {
     let authorRepository: jest.Mocked<Partial<Repository<Author>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasInstitute>>>;
     let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -41,9 +42,40 @@ describe('InstituteService', () => {
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         configService = {
             get: jest.fn(),
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const managerMock = {
+                    save: jest.fn().mockImplementation(async (entity, obj) => {
+                        if (entity && obj) {
+                             if (entity === AuthorPublication) return pubAutRepository.save(obj);
+                             if (entity === Author) return authorRepository.save(obj);
+                             if (entity === AliasInstitute) return aliasRepository.save(obj);
+                             return repository.save(obj);
+                        }
+                        return repository.save(entity);
+                    }),
+                    delete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === AliasInstitute) return aliasRepository.delete(criteria);
+                             return repository.delete(criteria);
+                        }
+                        return repository.delete(entity);
+                    }),
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AuthorPublication) return pubAutRepository;
+                        if (entity === Author) return authorRepository;
+                        if (entity === AliasInstitute) return aliasRepository;
+                        return repository;
+                    }),
+                    getTreeRepository: jest.fn().mockReturnValue(repository),
+                };
+                return cb(managerMock);
+            }),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -55,6 +87,7 @@ describe('InstituteService', () => {
                 { provide: getRepositoryToken(AliasInstitute), useValue: aliasRepository },
                 { provide: AliasLookupService, useValue: { findCanonicalElement: jest.fn() } },
                 { provide: AppConfigService, useValue: configService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -126,6 +159,35 @@ describe('InstituteService', () => {
         expect(repository.delete).toHaveBeenCalledWith([32, 33]);
     });
 
+    it('saves aliases after the institute id is known', async () => {
+        (repository.save as jest.Mock).mockImplementation(async (entities: Institute[]) =>
+            entities.map((entity, index) => ({ ...entity, id: 80 + index }) as Institute),
+        );
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save([{
+            label: 'Central Institute',
+            aliases: [{ alias: 'Central' } as AliasInstitute],
+            authorPublications: [{ publicationId: 1 } as AuthorPublication],
+        } as Institute]);
+
+        const savedInstitutesPayload = repository.save.mock.calls[0][0] as Institute[];
+        expect(savedInstitutesPayload[0]).not.toHaveProperty('aliases');
+        expect(savedInstitutesPayload[0]).not.toHaveProperty('authorPublications');
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 80 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Central',
+                elementId: 80,
+                element: expect.objectContaining({ id: 80 }),
+            }),
+        ]);
+        expect(result[0].aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Central', elementId: 80 }),
+        ]));
+    });
+
     it('returns institute ids including all descendants without duplicates', async () => {
         const root = { id: 1, sub_institutes: [{ id: 2 }, { id: 3 }] } as Institute;
         const childA = { id: 2, sub_institutes: [{ id: 4 }] } as Institute;
@@ -142,6 +204,38 @@ describe('InstituteService', () => {
         const ids = await service.findInstituteIdsIncludingSubInstitutes([1, 2]);
 
         expect(ids).toEqual([1, 2, 3, 4]);
+    });
+
+    it('clears references and aliases before deleting institutes', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 80,
+            label: 'Institute',
+            authorPublications: [{ authorId: 7, publicationId: 8 }] as AuthorPublication[],
+            authors: [{ id: 9, institutes: [{ id: 80 }, { id: 81 }] } as Author],
+        } as Institute);
+        pubAutRepository.save!.mockResolvedValue(undefined as never);
+        authorRepository.save!.mockResolvedValue(undefined as never);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 80 } as Institute]);
+
+        expect(pubAutRepository.save).toHaveBeenCalledWith({
+            authorId: 7,
+            publicationId: 8,
+            institute: null,
+        });
+        expect(authorRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                id: 9,
+                institutes: [expect.objectContaining({ id: 81 })],
+            }),
+        ]);
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [80] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([80]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
     });
 
     it('wraps duplicate institute save errors in the shared API error format', async () => {

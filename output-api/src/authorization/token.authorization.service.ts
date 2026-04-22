@@ -48,8 +48,8 @@ export class TokenAuthorizationService extends AuthorizationService {
                             req['user']['write_publication'] = payload.permissions.find(e => ((e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'admin' || e.rolename === 'publication_writer')) || (e.appname === null && e.rolename === 'admin')))
                             req['user']['write'] = payload.permissions.find(e => ((e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'admin')) || (e.appname === null && e.rolename === 'admin')))
                             req['user']['admin'] = payload.permissions.find(e => ((e.appname === 'output' && e.rolename === 'admin') || (e.appname === null && e.rolename === 'admin')))
-                            // Case II: if permissions is an empty array, a valid token is required to proceed
-                            if (permissions.length === 0) return resolve(true);
+                            // Case I/II: if permissions is an empty array, a valid token is required to proceed
+                            if (!permissions || permissions.length === 0) return resolve(true);
                             // Case III: if permissions are given, the user is required to posess ANY of them or admin
                             for (const p of permissions) {
                                 if (p.role === null && payload.permissions.find(e => e.appname === p.app)) return resolve(true);

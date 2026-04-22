@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { FunderService } from './funder.service';
 import { Funder } from './Funder.entity';
@@ -13,6 +13,7 @@ describe('FunderService', () => {
     let repository: jest.Mocked<Partial<Repository<Funder>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasFunder>>>;
     let publicationService: { save: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         repository = {
@@ -22,9 +23,25 @@ describe('FunderService', () => {
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         publicationService = {
             save: jest.fn(),
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasFunder) return aliasRepository;
+                        if (entity === Funder) return repository;
+                        return repository;
+                    }),
+                    findOne: repository.findOne,
+                };
+                return cb(manager);
+            }),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -35,10 +52,35 @@ describe('FunderService', () => {
                 { provide: PublicationService, useValue: publicationService },
                 { provide: AliasLookupService, useValue: { findCanonicalElement: jest.fn() } },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
         service = module.get(FunderService);
+    });
+
+    it('saves aliases after the funder id is known', async () => {
+        repository.save.mockResolvedValue({ id: 21, label: 'Funder' } as Funder);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save({
+            label: 'Funder',
+            aliases: [{ alias: 'Funder Alias' } as AliasFunder],
+        });
+
+        expect(repository.save).toHaveBeenCalledWith({ label: 'Funder' });
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 21 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Funder Alias',
+                elementId: 21,
+                element: expect.objectContaining({ id: 21 }),
+            }),
+        ]);
+        expect(result.aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Funder Alias', elementId: 21 }),
+        ]));
     });
 
     it('combines funders by aggregating aliases and reassigning funding relationships', async () => {
@@ -95,8 +137,27 @@ describe('FunderService', () => {
                     expect.objectContaining({ id: 99 }),
                 ]),
             }),
-        ]);
+        ], expect.anything());
         expect(aliasRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([22]);
+    });
+
+    it('deletes aliases before deleting funders', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 21,
+            label: 'Funder',
+            publications: [],
+        } as Funder);
+        publicationService.save.mockResolvedValue(undefined);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 21 } as Funder]);
+
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [21] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([21]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
     });
 });

@@ -1,8 +1,8 @@
-﻿import { BadRequestException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { ApiErrorCode } from '../../../output-interfaces/ApiError';
 import { ContractService } from './contract.service';
@@ -36,8 +36,9 @@ describe('ContractService', () => {
     let repository: jest.Mocked<Partial<Repository<Contract>>>;
     let identifierRepository: jest.Mocked<Partial<Repository<ContractIdentifier>>>;
     let componentRepository: jest.Mocked<Partial<Repository<ContractComponent>>>;
-    let invoiceRepository: jest.Mocked<Partial<Repository<Invoice>>>;
+    let invoiceRepository: { find: jest.Mock, save: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         repository = {
@@ -65,6 +66,39 @@ describe('ContractService', () => {
         publicationService = {
             save: jest.fn(),
         };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: jest.fn().mockImplementation(async (entity, obj) => {
+                        if (entity && obj) { // entity-based save
+                            if (entity === Contract) return repository.save(obj);
+                            if (entity === ContractComponent) return componentRepository.save(obj);
+                            if (entity === Invoice) return invoiceRepository.save(obj);
+                            return repository.save(obj);
+                        }
+                        return repository.save(entity); // object-based save
+                    }),
+                    delete: jest.fn().mockImplementation(async (entity, criteria) => {
+                        if (criteria) {
+                             if (entity === Contract) return repository.delete(criteria);
+                             if (entity === ContractComponent) return componentRepository.delete(criteria);
+                             if (entity === ContractIdentifier) return identifierRepository.delete(criteria);
+                             return repository.delete(criteria);
+                        }
+                        return repository.delete(entity);
+                    }),
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === Contract) return repository;
+                        if (entity === ContractIdentifier) return identifierRepository;
+                        if (entity === ContractComponent) return componentRepository;
+                        if (entity === Invoice) return invoiceRepository;
+                        return repository;
+                    }),
+                    findOne: repository.findOne,
+                };
+                return cb(manager);
+            }),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -75,6 +109,7 @@ describe('ContractService', () => {
                 { provide: getRepositoryToken(Invoice), useValue: invoiceRepository },
                 { provide: PublicationService, useValue: publicationService },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -475,10 +510,10 @@ describe('ContractService', () => {
         expect(publicationService.save).toHaveBeenCalledTimes(2);
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 31, contract: expect.objectContaining({ id: 11 }) }),
-        ]);
+        ], expect.anything());
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 32, contract: expect.objectContaining({ id: 11 }) }),
-        ]);
+        ], expect.anything());
         expect(identifierRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([12, 13]);
     });

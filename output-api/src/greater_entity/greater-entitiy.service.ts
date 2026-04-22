@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
+import { DataSource, FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { GreaterEntityIndex } from '../../../output-interfaces/PublicationIndex';
 import { GreaterEntity } from './GreaterEntity.entity';
@@ -21,6 +21,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         @InjectRepository(GEIdentifier) private idRepository: Repository<GEIdentifier>,
         private publicationService: PublicationService,
         configService: AppConfigService,
+        private dataSource: DataSource
     ) {
         super(repository, configService);
     }
@@ -38,26 +39,30 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async update(ge: Partial<GreaterEntity>, user?: string) {
-        await this.ensureEntityCanBeSaved(ge, user);
-        let orig: GreaterEntity = null;
-        if (hasProvidedEntityId(ge.id)) orig = await this.repository.findOne({ where: { id: ge.id }, relations: { identifiers: true } })
-        if (ge.identifiers) {
-            for (const id of ge.identifiers) {
-                if (!hasProvidedEntityId(id.id)) {
-                    id.value = id.value.toUpperCase();
-                    id.type = id.type.toLowerCase();
-                    id.id = (await this.idRepository.save(id).catch((error: unknown) => {
-                        throw createPersistenceHttpException(error);
-                    })).id;
+        return this.dataSource.transaction(async (manager) => {
+            await this.ensureEntityCanBeSaved(ge, user);
+            let orig: GreaterEntity = null;
+            if (hasProvidedEntityId(ge.id)) orig = await manager.getRepository(GreaterEntity).findOne({ where: { id: ge.id }, relations: { identifiers: true } })
+            if (ge.identifiers) {
+                for (const id of ge.identifiers) {
+                    if (!hasProvidedEntityId(id.id)) {
+                        id.value = id.value.toUpperCase();
+                        id.type = id.type.toLowerCase();
+                        id.id = (await manager.getRepository(GEIdentifier).save(id).catch((error: unknown) => {
+                            throw createPersistenceHttpException(error);
+                        })).id;
+                    }
                 }
             }
-        }
-        if (ge.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
-            if (!ge.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
-        })
+            if (ge.identifiers && orig && orig.identifiers) {
+                for (const id of orig.identifiers) {
+                    if (!ge.identifiers.find(e => e.id === id.id)) await manager.getRepository(GEIdentifier).delete(id.id)
+                }
+            }
 
-        return await this.repository.save(ge).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
+            return await manager.getRepository(GreaterEntity).save(ge).catch((error: unknown) => {
+                throw createPersistenceHttpException(error);
+            });
         });
     }
 
@@ -176,21 +181,23 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async delete(insts: GreaterEntity[]) {
-        for (const inst of insts) {
-            const conE: GreaterEntity = await this.repository.findOne({ where: { id: inst.id }, relations: { identifiers: true, publications: true }, withDeleted: true });
-            const pubs = [];
-            if (conE.publications) for (const pub of conE.publications) {
-                pubs.push({ id: pub.id, greater_entity: null })
-            }
-            if (pubs.length > 0) await this.publicationService.save(pubs);
+        return this.dataSource.transaction(async (manager) => {
+            for (const inst of insts) {
+                const conE: GreaterEntity = await manager.getRepository(GreaterEntity).findOne({ where: { id: inst.id }, relations: { identifiers: true, publications: true }, withDeleted: true });
+                const pubs = [];
+                if (conE.publications) for (const pub of conE.publications) {
+                    pubs.push({ id: pub.id, greater_entity: null })
+                }
+                if (pubs.length > 0) await this.publicationService.save(pubs, { manager });
 
-            const ides = [];
-            if (conE.identifiers) for (const ide of conE.identifiers) {
-                ides.push(ide.id)
-            }
-            if (ides.length > 0) await this.idRepository.delete(ides)
+                const ides = [];
+                if (conE.identifiers) for (const ide of conE.identifiers) {
+                    ides.push(ide.id)
+                }
+                if (ides.length > 0) await manager.getRepository(GEIdentifier).delete(ides)
 
-        }
-        return await this.repository.delete(insts.map(p => p.id));
+            }
+            return await manager.getRepository(GreaterEntity).delete(insts.map(p => p.id));
+        });
     }
 }

@@ -666,8 +666,8 @@ export abstract class AbstractImportService {
             let oa_status;
             let is_journal_oa;
             let best_oa_host;
-            if (typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun));
-            else {
+            if (oa && typeof (oa) == "string") oa_category = await firstValueFrom(this.oaService.findOrSave(oa as string, this.dryRun));
+            else if (oa){
                 oa_category = await firstValueFrom(this.oaService.findOrSave(oa["oa_category"], this.dryRun));
                 is_oa = oa["is_oa"];
                 oa_status = oa["oa_status"];

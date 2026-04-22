@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 
 import { PublisherService } from './publisher.service';
@@ -14,22 +15,50 @@ describe('PublisherService', () => {
     let repository: jest.Mocked<Partial<Repository<Publisher>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasPublisher>>>;
     let doiRepository: jest.Mocked<Partial<Repository<PublisherDOI>>>;
+    let aliasLookupService: { findAliases: jest.Mock, findCanonicalElement: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let configService: { get: jest.Mock };
 
     beforeEach(async () => {
         repository = {
-            findOne: jest.fn(),
             save: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            update: jest.fn(),
             delete: jest.fn(),
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         doiRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         publicationService = {
             save: jest.fn(),
+        };
+        configService = {
+            get: jest.fn(),
+        };
+        aliasLookupService = {
+            findAliases: jest.fn(),
+            findCanonicalElement: jest.fn(),
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockImplementation((entity) => {
+                        if (entity === AliasPublisher) return aliasRepository;
+                        if (entity === PublisherDOI) return doiRepository;
+                        return repository;
+                    })
+                };
+                return cb(manager);
+            })
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -39,12 +68,51 @@ describe('PublisherService', () => {
                 { provide: getRepositoryToken(AliasPublisher), useValue: aliasRepository },
                 { provide: getRepositoryToken(PublisherDOI), useValue: doiRepository },
                 { provide: PublicationService, useValue: publicationService },
-                { provide: AliasLookupService, useValue: { findCanonicalElement: jest.fn() } },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
+                { provide: AliasLookupService, useValue: aliasLookupService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
         service = module.get(PublisherService);
+    });
+
+    it('saves DOI prefixes and aliases after the publisher id is known', async () => {
+        repository.save.mockResolvedValue({ id: 5, label: 'Publisher' } as Publisher);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        doiRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+        (doiRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save({
+            label: 'Publisher',
+            aliases: [{ alias: 'Publisher Alias' } as AliasPublisher],
+            doi_prefixes: [{ doi_prefix: '10.1000' } as PublisherDOI],
+        });
+
+        expect(repository.save).toHaveBeenCalledWith({ label: 'Publisher' });
+        expect(doiRepository.delete).toHaveBeenCalledWith({ publisherId: 5 });
+        expect(doiRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                doi_prefix: '10.1000',
+                publisherId: 5,
+                publisher: expect.objectContaining({ id: 5 }),
+            }),
+        ]);
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 5 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Publisher Alias',
+                elementId: 5,
+                element: expect.objectContaining({ id: 5 }),
+            }),
+        ]);
+        expect(result.doi_prefixes).toEqual(expect.arrayContaining([
+            expect.objectContaining({ doi_prefix: '10.1000', publisherId: 5 }),
+        ]));
+        expect(result.aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Publisher Alias', elementId: 5 }),
+        ]));
     });
 
     it('merges publisher data by combining aliases and DOI prefixes without losing the primary identity', async () => {
@@ -102,12 +170,36 @@ describe('PublisherService', () => {
         expect(publicationService.save).toHaveBeenCalledTimes(2);
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 22, publisher: expect.objectContaining({ id: 5 }) }),
-        ]);
+        ], expect.anything());
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 23, publisher: expect.objectContaining({ id: 5 }) }),
-        ]);
+        ], expect.anything());
         expect(aliasRepository.delete).toHaveBeenCalled();
         expect(doiRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([9, 10]);
+    });
+
+    it('deletes DOI prefixes and aliases before deleting publishers', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 5,
+            label: 'Publisher',
+            publications: [],
+        } as Publisher);
+        publicationService.save.mockResolvedValue(undefined);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        doiRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 5 } as Publisher]);
+
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [5] }),
+        });
+        expect(doiRepository.delete).toHaveBeenCalledWith({
+            publisherId: expect.objectContaining({ _type: 'in', _value: [5] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([5]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+        expect(doiRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
     });
 });

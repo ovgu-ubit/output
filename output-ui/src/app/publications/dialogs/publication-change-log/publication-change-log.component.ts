@@ -31,8 +31,8 @@ type PublicationChangeEntry = {
 export class PublicationChangeLogComponent implements OnChanges {
   @Input() publicationId?: number | null;
   @Input() changes?: PublicationChange[] | null;
-  @Input() emptyMessage = 'Keine Aenderungen vorhanden.';
-  @Input() loadErrorMessage = 'Aenderungslog konnte nicht geladen werden.';
+  @Input() emptyMessage = 'Keine Änderungen vorhanden.';
+  @Input() loadErrorMessage = 'Änderungslog konnte nicht geladen werden.';
 
   changeEntries: PublicationChangeEntry[] = [];
   loading = false;
@@ -109,7 +109,7 @@ export class PublicationChangeLogComponent implements OnChanges {
       case 'update':
         return 'Aktualisiert';
       default:
-        return 'Geaendert';
+        return 'Geändert';
     }
   }
 

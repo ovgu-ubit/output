@@ -184,11 +184,11 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
       disableClose: true
     }).afterClosed().subscribe(updateResult => {
       if (isPersistedEntityDialogResult<T>(updateResult)) {
-        this.handlePersistedResult(updateResult.entity, 'wurde geaendert');
+        this.handlePersistedResult(updateResult.entity, 'wurde geändert');
       } else if (updateResult && updateResult.updated) {
         this.serviceClass.update(updateResult).subscribe({
           next: data => {
-            this.handlePersistedResult(data, 'wurde geaendert');
+            this.handlePersistedResult(data, 'wurde geändert');
           },
           error: (error) => {
             this.errorPresentation.present(error, { action: 'update', entity: this.name });

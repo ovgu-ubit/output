@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterValue } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
@@ -26,6 +26,13 @@ interface SavePublicationOptions {
     workflowReport?: IWorkflowReport;
     by_user?: string;
     dry_change?: boolean;
+    manager?: EntityManager;
+}
+
+interface PublicationOwnedCollections {
+    authorPublications?: AuthorPublication[];
+    identifiers?: PublicationIdentifier[];
+    supplements?: PublicationSupplement[];
 }
 
 interface GetAllPublicationOptions {
@@ -104,25 +111,32 @@ export class PublicationService {
     filter_joins: Set<string> = new Set();
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
-        @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
-        @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
-        @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
-        @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
-        @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
-        @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
         private configService: AppConfigService,
         private instService: InstituteService,
-        private publicationChangeService: PublicationChangeService) { }
+        private publicationChangeService: PublicationChangeService,
+        private dataSource: DataSource) { }
 
     public async save(pub: Publication[], options?: SavePublicationOptions) {
-        await this.ensurePublicationsCanBeSaved(pub, options?.by_user);
-        const shouldLogChanges = this.shouldCreatePublicationChange(options);
-        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub) : new Map<number, Publication>();
+        const manager = options?.manager;
+        if (!manager) {
+            return this.dataSource.transaction(async (m) => this.save(pub, { ...options, manager: m }));
+        }
 
-        const saved = await this.pubRepository.save(pub).catch((error: unknown) => {
+        await this.ensurePublicationsCanBeSaved(pub, options?.by_user, manager);
+        const shouldLogChanges = this.shouldCreatePublicationChange(options);
+        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub, manager) : new Map<number, Publication>();
+        const ownedCollectionsByIndex = pub.map((publication) => this.getPublicationOwnedCollections(publication));
+        const publicationsToSave = pub.map((publication) => this.withoutPublicationOwnedCollections(publication));
+
+        const saved = await manager.getRepository(Publication).save(publicationsToSave).catch((error: unknown) => {
             throw createPersistenceHttpException(error);
         });
-        const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved) : new Map<number, Publication>();
+
+        for (let i = 0; i < saved.length; i++) {
+            await this.replacePublicationOwnedCollections(saved[i], ownedCollectionsByIndex[i], manager);
+        }
+
+        const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved, manager) : new Map<number, Publication>();
         pub.forEach((publication) => this.syncPublicationLockOwner(publication, options?.by_user));
 
         if (shouldLogChanges) {
@@ -144,7 +158,7 @@ export class PublicationService {
                         before: patch.before,
                         after: patch.after,
                     }
-                });
+                }, manager);
             }
         }
 
@@ -314,54 +328,27 @@ export class PublicationService {
     }
 
     public async update(pubs: Publication[], options?: SavePublicationOptions) {
-        //return this.pubRepository.save(pubs);
-        let i = 0;
-        await this.ensurePublicationsCanBeSaved(pubs, options?.by_user);
-        const shouldLogChanges = this.shouldCreatePublicationChange(options);
-        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pubs) : new Map<number, Publication>();
-        for (const pub of pubs) {
-            const orig = shouldLogChanges
-                ? beforeMap.get(pub.id)
-                : await this.pubRepository.findOne({ where: { id: pub.id }, relations: { identifiers: true, supplements: true } });
-            if (pub.identifiers) {
-                for (const id of pub.identifiers) {
-                    if (!hasProvidedEntityId(id.id)) {
-                        id.value = id.value.toUpperCase();
-                        id.type = id.type.toLowerCase();
-                        id.id = (await this.idRepository.save(id).catch((error: unknown) => {
-                            throw createPersistenceHttpException(error);
-                        })).id;
-                    }
-                }
-            }
-            if (pub.supplements) {
-                for (const suppl of pub.supplements) {
-                    if (!hasProvidedEntityId(suppl.id)) {
-                        suppl.id = (await this.supplRepository.save(suppl).catch((error: unknown) => {
-                            throw createPersistenceHttpException(error);
-                        })).id;
-                    }
-                }
-            }
-            if (pub.identifiers && orig && orig.identifiers) orig.identifiers.forEach(async id => {
-                if (!pub.identifiers.find(e => e.id === id.id)) await this.idRepository.delete(id.id)
-            })
-            if (pub.supplements && orig && orig.supplements) orig.supplements.forEach(async suppl => {
-                if (!pub.supplements.find(e => e.id === suppl.id)) await this.supplRepository.delete(suppl.id)
-            })
+        const manager = options?.manager;
+        if (!manager) {
+            return this.dataSource.transaction(async (m) => this.update(pubs, { ...options, manager: m }));
+        }
 
-            const autPub = pub.authorPublications?.map((e) => { return { authorId: e.author.id, publicationId: e.publicationId, corresponding: e.corresponding, institute: e.institute, affiliation: e.affiliation, role: e.role }; })
-            if (autPub) {
-                pub.authorPublications = autPub;
-                await this.resetAuthorPublication(pub);
-            }
-            const savedPub = await this.pubRepository.save(pub).catch((error: unknown) => {
+        let i = 0;
+        await this.ensurePublicationsCanBeSaved(pubs, options?.by_user, manager);
+        const shouldLogChanges = this.shouldCreatePublicationChange(options);
+        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pubs, manager) : new Map<number, Publication>();
+        for (const pub of pubs) {
+            const orig = shouldLogChanges ? beforeMap.get(pub.id) : undefined;
+            const ownedCollections = this.getPublicationOwnedCollections(pub);
+            const publicationToSave = this.withoutPublicationOwnedCollections(pub);
+            const savedPub = await manager.getRepository(Publication).save(publicationToSave).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
+            await this.replacePublicationOwnedCollections(savedPub, ownedCollections, manager);
             if (savedPub) i++;
             this.syncPublicationLockOwner(pub, options?.by_user);
             if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
-                const after = hasProvidedEntityId(savedPub.id) ? await this.loadPublicationForChangeLog(savedPub.id) : savedPub;
+                const after = hasProvidedEntityId(savedPub.id) ? await this.loadPublicationForChangeLog(savedPub.id, manager) : savedPub;
                 const patch = this.buildPublicationChangePatch(orig, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
@@ -375,33 +362,19 @@ export class PublicationService {
                         before: patch.before,
                         after: patch.after,
                     }
-                });
+                }, manager);
             }
         }
         return i;
     }
 
     public async delete(pubs: Publication[], soft?: boolean) {
-        const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
-        for (const pub of pubs) {
-            const pubE = await this.pubRepository.findOne({ where: { id: pub.id }, relations: { authorPublications: true, invoices: { cost_items: true }, identifiers: true }, withDeleted: true });
-            for (const autPub of pubE.authorPublications) {
-                await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
-            }
-            if (pubE.invoices) for (const inv of pubE.invoices) {
-                if (inv.cost_items) for (const ci of inv.cost_items) await this.costItemRepository.delete(ci.id);
-                await this.invoiceRepository.delete(inv.id);
-            }
-            if (pubE.identifiers) for (const id of pubE.identifiers) {
-                await this.idRepository.delete(id.id);
-            }
-            if (pubE.supplements) for (const suppl of pubE.supplements) {
-                await this.supplRepository.delete(suppl.id);
-            }
-        }
-        await this.publicationChangeService.deletePublicationChangesForPublications(publicationIds);
-        if (!soft) return await this.pubRepository.delete(publicationIds);
-        else return await this.pubRepository.softDelete(publicationIds);
+        return this.dataSource.transaction(async (manager) => {
+            const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
+            await this.deletePublicationRelations(publicationIds, manager);
+            if (!soft) return await manager.getRepository(Publication).delete(publicationIds);
+            else return await manager.getRepository(Publication).softDelete(publicationIds);
+        });
     }
 
     public async getPublication(id: number, reader: boolean, writer: boolean, user?: string) {
@@ -416,19 +389,198 @@ export class PublicationService {
         return pub;
     }
 
-    public saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?: Role) {
-        return this.pubAutRepository.save({ author, publication, corresponding, affiliation, institute, role }).catch((error: unknown) => {
+    public async saveAuthorPublication(author: Author, publication: Publication, corresponding?: boolean, affiliation?: string, institute?: Institute, role?: Role, manager?: EntityManager) {
+        if (!hasProvidedEntityId(author?.id)) {
+            throw createInvalidRequestHttpException('Author id is required to save author publication.');
+        }
+        if (!hasProvidedEntityId(publication?.id)) {
+            throw createInvalidRequestHttpException('Publication id is required to save author publication.');
+        }
+        const authorId = author.id as number;
+        const publicationId = publication.id as number;
+
+        const repo = manager ? manager.getRepository(AuthorPublication) : this.dataSource.getRepository(AuthorPublication);
+        return repo.save({
+            author: { id: authorId } as Author,
+            authorId,
+            publication: { id: publicationId } as Publication,
+            publicationId,
+            corresponding,
+            affiliation,
+            institute,
+            role
+        }).catch((error: unknown) => {
             throw createPersistenceHttpException(error);
         });
     }
 
     public getAuthorsPublication(pub: Publication) {
-        return this.pubAutRepository.find({ where: { publicationId: pub.id }, relations: { author: true } });
+        return this.dataSource.getRepository(AuthorPublication).find({ where: { publicationId: pub.id }, relations: { author: true } });
     }
 
-    public async resetAuthorPublication(pub: Publication) {
-        const pub_aut = await this.pubAutRepository.findBy({ publicationId: pub.id });
-        return await this.pubAutRepository.remove(pub_aut);
+    public async resetAuthorPublication(pub: Publication, manager?: EntityManager) {
+        if (!hasProvidedEntityId(pub?.id)) {
+            throw createInvalidRequestHttpException('Publication id is required to reset author publications.');
+        }
+        const repo = manager ? manager.getRepository(AuthorPublication) : this.dataSource.getRepository(AuthorPublication);
+        return repo.delete({ publicationId: pub.id });
+    }
+
+    private getPublicationOwnedCollections(publication: Publication): PublicationOwnedCollections {
+        return {
+            authorPublications: publication.authorPublications,
+            identifiers: publication.identifiers,
+            supplements: publication.supplements,
+        };
+    }
+
+    private withoutPublicationOwnedCollections(publication: Publication): Publication {
+        const hasOwnedCollection = ['authorPublications', 'identifiers', 'supplements']
+            .some((key) => Object.prototype.hasOwnProperty.call(publication, key));
+        if (!hasOwnedCollection) {
+            return publication;
+        }
+
+        const {
+            authorPublications: _authorPublications,
+            identifiers: _identifiers,
+            supplements: _supplements,
+            ...publicationToSave
+        } = publication;
+        return publicationToSave as Publication;
+    }
+
+    private async replacePublicationOwnedCollections(publication: Publication, collections: PublicationOwnedCollections, manager: EntityManager): Promise<void> {
+        if (collections.authorPublications !== undefined) {
+            publication.authorPublications = await this.replaceAuthorPublications(publication, collections.authorPublications, manager);
+        }
+        if (collections.identifiers !== undefined) {
+            publication.identifiers = await this.replaceIdentifiers(publication, collections.identifiers, manager);
+        }
+        if (collections.supplements !== undefined) {
+            publication.supplements = await this.replaceSupplements(publication, collections.supplements, manager);
+        }
+    }
+
+    private async replaceAuthorPublications(publication: Publication, authorPublications: AuthorPublication[], manager: EntityManager): Promise<AuthorPublication[]> {
+        const publicationId = publication?.id;
+        if (!hasProvidedEntityId(publicationId)) {
+            throw createInvalidRequestHttpException('Publication id is required to save author publications.');
+        }
+        const normalizedPublicationId = publicationId as number;
+
+        await manager.getRepository(AuthorPublication).delete({ publicationId: normalizedPublicationId });
+        if (!authorPublications || authorPublications.length === 0) return [];
+
+        const normalizedAuthorPublications = authorPublications.map((authorPublication, index) =>
+            this.normalizeAuthorPublication(normalizedPublicationId, authorPublication, index),
+        );
+
+        return manager.getRepository(AuthorPublication).save(normalizedAuthorPublications).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private async replaceIdentifiers(publication: Publication, identifiers: PublicationIdentifier[], manager: EntityManager): Promise<PublicationIdentifier[]> {
+        const publicationId = this.requirePublicationId(publication, 'save publication identifiers');
+        await manager.getRepository(PublicationIdentifier).delete({ entity: { id: publicationId } });
+        if (!identifiers || identifiers.length === 0) return [];
+
+        const normalizedIdentifiers = identifiers.map((identifier) => this.normalizeIdentifier(publicationId, identifier));
+        return manager.getRepository(PublicationIdentifier).save(normalizedIdentifiers).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private normalizeIdentifier(publicationId: number, identifier: PublicationIdentifier): DeepPartial<PublicationIdentifier> {
+        return {
+            type: identifier.type?.toLowerCase(),
+            value: identifier.value?.toUpperCase(),
+            entity: { id: publicationId } as Publication,
+        };
+    }
+
+    private async replaceSupplements(publication: Publication, supplements: PublicationSupplement[], manager: EntityManager): Promise<PublicationSupplement[]> {
+        const publicationId = this.requirePublicationId(publication, 'save publication supplements');
+        await manager.getRepository(PublicationSupplement).delete({ publication: { id: publicationId } });
+        if (!supplements || supplements.length === 0) return [];
+
+        const normalizedSupplements = supplements.map((supplement) => this.normalizeSupplement(publicationId, supplement));
+        return manager.getRepository(PublicationSupplement).save(normalizedSupplements).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private normalizeSupplement(publicationId: number, supplement: PublicationSupplement): DeepPartial<PublicationSupplement> {
+        return {
+            link: supplement.link,
+            publication: { id: publicationId } as Publication,
+        };
+    }
+
+    private requirePublicationId(publication: Publication, operation: string): number {
+        const publicationId = publication?.id;
+        if (!hasProvidedEntityId(publicationId)) {
+            throw createInvalidRequestHttpException(`Publication id is required to ${operation}.`);
+        }
+        return publicationId;
+    }
+
+    private async deletePublicationRelations(publicationIds: number[], manager: EntityManager) {
+        const ids = publicationIds.filter((publicationId): publicationId is number => hasProvidedEntityId(publicationId));
+        if (ids.length === 0) return;
+
+        const publications = await manager.getRepository(Publication).find({
+            where: { id: In(ids) },
+            relations: { invoices: { cost_items: true } },
+            withDeleted: true,
+        });
+        const invoiceIds = publications
+            .flatMap((publication) => publication.invoices ?? [])
+            .map((invoice) => invoice.id)
+            .filter((invoiceId): invoiceId is number => hasProvidedEntityId(invoiceId));
+        const costItemIds = publications
+            .flatMap((publication) => publication.invoices ?? [])
+            .flatMap((invoice) => invoice.cost_items ?? [])
+            .map((costItem) => costItem.id)
+            .filter((costItemId): costItemId is number => hasProvidedEntityId(costItemId));
+
+        await manager.getRepository(AuthorPublication).delete({ publicationId: In(ids) });
+        if (costItemIds.length > 0) await manager.getRepository(CostItem).delete(costItemIds);
+        if (invoiceIds.length > 0) await manager.getRepository(Invoice).delete(invoiceIds);
+        await manager.getRepository(PublicationIdentifier).delete({ entity: { id: In(ids) } });
+        await manager.getRepository(PublicationSupplement).delete({ publication: { id: In(ids) } });
+        await manager.getRepository(PublicationDuplicate).delete({ id_first: In(ids) });
+        await manager.getRepository(PublicationDuplicate).delete({ id_second: In(ids) });
+        await this.publicationChangeService.deletePublicationChangesForPublications(ids, manager);
+    }
+
+    private normalizeAuthorPublication(
+        publicationId: number,
+        authorPublication: AuthorPublication,
+        index: number,
+    ): DeepPartial<AuthorPublication> {
+        const authorId = authorPublication?.author?.id ?? authorPublication?.authorId;
+        if (!hasProvidedEntityId(authorId)) {
+            throw createInvalidRequestHttpException('authorPublications entries require author.id or authorId.', [
+                {
+                    path: `authorPublications.${index}.author`,
+                    code: 'required',
+                    message: 'author.id or authorId is required.',
+                },
+            ]);
+        }
+
+        return {
+            author: { id: authorId } as Author,
+            authorId,
+            publication: { id: publicationId } as Publication,
+            publicationId,
+            corresponding: authorPublication.corresponding,
+            affiliation: authorPublication.affiliation,
+            institute: authorPublication.institute,
+            role: authorPublication.role,
+        };
     }
 
     public isDOIvalid(pub: Publication): boolean {
@@ -509,70 +661,52 @@ export class PublicationService {
 
 
     async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        const duplicatePairs = await this.duplRepository.find({ where: { id_first: id1, id_second: In(ids) }, withDeleted: true });
-        const reversePairs = await this.duplRepository.find({ where: { id_first: In(ids), id_second: id1 }, withDeleted: true });
-        const duplicateRecords = duplicatePairs.concat(reversePairs);
-        const duplicateRecordIds = duplicateRecords.map(record => record.id);
-
-        return mergeEntities<Publication>({
-            repository: this.pubRepository,
-            primaryId: id1,
-            duplicateIds: ids,
-            primaryOptions: {
-                relations: { pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
-                withDeleted: true
-            },
-            duplicateOptions: {
-                relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
-                withDeleted: true
-            },
-            validate: ({ primary, duplicates }) => {
-                if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
-                    throw createEntityLockedHttpException();
-                }
-            },
-            mergeContext: {
-                field: 'publication',
-                pubAutrepository: this.pubAutRepository,
-                alias_strings
-            },
-            afterSave: async ({ duplicateIds, defaultDelete }) => {
-                if (duplicateIds.length > 0) {
-                    await this.pubAutRepository.delete({ publicationId: In(duplicateIds) });
-                    await this.invoiceRepository.delete({ publication: { id: In(duplicateIds) } });
-                    await this.supplRepository.delete({ publication: { id: In(duplicateIds) } });
-                    await this.publicationChangeService.deletePublicationChangesForPublications(duplicateIds);
-                }
-
-                if (duplicateRecordIds.length > 0) {
-                    await this.duplRepository.delete(duplicateRecordIds);
-                }
-
-                await defaultDelete();
-            },
+        return this.dataSource.transaction(async (manager) => {
+            return mergeEntities<Publication>({
+                repository: this.pubRepository,
+                primaryId: id1,
+                duplicateIds: ids,
+                primaryOptions: {
+                    relations: { pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+                    withDeleted: true
+                },
+                duplicateOptions: {
+                    relations: { authorPublications: true, pub_type: true, oa_category: true, greater_entity: true, publisher: true, contract: true, funders: true, invoices: true, identifiers: true, supplements: true },
+                    withDeleted: true
+                },
+                validate: ({ primary, duplicates }) => {
+                    if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
+                        throw createEntityLockedHttpException();
+                    }
+                },
+                mergeContext: {
+                    field: 'publication',
+                    pubAutrepository: this.dataSource.getRepository(AuthorPublication),
+                    alias_strings,
+                    service: this
+                },
+                afterSave: async ({ duplicateIds, defaultDelete }) => {
+                    await this.deletePublicationRelations(duplicateIds, manager);
+                    await defaultDelete();
+                },
+                manager
+            });
         });
     }
     getAllDuplicates(soft?: boolean) {
-        if (!soft) return this.duplRepository.find();
-        else return this.duplRepository.find({ where: { delete_date: Not(IsNull()) }, withDeleted: true })
+        if (!soft) return this.dataSource.getRepository(PublicationDuplicate).find();
+        else return this.dataSource.getRepository(PublicationDuplicate).find({ where: { delete_date: Not(IsNull()) }, withDeleted: true })
     }
 
     async getDuplicates(id: number) {
-        /*let query = this.pubRepository.createQueryBuilder("publication")
-            .leftJoinAndSelect("publication.duplicates", 'duplicates')
-            .select("duplicates.id_second")
-            .addSelect("duplicates.id")
-            .addSelect("duplicates.id_first")
-            .where("publication.id = :id", {id: id})
-
-        return (await query.getRawMany());*/
-        return this.duplRepository.findOne({ where: { id }, withDeleted: true })
+        return this.dataSource.getRepository(PublicationDuplicate).findOne({ where: { id }, withDeleted: true })
     }
 
     async saveDuplicate(id_first: number, id_second: number, description?: string) {
-        const check = await this.duplRepository.findOne({ where: { id_first, id_second }, withDeleted: true })
+        const repo = this.dataSource.getRepository(PublicationDuplicate);
+        const check = await repo.findOne({ where: { id_first, id_second }, withDeleted: true })
         if (!check) {
-            return this.duplRepository.save({ id_first, id_second, description }).catch((error: unknown) => {
+            return repo.save({ id_first, id_second, description }).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
         }
@@ -580,12 +714,13 @@ export class PublicationService {
     }
 
     async updateDuplicate(dupl: PublicationDuplicate) {
-        return this.duplRepository.update(dupl.id, { id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date });
+        return this.dataSource.getRepository(PublicationDuplicate).update(dupl.id, { id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date });
     }
 
     deleteDuplicate(id, soft?: boolean) {
-        if (soft) return this.duplRepository.softDelete(id);
-        else return this.duplRepository.delete(id);
+        const repo = this.dataSource.getRepository(PublicationDuplicate);
+        if (soft) return repo.softDelete(id);
+        else return repo.delete(id);
     }
 
     // retrieves a publication index based on a filter object
@@ -938,11 +1073,12 @@ export class PublicationService {
         }
     }
 
-    private async loadPublicationsForChangeLog(pubs: Publication[]): Promise<Map<number, Publication>> {
+    private async loadPublicationsForChangeLog(pubs: Publication[], manager?: EntityManager): Promise<Map<number, Publication>> {
         const ids = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
         if (ids.length === 0) return new Map<number, Publication>();
 
-        const existing = await this.pubRepository.find({
+        const repo = manager ? manager.getRepository(Publication) : this.pubRepository;
+        const existing = await repo.find({
             where: { id: In(ids) },
             relations: {
                 pub_type: true,
@@ -959,7 +1095,12 @@ export class PublicationService {
                 },
                 language: true,
                 identifiers: true,
-                supplements: true
+                supplements: true,
+                authorPublications: {
+                    author: true,
+                    institute: true,
+                    role: true
+                }
             },
             withDeleted: true
         });
@@ -967,8 +1108,8 @@ export class PublicationService {
         return new Map(existing.map((publication) => [publication.id, publication]));
     }
 
-    private async loadPublicationForChangeLog(id: number): Promise<Publication | null> {
-        return (await this.loadPublicationsForChangeLog([{ id } as Publication])).get(id) ?? null;
+    private async loadPublicationForChangeLog(id: number, manager?: EntityManager): Promise<Publication | null> {
+        return (await this.loadPublicationsForChangeLog([{ id } as Publication], manager)).get(id) ?? null;
     }
 
     private buildPublicationChangePatch(before?: Publication | null, after?: Publication | null) {
@@ -1066,6 +1207,14 @@ export class PublicationService {
             supplements: publication.supplements?.map((supplement) => ({
                 id: supplement.id,
                 link: supplement.link
+            })) ?? [],
+            authorPublications: publication.authorPublications?.map((ap) => ({
+                id: ap.id,
+                author: ap.author ? { id: ap.author.id, last_name: ap.author.last_name, first_name: ap.author.first_name } : { id: ap.authorId },
+                institute: ap.institute ? { id: ap.institute.id, label: ap.institute.label } : null,
+                role: ap.role ? { id: ap.role.id, label: ap.role.label } : null,
+                corresponding: ap.corresponding,
+                affiliation: ap.affiliation
             })) ?? []
         };
     }
@@ -1177,11 +1326,12 @@ export class PublicationService {
         throw createEntityLockedHttpException();
     }
 
-    private async ensurePublicationsCanBeSaved(publications: Publication[], user?: string): Promise<void> {
+    private async ensurePublicationsCanBeSaved(publications: Publication[], user?: string, manager?: EntityManager): Promise<void> {
         const ids = publications.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
         if (ids.length === 0) return;
 
-        const existing = await this.pubRepository.find({
+        const repo = manager ? manager.getRepository(Publication) : this.pubRepository;
+        const existing = await repo.find({
             where: { id: In(ids) },
             withDeleted: true,
         });
