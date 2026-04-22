@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
 import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
@@ -75,10 +75,12 @@ describe('PublicationService combine', () => {
             delete: jest.fn(),
         };
         idRepository = {
+            delete: jest.fn(),
             save: jest.fn(),
         };
         supplRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         duplRepository = {
             find: jest.fn(),
@@ -114,12 +116,6 @@ describe('PublicationService combine', () => {
     });
 
     it('combines publications by preserving locked state and aggregating related records', async () => {
-        const duplicateForward = [{ id: 501 } as PublicationDuplicate];
-        const duplicateReverse = [{ id: 502 } as PublicationDuplicate];
-        duplRepository.find
-            .mockResolvedValueOnce(duplicateForward)
-            .mockResolvedValueOnce(duplicateReverse);
-
         const primary: Publication = {
             id: 61,
             locked: false,
@@ -161,17 +157,22 @@ describe('PublicationService combine', () => {
         ]);
 
         pubRepository.findOne.mockImplementation(async ({ where }: any) => byId.get(where.id));
+        pubRepository.find.mockResolvedValue([
+            { id: 62, invoices: [{ id: 901, cost_items: [{ id: 801 } as CostItem] } as Invoice] } as Publication,
+            { id: 63, invoices: [] } as Publication,
+        ]);
         pubRepository.save.mockImplementation(async entity => entity as Publication);
         pubRepository.delete!.mockResolvedValue(undefined as never);
         pubAutRepository.delete!.mockResolvedValue(undefined as never);
         pubAutRepository.save!.mockResolvedValue(undefined as never);
         invoiceRepository.delete!.mockResolvedValue(undefined as never);
+        costItemRepository.delete!.mockResolvedValue(undefined as never);
+        idRepository.delete!.mockResolvedValue(undefined as never);
         supplRepository.delete!.mockResolvedValue(undefined as never);
         duplRepository.delete!.mockResolvedValue(undefined as never);
 
         const combined = await service.combine(61, [62, 63], ['alias-a']);
 
-        expect(duplRepository.find).toHaveBeenCalledTimes(2);
         expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({
             id: 61,
             doi: '10.primary/doi',
@@ -203,11 +204,14 @@ describe('PublicationService combine', () => {
             id: 802,
             publication: expect.objectContaining({ id: 61 }),
         });
-        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: expect.anything() });
-        expect(invoiceRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
-        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: In([62, 63]) });
+        expect(costItemRepository.delete).toHaveBeenCalledWith([801]);
+        expect(invoiceRepository.delete).toHaveBeenCalledWith([901]);
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([62, 63]) } });
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([62, 63]) } });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([62, 63]) });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([62, 63]) });
         expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63]);
-        expect(duplRepository.delete).toHaveBeenCalledWith([501, 502]);
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
@@ -322,9 +326,49 @@ describe('PublicationService combine', () => {
         ]));
     });
 
+    it('saves identifiers and supplements after the publication id is known', async () => {
+        (pubRepository.save as jest.Mock).mockImplementation(async (entities: Publication[]) =>
+            entities.map((entity, index) => ({ ...entity, id: 90 + index }) as Publication),
+        );
+        idRepository.delete!.mockResolvedValue(undefined as never);
+        (idRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationIdentifier[]);
+        supplRepository.delete!.mockResolvedValue(undefined as never);
+        (supplRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationSupplement[]);
+
+        const result = await service.save([{
+            title: 'Publication with owned relations',
+            identifiers: [{ type: 'DOI', value: '10.1234/example' } as PublicationIdentifier],
+            supplements: [{ link: 'https://example.test/supplement.pdf' } as PublicationSupplement],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication[];
+        expect(savedPublicationArg[0]).not.toHaveProperty('identifiers');
+        expect(savedPublicationArg[0]).not.toHaveProperty('supplements');
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: 90 } });
+        expect(idRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                type: 'doi',
+                value: '10.1234/EXAMPLE',
+                entity: expect.objectContaining({ id: 90 }),
+            }),
+        ]);
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: 90 } });
+        expect(supplRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                link: 'https://example.test/supplement.pdf',
+                publication: expect.objectContaining({ id: 90 }),
+            }),
+        ]);
+        expect(result[0].identifiers).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: 'doi', value: '10.1234/EXAMPLE' }),
+        ]));
+        expect(result[0].supplements).toEqual(expect.arrayContaining([
+            expect.objectContaining({ link: 'https://example.test/supplement.pdf' }),
+        ]));
+    });
+
     it('updates authorships without cascading rows with a null publication id', async () => {
         pubRepository.find.mockResolvedValue([{ id: 7, locked_at: null } as Publication] as never);
-        pubRepository.findOne.mockResolvedValue({ id: 7, identifiers: [], supplements: [] } as Publication);
         pubRepository.save.mockResolvedValue({ id: 7, title: 'Updated' } as never);
         pubAutRepository.delete!.mockResolvedValue(undefined as never);
         (pubAutRepository.save as jest.Mock).mockImplementation(async (entities) => entities as AuthorPublication[]);
@@ -346,6 +390,41 @@ describe('PublicationService combine', () => {
             expect.objectContaining({
                 authorId: 876,
                 publicationId: 7,
+                publication: expect.objectContaining({ id: 7 }),
+            }),
+        ]);
+    });
+
+    it('updates identifiers and supplements without cascading rows with a null publication id', async () => {
+        pubRepository.find.mockResolvedValue([{ id: 7, locked_at: null } as Publication] as never);
+        pubRepository.save.mockResolvedValue({ id: 7, title: 'Updated' } as never);
+        idRepository.delete!.mockResolvedValue(undefined as never);
+        (idRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationIdentifier[]);
+        supplRepository.delete!.mockResolvedValue(undefined as never);
+        (supplRepository.save as jest.Mock).mockImplementation(async (entities) => entities as PublicationSupplement[]);
+
+        await service.update([{
+            id: 7,
+            title: 'Updated',
+            identifiers: [{ type: 'ISBN', value: 'abc-123' } as PublicationIdentifier],
+            supplements: [{ link: 'https://example.test/supplement.pdf' } as PublicationSupplement],
+        } as Publication]);
+
+        const savedPublicationArg = pubRepository.save.mock.calls[0][0] as Publication;
+        expect(savedPublicationArg).not.toHaveProperty('identifiers');
+        expect(savedPublicationArg).not.toHaveProperty('supplements');
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: 7 } });
+        expect(idRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                type: 'isbn',
+                value: 'ABC-123',
+                entity: expect.objectContaining({ id: 7 }),
+            }),
+        ]);
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: 7 } });
+        expect(supplRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                link: 'https://example.test/supplement.pdf',
                 publication: expect.objectContaining({ id: 7 }),
             }),
         ]);
@@ -524,13 +603,10 @@ describe('PublicationService combine', () => {
     });
 
     it('deletes publication changes before soft deleting publications', async () => {
-        pubRepository.findOne.mockResolvedValue({
+        pubRepository.find.mockResolvedValue([{
             id: 7,
-            authorPublications: [],
             invoices: [],
-            identifiers: [],
-            supplements: [],
-        } as unknown as Publication);
+        } as unknown as Publication]);
         pubRepository.softDelete!.mockResolvedValue(undefined as never);
 
         await service.delete([{ id: 7 } as Publication], true);
@@ -538,6 +614,37 @@ describe('PublicationService combine', () => {
         expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('deletes publication relation rows before hard deleting publications', async () => {
+        pubRepository.find.mockResolvedValue([{
+            id: 7,
+            invoices: [{
+                id: 11,
+                cost_items: [{ id: 21 } as CostItem],
+            } as Invoice],
+        } as Publication]);
+        pubRepository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 7 } as Publication]);
+
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: In([7]) });
+        expect(costItemRepository.delete).toHaveBeenCalledWith([21]);
+        expect(invoiceRepository.delete).toHaveBeenCalledWith([11]);
+        expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([7]) } });
+        expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([7]) } });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([7]) });
+        expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([7]) });
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+
+        const parentDeleteOrder = pubRepository.delete.mock.invocationCallOrder[0];
+        expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(costItemRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(invoiceRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(idRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(supplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(duplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(publicationChangeService.deletePublicationChangesForPublications.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
     });
 });
 
