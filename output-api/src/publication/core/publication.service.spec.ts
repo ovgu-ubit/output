@@ -617,6 +617,58 @@ describe('PublicationService', () => {
         });
     });
 
+    it('does not log changes when authorPublications IDs change but content is identical', async () => {
+        const author = { id: 101, last_name: 'Doe', first_name: 'John' };
+        const before = {
+            id: 9,
+            authorPublications: [{ id: 1, authorId: 101, author, corresponding: true }],
+            identifiers: [],
+            supplements: [],
+        } as any;
+        const after = {
+            id: 9,
+            authorPublications: [{ id: 2, authorId: 101, author, corresponding: true }], // ID changed from 1 to 2
+            identifiers: [],
+            supplements: [],
+        } as any;
+
+        pubRepository.find
+            .mockResolvedValueOnce([{ id: 9, locked_at: null } as Publication] as never)
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 9 } as Publication] as any);
+        pubAutRepository.save!.mockResolvedValue([] as any);
+
+        await service.save([{ id: 9, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
+
+        expect(publicationChangeService.createPublicationChange).not.toHaveBeenCalled();
+    });
+
+    it('does not log changes when values are logically empty (null, undefined, "")', async () => {
+        const before = {
+            id: 8,
+            add_info: null,
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+        const after = {
+            id: 8,
+            add_info: '',
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+
+        pubRepository.find
+            .mockResolvedValueOnce([{ id: 8, locked_at: null } as Publication] as never)
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 8 } as Publication] as any);
+
+        await service.save([{ id: 8, add_info: '' } as Publication], { by_user: 'scanner' } as any);
+
+        expect(publicationChangeService.createPublicationChange).not.toHaveBeenCalled();
+    });
+
     it('logs change patches from reloaded entities instead of partial save payloads', async () => {
         const before = {
             id: 7,
