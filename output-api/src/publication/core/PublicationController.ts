@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, InternalServerErrorException, NotFoundException, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Between } from "typeorm";
@@ -7,10 +7,13 @@ import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex
 import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { AppConfigService } from "../../config/app-config.service";
+import { PublicationChangeService } from "./publication-change.service";
 import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { AbstractFilterService, getFilterServiceMeta } from "../../workflow/filter/abstract-filter.service";
+import { createInternalErrorHttpException, createInvalidRequestHttpException, createNotFoundHttpException } from "../../common/api-error";
+import { assertCreateRequestHasNoId, hasProvidedEntityId } from "../../common/entity-id";
 
 @Controller("publications")
 @ApiTags("publications")
@@ -18,12 +21,14 @@ export class PublicationController {
 
     constructor(@InjectRepository(Publication) private repository,
         private publicationService: PublicationService,
+        private publicationChangeService: PublicationChangeService,
         private appConfigService: AppConfigService,
         private configService: AppConfigService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
 
       list() {
         return this.filterServices.map(i => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
           const meta = getFilterServiceMeta(i.constructor as Function)!;
           return { path: meta.path };
         });
@@ -65,7 +70,7 @@ export class PublicationController {
             }
         }).catch(err => {
             console.log(err);
-            throw new InternalServerErrorException('Failure while selecting');
+            throw createInternalErrorHttpException();
         });
     }
 
@@ -82,8 +87,30 @@ export class PublicationController {
         type: Publication
     })
     async one(@Query('id') id: number, @Req() request: Request) {
-        if (!id) throw new BadRequestException('id must be given')
-        return await this.publicationService.getPublication(id, request['user'] ? request['user']['read'] : false, request['user'] ? request['user']['write_publication'] : false);
+        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given')
+        const publication = await this.publicationService.getPublication(
+            id,
+            request['user'] ? request['user']['read'] : false,
+            request['user'] ? request['user']['write_publication'] : false,
+            request['user']?.['username'],
+        );
+        if (!publication) throw createNotFoundHttpException('Publication not found.');
+        return publication;
+    }
+
+    @Get('changes')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @ApiQuery({
+        name: 'id',
+        type: 'integer',
+        required: true,
+        description: 'Publication ID',
+        example: "3"
+    })
+    async changes(@Query('id') id: number) {
+        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given');
+        return this.publicationChangeService.getPublicationChangesForPublication(id);
     }
 
     @Get('publicationIndex')
@@ -95,7 +122,7 @@ export class PublicationController {
         example: "2022"
     })
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
-        if ((yop === null || yop === undefined) && !soft) throw new BadRequestException('reporting year or soft has to be given');
+        if ((yop === null || yop === undefined) && !soft) throw createInvalidRequestHttpException('reporting year or soft has to be given');
 
         if (!soft) {
             if (Number.isNaN(yop)) return await this.publicationService.index(null);
@@ -119,16 +146,17 @@ export class PublicationController {
             }
         }
     })
-    async save(@Body() body: Publication) {
-        return this.publicationService.save([body]);
+    async save(@Body() body: Publication, @Req() request: Request) {
+        assertCreateRequestHasNoId(body);
+        return this.publicationService.save([body], { by_user: request['user']?.['username'] });
     }
 
     @Put()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async update(@Body() body: Publication[] | Publication) {
-        if (Array.isArray(body)) return this.publicationService.update(body);
-        else return this.publicationService.update([body]);
+    async update(@Body() body: Publication[] | Publication, @Req() request: Request) {
+        if (Array.isArray(body)) return this.publicationService.update(body, { by_user: request['user']?.['username'] });
+        else return this.publicationService.update([body], { by_user: request['user']?.['username'] });
     }
 
     @Delete()
@@ -155,10 +183,7 @@ export class PublicationController {
         }
     })
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        const res = await this.publicationService.combine(id1, ids);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first publication')
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting second publication')
-        else return res;
+        return this.publicationService.combine(id1, ids);
     }
 
     @Post('filter')
@@ -183,7 +208,7 @@ export class PublicationController {
         let res = await this.publicationService.filterIndex(filter);
         if (paths && paths.length > 0) for (const path of paths) {
             const so = this.list().findIndex(e => e.path === path)
-            if (so === -1) throw new NotFoundException();
+            if (so === -1) throw createNotFoundHttpException('Filter not found.');
             res = await this.filterServices[so].filter(res)
         }
         return res;
@@ -210,7 +235,7 @@ export class PublicationController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
-        if (id) return this.publicationService.getDuplicates(id);
+        if (hasProvidedEntityId(id)) return this.publicationService.getDuplicates(id);
         else return this.publicationService.getAllDuplicates(soft);
     }
 

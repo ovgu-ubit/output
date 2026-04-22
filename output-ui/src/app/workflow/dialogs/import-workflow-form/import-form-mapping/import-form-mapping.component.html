@@ -1,23 +1,63 @@
 <mat-card *ngIf="this.entity">
   <mat-card-title>JSONata Mapping</mat-card-title>
   <mat-card-content>
-    <!--<pre class="mapping">{{ workflow.mapping }}</pre>-->
-    <form [formGroup]="form">
-      <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>Mapping</mat-label>
+    <form [formGroup]="form" class="mapping-form">
+      <mat-form-field appearance="fill" class="mapping-general">
+        <mat-label>Hilfsfunktionen und Variablen</mat-label>
         <textarea
           matInput
-          formControlName="mapping"
-          rows="20"
-          placeholder="JSONata Mapping eingeben"
+          formControlName="common"
+          rows="8"
+          placeholder="$cfg := params.cfg;"
         ></textarea>
       </mat-form-field>
+
+      <mat-chip-listbox
+        class="mapping-field-selector"
+        aria-label="Mapping-Felder"
+        multiple
+        [disabled]="!canEdit"
+      >
+        <mat-chip-option
+          *ngFor="let field of mappingFields"
+          [selected]="isFieldActive(field.key)"
+          [disabled]="!canEdit"
+          (selectionChange)="setFieldActive(field.key, $event.selected, $event.isUserInput)"
+        >
+          {{ field.label }}
+        </mat-chip-option>
+      </mat-chip-listbox>
+
+      <mat-accordion class="mapping-fields" multi>
+        <mat-expansion-panel
+          *ngFor="let field of activeMappingFields"
+          class="mapping-field-panel"
+          [expanded]="fieldHasValue(field.key)"
+        >
+          <mat-expansion-panel-header>
+            <mat-panel-title>{{ field.label }}</mat-panel-title>
+            <mat-panel-description>{{ field.key }}</mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div formGroupName="fields">
+            <mat-form-field appearance="fill" class="mapping-field" floatLabel="always">
+              <mat-label>{{ field.key }}</mat-label>
+              <textarea
+                matInput
+                [formControlName]="field.key"
+                [rows]="getRows(field)"
+                [placeholder]="field.placeholder ?? ''"
+              ></textarea>
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
     </form>
   </mat-card-content>
-    @if (!this.entity.published_at && !this.entity.deleted_at) {
-    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
-        <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
-        <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
+  @if (!this.entity.published_at && !this.entity.deleted_at) {
+    <mat-card-actions class="mapping-actions">
+      <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
+      <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
     </mat-card-actions>
   }
 </mat-card>

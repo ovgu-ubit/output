@@ -1,5 +1,11 @@
 <app-window-toolbar [name]="this.name" [disabled]="this.disabled" [parent]="this"></app-window-toolbar>
 <mat-dialog-content>
+    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
+        <mat-card-header><mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
+        <mat-card-content>
+            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
+        </mat-card-content>
+    </mat-card>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
         <mat-form-field *ngIf="this.entity?.id" appearance="fill">
@@ -15,23 +21,25 @@
         <mat-form-field appearance="fill">
             <mat-label>Vorname</mat-label>
             <input matInput placeholder="Vorname" formControlName="first_name" />
+            <mat-error *ngIf="getFieldError('first_name', 'Vorname') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>Nachname</mat-label>
             <input matInput placeholder="Nachname" formControlName="last_name" />
+            <mat-error *ngIf="getFieldError('last_name', 'Nachname') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>ORCID</mat-label>
             <input matInput placeholder="ORCID" formControlName="orcid" />
-            <mat-error>Bitte geben Sie die ORCID im korrekten Format an (XXXX-XXXX-XXXX-XXXX)</mat-error>
+            <mat-error *ngIf="getFieldError('orcid', 'ORCID') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>GND-Nummer</mat-label>
             <input matInput placeholder="GND-Nummer" formControlName="gnd_id" />
-            <mat-error>Bitte geben Sie die GND-Nummer im korrekten Format an (nur Zahlen, X und Bindestrich)</mat-error>
+            <mat-error *ngIf="getFieldError('gnd_id', 'GND-Nummer') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-card>

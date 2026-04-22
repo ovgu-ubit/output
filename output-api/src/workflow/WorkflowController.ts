@@ -1,15 +1,19 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseBoolPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
-import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ImportWorkflowTestResult, Strategy } from "../../../output-interfaces/Workflow";
+import { SearchFilter, UpdateMapping } from "../../../output-interfaces/Config";
+import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType } from "../../../output-interfaces/Workflow";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
+import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import { ReportItemService } from "./report-item.service";
+import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { WorkflowService } from "./workflow.service";
+import { WorkflowReportService } from "./workflow-report.service";
+import { createInvalidRequestHttpException } from "../common/api-error";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -18,7 +22,8 @@ export class WorkflowController {
   constructor(
     private reportService: ReportItemService,
     private configService: AppConfigService,
-    private workflowService: WorkflowService) { }
+    private workflowService: WorkflowService,
+    private workflowReportService: WorkflowReportService) { }
 
   @Get("import")
   @UseGuards(AccessGuard)
@@ -27,20 +32,60 @@ export class WorkflowController {
     return this.workflowService.getImports(type)
   }
 
+  @Get("export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_exports(@Query('type') type?: 'draft' | 'published' | 'archived') {
+    return this.workflowService.getExports(type)
+  }
+
+  @Get("validation")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_validations(@Query('type') type?: 'draft' | 'published' | 'archived') {
+    return this.workflowService.getValidations(type)
+  }
+
   @Get("import/:id")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
-  get_import(@Param('id') id: number) {
-    return this.workflowService.getImport(id);
+  get_import(@Param('id') id: number, @Req() req) {
+    return this.workflowService.getImport(id, true, req.user?.username);
+  }
+
+  @Get("export/:id")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_export(@Param('id') id: number, @Req() req) {
+    return this.workflowService.getExport(id, true, req.user?.username);
+  }
+
+  @Get("validation/:id")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  get_validation(@Param('id') id: number, @Req() req) {
+    return this.workflowService.getValidation(id, true, req.user?.username);
   }
 
   @Get("import/:id/export")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   async export_import(@Param('id') id: number, @Res({ passthrough: true }) res) {
-    const wf = await this.workflowService.getImport(id);
+    const wf = await this.workflowService.getImport(id, false);
     const json = JSON.stringify(wf, null, 2);
     const filename = 'Import_' + wf.label + '_' + wf.version + '_' + wf.published_at;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
+    return new StreamableFile(Buffer.from(json, 'utf-8'));
+  }
+
+  @Get("export/:id/export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async export_export(@Param('id') id: number, @Res({ passthrough: true }) res) {
+    const wf = await this.workflowService.getExport(id, false);
+    const json = JSON.stringify(wf, null, 2);
+    const filename = 'Export_' + wf.label + '_' + wf.version + '_' + wf.published_at;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
     return new StreamableFile(Buffer.from(json, 'utf-8'));
@@ -60,6 +105,20 @@ export class WorkflowController {
     return this.workflowService.isLocked(id);
   }
 
+  @Get("export/:id/locked")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  isExportLocked(@Param('id') id: number): Promise<boolean> {
+    return this.workflowService.isExportLocked(id);
+  }
+
+  @Get("validation/:id/locked")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  isValidationLocked(@Param('id') id: number): Promise<boolean> {
+    return this.workflowService.isValidationLocked(id);
+  }
+
   @Post("import/:id/run")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -69,6 +128,49 @@ export class WorkflowController {
     return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
   }
 
+  @Post("export/:id/run")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async run_export(
+    @Param('id') id: number,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req,
+    @Body('filter') filter?: { filter: SearchFilter, paths: string[] },
+    @Body('withMasterData') withMasterData?: boolean
+  ) {
+    const workflow = await this.workflowService.getExport(id, false);
+    const result = await this.workflowService.startExport(id, filter, req.user?.username, withMasterData);
+    const strategy = workflow.strategy ?? {};
+    const format = (strategy.format ?? 'json') as ExportFormat;
+    const disposition = (strategy.disposition ?? (format === 'xlsx' ? 'attachment' : 'inline')) as ExportDisposition;
+    const contentType = this.getExportContentType(format);
+
+    res.setHeader('Content-Type', contentType);
+
+    if (disposition === 'attachment') {
+      const filename = this.buildExportFilename(workflow.label, workflow.version, format);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+
+    if (Buffer.isBuffer(result)) {
+      return new StreamableFile(result, {
+        type: contentType,
+        disposition: disposition === 'attachment'
+          ? `attachment; filename="${this.buildExportFilename(workflow.label, workflow.version, format)}"`
+          : undefined
+      });
+    }
+
+    return result;
+  }
+
+  @Post("validation/:id/run")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  run_validation(@Param('id') id: number, @Req() req) {
+    return this.workflowService.startValidation(id, req.user?.username);
+  }
+
   @Get('import/:id/run')
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -76,11 +178,39 @@ export class WorkflowController {
     return this.workflowService.status(id);
   }
 
+  @Get('export/:id/run')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  exportStatus(@Param('id') id: number) {
+    return this.workflowService.exportStatus(id);
+  }
+
+  @Get('validation/:id/run')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  validationStatus(@Param('id') id: number) {
+    return this.workflowService.validationStatus(id);
+  }
+
   @Delete("import")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   delete_imports(@Body() body: { id: number }[]) {
     return this.workflowService.deleteImports(body.map((entry) => entry.id));
+  }
+
+  @Delete("export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  delete_exports(@Body() body: { id: number }[]) {
+    return this.workflowService.deleteExports(body.map((entry) => entry.id));
+  }
+
+  @Delete("validation")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  delete_validations(@Body() body: { id: number }[]) {
+    return this.workflowService.deleteValidations(body.map((entry) => entry.id));
   }
 
   @Post("import/import")
@@ -99,8 +229,28 @@ export class WorkflowController {
   })
   @UseInterceptors(FileInterceptor('file'))
   import_import(@UploadedFile() file: Express.Multer.File) {
-    if (!file || !file.originalname.endsWith('.json')) throw new BadRequestException('valid json file required');
+    if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
     return this.workflowService.importImport(file);
+  }
+
+  @Post("export/import")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiConsumes('multipart/form-data') @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        }
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  import_export(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    return this.workflowService.importExport(file);
   }
 
   @Post("import")
@@ -113,7 +263,7 @@ export class WorkflowController {
         workflow_id: 0,
         version: 1,
         label: 'Crossref Import',
-        strategy_type: Strategy.URL_QUERY_OFFSET,
+        strategy_type: ImportStrategy.URL_QUERY_OFFSET,
         strategy: {
           url_count: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed",
           url_items: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed",
@@ -136,8 +286,70 @@ export class WorkflowController {
       }
     }
   })
-  save_import(@Body() body: ImportWorkflow) {
-    return this.workflowService.saveImport(body);
+  save_import(@Body() body: ImportWorkflow, @Req() req) {
+    return this.workflowService.saveImport(body, req.user?.username);
+  }
+
+  @Post("export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiBody({
+    description: '<p>JSON Request:</p>',
+    schema: {
+      example: {
+        workflow_id: 'export-workflow-id',
+        version: 1,
+        label: 'JSONata Export',
+        strategy_type: ExportStrategy.HTTP_RESPONSE,
+        strategy: {
+          format: 'json',
+          disposition: 'inline'
+        },
+        mapping: '{ "items": publications.{ "id": id, "title": title, "doi": doi } }'
+      } satisfies IExportWorkflow
+    }
+  })
+  save_export(@Body() body: ExportWorkflow, @Req() req) {
+    return this.workflowService.saveExport(body, req.user?.username);
+  }
+
+  @Post("validation")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiBody({
+    description: '<p>JSON Request:</p>',
+    schema: {
+      example: {
+        workflow_id: 'validation-workflow-id',
+        version: 1,
+        label: 'Publikations-Validierung',
+        target: 'publication',
+        target_filter: {
+          expressions: [
+            {
+              op: 0,
+              key: 'reporting_year',
+              comp: 1,
+              value: 2025
+            }
+          ]
+        },
+        rules: [
+          { type: 'required', result: 'error', path: 'doi' },
+          { type: 'compare', result: 'warning', path: 'status', comp: 1, value: 1 },
+          {
+            type: 'conditional',
+            result: 'warning',
+            if: { type: 'compare', path: 'oa_category', comp: 1, value: 'gold' },
+            then: { type: 'required', path: 'license' }
+          }
+        ],
+        mapping: '$'
+      } satisfies IValidationWorkflow
+    }
+  })
+  save_validation(@Body() body: ValidationWorkflow, @Req() req) {
+    return this.workflowService.saveValidation(body, req.user?.username);
   }
 
   @Get("reports")
@@ -184,6 +396,56 @@ export class WorkflowController {
     return this.workflowService.getUpdateMapping(id);
   }
 
+  @Get("import/:id/workflow-reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async workflowReports(
+    @Param('id') id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number
+  ) {
+    await this.workflowService.getImport(id, false);
+    return this.workflowReportService.getReports(id, WorkflowType.IMPORT, { limit, offset });
+  }
+
+  @Get("export/:id/workflow-reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async exportWorkflowReports(
+    @Param('id') id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number
+  ) {
+    await this.workflowService.getExport(id, false);
+    return this.workflowReportService.getReports(id, WorkflowType.EXPORT, { limit, offset });
+  }
+
+  @Get("validation/:id/workflow-reports")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async validationWorkflowReports(
+    @Param('id') id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number
+  ) {
+    await this.workflowService.getValidation(id, false);
+    return this.workflowReportService.getReports(id, WorkflowType.VALIDATION, { limit, offset });
+  }
+
+  @Get("workflow-report/:reportId")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async workflowReport(@Param('reportId') reportId: number) {
+    return this.workflowReportService.getReport(reportId);
+  }
+
+  @Delete("workflow-report/:reportId")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async deleteWorkflowReport(@Param('reportId') reportId: number) {
+    return this.workflowReportService.deleteReport(reportId);
+  }
+
   @Post("import/:id/config")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -212,5 +474,24 @@ export class WorkflowController {
             cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
         };*/
     return this.workflowService.setUpdateMapping(id, mapping);
+  }
+
+  private getExportContentType(format: ExportFormat) {
+    switch (format) {
+      case 'xml':
+        return 'application/xml; charset=utf-8';
+      case 'csv':
+        return 'text/csv; charset=utf-8';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'json':
+      default:
+        return 'application/json; charset=utf-8';
+    }
+  }
+
+  private buildExportFilename(label?: string, version?: number, format: ExportFormat = 'json') {
+    const safeLabel = (label ?? 'Export').replace(/[^\w.-]+/g, '_');
+    return `${safeLabel}_v${version ?? 1}.${format}`;
   }
 }

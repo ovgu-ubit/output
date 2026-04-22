@@ -5,7 +5,8 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { map, Observable, startWith } from 'rxjs';
-import { EntityService } from 'src/app/services/entities/service.interface';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { EntityService, isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
 import { Entity } from '../../../../../output-interfaces/Publication';
 import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 
@@ -34,7 +35,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   @Input()
   serviceClass: EntityService<T, any>
 
-  @Input() 
+  @Input()
   formComponent?: ComponentType<any>;
 
   @Output()
@@ -46,8 +47,9 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   exists = false;
 
-  _snackBar =  inject(MatSnackBar);
-  dialog = inject(MatDialog)
+  _snackBar = inject(MatSnackBar);
+  dialog = inject(MatDialog);
+  errorPresentation = inject(ErrorPresentationService);
 
   constructor() { }
 
@@ -55,22 +57,23 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   }
 
-  getValue(ent?:T) {
+  getValue(ent?: T) {
     if (ent) return ent.label;
     return this.ent?.label;
   }
-  setValue(ent:any, value:string) {
+
+  setValue(ent: any, value: string) {
     ent.label = value;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['serviceClass']) this.updateEnts();
     if (changes['ent']) {
-      if (this.ent) this.form.get('input').setValue(this.getValue())
-      else this.form.get('input').setValue('')
+      if (this.ent) this.form.get('input').setValue(this.getValue());
+      else this.form.get('input').setValue('');
     }
     if (changes['disabled']) {
-      if (changes['disabled'].currentValue) this.form.disable()
+      if (changes['disabled'].currentValue) this.form.disable();
       else this.form.enable();
     }
   }
@@ -83,10 +86,14 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
         map(value => this.test(value)),
         map(value => this._filterEnt(value || '')),
       );
-    })).subscribe();
+    })).subscribe({
+      error: (error) => {
+        this.errorPresentation.present(error, { action: 'load', entityPlural: this.name });
+      }
+    });
   }
 
-  test(value:string) {
+  test(value: string) {
     if (!value || this.ents.find(e => this.getValue(e) === value)) {
       this.exists = true;
     } else this.exists = false;
@@ -95,91 +102,112 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
 
   select(event) {
     if (!event.value) {
-      this.selected.next(null)
+      this.selected.next(null);
       return;
     }
     if (this.disabled) {
-      let dialogRef = this.dialog.open(this.formComponent, {
-        width: "800px",
+      this.dialog.open(this.formComponent, {
+        width: '800px',
         data: {
-          entity: this.ent
+          entity: this.ent,
+          locked: true,
+        },
+        disableClose: true
+      }).afterClosed().subscribe(viewResult => {
+        if (viewResult && viewResult.id) {
+          this.serviceClass.update(viewResult).subscribe({
+            error: (error) => {
+              this.errorPresentation.present(error, { action: 'save', entity: this.name });
+            }
+          });
         }
       });
       return;
     }
+
     this.form.get('input').disable();
+
     if (!this.ents.find(e => this.getValue(e) === event.value) && this.formComponent) {
-      let dialogData = new ConfirmDialogModel("Neuer " + this.name, `Möchten Sie den ${this.name} "${event.value}" anlegen?`);
+      const dialogData = new ConfirmDialogModel('Neuer ' + this.name, `Moechten Sie den ${this.name} "${event.value}" anlegen?`);
 
-      let dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        maxWidth: "400px",
+      this.dialog.open(ConfirmDialogComponent, {
+        maxWidth: '400px',
         data: dialogData
-      });
+      }).afterClosed().subscribe(dialogResult => {
+        if (!dialogResult) {
+          this.form.get('input').enable();
+          return;
+        }
 
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult) {
-          let entity = {} as any;
-          this.setValue(entity, event.value)
+        const entity = {} as any;
+        this.setValue(entity, event.value);
 
-          let dialogRef1 = this.dialog.open(this.formComponent, {
-            width: "800px",
-            data: {
-              entity
-            },
-            disableClose: true
-          });
-          dialogRef1.afterClosed().subscribe(dialogResult => {
-            this.form.get('input').enable();
-            if (dialogResult) {
-              this.serviceClass.add(dialogResult).subscribe({
-                next: data => {
-                  this._snackBar.open(this.name + ' wurde hinzugefügt', 'Super!', {
-                    duration: 5000,
-                    panelClass: [`success-snackbar`],
-                    verticalPosition: 'top'
-                  })
-                  this.ent = data[0];
-                  this.form.get('input').setValue(this.getValue())
-                  this.selected.next(this.ent)
-                  this.updateEnts()
-                }
-              })
-            }
-          });
-        } else this.form.get('input').enable();
-      });
-    } else if (this.formComponent) {
-      let dialogRef = this.dialog.open(this.formComponent, {
-        width: "800px",
-        data: {
-          entity: this.ent
-        },
-        disableClose: true
-      });
-      dialogRef.afterClosed().subscribe(dialogResult => {
-        if (dialogResult && dialogResult.updated) {
-          this.serviceClass.update(dialogResult).subscribe({
+        this.dialog.open(this.formComponent, {
+          width: '800px',
+          data: {
+            entity,
+            persistOnSave: true
+          },
+          disableClose: true
+        }).afterClosed().subscribe(createResult => {
+          this.form.get('input').enable();
+          if (isPersistedEntityDialogResult<T>(createResult)) {
+            this.handlePersistedResult(createResult.entity, 'wurde hinzugefuegt');
+            return;
+          }
+          if (!createResult) return;
+
+          this.serviceClass.add(createResult).subscribe({
             next: data => {
-              this._snackBar.open(this.name + ' wurde geändert', 'Super!', {
-                duration: 5000,
-                panelClass: [`success-snackbar`],
-                verticalPosition: 'top'
-              })
-              this.ent = Array.isArray(data) ? data[0] : data;
-              this.form.get('input').setValue(this.getValue())
-              this.selected.next(this.ent)
-              this.updateEnts()
+              this.handlePersistedResult(data, 'wurde hinzugefuegt');
+            },
+            error: (error) => {
+              this.errorPresentation.present(error, { action: 'create', entity: this.name });
             }
-          })
-        } else if (dialogResult && dialogResult.id) this.serviceClass.update(dialogResult).subscribe();
-        this.form.get('input').enable();
+          });
+        });
       });
+      return;
     }
+
+    if (!this.formComponent) {
+      this.form.get('input').enable();
+      return;
+    }
+
+    this.dialog.open(this.formComponent, {
+      width: '800px',
+      data: {
+        entity: this.ent,
+        persistOnSave: true
+      },
+      disableClose: true
+    }).afterClosed().subscribe(updateResult => {
+      if (isPersistedEntityDialogResult<T>(updateResult)) {
+        this.handlePersistedResult(updateResult.entity, 'wurde geaendert');
+      } else if (updateResult && updateResult.updated) {
+        this.serviceClass.update(updateResult).subscribe({
+          next: data => {
+            this.handlePersistedResult(data, 'wurde geaendert');
+          },
+          error: (error) => {
+            this.errorPresentation.present(error, { action: 'update', entity: this.name });
+          }
+        });
+      } else if (updateResult && updateResult.id) {
+        this.serviceClass.update(updateResult).subscribe({
+          error: (error) => {
+            this.errorPresentation.present(error, { action: 'save', entity: this.name });
+          }
+        });
+      }
+      this.form.get('input').enable();
+    });
   }
 
   _filterEnt(value: string): T[] {
     const filterValue = value.toLowerCase();
-    return this.ents.filter(pub => pub && (this.getValue(pub).toLowerCase().includes(filterValue) 
+    return this.ents.filter(pub => pub && (this.getValue(pub).toLowerCase().includes(filterValue)
     || (pub['identifiers'] && pub['identifiers'].find(e => e.value.toLowerCase().includes(filterValue))
     || (pub['short_label'] && pub['short_label'].toLowerCase().includes(filterValue))
     || (pub['number'] && pub['number'].toLowerCase().includes(filterValue))
@@ -190,14 +218,33 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
   selectedEnt(event: MatAutocompleteSelectedEvent): void {
     if (this.disabled) return;
     this.ent = this.ents.find(e => this.getValue(e).trim().toLowerCase() === event.option.value.trim().toLowerCase());
-    if (!this.resetOnSelect) this.form.get('input').setValue(this.getValue())
+    if (!this.resetOnSelect) this.form.get('input').setValue(this.getValue());
     else this.form.get('input').setValue('');
-    this.selected.next(this.ent)
+    this.selected.next(this.ent);
   }
 
   clear() {
     this.form.get('input').setValue('');
     this.ent = null;
-    this.selected.next(this.ent)
+    this.selected.next(this.ent);
+  }
+
+  private handlePersistedResult(value: unknown, action: string): void {
+    this._snackBar.open(this.name + ' ' + action, 'Super!', {
+      duration: 5000,
+      panelClass: ['success-snackbar'],
+      verticalPosition: 'top'
+    });
+    this.ent = this.normalizeSavedEntity(value);
+    this.form.get('input').setValue(this.getValue());
+    this.selected.next(this.ent);
+    this.updateEnts();
+  }
+
+  private normalizeSavedEntity(value: unknown): T {
+    if (Array.isArray(value)) {
+      return value[0] as T;
+    }
+    return value as T;
   }
 }

@@ -1,6 +1,9 @@
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { ContractFormComponent } from './contract-form.component';
+import { ContractService } from 'src/app/services/entities/contract.service';
 
 describe('ContractFormComponent', () => {
   let component: ContractFormComponent;
@@ -8,7 +11,14 @@ describe('ContractFormComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ContractFormComponent ]
+      declarations: [ContractFormComponent],
+      providers: [
+        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+        { provide: MatDialogRef, useValue: { close: jasmine.createSpy('close') } },
+        { provide: ContractService, useValue: {} },
+        { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(null) }) } },
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
 
@@ -19,5 +29,17 @@ describe('ContractFormComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should hide add component button when abstract form is disabled', () => {
+    component.abstractForm = { disabled: true } as any;
+
+    expect(component.hideAddComponentButton).toBeTrue();
+  });
+
+  it('should show add component button when abstract form is enabled', () => {
+    component.abstractForm = { disabled: false } as any;
+
+    expect(component.hideAddComponentButton).toBeFalse();
   });
 });

@@ -1,7 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne, ManyToMany, JoinTable } from "typeorm";
-import { AuthorPublication } from "../publication/relations/AuthorPublication.entity";
-import { Author as IAuthor} from "../../../output-interfaces/Publication"
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Author as IAuthor } from "../../../output-interfaces/Publication";
 import { Institute } from "../institute/Institute.entity";
+import { AuthorPublication } from "../publication/relations/AuthorPublication.entity";
 import { AliasAuthorFirstName } from "./AliasAuthorFirstName.entity";
 import { AliasAuthorLastName } from "./AliasAuthorLastName.entity";
 
@@ -39,7 +39,6 @@ export class Author implements IAuthor {
     @OneToMany(() => AliasAuthorFirstName, ai => ai.element, { cascade : true })
     aliases_first_name?: AliasAuthorFirstName[];
     
-
     @OneToMany(() => AliasAuthorLastName, ai => ai.element, { cascade : true })
     aliases_last_name?: AliasAuthorLastName[];
 }

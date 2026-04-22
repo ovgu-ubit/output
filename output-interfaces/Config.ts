@@ -94,6 +94,7 @@ export class CSVMapping {
         edition?: string;
         article_number?: string;
         cost_approach?: string;
+        cost_approach_currency?: string;
     }
 }
 
@@ -101,11 +102,13 @@ export class SearchFilter {
     expressions: SearchFilterExpression[];
 }
 
+export type SearchFilterValue = string | number | boolean | null | Array<string | number | boolean>;
+
 export class SearchFilterExpression {
     op: JoinOperation;
     key: string;
     comp: CompareOperation;
-    value: string|number;
+    value: SearchFilterValue;
 }
 
 export enum CompareOperation {

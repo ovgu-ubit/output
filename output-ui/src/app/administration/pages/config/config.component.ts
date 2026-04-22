@@ -1,12 +1,13 @@
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { Component, OnInit } from '@angular/core';
+import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Config } from '../../../../../../output-interfaces/Config';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from '../../services/config.service';
-import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
-import { COMMA, ENTER } from '@angular/cdk/keycodes';
 
 interface EditableConfig extends Config {
-  editedValue: string[];
+  editedValue: any;
 }
 
 @Component({
@@ -16,14 +17,17 @@ interface EditableConfig extends Config {
   standalone: false
 })
 export class ConfigComponent implements OnInit {
-
   displayedColumns = ['key', 'description', 'value', 'actions'];
   configs: EditableConfig[] = [];
   loading = false;
   busy = false;
-  separatorKeys = [ENTER, COMMA]
+  separatorKeys = [ENTER, COMMA];
 
-  constructor(private configService: ConfigService, private snackBar: MatSnackBar) { }
+  constructor(
+    private configService: ConfigService,
+    private snackBar: MatSnackBar,
+    private errorPresentation: ErrorPresentationService,
+  ) { }
 
   ngOnInit(): void {
     this.reload();
@@ -39,13 +43,9 @@ export class ConfigComponent implements OnInit {
         }));
         this.loading = false;
       },
-      error: () => {
+      error: (error) => {
         this.loading = false;
-        this.snackBar.open('Konfiguration konnte nicht geladen werden.', 'Schließen', {
-          duration: 5000,
-          panelClass: ['danger-snackbar'],
-          verticalPosition: 'top'
-        });
+        this.errorPresentation.present(error, { action: 'load', entity: 'Konfiguration' });
       }
     });
   }
@@ -71,49 +71,44 @@ export class ConfigComponent implements OnInit {
           verticalPosition: 'top'
         });
       },
-      error: () => {
+      error: (error) => {
         this.busy = false;
-        this.snackBar.open('Konfiguration konnte nicht gespeichert werden.', 'Oh Oh!', {
-          duration: 5000,
-          panelClass: ['danger-snackbar'],
-          verticalPosition: 'top'
-        });
+        this.errorPresentation.present(error, { action: 'save', entity: 'Konfiguration' });
       }
     });
   }
 
   getType(config: EditableConfig) {
-    if (Array.isArray(config.value)) return 'array'
-    else return typeof config.value;
+    if (Array.isArray(config.value)) return 'array';
+    return typeof config.value;
   }
 
-  getKeys(obj:any) {
+  getKeys(obj: any) {
     return Object.keys(obj);
   }
 
-  flipKey(event, config: EditableConfig, key: string) {
+  flipKey(event: { selected: boolean }, config: EditableConfig, key: string) {
     config.editedValue[key] = event.selected;
   }
 
   add(config: EditableConfig, event: MatChipInputEvent): void {
     const value = (event.value || '').trim();
 
-    // Add our fruit
     if (value) {
-      config.editedValue.push(value)
+      config.editedValue.push(value);
     }
-    // Clear the input value
+
     event.chipInput!.clear();
   }
 
   remove(config: EditableConfig, value: string): void {
-    config.editedValue = config.editedValue.filter(e => e !== value)
+    config.editedValue = config.editedValue.filter(e => e !== value);
   }
 
   edit(config: EditableConfig, origValue: string, event: MatChipEditedEvent) {
     const value = event.value.trim();
     if (!value) return this.remove(config, origValue);
-    config.editedValue = config.editedValue.map(e => e === origValue ? value : e)
+    config.editedValue = config.editedValue.map(e => e === origValue ? value : e);
   }
 
   reset(config: EditableConfig) {

@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { StatisticController } from './StatisticController';
 import { StatisticsService } from './statistics.service';
+import { InstituteModule } from '../institute/institute.module';
 import { PublicationModule } from '../publication/publication.module';
 
 @Module({
   imports: [
-    PublicationModule
+    PublicationModule,
+    InstituteModule
   ],
   controllers: [StatisticController],
   providers: [StatisticsService],

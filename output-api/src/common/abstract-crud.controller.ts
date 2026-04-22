@@ -3,7 +3,9 @@ import { ApiBody, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AccessGuard } from '../authorization/access.guard';
 import { Permissions } from '../authorization/permission.decorator';
+import { createNotFoundHttpException } from './api-error';
 import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
+import { assertCreateRequestHasNoId } from './entity-id';
 
 export abstract class AbstractCrudController<TEntity extends LockableEntity, TService extends AbstractEntityService<TEntity>> {
     protected constructor(protected readonly service: TService) { }
@@ -19,7 +21,7 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     @UseGuards(AccessGuard)
     @ApiResponse({ type: Object })
     async one(@Query('id') id: number, @Req() request: Request): Promise<TEntity> {
-        return this.getSingleEntity(id, this.isWriter(request));
+        return this.getSingleEntity(id, this.isWriter(request), this.getUsername(request));
     }
 
     @Post()
@@ -48,8 +50,8 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
             },
         },
     })
-    async update(@Body() body: TEntity) {
-        return this.updateEntity(body);
+    async update(@Body() body: TEntity, @Req() request: Request) {
+        return this.updateEntity(body, this.getUsername(request));
     }
 
     @Delete()
@@ -60,6 +62,7 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     }
 
     protected normalizeBodyForCreate(body: TEntity): TEntity {
+        assertCreateRequestHasNoId(body);
         return this.service.normalizeForCreate(body);
     }
 
@@ -67,8 +70,8 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
         return this.service.save(body);
     }
 
-    protected updateEntity(body: TEntity) {
-        return this.service.update(body);
+    protected updateEntity(body: TEntity, user?: string) {
+        return this.service.update(body, user);
     }
 
     protected deleteEntities(body: TEntity[]) {
@@ -79,11 +82,19 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
         return this.service.get();
     }
 
-    protected getSingleEntity(id: number, writer: boolean) {
-        return this.service.one(id, writer);
+    protected async getSingleEntity(id: number, writer: boolean, user?: string) {
+        const entity = await this.service.one(id, writer, user);
+        if (!entity) {
+            throw createNotFoundHttpException();
+        }
+        return entity;
     }
 
     protected isWriter(request: Request): boolean {
         return request?.['user']?.['write'] ?? false;
+    }
+
+    protected getUsername(request: Request): string | undefined {
+        return request?.['user']?.['username'];
     }
 }

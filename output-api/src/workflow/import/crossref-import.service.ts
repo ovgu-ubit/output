@@ -20,6 +20,7 @@ import { ApiImportOffsetService } from './api-import-offset.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ImportService } from './abstract-import';
+import { WorkflowReportService } from '../workflow-report.service';
 
 @ImportService({path: 'crossref'})
 @Injectable()
@@ -30,13 +31,13 @@ export class CrossrefImportService extends ApiImportOffsetService {
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
-        protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, http);
+        protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
 
     }
 
     private searchText = '';
-    private affiliation_tags = [];
+    private affiliation_tags: string[] = [];
 
     protected updateMapping: UpdateMapping = {
         author_inst: UpdateOptions.APPEND,
@@ -210,9 +211,12 @@ export class CrossrefImportService extends ApiImportOffsetService {
         } else return [];
     }
 
-    private async affiliationIncludesTags(affiliation) {
+    private affiliationIncludesTags(affiliation): boolean {
+        const affiliationName = affiliation.name?.toLowerCase();
+        if (!affiliationName) return false;
         for (let i = 0; i < this.affiliation_tags.length; i++) {
-            if (affiliation.name?.toLowerCase().includes(this.affiliation_tags[i])) return true;
+            const tag = this.affiliation_tags[i]?.toLowerCase();
+            if (tag && affiliationName.includes(tag)) return true;
         }
         return false;
     }

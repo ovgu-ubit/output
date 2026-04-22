@@ -12,7 +12,7 @@ export class CostCenter implements ICostCenter {
     number?: string;
     
     @Column()
-    label: string;
+    label?: string;
 
     @ManyToOne(() => Invoice, (inv) => inv.cost_center)
     invoices?: Invoice

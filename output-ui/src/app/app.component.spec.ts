@@ -1,35 +1,114 @@
-import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { of, throwError } from 'rxjs';
+import { ConfigService } from './administration/services/config.service';
+import { BackendAvailabilityService } from './core/errors/backend-availability.service';
+import { ErrorPresentationService } from './core/errors/error-presentation.service';
 import { AppComponent } from './app.component';
+import { AuthorizationService } from './security/authorization.service';
+import { RuntimeConfigService } from './services/runtime-config.service';
 
 describe('AppComponent', () => {
+  let fixture: ComponentFixture<AppComponent>;
+  let component: AppComponent;
+  let configService: jasmine.SpyObj<ConfigService>;
+  let tokenService: jasmine.SpyObj<AuthorizationService>;
+  let runtimeConfigService: jasmine.SpyObj<RuntimeConfigService>;
+  let errorPresentation: jasmine.SpyObj<ErrorPresentationService>;
+  let backendAvailability: BackendAvailabilityService;
+
   beforeEach(async () => {
+    configService = jasmine.createSpyObj<ConfigService>('ConfigService', ['get', 'health']);
+    tokenService = jasmine.createSpyObj<AuthorizationService>('AuthorizationService', ['getUser', 'hasRole', 'login', 'logout', 'details']);
+    runtimeConfigService = jasmine.createSpyObj<RuntimeConfigService>('RuntimeConfigService', ['applyThemeFromConfig', 'getValue']);
+    errorPresentation = jasmine.createSpyObj<ErrorPresentationService>('ErrorPresentationService', ['present']);
+    backendAvailability = new BackendAvailabilityService();
+
+    tokenService.getUser.and.returnValue(null);
+    tokenService.hasRole.and.returnValue(false);
+    runtimeConfigService.getValue.and.callFake(<T>(key: string): T => {
+      if (key === 'security') return false as T;
+      if (key === 'theme') return 'ovgu' as T;
+      return null as T;
+    });
+    configService.get.and.returnValue(of({ key: 'institution_short_label', value: 'TEST' } as any));
+    configService.health.and.returnValue(of({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: 1,
+      checks: { database: 'up' }
+    }));
+
     await TestBed.configureTestingModule({
-      imports: [
-        RouterTestingModule
+      imports: [RouterTestingModule],
+      declarations: [AppComponent],
+      providers: [
+        { provide: AuthorizationService, useValue: tokenService },
+        { provide: ConfigService, useValue: configService },
+        { provide: RuntimeConfigService, useValue: runtimeConfigService },
+        { provide: ErrorPresentationService, useValue: errorPresentation },
+        { provide: BackendAvailabilityService, useValue: backendAvailability },
       ],
-      declarations: [
-        AppComponent
-      ],
-    }).compileComponents();
+      schemas: [NO_ERRORS_SCHEMA],
+    })
+      .overrideComponent(AppComponent, {
+        set: { template: '' }
+      })
+      .compileComponents();
+  });
+
+  afterEach(() => {
+    if (fixture) {
+      fixture.destroy();
+    }
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
+    expect(component).toBeTruthy();
   });
 
-  it(`should have as title 'output-ui'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('output-ui');
-  });
+  it('sets the application title from config on init', fakeAsync(() => {
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.content span')?.textContent).toContain('output-ui app is running!');
-  });
+    tick();
+
+    expect(component.title).toBe('Output.TEST');
+    discardPeriodicTasks();
+  }));
+
+  it('ignores institution short label lookup failures without surfacing a heartbeat error', fakeAsync(() => {
+    configService.get.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
+
+    fixture.detectChanges();
+    tick();
+
+    expect(component.title).toBe('Output');
+    expect(errorPresentation.present).not.toHaveBeenCalled();
+    discardPeriodicTasks();
+  }));
+
+  it('presents a backend heartbeat error when the health check fails', fakeAsync(() => {
+    configService.health.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
+
+    fixture.detectChanges();
+    tick();
+
+    expect(errorPresentation.present).toHaveBeenCalledWith(jasmine.any(HttpErrorResponse), {
+      fallbackMessage: 'Backend nicht erreichbar oder nicht betriebsbereit.',
+      bypassBackendUnavailableSuppression: true,
+    });
+    discardPeriodicTasks();
+  }));
 });

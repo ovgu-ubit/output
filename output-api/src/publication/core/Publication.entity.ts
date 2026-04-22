@@ -12,6 +12,7 @@ import { GreaterEntity } from "../../greater_entity/GreaterEntity.entity";
 import { Invoice } from "../../invoice/Invoice.entity";
 import { PublicationType } from "../../pub_type/PublicationType.entity";
 import { Language } from "../lookups/Language.entity";
+import { PublicationChange } from "./PublicationChange.entity";
 
 @Entity()
 export class Publication implements IPublication {
@@ -150,6 +151,9 @@ export class Publication implements IPublication {
 
     @Column({ nullable: true,  type: "float" })
     cost_approach?: number;
+
+    @Column({ default: 'EUR' })
+    cost_approach_currency?: string;
     
     @Column({ nullable: true })
     not_budget_relevant?: boolean;
@@ -165,4 +169,7 @@ export class Publication implements IPublication {
 
     @OneToMany(() => PublicationDuplicate, (ide) => ide.first, {cascade: true})
     duplicates?: PublicationDuplicate[];
+
+    @OneToMany(() => PublicationChange, (change) => change.publication)
+    changes?: PublicationChange[];
 }

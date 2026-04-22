@@ -1,0 +1,36 @@
+<mat-card>
+    <mat-card-title>Target und Regeln</mat-card-title>
+    <mat-card-content>
+        <form class="rules-form" [formGroup]="form">
+            <mat-form-field appearance="fill">
+                <mat-label>Target</mat-label>
+                <mat-select formControlName="target">
+                    <mat-option value="publication">publication</mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>target_filter</mat-label>
+                <textarea matInput rows="10" formControlName="target_filter_json"></textarea>
+                <mat-hint>SearchFilter-JSON, zum Beispiel mit leerem expressions-Array.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>rules</mat-label>
+                <textarea matInput rows="18" formControlName="rules_json"></textarea>
+                <mat-hint>JSON-Array mit Regeln vom Typ required, compare oder conditional.</mat-hint>
+            </mat-form-field>
+        </form>
+
+        <div class="example-block">
+            <div class="eyebrow">Beispiel</div>
+            <pre [textContent]="exampleJson"></pre>
+        </div>
+    </mat-card-content>
+    @if (!this.entity?.published_at && !this.entity?.deleted_at) {
+    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+        <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
+        <button mat-raised-button class="secondary-button" (click)="this.reset()">Zuruecksetzen</button>
+    </mat-card-actions>
+    }
+</mat-card>

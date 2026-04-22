@@ -18,3 +18,17 @@ export interface EntityService<T, E> {
 
 export interface EntityFormComponent<T> {
 }
+
+export interface PersistedEntityDialogResult<T> {
+    persisted: true;
+    mode: 'create' | 'update';
+    entity: T;
+}
+
+export function isPersistedEntityDialogResult<T>(value: unknown): value is PersistedEntityDialogResult<T> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const candidate = value as Partial<PersistedEntityDialogResult<T>>;
+    return candidate.persisted === true
+        && (candidate.mode === 'create' || candidate.mode === 'update')
+        && Object.prototype.hasOwnProperty.call(candidate, 'entity');
+}

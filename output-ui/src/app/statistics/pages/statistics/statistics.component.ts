@@ -4,7 +4,6 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { ChartConstructorType } from 'highcharts-angular';
 import { Observable, catchError, map, merge, of, startWith } from 'rxjs';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { InstituteService } from 'src/app/services/entities/institute.service';
@@ -14,6 +13,13 @@ import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatisticsService } from 'src/app/statistics/statistics.service';
 import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
 import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
+import { EChartsCoreOption } from 'echarts/core';
+
+type PercentageSeriesPoint = {
+  value: number,
+  count: number,
+  percentage: number
+};
 
 @Component({
     selector: 'app-statistics',
@@ -22,78 +28,141 @@ import { FilterOptions, HighlightOptions } from '../../../../../../output-interf
     standalone: false
 })
 export class StatisticsComponent implements OnInit {
-  chartConstructor: ChartConstructorType = 'chart'; // 'chart'|'stockChart'|'mapChart'|'ganttChart'
-  chartOptionsDefault: Highcharts.Options = {
-    chart: {
-      type: 'column',
-      plotBorderWidth: null,
-      plotShadow: false,
-      backgroundColor: window.getComputedStyle(document.body).getPropertyValue("background-color")
-    }, xAxis: {
-      title: { text: 'Erscheinungsjahr' }
+  private readonly chartStyles = window.getComputedStyle(document.body);
+  private readonly chartBackgroundColor = this.chartStyles.getPropertyValue('background-color').trim();
+  private readonly chartTextColor = this.chartStyles.getPropertyValue('color').trim() || '#333333';
+  private readonly eChartCountColor = '#7cb5ec';
+  private readonly eChartHighlightColor = '#434348';
+  private readonly oaCategoryOrder = ['Green', 'Gold', 'Diamond', 'Bronze', 'Closed', 'Hybrid'];
+  private readonly oaCategoryColors: Record<string, string> = {
+    green: '#2e8b57',
+    gold: '#ffd700',
+    diamond: '#b9f2ff',
+    bronze: '#cd7f32',
+    closed: '#000000',
+    hybrid: '#808080'
+  };
+  private readonly eChartTitle = {
+    left: 'center',
+    textStyle: {
+      color: this.chartTextColor,
+      fontSize: 16,
+      fontWeight: 'bold'
     }
-  }
-  chartOptions: Highcharts.Options = {
-    ...this.chartOptionsDefault,
+  };
+  private readonly eChartLegend = {
+    top: 36,
+    textStyle: {
+      color: this.chartTextColor
+    }
+  };
+  private readonly eChartToolbox = {
+    top: 8,
+    right: 12,
+    itemSize: 16,
+    iconStyle: {
+      borderColor: this.chartTextColor
+    },
+    emphasis: {
+      iconStyle: {
+        borderColor: this.chartTextColor
+      }
+    },
+    feature: {
+      saveAsImage: {
+        show: true,
+        title: 'Als Bild speichern',
+        pixelRatio: 2,
+        backgroundColor: this.chartBackgroundColor,
+        connectedBackgroundColor: this.chartBackgroundColor,
+        excludeComponents: ['toolbox']
+      }
+    }
+  };
+  private readonly eChartXAxis = {
+    type: 'category' as const,
+    name: 'Erscheinungsjahr',
+    nameLocation: 'middle' as const,
+    nameGap: 36,
+    axisTick: {
+      alignWithLabel: true
+    },
+    axisLine: {
+      lineStyle: {
+        color: '#ccd6eb'
+      }
+    },
+    axisLabel: {
+      color: this.chartTextColor
+    },
+    nameTextStyle: {
+      color: this.chartTextColor
+    }
+  };
+  private readonly eChartYAxis = {
+    type: 'value' as const,
+    name: 'Anzahl',
+    nameLocation: 'middle' as const,
+    nameGap: 55,
+    min: 0,
+    minInterval: 1,
+    axisLabel: {
+      color: this.chartTextColor
+    },
+    nameTextStyle: {
+      color: this.chartTextColor
+    },
+    splitLine: {
+      lineStyle: {
+        color: '#e6e6e6'
+      }
+    }
+  };
+
+  eChartOptionsDefault: EChartsCoreOption = {
+    backgroundColor: this.chartBackgroundColor,
+    animationDuration: 300,
+    title: this.eChartTitle,
+    legend: this.eChartLegend,
+    toolbox: this.eChartToolbox,
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      top: 88,
+      right: 24,
+      bottom: 60,
+      left: 24,
+      containLabel: true
+    },
+    xAxis: this.eChartXAxis,
+    yAxis: this.eChartYAxis,
+    series: []
+  };
+  eChartOptions: EChartsCoreOption = {
+    ...this.eChartOptionsDefault,
     title: {
+      ...this.eChartTitle,
       text: 'Anzahl Publikationen nach Jahr'
     },
-    yAxis: {
-      title: { text: 'Anzahl' },
-      min: 0,
-      stackLabels: {
-        enabled: true
-      }
-    }, plotOptions: {
-      column: {
-        stacking: 'normal'
-      }
-    }
-  }; // required
-  chartOptions1: Highcharts.Options = {
-    ...this.chartOptionsDefault,
-    tooltip: {
-      shared: false,
-      pointFormat: '<span style="color:{series.color}">\u25CF</span> {series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)<br/>'
-    },
+  };
+  eChartOptions1: EChartsCoreOption = {
+    ...this.eChartOptionsDefault,
     title: {
+      ...this.eChartTitle,
       text: 'Anteil Publikationen nach Jahr und OA-Kategorie'
     },
-    yAxis: {
-      title: { text: 'Anzahl' },
-      min: 0
-    }, plotOptions: {
-      column: {
-        stacking: 'percent',
-        dataLabels: {
-          enabled: true
-        }
-      }
-    }
-  }; // required
-  chartOptions2: Highcharts.Options = {
-    ...this.chartOptionsDefault,
-    tooltip: {
-      shared: false,
-      pointFormat: '<span style="color:{series.color}">\u25CF</span> {series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)<br/>'
-    },
+  };
+  eChartOptions2: EChartsCoreOption = {
+    ...this.eChartOptionsDefault,
     title: {
+      ...this.eChartTitle,
       text: 'Anteil Publikationen nach Jahr und Publikationsart'
     },
-    yAxis: {
-      title: { text: 'Anzahl' },
-      min: 0
-    }, plotOptions: {
-      column: {
-        stacking: 'percent',
-        dataLabels: {
-          enabled: true
-        }
-      }
-    }
-  }; // required
-  
-  charts = new Map<string, Highcharts.Chart>();
+  };
 
   form: FormGroup = this.formBuilder.group({
     institute: [''],
@@ -122,7 +191,6 @@ export class StatisticsComponent implements OnInit {
   filtered_contracts1: Observable<Contract[]>;
   filter: FilterOptions = {};
   highlight: HighlightOptions = {};
-  highlightName: string;
 
   @ViewChild('select_oa') selectOA: MatSelect;
   @ViewChild('select_PubType') selectPubType: MatSelect;
@@ -193,97 +261,32 @@ export class StatisticsComponent implements OnInit {
     })
   }
 
-  onChartInstance(id: string, chart: Highcharts.Chart) {
-    this.charts.set(id, chart);
-  }
-
   updateChart() {
-    this.chartOptions1.series = []
-    this.chartOptions2.series = []
     let ob$ = this.statService.countPubByYear(this.filter, this.highlight).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
-        this.chartOptions.series = [{
-          name: 'Anzahl Publikationen',
-          type: 'column',
-          events: {
-            click: this.chooseYear.bind(this)
-          },
-          data: data.map(e => {
-            return {
-              x: e.pub_year,
-              y: Number.isFinite(e.highlight) ? e.count - e.highlight : e.count
-            }
-          })
-        }]
-        if (Number.isFinite(data[0]?.highlight)) {
-          this.chartOptions.series.push({
-            name: 'Highlight',
-            type: 'column',
-            events: {
-              click: this.chooseYear.bind(this)
-            },
-            data: data.map(e => {
-              return {
-                x: e.pub_year,
-                y: e.highlight
-              }
-            })
-          })
-        }
-        this.charts.get('count')?.update(this.chartOptions, true, true);
+        this.eChartOptions = this.createCountEChartOptions(data);
       }))
     ob$ = merge(ob$, this.statService.countPubByYearAndOACat(this.filter).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
-        let oa_cats = [...new Set(data.map(e => e.oa_category))]
-        for (let oaCat of oa_cats) {
-          let series = {
-            name: oaCat,
-            type: 'column' as 'xrange',
-            events: {
-              click: this.chooseYear.bind(this)
-            },
-            data: data.filter(e => e.oa_category === oaCat).map(e => {
-              return {
-                x: e.pub_year,
-                y: e.count
-              }
-            }
-            )
-          }
-          this.chartOptions1.series.push(series)
-        }
-        this.charts.get('oa_cat')?.update(this.chartOptions1, true, true);
+        this.eChartOptions1 = this.createOACategoryEChartOptions(data);
       })))
     ob$ = merge(ob$, this.statService.countPubByYearAndPubType(this.filter).pipe(map(
       data => {
         data = data.filter(e => e.pub_year)
-        let oa_cats = [...new Set(data.map(e => e.pub_type))]
-        for (let oaCat of oa_cats) {
-          let series = {
-            name: oaCat,
-            type: 'column' as 'xrange',
-            events: {
-              click: this.chooseYear.bind(this)
-            },
-            data: data.filter(e => e.pub_type === oaCat).map(e => {
-              return {
-                x: e.pub_year,
-                y: e.count
-              }
-            }
-            )
-          }
-          this.chartOptions2.series.push(series)
-        }
-        this.charts.get('pub_type')?.update(this.chartOptions2, true, true);
+        this.eChartOptions2 = this.createPublicationTypeEChartOptions(data);
       })))
     return ob$.pipe(catchError((e, c) => { return of(console.log(e.message)) }));
   }
 
-  chooseYear(event) {
-    this.router.navigateByUrl('statistics/' + event.point.category)
+  chooseEChartYear(event: { name?: string | number }) {
+    const year = Number(event.name);
+    if (!Number.isFinite(year)) {
+      return;
+    }
+
+    this.router.navigateByUrl('statistics/' + year);
   }
 
   action() {
@@ -392,5 +395,194 @@ export class StatisticsComponent implements OnInit {
 
   getLabel() {
     return '/Berichte'
+  }
+
+  private createCountEChartOptions(data: { pub_year: number, count: number, highlight?: number }[]): EChartsCoreOption {
+    const categories = data.map(entry => entry.pub_year.toString());
+    const totals = data.map(entry => entry.count);
+    const baseSeriesData = data.map(entry => Number.isFinite(entry.highlight) ? entry.count - entry.highlight : entry.count);
+    const hasHighlight = data.some(entry => Number.isFinite(entry.highlight));
+    const series = [];
+
+    if (hasHighlight) {
+      series.push({
+        name: 'Highlight',
+        type: 'bar',
+        stack: 'total',
+        itemStyle: {
+          color: this.eChartHighlightColor
+        },
+        emphasis: {
+          focus: 'series'
+        },
+        data: data.map(entry => Number.isFinite(entry.highlight) ? entry.highlight : 0),
+        label: {
+          show: false
+        }
+      });
+    }
+
+    series.push({
+      name: 'Anzahl Publikationen',
+      type: 'bar',
+      stack: 'total',
+      itemStyle: {
+        color: this.eChartCountColor
+      },
+      emphasis: {
+        focus: 'series'
+      },
+      data: baseSeriesData,
+      label: {
+        show: true,
+        position: 'top',
+        formatter: ({ dataIndex }: { dataIndex: number }) => `${totals[dataIndex]}`
+      }
+    });
+
+    return {
+      ...this.eChartOptionsDefault,
+      title: {
+        ...this.eChartTitle,
+        text: 'Anzahl Publikationen nach Jahr'
+      },
+      legend: {
+        ...this.eChartLegend,
+        data: ['Anzahl Publikationen', 'Highlight'],
+        show: hasHighlight
+      },
+      xAxis: {
+        ...this.eChartXAxis,
+        data: categories
+      },
+      series
+    };
+  }
+
+  private createOACategoryEChartOptions(data: { pub_year: number, count: number, oa_category: string }[]): EChartsCoreOption {
+    return this.createPercentageStackedEChartOptions(
+      'Anteil Publikationen nach Jahr und OA-Kategorie',
+      data,
+      entry => entry.oa_category,
+      (left, right) => this.compareOACategories(left, right),
+      category => this.getOACategoryColor(category)
+    );
+  }
+
+  private createPublicationTypeEChartOptions(data: { pub_year: number, count: number, pub_type: string }[]): EChartsCoreOption {
+    return this.createPercentageStackedEChartOptions(
+      'Anteil Publikationen nach Jahr und Publikationsart',
+      data,
+      entry => entry.pub_type
+    );
+  }
+
+  private createPercentageStackedEChartOptions<T extends { pub_year: number, count: number }>(
+    title: string,
+    data: T[],
+    getSeriesName: (entry: T) => string,
+    sortSeriesNames?: (left: string, right: string) => number,
+    getColor?: (seriesName: string) => string | undefined
+  ): EChartsCoreOption {
+    const years = [...new Set(data.map(entry => entry.pub_year))].sort((a, b) => a - b);
+    const categories = years.map(year => year.toString());
+    const totalsByYear = new Map<number, number>();
+
+    for (const year of years) {
+      totalsByYear.set(
+        year,
+        data.filter(entry => entry.pub_year === year).reduce((sum, entry) => sum + Number(entry.count), 0)
+      );
+    }
+
+    const seriesNames = [...new Set(data.map(entry => getSeriesName(entry)))];
+    if (sortSeriesNames) {
+      seriesNames.sort(sortSeriesNames);
+    }
+
+    const series = seriesNames.map(seriesName => ({
+      name: seriesName,
+      type: 'bar',
+      stack: 'total',
+      itemStyle: getColor?.(seriesName) ? { color: getColor(seriesName) } : undefined,
+      emphasis: {
+        focus: 'series'
+      },
+      label: {
+        show: true,
+        position: 'inside',
+        formatter: ({ data: point }: { data?: PercentageSeriesPoint }) => point?.count ? `${point.count}` : ''
+      },
+      data: years.map(year => {
+        const entry = data.find(item => item.pub_year === year && getSeriesName(item) === seriesName);
+        const count = Number(entry?.count ?? 0);
+        const total = totalsByYear.get(year) ?? 0;
+        const percentage = total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0;
+
+        return {
+          value: percentage,
+          count,
+          percentage
+        };
+      })
+    }));
+
+    return {
+      ...this.eChartOptionsDefault,
+      title: {
+        ...this.eChartTitle,
+        text: title
+      },
+      legend: {
+        ...this.eChartLegend,
+        data: seriesNames,
+        show: seriesNames.length > 0
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: {
+          seriesName: string,
+          color?: string,
+          data?: PercentageSeriesPoint
+        }) => {
+          const count = params.data?.count ?? 0;
+          const percentage = params.data?.percentage ?? 0;
+          const color = getColor?.(params.seriesName) ?? params.color ?? this.chartTextColor;
+          return `<span style="color:${color}">\u25CF</span> ${params.seriesName}: <b>${count}</b> (${percentage.toFixed(1)}%)`;
+        }
+      },
+      xAxis: {
+        ...this.eChartXAxis,
+        data: categories
+      },
+      yAxis: {
+        ...this.eChartYAxis,
+        max: 100
+      },
+      series
+    };
+  }
+
+  private compareOACategories(left: string, right: string): number {
+    const leftIndex = this.oaCategoryOrder.findIndex(category => category.toLowerCase() === left?.toLowerCase());
+    const rightIndex = this.oaCategoryOrder.findIndex(category => category.toLowerCase() === right?.toLowerCase());
+
+    if (leftIndex >= 0 && rightIndex >= 0) {
+      return leftIndex - rightIndex;
+    }
+
+    if (leftIndex >= 0) {
+      return -1;
+    }
+
+    if (rightIndex >= 0) {
+      return 1;
+    }
+
+    return left.localeCompare(right);
+  }
+
+  private getOACategoryColor(category: string): string | undefined {
+    return this.oaCategoryColors[category?.toLowerCase()] ?? undefined;
   }
 }

@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 import { concatMap, concatWith, map, merge, mergeAll, mergeMap, mergeWith, Observable, of, queueScheduler, scheduled, Subject, takeUntil } from 'rxjs';
 import { Publication } from '../../publication/core/Publication.entity';
 import { PublicationService } from '../../publication/core/publication.service';
@@ -17,6 +17,8 @@ import { PublicationTypeService } from '../../pub_type/publication-type.service'
 import { ContractService } from '../../contract/contract.service';
 import { LanguageService } from '../../publication/lookups/language.service';
 import { RoleService } from '../../publication/relations/role.service';
+import { WorkflowReportService } from '../workflow-report.service';
+import { createWorkflowRunningHttpException } from '../../common/api-error';
 
 @Injectable()
 export abstract class ApiImportCursorService extends AbstractImportService {
@@ -25,8 +27,8 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
-        protected invoiceService: InvoiceService, protected configService: AppConfigService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected invoiceService: InvoiceService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     private newPublications: Publication[] = [];
@@ -81,9 +83,9 @@ export abstract class ApiImportCursorService extends AbstractImportService {
             console.log(this.newPublications.length + ' pubs import to DB');
             console.log(this.publicationsUpdate.length + ' pubs update to DB');
             //insert new objects
-            if (!this.dryRun) await this.publicationService.save(this.newPublications);
+            if (!this.dryRun) await this.publicationService.save(this.newPublications, { workflowReport: this.workflowReport });
             //update objects
-            if (!this.dryRun) await this.publicationService.save(this.publicationsUpdate);
+            if (!this.dryRun) await this.publicationService.save(this.publicationsUpdate, { workflowReport: this.workflowReport });
             //finalize
             this.progress = 0;
             this.status_text = 'Successfull import on ' + new Date();
@@ -95,7 +97,7 @@ export abstract class ApiImportCursorService extends AbstractImportService {
     }
 
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The enrich is already running, check status for further information.');
+        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         await this.init();
         this.progress = -1;

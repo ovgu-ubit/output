@@ -336,6 +336,27 @@ $themes: (
   max-width: 100% !important;
 }
 
+.cdk-overlay-pane.mat-mdc-dialog-panel.publication-form-dialog-maximized {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.cdk-overlay-pane.mat-mdc-dialog-panel.publication-form-dialog-maximized .mat-mdc-dialog-container,
+.cdk-overlay-pane.mat-mdc-dialog-panel.publication-form-dialog-maximized .mdc-dialog__surface {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  border-radius: 0;
+}
+
+.cdk-overlay-pane.mat-mdc-dialog-panel.publication-form-dialog-maximized .mat-mdc-dialog-content {
+  max-height: none !important;
+  height: 100% !important;
+}
+
 mat-expansion-panel>* {
   font-size: var(--mat-sys-body-medium-size) !important;
 }

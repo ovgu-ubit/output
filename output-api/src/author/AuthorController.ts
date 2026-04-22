@@ -1,11 +1,13 @@
 import { Request } from "express";
 import { Author } from "./Author.entity";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Body, Controller, Delete, Get, InternalServerErrorException, Param, Post, Put, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthorService } from "./author.service";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
+import { createNotFoundHttpException } from "../common/api-error";
+import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("authors")
 @ApiTags("authors")
@@ -30,7 +32,9 @@ export class AuthorController {
     @UseGuards(AccessGuard)
     @ApiParam({ name: 'id', description: 'id for which author object should be obtained' })
     async one(@Param('id') id: number, @Req() request: Request) {
-        return this.authorService.one(id, request['user'] ? request['user']['write'] : false);
+        const author = await this.authorService.one(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
+        if (!author) throw createNotFoundHttpException('Author not found.');
+        return author;
     }
 
     @Post()
@@ -46,7 +50,8 @@ export class AuthorController {
     })
     @ApiResponse({ status: 201, description: 'Saved objects are returned.' })
     async save(@Req() request: Request) {
-        return this.authorService.save([request.body]);
+        assertCreateRequestHasNoId(request.body as Author | undefined);
+        return this.authorService.save([request.body], request['user']?.['username']);
     }
 
     @Put()
@@ -61,8 +66,8 @@ export class AuthorController {
             }
         }
     })
-    async update(@Body() author: Author) {
-        return this.authorService.save([author])
+    async update(@Body() author: Author, @Req() request: Request) {
+        return this.authorService.save([author], request['user']?.['username'])
     }
 
     @Delete()
@@ -86,9 +91,6 @@ export class AuthorController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
-        const res = await this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
-        if (res['error'] && res['error'] === 'update') throw new InternalServerErrorException('Problems while updating first author')
-        else if (res['error'] && res['error'] === 'delete') throw new InternalServerErrorException('Problems while deleting other authors')
-        else return res;
+        return this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
     }
 }

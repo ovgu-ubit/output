@@ -1,13 +1,21 @@
 <app-window-toolbar name="Publikation" [disabled]="this.disabled" [parent]="this"
-    [lockable]="true"></app-window-toolbar>
+    [lockable]="true" [maximizeable]="true"></app-window-toolbar>
 
 <div *ngIf="this.loading" class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
     </div>
 </div>
-<mat-dialog-content [hidden]="this.loading">
-    <form [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
-        (keyup)="escape($event)" style="display: flex; flex-direction: column;justify-content: space-evenly;">
+<mat-dialog-content class="publication-dialog-content" [hidden]="this.loading">
+    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
+        <mat-card-header>
+            <mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
+        </mat-card-content>
+    </mat-card>
+    <form class="publication-dialog-form" [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
+        (keyup)="escape($event)">
 
         <div style="display: flex;flex-direction: row;justify-content: space-between;">
             <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
@@ -19,12 +27,14 @@
                 <input matInput [type]="'number'" onwheel="return false;" placeholder="Status"
                     formControlName="status" />
                 <mat-hint [matTooltip]="showStatusLabel(true)">{{showStatusLabel(false)}}</mat-hint>
+                <mat-error *ngIf="getFieldError('status', 'Status') as error">{{error}}</mat-error>
             </mat-form-field>
         </div>
 
         <mat-form-field appearance="fill" style="width: 100%;">
             <mat-label>Titel</mat-label>
             <textarea matInput [type]="'text'" placeholder="Titel" formControlName="title"></textarea>
+            <mat-error *ngIf="getFieldError('title', 'Titel') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="fill" style="width: 100%;">
@@ -35,6 +45,7 @@
                 [matTooltipShowDelay]="800">
                 <mat-icon>open_in_new</mat-icon>
             </a>
+            <mat-error *ngIf="getFieldError('doi', 'DOI') as error">{{error}}</mat-error>
         </mat-form-field>
 
         <mat-expansion-panel>
@@ -54,14 +65,16 @@
                 target="_blank" matTooltip="Link folgen" [matTooltipShowDelay]="800">
                 <mat-icon>open_in_new</mat-icon>
             </a>
+            <mat-error *ngIf="getFieldError('link', 'Link') as error">{{error}}</mat-error>
         </mat-form-field>
 
-        <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
             <mat-label>Weitere Informationen</mat-label>
             <textarea matInput [type]="'text'" placeholder="Informationen" formControlName="add_info"></textarea>
+            <mat-error *ngIf="getFieldError('add_info', 'Weitere Informationen') as error">{{error}}</mat-error>
         </mat-form-field>
 
-        <mat-accordion multi="true">
+        <mat-accordion class="publication-panel-grid" multi="true">
             <mat-expansion-panel formGroupName="author_info">
                 <mat-expansion-panel-header>
                     <mat-panel-title>
@@ -81,6 +94,7 @@
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Autor*innen-Angabe</mat-label>
                     <textarea matInput [type]="'text'" placeholder="Autor*innen" formControlName="authors"></textarea>
+                    <mat-error *ngIf="getFieldError('author_info.authors', 'Autor*innen-Angabe') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-card>
@@ -183,6 +197,7 @@
                     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub?.pub_date : today"
                         startView="year"></mat-datepicker>
+                    <mat-error *ngIf="getFieldError('biblio_info.pub_date', 'Publikationsdatum') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_print">
@@ -192,6 +207,7 @@
                     <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
                     <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub?.pub_date_print : today"
                         startView="year"></mat-datepicker>
+                    <mat-error *ngIf="getFieldError('biblio_info.pub_date_print', 'Publikationsdatum (print)') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
@@ -202,6 +218,7 @@
                     <mat-datepicker #picker3
                         [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today"
                         startView="year"></mat-datepicker>
+                    <mat-error *ngIf="getFieldError('biblio_info.pub_date_accepted', 'Datum der Akzeptanz') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_submitted">
@@ -212,6 +229,7 @@
                     <mat-datepicker #picker4
                         [startAt]="this.pub?.pub_date_submitted? this.pub?.pub_date_submitted : today"
                         startView="year"></mat-datepicker>
+                    <mat-error *ngIf="getFieldError('biblio_info.pub_date_submitted', 'Datum der Einreichung') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <app-select-entity name="Sprache"
@@ -263,40 +281,49 @@
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Volume</mat-label>
                             <input matInput placeholder="Volume" formControlName="volume" />
+                            <mat-error *ngIf="getFieldError('biblio_info.volume', 'Volume') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Issue</mat-label>
                             <input matInput placeholder="Issue" formControlName="issue" />
+                            <mat-error *ngIf="getFieldError('biblio_info.issue', 'Issue') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Erste Seite</mat-label>
                             <input matInput placeholder="Erste Seite" formControlName="first_page" />
+                            <mat-error *ngIf="getFieldError('biblio_info.first_page', 'Erste Seite') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Letzte Seite</mat-label>
                             <input matInput placeholder="Letzte Seite" formControlName="last_page" />
+                            <mat-error *ngIf="getFieldError('biblio_info.last_page', 'Letzte Seite') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
                             <mat-label>Seitenzahl</mat-label>
                             <input matInput [type]="'number'" onwheel="return false;" placeholder="Seitenzahl"
                                 formControlName="page_count" />
+                            <mat-error *ngIf="getFieldError('biblio_info.page_count', 'Seitenzahl') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Verlagsort</mat-label>
                             <input matInput placeholder="Verlagsort" formControlName="publisher_location" />
+                            <mat-error *ngIf="getFieldError('biblio_info.publisher_location', 'Verlagsort') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Ausgabe</mat-label>
                             <input matInput placeholder="Ausgabe" formControlName="edition" />
+                            <mat-error *ngIf="getFieldError('biblio_info.edition', 'Ausgabe') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
                             <mat-label>Artikelnummer</mat-label>
                             <input matInput placeholder="Artikelnummer" formControlName="article_number" />
+                            <mat-error *ngIf="getFieldError('biblio_info.article_number', 'Artikelnummer') as error">{{error}}</mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
                             <mat-label>Abstract</mat-label>
                             <textarea matInput [type]="'text'" placeholder="Abstract"
                                 formControlName="abstract"></textarea>
+                            <mat-error *ngIf="getFieldError('biblio_info.abstract', 'Abstract') as error">{{error}}</mat-error>
                         </mat-form-field>
                     </mat-card-content>
                 </mat-card>
@@ -327,6 +354,7 @@
                     <mat-label>Zweitveröffentlichung</mat-label>
                     <textarea matInput [type]="'text'" placeholder="Zweitveröffentlichung"
                         formControlName="second_pub"></textarea>
+                    <mat-error *ngIf="getFieldError('oa_info.second_pub', 'Zweitveroeffentlichung') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
@@ -355,6 +383,7 @@
                         <mat-option [value]="null"></mat-option>
                         <mat-option *ngFor="let value of this.licenses" [value]="value">{{value}}</mat-option>
                     </mat-select>
+                    <mat-error *ngIf="getFieldError('oa_info.best_oa_license', 'Beste OA Lizenz') as error">{{error}}</mat-error>
                 </mat-form-field>
 
             </mat-expansion-panel>
@@ -384,6 +413,7 @@
                     <mat-label>Vertragsjahr</mat-label>
                     <input matInput type="number" onwheel="return false;" placeholder="Vertragsjahr"
                         formControlName="contract_year" />
+                    <mat-error *ngIf="getFieldError('finance_info.contract_year', 'Vertragsjahr') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-card
@@ -434,9 +464,18 @@
                 </mat-card><br>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Kostenansatz in EUR</mat-label>
-                    <input matInput type="number" onwheel="return false;" placeholder="Kostenansatz in EUR"
+                    <mat-label>Kostenansatz</mat-label>
+                    <input matInput type="number" onwheel="return false;" placeholder="Kostenansatz"
                         formControlName="cost_approach" />
+                    <mat-error *ngIf="getFieldError('finance_info.cost_approach', 'Kostenansatz') as error">{{error}}</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>Währung des Kostenansatzes</mat-label>
+                    <mat-select formControlName="cost_approach_currency">
+                        <mat-option *ngFor="let currency of this.currencies" [value]="currency">{{currency}}</mat-option>
+                    </mat-select>
+                    <mat-error *ngIf="getFieldError('finance_info.cost_approach_currency', 'Waehrung des Kostenansatzes') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-card>
@@ -463,6 +502,7 @@
                     <mat-label>(DFG-)Fördernummer</mat-label>
                     <input matInput placeholder="(DFG-)Fördernummer"
                         formControlName="grant_number" />
+                    <mat-error *ngIf="getFieldError('finance_info.grant_number', '(DFG-)Foerdernummer') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-checkbox formControlName="not_budget_relevant">Nicht budgetrelevant</mat-checkbox>
@@ -482,6 +522,7 @@
                 <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Datenquelle</mat-label>
                     <input matInput [type]="'text'" placeholder="Datenquelle" formControlName="dataSource" />
+                    <mat-error *ngIf="getFieldError('dataSource', 'Datenquelle') as error">{{error}}</mat-error>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill" style="width: 100%;">
@@ -502,6 +543,16 @@
                         <mat-icon>recycling</mat-icon>
                     </button>
                 </mat-form-field>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel *ngIf="this.pub?.id">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>
+                        Änderungslog
+                    </mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <app-publication-change-log [publicationId]="this.pub?.id"></app-publication-change-log>
             </mat-expansion-panel>
         </mat-accordion>
     </form>

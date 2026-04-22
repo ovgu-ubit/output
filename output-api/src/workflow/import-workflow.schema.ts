@@ -1,7 +1,7 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
-import { BadRequestException } from "@nestjs/common";
-import { Strategy } from "../../../output-interfaces/Workflow";
+import { ImportStrategy } from "../../../output-interfaces/Workflow";
+import { createValidationHttpException } from "../common/api-error";
 
 const StrategyTypeSchema = z.enum([
   "FILE_UPLOAD",
@@ -9,16 +9,6 @@ const StrategyTypeSchema = z.enum([
   "URL_QUERY_OFFSET",
   "URL_DOI",
 ]);
-
-const StrategyFromApi: Record<
-  z.infer<typeof StrategyTypeSchema>,
-  Strategy
-> = {
-  FILE_UPLOAD: Strategy.FILE_UPLOAD,
-  URL_LOOKUP_AND_RETRIEVE: Strategy.URL_LOOKUP_AND_RETRIEVE,
-  URL_QUERY_OFFSET: Strategy.URL_QUERY_OFFSET,
-  URL_DOI: Strategy.URL_DOI,
-};
 
 const StrategyTypeFromNumber = (v: unknown) => {
   if (typeof v !== "number" || !Number.isInteger(v)) return v;
@@ -29,6 +19,25 @@ const StrategyTypeFromNumber = (v: unknown) => {
     case 2: return "URL_QUERY_OFFSET";
     case 3: return "URL_DOI";
     default: return v; // damit Zod sauber "invalid_enum_value" o.ä. wirft
+  }
+};
+
+const StrategyTypeToEnum = (value: unknown): ImportStrategy | unknown => {
+  switch (value) {
+    case "FILE_UPLOAD":
+    case ImportStrategy.FILE_UPLOAD:
+      return ImportStrategy.FILE_UPLOAD;
+    case "URL_LOOKUP_AND_RETRIEVE":
+    case ImportStrategy.URL_LOOKUP_AND_RETRIEVE:
+      return ImportStrategy.URL_LOOKUP_AND_RETRIEVE;
+    case "URL_QUERY_OFFSET":
+    case ImportStrategy.URL_QUERY_OFFSET:
+      return ImportStrategy.URL_QUERY_OFFSET;
+    case "URL_DOI":
+    case ImportStrategy.URL_DOI:
+      return ImportStrategy.URL_DOI;
+    default:
+      return value;
   }
 };
 
@@ -117,6 +126,27 @@ const QueryOffsetStrategyConfig = z
         search_text_combiner: z.string().default(" "),
       })));
 
+const LookupAndRetrieveStrategyConfig = z
+  .intersection(
+    CommonStrategy,
+    z.intersection(
+      URLStrategyConfig,
+      z.looseObject({
+        url_lookup: z.string().min(1),
+        url_retrieve: z.string().min(1),
+        max_res: z.number().int().positive(),
+        max_res_name: z.string().min(1),
+        request_mode: z.enum(["offset", "page"]),
+        offset_name: z.string().min(1),
+        offset_start: z.number().int(),
+        get_count: JsonataExpr,
+        get_lookup_ids: JsonataExpr,
+        get_retrieve_item: JsonataExpr,
+        search_text_combiner: z.string().default(" "),
+        lookup_format: z.enum(["json", "xml"]).optional(),
+        retrieve_format: z.enum(["json", "xml"]).optional(),
+      })));
+
 const Base = ImportMeta.extend({
   strategy: z.unknown(), // wird je Variante überschrieben
 });
@@ -146,31 +176,32 @@ export const ImportWorkflowSourceSchema = z.preprocess((obj) => {
     }),
     Base.extend({
       strategy_type: z.literal("URL_LOOKUP_AND_RETRIEVE"),
-      strategy: z.looseObject({}), // ggf. hier file-spezifische Felder
+      strategy: LookupAndRetrieveStrategyConfig,
     }),
   ]));
 
 export type ImportWorkflowSourceInput = z.infer<typeof ImportWorkflowSourceSchema>;
 
-export function validateImportWorkflow(workflow: ImportWorkflow) {
-  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return true;
+export function validateImportWorkflow(workflow: ImportWorkflow): ImportWorkflow {
+  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return workflow;
   const schema = ImportWorkflowSourceSchema;
 
-  if (!schema) return; // unbekannter Key → dito
+  if (!schema) return workflow; // unbekannter Key → dito
   try {
-    return schema.parse(workflow);
+    const parsed = schema.parse(workflow);
+    return {
+      ...workflow,
+      ...parsed,
+      strategy_type: StrategyTypeToEnum(parsed.strategy_type) as ImportStrategy,
+    };
   } catch (e) {
     if (e instanceof ZodError) {
-      // UI-freundliches Fehlerformat
       const details = e.issues.map((iss) => ({
         path: iss.path.join("."),
         message: iss.message,
         code: iss.code,
       }));
-      throw new BadRequestException({
-        message: "Validation failed",
-        details,
-      });
+      throw createValidationHttpException(details);
     }
     throw e;
   }

@@ -1,7 +1,10 @@
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
+import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
@@ -11,7 +14,31 @@ import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
+import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
+import { PublicationChangeService } from './publication-change.service';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
+
 describe('PublicationService combine', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
@@ -21,11 +48,21 @@ describe('PublicationService combine', () => {
     let idRepository: jest.Mocked<Partial<Repository<PublicationIdentifier>>>;
     let supplRepository: jest.Mocked<Partial<Repository<PublicationSupplement>>>;
     let duplRepository: jest.Mocked<Partial<Repository<PublicationDuplicate>>>;
+    let publicationChangeService: {
+        createPublicationChange: jest.Mock;
+        deletePublicationChangesForPublications: jest.Mock;
+    };
+    let configService: { get: jest.Mock };
+
     beforeEach(async () => {
+        EditLockOwnerStore.clear();
         pubRepository = {
+            find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             delete: jest.fn(),
+            softDelete: jest.fn(),
         };
         pubAutRepository = {
             delete: jest.fn(),
@@ -49,6 +86,13 @@ describe('PublicationService combine', () => {
             findOne: jest.fn(),
             save: jest.fn(),
         };
+        publicationChangeService = {
+            createPublicationChange: jest.fn(),
+            deletePublicationChangesForPublications: jest.fn(),
+        };
+        configService = {
+            get: jest.fn(async () => 5),
+        };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -60,8 +104,9 @@ describe('PublicationService combine', () => {
                 { provide: getRepositoryToken(PublicationIdentifier), useValue: idRepository },
                 { provide: getRepositoryToken(PublicationSupplement), useValue: supplRepository },
                 { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
+                { provide: PublicationChangeService, useValue: publicationChangeService },
             ],
         }).compile();
 
@@ -161,8 +206,163 @@ describe('PublicationService combine', () => {
         expect(pubAutRepository.delete).toHaveBeenCalledWith({ publicationId: expect.anything() });
         expect(invoiceRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: expect.anything() } });
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63]);
         expect(duplRepository.delete).toHaveBeenCalledWith([501, 502]);
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
+    });
+
+    it('returns a structured not-found error when the primary publication does not exist during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        pubRepository.findOne.mockResolvedValue(null);
+
+        await expectApiError(service.combine(999, [62]), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('returns a structured not-found error when a duplicate publication does not exist during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        const primary = { id: 61, locked: false } as Publication;
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => where.id === 61 ? primary : null);
+
+        await expectApiError(service.combine(61, [999]), {
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('returns a structured lock error when one of the publications is locked during combine', async () => {
+        duplRepository.find.mockResolvedValue([]);
+        const primary = { id: 61, locked: true } as Publication;
+        const duplicate = { id: 62, locked: false } as Publication;
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => {
+            if (where.id === 61) return primary;
+            if (where.id === 62) return duplicate;
+            return null;
+        });
+
+        await expectApiError(service.combine(61, [62]), {
+            statusCode: 409,
+            code: ApiErrorCode.ENTITY_LOCKED,
+        });
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('returns null when a requested publication id does not exist', async () => {
+        pubRepository.findOne.mockResolvedValue(null);
+
+        const result = await service.getPublication(999, false, true);
+
+        expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 999 },
+            withDeleted: true,
+        }));
+        expect(pubRepository.save).not.toHaveBeenCalled();
+        expect(result).toBeNull();
+    });
+
+    it('wraps duplicate publication save errors in the shared API error format', async () => {
+        pubRepository.save.mockRejectedValue({
+            code: '23505',
+            detail: 'Key (doi)=(10.1234/example) already exists.',
+            constraint: 'uq_publication_doi',
+        });
+
+        try {
+            await service.save([{ doi: '10.1234/example' } as Publication]);
+            fail('service.save should throw for duplicate publication values');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.UNIQUE_CONSTRAINT,
+                details: expect.arrayContaining([
+                    expect.objectContaining({ path: 'doi', code: 'unique' }),
+                ]),
+            });
+        }
+    });
+
+    it('keeps a locked publication editable for the same user', async () => {
+        const lockedAt = new Date();
+
+        pubRepository.findOne
+            .mockResolvedValueOnce({ id: 41, locked_at: null } as Publication)
+            .mockResolvedValueOnce({ id: 41, locked_at: lockedAt } as Publication);
+        pubRepository.update!.mockResolvedValue({ affected: 1 } as never);
+
+        const first = await service.getPublication(41, false, true, 'alice');
+        const second = await service.getPublication(41, false, true, 'alice');
+
+        expect(pubRepository.update).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 41, locked_at: expect.any(Object) }),
+            expect.objectContaining({ locked_at: expect.any(Date) }),
+        );
+        expect(first?.locked_at).toBeUndefined();
+        expect(second?.locked_at).toBeUndefined();
+    });
+
+    it('rejects saving a publication locked by another user', async () => {
+        const lockedAt = new Date();
+
+        pubRepository.findOne.mockResolvedValueOnce({ id: 42, locked_at: null } as Publication);
+        pubRepository.update!.mockResolvedValue({ affected: 1 } as never);
+
+        await service.getPublication(42, false, true, 'alice');
+
+        pubRepository.find.mockResolvedValue([{ id: 42, locked_at: lockedAt } as Publication] as never);
+
+        try {
+            await service.save([{ id: 42, title: 'Blocked' } as Publication], { by_user: 'mallory' });
+            fail('service.save should reject publication updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
+        expect(pubRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects saving a publication with id 0 when that record is locked by another user', async () => {
+        EditLockOwnerStore.setOwner('publication', 0, 'alice');
+        pubRepository.find.mockResolvedValue([{ id: 0, locked_at: new Date() } as Publication] as never);
+
+        try {
+            await service.save([{ id: 0, title: 'Blocked zero' } as Publication], { by_user: 'mallory' });
+            fail('service.save should reject publication id 0 updates while locked by another user');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 409,
+                code: ApiErrorCode.ENTITY_LOCKED,
+            });
+        }
+        expect(pubRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('allows the lock owner to release an active publication lock', async () => {
+        const lockedAt = new Date();
+
+        pubRepository.findOne
+            .mockResolvedValueOnce({ id: 43, locked_at: null } as Publication)
+            .mockResolvedValueOnce({ id: 43, locked_at: lockedAt, identifiers: [], supplements: [] } as Publication);
+        pubRepository.update!.mockResolvedValue({ affected: 1 } as never);
+        pubRepository.find.mockResolvedValue([{ id: 43, locked_at: lockedAt } as Publication] as never);
+        pubRepository.save.mockResolvedValue({ id: 43, locked_at: null } as never);
+
+        await service.getPublication(43, false, true, 'alice');
+
+        await expect(service.update([{ id: 43, locked_at: null } as Publication], { by_user: 'alice' }))
+            .resolves.toBe(1);
+        expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 43, locked_at: null }));
     });
 
     it('checks DOI or title existence using case-insensitive matching', async () => {
@@ -223,5 +423,311 @@ describe('PublicationService combine', () => {
             expect(duplRepository.save).not.toHaveBeenCalled();
             expect(result).toBeNull();
         });
+    });
+
+    it('logs change patches from reloaded entities instead of partial save payloads', async () => {
+        const before = {
+            id: 7,
+            title: 'Before',
+            pub_type: { id: 11, label: 'Journal' },
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+        const after = {
+            id: 7,
+            title: 'After',
+            pub_type: { id: 11, label: 'Journal' },
+            identifiers: [],
+            supplements: [],
+        } as Publication;
+
+        pubRepository.find
+            .mockResolvedValueOnce([{ id: 7, locked_at: null } as Publication] as never)
+            .mockResolvedValueOnce([before])
+            .mockResolvedValueOnce([after]);
+        pubRepository.save.mockResolvedValue([{ id: 7, title: 'After' } as Publication] as any);
+
+        await service.save([{ id: 7, title: 'After' } as Publication], { by_user: 'scanner' } as any);
+
+        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+            patch_data: expect.objectContaining({
+                before: {
+                    title: 'Before',
+                },
+                after: {
+                    title: 'After',
+                },
+            }),
+        }));
+    });
+
+    it('deletes publication changes before soft deleting publications', async () => {
+        pubRepository.findOne.mockResolvedValue({
+            id: 7,
+            authorPublications: [],
+            invoices: [],
+            identifiers: [],
+            supplements: [],
+        } as unknown as Publication);
+        pubRepository.softDelete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 7 } as Publication], true);
+
+        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7]);
+        expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
+        expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+});
+
+describe('PublicationService filter', () => {
+    let service: PublicationService;
+    let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
+
+    const createQueryBuilderMock = () => ({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+    });
+
+    beforeEach(() => {
+        instituteService = {
+            findInstituteIdsIncludingSubInstitutes: jest.fn(),
+        };
+
+        service = new PublicationService(
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            {} as any,
+            instituteService as any,
+            {} as any,
+        );
+        service.filter_joins = new Set();
+    });
+
+    it('binds string filter values as query parameters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'title',
+                comp: CompareOperation.INCLUDES,
+                value: `%' OR 1=1 --`,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.title ILIKE :filter_0',
+            { filter_0: `%%' OR 1=1 --%` }
+        );
+    });
+
+    it('expands institute filters and binds the resulting ids', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        instituteService.findInstituteIdsIncludingSubInstitutes.mockResolvedValue([11, 12, 13]);
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id',
+                comp: CompareOperation.EQUALS,
+                value: 11,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11]);
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."instituteId" IN (:...filter_0))',
+            { filter_0: [11, 12, 13] }
+        );
+    });
+
+    it('filters author membership via EXISTS so joined metadata rows stay intact', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'author_id',
+                comp: CompareOperation.EQUALS,
+                value: 42,
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" = :filter_0)',
+            { filter_0: 42 }
+        );
+    });
+
+    it('filters institutional author names via EXISTS without relying on outer author joins', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'inst_authors',
+                comp: CompareOperation.INCLUDES,
+                value: 'Miller',
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :filter_0)`,
+            { filter_0: '%Miller%' }
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
+    it('filters institute names via EXISTS without shrinking joined institute metadata', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute',
+                comp: CompareOperation.STARTS_WITH,
+                value: 'Central',
+            }]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND institute_filter.label ILIKE :filter_0)',
+            { filter_0: 'Central%' }
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
+    it('rejects unsupported filter keys instead of passing them into SQL', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'title) OR 1=1 --',
+                comp: CompareOperation.EQUALS,
+                value: 'anything',
+            }]
+        };
+
+        try {
+            await service.filter(filter, queryBuilder as any);
+            fail('service.filter should reject unsupported filter keys');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+        }
+        expect(queryBuilder.where).not.toHaveBeenCalled();
+    });
+
+    it('adds relation joins for publisher and invoice year filters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'publisher',
+                    comp: CompareOperation.EQUALS,
+                    value: 'Test Publisher',
+                },
+                {
+                    op: JoinOperation.AND,
+                    key: 'invoice_year',
+                    comp: CompareOperation.EQUALS,
+                    value: 2024,
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publisher.label = :filter_0',
+            { filter_0: 'Test Publisher' }
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'invoice.date > :filter_1_beginDate AND invoice.date < :filter_1_endDate',
+            {
+                filter_1_beginDate: new Date(Date.UTC(2024, 0, 1, 0, 0, 0, 0)),
+                filter_1_endDate: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)),
+            }
+        );
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.publisher', 'publisher');
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.invoices', 'invoice');
+    });
+
+    it('uses the null-date fallback and negates filters for AND_NOT expressions', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'pub_date',
+                    comp: CompareOperation.EQUALS,
+                    value: '',
+                },
+                {
+                    op: JoinOperation.AND_NOT,
+                    key: 'locked',
+                    comp: CompareOperation.EQUALS,
+                    value: true as any,
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.pub_date IS NULL AND publication.pub_date_print IS NULL AND publication.pub_date_accepted IS NULL AND publication.pub_date_submitted IS NULL',
+            undefined
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT (publication.locked = :filter_1)',
+            { filter_1: true }
+        );
+    });
+
+    it('uses OR for subsequent alternative filters', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'title',
+                    comp: CompareOperation.STARTS_WITH,
+                    value: 'Alpha',
+                },
+                {
+                    op: JoinOperation.OR,
+                    key: 'doi',
+                    comp: CompareOperation.EQUALS,
+                    value: '10.1000/example',
+                }
+            ]
+        };
+
+        await service.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'publication.title ILIKE :filter_0',
+            { filter_0: 'Alpha%' }
+        );
+        expect(queryBuilder.orWhere).toHaveBeenCalledWith(
+            'publication.doi = :filter_1',
+            { filter_1: '10.1000/example' }
+        );
     });
 });

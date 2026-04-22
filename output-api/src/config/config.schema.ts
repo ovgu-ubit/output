@@ -4,6 +4,7 @@ import { CONFIG_DEFAULTS } from './config.defaults';
 export const ConfigSchemas = z.object({
   reporting_year: z.number().int().min(1850).default(CONFIG_DEFAULTS.reporting_year),
   lock_timeout: z.number().int().min(0).default(CONFIG_DEFAULTS.lock_timeout),
+  workflow_import_watchdog_timeout: z.number().int().min(1).default(CONFIG_DEFAULTS.workflow_import_watchdog_timeout),
   institution: z.string().default(CONFIG_DEFAULTS.institution),
   institution_short_label: z.string().max(10).default(CONFIG_DEFAULTS.institution_short_label),
   search_tags: z.array(z.string()).default(CONFIG_DEFAULTS.search_tags),

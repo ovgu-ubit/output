@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ImportWorkflow, ImportWorkflowTestResult, Strategy } from '../../../../../../../output-interfaces/Workflow';
+import { ImportWorkflow, ImportWorkflowTestResult, ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
 import { filter, finalize, takeUntil } from 'rxjs';
@@ -60,6 +60,6 @@ export class ImportFormTestComponent implements OnInit {
   }
 
   get doiStrategy() {
-    return this.workflow?.strategy_type === Strategy.URL_DOI
+    return this.workflow?.strategy_type === ImportStrategy.URL_DOI
   }
 }

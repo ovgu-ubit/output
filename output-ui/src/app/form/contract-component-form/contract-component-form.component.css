@@ -1,0 +1,26 @@
+﻿.contract-component-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.relation-selectors {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.chip-field {
+  width: 100%;
+}
+
+.component-params {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.component-params-empty {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.6);
+}

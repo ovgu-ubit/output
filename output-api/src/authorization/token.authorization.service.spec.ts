@@ -1,7 +1,8 @@
-import { ExecutionContext, InternalServerErrorException } from "@nestjs/common";
+import { ExecutionContext, HttpException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { of } from "rxjs";
+import { ApiErrorCode } from "../../../output-interfaces/ApiError";
 import { AppConfigService } from "../config/app-config.service";
 import { PermissionDecoration } from "./permission.decorator";
 import { TokenAuthorizationService } from "./token.authorization.service";
@@ -108,13 +109,22 @@ describe("TokenAuthorizationService", () => {
         (configService.get as jest.Mock).mockResolvedValueOnce("true");
         (reflector.get as jest.Mock).mockReturnValue([] as PermissionDecoration[]);
         httpService.get.mockImplementation(() => ({
-            subscribe: () => {
-                throw new InternalServerErrorException();
+            subscribe: ({ error }: { error: (value: unknown) => void }) => {
+                error(new Error("lookup failed"));
             },
         }));
         const request: any = { cookies: { "auth-token": "token" } };
         const context = createExecutionContext(request);
 
-        await expect(service.verify(context)).rejects.toBeInstanceOf(InternalServerErrorException);
+        try {
+            await service.verify(context);
+            fail("service.verify should reject when public key lookup fails");
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 500,
+                code: ApiErrorCode.INTERNAL_ERROR,
+            });
+        }
     });
 });

@@ -11,9 +11,10 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
+import { EntityFormComponent, EntityService, isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
@@ -95,7 +96,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   constructor(private formBuilder: UntypedFormBuilder, private _snackBar: MatSnackBar, private dialog: MatDialog,
     public tokenService: AuthorizationService, private location: Location, private router: Router, private route: ActivatedRoute,
-    private configService:ConfigService, private store: Store) { }
+    private configService:ConfigService, private store: Store, private errorPresentation: ErrorPresentationService) { }
 
   public ngOnInit(): void {
     this.loading = true;
@@ -136,11 +137,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.dataSource.paginator = this.paginator;
 
     ob$.pipe(catchError(err => {
-      this._snackBar.open(`Unerwarter Fehler (siehe Konsole)`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-      console.log(err)
+      this.errorPresentation.present(err, { action: 'load', entity: this.name });
       return of(null)
     }), takeUntil(this.destroy$)).subscribe();
 
@@ -273,7 +270,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       width: '1000px',
       maxHeight: '800px',
       data: {
-        entity: row
+        entity: row,
+        persistOnSave: true
       },
       disableClose: true
     });
@@ -281,7 +279,15 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.location.replaceState(this.router.url.split('?')[0])
       this.id = null;
       // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
-      if (result && result.updated) {
+      if (isPersistedEntityDialogResult(result)) {
+        this._snackBar.open(`${this.nameSingle} geÃ¤ndert`, 'Super!', {
+          duration: 5000,
+          panelClass: [`success-snackbar`],
+          verticalPosition: 'top'
+        })
+        this.loading = true;
+        return this.updateData();
+      } else if (result && result.updated) {
         return this.serviceClass.update(result).pipe(concatMap(data => {
           this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
             duration: 5000,
@@ -295,12 +301,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         return this.serviceClass.update(result);
       } else return of(null)
     })).pipe(catchError(err => {
-      this._snackBar.open(`Fehler beim Ändern von ${this.nameSingle}`, 'Oh oh!', {
-        duration: 5000,
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-      console.log(err);
+      this.errorPresentation.present(err, { action: 'update', entity: this.nameSingle });
       return of(null)
     })).subscribe();
   }
@@ -312,12 +313,20 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       data: {
         entity: {
 
-        }
+        },
+        persistOnSave: true
       },
       disableClose: true
     });
     dialogRef.afterClosed().pipe(concatMap(result => {
-      if (result) {
+      if (isPersistedEntityDialogResult(result)) {
+        this._snackBar.open(`${this.nameSingle} wurde angelegt`, 'Super!', {
+          duration: 5000,
+          panelClass: [`success-snackbar`],
+          verticalPosition: 'top'
+        })
+        return this.updateData();
+      } else if (result) {
         return this.serviceClass.add(result).pipe(concatMap(data => {
           this._snackBar.open(`${this.nameSingle} wurde angelegt`, 'Super!', {
             duration: 5000,
@@ -328,20 +337,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         }))
       } else return of(null)
     }), catchError(err => {
-      if (err.status === 400) {
-        this._snackBar.open(`Fehler beim Einfügen: ${err.error.message}`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-      } else {
-        this._snackBar.open(`Unerwarteter Fehler beim Einfügen`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
-      }
+      this.errorPresentation.present(err, { action: 'create', entity: this.nameSingle });
       return of(null)
     })).subscribe();
   }
@@ -373,12 +369,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       } else return of(null)
     }),
       catchError(err => {
-        this._snackBar.open(`Fehler beim Löschen der ${this.name}`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
+        this.errorPresentation.present(err, { action: 'delete', entityPlural: this.name });
         return of(null)
       })).subscribe()
   }
@@ -414,12 +405,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
             }))
         } else return of(null)
       }), catchError(err => {
-        this._snackBar.open(`Fehler beim Zusammenführen`, 'Oh oh!', {
-          duration: 5000,
-          panelClass: [`danger-snackbar`],
-          verticalPosition: 'top'
-        })
-        console.log(err);
+        this.errorPresentation.present(err, { action: 'combine', entityPlural: this.name });
         return of(null)
       })).subscribe();
     }
@@ -470,7 +456,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterAvailable(col: TableHeader) {
-    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime')
+    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime' && col.type !== 'route-link')
   }
 
   /**
@@ -500,7 +486,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
    * @returns depending on the column, if the text is longer than the max_char, a truncated string is returned with three dots at the end
    */
   public truncString(text: string, max_char: number, col: TableHeader): string {
-    if (!text) return text;
+    if (!text) return '';
     if (text.length > max_char) return text.substring(0, max_char) + '...';
     else return text;
   }

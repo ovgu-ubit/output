@@ -60,6 +60,10 @@
       <mat-menu #adminMenu2="matMenu">
         <button mat-menu-item routerLink="/workflow/publication_import" [disabled]="!this.tokenService.hasRole('admin')">
           Imports verwalten </button>
+        <button mat-menu-item routerLink="/workflow/publication_export" [disabled]="!this.tokenService.hasRole('admin')">
+          Exporte verwalten </button>
+        <button mat-menu-item routerLink="/workflow/publication_validation" [disabled]="!this.tokenService.hasRole('admin')">
+          Validierungen verwalten </button>
       </mat-menu>
 
       <ng-container *ngIf="!this.user">

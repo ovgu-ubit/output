@@ -1,0 +1,281 @@
+﻿<app-window-toolbar
+    [name]="this.name"
+    [disabled]="this.disabled"
+    [parent]="this"></app-window-toolbar>
+<mat-dialog-content>
+    <form class="contract-component-form" [formGroup]="form"
+        (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
+        <mat-form-field *ngIf="this.entity?.id" appearance="fill">
+            <mat-label>ID</mat-label>
+            <input matInput type="number" onwheel="return false;" formControlName="id" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Bezeichnung</mat-label>
+            <input matInput placeholder="Bezeichnung" formControlName="label" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Vertragsmodell</mat-label>
+            <mat-select formControlName="contract_model">
+                <mat-option [value]="null">Kein Contract Model</mat-option>
+                <mat-option *ngFor="let model of this.contractModels" [value]="model.value">{{model.label}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill">
+            <mat-label>Version des Vertragsmodells</mat-label>
+            <input matInput type="number" onwheel="return false;" formControlName="contract_model_version" />
+        </mat-form-field>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-subtitle>Zugeordnete Auswahlwerte</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content class="relation-selectors">
+                <mat-form-field appearance="fill" class="chip-field">
+                    <mat-label>OA-Kategorien</mat-label>
+                    <mat-chip-grid #oaCategoryGrid aria-label="Ausgewählte OA-Kategorien">
+                        <mat-chip-row *ngFor="let category of this.selectedOACategories" (removed)="this.removeOACategory(category)"
+                            [removable]="!this.disabled">
+                            {{category.label}}
+                            <button matChipRemove *ngIf="!this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                        <input matInput [formControl]="this.oaCategoryInput" [matChipInputFor]="oaCategoryGrid"
+                            [matAutocomplete]="oaCategoryAuto" [readonly]="this.disabled"
+                            placeholder="OA-Kategorie auswählen" />
+                    </mat-chip-grid>
+                    <mat-autocomplete #oaCategoryAuto="matAutocomplete" (optionSelected)="this.addOACategory($event)">
+                        <mat-option *ngFor="let category of this.filteredOACategories$ | async" [value]="category.label">
+                            {{category.label}}
+                        </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Leer bedeutet: keine Einschränkung.</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="chip-field">
+                    <mat-label>Publikationstypen</mat-label>
+                    <mat-chip-grid #publicationTypeGrid aria-label="Ausgewählte Publikationstypen">
+                        <mat-chip-row *ngFor="let publicationType of this.selectedPublicationTypes"
+                            (removed)="this.removePublicationType(publicationType)" [removable]="!this.disabled">
+                            {{publicationType.label}}
+                            <button matChipRemove *ngIf="!this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                        <input matInput [formControl]="this.publicationTypeInput" [matChipInputFor]="publicationTypeGrid"
+                            [matAutocomplete]="publicationTypeAuto" [readonly]="this.disabled"
+                            placeholder="Publikationstyp auswählen" />
+                    </mat-chip-grid>
+                    <mat-autocomplete #publicationTypeAuto="matAutocomplete" (optionSelected)="this.addPublicationType($event)">
+                        <mat-option *ngFor="let publicationType of this.filteredPublicationTypes$ | async"
+                            [value]="publicationType.label">
+                            {{publicationType.label}}
+                        </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Mehrfachauswahl über Chips.</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="chip-field">
+                    <mat-label>Größere Einheiten</mat-label>
+                    <mat-chip-grid #greaterEntityGrid aria-label="Ausgewählte größere Einheiten">
+                        <mat-chip-row *ngFor="let greaterEntity of this.selectedGreaterEntities"
+                            (removed)="this.removeGreaterEntity(greaterEntity)" [removable]="!this.disabled">
+                            {{greaterEntity.label}}
+                            <button matChipRemove *ngIf="!this.disabled">
+                                <mat-icon>cancel</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                        <input matInput [formControl]="this.greaterEntityInput" [matChipInputFor]="greaterEntityGrid"
+                            [matAutocomplete]="greaterEntityAuto" [readonly]="this.disabled"
+                            placeholder="Größere Einheit auswählen" />
+                    </mat-chip-grid>
+                    <mat-autocomplete #greaterEntityAuto="matAutocomplete" (optionSelected)="this.addGreaterEntity($event)">
+                        <mat-option *ngFor="let greaterEntity of this.filteredGreaterEntities$ | async"
+                            [value]="greaterEntity.label">
+                            {{greaterEntity.label}}
+                            <ng-container *ngIf="greaterEntity.identifiers?.length">
+                                (<ng-container *ngFor="let identifier of greaterEntity.identifiers; let last = last">
+                                    {{identifier.value}}<span *ngIf="!last">, </span>
+                                </ng-container>)
+                            </ng-container>
+                        </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Suche auch über Identifier.</mat-hint>
+                </mat-form-field>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-subtitle>Rechnungen</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <table #tableInvoice *ngIf="this.invoices.length > 0" mat-table [dataSource]="this.invoices">
+                    <ng-container matColumnDef="date">
+                        <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
+                        <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="number">
+                        <th mat-header-cell *matHeaderCellDef> Rechnungsnummer </th>
+                        <td mat-cell *matCellDef="let element"> {{element.number || '-'}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="costs">
+                        <th mat-header-cell *matHeaderCellDef> Kosten </th>
+                        <td mat-cell *matCellDef="let element"> {{this.getInvoiceCosts(element)}} EUR </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="edit">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let element">
+                            <button matSuffix mat-icon-button type="button" (click)="this.addInvoice(element)"
+                                [matTooltip]="this.disabled ? 'Rechnung ansehen' : 'Rechnung bearbeiten'">
+                                <mat-icon>{{this.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="delete">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let element">
+                            <button matSuffix mat-icon-button type="button" (click)="this.deleteInvoice(element)"
+                                [disabled]="this.disabled" matTooltip="Rechnung löschen">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedInvoiceColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedInvoiceColumns;"></tr>
+                </table>
+
+                <p class="component-params-empty" *ngIf="this.invoices.length === 0">
+                    Für diese Vertragskomponente sind noch keine Rechnungen hinterlegt.
+                </p>
+            </mat-card-content>
+            <mat-card-actions>
+                <button matSuffix mat-icon-button type="button" (click)="this.addInvoice()"
+                    [hidden]="this.disabled" matTooltip="Rechnung hinzufügen">
+                    <mat-icon>add</mat-icon>
+                </button>
+            </mat-card-actions>
+        </mat-card>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-subtitle>Vorabrechnungen</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <table #tablePreInvoice *ngIf="this.preInvoices.length > 0" mat-table [dataSource]="this.preInvoices">
+                    <ng-container matColumnDef="date">
+                        <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
+                        <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="number">
+                        <th mat-header-cell *matHeaderCellDef> Rechnungsnummer </th>
+                        <td mat-cell *matCellDef="let element"> {{element.number || '-'}} </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="costs">
+                        <th mat-header-cell *matHeaderCellDef> Kosten </th>
+                        <td mat-cell *matCellDef="let element"> {{this.getInvoiceCosts(element)}} EUR </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="edit">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let element">
+                            <button matSuffix mat-icon-button type="button" (click)="this.addPreInvoice(element)"
+                                [matTooltip]="this.disabled ? 'Vorabrechnung ansehen' : 'Vorabrechnung bearbeiten'">
+                                <mat-icon>{{this.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="delete">
+                        <th mat-header-cell *matHeaderCellDef> </th>
+                        <td mat-cell *matCellDef="let element">
+                            <button matSuffix mat-icon-button type="button" (click)="this.deletePreInvoice(element)"
+                                [disabled]="this.disabled" matTooltip="Vorabrechnung löschen">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </td>
+                    </ng-container>
+
+                    <tr mat-header-row *matHeaderRowDef="displayedInvoiceColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: displayedInvoiceColumns;"></tr>
+                </table>
+
+                <p class="component-params-empty" *ngIf="this.preInvoices.length === 0">
+                    Für diese Vertragskomponente sind noch keine Vorabrechnungen hinterlegt.
+                </p>
+            </mat-card-content>
+            <mat-card-actions>
+                <button matSuffix mat-icon-button type="button" (click)="this.addPreInvoice()"
+                    [hidden]="this.disabled" matTooltip="Vorabrechnung hinzufügen">
+                    <mat-icon>add</mat-icon>
+                </button>
+            </mat-card-actions>
+        </mat-card>
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-subtitle>Modellspezifische Parameter</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.DISCOUNT">
+                    <mat-form-field appearance="fill">
+                        <mat-label>Rabatt in %</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="percentage" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                    </mat-form-field>
+                </div>
+
+                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.PUBLISH_AND_READ">
+                    <mat-form-field appearance="fill">
+                        <mat-label>PAR-Gebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="par_fee" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                    </mat-form-field>
+                </div>
+
+                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.FLATRATE">
+                    <mat-form-field appearance="fill">
+                        <mat-label>Limit-Typ</mat-label>
+                        <mat-select formControlName="limit_type">
+                            <mat-option *ngFor="let type of this.limitTypes" [value]="type.value">{{type.label}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Verteilungsformel</mat-label>
+                        <mat-select formControlName="distribution_formula">
+                            <mat-option *ngFor="let formula of this.distributionFormulas" [value]="formula.value">{{formula.label}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                    </mat-form-field>
+                </div>
+
+                <p class="component-params-empty" *ngIf="this.selectedModel === null || this.selectedModel === undefined">
+                    Wählen Sie ein Vertragsmodell, um die zugehörigen Parameter zu bearbeiten.
+                </p>
+            </mat-card-content>
+        </mat-card>
+    </form>
+</mat-dialog-content>

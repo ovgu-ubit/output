@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as moment from 'moment';
 import * as Papa from 'papaparse';
@@ -23,6 +23,8 @@ import { RoleService } from '../../publication/relations/role.service';
 import { AbstractImportService } from './abstract-import';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
+import { WorkflowReportService } from '../workflow-report.service';
+import { createWorkflowRunningHttpException } from '../../common/api-error';
 
 @Injectable()
 /**
@@ -34,8 +36,8 @@ export class CSVImportService extends AbstractImportService {
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
-        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService);
+        protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService) {
+        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -91,7 +93,7 @@ export class CSVImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw new ConflictException('The import is already running, check status for further information.');
+        if (this.progress !== 0) throw createWorkflowRunningHttpException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -437,6 +439,15 @@ export class CSVImportService extends AbstractImportService {
             return this.parseNumber(e);
         } catch (err) {
             return null;
+        }
+    }
+    protected getCostApproachCurrency(element: any): string {
+        try {
+            if (!this.importConfig.mapping.cost_approach_currency) return 'EUR';
+            if (this.importConfig.mapping.cost_approach_currency.startsWith('$')) return this.importConfig.mapping.cost_approach_currency.slice(1, this.importConfig.mapping.cost_approach_currency.length);
+            return element[this.importConfig.mapping.cost_approach_currency];
+        } catch (err) {
+            return 'EUR';
         }
     }
 
