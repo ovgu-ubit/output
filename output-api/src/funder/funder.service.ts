@@ -9,8 +9,6 @@ import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { mergeEntities } from '../common/merge';
-import { createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
-import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class FunderService extends AbstractEntityService<Funder> {
@@ -31,10 +29,10 @@ export class FunderService extends AbstractEntityService<Funder> {
 
     public override async save(entity: DeepPartial<Funder>, user?: string) {
         const aliases = entity.aliases;
-        const saved = await super.save(this.withoutAliases(entity), user);
+        const saved = await super.save(this.stripOwnedCollections(entity, ['aliases']), user);
 
         if (aliases !== undefined) {
-            saved.aliases = await this.replaceAliases(saved, aliases ?? []);
+            saved.aliases = await this.replaceAliasCollection(saved, aliases, this.aliasRepository, 'Funder');
         }
 
         return saved;
@@ -117,29 +115,4 @@ export class FunderService extends AbstractEntityService<Funder> {
         return await this.repository.delete(insts.map(p => p.id));
     }
 
-    private withoutAliases(entity: DeepPartial<Funder>): DeepPartial<Funder> {
-        const { aliases: _aliases, ...funder } = entity;
-        return funder;
-    }
-
-    private async replaceAliases(funder: Funder, aliases: DeepPartial<AliasFunder>[]) {
-        const funderId = this.getFunderId(funder);
-        await this.aliasRepository.delete({ elementId: funderId });
-        if (!aliases.length) return [];
-
-        return this.aliasRepository.save(aliases.map(alias => ({
-            alias: alias.alias,
-            elementId: funderId,
-            element: { id: funderId } as Funder,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-    }
-
-    private getFunderId(funder: Funder): number {
-        if (!hasProvidedEntityId(funder?.id)) {
-            throw createInvalidRequestHttpException('Funder id is required to save aliases.');
-        }
-        return funder.id as number;
-    }
 }

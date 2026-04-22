@@ -11,8 +11,6 @@ import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { mergeEntities } from '../common/merge';
 import { PublisherDOI } from './PublisherDOI.entity';
-import { createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
-import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {
@@ -35,13 +33,13 @@ export class PublisherService extends AbstractEntityService<Publisher> {
     public override async save(entity: DeepPartial<Publisher>, user?: string) {
         const aliases = entity.aliases;
         const doiPrefixes = entity.doi_prefixes;
-        const saved = await super.save(this.withoutOwnedCollections(entity), user);
+        const saved = await super.save(this.stripOwnedCollections(entity, ['aliases', 'doi_prefixes']), user);
 
         if (doiPrefixes !== undefined) {
             saved.doi_prefixes = await this.replaceDoiPrefixes(saved, doiPrefixes ?? []);
         }
         if (aliases !== undefined) {
-            saved.aliases = await this.replaceAliases(saved, aliases ?? []);
+            saved.aliases = await this.replaceAliasCollection(saved, aliases, this.aliasRepository, 'Publisher');
         }
 
         return saved;
@@ -141,43 +139,19 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         return await this.repository.delete(insts.map(p => p.id));
     }
 
-    private withoutOwnedCollections(entity: DeepPartial<Publisher>): DeepPartial<Publisher> {
-        const { aliases: _aliases, doi_prefixes: _doiPrefixes, ...publisher } = entity;
-        return publisher;
-    }
-
-    private async replaceAliases(publisher: Publisher, aliases: DeepPartial<AliasPublisher>[]) {
-        const publisherId = this.getPublisherId(publisher);
-        await this.aliasRepository.delete({ elementId: publisherId });
-        if (!aliases.length) return [];
-
-        return this.aliasRepository.save(aliases.map(alias => ({
-            alias: alias.alias,
-            elementId: publisherId,
-            element: { id: publisherId } as Publisher,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-    }
-
     private async replaceDoiPrefixes(publisher: Publisher, doiPrefixes: DeepPartial<PublisherDOI>[]) {
-        const publisherId = this.getPublisherId(publisher);
-        await this.doiRepository.delete({ publisherId });
-        if (!doiPrefixes.length) return [];
-
-        return this.doiRepository.save(doiPrefixes.map(doiPrefix => ({
-            doi_prefix: doiPrefix.doi_prefix,
-            publisherId,
-            publisher: { id: publisherId } as Publisher,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
+        return this.replaceOwnedCollection({
+            parent: publisher,
+            children: doiPrefixes,
+            repository: this.doiRepository,
+            parentName: 'Publisher',
+            collectionName: 'DOI prefixes',
+            deleteByParentId: (publisherId) => ({ publisherId }),
+            mapChild: (doiPrefix, publisherId) => ({
+                doi_prefix: doiPrefix.doi_prefix,
+                publisherId,
+                publisher: { id: publisherId } as Publisher,
+            }),
         });
-    }
-
-    private getPublisherId(publisher: Publisher): number {
-        if (!hasProvidedEntityId(publisher?.id)) {
-            throw createInvalidRequestHttpException('Publisher id is required to save owned collections.');
-        }
-        return publisher.id as number;
     }
 }

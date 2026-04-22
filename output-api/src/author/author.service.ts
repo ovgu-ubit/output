@@ -4,8 +4,9 @@ import { firstValueFrom } from 'rxjs';
 import { ILike, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
+import { getProvidedOwnedCollection, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
-import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
+import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
@@ -33,9 +34,9 @@ export class AuthorService {
         await this.ensureAuthorsCanBeSaved(aut, user);
         const result = [];
         for (const auth of aut) {
-            const aliasesFirstName = auth.aliases_first_name;
-            const aliasesLastName = auth.aliases_last_name;
-            const obj = this.withoutOwnedCollections(auth);
+            const aliasesFirstName = getProvidedOwnedCollection<Author, AliasAuthorFirstName>(auth as Author, 'aliases_first_name');
+            const aliasesLastName = getProvidedOwnedCollection<Author, AliasAuthorLastName>(auth as Author, 'aliases_last_name');
+            const obj = stripOwnedCollections<Author>(auth, ['aliases_first_name', 'aliases_last_name', 'authorPublications', 'institutes']);
             let authEnt = await this.repository.save(obj).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
@@ -45,10 +46,10 @@ export class AuthorService {
                 });
             }
             if (authEnt && aliasesFirstName !== undefined) {
-                authEnt.aliases_first_name = await this.replaceFirstNameAliases(authEnt, aliasesFirstName ?? []);
+                authEnt.aliases_first_name = await replaceAliasCollection(authEnt, aliasesFirstName, this.aliasFirstNameRepository, 'Author');
             }
             if (authEnt && aliasesLastName !== undefined) {
-                authEnt.aliases_last_name = await this.replaceLastNameAliases(authEnt, aliasesLastName ?? []);
+                authEnt.aliases_last_name = await replaceAliasCollection(authEnt, aliasesLastName, this.aliasLastNameRepository, 'Author');
             }
             result.push(authEnt);
         }
@@ -346,52 +347,6 @@ export class AuthorService {
             && author.locked_at === null
             && keys.length > 0
             && keys.every((key) => key === 'id' || key === 'locked_at');
-    }
-
-    private withoutOwnedCollections(author: Partial<Author>): Partial<Author> {
-        const {
-            aliases_first_name: _aliasesFirstName,
-            aliases_last_name: _aliasesLastName,
-            authorPublications: _authorPublications,
-            institutes: _institutes,
-            ...authorToSave
-        } = author;
-        return authorToSave;
-    }
-
-    private async replaceFirstNameAliases(author: Author, aliases: Partial<AliasAuthorFirstName>[]) {
-        const authorId = this.getAuthorId(author);
-        await this.aliasFirstNameRepository.delete({ elementId: authorId });
-        if (!aliases.length) return [];
-
-        return this.aliasFirstNameRepository.save(aliases.map(alias => ({
-            alias: alias.alias,
-            elementId: authorId,
-            element: { id: authorId } as Author,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-    }
-
-    private async replaceLastNameAliases(author: Author, aliases: Partial<AliasAuthorLastName>[]) {
-        const authorId = this.getAuthorId(author);
-        await this.aliasLastNameRepository.delete({ elementId: authorId });
-        if (!aliases.length) return [];
-
-        return this.aliasLastNameRepository.save(aliases.map(alias => ({
-            alias: alias.alias,
-            elementId: authorId,
-            element: { id: authorId } as Author,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-    }
-
-    private getAuthorId(author: Author): number {
-        if (!hasProvidedEntityId(author?.id)) {
-            throw createInvalidRequestHttpException('Author id is required to save aliases.');
-        }
-        return author.id as number;
     }
 
     private async getLockTimeoutMs(): Promise<number> {

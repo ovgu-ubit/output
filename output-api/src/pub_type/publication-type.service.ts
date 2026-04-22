@@ -8,8 +8,6 @@ import { PublicationType } from './PublicationType.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { mergeEntities } from '../common/merge';
-import { createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
-import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class PublicationTypeService extends AbstractEntityService<PublicationType> {
@@ -29,10 +27,10 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
     public override async save(entity: DeepPartial<PublicationType>, user?: string) {
         const aliases = entity.aliases;
-        const saved = await super.save(this.withoutAliases(entity), user);
+        const saved = await super.save(this.stripOwnedCollections(entity, ['aliases']), user);
 
         if (aliases !== undefined) {
-            saved.aliases = await this.replaceAliases(saved, aliases ?? []);
+            saved.aliases = await this.replaceAliasCollection(saved, aliases, this.aliasRepository, 'Publication type');
         }
 
         return saved;
@@ -123,29 +121,4 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         return await this.repository.delete(insts.map(p => p.id));
     }
 
-    private withoutAliases(entity: DeepPartial<PublicationType>): DeepPartial<PublicationType> {
-        const { aliases: _aliases, ...publicationType } = entity;
-        return publicationType;
-    }
-
-    private async replaceAliases(publicationType: PublicationType, aliases: DeepPartial<AliasPubType>[]) {
-        const publicationTypeId = this.getPublicationTypeId(publicationType);
-        await this.aliasRepository.delete({ elementId: publicationTypeId });
-        if (!aliases.length) return [];
-
-        return this.aliasRepository.save(aliases.map(alias => ({
-            alias: alias.alias,
-            elementId: publicationTypeId,
-            element: { id: publicationTypeId } as PublicationType,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-    }
-
-    private getPublicationTypeId(publicationType: PublicationType): number {
-        if (!hasProvidedEntityId(publicationType?.id)) {
-            throw createInvalidRequestHttpException('Publication type id is required to save aliases.');
-        }
-        return publicationType.id as number;
-    }
 }

@@ -4,15 +4,15 @@ import { concatMap, from, Observable, of } from 'rxjs';
 import { EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author.entity';
+import { getProvidedOwnedCollection, LockableEntity, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
-import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
+import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
 import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';
 import { AliasInstitute } from './AliasInstitute.entity';
 import { Institute } from './Institute.entity';
-import { LockableEntity } from '../common/abstract-entity.service';
 import { hasProvidedEntityId } from '../common/entity-id';
 
 const INSTITUTE_LOCK_SCOPE = 'institute';
@@ -32,8 +32,8 @@ export class InstituteService {
 
     public async save(inst: Institute[] | LockableEntity[], user?: string) {
         await this.ensureInstitutesCanBeSaved(inst, user);
-        const aliasesByIndex = inst.map((institute) => this.getProvidedAliases(institute));
-        const institutesToSave = inst.map((institute) => this.withoutOwnedCollections(institute));
+        const aliasesByIndex = inst.map((institute) => getProvidedOwnedCollection<Institute, AliasInstitute>(institute as Institute, 'aliases'));
+        const institutesToSave = inst.map((institute) => stripOwnedCollections<Institute>(institute as Institute, ['aliases', 'authorPublications']));
         const saved = await this.repository.save(institutesToSave as Institute[]).catch((error: unknown) => {
             throw createPersistenceHttpException(error);
         });
@@ -41,7 +41,7 @@ export class InstituteService {
         for (let i = 0; i < savedInstitutes.length; i++) {
             const aliases = aliasesByIndex[i];
             if (aliases !== undefined) {
-                savedInstitutes[i].aliases = await this.replaceAliases(savedInstitutes[i], aliases);
+                savedInstitutes[i].aliases = await replaceAliasCollection(savedInstitutes[i], aliases, this.aliasRepository, 'Institute');
             }
         }
         inst.forEach((institute) => this.syncInstituteLockOwner(institute, user));
@@ -273,41 +273,6 @@ export class InstituteService {
             && institute.locked_at === null
             && keys.length > 0
             && keys.every((key) => key === 'id' || key === 'locked_at');
-    }
-
-    private getProvidedAliases(institute: Institute | LockableEntity): AliasInstitute[] | undefined {
-        if (!Object.prototype.hasOwnProperty.call(institute, 'aliases')) return undefined;
-        return (institute as Institute).aliases ?? [];
-    }
-
-    private withoutOwnedCollections(institute: Institute | LockableEntity): Institute | LockableEntity {
-        const {
-            aliases: _aliases,
-            authorPublications: _authorPublications,
-            ...instituteToSave
-        } = institute as Institute;
-        return instituteToSave;
-    }
-
-    private async replaceAliases(institute: Institute, aliases: Partial<AliasInstitute>[]) {
-        const instituteId = this.getInstituteId(institute);
-        await this.aliasRepository.delete({ elementId: instituteId });
-        if (!aliases.length) return [];
-
-        return this.aliasRepository.save(aliases.map(alias => ({
-            alias: alias.alias,
-            elementId: instituteId,
-            element: { id: instituteId } as Institute,
-        }))).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
-    }
-
-    private getInstituteId(institute: Institute): number {
-        if (!hasProvidedEntityId(institute?.id)) {
-            throw createInvalidRequestHttpException('Institute id is required to save aliases.');
-        }
-        return institute.id as number;
     }
 
     private async getLockTimeoutMs(): Promise<number> {
