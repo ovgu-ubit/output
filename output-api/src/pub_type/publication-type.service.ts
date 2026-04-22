@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
+import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { PublicationTypeIndex } from '../../../output-interfaces/PublicationIndex';
 import { AliasPubType } from './AliasPubType.entity';
 import { PublicationService } from '../publication/core/publication.service';
@@ -17,12 +17,26 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         @InjectRepository(AliasPubType) private aliasRepository: Repository<AliasPubType>,
         configService: AppConfigService,
         private publicationService: PublicationService,
+        private dataSource: DataSource
     ) {
         super(repository, configService);
     }
 
     protected override getFindOneRelations(): FindOptionsRelations<PublicationType> {
         return { aliases: true };
+    }
+
+    public override async save(entity: DeepPartial<PublicationType>, user?: string) {
+        return this.dataSource.transaction(async (manager) => {
+            const aliases = entity.aliases;
+            const saved = await super.save(this.stripOwnedCollections(entity, ['aliases']), user, { manager });
+
+            if (aliases !== undefined) {
+                saved.aliases = await this.replaceAliasCollection(saved, aliases, manager.getRepository(AliasPubType), 'Publication type');
+            }
+
+            return saved;
+        });
     }
 
     public async findOrSave(title: string, dryRun = false): Promise<PublicationType> {
@@ -97,17 +111,20 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
     }
 
     public async delete(insts: PublicationType[]) {
-        for (const inst of insts) {
-            const conE: PublicationType = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { pub_type: true } }, withDeleted: true });
-            const pubs = [];
-            if (conE.publications) for (const pub of conE.publications) {
-                pubs.push({ id: pub.id, pub_type: null });
+        return this.dataSource.transaction(async (manager) => {
+            const publicationTypeIds = insts.map(publicationType => publicationType.id).filter((id): id is number => typeof id === 'number');
+            for (const inst of insts) {
+                const conE: PublicationType = await manager.getRepository(PublicationType).findOne({ where: { id: inst.id }, relations: { publications: { pub_type: true } }, withDeleted: true });
+                const pubs = [];
+                if (conE.publications) for (const pub of conE.publications) {
+                    pubs.push({ id: pub.id, pub_type: null });
+                }
+
+                await this.publicationService.save(pubs, { manager });
             }
-
-            await this.publicationService.save(pubs);
-            await this.aliasRepository.delete({ elementId: conE.id });
-        }
-        return await this.repository.delete(insts.map(p => p.id));
+            await this.deleteAliasCollection(manager.getRepository(AliasPubType), publicationTypeIds);
+            return await manager.getRepository(PublicationType).delete(publicationTypeIds);
+        });
     }
-}
 
+}

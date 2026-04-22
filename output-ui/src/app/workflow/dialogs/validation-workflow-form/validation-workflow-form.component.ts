@@ -142,8 +142,8 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
     if (!activePage?.hasPendingChanges()) return true;
 
     const dialogData = new ConfirmDialogModel(
-      'Ungespeicherte Aenderungen',
-      'Sollen die durchgefuehrten Aenderungen zunaechst gespeichert werden?'
+      'Ungespeicherte Änderungen',
+      'Sollen die durchgefuehrten Änderungen zunächst gespeichert werden?'
     );
     const shouldSave = !!(await firstValueFrom(
       this.dialog.open(ConfirmDialogComponent, { maxWidth: '500px', disableClose: true, data: dialogData }).afterClosed()

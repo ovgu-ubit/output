@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Repository } from 'typeorm';
 
 import { OACategoryService } from './oa-category.service';
@@ -8,17 +9,33 @@ import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 describe('OACategoryService', () => {
     let service: OACategoryService;
-    let repository: jest.Mocked<Partial<Repository<OA_Category>>>;
+    let repository: { save: jest.Mock, find: jest.Mock, findOne: jest.Mock, delete: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let configService: { get: jest.Mock };
+    let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
         repository = {
-            findOne: jest.fn(),
             save: jest.fn(),
-            delete: jest.fn(),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn()
+        };
+        dataSource = {
+            transaction: jest.fn().mockImplementation(async (cb) => {
+                const manager = {
+                    save: repository.save,
+                    delete: repository.delete,
+                    getRepository: jest.fn().mockReturnValue(repository)
+                };
+                return cb(manager);
+            })
         };
         publicationService = {
             save: jest.fn(),
+        };
+        configService = {
+            get: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -26,7 +43,8 @@ describe('OACategoryService', () => {
                 OACategoryService,
                 { provide: getRepositoryToken(OA_Category), useValue: repository },
                 { provide: PublicationService, useValue: publicationService },
-                { provide: AppConfigService, useValue: { get: jest.fn() } },
+                { provide: AppConfigService, useValue: configService },
+                { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
@@ -82,10 +100,10 @@ describe('OACategoryService', () => {
         expect(publicationService.save).toHaveBeenCalledTimes(2);
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 2, oa_category: expect.objectContaining({ id: 10 }) }),
-        ]);
+        ], expect.anything());
         expect(publicationService.save).toHaveBeenCalledWith([
             expect.objectContaining({ id: 3, oa_category: expect.objectContaining({ id: 10 }) }),
-        ]);
+        ], expect.anything());
         expect(repository.delete).toHaveBeenCalledWith([20, 30]);
     });
 });

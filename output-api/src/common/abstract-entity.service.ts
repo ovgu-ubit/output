@@ -1,12 +1,125 @@
-import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, IsNull, LessThan, Repository } from 'typeorm';
+import { DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 import { hasProvidedEntityId } from './entity-id';
-import { createEntityLockedHttpException, createPersistenceHttpException } from './api-error';
+import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from './api-error';
 
 export interface LockableEntity {
     id?: number;
     locked_at?: Date | null;
+}
+
+interface ReplaceOwnedCollectionOptions<TEntity extends LockableEntity, TChild extends object> {
+    parent: TEntity;
+    children: DeepPartial<TChild>[] | null | undefined;
+    repository: Repository<TChild>;
+    parentName: string;
+    collectionName: string;
+    deleteByParentId: (parentId: number) => FindOptionsWhere<TChild>;
+    mapChild: (child: DeepPartial<TChild>, parentId: number) => DeepPartial<TChild>;
+}
+
+interface DeleteOwnedCollectionOptions<TChild extends object> {
+    parentIds: number[];
+    repository: Repository<TChild>;
+    deleteByParentIds: (parentIds: number[]) => FindOptionsWhere<TChild>;
+}
+
+type AliasChild<TEntity> = {
+    alias?: string;
+    elementId?: number;
+    element?: TEntity;
+};
+
+export function stripOwnedCollections<TEntity extends object>(
+    entity: DeepPartial<TEntity>,
+    collectionKeys: readonly string[],
+): DeepPartial<TEntity> {
+    const entityToSave = { ...entity } as Record<string, unknown>;
+    for (const key of collectionKeys) {
+        delete entityToSave[key];
+    }
+    return entityToSave as DeepPartial<TEntity>;
+}
+
+export function getProvidedOwnedCollection<TEntity extends object, TChild>(
+    entity: TEntity,
+    collectionKey: string,
+): DeepPartial<TChild>[] | undefined {
+    if (!Object.prototype.hasOwnProperty.call(entity, collectionKey)) return undefined;
+    const collection = (entity as Record<string, unknown>)[collectionKey] as DeepPartial<TChild>[] | null | undefined;
+    if (collection === undefined) return undefined;
+    return collection ?? [];
+}
+
+export async function replaceOwnedCollection<TEntity extends LockableEntity, TChild extends object>(
+    options: ReplaceOwnedCollectionOptions<TEntity, TChild>,
+): Promise<TChild[]> {
+    const parentId = getSavedEntityId(options.parent, options.parentName, options.collectionName);
+
+    await options.repository.delete(options.deleteByParentId(parentId)).catch((error: unknown) => {
+        throw createPersistenceHttpException(error);
+    });
+
+    if (!options.children || options.children.length === 0) return [];
+    const children = options.children;
+
+    return options.repository.save(children.map(child => options.mapChild(child, parentId))).catch((error: unknown) => {
+        throw createPersistenceHttpException(error);
+    });
+}
+
+export async function deleteOwnedCollection<TChild extends object>(
+    options: DeleteOwnedCollectionOptions<TChild>,
+): Promise<void> {
+    if (!options.parentIds.length) return;
+
+    await options.repository.delete(options.deleteByParentIds(options.parentIds)).catch((error: unknown) => {
+        throw createPersistenceHttpException(error);
+    });
+}
+
+export function replaceAliasCollection<TEntity extends LockableEntity, TAlias extends AliasChild<TEntity>>(
+    parent: TEntity,
+    aliases: DeepPartial<TAlias>[] | null | undefined,
+    repository: Repository<TAlias>,
+    parentName: string,
+): Promise<TAlias[]> {
+    return replaceOwnedCollection<TEntity, TAlias>({
+        parent,
+        children: aliases,
+        repository,
+        parentName,
+        collectionName: 'aliases',
+        deleteByParentId: (parentId) => ({ elementId: parentId } as FindOptionsWhere<TAlias>),
+        mapChild: (alias, parentId) => ({
+            alias: alias.alias,
+            elementId: parentId,
+            element: { id: parentId } as TEntity,
+        } as DeepPartial<TAlias>),
+    });
+}
+
+export function deleteAliasCollection<TEntity extends LockableEntity, TAlias extends AliasChild<TEntity>>(
+    repository: Repository<TAlias>,
+    parentIds: number[],
+): Promise<void> {
+    return deleteOwnedCollection({
+        parentIds,
+        repository,
+        deleteByParentIds: (ids) => ({ elementId: In(ids) } as FindOptionsWhere<TAlias>),
+    });
+}
+
+function getSavedEntityId<TEntity extends LockableEntity>(
+    entity: TEntity,
+    parentName: string,
+    collectionName: string,
+): number {
+    if (!hasProvidedEntityId(entity?.id)) {
+        throw createInvalidRequestHttpException(`${parentName} id is required to save ${collectionName}.`);
+    }
+    return entity.id as number;
 }
 
 export abstract class AbstractEntityService<TEntity extends LockableEntity> {
@@ -23,8 +136,9 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         return {};
     }
 
-    public async save(entity: DeepPartial<TEntity>, _user?: string) {
-        return this.repository.save(entity).catch(err => {
+    public async save(entity: DeepPartial<TEntity>, _user?: string, options?: { manager?: EntityManager }) {
+        const repo = options?.manager ? options.manager.getRepository(this.repository.target) : this.repository;
+        return repo.save(entity).catch(err => {
             throw createPersistenceHttpException(err);
         });
     }
@@ -107,6 +221,41 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
 
     protected async unlockEntity(id: number) {
         await this.save({ id, locked_at: null } as DeepPartial<TEntity>);
+    }
+
+    protected stripOwnedCollections(
+        entity: DeepPartial<TEntity>,
+        collectionKeys: readonly string[],
+    ): DeepPartial<TEntity> {
+        return stripOwnedCollections(entity, collectionKeys);
+    }
+
+    protected replaceOwnedCollection<TChild extends object>(
+        options: ReplaceOwnedCollectionOptions<TEntity, TChild>,
+    ): Promise<TChild[]> {
+        return replaceOwnedCollection(options);
+    }
+
+    protected deleteOwnedCollection<TChild extends object>(
+        options: DeleteOwnedCollectionOptions<TChild>,
+    ): Promise<void> {
+        return deleteOwnedCollection(options);
+    }
+
+    protected replaceAliasCollection<TAlias extends AliasChild<TEntity>>(
+        parent: TEntity,
+        aliases: DeepPartial<TAlias>[] | null | undefined,
+        repository: Repository<TAlias>,
+        parentName: string,
+    ): Promise<TAlias[]> {
+        return replaceAliasCollection(parent, aliases, repository, parentName);
+    }
+
+    protected deleteAliasCollection<TAlias extends AliasChild<TEntity>>(
+        repository: Repository<TAlias>,
+        parentIds: number[],
+    ): Promise<void> {
+        return deleteAliasCollection(repository, parentIds);
     }
 
     protected async ensureEntityCanBeSaved(entity: DeepPartial<TEntity>, user?: string): Promise<void> {

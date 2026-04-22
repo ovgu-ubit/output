@@ -69,17 +69,17 @@
 
         <div class="log-section">
             <div class="section-header">
-                <h3>Publikationsaenderungen</h3>
+                <h3>Publikationsänderungen</h3>
                 <div class="filter-controls">
-                    <mat-checkbox [(ngModel)]="collapsePublicationChanges">Publikationsaenderungen einklappen</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="collapsePublicationChanges">Publikationsänderungen einklappen</mat-checkbox>
                 </div>
             </div>
             @if (collapsePublicationChanges && report.publication_changes && report.publication_changes.length > 0) {
-            <p>{{ report.publication_changes.length }} Publikationsaenderungen eingeklappt.</p>
+            <p>{{ report.publication_changes.length }} Publikationsänderungen eingeklappt.</p>
             } @else {
             <app-publication-change-log
                 [changes]="report.publication_changes ?? []"
-                emptyMessage="Keine Publikationsaenderungen vorhanden.">
+                emptyMessage="Keine Publikationsänderungen vorhanden.">
             </app-publication-change-log>
             }
         </div>
