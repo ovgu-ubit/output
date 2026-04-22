@@ -27,14 +27,14 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
   ];
 
   draft_headers: TableHeader[] = [
-    { colName: 'modified_at', colTitle: 'Zuletzt geaendert', type: 'datetime' },
+    { colName: 'modified_at', colTitle: 'Zuletzt geändert', type: 'datetime' },
   ];
 
   published_headers: TableHeader[] = [
     { colName: 'last_run_status', colTitle: 'Letzter Lauf Status' },
     { colName: 'last_run_finished_at', colTitle: 'Letzter Lauf beendet', type: 'datetime' },
     { colName: 'last_run_log_link', colTitle: 'Letzter Lauf Log', type: 'route-link' },
-    { colName: 'published_at', colTitle: 'Veroeffentlicht', type: 'datetime' },
+    { colName: 'published_at', colTitle: 'Veröffentlicht', type: 'datetime' },
   ];
 
   archived_headers: TableHeader[] = [

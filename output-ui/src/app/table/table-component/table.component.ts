@@ -280,7 +280,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.id = null;
       // three possible results: null (canceled), only id (not longer locked and not changed), full object (not longer locked and changed)
       if (isPersistedEntityDialogResult(result)) {
-        this._snackBar.open(`${this.nameSingle} geÃ¤ndert`, 'Super!', {
+        this._snackBar.open(`${this.nameSingle} geändert`, 'Super!', {
           duration: 5000,
           panelClass: [`success-snackbar`],
           verticalPosition: 'top'

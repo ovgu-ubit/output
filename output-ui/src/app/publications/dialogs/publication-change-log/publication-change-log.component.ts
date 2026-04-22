@@ -109,7 +109,7 @@ export class PublicationChangeLogComponent implements OnChanges {
       case 'update':
         return 'Aktualisiert';
       default:
-        return 'Geaendert';
+        return 'Geändert';
     }
   }
 
