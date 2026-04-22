@@ -21,6 +21,7 @@ describe('PublicationTypeService', () => {
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         publicationService = {
             save: jest.fn(),
@@ -37,6 +38,30 @@ describe('PublicationTypeService', () => {
         }).compile();
 
         service = module.get(PublicationTypeService);
+    });
+
+    it('saves aliases after the publication type id is known', async () => {
+        repository.save.mockResolvedValue({ id: 4, label: 'Type' } as PublicationType);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save({
+            label: 'Type',
+            aliases: [{ alias: 'Type Alias' } as AliasPubType],
+        });
+
+        expect(repository.save).toHaveBeenCalledWith({ label: 'Type' });
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 4 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Type Alias',
+                elementId: 4,
+                element: expect.objectContaining({ id: 4 }),
+            }),
+        ]);
+        expect(result.aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Type Alias', elementId: 4 }),
+        ]));
     });
 
     it('combines publication types by merging aliases and preserving the primary label', async () => {

@@ -24,9 +24,11 @@ describe('PublisherService', () => {
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         doiRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         publicationService = {
             save: jest.fn(),
@@ -45,6 +47,44 @@ describe('PublisherService', () => {
         }).compile();
 
         service = module.get(PublisherService);
+    });
+
+    it('saves DOI prefixes and aliases after the publisher id is known', async () => {
+        repository.save.mockResolvedValue({ id: 5, label: 'Publisher' } as Publisher);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        doiRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+        (doiRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save({
+            label: 'Publisher',
+            aliases: [{ alias: 'Publisher Alias' } as AliasPublisher],
+            doi_prefixes: [{ doi_prefix: '10.1000' } as PublisherDOI],
+        });
+
+        expect(repository.save).toHaveBeenCalledWith({ label: 'Publisher' });
+        expect(doiRepository.delete).toHaveBeenCalledWith({ publisherId: 5 });
+        expect(doiRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                doi_prefix: '10.1000',
+                publisherId: 5,
+                publisher: expect.objectContaining({ id: 5 }),
+            }),
+        ]);
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 5 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Publisher Alias',
+                elementId: 5,
+                element: expect.objectContaining({ id: 5 }),
+            }),
+        ]);
+        expect(result.doi_prefixes).toEqual(expect.arrayContaining([
+            expect.objectContaining({ doi_prefix: '10.1000', publisherId: 5 }),
+        ]));
+        expect(result.aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Publisher Alias', elementId: 5 }),
+        ]));
     });
 
     it('merges publisher data by combining aliases and DOI prefixes without losing the primary identity', async () => {

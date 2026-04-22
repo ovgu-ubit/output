@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
+import { DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { Publisher } from './Publisher.entity';
 import { AliasPublisher } from './AliasPublisher.entity';
 import { PublicationService } from '../publication/core/publication.service';
@@ -11,6 +11,8 @@ import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { mergeEntities } from '../common/merge';
 import { PublisherDOI } from './PublisherDOI.entity';
+import { createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class PublisherService extends AbstractEntityService<Publisher> {
@@ -30,6 +32,21 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         return { aliases: true, doi_prefixes: true };
     }
 
+    public override async save(entity: DeepPartial<Publisher>, user?: string) {
+        const aliases = entity.aliases;
+        const doiPrefixes = entity.doi_prefixes;
+        const saved = await super.save(this.withoutOwnedCollections(entity), user);
+
+        if (doiPrefixes !== undefined) {
+            saved.doi_prefixes = await this.replaceDoiPrefixes(saved, doiPrefixes ?? []);
+        }
+        if (aliases !== undefined) {
+            saved.aliases = await this.replaceAliases(saved, aliases ?? []);
+        }
+
+        return saved;
+    }
+
     public async findOrSave(publisher: Publisher, dryRun = false): Promise<Publisher> {
         if (!publisher.label) return null;
         const canonicalPublisher = await this.aliasLookupService.findCanonicalElement<AliasPublisher, Publisher>(this.aliasRepository, publisher.label);
@@ -40,7 +57,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             publisher_ent = await this.repository.findOne({ where: { doi_prefixes: { doi_prefix: In(publisher.doi_prefixes.map(e => e.doi_prefix)) } }, relations: { doi_prefixes: true } })
         }
         if (publisher_ent || dryRun) return publisher_ent;
-        else return this.repository.save({ label, doi_prefixes: publisher.doi_prefixes });
+        else return this.save({ label, doi_prefixes: publisher.doi_prefixes });
     }
 
     public async findByDOI(doi: string) {
@@ -123,5 +140,44 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         }
         return await this.repository.delete(insts.map(p => p.id));
     }
-}
 
+    private withoutOwnedCollections(entity: DeepPartial<Publisher>): DeepPartial<Publisher> {
+        const { aliases: _aliases, doi_prefixes: _doiPrefixes, ...publisher } = entity;
+        return publisher;
+    }
+
+    private async replaceAliases(publisher: Publisher, aliases: DeepPartial<AliasPublisher>[]) {
+        const publisherId = this.getPublisherId(publisher);
+        await this.aliasRepository.delete({ elementId: publisherId });
+        if (!aliases.length) return [];
+
+        return this.aliasRepository.save(aliases.map(alias => ({
+            alias: alias.alias,
+            elementId: publisherId,
+            element: { id: publisherId } as Publisher,
+        }))).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private async replaceDoiPrefixes(publisher: Publisher, doiPrefixes: DeepPartial<PublisherDOI>[]) {
+        const publisherId = this.getPublisherId(publisher);
+        await this.doiRepository.delete({ publisherId });
+        if (!doiPrefixes.length) return [];
+
+        return this.doiRepository.save(doiPrefixes.map(doiPrefix => ({
+            doi_prefix: doiPrefix.doi_prefix,
+            publisherId,
+            publisher: { id: publisherId } as Publisher,
+        }))).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private getPublisherId(publisher: Publisher): number {
+        if (!hasProvidedEntityId(publisher?.id)) {
+            throw createInvalidRequestHttpException('Publisher id is required to save owned collections.');
+        }
+        return publisher.id as number;
+    }
+}

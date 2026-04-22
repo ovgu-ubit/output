@@ -41,6 +41,7 @@ describe('InstituteService', () => {
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         configService = {
             get: jest.fn(),
@@ -124,6 +125,35 @@ describe('InstituteService', () => {
             ]),
         });
         expect(repository.delete).toHaveBeenCalledWith([32, 33]);
+    });
+
+    it('saves aliases after the institute id is known', async () => {
+        (repository.save as jest.Mock).mockImplementation(async (entities: Institute[]) =>
+            entities.map((entity, index) => ({ ...entity, id: 80 + index }) as Institute),
+        );
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save([{
+            label: 'Central Institute',
+            aliases: [{ alias: 'Central' } as AliasInstitute],
+            authorPublications: [{ publicationId: 1 } as AuthorPublication],
+        } as Institute]);
+
+        const savedInstitutesPayload = repository.save.mock.calls[0][0] as Institute[];
+        expect(savedInstitutesPayload[0]).not.toHaveProperty('aliases');
+        expect(savedInstitutesPayload[0]).not.toHaveProperty('authorPublications');
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 80 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Central',
+                elementId: 80,
+                element: expect.objectContaining({ id: 80 }),
+            }),
+        ]);
+        expect(result[0].aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Central', elementId: 80 }),
+        ]));
     });
 
     it('returns institute ids including all descendants without duplicates', async () => {

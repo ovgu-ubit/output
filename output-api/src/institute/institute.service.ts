@@ -5,7 +5,7 @@ import { EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository 
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author.entity';
 import { AliasLookupService } from '../common/alias-lookup.service';
-import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
+import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
@@ -32,9 +32,18 @@ export class InstituteService {
 
     public async save(inst: Institute[] | LockableEntity[], user?: string) {
         await this.ensureInstitutesCanBeSaved(inst, user);
-        const saved = await this.repository.save(inst).catch((error: unknown) => {
+        const aliasesByIndex = inst.map((institute) => this.getProvidedAliases(institute));
+        const institutesToSave = inst.map((institute) => this.withoutOwnedCollections(institute));
+        const saved = await this.repository.save(institutesToSave as Institute[]).catch((error: unknown) => {
             throw createPersistenceHttpException(error);
         });
+        const savedInstitutes = Array.isArray(saved) ? saved : [saved];
+        for (let i = 0; i < savedInstitutes.length; i++) {
+            const aliases = aliasesByIndex[i];
+            if (aliases !== undefined) {
+                savedInstitutes[i].aliases = await this.replaceAliases(savedInstitutes[i], aliases);
+            }
+        }
         inst.forEach((institute) => this.syncInstituteLockOwner(institute, user));
         return saved;
     }
@@ -264,6 +273,41 @@ export class InstituteService {
             && institute.locked_at === null
             && keys.length > 0
             && keys.every((key) => key === 'id' || key === 'locked_at');
+    }
+
+    private getProvidedAliases(institute: Institute | LockableEntity): AliasInstitute[] | undefined {
+        if (!Object.prototype.hasOwnProperty.call(institute, 'aliases')) return undefined;
+        return (institute as Institute).aliases ?? [];
+    }
+
+    private withoutOwnedCollections(institute: Institute | LockableEntity): Institute | LockableEntity {
+        const {
+            aliases: _aliases,
+            authorPublications: _authorPublications,
+            ...instituteToSave
+        } = institute as Institute;
+        return instituteToSave;
+    }
+
+    private async replaceAliases(institute: Institute, aliases: Partial<AliasInstitute>[]) {
+        const instituteId = this.getInstituteId(institute);
+        await this.aliasRepository.delete({ elementId: instituteId });
+        if (!aliases.length) return [];
+
+        return this.aliasRepository.save(aliases.map(alias => ({
+            alias: alias.alias,
+            elementId: instituteId,
+            element: { id: instituteId } as Institute,
+        }))).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private getInstituteId(institute: Institute): number {
+        if (!hasProvidedEntityId(institute?.id)) {
+            throw createInvalidRequestHttpException('Institute id is required to save aliases.');
+        }
+        return institute.id as number;
     }
 
     private async getLockTimeoutMs(): Promise<number> {

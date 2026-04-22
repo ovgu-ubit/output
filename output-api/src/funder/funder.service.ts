@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
+import { DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { AliasFunder } from './AliasFunder.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { Funder } from './Funder.entity';
@@ -9,6 +9,8 @@ import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { mergeEntities } from '../common/merge';
+import { createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class FunderService extends AbstractEntityService<Funder> {
@@ -25,6 +27,17 @@ export class FunderService extends AbstractEntityService<Funder> {
 
     protected override getFindOneRelations(): FindOptionsRelations<Funder> {
         return { aliases: true };
+    }
+
+    public override async save(entity: DeepPartial<Funder>, user?: string) {
+        const aliases = entity.aliases;
+        const saved = await super.save(this.withoutAliases(entity), user);
+
+        if (aliases !== undefined) {
+            saved.aliases = await this.replaceAliases(saved, aliases ?? []);
+        }
+
+        return saved;
     }
 
     public async findOrSave(funder: Funder, dryRun = false): Promise<Funder> {
@@ -103,5 +116,30 @@ export class FunderService extends AbstractEntityService<Funder> {
         }
         return await this.repository.delete(insts.map(p => p.id));
     }
-}
 
+    private withoutAliases(entity: DeepPartial<Funder>): DeepPartial<Funder> {
+        const { aliases: _aliases, ...funder } = entity;
+        return funder;
+    }
+
+    private async replaceAliases(funder: Funder, aliases: DeepPartial<AliasFunder>[]) {
+        const funderId = this.getFunderId(funder);
+        await this.aliasRepository.delete({ elementId: funderId });
+        if (!aliases.length) return [];
+
+        return this.aliasRepository.save(aliases.map(alias => ({
+            alias: alias.alias,
+            elementId: funderId,
+            element: { id: funderId } as Funder,
+        }))).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private getFunderId(funder: Funder): number {
+        if (!hasProvidedEntityId(funder?.id)) {
+            throw createInvalidRequestHttpException('Funder id is required to save aliases.');
+        }
+        return funder.id as number;
+    }
+}

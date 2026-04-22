@@ -22,6 +22,7 @@ describe('FunderService', () => {
         };
         aliasRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         publicationService = {
             save: jest.fn(),
@@ -39,6 +40,30 @@ describe('FunderService', () => {
         }).compile();
 
         service = module.get(FunderService);
+    });
+
+    it('saves aliases after the funder id is known', async () => {
+        repository.save.mockResolvedValue({ id: 21, label: 'Funder' } as Funder);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        (aliasRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save({
+            label: 'Funder',
+            aliases: [{ alias: 'Funder Alias' } as AliasFunder],
+        });
+
+        expect(repository.save).toHaveBeenCalledWith({ label: 'Funder' });
+        expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: 21 });
+        expect(aliasRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Funder Alias',
+                elementId: 21,
+                element: expect.objectContaining({ id: 21 }),
+            }),
+        ]);
+        expect(result.aliases).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Funder Alias', elementId: 21 }),
+        ]));
     });
 
     it('combines funders by aggregating aliases and reassigning funding relationships', async () => {

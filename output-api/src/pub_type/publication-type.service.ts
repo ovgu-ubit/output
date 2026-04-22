@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, ILike, In, Repository } from 'typeorm';
+import { DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
 import { PublicationTypeIndex } from '../../../output-interfaces/PublicationIndex';
 import { AliasPubType } from './AliasPubType.entity';
 import { PublicationService } from '../publication/core/publication.service';
@@ -8,6 +8,8 @@ import { PublicationType } from './PublicationType.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { mergeEntities } from '../common/merge';
+import { createInvalidRequestHttpException, createPersistenceHttpException } from '../common/api-error';
+import { hasProvidedEntityId } from '../common/entity-id';
 
 @Injectable()
 export class PublicationTypeService extends AbstractEntityService<PublicationType> {
@@ -23,6 +25,17 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
     protected override getFindOneRelations(): FindOptionsRelations<PublicationType> {
         return { aliases: true };
+    }
+
+    public override async save(entity: DeepPartial<PublicationType>, user?: string) {
+        const aliases = entity.aliases;
+        const saved = await super.save(this.withoutAliases(entity), user);
+
+        if (aliases !== undefined) {
+            saved.aliases = await this.replaceAliases(saved, aliases ?? []);
+        }
+
+        return saved;
     }
 
     public async findOrSave(title: string, dryRun = false): Promise<PublicationType> {
@@ -109,5 +122,30 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         }
         return await this.repository.delete(insts.map(p => p.id));
     }
-}
 
+    private withoutAliases(entity: DeepPartial<PublicationType>): DeepPartial<PublicationType> {
+        const { aliases: _aliases, ...publicationType } = entity;
+        return publicationType;
+    }
+
+    private async replaceAliases(publicationType: PublicationType, aliases: DeepPartial<AliasPubType>[]) {
+        const publicationTypeId = this.getPublicationTypeId(publicationType);
+        await this.aliasRepository.delete({ elementId: publicationTypeId });
+        if (!aliases.length) return [];
+
+        return this.aliasRepository.save(aliases.map(alias => ({
+            alias: alias.alias,
+            elementId: publicationTypeId,
+            element: { id: publicationTypeId } as PublicationType,
+        }))).catch((error: unknown) => {
+            throw createPersistenceHttpException(error);
+        });
+    }
+
+    private getPublicationTypeId(publicationType: PublicationType): number {
+        if (!hasProvidedEntityId(publicationType?.id)) {
+            throw createInvalidRequestHttpException('Publication type id is required to save aliases.');
+        }
+        return publicationType.id as number;
+    }
+}

@@ -46,9 +46,11 @@ describe('AuthorService', () => {
         };
         aliasFirstNameRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         aliasLastNameRepository = {
             delete: jest.fn(),
+            save: jest.fn(),
         };
         instService = {
             findOrSave: jest.fn(),
@@ -95,13 +97,58 @@ describe('AuthorService', () => {
         expect(repository.save).toHaveBeenNthCalledWith(1, expect.objectContaining({
             id: 1,
             first_name: 'Alice',
-            institutes: undefined,
         }));
+        expect(repository.save.mock.calls[0][0]).not.toHaveProperty('institutes');
         expect(repository.save).toHaveBeenNthCalledWith(2, {
             id: 1,
             institutes: authorData[0].institutes,
         });
         expect(result).toEqual(authorData);
+    });
+
+    it('saves author aliases after the author id is known', async () => {
+        const authorData = [{
+            first_name: 'Alice',
+            last_name: 'Smith',
+            aliases_first_name: [{ alias: 'Ally' } as AliasAuthorFirstName],
+            aliases_last_name: [{ alias: 'Smyth' } as AliasAuthorLastName],
+            authorPublications: [{ publicationId: 3 } as AuthorPublication],
+        } as Author];
+
+        repository.save.mockResolvedValue({ id: 12, first_name: 'Alice', last_name: 'Smith' } as Author);
+        aliasFirstNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasLastNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        (aliasFirstNameRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+        (aliasLastNameRepository.save as jest.Mock).mockImplementation(async (entities) => entities);
+
+        const result = await service.save(authorData);
+
+        const savedAuthorPayload = repository.save.mock.calls[0][0] as Author;
+        expect(savedAuthorPayload).not.toHaveProperty('aliases_first_name');
+        expect(savedAuthorPayload).not.toHaveProperty('aliases_last_name');
+        expect(savedAuthorPayload).not.toHaveProperty('authorPublications');
+        expect(aliasFirstNameRepository.delete).toHaveBeenCalledWith({ elementId: 12 });
+        expect(aliasFirstNameRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Ally',
+                elementId: 12,
+                element: expect.objectContaining({ id: 12 }),
+            }),
+        ]);
+        expect(aliasLastNameRepository.delete).toHaveBeenCalledWith({ elementId: 12 });
+        expect(aliasLastNameRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                alias: 'Smyth',
+                elementId: 12,
+                element: expect.objectContaining({ id: 12 }),
+            }),
+        ]);
+        expect(result[0].aliases_first_name).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Ally', elementId: 12 }),
+        ]));
+        expect(result[0].aliases_last_name).toEqual(expect.arrayContaining([
+            expect.objectContaining({ alias: 'Smyth', elementId: 12 }),
+        ]));
     });
 
     it('wraps duplicate author save errors in the shared API error format', async () => {
