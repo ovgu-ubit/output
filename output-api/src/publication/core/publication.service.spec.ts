@@ -39,7 +39,7 @@ const expectApiError = async (
     }
 };
 
-describe('PublicationService combine', () => {
+describe('PublicationService', () => {
     let service: PublicationService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
     let pubAutRepository: jest.Mocked<Partial<Repository<AuthorPublication>>>;
@@ -53,7 +53,7 @@ describe('PublicationService combine', () => {
         deletePublicationChangesForPublications: jest.Mock;
     };
     let configService: { get: jest.Mock };
-    let dataSource: { transaction: jest.Mock };
+    let dataSource: { transaction: jest.Mock; getRepository: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -141,18 +141,22 @@ describe('PublicationService combine', () => {
                 };
                 return cb(managerMock);
             }),
+            getRepository: jest.fn().mockImplementation((entity) => {
+                if (entity === Publication) return pubRepository;
+                if (entity === AuthorPublication) return pubAutRepository;
+                if (entity === Invoice) return invoiceRepository;
+                if (entity === CostItem) return costItemRepository;
+                if (entity === PublicationIdentifier) return idRepository;
+                if (entity === PublicationSupplement) return supplRepository;
+                if (entity === PublicationDuplicate) return duplRepository;
+                return pubRepository;
+            }),
         };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PublicationService,
                 { provide: getRepositoryToken(Publication), useValue: pubRepository },
-                { provide: getRepositoryToken(AuthorPublication), useValue: pubAutRepository },
-                { provide: getRepositoryToken(Invoice), useValue: invoiceRepository },
-                { provide: getRepositoryToken(CostItem), useValue: costItemRepository },
-                { provide: getRepositoryToken(PublicationIdentifier), useValue: idRepository },
-                { provide: getRepositoryToken(PublicationSupplement), useValue: supplRepository },
-                { provide: getRepositoryToken(PublicationDuplicate), useValue: duplRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
                 { provide: PublicationChangeService, useValue: publicationChangeService },
@@ -693,39 +697,30 @@ describe('PublicationService combine', () => {
         expect(duplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
         expect(publicationChangeService.deletePublicationChangesForPublications.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
     });
-});
+    describe('filter', () => {
+        const createQueryBuilderMock = () => ({
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orWhere: jest.fn().mockReturnThis(),
+            leftJoin: jest.fn().mockReturnThis(),
+        });
 
-describe('PublicationService filter', () => {
-    let service: PublicationService;
-    let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
+        let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
 
-    const createQueryBuilderMock = () => ({
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orWhere: jest.fn().mockReturnThis(),
-        leftJoin: jest.fn().mockReturnThis(),
-    });
+        beforeEach(() => {
+            instituteService = {
+                findInstituteIdsIncludingSubInstitutes: jest.fn(),
+            };
 
-    beforeEach(() => {
-        instituteService = {
-            findInstituteIdsIncludingSubInstitutes: jest.fn(),
-        };
-
-        service = new PublicationService(
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            instituteService as any,
-            {} as any,
-            {} as any,
-        );
-        service.filter_joins = new Set();
-    });
+            service = new PublicationService(
+                pubRepository as any,
+                configService as any,
+                instituteService as any,
+                publicationChangeService as any,
+                dataSource as any,
+            );
+            service.filter_joins = new Set();
+        });
 
     it('binds string filter values as query parameters', async () => {
         const queryBuilder = createQueryBuilderMock();
@@ -947,4 +942,5 @@ describe('PublicationService filter', () => {
             { filter_1: '10.1000/example' }
         );
     });
+});
 });

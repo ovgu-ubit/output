@@ -111,12 +111,6 @@ export class PublicationService {
     filter_joins: Set<string> = new Set();
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
-        @InjectRepository(AuthorPublication) private pubAutRepository: Repository<AuthorPublication>,
-        @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
-        @InjectRepository(CostItem) private costItemRepository: Repository<CostItem>,
-        @InjectRepository(PublicationIdentifier) private idRepository: Repository<PublicationIdentifier>,
-        @InjectRepository(PublicationSupplement) private supplRepository: Repository<PublicationSupplement>,
-        @InjectRepository(PublicationDuplicate) private duplRepository: Repository<PublicationDuplicate>,
         private configService: AppConfigService,
         private instService: InstituteService,
         private publicationChangeService: PublicationChangeService,
@@ -405,7 +399,7 @@ export class PublicationService {
         const authorId = author.id as number;
         const publicationId = publication.id as number;
 
-        const repo = manager ? manager.getRepository(AuthorPublication) : this.pubAutRepository;
+        const repo = manager ? manager.getRepository(AuthorPublication) : this.dataSource.getRepository(AuthorPublication);
         return repo.save({
             author: { id: authorId } as Author,
             authorId,
@@ -421,14 +415,14 @@ export class PublicationService {
     }
 
     public getAuthorsPublication(pub: Publication) {
-        return this.pubAutRepository.find({ where: { publicationId: pub.id }, relations: { author: true } });
+        return this.dataSource.getRepository(AuthorPublication).find({ where: { publicationId: pub.id }, relations: { author: true } });
     }
 
     public async resetAuthorPublication(pub: Publication, manager?: EntityManager) {
         if (!hasProvidedEntityId(pub?.id)) {
             throw createInvalidRequestHttpException('Publication id is required to reset author publications.');
         }
-        const repo = manager ? manager.getRepository(AuthorPublication) : this.pubAutRepository;
+        const repo = manager ? manager.getRepository(AuthorPublication) : this.dataSource.getRepository(AuthorPublication);
         return repo.delete({ publicationId: pub.id });
     }
 
@@ -687,7 +681,7 @@ export class PublicationService {
                 },
                 mergeContext: {
                     field: 'publication',
-                    pubAutrepository: this.pubAutRepository,
+                    pubAutrepository: this.dataSource.getRepository(AuthorPublication),
                     alias_strings,
                     service: this
                 },
@@ -700,26 +694,19 @@ export class PublicationService {
         });
     }
     getAllDuplicates(soft?: boolean) {
-        if (!soft) return this.duplRepository.find();
-        else return this.duplRepository.find({ where: { delete_date: Not(IsNull()) }, withDeleted: true })
+        if (!soft) return this.dataSource.getRepository(PublicationDuplicate).find();
+        else return this.dataSource.getRepository(PublicationDuplicate).find({ where: { delete_date: Not(IsNull()) }, withDeleted: true })
     }
 
     async getDuplicates(id: number) {
-        /*let query = this.pubRepository.createQueryBuilder("publication")
-            .leftJoinAndSelect("publication.duplicates", 'duplicates')
-            .select("duplicates.id_second")
-            .addSelect("duplicates.id")
-            .addSelect("duplicates.id_first")
-            .where("publication.id = :id", {id: id})
-
-        return (await query.getRawMany());*/
-        return this.duplRepository.findOne({ where: { id }, withDeleted: true })
+        return this.dataSource.getRepository(PublicationDuplicate).findOne({ where: { id }, withDeleted: true })
     }
 
     async saveDuplicate(id_first: number, id_second: number, description?: string) {
-        const check = await this.duplRepository.findOne({ where: { id_first, id_second }, withDeleted: true })
+        const repo = this.dataSource.getRepository(PublicationDuplicate);
+        const check = await repo.findOne({ where: { id_first, id_second }, withDeleted: true })
         if (!check) {
-            return this.duplRepository.save({ id_first, id_second, description }).catch((error: unknown) => {
+            return repo.save({ id_first, id_second, description }).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
         }
@@ -727,12 +714,13 @@ export class PublicationService {
     }
 
     async updateDuplicate(dupl: PublicationDuplicate) {
-        return this.duplRepository.update(dupl.id, { id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date });
+        return this.dataSource.getRepository(PublicationDuplicate).update(dupl.id, { id: dupl.id, id_first: dupl.id_first, id_second: dupl.id_second, description: dupl.description, delete_date: dupl.delete_date });
     }
 
     deleteDuplicate(id, soft?: boolean) {
-        if (soft) return this.duplRepository.softDelete(id);
-        else return this.duplRepository.delete(id);
+        const repo = this.dataSource.getRepository(PublicationDuplicate);
+        if (soft) return repo.softDelete(id);
+        else return repo.delete(id);
     }
 
     // retrieves a publication index based on a filter object

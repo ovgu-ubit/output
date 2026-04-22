@@ -16,8 +16,6 @@ import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
 import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
 import { Author } from './Author.entity';
 
-const AUTHOR_LOCK_SCOPE = 'author';
-
 @Injectable()
 export class AuthorService extends AbstractEntityService<Author> {
 
@@ -40,7 +38,7 @@ export class AuthorService extends AbstractEntityService<Author> {
         return { institutes: true, aliases_first_name: true, aliases_last_name: true };
     }
 
-    public override async save(entity: DeepPartial<Author>, user?: string) {
+    public override async save(entity: DeepPartial<Author>, _user?: string) {
         return this.dataSource.transaction(async (manager) => {
             const aliasesFirstName = entity.aliases_first_name;
             const aliasesLastName = entity.aliases_last_name;
