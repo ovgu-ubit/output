@@ -470,7 +470,7 @@ export class PublicationService {
         const normalizedPublicationId = publicationId as number;
 
         await manager.getRepository(AuthorPublication).delete({ publicationId: normalizedPublicationId });
-        if (authorPublications.length === 0) return [];
+        if (!authorPublications || authorPublications.length === 0) return [];
 
         const normalizedAuthorPublications = authorPublications.map((authorPublication, index) =>
             this.normalizeAuthorPublication(normalizedPublicationId, authorPublication, index),
@@ -484,7 +484,7 @@ export class PublicationService {
     private async replaceIdentifiers(publication: Publication, identifiers: PublicationIdentifier[], manager: EntityManager): Promise<PublicationIdentifier[]> {
         const publicationId = this.requirePublicationId(publication, 'save publication identifiers');
         await manager.getRepository(PublicationIdentifier).delete({ entity: { id: publicationId } });
-        if (identifiers.length === 0) return [];
+        if (!identifiers || identifiers.length === 0) return [];
 
         const normalizedIdentifiers = identifiers.map((identifier) => this.normalizeIdentifier(publicationId, identifier));
         return manager.getRepository(PublicationIdentifier).save(normalizedIdentifiers).catch((error: unknown) => {
@@ -503,7 +503,7 @@ export class PublicationService {
     private async replaceSupplements(publication: Publication, supplements: PublicationSupplement[], manager: EntityManager): Promise<PublicationSupplement[]> {
         const publicationId = this.requirePublicationId(publication, 'save publication supplements');
         await manager.getRepository(PublicationSupplement).delete({ publication: { id: publicationId } });
-        if (supplements.length === 0) return [];
+        if (!supplements || supplements.length === 0) return [];
 
         const normalizedSupplements = supplements.map((supplement) => this.normalizeSupplement(publicationId, supplement));
         return manager.getRepository(PublicationSupplement).save(normalizedSupplements).catch((error: unknown) => {

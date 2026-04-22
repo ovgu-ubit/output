@@ -161,28 +161,4 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             return await manager.getRepository(Publisher).delete(publisherIds);
         });
     }
-
-    private async replaceDoiPrefixes(publisher: Publisher, doiPrefixes: DeepPartial<PublisherDOI>[]) {
-        return this.replaceOwnedCollection({
-            parent: publisher,
-            children: doiPrefixes,
-            repository: this.doiRepository,
-            parentName: 'Publisher',
-            collectionName: 'DOI prefixes',
-            deleteByParentId: (publisherId) => ({ publisherId }),
-            mapChild: (doiPrefix, publisherId) => ({
-                doi_prefix: doiPrefix.doi_prefix,
-                publisherId,
-                publisher: { id: publisherId } as Publisher,
-            }),
-        });
-    }
-
-    private deleteDoiPrefixes(publisherIds: number[]) {
-        return this.deleteOwnedCollection({
-            parentIds: publisherIds,
-            repository: this.doiRepository,
-            deleteByParentIds: (ids) => ({ publisherId: In(ids) }),
-        });
-    }
 }

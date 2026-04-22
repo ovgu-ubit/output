@@ -61,8 +61,8 @@ export async function replaceOwnedCollection<TEntity extends LockableEntity, TCh
         throw createPersistenceHttpException(error);
     });
 
-    const children = options.children ?? [];
-    if (!children.length) return [];
+    if (!options.children || options.children.length === 0) return [];
+    const children = options.children;
 
     return options.repository.save(children.map(child => options.mapChild(child, parentId))).catch((error: unknown) => {
         throw createPersistenceHttpException(error);
