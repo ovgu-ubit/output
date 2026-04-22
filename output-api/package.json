@@ -1,6 +1,6 @@
 {
    "name": "output",
-   "version": "2.0.1",
+   "version": "2.1.0",
    "description": "Publication management for universities.",
    "overrides": {
       "picomatch": "4.0.4",
