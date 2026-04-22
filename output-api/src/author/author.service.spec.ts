@@ -331,6 +331,29 @@ describe('AuthorService', () => {
         expect(result).toEqual({ id: 1 });
     });
 
+    it('deletes author publication rows and aliases before deleting authors', async () => {
+        pubAutRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasFirstNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        aliasLastNameRepository.delete.mockResolvedValue({ affected: 1 } as any);
+        repository.delete.mockResolvedValue({ affected: 1 } as any);
+
+        await service.delete([{ id: 12 } as Author]);
+
+        expect(pubAutRepository.delete).toHaveBeenCalledWith({
+            authorId: expect.objectContaining({ _type: 'in', _value: [12] }),
+        });
+        expect(aliasFirstNameRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [12] }),
+        });
+        expect(aliasLastNameRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [12] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([12]);
+        expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+        expect(aliasFirstNameRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+        expect(aliasLastNameRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+    });
+
     it('keeps an author editable for the same lock owner', async () => {
         const lockedAt = new Date();
 

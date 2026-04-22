@@ -108,6 +108,7 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
     }
 
     public async delete(insts: PublicationType[]) {
+        const publicationTypeIds = insts.map(publicationType => publicationType.id).filter((id): id is number => typeof id === 'number');
         for (const inst of insts) {
             const conE: PublicationType = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { pub_type: true } }, withDeleted: true });
             const pubs = [];
@@ -116,9 +117,9 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             }
 
             await this.publicationService.save(pubs);
-            await this.aliasRepository.delete({ elementId: conE.id });
         }
-        return await this.repository.delete(insts.map(p => p.id));
+        await this.deleteAliasCollection(this.aliasRepository, publicationTypeIds);
+        return await this.repository.delete(publicationTypeIds);
     }
 
 }

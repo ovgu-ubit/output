@@ -4,7 +4,7 @@ import { concatMap, from, Observable, of } from 'rxjs';
 import { EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
 import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
 import { Author } from '../author/Author.entity';
-import { getProvidedOwnedCollection, LockableEntity, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
+import { deleteAliasCollection, getProvidedOwnedCollection, LockableEntity, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
@@ -58,6 +58,7 @@ export class InstituteService {
     }
 
     public async delete(insts: Institute[]) {
+        const instituteIds = insts.map(institute => institute.id).filter((id): id is number => typeof id === 'number');
         for (const inst of insts) {
             const instE = await this.repository.findOne({ where: { id: inst.id }, relations: { authorPublications: { institute: true }, authors: { institutes: true } } });
             if (instE.authorPublications) for (const autPub of instE.authorPublications) {
@@ -65,11 +66,11 @@ export class InstituteService {
             }
             if (instE.authors) for (const aut of instE.authors) {
                 aut.institutes = aut.institutes.filter(e => e.id !== inst.id);
-                this.autRepository.save([aut])
+                await this.autRepository.save([aut])
             }
-            await this.aliasRepository.delete({ elementId: instE.id });
         }
-        return await this.repository.delete(insts.map(p => p.id));
+        await deleteAliasCollection(this.aliasRepository, instituteIds);
+        return await this.repository.delete(instituteIds);
     }
 
     public findOrSave(affiliation: string, _dry_run = false): Observable<Institute> {

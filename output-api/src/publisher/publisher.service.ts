@@ -126,6 +126,7 @@ export class PublisherService extends AbstractEntityService<Publisher> {
     }
 
     public async delete(insts: Publisher[]) {
+        const publisherIds = insts.map(publisher => publisher.id).filter((id): id is number => typeof id === 'number');
         for (const inst of insts) {
             const conE: Publisher = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: true, aliases: true, doi_prefixes: true }, withDeleted: true });
             const pubs = [];
@@ -134,9 +135,10 @@ export class PublisherService extends AbstractEntityService<Publisher> {
             }
 
             await this.publicationService.save(pubs);
-            await this.aliasRepository.delete({ elementId: conE.id });
         }
-        return await this.repository.delete(insts.map(p => p.id));
+        await this.deleteAliasCollection(this.aliasRepository, publisherIds);
+        await this.deleteDoiPrefixes(publisherIds);
+        return await this.repository.delete(publisherIds);
     }
 
     private async replaceDoiPrefixes(publisher: Publisher, doiPrefixes: DeepPartial<PublisherDOI>[]) {
@@ -152,6 +154,14 @@ export class PublisherService extends AbstractEntityService<Publisher> {
                 publisherId,
                 publisher: { id: publisherId } as Publisher,
             }),
+        });
+    }
+
+    private deleteDoiPrefixes(publisherIds: number[]) {
+        return this.deleteOwnedCollection({
+            parentIds: publisherIds,
+            repository: this.doiRepository,
+            deleteByParentIds: (ids) => ({ publisherId: In(ids) }),
         });
     }
 }

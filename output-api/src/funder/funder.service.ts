@@ -102,17 +102,18 @@ export class FunderService extends AbstractEntityService<Funder> {
     }
 
     public async delete(insts: Funder[]) {
+        const funderIds = insts.map(funder => funder.id).filter((id): id is number => typeof id === 'number');
         for (const inst of insts) {
             const conE: Funder = await this.repository.findOne({ where: { id: inst.id }, relations: { publications: { funders: true } }, withDeleted: true });
             const pubs = [];
             if (conE.publications) for (const pub of conE.publications) {
                 pubs.push({ id: pub.id, funders: pub.funders.filter(e => e.id !== conE.id) });
             }
-            await this.aliasRepository.delete({ elementId: conE.id });
 
             await this.publicationService.save(pubs);
         }
-        return await this.repository.delete(insts.map(p => p.id));
+        await this.deleteAliasCollection(this.aliasRepository, funderIds);
+        return await this.repository.delete(funderIds);
     }
 
 }

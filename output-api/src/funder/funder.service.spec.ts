@@ -124,4 +124,23 @@ describe('FunderService', () => {
         expect(aliasRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([22]);
     });
+
+    it('deletes aliases before deleting funders', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 21,
+            label: 'Funder',
+            publications: [],
+        } as Funder);
+        publicationService.save.mockResolvedValue(undefined);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 21 } as Funder]);
+
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [21] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([21]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+    });
 });

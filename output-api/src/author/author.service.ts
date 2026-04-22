@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { ILike, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppError } from '../../../output-interfaces/Config';
 import { AuthorIndex } from '../../../output-interfaces/PublicationIndex';
-import { getProvidedOwnedCollection, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
+import { deleteAliasCollection, getProvidedOwnedCollection, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
@@ -243,15 +243,11 @@ export class AuthorService {
     }
 
     public async delete(auts: Author[]) {
-        for (const aut of auts) {
-            const autE = await this.repository.findOne({ where: { id: aut.id }, relations: { authorPublications: true, institutes: true, aliases_first_name: true, aliases_last_name: true } })
-            if (autE.authorPublications) for (const autPub of autE.authorPublications) {
-                await this.pubAutRepository.delete({ authorId: autPub.authorId, publicationId: autPub.publicationId });
-            }
-            if (autE.aliases_first_name) await this.aliasFirstNameRepository.remove(autE.aliases_first_name)
-            if (autE.aliases_last_name) await this.aliasLastNameRepository.remove(autE.aliases_last_name)
-        }
-        return await this.repository.delete(auts.map(p => p.id));
+        const authorIds = auts.map(author => author.id).filter((id): id is number => typeof id === 'number');
+        await this.pubAutRepository.delete({ authorId: In(authorIds) });
+        await deleteAliasCollection(this.aliasFirstNameRepository, authorIds);
+        await deleteAliasCollection(this.aliasLastNameRepository, authorIds);
+        return await this.repository.delete(authorIds);
     }
 
     private async acquireAuthorEditLock(author: Author, user?: string): Promise<Author> {

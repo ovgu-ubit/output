@@ -122,4 +122,23 @@ describe('PublicationTypeService', () => {
         expect(aliasRepository.delete).toHaveBeenCalledWith({ elementId: expect.anything() });
         expect(repository.delete).toHaveBeenCalledWith([7, 8]);
     });
+
+    it('deletes aliases before deleting publication types', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 4,
+            label: 'Type',
+            publications: [],
+        } as PublicationType);
+        publicationService.save.mockResolvedValue(undefined);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 4 } as PublicationType]);
+
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [4] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([4]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+    });
 });

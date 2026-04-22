@@ -1,4 +1,4 @@
-import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, IsNull, LessThan, Repository } from 'typeorm';
+import { DeepPartial, FindManyOptions, FindOptionsRelations, FindOptionsWhere, In, IsNull, LessThan, Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 import { hasProvidedEntityId } from './entity-id';
@@ -17,6 +17,12 @@ interface ReplaceOwnedCollectionOptions<TEntity extends LockableEntity, TChild e
     collectionName: string;
     deleteByParentId: (parentId: number) => FindOptionsWhere<TChild>;
     mapChild: (child: DeepPartial<TChild>, parentId: number) => DeepPartial<TChild>;
+}
+
+interface DeleteOwnedCollectionOptions<TChild extends object> {
+    parentIds: number[];
+    repository: Repository<TChild>;
+    deleteByParentIds: (parentIds: number[]) => FindOptionsWhere<TChild>;
 }
 
 type AliasChild<TEntity> = {
@@ -63,6 +69,16 @@ export async function replaceOwnedCollection<TEntity extends LockableEntity, TCh
     });
 }
 
+export async function deleteOwnedCollection<TChild extends object>(
+    options: DeleteOwnedCollectionOptions<TChild>,
+): Promise<void> {
+    if (!options.parentIds.length) return;
+
+    await options.repository.delete(options.deleteByParentIds(options.parentIds)).catch((error: unknown) => {
+        throw createPersistenceHttpException(error);
+    });
+}
+
 export function replaceAliasCollection<TEntity extends LockableEntity, TAlias extends AliasChild<TEntity>>(
     parent: TEntity,
     aliases: DeepPartial<TAlias>[] | null | undefined,
@@ -81,6 +97,17 @@ export function replaceAliasCollection<TEntity extends LockableEntity, TAlias ex
             elementId: parentId,
             element: { id: parentId } as TEntity,
         } as DeepPartial<TAlias>),
+    });
+}
+
+export function deleteAliasCollection<TEntity extends LockableEntity, TAlias extends AliasChild<TEntity>>(
+    repository: Repository<TAlias>,
+    parentIds: number[],
+): Promise<void> {
+    return deleteOwnedCollection({
+        parentIds,
+        repository,
+        deleteByParentIds: (ids) => ({ elementId: In(ids) } as FindOptionsWhere<TAlias>),
     });
 }
 
@@ -208,6 +235,12 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         return replaceOwnedCollection(options);
     }
 
+    protected deleteOwnedCollection<TChild extends object>(
+        options: DeleteOwnedCollectionOptions<TChild>,
+    ): Promise<void> {
+        return deleteOwnedCollection(options);
+    }
+
     protected replaceAliasCollection<TAlias extends AliasChild<TEntity>>(
         parent: TEntity,
         aliases: DeepPartial<TAlias>[] | null | undefined,
@@ -215,6 +248,13 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         parentName: string,
     ): Promise<TAlias[]> {
         return replaceAliasCollection(parent, aliases, repository, parentName);
+    }
+
+    protected deleteAliasCollection<TAlias extends AliasChild<TEntity>>(
+        repository: Repository<TAlias>,
+        parentIds: number[],
+    ): Promise<void> {
+        return deleteAliasCollection(repository, parentIds);
     }
 
     protected async ensureEntityCanBeSaved(entity: DeepPartial<TEntity>, user?: string): Promise<void> {

@@ -150,4 +150,28 @@ describe('PublisherService', () => {
         expect(doiRepository.delete).toHaveBeenCalled();
         expect(repository.delete).toHaveBeenCalledWith([9, 10]);
     });
+
+    it('deletes DOI prefixes and aliases before deleting publishers', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 5,
+            label: 'Publisher',
+            publications: [],
+        } as Publisher);
+        publicationService.save.mockResolvedValue(undefined);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        doiRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 5 } as Publisher]);
+
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [5] }),
+        });
+        expect(doiRepository.delete).toHaveBeenCalledWith({
+            publisherId: expect.objectContaining({ _type: 'in', _value: [5] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([5]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+        expect(doiRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+    });
 });

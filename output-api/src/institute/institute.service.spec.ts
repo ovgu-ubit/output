@@ -174,6 +174,38 @@ describe('InstituteService', () => {
         expect(ids).toEqual([1, 2, 3, 4]);
     });
 
+    it('clears references and aliases before deleting institutes', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 80,
+            label: 'Institute',
+            authorPublications: [{ authorId: 7, publicationId: 8 }] as AuthorPublication[],
+            authors: [{ id: 9, institutes: [{ id: 80 }, { id: 81 }] } as Author],
+        } as Institute);
+        pubAutRepository.save!.mockResolvedValue(undefined as never);
+        authorRepository.save!.mockResolvedValue(undefined as never);
+        aliasRepository.delete!.mockResolvedValue(undefined as never);
+        repository.delete!.mockResolvedValue(undefined as never);
+
+        await service.delete([{ id: 80 } as Institute]);
+
+        expect(pubAutRepository.save).toHaveBeenCalledWith({
+            authorId: 7,
+            publicationId: 8,
+            institute: null,
+        });
+        expect(authorRepository.save).toHaveBeenCalledWith([
+            expect.objectContaining({
+                id: 9,
+                institutes: [expect.objectContaining({ id: 81 })],
+            }),
+        ]);
+        expect(aliasRepository.delete).toHaveBeenCalledWith({
+            elementId: expect.objectContaining({ _type: 'in', _value: [80] }),
+        });
+        expect(repository.delete).toHaveBeenCalledWith([80]);
+        expect(aliasRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(repository.delete.mock.invocationCallOrder[0]);
+    });
+
     it('wraps duplicate institute save errors in the shared API error format', async () => {
         repository.save.mockRejectedValue({
             code: '23505',
