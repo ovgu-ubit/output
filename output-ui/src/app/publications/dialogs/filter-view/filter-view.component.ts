@@ -6,12 +6,14 @@ import { MatChipListbox } from '@angular/material/chips';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { map, merge } from 'rxjs';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @Component({
   selector: 'app-filter-view',
   templateUrl: './filter-view.component.html',
   styleUrls: ['./filter-view.component.css'],
-  standalone: false
+  standalone: true,
+  imports: [SharedModule],
 })
 export class FilterViewComponent implements OnInit {
 

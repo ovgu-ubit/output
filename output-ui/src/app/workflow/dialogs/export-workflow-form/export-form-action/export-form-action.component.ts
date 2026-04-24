@@ -1,16 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { FilterViewComponent } from 'src/app/publications/dialogs/filter-view/filter-view.component';
+import { selectViewConfig } from 'src/app/services/redux';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ExportWorkflowService } from 'src/app/workflow/export-workflow.service';
+import { SearchFilter } from '../../../../../../../output-interfaces/Config';
 import { ExportWorkflow } from '../../../../../../../output-interfaces/Workflow';
 import { ExportFormFacade } from '../export-form-facade.service';
 
 type InlinePreviewKind = 'json' | 'xml' | 'csv' | 'text';
+type ExportPublicationFilter = { filter: SearchFilter, paths: string[] };
 
 @Component({
   selector: 'app-export-form-action',
@@ -29,6 +35,9 @@ export class ExportFormActionComponent implements OnInit {
   latestResultFilename: string | null = null;
   inlineResult: string | null = null;
   inlineResultKind: InlinePreviewKind | null = null;
+  publicationFilter: ExportPublicationFilter = this.emptyPublicationFilter();
+  publicationPageFilter: ExportPublicationFilter = this.emptyPublicationFilter();
+  private filterInitialized = false;
 
   form: FormGroup = this.formBuilder.group({
     withMasterData: [false],
@@ -39,6 +48,8 @@ export class ExportFormActionComponent implements OnInit {
     private exportWorkflowService: ExportWorkflowService,
     private snackBar: MatSnackBar,
     private router: Router,
+    private dialog: MatDialog,
+    private store: Store,
     private formBuilder: FormBuilder,
     private errorPresentation: ErrorPresentationService,
   ) { }
@@ -48,6 +59,16 @@ export class ExportFormActionComponent implements OnInit {
       this.entity = workflow;
       void this.update();
     });
+
+    this.store.select(selectViewConfig)
+      .pipe(takeUntil(this.facade.destroy$))
+      .subscribe((viewConfig) => {
+        this.publicationPageFilter = this.normalizePublicationFilter(viewConfig?.filter);
+        if (!this.filterInitialized) {
+          this.publicationFilter = this.clonePublicationFilter(this.publicationPageFilter);
+          this.filterInitialized = true;
+        }
+      });
   }
 
   async update() {
@@ -80,6 +101,25 @@ export class ExportFormActionComponent implements OnInit {
 
   get isArchived(): boolean {
     return !!this.entity && !!this.entity.deleted_at;
+  }
+
+  get hasPublicationFilter(): boolean {
+    return this.hasFilter(this.publicationFilter);
+  }
+
+  get hasPublicationPageFilter(): boolean {
+    return this.hasFilter(this.publicationPageFilter);
+  }
+
+  get publicationFilterSummary(): string {
+    const expressionCount = this.publicationFilter.filter?.expressions?.length ?? 0;
+    const pathCount = this.publicationFilter.paths?.length ?? 0;
+    if (expressionCount === 0 && pathCount === 0) return 'Kein Publikationsfilter aktiv';
+
+    const parts = [];
+    if (expressionCount > 0) parts.push(`${expressionCount} Feldfilter`);
+    if (pathCount > 0) parts.push(`${pathCount} Filteransicht${pathCount === 1 ? '' : 'en'}`);
+    return parts.join(', ');
   }
 
   publish(): void {
@@ -140,6 +180,32 @@ export class ExportFormActionComponent implements OnInit {
       });
   }
 
+  editPublicationFilter(): void {
+    const dialogRef = this.dialog.open(FilterViewComponent, {
+      width: '800px',
+      maxHeight: '800px',
+      disableClose: false,
+      data: {
+        viewConfig: {
+          filter: this.clonePublicationFilter(this.publicationFilter),
+        },
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result: ExportPublicationFilter | null) => {
+      if (!result) return;
+      this.publicationFilter = this.normalizePublicationFilter(result);
+    });
+  }
+
+  usePublicationPageFilter(): void {
+    this.publicationFilter = this.clonePublicationFilter(this.publicationPageFilter);
+  }
+
+  resetPublicationFilter(): void {
+    this.publicationFilter = this.emptyPublicationFilter();
+  }
+
   run(): void {
     if (!this.entity?.id || this.loading) return;
 
@@ -147,8 +213,11 @@ export class ExportFormActionComponent implements OnInit {
     this.form.disable();
 
     const withMasterData = !!this.form.controls.withMasterData.value;
+    const publicationFilter = this.hasPublicationFilter
+      ? this.clonePublicationFilter(this.publicationFilter)
+      : undefined;
     this.exportWorkflowService
-      .run(this.entity.id, undefined, withMasterData)
+      .run(this.entity.id, publicationFilter, withMasterData)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (resp) => {
@@ -263,5 +332,29 @@ export class ExportFormActionComponent implements OnInit {
       }
     }
     return value;
+  }
+
+  private emptyPublicationFilter(): ExportPublicationFilter {
+    return {
+      filter: { expressions: [] },
+      paths: [],
+    };
+  }
+
+  private normalizePublicationFilter(value?: { filter?: SearchFilter, paths?: string[] } | null): ExportPublicationFilter {
+    return {
+      filter: {
+        expressions: (value?.filter?.expressions ?? []).map((expression) => ({ ...expression })),
+      },
+      paths: [...(value?.paths ?? [])],
+    };
+  }
+
+  private clonePublicationFilter(value: ExportPublicationFilter): ExportPublicationFilter {
+    return this.normalizePublicationFilter(value);
+  }
+
+  private hasFilter(value: ExportPublicationFilter): boolean {
+    return (value.filter?.expressions?.length ?? 0) > 0 || (value.paths?.length ?? 0) > 0;
   }
 }
