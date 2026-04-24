@@ -80,7 +80,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   ngOnDestroy(): void {
     if (this.entity?.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.workflowService.update({ id: this.entity.id, locked_at: null }).subscribe();
+      this.workflowService.unlockImport(this.entity.id).subscribe();
     }
     this.facade.destroy();
   }
@@ -109,7 +109,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
 
     if (this.entity.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.workflowService.update({ id: this.entity.id, locked_at: null }).subscribe({
+      this.workflowService.unlockImport(this.entity.id).subscribe({
         next: () => {
           this.router.navigateByUrl('/workflow/publication_import');
         }

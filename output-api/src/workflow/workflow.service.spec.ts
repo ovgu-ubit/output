@@ -578,6 +578,58 @@ describe('WorkflowService', () => {
         expect(validationRepository.findOneBy).not.toHaveBeenCalled();
     });
 
+    it('unlocks import workflows through the dedicated endpoint without saving the workflow', async () => {
+        importRepository.findOne!.mockResolvedValue({
+            id: 38,
+            workflow_id: 'wf-38',
+            version: 1,
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow);
+        (importRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        EditLockOwnerStore.setOwner(WorkflowType.IMPORT, 38, 'alice');
+
+        await expect(service.unlockImport(38, 'alice')).resolves.toMatchObject({
+            id: 38,
+            locked_at: null,
+        });
+
+        expect(importRepository.update).toHaveBeenCalledWith({ id: 38 }, { locked_at: null });
+        expect(importRepository.save).not.toHaveBeenCalled();
+        expect(importRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
+    it('unlocks export workflows through the dedicated endpoint without saving the workflow', async () => {
+        exportRepository.findOne!.mockResolvedValue({
+            id: 39,
+            workflow_id: 'wf-39',
+            version: 1,
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ExportWorkflow);
+        (exportRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        EditLockOwnerStore.setOwner(WorkflowType.EXPORT, 39, 'alice');
+
+        await expect(service.unlockExport(39, 'alice')).resolves.toMatchObject({
+            id: 39,
+            locked_at: null,
+        });
+
+        expect(exportRepository.update).toHaveBeenCalledWith({ id: 39 }, { locked_at: null });
+        expect(exportRepository.save).not.toHaveBeenCalled();
+        expect(exportRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
     it('rejects publishing validation workflows without any rules while still allowing empty-rule drafts', async () => {
         const draftWorkflow = {
             id: 33,

@@ -33,6 +33,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public isLocked(id: number) {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/locked', { withCredentials: true });
   }
+  public unlockImport(id: number) {
+    return this.http.post<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/unlock', {}, { withCredentials: true });
+  }
   public getConfig(id: number) {
     return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { withCredentials: true })
   }
@@ -162,6 +165,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   }
   public isExportLocked(id: number) {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/locked', { withCredentials: true });
+  }
+  public unlockExport(id: number) {
+    return this.http.post<ExportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/unlock', {}, { withCredentials: true });
   }
   public exportWorkflow(id: number) {
     return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });

@@ -269,6 +269,14 @@ export class WorkflowService {
         return this.isWorkflowLocked(this.validationRepository, id);
     }
 
+    async unlockImport(id: number, user?: string): Promise<ImportWorkflow> {
+        return this.unlockWorkflow(this.importRepository, id, WorkflowType.IMPORT, user);
+    }
+
+    async unlockExport(id: number, user?: string): Promise<ExportWorkflow> {
+        return this.unlockWorkflow(this.exportRepository, id, WorkflowType.EXPORT, user);
+    }
+
     async unlockValidation(id: number, user?: string): Promise<ValidationWorkflow> {
         return this.unlockWorkflow(this.validationRepository, id, WorkflowType.VALIDATION, user);
     }
