@@ -65,7 +65,10 @@ We recommend running the backend api on a Linux server using pm2, adapt `output-
 
 Before running the system the first time, use
 > $ npm run start:init_{test|prod}
->
+> 
+> $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts --fake
+
+The last line ensures that the migrations table is populated for future migrations.
 
 Alternatively to pm2, you can also use `npm run start:{test|prod}` after building the software.
 
