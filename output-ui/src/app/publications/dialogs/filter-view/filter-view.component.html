@@ -1,10 +1,12 @@
 <div style="padding: 5px;">
     <h1>Erweiterte Filter</h1>
-    Verfügbare Filteransichten
-    <mat-chip-listbox multiple="true">
-        <mat-chip-option *ngFor="let filter of this.filters; let i = index" [value]="filter.path"
-            [selected]="this.selected[filter.path]">{{filter.label}}</mat-chip-option>
-    </mat-chip-listbox>
+    <ng-container *ngIf="!data.hideSavedFilters">
+        Verfügbare Filteransichten
+        <mat-chip-listbox multiple="true">
+            <mat-chip-option *ngFor="let filter of this.filters; let i = index" [value]="filter.path"
+                [selected]="this.selected[filter.path]">{{filter.label}}</mat-chip-option>
+        </mat-chip-listbox>
+    </ng-container>
     <form [formGroup]="form">
         <ng-container formArrayName="filters">
             <ng-container *ngFor="let filter of getFiltersControls(); let i = index">

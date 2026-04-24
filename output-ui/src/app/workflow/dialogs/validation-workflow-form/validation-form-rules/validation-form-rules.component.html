@@ -1,36 +1,204 @@
 <mat-card>
-    <mat-card-title>Target und Regeln</mat-card-title>
+    <mat-card-title>Filter und Regeln</mat-card-title>
     <mat-card-content>
         <form class="rules-form" [formGroup]="form">
-            <mat-form-field appearance="fill">
-                <mat-label>Target</mat-label>
+            <mat-form-field appearance="fill" class="target-field">
+                <mat-label>Zu prüfende Entität</mat-label>
                 <mat-select formControlName="target">
                     <mat-option value="publication">publication</mat-option>
                 </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="fill">
-                <mat-label>target_filter</mat-label>
-                <textarea matInput rows="10" formControlName="target_filter_json"></textarea>
-                <mat-hint>SearchFilter-JSON, zum Beispiel mit leerem expressions-Array.</mat-hint>
-            </mat-form-field>
+            <section class="target-filter">
+                <div>
+                    <div class="section-title">Filter</div>
+                    <div class="summary">{{ targetFilterSummary }}</div>
+                </div>
+                <div class="filter-actions">
+                    <button mat-stroked-button type="button" (click)="editTargetFilter()" [disabled]="form.disabled">
+                        <mat-icon>filter_alt</mat-icon>
+                        Bearbeiten
+                    </button>
+                    <button mat-icon-button type="button" matTooltip="Filter zurücksetzen" (click)="resetTargetFilter()" [disabled]="form.disabled || (targetFilter.expressions.length === 0)">
+                        <mat-icon>filter_alt_off</mat-icon>
+                    </button>
+                </div>
+            </section>
 
-            <mat-form-field appearance="fill">
-                <mat-label>rules</mat-label>
-                <textarea matInput rows="18" formControlName="rules_json"></textarea>
-                <mat-hint>JSON-Array mit Regeln vom Typ required, compare oder conditional.</mat-hint>
-            </mat-form-field>
+            <section class="rules-header">
+                <div>
+                    <div class="section-title">Regeln</div>
+                    <div class="summary">{{ rules.length }} Regel{{ rules.length === 1 ? '' : 'n' }}</div>
+                </div>
+                <button mat-raised-button type="button" class="primary-button" (click)="addRule()" [disabled]="form.disabled">
+                    <mat-icon>add</mat-icon>
+                    Regel hinzufügen
+                </button>
+            </section>
+
+            <div formArrayName="rules" class="rules-list">
+                <div class="empty-state" *ngIf="rules.length === 0">
+                    Noch keine Regeln definiert.
+                </div>
+
+                <section class="rule-item" *ngFor="let rule of getRulesControls(); let i = index; trackBy: trackByIndex" [formGroupName]="i">
+                    <div class="rule-toolbar">
+                        <div class="rule-number">Regel {{ i + 1 }}</div>
+                        <button mat-icon-button type="button" matTooltip="Regel löschen" (click)="deleteRule(i)" [disabled]="form.disabled">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+
+                    <div class="rule-grid">
+                        <mat-form-field appearance="fill">
+                            <mat-label>Regelbaustein</mat-label>
+                            <mat-select formControlName="type" (selectionChange)="setRuleType(rule, $event.value)">
+                                <mat-option *ngFor="let ruleType of ruleTypes" [value]="ruleType.type">
+                                    {{ ruleType.label }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill">
+                            <mat-label>Ergebnis</mat-label>
+                            <mat-select formControlName="result">
+                                <mat-option *ngFor="let result of results" [value]="result.value">
+                                    {{ result.label }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="fill" *ngIf="isRequiredRule(rule) || isCompareRule(rule)">
+                            <mat-label>Feld</mat-label>
+                            <mat-select formControlName="path" (selectionChange)="normalizeCompareOperator(rule)">
+                                <mat-option *ngFor="let field of fields" [value]="field.path">
+                                    {{ field.label }}
+                                </mat-option>
+                            </mat-select>
+                            <mat-error>Bitte wählen Sie ein Feld aus.</mat-error>
+                        </mat-form-field>
+
+                        <ng-container *ngIf="isCompareRule(rule)">
+                            <mat-form-field appearance="fill">
+                                <mat-label>Vergleich</mat-label>
+                                <mat-select formControlName="comp">
+                                    <ng-container *ngFor="let op of compareOps">
+                                        <mat-option *ngIf="displayCompareOp(rule, op)" [value]="op.op">
+                                            {{ op.label }}
+                                        </mat-option>
+                                    </ng-container>
+                                </mat-select>
+                                <mat-error>Bitte wählen Sie einen Vergleich aus.</mat-error>
+                            </mat-form-field>
+
+                            <ng-container *ngTemplateOutlet="valueEditor; context: { group: rule }"></ng-container>
+                        </ng-container>
+                    </div>
+
+                    <div class="condition-groups" *ngIf="isConditionalRule(rule)">
+                        <section class="condition-group">
+                            <div class="condition-header">
+                                <span>Wenn</span>
+                                <button mat-icon-button type="button" matTooltip="Bedingung hinzufügen" (click)="addCondition(rule, 'if')" [disabled]="form.disabled">
+                                    <mat-icon>add</mat-icon>
+                                </button>
+                            </div>
+                            <div formArrayName="if">
+                                <div class="condition-row" *ngFor="let condition of getConditionControls(rule, 'if'); let conditionIndex = index; trackBy: trackByIndex" [formGroupName]="conditionIndex">
+                                    <ng-container *ngTemplateOutlet="conditionEditor; context: { condition: condition, rule: rule, groupName: 'if', index: conditionIndex }"></ng-container>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="condition-group">
+                            <div class="condition-header">
+                                <span>Dann</span>
+                                <button mat-icon-button type="button" matTooltip="Bedingung hinzufügen" (click)="addCondition(rule, 'then')" [disabled]="form.disabled">
+                                    <mat-icon>add</mat-icon>
+                                </button>
+                            </div>
+                            <div formArrayName="then">
+                                <div class="condition-row" *ngFor="let condition of getConditionControls(rule, 'then'); let conditionIndex = index; trackBy: trackByIndex" [formGroupName]="conditionIndex">
+                                    <ng-container *ngTemplateOutlet="conditionEditor; context: { condition: condition, rule: rule, groupName: 'then', index: conditionIndex }"></ng-container>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            </div>
         </form>
-
-        <div class="example-block">
-            <div class="eyebrow">Beispiel</div>
-            <pre [textContent]="exampleJson"></pre>
-        </div>
     </mat-card-content>
     @if (!this.entity?.published_at && !this.entity?.deleted_at) {
-    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+    <mat-card-actions class="form-actions">
         <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
         <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
     </mat-card-actions>
     }
 </mat-card>
+
+<ng-template #conditionEditor let-condition="condition" let-rule="rule" let-groupName="groupName" let-index="index">
+    <ng-container [formGroup]="condition">
+    <mat-form-field appearance="fill">
+        <mat-label>Bedingung</mat-label>
+        <mat-select formControlName="type" (selectionChange)="setConditionType(condition)">
+            <mat-option value="required">Pflichtfeld</mat-option>
+            <mat-option value="compare">Vergleich</mat-option>
+        </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+        <mat-label>Feld</mat-label>
+        <mat-select formControlName="path" (selectionChange)="normalizeCompareOperator(condition)">
+            <mat-option *ngFor="let field of fields" [value]="field.path">
+                {{ field.label }}
+            </mat-option>
+        </mat-select>
+        <mat-error>Bitte wählen Sie ein Feld aus.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" *ngIf="isCompareCondition(condition)">
+        <mat-label>Vergleich</mat-label>
+        <mat-select formControlName="comp">
+            <ng-container *ngFor="let op of compareOps">
+                <mat-option *ngIf="displayCompareOp(condition, op)" [value]="op.op">
+                    {{ op.label }}
+                </mat-option>
+            </ng-container>
+        </mat-select>
+        <mat-error>Bitte wählen Sie einen Vergleich aus.</mat-error>
+    </mat-form-field>
+
+    <ng-container *ngIf="isCompareCondition(condition)">
+        <ng-container *ngTemplateOutlet="valueEditor; context: { group: condition }"></ng-container>
+    </ng-container>
+
+    <button mat-icon-button type="button" matTooltip="Bedingung löschen" (click)="deleteCondition(rule, groupName, index)" [disabled]="form.disabled || getConditionArray(rule, groupName).length === 1">
+        <mat-icon>delete</mat-icon>
+    </button>
+    </ng-container>
+</ng-template>
+
+<ng-template #valueEditor let-group="group">
+    <ng-container [formGroup]="group">
+    <mat-form-field appearance="fill" *ngIf="isListComparison(group)">
+        <mat-label>Werte</mat-label>
+        <textarea matInput rows="2" formControlName="value" placeholder="Werte durch Komma trennen"></textarea>
+        <mat-error>Bitte geben Sie mindestens einen Wert ein.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" *ngIf="!isListComparison(group) && isBooleanField(group.get('path')?.value)">
+        <mat-label>Wert</mat-label>
+        <mat-select formControlName="value">
+            <mat-option [value]="true">wahr</mat-option>
+            <mat-option [value]="false">falsch</mat-option>
+        </mat-select>
+        <mat-error>Bitte wählen Sie einen Wert aus.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" *ngIf="!isListComparison(group) && !isBooleanField(group.get('path')?.value)">
+        <mat-label>Wert</mat-label>
+        <input matInput formControlName="value" [type]="isNumberField(group.get('path')?.value) ? 'number' : 'text'">
+        <mat-error>Bitte geben Sie einen Wert ein.</mat-error>
+    </mat-form-field>
+    </ng-container>
+</ng-template>

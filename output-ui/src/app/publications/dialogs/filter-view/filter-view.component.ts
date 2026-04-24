@@ -114,19 +114,21 @@ export class FilterViewComponent implements OnInit {
       }
     })
 
-    this.publicationService.getFilters().subscribe({
-      next: data => {
-        this.filters = data;
-        if (this.data.viewConfig?.filter?.paths && this.data.viewConfig?.filter.paths.length > 0) {
-          for (let e of this.data.viewConfig?.filter.paths) {
-            let idx = this.filters.findIndex(f => f.path === e);
-            if (idx >= 0) {
-              this.selected[this.filters[idx].path] = true;
+    if (!this.data.hideSavedFilters) {
+      this.publicationService.getFilters().subscribe({
+        next: data => {
+          this.filters = data;
+          if (this.data.viewConfig?.filter?.paths && this.data.viewConfig?.filter.paths.length > 0) {
+            for (let e of this.data.viewConfig?.filter.paths) {
+              let idx = this.filters.findIndex(f => f.path === e);
+              if (idx >= 0) {
+                this.selected[this.filters[idx].path] = true;
+              }
             }
           }
         }
-      }
-    })
+      })
+    }
     if (this.data.viewConfig?.filter && this.data.viewConfig?.filter.filter.expressions.length > 0) {
       let i = 0;
       for (let e of this.data.viewConfig?.filter.filter.expressions) {
@@ -177,8 +179,10 @@ export class FilterViewComponent implements OnInit {
     this.form.markAllAsTouched();
 
     let chips = [];
-    if (!Array.isArray(this.chips.selected)) chips = [this.chips.selected.value]
-    else chips = this.chips.selected.map(e => e.value);
+    if (!this.data.hideSavedFilters && this.chips?.selected) {
+      if (!Array.isArray(this.chips.selected)) chips = [this.chips.selected.value]
+      else chips = this.chips.selected.map(e => e.value);
+    }
 
     if (this.form.invalid && chips.length === 0) return;
 
@@ -194,10 +198,12 @@ export class FilterViewComponent implements OnInit {
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
-    if (Array.isArray(this.chips.selected)) this.chips.selected.forEach(i => {
-      i.deselect();
-    });
-    else this.chips.selected.select();
+    if (this.chips?.selected) {
+      if (Array.isArray(this.chips.selected)) this.chips.selected.forEach(i => {
+        i.deselect();
+      });
+      else this.chips.selected.select();
+    }
   }
 
   getFilter(): SearchFilter {
