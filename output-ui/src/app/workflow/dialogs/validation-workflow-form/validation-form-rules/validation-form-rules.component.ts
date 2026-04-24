@@ -508,8 +508,9 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
   private parseSingleValue(fieldType: FieldType, value: unknown): string | number | boolean | null {
     if (fieldType === 'boolean') return value === true || `${value}`.toLowerCase() === 'true';
     if (fieldType === 'number') {
+      if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
       const numberValue = Number(value);
-      return Number.isNaN(numberValue) ? 0 : numberValue;
+      return Number.isNaN(numberValue) ? null : numberValue;
     }
     return value === null || value === undefined ? '' : String(value);
   }
