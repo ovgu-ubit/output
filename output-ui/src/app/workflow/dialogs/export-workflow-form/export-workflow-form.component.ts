@@ -171,7 +171,7 @@ export class ExportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
 
     const dialogData = new ConfirmDialogModel(
       'Ungespeicherte Änderungen',
-      'Sollen die durchgefuehrten Änderungen zunächst gespeichert werden?'
+      'Sollen die durchgeführten Änderungen zunächst gespeichert werden?'
     );
     const shouldSave = !!(await firstValueFrom(
       this.dialog.open(ConfirmDialogComponent, { maxWidth: '500px', disableClose: true, data: dialogData }).afterClosed()
@@ -208,7 +208,7 @@ export class ExportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   private showSaveSuccess(id?: number) {
     this.snackBar.open(
       'Workflow erfolgreich gespeichert unter ID ' + id + '.',
-      'Sehr schoen.',
+      'Sehr schön.',
       { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
     );
   }

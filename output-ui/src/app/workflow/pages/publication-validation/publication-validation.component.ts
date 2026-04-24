@@ -60,7 +60,7 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
 
   getName() {
     let res = 'Validation-Workflows';
-    if (this.indexOptions.type === 'draft') res += ' (Entwuerfe)';
+    if (this.indexOptions.type === 'draft') res += ' (Entwürfe)';
     else if (this.indexOptions.type === 'published') res += ' (Aktiv)';
     else if (this.indexOptions.type === 'archived') res += ' (Archiviert)';
     return res;

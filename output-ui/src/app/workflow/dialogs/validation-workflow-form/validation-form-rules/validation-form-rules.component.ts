@@ -121,7 +121,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     try {
       return JSON.parse(trimmed) as T;
     } catch {
-      this.snackBar.open(label + ' enthaelt kein gueltiges JSON.', 'OK', {
+      this.snackBar.open(label + ' enthält kein gueltiges JSON.', 'OK', {
         duration: 5000,
         verticalPosition: 'top',
         panelClass: ['danger-snackbar'],

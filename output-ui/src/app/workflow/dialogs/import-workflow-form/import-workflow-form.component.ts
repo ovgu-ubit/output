@@ -209,7 +209,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   private showSaveSuccess(id?: number) {
     this.snackBar.open(
       'Workflow erfolgreich gespeichert unter ID ' + id + '.',
-      'Sehr schoen.',
+      'Sehr schön.',
       { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
     );
   }

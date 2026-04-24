@@ -15,11 +15,11 @@ export class ErrorMessageService {
       case ApiErrorCode.UNAUTHENTICATED:
         return 'Anmeldung erforderlich oder Sitzung abgelaufen.';
       case ApiErrorCode.FORBIDDEN:
-        return 'Sie haben fuer diese Aktion keine Berechtigung.';
+        return 'Sie haben für diese Aktion keine Berechtigung.';
       case ApiErrorCode.ENTITY_LOCKED:
         return `${this.getEntityLabel(context.entity, 'Der Datensatz')} wird gerade durch eine andere Person bearbeitet.`;
       case ApiErrorCode.WORKFLOW_RUNNING:
-        return 'Es laeuft bereits eine Ausfuehrung. Bitte warten Sie, bis der aktuelle Lauf beendet ist.';
+        return 'Es läuft bereits eine Ausführung. Bitte warten Sie, bis der aktuelle Lauf beendet ist.';
       case ApiErrorCode.UNIQUE_CONSTRAINT:
         return this.getUniqueMessage(context);
       case ApiErrorCode.NOT_FOUND:
@@ -73,9 +73,9 @@ export class ErrorMessageService {
       case 'create':
         return `${this.getEntityLabel(context.entity, 'Der Datensatz')} konnte nicht angelegt werden.`;
       case 'delete':
-        return `${this.getEntityLabel(context.entityPlural ?? context.entity, 'Die Daten')} konnten nicht geloescht werden.`;
+        return `${this.getEntityLabel(context.entityPlural ?? context.entity, 'Die Daten')} konnten nicht gelöscht werden.`;
       case 'combine':
-        return 'Die ausgewaehlten Datensaetze konnten nicht zusammengefuehrt werden.';
+        return 'Die ausgewählten Datensätze konnten nicht zusammengeführt werden.';
       case 'run':
       case 'start':
         return 'Aktion konnte nicht gestartet werden.';

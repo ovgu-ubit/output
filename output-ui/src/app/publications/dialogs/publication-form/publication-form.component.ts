@@ -244,7 +244,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (!result?.doi) return;
 
         this.pub.doi = result.doi;
-        this.pub.dataSource = 'Manuell per DOI hinzugefuegt';
+        this.pub.dataSource = 'Manuell per DOI hinzugefügt';
         this.form.patchValue({
           doi: this.pub.doi,
           dataSource: this.pub.dataSource,
@@ -398,7 +398,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
 
   abort(): void {
     if (this.form.dirty) {
-      const dialogData = new ConfirmDialogModel('Ungesicherte Änderungen', 'Es gibt ungespeicherte Änderungen, moechten Sie diese zunächst speichern?');
+      const dialogData = new ConfirmDialogModel('Ungesicherte Änderungen', 'Es gibt ungespeicherte Änderungen, möchten Sie diese zunächst speichern?');
 
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',
@@ -432,7 +432,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     }
 
     if (this.idTable && this.idTable.isDirty()) {
-      const dialogData = new ConfirmDialogModel('Ungesicherte Änderungen', 'Es gibt einen ungespeicherten Identifier, moechten Sie diesen zunächst speichern?');
+      const dialogData = new ConfirmDialogModel('Ungesicherte Änderungen', 'Es gibt einen ungespeicherten Identifier, möchten Sie diesen zunächst speichern?');
 
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',
@@ -693,7 +693,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       publication = {
         ...this.pub,
         ...formValue,
-        dataSource: this.form.get('dataSource').value || 'Manuell hinzugefuegt',
+        dataSource: this.form.get('dataSource').value || 'Manuell hinzugefügt',
         pub_date: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date').value),
         pub_date_print: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date_print').value),
         pub_date_accepted: this.normalizeDateValue(this.form.get('biblio_info').get('pub_date_accepted').value),
