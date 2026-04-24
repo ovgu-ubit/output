@@ -149,6 +149,30 @@ export class WorkflowService {
         });
     }
 
+    async importValidation(file: Express.Multer.File) {
+        let workflow: ValidationWorkflow;
+        try {
+            workflow = JSON.parse(file.buffer.toString('utf-8'));
+        } catch {
+            throw createInvalidRequestHttpException('invalid json');
+        }
+
+        const nextVersion = await this.getNextDraftVersion(this.validationRepository, workflow.workflow_id);
+
+        const obj: ValidationWorkflow = {
+            workflow_id: workflow.workflow_id,
+            label: workflow.label,
+            version: nextVersion,
+            description: workflow.description,
+            target: workflow.target,
+            target_filter: workflow.target_filter,
+            rules: workflow.rules,
+            mapping: workflow.mapping
+        }
+
+        return this.saveValidation(obj);
+    }
+
     async saveValidation(workflow: ValidationWorkflow, user?: string) {
         return this.saveWorkflow(workflow, user, {
             repository: this.validationRepository,

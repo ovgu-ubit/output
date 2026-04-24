@@ -226,6 +226,18 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public deleteValidations(ids: number[]) {
     return this.http.delete<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation', { withCredentials: true, body: ids.map(e => ({ id: e })) });
   }
+  public exportValidation(id: number) {
+    return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });
+  }
+  public importValidationWorkflow(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ValidationWorkflow>(
+      this.runtimeConfigService.getValue("api") + 'workflow/validation/import',
+      formData,
+      { withCredentials: true }
+    );
+  }
   async isValidationRunning(id: number) {
     return this.isRunning(id, WorkflowType.VALIDATION);
   }

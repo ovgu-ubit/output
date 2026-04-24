@@ -91,6 +91,18 @@ export class WorkflowController {
     return new StreamableFile(Buffer.from(json, 'utf-8'));
   }
 
+  @Get("validation/:id/export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async export_validation(@Param('id') id: number, @Res({ passthrough: true }) res) {
+    const wf = await this.workflowService.getValidation(id, false);
+    const json = JSON.stringify(wf, null, 2);
+    const filename = this.buildWorkflowDefinitionFilename('Validation', wf.label, wf.version);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
+    return new StreamableFile(Buffer.from(json, 'utf-8'));
+  }
+
   @Get("import/:id/test")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -267,6 +279,26 @@ export class WorkflowController {
   import_export(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
     return this.workflowService.importExport(file);
+  }
+
+  @Post("validation/import")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiConsumes('multipart/form-data') @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        }
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  import_validation(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    return this.workflowService.importValidation(file);
   }
 
   @Post("import")

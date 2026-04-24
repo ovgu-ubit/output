@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -16,7 +16,9 @@ import { ValidationWorkflowService } from '../../validation-workflow.service';
 })
 export class PublicationValidationComponent implements TableParent<ValidationWorkflow>, OnInit {
   formComponent = ValidationWorkflowFormComponent;
-  buttons: TableButton[] = [];
+  buttons: TableButton[] = [
+    { title: 'Validierung aus Datei hinzufügen', action_function: this.import.bind(this) }
+  ];
   not_selectable?: boolean = true;
 
   common_headers: TableHeader[] = [
@@ -48,6 +50,7 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
   };
 
   @ViewChild(TableComponent) table: TableComponent<ValidationWorkflow, ValidationWorkflow>;
+  @ViewChild('fileInput') fileInput: ElementRef<HTMLInputElement>;
 
   constructor(
     public validationWorkflowService: ValidationWorkflowService,
@@ -108,5 +111,41 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
     }
 
     this.table.updateData().subscribe();
+  }
+
+  import() {
+    this.fileInput?.nativeElement.click();
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.name.endsWith('.json')) {
+      this.snackBar.open('Bitte eine JSON-Datei auswählen.', 'OK', {
+        duration: 5000,
+        panelClass: ['danger-snackbar'],
+        verticalPosition: 'top'
+      });
+      return;
+    }
+    this.validationWorkflowService.importWorkflow(file).subscribe({
+      next: () => {
+        this.snackBar.open('Validierung-Workflow wurde hinzugefügt.', 'Super!', {
+          duration: 5000,
+          panelClass: ['success-snackbar'],
+          verticalPosition: 'top'
+        });
+        this.table.updateData().subscribe();
+      },
+      error: () => {
+        this.snackBar.open('Import fehlgeschlagen.', 'OK', {
+          duration: 5000,
+          panelClass: ['danger-snackbar'],
+          verticalPosition: 'top'
+        });
+      }
+    });
   }
 }

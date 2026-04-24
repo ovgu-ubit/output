@@ -69,4 +69,12 @@ export class ValidationWorkflowService implements EntityService<ValidationWorkfl
   deleteWorkflowReport(reportId: number) {
     return this.api.deleteWorkflowReport(reportId);
   }
+
+  exportValidation(id: number) {
+    return this.api.exportValidation(id);
+  }
+
+  importWorkflow(file: File) {
+    return this.api.importValidationWorkflow(file);
+  }
 }
