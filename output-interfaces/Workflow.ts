@@ -42,6 +42,7 @@ export interface ValidationCompareCondition {
     path: string;
     comp: CompareOperation;
     value: SearchFilterValue;
+    negate?: boolean;
 }
 
 export type ValidationCondition = ValidationRequiredCondition | ValidationCompareCondition;

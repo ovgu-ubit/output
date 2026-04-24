@@ -10,6 +10,7 @@ describe('WorkflowController', () => {
         getValidation: jest.Mock;
         deleteValidations: jest.Mock;
         startValidation: jest.Mock;
+        unlockValidation: jest.Mock;
         validationStatus: jest.Mock;
         startExport: jest.Mock;
     };
@@ -25,6 +26,7 @@ describe('WorkflowController', () => {
             getValidation: jest.fn(),
             deleteValidations: jest.fn(),
             startValidation: jest.fn(),
+            unlockValidation: jest.fn(),
             validationStatus: jest.fn(),
             startExport: jest.fn(),
         };
@@ -133,6 +135,14 @@ describe('WorkflowController', () => {
         await controller.run_validation(33, { user: { username: 'alice' } });
 
         expect(workflowService.startValidation).toHaveBeenCalledWith(33, 'alice');
+    });
+
+    it('unlocks validation workflows without forwarding a workflow body', async () => {
+        workflowService.unlockValidation.mockResolvedValue({ id: 33, locked_at: null });
+
+        await controller.unlock_validation(33, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockValidation).toHaveBeenCalledWith(33, 'alice');
     });
 
     it('reads validation workflow status via the workflow service', async () => {

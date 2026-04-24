@@ -91,6 +91,8 @@
                                 <mat-error>Bitte wählen Sie einen Vergleich aus.</mat-error>
                             </mat-form-field>
 
+                            <mat-checkbox formControlName="negate" class="negate-checkbox">Negieren</mat-checkbox>
+
                             <mat-form-field appearance="fill" *ngIf="isListComparison(rule)">
                                 <mat-label>Werte</mat-label>
                                 <textarea matInput rows="2" formControlName="value" placeholder="Werte durch Komma trennen"></textarea>
@@ -186,6 +188,8 @@
         </mat-select>
         <mat-error>Bitte wählen Sie einen Vergleich aus.</mat-error>
     </mat-form-field>
+
+    <mat-checkbox *ngIf="isCompareCondition(condition)" formControlName="negate" class="negate-checkbox">Negieren</mat-checkbox>
 
     <ng-container *ngIf="isCompareCondition(condition)">
         <mat-form-field appearance="fill" *ngIf="isListComparison(condition)">

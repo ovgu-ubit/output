@@ -269,6 +269,10 @@ export class WorkflowService {
         return this.isWorkflowLocked(this.validationRepository, id);
     }
 
+    async unlockValidation(id: number, user?: string): Promise<ValidationWorkflow> {
+        return this.unlockWorkflow(this.validationRepository, id, WorkflowType.VALIDATION, user);
+    }
+
     async deleteImports(ids: number[]) {
         return this.deleteWorkflows(ids, {
             repository: this.importRepository,
@@ -373,6 +377,33 @@ export class WorkflowService {
         if (!db.locked_at || db.deleted_at) return false;
         else if ((new Date().getTime() - db.locked_at.getTime()) > await this.getLockTimeoutMs()) return false;
         else return true;
+    }
+
+    private async unlockWorkflow<T extends { id?: number; locked_at?: Date | null; published_at?: Date | null; deleted_at?: Date | null }>(
+        repository: Repository<T>,
+        id: number,
+        workflowType: WorkflowType,
+        user?: string,
+    ): Promise<T> {
+        const db = await repository.findOne({ where: { id } as never, withDeleted: true });
+        if (!db || !hasProvidedEntityId(db.id)) throw createNotFoundHttpException('Workflow not found.');
+
+        if (!db.locked_at || db.published_at || db.deleted_at) {
+            this.releaseEditLock(workflowType, db.id);
+            return { ...db, locked_at: null };
+        }
+
+        const lockedAt = db.locked_at instanceof Date ? db.locked_at : new Date(db.locked_at);
+        const lockTimeoutMs = await this.getLockTimeoutMs();
+        const owner = EditLockOwnerStore.getOwner(workflowType, db.id);
+        const lockIsActive = (Date.now() - lockedAt.getTime()) <= lockTimeoutMs;
+        if (lockIsActive && owner && (!user || owner !== user)) {
+            throw createEntityLockedHttpException('Workflow is currently locked.');
+        }
+
+        await repository.update({ id: db.id } as never, { locked_at: null } as never);
+        this.releaseEditLock(workflowType, db.id);
+        return { ...db, locked_at: null };
     }
 
     private async runExclusive<T>(key: string, action: () => Promise<T>): Promise<T> {
@@ -547,6 +578,14 @@ export class WorkflowService {
             if (!db) throw createInvalidRequestHttpException("Error: ID of workflow to update does not exist");
             await this.ensureDraftWorkflowCanBeSaved(db, workflow, options.workflowType, user);
             const nextLockedAt = this.resolveNextLockState(db.locked_at, workflow.locked_at);
+            const isUnlockOnly = this.isUnlockOnlyRequest(workflow);
+
+            if (isUnlockOnly) {
+                await options.repository.update({ id: db.id } as never, { locked_at: null } as never);
+                const unlocked = { ...db, locked_at: null };
+                this.syncEditLockOwner(unlocked, options.workflowType, user);
+                return unlocked as TWorkflow;
+            }
 
             if (db.published_at) {
                 const isArchiving = !!workflow.deleted_at;

@@ -79,7 +79,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
   ngOnDestroy(): void {
     if (this.entity?.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.validationWorkflowService.update({ id: this.entity.id, locked_at: null }).subscribe();
+      this.validationWorkflowService.unlock(this.entity.id).subscribe();
     }
     this.facade.destroy();
   }
@@ -108,7 +108,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
 
     if (this.entity.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.validationWorkflowService.update({ id: this.entity.id, locked_at: null }).subscribe({
+      this.validationWorkflowService.unlock(this.entity.id).subscribe({
         next: () => {
           this.router.navigateByUrl('/workflow/publication_validation');
         }

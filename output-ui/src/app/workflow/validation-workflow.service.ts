@@ -38,6 +38,10 @@ export class ValidationWorkflowService implements EntityService<ValidationWorkfl
     return this.api.isValidationLocked(id);
   }
 
+  unlock(id: number) {
+    return this.api.unlockValidation(id);
+  }
+
   run(id: number) {
     return this.api.runValidation(id);
   }

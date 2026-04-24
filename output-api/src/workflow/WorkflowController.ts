@@ -166,6 +166,13 @@ export class WorkflowController {
     return this.workflowService.startValidation(id, req.user?.username);
   }
 
+  @Post("validation/:id/unlock")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  unlock_validation(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.workflowService.unlockValidation(id, req.user?.username);
+  }
+
   @Get('import/:id/run')
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])

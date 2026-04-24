@@ -201,6 +201,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public isValidationLocked(id: number) {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/locked', { withCredentials: true });
   }
+  public unlockValidation(id: number) {
+    return this.http.post<ValidationWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/unlock', {}, { withCredentials: true });
+  }
   public runValidation(id: number) {
     return this.http.post<{ status: string }>(
       this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/run',

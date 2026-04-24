@@ -365,6 +365,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
       path: ['path' in (rule ?? {}) ? (rule as any).path : ''],
       comp: ['comp' in (rule ?? {}) ? (rule as ValidationCompareCondition).comp : CompareOperation.EQUALS],
       value: ['value' in (rule ?? {}) ? this.toFormValue((rule as ValidationCompareCondition).value) : ''],
+      negate: ['negate' in (rule ?? {}) ? !!(rule as ValidationCompareCondition).negate : false],
       if: this.formBuilder.array([]),
       then: this.formBuilder.array([]),
     });
@@ -386,6 +387,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
       path: [condition?.path ?? '', Validators.required],
       comp: [(condition as ValidationCompareCondition | undefined)?.comp ?? CompareOperation.EQUALS],
       value: ['value' in (condition ?? {}) ? this.toFormValue((condition as ValidationCompareCondition).value) : ''],
+      negate: ['negate' in (condition ?? {}) ? !!(condition as ValidationCompareCondition).negate : false],
     });
     this.applyConditionValidators(group);
     return group;
@@ -444,6 +446,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
           path: rule.get('path')?.value,
           comp: rule.get('comp')?.value,
           value: this.parseFormValue(rule),
+          negate: !!rule.get('negate')?.value,
         };
       }
       return {
@@ -462,6 +465,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
           path: condition.get('path')?.value,
           comp: condition.get('comp')?.value,
           value: this.parseFormValue(condition),
+          negate: !!condition.get('negate')?.value,
         };
       }
       return {
@@ -494,7 +498,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     if (group.get('comp')?.value === CompareOperation.IN) {
       const values = Array.isArray(value) ? value : `${value ?? ''}`.split(/[\n,]+/);
       return values
-        .map((entry) => this.parseSingleValue(fieldType, entry))
+        .map((entry) => this.parseSingleValue(fieldType, typeof entry === 'string' ? entry.trim() : entry))
         .filter((entry): entry is string | number | boolean => entry !== null && entry !== '');
     }
 
@@ -511,6 +515,6 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
   }
 
   private toFormValue(value: SearchFilterValue): string | number | boolean {
-    return Array.isArray(value) ? value.join(', ') : value ?? '';
+    return Array.isArray(value) ? value.join(',') : value ?? '';
   }
 }

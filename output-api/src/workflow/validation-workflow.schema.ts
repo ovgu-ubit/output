@@ -35,6 +35,7 @@ const ValidationCompareConditionSchema = z.object({
   path: NonEmptyStringSchema,
   comp: z.nativeEnum(CompareOperation),
   value: SearchFilterValueSchema,
+  negate: z.boolean().optional(),
 }).strict();
 
 const ValidationConditionSchema = z.discriminatedUnion("type", [

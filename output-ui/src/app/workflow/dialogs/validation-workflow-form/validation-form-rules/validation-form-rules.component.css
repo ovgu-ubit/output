@@ -60,7 +60,7 @@
 .condition-row {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(170px, 0.8fr) minmax(150px, 0.7fr) minmax(220px, 1.2fr) minmax(170px, 0.8fr) minmax(180px, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .condition-groups {
@@ -83,8 +83,14 @@
 
 .condition-row {
   align-items: start;
-  grid-template-columns: minmax(140px, 0.8fr) minmax(190px, 1.1fr) minmax(150px, 0.8fr) minmax(170px, 1fr) 40px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   overflow: visible;
+}
+
+.negate-checkbox {
+  align-self: center;
+  min-height: 56px;
+  padding-top: 0.5rem;
 }
 
 .empty-state {
