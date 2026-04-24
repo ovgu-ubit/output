@@ -258,6 +258,7 @@ export class WorkflowController {
   @UseInterceptors(FileInterceptor('file'))
   import_import(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importImport(file);
   }
 
@@ -278,6 +279,7 @@ export class WorkflowController {
   @UseInterceptors(FileInterceptor('file'))
   import_export(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importExport(file);
   }
 
@@ -298,6 +300,7 @@ export class WorkflowController {
   @UseInterceptors(FileInterceptor('file'))
   import_validation(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importValidation(file);
   }
 

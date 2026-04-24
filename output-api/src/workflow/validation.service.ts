@@ -154,7 +154,7 @@ export class ValidationService {
                 timestamp: new Date(),
                 level: WorkflowReportItemLevel.ERROR,
                 code: 'validation.error',
-                message: `Error while validating: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+                message: `Error while validating: ${error instanceof Error ? error.message : String(error)}`,
             });
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Error while validating',
