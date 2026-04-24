@@ -91,7 +91,26 @@
                                 <mat-error>Bitte wählen Sie einen Vergleich aus.</mat-error>
                             </mat-form-field>
 
-                            <ng-container *ngTemplateOutlet="valueEditor; context: { group: rule }"></ng-container>
+                            <mat-form-field appearance="fill" *ngIf="isListComparison(rule)">
+                                <mat-label>Werte</mat-label>
+                                <textarea matInput rows="2" formControlName="value" placeholder="Werte durch Komma trennen"></textarea>
+                                <mat-error>Bitte geben Sie mindestens einen Wert ein.</mat-error>
+                            </mat-form-field>
+
+                            <mat-form-field appearance="fill" *ngIf="showBooleanValue(rule)">
+                                <mat-label>Wert</mat-label>
+                                <mat-select formControlName="value">
+                                    <mat-option [value]="true">wahr</mat-option>
+                                    <mat-option [value]="false">falsch</mat-option>
+                                </mat-select>
+                                <mat-error>Bitte wählen Sie einen Wert aus.</mat-error>
+                            </mat-form-field>
+
+                            <mat-form-field appearance="fill" *ngIf="showTextValue(rule)">
+                                <mat-label>Wert</mat-label>
+                                <input matInput formControlName="value" [type]="isNumberField(rule.get('path')?.value) ? 'number' : 'text'">
+                                <mat-error>Bitte geben Sie einen Wert ein.</mat-error>
+                            </mat-form-field>
                         </ng-container>
                     </div>
 
@@ -169,36 +188,30 @@
     </mat-form-field>
 
     <ng-container *ngIf="isCompareCondition(condition)">
-        <ng-container *ngTemplateOutlet="valueEditor; context: { group: condition }"></ng-container>
+        <mat-form-field appearance="fill" *ngIf="isListComparison(condition)">
+            <mat-label>Werte</mat-label>
+            <textarea matInput rows="2" formControlName="value" placeholder="Werte durch Komma trennen"></textarea>
+            <mat-error>Bitte geben Sie mindestens einen Wert ein.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" *ngIf="showBooleanValue(condition)">
+            <mat-label>Wert</mat-label>
+            <mat-select formControlName="value">
+                <mat-option [value]="true">wahr</mat-option>
+                <mat-option [value]="false">falsch</mat-option>
+            </mat-select>
+            <mat-error>Bitte wählen Sie einen Wert aus.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" *ngIf="showTextValue(condition)">
+            <mat-label>Wert</mat-label>
+            <input matInput formControlName="value" [type]="isNumberField(condition.get('path')?.value) ? 'number' : 'text'">
+            <mat-error>Bitte geben Sie einen Wert ein.</mat-error>
+        </mat-form-field>
     </ng-container>
 
     <button mat-icon-button type="button" matTooltip="Bedingung löschen" (click)="deleteCondition(rule, groupName, index)" [disabled]="form.disabled || getConditionArray(rule, groupName).length === 1">
         <mat-icon>delete</mat-icon>
     </button>
-    </ng-container>
-</ng-template>
-
-<ng-template #valueEditor let-group="group">
-    <ng-container [formGroup]="group">
-    <mat-form-field appearance="fill" *ngIf="isListComparison(group)">
-        <mat-label>Werte</mat-label>
-        <textarea matInput rows="2" formControlName="value" placeholder="Werte durch Komma trennen"></textarea>
-        <mat-error>Bitte geben Sie mindestens einen Wert ein.</mat-error>
-    </mat-form-field>
-
-    <mat-form-field appearance="fill" *ngIf="!isListComparison(group) && isBooleanField(group.get('path')?.value)">
-        <mat-label>Wert</mat-label>
-        <mat-select formControlName="value">
-            <mat-option [value]="true">wahr</mat-option>
-            <mat-option [value]="false">falsch</mat-option>
-        </mat-select>
-        <mat-error>Bitte wählen Sie einen Wert aus.</mat-error>
-    </mat-form-field>
-
-    <mat-form-field appearance="fill" *ngIf="!isListComparison(group) && !isBooleanField(group.get('path')?.value)">
-        <mat-label>Wert</mat-label>
-        <input matInput formControlName="value" [type]="isNumberField(group.get('path')?.value) ? 'number' : 'text'">
-        <mat-error>Bitte geben Sie einen Wert ein.</mat-error>
-    </mat-form-field>
     </ng-container>
 </ng-template>

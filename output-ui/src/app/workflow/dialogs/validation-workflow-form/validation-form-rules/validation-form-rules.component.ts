@@ -152,9 +152,18 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
   }
 
   async persistFormToBackend(): Promise<boolean> {
+    if (!this.entity?.label?.trim()) {
+      this.snackBar.open('Bitte geben Sie unter "Allgemein" zuerst einen Namen für den Workflow ein.', 'OK', {
+        duration: 6000,
+        verticalPosition: 'top',
+        panelClass: ['danger-snackbar'],
+      });
+      return false;
+    }
+
     this.form.markAllAsTouched();
     if (this.form.invalid) {
-      this.snackBar.open('Bitte pruefen Sie die markierten Regel-Felder.', 'OK', {
+      this.snackBar.open('Bitte prüfen Sie die markierten Regel-Felder.', 'OK', {
         duration: 5000,
         verticalPosition: 'top',
         panelClass: ['danger-snackbar'],
@@ -306,6 +315,14 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
 
   isListComparison(group: FormGroup): boolean {
     return group.get('comp')?.value === CompareOperation.IN;
+  }
+
+  showTextValue(group: FormGroup): boolean {
+    return !this.isListComparison(group) && !this.isBooleanField(group.get('path')?.value);
+  }
+
+  showBooleanValue(group: FormGroup): boolean {
+    return !this.isListComparison(group) && this.isBooleanField(group.get('path')?.value);
   }
 
   displayCompareOp(group: FormGroup, op: { op: CompareOperation, type: FieldType[] }): boolean {
