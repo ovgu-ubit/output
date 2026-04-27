@@ -224,12 +224,20 @@ export class FilterViewComponent implements OnInit {
   }
 
   getValue(key, value): any {
-    if (key === 'locked') {
-      value = value + '';
-      if (value.toLowerCase().includes('true') || value.toLowerCase().includes('wahr') || value.toLowerCase().includes('1') || value.toLowerCase().includes('ja')) return true;
+    let field = this.keys.find(e => e.key === key);
+    if (field && field.type === 'boolean') {
+      if (typeof value === 'boolean') return value;
+      value = String(value).toLowerCase();
+      if (value.includes('true') || value.includes('wahr') || value.includes('1') || value.includes('ja')) return true;
       else return false;
     }
     return value;
+  }
+
+  isBoolean(idx: number): boolean {
+    if (!this.getFiltersControls()[idx].get('field').value) return false;
+    let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
+    return key && key.type === 'boolean';
   }
 
   display(idx: number, op: { op: CompareOperation, label: string, type?: string[] }): boolean {

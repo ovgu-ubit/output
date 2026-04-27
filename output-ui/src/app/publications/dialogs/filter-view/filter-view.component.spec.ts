@@ -8,7 +8,7 @@ describe('FilterViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ FilterViewComponent ]
+      imports: [ FilterViewComponent ]
     })
     .compileComponents();
 
