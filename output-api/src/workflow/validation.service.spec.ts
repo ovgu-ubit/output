@@ -165,6 +165,107 @@ describe('ValidationService', () => {
         expect(summary.findings).toBe(0);
     });
 
+    it('supports negated compare rules', async () => {
+        publicationService.getAll.mockResolvedValue([
+            {
+                id: 11,
+                title: 'Draft',
+                status: 0,
+            },
+            {
+                id: 12,
+                title: 'Done',
+                status: 1,
+            },
+        ]);
+
+        await service.setUp({
+            id: 11,
+            label: 'Validation',
+            workflow_id: 'validation-negated',
+            target: 'publication',
+            rules: [
+                { type: 'compare', result: 'warning', path: 'status', comp: CompareOperation.EQUALS, value: 1, negate: true },
+            ],
+        } as any);
+
+        const summary = await service.validate();
+
+        expect(workflowReportService.write).toHaveBeenCalledWith(91, expect.objectContaining({
+            code: 'validation.compare.status',
+            level: 'warning',
+            message: expect.stringContaining('Done'),
+        }));
+        expect(summary.findings).toBe(1);
+    });
+
+    it('ignores empty values for compare rules', async () => {
+        publicationService.getAll.mockResolvedValue([
+            {
+                id: 13,
+                title: 'No DOI',
+                doi: '',
+            },
+            {
+                id: 14,
+                title: 'Matching DOI',
+                doi: '10.1000/example',
+            },
+        ]);
+
+        await service.setUp({
+            id: 12,
+            label: 'Validation',
+            workflow_id: 'validation-empty-compare',
+            target: 'publication',
+            rules: [
+                { type: 'compare', result: 'warning', path: 'doi', comp: CompareOperation.STARTS_WITH, value: '10.' },
+            ],
+        } as any);
+
+        const summary = await service.validate();
+
+        expect(workflowReportService.write).toHaveBeenCalledWith(91, expect.objectContaining({
+            code: 'validation.clean',
+            level: 'info',
+        }));
+        expect(summary.findings).toBe(0);
+    });
+
+    it('does not trigger conditional IF comparisons on empty values', async () => {
+        publicationService.getAll.mockResolvedValue([
+            {
+                id: 15,
+                title: 'No OA Category',
+                oa_category: null,
+                doi: '',
+            },
+        ]);
+
+        await service.setUp({
+            id: 13,
+            label: 'Validation',
+            workflow_id: 'validation-empty-if',
+            target: 'publication',
+            rules: [
+                {
+                    type: 'conditional',
+                    result: 'error',
+                    if: { type: 'compare', path: 'oa_category', comp: CompareOperation.EQUALS, value: 'gold' },
+                    then: { type: 'required', path: 'doi' },
+                },
+            ],
+        } as any);
+
+        const summary = await service.validate();
+
+        expect(workflowReportService.write).toHaveBeenCalledWith(91, expect.objectContaining({
+            code: 'validation.clean',
+            level: 'info',
+        }));
+        expect(summary.findings).toBe(0);
+    });
+
     it('heartbeats clean validation runs during iteration to keep the report active', async () => {
         publicationService.getAll.mockResolvedValue([
             {

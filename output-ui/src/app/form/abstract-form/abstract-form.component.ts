@@ -34,6 +34,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   @Input() preProcessing?: Observable<any>
   @Input() postProcessing?: Observable<any>
 
+  displayFields: { key: string, title: string, type?: string, required?: boolean, pattern?: RegExp, select?: string[] }[] = [];
   entity: T;
   disabled: boolean;
   saving = false;
@@ -59,49 +60,52 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   });
 
   ngAfterViewInit(): void {
-    if (!this.preProcessing) this.preProcessing = of(null);
-    if (!this.postProcessing) this.postProcessing = of(null);
-    this.preProcessing.pipe(concatMap(data => {
-      if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data?.locked) {
-        this.disable();
-      }
-      if (this.data.entity?.id && this.service) {//edit mode with current db entity
-        this.form.controls.id.disable();
-        return this.service.getOne(this.data.entity.id).pipe(map(data => {
-          this.entity = data;
-          this.form.patchValue(this.entity)
-          if (this.entity.locked_at) {
-            this.disable();
-            this._snackBar.open(`${this.name} wird leider gerade durch einen anderen Nutzer bearbeitet`, 'Ok.', {
-              duration: 5000,
-              panelClass: [`warning-snackbar`],
-              verticalPosition: 'top'
-            })
-          }
+    setTimeout(() => {
+      if (!this.preProcessing) this.preProcessing = of(null);
+      if (!this.postProcessing) this.postProcessing = of(null);
+      this.preProcessing.pipe(concatMap(data => {
+        if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data?.locked) {
+          this.disable();
         }
-        ))
-      } else if (this.data.entity?.id) { //Edit mode with giving entity
-        this.entity = this.data.entity;
-        this.form.patchValue(this.entity)
-        this.form.controls.id.disable();
-        return of(null)
-      }
-      else {
-        if (!this.fields) this.fields = [];
-        this.fields = this.fields.filter(e => e.key !== 'id' || e.type === 'status')
-        if (this.data.entity) {
-          for (let field of this.fields) {
-            if (this.data.entity[field.key]) this.form.get(field.key)?.setValue(this.data.entity[field.key])
+        if (this.data.entity?.id && this.service) {//edit mode with current db entity
+          this.displayFields = this.fields;
+          this.form.controls.id.disable();
+          return this.service.getOne(this.data.entity.id).pipe(map(data => {
+            this.entity = data;
+            this.form.patchValue(this.entity)
+            if (this.entity.locked_at) {
+              this.disable();
+              this._snackBar.open(`${this.name} wird leider gerade durch einen anderen Nutzer bearbeitet`, 'Ok.', {
+                duration: 5000,
+                panelClass: [`warning-snackbar`],
+                verticalPosition: 'top'
+              })
+            }
           }
-          this.entity = this.data.entity as any
-        } else this.entity = {} as any
-        return of(null)
-      }
-    }), concatMap(data => {return this.postProcessing})).subscribe({
-      error: (error) => {
-        this.errorPresentation.present(error, { action: 'load', entity: this.name });
-        this.dialogRef.close(null);
-      }
+          ))
+        } else if (this.data.entity?.id) { //Edit mode with giving entity
+          this.displayFields = this.fields;
+          this.entity = this.data.entity;
+          this.form.patchValue(this.entity)
+          this.form.controls.id.disable();
+          return of(null)
+        }
+        else {
+          this.displayFields = this.fields?.filter(e => e.key !== 'id' || e.type === 'status') || [];
+          if (this.data.entity) {
+            for (let field of this.fields) {
+              if (this.data.entity[field.key]) this.form.get(field.key)?.setValue(this.data.entity[field.key])
+            }
+            this.entity = this.data.entity as any
+          } else this.entity = {} as any
+          return of(null)
+        }
+      }), concatMap(data => { return this.postProcessing })).subscribe({
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'load', entity: this.name });
+          this.dialogRef.close(null);
+        }
+      });
     });
   }
 

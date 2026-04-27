@@ -14,6 +14,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-action',
+  standalone: true,
   imports: [SharedModule, MatProgressBarModule],
   templateUrl: './import-form-action.component.html',
   styleUrl: './import-form-action.component.css',
@@ -91,7 +92,7 @@ export class ImportFormActionComponent implements OnInit {
 
   publish(): void {
     if (!this.entity || !this.entity.id || this.loading) return;
-    this.persistChanges({ published_at: new Date(), deleted_at: null, locked_at: null }, 'Workflow veroeffentlicht.');
+    this.persistChanges({ published_at: new Date(), deleted_at: null, locked_at: null }, 'Workflow veröffentlicht.');
   }
 
   archive(): void {
@@ -101,7 +102,7 @@ export class ImportFormActionComponent implements OnInit {
 
   deleteDraft(): void {
     if (!this.entity?.id || this.loading) return;
-    if (!window.confirm('Moechten Sie diesen Entwurf wirklich loeschen?')) return;
+    if (!window.confirm('Möchten Sie diesen Entwurf wirklich löschen?')) return;
 
     this.loading = true;
     this.workflowService
@@ -109,7 +110,7 @@ export class ImportFormActionComponent implements OnInit {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: () => {
-          this.snackBar.open('Entwurf wurde geloescht.', 'OK', { duration: 3500, verticalPosition: 'top' });
+          this.snackBar.open('Entwurf wurde gelöscht.', 'OK', { duration: 3500, verticalPosition: 'top' });
           this.router.navigateByUrl('/workflow/publication_import');
         },
         error: (error) => {

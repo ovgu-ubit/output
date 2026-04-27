@@ -14,6 +14,8 @@ type ValidationFinding = {
     message: string;
 };
 
+type CompareEmptyMode = 'ignore' | 'no-match';
+
 export type ValidationSummary = {
     target: string;
     checked: number;
@@ -152,7 +154,7 @@ export class ValidationService {
                 timestamp: new Date(),
                 level: WorkflowReportItemLevel.ERROR,
                 code: 'validation.error',
-                message: `Error while validating: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+                message: `Error while validating: ${error instanceof Error ? error.message : String(error)}`,
             });
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Error while validating',
@@ -183,7 +185,7 @@ export class ValidationService {
                 case 'required':
                     return this.matchesCondition(subject, rule) ? [] : [this.buildFinding(subject, rule.result, `validation.required.${rule.path}`, `${this.describeSubject(subject)} is missing required value at "${rule.path}"`)];
                 case 'compare':
-                    return this.matchesCondition(subject, rule) ? [] : [this.buildFinding(subject, rule.result, `validation.compare.${rule.path}`, `${this.describeSubject(subject)} does not satisfy compare rule at "${rule.path}"`)];
+                    return this.matchesCondition(subject, rule, 'ignore') ? [] : [this.buildFinding(subject, rule.result, `validation.compare.${rule.path}`, `${this.describeSubject(subject)} does not satisfy compare rule at "${rule.path}"`)];
                 case 'conditional':
                     return this.evaluateConditionalRule(subject, rule);
                 default:
@@ -193,8 +195,8 @@ export class ValidationService {
     }
 
     private evaluateConditionalRule(subject: unknown, rule: ValidationConditionalRule): ValidationFinding[] {
-        if (!this.matchesConditionGroup(subject, rule.if)) return [];
-        if (this.matchesConditionGroup(subject, rule.then)) return [];
+        if (!this.matchesConditionGroup(subject, rule.if, 'no-match')) return [];
+        if (this.matchesConditionGroup(subject, rule.then, 'ignore')) return [];
 
         return [this.buildFinding(
             subject,
@@ -212,21 +214,29 @@ export class ValidationService {
         };
     }
 
-    private matchesConditionGroup(subject: unknown, conditions: ValidationCondition | ValidationCondition[]): boolean {
+    private matchesConditionGroup(subject: unknown, conditions: ValidationCondition | ValidationCondition[], compareEmptyMode: CompareEmptyMode = 'no-match'): boolean {
         const conditionList = Array.isArray(conditions) ? conditions : [conditions];
-        return conditionList.every((condition) => this.matchesCondition(subject, condition));
+        return conditionList.every((condition) => this.matchesCondition(subject, condition, compareEmptyMode));
     }
 
-    private matchesCondition(subject: unknown, condition: ValidationCondition): boolean {
+    private matchesCondition(subject: unknown, condition: ValidationCondition, compareEmptyMode: CompareEmptyMode = 'no-match'): boolean {
         const values = this.getPathValues(subject, condition.path);
         switch (condition.type) {
             case 'required':
                 return this.hasPresentValue(values);
             case 'compare':
-                return this.matchesCompare(values, condition);
+                return this.matchesCompareCondition(values, condition, compareEmptyMode);
             default:
                 return false;
         }
+    }
+
+    private matchesCompareCondition(values: unknown[], condition: ValidationCompareCondition, compareEmptyMode: CompareEmptyMode): boolean {
+        const presentValues = values.filter((value) => this.isPresentValue(value));
+        if (presentValues.length === 0) return compareEmptyMode === 'ignore';
+
+        const matches = this.matchesCompare(presentValues, condition);
+        return condition.negate ? !matches : matches;
     }
 
     private matchesCompare(values: unknown[], condition: ValidationCompareCondition): boolean {
@@ -300,12 +310,14 @@ export class ValidationService {
     }
 
     private hasPresentValue(values: unknown[]): boolean {
-        return values.some((value) => {
-            if (value === undefined || value === null) return false;
-            if (typeof value === 'string') return value.trim().length > 0;
-            if (Array.isArray(value)) return value.length > 0;
-            return true;
-        });
+        return values.some((value) => this.isPresentValue(value));
+    }
+
+    private isPresentValue(value: unknown): boolean {
+        if (value === undefined || value === null) return false;
+        if (typeof value === 'string') return value.trim().length > 0;
+        if (Array.isArray(value)) return value.length > 0;
+        return true;
     }
 
     private getPathValues(subject: unknown, path: string): unknown[] {

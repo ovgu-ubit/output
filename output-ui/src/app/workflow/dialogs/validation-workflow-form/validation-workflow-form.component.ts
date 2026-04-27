@@ -79,7 +79,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
   ngOnDestroy(): void {
     if (this.entity?.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.validationWorkflowService.update({ id: this.entity.id, locked_at: null }).subscribe();
+      this.validationWorkflowService.unlock(this.entity.id).subscribe();
     }
     this.facade.destroy();
   }
@@ -108,7 +108,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
 
     if (this.entity.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.validationWorkflowService.update({ id: this.entity.id, locked_at: null }).subscribe({
+      this.validationWorkflowService.unlock(this.entity.id).subscribe({
         next: () => {
           this.router.navigateByUrl('/workflow/publication_validation');
         }
@@ -122,6 +122,34 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
     event?.preventDefault();
     if (!(await this.confirmSaveBeforeLeave())) return;
     void this.router.navigate([path], { relativeTo: this.route });
+  }
+
+  export() {
+    this.validationWorkflowService.exportValidation(this.id).subscribe({
+      next: (resp) => {
+        const blob = resp.body!;
+        const cd = resp.headers.get('content-disposition') || resp.headers.get('Content-Disposition');
+        const filename = this.getFilenameFromContentDisposition(cd) ?? `validation-workflow-${this.id}.json`;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        a.remove();
+      }
+    })
+  }
+
+  private getFilenameFromContentDisposition(cd: string | null): string | null {
+    if (!cd) return null;
+
+    const mStar = cd.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+    if (mStar?.[1]) return decodeURIComponent(mStar[1].trim().replace(/(^"|"$)/g, ''));
+
+    const m = cd.match(/filename\s*=\s*("?)([^";]+)\1/i);
+    return m?.[2]?.trim() ?? null;
   }
 
   toggle() {
@@ -143,7 +171,7 @@ export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, O
 
     const dialogData = new ConfirmDialogModel(
       'Ungespeicherte Änderungen',
-      'Sollen die durchgefuehrten Änderungen zunächst gespeichert werden?'
+      'Sollen die durchgeführten Änderungen zunächst gespeichert werden?'
     );
     const shouldSave = !!(await firstValueFrom(
       this.dialog.open(ConfirmDialogComponent, { maxWidth: '500px', disableClose: true, data: dialogData }).afterClosed()

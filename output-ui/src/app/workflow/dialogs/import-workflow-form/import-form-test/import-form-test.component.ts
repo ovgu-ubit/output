@@ -8,6 +8,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-import-form-test',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-test.component.html',
   styleUrl: './import-form-test.component.css',

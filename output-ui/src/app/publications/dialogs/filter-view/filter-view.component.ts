@@ -6,12 +6,14 @@ import { MatChipListbox } from '@angular/material/chips';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { map, merge } from 'rxjs';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @Component({
   selector: 'app-filter-view',
   templateUrl: './filter-view.component.html',
   styleUrls: ['./filter-view.component.css'],
-  standalone: false
+  standalone: true,
+  imports: [SharedModule],
 })
 export class FilterViewComponent implements OnInit {
 
@@ -112,19 +114,21 @@ export class FilterViewComponent implements OnInit {
       }
     })
 
-    this.publicationService.getFilters().subscribe({
-      next: data => {
-        this.filters = data;
-        if (this.data.viewConfig?.filter?.paths && this.data.viewConfig?.filter.paths.length > 0) {
-          for (let e of this.data.viewConfig?.filter.paths) {
-            let idx = this.filters.findIndex(f => f.path === e);
-            if (idx >= 0) {
-              this.selected[this.filters[idx].path] = true;
+    if (!this.data.hideSavedFilters) {
+      this.publicationService.getFilters().subscribe({
+        next: data => {
+          this.filters = data;
+          if (this.data.viewConfig?.filter?.paths && this.data.viewConfig?.filter.paths.length > 0) {
+            for (let e of this.data.viewConfig?.filter.paths) {
+              let idx = this.filters.findIndex(f => f.path === e);
+              if (idx >= 0) {
+                this.selected[this.filters[idx].path] = true;
+              }
             }
           }
         }
-      }
-    })
+      })
+    }
     if (this.data.viewConfig?.filter && this.data.viewConfig?.filter.filter.expressions.length > 0) {
       let i = 0;
       for (let e of this.data.viewConfig?.filter.filter.expressions) {
@@ -175,8 +179,10 @@ export class FilterViewComponent implements OnInit {
     this.form.markAllAsTouched();
 
     let chips = [];
-    if (!Array.isArray(this.chips.selected)) chips = [this.chips.selected.value]
-    else chips = this.chips.selected.map(e => e.value);
+    if (!this.data.hideSavedFilters && this.chips?.selected) {
+      if (!Array.isArray(this.chips.selected)) chips = [this.chips.selected.value]
+      else chips = this.chips.selected.map(e => e.value);
+    }
 
     if (this.form.invalid && chips.length === 0) return;
 
@@ -192,10 +198,12 @@ export class FilterViewComponent implements OnInit {
       filters: this.formBuilder.array([])
     })
     this.addRow(true);
-    if (Array.isArray(this.chips.selected)) this.chips.selected.forEach(i => {
-      i.deselect();
-    });
-    else this.chips.selected.select();
+    if (this.chips?.selected) {
+      if (Array.isArray(this.chips.selected)) this.chips.selected.forEach(i => {
+        i.deselect();
+      });
+      else this.chips.selected.select();
+    }
   }
 
   getFilter(): SearchFilter {
@@ -216,12 +224,20 @@ export class FilterViewComponent implements OnInit {
   }
 
   getValue(key, value): any {
-    if (key === 'locked') {
-      value = value + '';
-      if (value.toLowerCase().includes('true') || value.toLowerCase().includes('wahr') || value.toLowerCase().includes('1') || value.toLowerCase().includes('ja')) return true;
+    let field = this.keys.find(e => e.key === key);
+    if (field && field.type === 'boolean') {
+      if (typeof value === 'boolean') return value;
+      value = String(value).toLowerCase();
+      if (value.includes('true') || value.includes('wahr') || value.includes('1') || value.includes('ja')) return true;
       else return false;
     }
     return value;
+  }
+
+  isBoolean(idx: number): boolean {
+    if (!this.getFiltersControls()[idx].get('field').value) return false;
+    let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
+    return key && key.type === 'boolean';
   }
 
   display(idx: number, op: { op: CompareOperation, label: string, type?: string[] }): boolean {

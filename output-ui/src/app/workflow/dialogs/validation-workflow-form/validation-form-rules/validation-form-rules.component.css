@@ -1,25 +1,133 @@
 .rules-form {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
 }
 
-.example-block {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #f7f9fc;
-  border-radius: 12px;
+.target-field {
+  max-width: 360px;
 }
 
-.example-block pre {
-  margin: 0.75rem 0 0;
-  white-space: pre-wrap;
-  word-break: break-word;
+.target-filter,
+.rules-header {
+  align-items: center;
+  border: 1px solid #d7dde6;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
 }
 
-.eyebrow {
-  color: #5f6368;
-  font-size: 0.8rem;
+.filter-actions,
+.form-actions,
+.rule-toolbar,
+.condition-header {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.section-title,
+.rule-number,
+.condition-header {
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+}
+
+.summary {
+  color: #5f6368;
+  font-size: 0.875rem;
+  margin-top: 0.15rem;
+}
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rule-item {
+  border: 1px solid #d7dde6;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.rule-toolbar {
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.rule-grid,
+.condition-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.condition-groups {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 0.75rem;
+}
+
+.condition-group {
+  background: #f7f9fc;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.condition-header {
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.condition-row {
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  overflow: visible;
+}
+
+.negate-checkbox,
+.boolean-checkbox {
+  align-self: center;
+  min-height: 56px;
+  padding-top: 0.5rem;
+}
+
+.empty-state {
+  border: 1px dashed #c5ceda;
+  border-radius: 8px;
+  color: #5f6368;
+  padding: 1rem;
+  text-align: center;
+}
+
+mat-form-field {
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .rule-grid,
+  .condition-row {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .target-filter,
+  .rules-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-actions {
+    justify-content: flex-start;
+  }
+
+  .rule-grid,
+  .condition-row {
+    grid-template-columns: 1fr;
+  }
 }

@@ -33,6 +33,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public isLocked(id: number) {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/locked', { withCredentials: true });
   }
+  public unlockImport(id: number) {
+    return this.http.post<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/unlock', {}, { withCredentials: true });
+  }
   public getConfig(id: number) {
     return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { withCredentials: true })
   }
@@ -163,6 +166,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public isExportLocked(id: number) {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/locked', { withCredentials: true });
   }
+  public unlockExport(id: number) {
+    return this.http.post<ExportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/unlock', {}, { withCredentials: true });
+  }
   public exportWorkflow(id: number) {
     return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });
   }
@@ -201,6 +207,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public isValidationLocked(id: number) {
     return this.http.get<boolean>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/locked', { withCredentials: true });
   }
+  public unlockValidation(id: number) {
+    return this.http.post<ValidationWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/unlock', {}, { withCredentials: true });
+  }
   public runValidation(id: number) {
     return this.http.post<{ status: string }>(
       this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/run',
@@ -216,6 +225,18 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   }
   public deleteValidations(ids: number[]) {
     return this.http.delete<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation', { withCredentials: true, body: ids.map(e => ({ id: e })) });
+  }
+  public exportValidation(id: number) {
+    return this.http.get(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id + '/export', { withCredentials: true, observe: 'response', responseType: 'blob' as const });
+  }
+  public importValidationWorkflow(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ValidationWorkflow>(
+      this.runtimeConfigService.getValue("api") + 'workflow/validation/import',
+      formData,
+      { withCredentials: true }
+    );
   }
   async isValidationRunning(id: number) {
     return this.isRunning(id, WorkflowType.VALIDATION);

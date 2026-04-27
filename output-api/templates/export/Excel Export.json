@@ -1,0 +1,19 @@
+{
+  "id": 1,
+  "workflow_id": "0d47f34e-9922-4265-b6fc-027503218167",
+  "label": "Excel-Export",
+  "version": 1,
+  "created_at": "2026-04-24T08:43:45.936Z",
+  "modified_at": "2026-04-24T08:50:14.246Z",
+  "published_at": null,
+  "deleted_at": null,
+  "description": "Publikationsliste als Excel-Tabelle herunterladen",
+  "strategy_type": 0,
+  "strategy": {
+    "format": "xlsx",
+    "sheet_name": "Publikationen",
+    "disposition": "attachment"
+  },
+  "mapping": "(\n  $cell := function($value) { $exists($value) ? $value : \"\" };\n  $joinValues := function($values) {\n    $exists($values) ? $join($values[$exists($) and $string($) != \"\"].$string($), \" | \") : \"\"\n  };\n  $authorName := function($entry) {\n    $trim(($entry.author.last_name ? $entry.author.last_name : \"\") & ($entry.author.first_name ? \", \" & $entry.author.first_name : \"\"))\n  };\n  $sumValues := function($values) {\n    $exists($values) ? $sum($values[$exists($)].$number($)) : \"\"\n  };\n  $amountWithVat := function($item) {\n    ($exists($item.euro_value) ? $item.euro_value : 0) + ($exists($item.vat) ? $item.vat : 0)\n  };\n  $costTypeTotals := function($items) {(\n    $labels := $distinct($items.cost_type.label);\n    $exists($labels) ? $merge($labels.(\n      $label := $;\n      {($label): $sum($items[cost_type.label = $label].$amountWithVat($))}\n    )) : {}\n  )};\n  $merge([\n    {\n      \"id\": $cell(id),\n      \"locked\": $cell(locked),\n      \"status\": $cell(status),\n      \"title\": $cell(title),\n      \"doi\": $cell(doi),\n      \"link\": $cell(link),\n      \"authors\": $cell(authors),\n      \"authors_inst\": $joinValues(authorPublications.$authorName($)),\n      \"institutes\": $joinValues(authorPublications.institute.label),\n      \"corr_authors\": $joinValues(authorPublications[corresponding].$authorName($)),\n      \"corr_institutes\": $joinValues(authorPublications[corresponding].institute.label),\n      \"greater_entity\": $cell(greater_entity.label),\n      \"pub_date\": $cell(pub_date),\n      \"publisher\": $cell(publisher.label),\n      \"language\": $cell(language.label),\n      \"oa_category\": $cell(oa_category.label),\n      \"pub_type\": $cell(pub_type.label),\n      \"funders\": $joinValues(funders.label),\n      \"contract\": $cell(contract.label),\n      \"cost_approach\": $cell(cost_approach),\n      \"cost_approach_currency\": $cell(cost_approach_currency),\n      \"invoice_numbers\": $joinValues(invoices.number),\n      \"net_costs\": $sumValues(invoices.cost_items.euro_value),\n      \"paid_amount\": $sumValues(invoices.booking_amount),\n      \"cost_center\": $joinValues(invoices.cost_center.label),\n      \"data_source\": $cell(dataSource),\n      \"second_pub\": $cell(second_pub),\n      \"add_info\": $cell(add_info),\n      \"import_date\": $cell(import_date),\n      \"edit_date\": $cell(edit_date)\n    },\n    $costTypeTotals(invoices.cost_items)\n  ])\n)",
+  "locked_at": "2026-04-24T08:50:14.244Z"
+}

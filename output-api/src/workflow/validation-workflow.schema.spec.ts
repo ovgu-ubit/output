@@ -43,6 +43,7 @@ describe('validateValidationWorkflow', () => {
                     path: 'status',
                     comp: CompareOperation.EQUALS,
                     value: 1,
+                    negate: true,
                 },
                 {
                     type: 'conditional',
@@ -71,7 +72,7 @@ describe('validateValidationWorkflow', () => {
             },
             rules: [
                 { type: 'required', result: 'error', path: 'doi' },
-                { type: 'compare', result: 'warning', path: 'status', value: 1 },
+                { type: 'compare', result: 'warning', path: 'status', value: 1, negate: true },
                 { type: 'conditional', result: 'info' },
             ],
         });

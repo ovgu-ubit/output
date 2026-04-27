@@ -7,6 +7,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-overview',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-overview.component.html',
   styleUrl: './import-form-overview.component.css',
