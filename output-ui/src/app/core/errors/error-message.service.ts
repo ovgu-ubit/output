@@ -48,7 +48,7 @@ export class ErrorMessageService {
     if (context.action === 'create') {
       return `${this.getEntityLabel(context.entity, 'Der Datensatz')} existiert bereits mit diesen Angaben.`;
     }
-    return `Fuer ${this.getEntityLabel(context.entity, 'den Datensatz')} existiert bereits ein Eintrag mit diesen Angaben.`;
+    return `Für ${this.getEntityLabel(context.entity, 'den Datensatz')} existiert bereits ein Eintrag mit diesen Angaben.`;
   }
 
   private getValidationMessage(context: UiErrorContext): string {
@@ -60,7 +60,7 @@ export class ErrorMessageService {
         return `${this.getEntityLabel(context.entity, 'Der Datensatz')} konnte nicht gespeichert werden. Bitte korrigieren Sie die Eingaben.`;
       case 'run':
       case 'start':
-        return 'Aktion konnte nicht gestartet werden. Bitte pruefen Sie die Eingaben.';
+        return 'Aktion konnte nicht gestartet werden. Bitte prüfen Sie die Eingaben.';
       default:
         return 'Bitte korrigieren Sie die Eingaben.';
     }

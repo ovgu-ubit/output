@@ -99,14 +99,7 @@
                                 <mat-error>Bitte geben Sie mindestens einen Wert ein.</mat-error>
                             </mat-form-field>
 
-                            <mat-form-field appearance="fill" *ngIf="showBooleanValue(rule)">
-                                <mat-label>Wert</mat-label>
-                                <mat-select formControlName="value">
-                                    <mat-option [value]="true">wahr</mat-option>
-                                    <mat-option [value]="false">falsch</mat-option>
-                                </mat-select>
-                                <mat-error>Bitte wählen Sie einen Wert aus.</mat-error>
-                            </mat-form-field>
+                            <mat-checkbox formControlName="value" class="boolean-checkbox" *ngIf="showBooleanValue(rule)">Wahr</mat-checkbox>
 
                             <mat-form-field appearance="fill" *ngIf="showTextValue(rule)">
                                 <mat-label>Wert</mat-label>
@@ -198,14 +191,7 @@
             <mat-error>Bitte geben Sie mindestens einen Wert ein.</mat-error>
         </mat-form-field>
 
-        <mat-form-field appearance="fill" *ngIf="showBooleanValue(condition)">
-            <mat-label>Wert</mat-label>
-            <mat-select formControlName="value">
-                <mat-option [value]="true">wahr</mat-option>
-                <mat-option [value]="false">falsch</mat-option>
-            </mat-select>
-            <mat-error>Bitte wählen Sie einen Wert aus.</mat-error>
-        </mat-form-field>
+            <mat-checkbox formControlName="value" class="boolean-checkbox" *ngIf="showBooleanValue(condition)">Wahr</mat-checkbox>
 
         <mat-form-field appearance="fill" *ngIf="showTextValue(condition)">
             <mat-label>Wert</mat-label>

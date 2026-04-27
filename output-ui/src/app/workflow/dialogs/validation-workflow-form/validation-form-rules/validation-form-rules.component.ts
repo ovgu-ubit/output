@@ -52,7 +52,7 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     { op: CompareOperation.STARTS_WITH, label: 'beginnt mit', type: ['string'] },
     { op: CompareOperation.GREATER_THAN, label: 'größer als', type: ['number', 'date'] },
     { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: ['number', 'date'] },
-    { op: CompareOperation.IN, label: 'ist in Liste', type: ['string', 'number', 'boolean'] },
+    { op: CompareOperation.IN, label: 'ist in Liste', type: ['string', 'number'] },
   ];
 
   readonly fields: ValidationFieldOption[] = [
@@ -336,6 +336,11 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     if (!available.some((op) => op.op === selected)) {
       group.get('comp')?.setValue(available[0]?.op ?? CompareOperation.EQUALS);
     }
+
+    const value = group.get('value')?.value;
+    if (fieldType === 'boolean' && typeof value !== 'boolean') {
+      group.get('value')?.setValue(value === true || String(value).toLowerCase() === 'true');
+    }
   }
 
   trackByIndex(index: number): number {
@@ -506,7 +511,11 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
   }
 
   private parseSingleValue(fieldType: FieldType, value: unknown): string | number | boolean | null {
-    if (fieldType === 'boolean') return value === true || `${value}`.toLowerCase() === 'true';
+    if (fieldType === 'boolean') {
+      if (value === true || String(value).toLowerCase() === 'true') return true;
+      if (value === false || String(value).toLowerCase() === 'false') return false;
+      return null;
+    }
     if (fieldType === 'number') {
       if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
       const numberValue = Number(value);

@@ -87,7 +87,8 @@
   overflow: visible;
 }
 
-.negate-checkbox {
+.negate-checkbox,
+.boolean-checkbox {
   align-self: center;
   min-height: 56px;
   padding-top: 0.5rem;
