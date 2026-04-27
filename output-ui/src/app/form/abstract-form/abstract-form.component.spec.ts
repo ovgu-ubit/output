@@ -1,13 +1,17 @@
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { SharedModule } from 'src/app/shared/shared.module';
+
 import { AbstractFormComponent } from './abstract-form.component';
 
 describe('AbstractFormComponent', () => {
@@ -26,20 +30,25 @@ describe('AbstractFormComponent', () => {
     tokenService.hasRole.and.returnValue(true);
 
     await TestBed.configureTestingModule({
-      imports: [ReactiveFormsModule],
+      imports: [
+        NoopAnimationsModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        SharedModule
+      ],
       declarations: [AbstractFormComponent],
       providers: [
+        FormBuilder,
         { provide: MatDialog, useValue: dialog },
         { provide: MatSnackBar, useValue: jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']) },
         { provide: ErrorPresentationService, useValue: errorPresentation },
         { provide: AuthorizationService, useValue: tokenService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-      ],
-      schemas: [NO_ERRORS_SCHEMA],
-    })
-    .overrideComponent(AbstractFormComponent, {
-      set: { template: '' }
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     })
     .compileComponents();
 

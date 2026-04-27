@@ -14,6 +14,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-action',
+  standalone: true,
   imports: [SharedModule, MatProgressBarModule],
   templateUrl: './import-form-action.component.html',
   styleUrl: './import-form-action.component.css',
