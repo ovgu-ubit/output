@@ -13,7 +13,7 @@
     </mat-card>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
-        <ng-container *ngFor="let field of this.fields; let i = index;">
+        <ng-container *ngFor="let field of this.displayFields; let i = index;">
             <div [ngSwitch]="field.type">
                 <mat-checkbox *ngSwitchCase="'boolean'" [formControlName]="field.key">{{field.title}}</mat-checkbox>
 
