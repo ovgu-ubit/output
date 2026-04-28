@@ -67,7 +67,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data?.locked) {
           this.disable();
         }
-        if (this.data.entity?.id && this.service) {//edit mode with current db entity
+        if (this.hasEntityId(this.data.entity) && this.service) {//edit mode with current db entity
           this.displayFields = this.fields;
           this.form.controls.id.disable();
           return this.service.getOne(this.data.entity.id).pipe(map(data => {
@@ -83,7 +83,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
             }
           }
           ))
-        } else if (this.data.entity?.id) { //Edit mode with giving entity
+        } else if (this.hasEntityId(this.data.entity)) { //Edit mode with giving entity
           this.displayFields = this.fields;
           this.entity = this.data.entity;
           this.form.patchValue(this.entity)
@@ -94,7 +94,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
           this.displayFields = this.fields?.filter(e => e.key !== 'id' || e.type === 'status') || [];
           if (this.data.entity) {
             for (let field of this.fields) {
-              if (this.data.entity[field.key]) this.form.get(field.key)?.setValue(this.data.entity[field.key])
+              if (this.data.entity[field.key] !== undefined && this.data.entity[field.key] !== null) this.form.get(field.key)?.setValue(this.data.entity[field.key])
             }
             this.entity = this.data.entity as any
           } else this.entity = {} as any
@@ -177,7 +177,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         this.addPrefix();
       }
     }
-    const isUpdate = !!this.entity?.id;
+    const isUpdate = this.hasEntityId(this.entity);
     this.entity = this.buildEntityPayload(isUpdate);
 
     if (!this.shouldPersistOnSave()) {
@@ -230,10 +230,10 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else if (this.entity?.id) this.dialogRef.close({ id: this.entity.id, locked_at: null })
+        } else if (this.hasEntityId(this.entity)) this.dialogRef.close({ id: this.entity.id, locked_at: null })
         else this.close()
       });
-    } else if (this.entity?.id) this.dialogRef.close({ id: this.entity.id, locked_at: null })
+    } else if (this.hasEntityId(this.entity)) this.dialogRef.close({ id: this.entity.id, locked_at: null })
     else this.close()
   }
 
@@ -300,7 +300,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     for (const field of this.fields) {
       if (entity[field.key] === '') entity[field.key] = null as never;
     }
-    if (!entity.id) entity.id = undefined;
+    if (entity.id === null || entity.id === undefined) entity.id = undefined;
     if (isUpdate) entity.locked_at = null;
 
     return entity as T;
@@ -320,8 +320,12 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   private shouldReleaseLockOnClose(): boolean {
     const canWrite = this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin');
     return !!this.service
-      && !!this.entity?.id
+      && this.hasEntityId(this.entity)
       && canWrite
       && !this.entity?.locked_at;
+  }
+
+  private hasEntityId(entity: Partial<Entity> | null | undefined): boolean {
+    return entity?.id !== undefined && entity?.id !== null;
   }
 }
