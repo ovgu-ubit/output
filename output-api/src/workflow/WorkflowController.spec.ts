@@ -10,6 +10,9 @@ describe('WorkflowController', () => {
         getValidation: jest.Mock;
         deleteValidations: jest.Mock;
         startValidation: jest.Mock;
+        unlockImport: jest.Mock;
+        unlockExport: jest.Mock;
+        unlockValidation: jest.Mock;
         validationStatus: jest.Mock;
         startExport: jest.Mock;
     };
@@ -25,6 +28,9 @@ describe('WorkflowController', () => {
             getValidation: jest.fn(),
             deleteValidations: jest.fn(),
             startValidation: jest.fn(),
+            unlockImport: jest.fn(),
+            unlockExport: jest.fn(),
+            unlockValidation: jest.fn(),
             validationStatus: jest.fn(),
             startExport: jest.fn(),
         };
@@ -133,6 +139,30 @@ describe('WorkflowController', () => {
         await controller.run_validation(33, { user: { username: 'alice' } });
 
         expect(workflowService.startValidation).toHaveBeenCalledWith(33, 'alice');
+    });
+
+    it('unlocks import workflows without forwarding a workflow body', async () => {
+        workflowService.unlockImport.mockResolvedValue({ id: 31, locked_at: null });
+
+        await controller.unlock_import(31, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockImport).toHaveBeenCalledWith(31, 'alice');
+    });
+
+    it('unlocks export workflows without forwarding a workflow body', async () => {
+        workflowService.unlockExport.mockResolvedValue({ id: 32, locked_at: null });
+
+        await controller.unlock_export(32, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockExport).toHaveBeenCalledWith(32, 'alice');
+    });
+
+    it('unlocks validation workflows without forwarding a workflow body', async () => {
+        workflowService.unlockValidation.mockResolvedValue({ id: 33, locked_at: null });
+
+        await controller.unlock_validation(33, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockValidation).toHaveBeenCalledWith(33, 'alice');
     });
 
     it('reads validation workflow status via the workflow service', async () => {

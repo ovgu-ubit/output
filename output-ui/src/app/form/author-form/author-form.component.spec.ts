@@ -1,51 +1,80 @@
-import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
-import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { CostTypeService } from 'src/app/services/entities/cost-type.service';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { SharedModule } from 'src/app/shared/shared.module';
+
+import { provideStore } from '@ngrx/store';
+import { provideRouter } from '@angular/router';
+
 import { AuthorFormComponent } from './author-form.component';
 
 describe('AuthorFormComponent', () => {
   let component: AuthorFormComponent;
   let fixture: ComponentFixture<AuthorFormComponent>;
 
-  beforeEach(async () => {
-    const dialogRef = jasmine.createSpyObj<MatDialogRef<AuthorFormComponent>>('MatDialogRef', ['close']);
-    const tokenService = jasmine.createSpyObj<AuthorizationService>('AuthorizationService', ['hasRole']);
-    tokenService.hasRole.and.returnValue(true);
+  const mockDialogRef = {
+    close: jasmine.createSpy('close')
+  };
 
-    await TestBed.configureTestingModule({
-      imports: [ReactiveFormsModule],
-      declarations: [AuthorFormComponent],
-      providers: [
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: MatDialogRef, useValue: dialogRef },
-        { provide: MatDialog, useValue: jasmine.createSpyObj<MatDialog>('MatDialog', ['open']) },
-        { provide: MatSnackBar, useValue: jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']) },
-        { provide: ErrorPresentationService, useValue: jasmine.createSpyObj<ErrorPresentationService>('ErrorPresentationService', ['clearFieldErrors', 'applyFieldErrors', 'present']) },
-        { provide: AuthorizationService, useValue: tokenService },
-        { provide: AuthorService, useValue: jasmine.createSpyObj<AuthorService>('AuthorService', ['getOne', 'add', 'update']) },
-        { provide: InstituteService, useValue: {} },
-        { provide: PublisherService, useValue: {} },
-        { provide: CostTypeService, useValue: {} },
+  const mockAuthService = {
+    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
+  };
+
+  const mockErrorService = {
+    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
+    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
+    present: jasmine.createSpy('present')
+  };
+
+  const mockAuthorService = {
+    getOne: jasmine.createSpy('getOne').and.returnValue(of({}))
+  };
+
+  beforeEach(fakeAsync(() => {
+    TestBed.configureTestingModule({
+      imports: [
+        NoopAnimationsModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        SharedModule
       ],
-      schemas: [NO_ERRORS_SCHEMA],
-    })
-    .overrideComponent(AuthorFormComponent, {
-      set: { template: '' }
+      declarations: [ AuthorFormComponent ],
+      providers: [
+        FormBuilder,
+        { provide: MatDialogRef, useValue: mockDialogRef },
+        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+        { provide: AuthorizationService, useValue: mockAuthService },
+        { provide: ErrorPresentationService, useValue: mockErrorService },
+        { provide: AuthorService, useValue: mockAuthorService },
+        { provide: InstituteService, useValue: { getAll: () => of([]) } },
+        { provide: PublisherService, useValue: { getAll: () => of([]) } },
+        { provide: CostTypeService, useValue: { getAll: () => of([]) } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        provideStore({})
+      ]
     })
     .compileComponents();
 
     fixture = TestBed.createComponent(AuthorFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-  });
+    tick();
+    fixture.detectChanges();
+  }));
 
   it('should create', () => {
     expect(component).toBeTruthy();

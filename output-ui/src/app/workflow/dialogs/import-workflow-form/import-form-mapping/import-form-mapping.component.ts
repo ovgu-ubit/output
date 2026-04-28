@@ -23,6 +23,7 @@ interface ParsedMapping {
 
 @Component({
   selector: 'app-import-form-mapping',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-mapping.component.html',
   styleUrl: './import-form-mapping.component.css',

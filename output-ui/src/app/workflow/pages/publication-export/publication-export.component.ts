@@ -125,7 +125,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     input.value = '';
     if (!file) return;
     if (!file.name.endsWith('.json')) {
-      this.snackBar.open('Bitte eine JSON-Datei auswaehlen.', 'Nagut...', {
+      this.snackBar.open('Bitte eine JSON-Datei auswählen.', 'Nagut...', {
         duration: 5000,
         panelClass: ['danger-snackbar'],
         verticalPosition: 'top'
@@ -134,7 +134,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     }
     this.exportWorkflowService.importWorkflow(file).subscribe({
       next: () => {
-        this.snackBar.open('Export-Workflow wurde hinzugefuegt.', 'Super!', {
+        this.snackBar.open('Export-Workflow wurde hinzugefügt.', 'Super!', {
           duration: 5000,
           panelClass: ['success-snackbar'],
           verticalPosition: 'top'

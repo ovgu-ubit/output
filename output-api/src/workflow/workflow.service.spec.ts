@@ -520,6 +520,116 @@ describe('WorkflowService', () => {
         expect(validationRepository.save).not.toHaveBeenCalled();
     });
 
+    it('allows validation unlock-only requests without validating a partial workflow payload', async () => {
+        validationRepository.findOneBy!.mockResolvedValue({
+            id: 36,
+            workflow_id: 'wf-36',
+            version: 1,
+            target: 'publication',
+            rules: [],
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ValidationWorkflow);
+        validationRepository.save!.mockImplementation(async (workflow) => workflow as ValidationWorkflow);
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        (validationRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        EditLockOwnerStore.setOwner(WorkflowType.VALIDATION, 36, 'alice');
+
+        await expect(service.saveValidation({ id: 36, locked_at: null } as ValidationWorkflow, 'alice')).resolves.toMatchObject({
+            id: 36,
+            locked_at: null,
+        });
+
+        expect(validationRepository.update).toHaveBeenCalledWith(expect.objectContaining({
+            id: 36,
+        }), expect.objectContaining({
+            locked_at: null,
+        }));
+        expect(validationRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('unlocks validation workflows through the dedicated endpoint without validating or saving the workflow', async () => {
+        validationRepository.findOne!.mockResolvedValue({
+            id: 37,
+            workflow_id: 'wf-37',
+            version: 1,
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ValidationWorkflow);
+        (validationRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        EditLockOwnerStore.setOwner(WorkflowType.VALIDATION, 37, 'alice');
+
+        await expect(service.unlockValidation(37, 'alice')).resolves.toMatchObject({
+            id: 37,
+            locked_at: null,
+        });
+
+        expect(validationRepository.update).toHaveBeenCalledWith({ id: 37 }, { locked_at: null });
+        expect(validationRepository.save).not.toHaveBeenCalled();
+        expect(validationRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
+    it('unlocks import workflows through the dedicated endpoint without saving the workflow', async () => {
+        importRepository.findOne!.mockResolvedValue({
+            id: 38,
+            workflow_id: 'wf-38',
+            version: 1,
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ImportWorkflow);
+        (importRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        EditLockOwnerStore.setOwner(WorkflowType.IMPORT, 38, 'alice');
+
+        await expect(service.unlockImport(38, 'alice')).resolves.toMatchObject({
+            id: 38,
+            locked_at: null,
+        });
+
+        expect(importRepository.update).toHaveBeenCalledWith({ id: 38 }, { locked_at: null });
+        expect(importRepository.save).not.toHaveBeenCalled();
+        expect(importRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
+    it('unlocks export workflows through the dedicated endpoint without saving the workflow', async () => {
+        exportRepository.findOne!.mockResolvedValue({
+            id: 39,
+            workflow_id: 'wf-39',
+            version: 1,
+            locked_at: new Date(),
+            published_at: null,
+            deleted_at: null,
+        } as ExportWorkflow);
+        (exportRepository.update as jest.Mock).mockResolvedValue({ affected: 1 });
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'lock_timeout') return 5;
+            return undefined;
+        });
+        EditLockOwnerStore.setOwner(WorkflowType.EXPORT, 39, 'alice');
+
+        await expect(service.unlockExport(39, 'alice')).resolves.toMatchObject({
+            id: 39,
+            locked_at: null,
+        });
+
+        expect(exportRepository.update).toHaveBeenCalledWith({ id: 39 }, { locked_at: null });
+        expect(exportRepository.save).not.toHaveBeenCalled();
+        expect(exportRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
     it('rejects publishing validation workflows without any rules while still allowing empty-rule drafts', async () => {
         const draftWorkflow = {
             id: 33,

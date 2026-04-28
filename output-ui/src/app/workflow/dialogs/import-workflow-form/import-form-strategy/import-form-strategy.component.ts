@@ -9,6 +9,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-strategy',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-strategy.component.html',
   styleUrl: './import-form-strategy.component.css',

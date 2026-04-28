@@ -113,9 +113,11 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   }
 
   ngOnDestroy(): void {
-    this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions.filter, paths: this.indexOptions.paths } }
-    }))
+    if (this.table) {
+      this.store.dispatch(setViewConfig({
+        viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
+      }))
+    }
   }
 
   changeReportingYear() {

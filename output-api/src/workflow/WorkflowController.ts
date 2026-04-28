@@ -73,9 +73,9 @@ export class WorkflowController {
   async export_import(@Param('id') id: number, @Res({ passthrough: true }) res) {
     const wf = await this.workflowService.getImport(id, false);
     const json = JSON.stringify(wf, null, 2);
-    const filename = 'Import_' + wf.label + '_' + wf.version + '_' + wf.published_at;
+    const filename = this.buildWorkflowDefinitionFilename('Import', wf.label, wf.version);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
     return new StreamableFile(Buffer.from(json, 'utf-8'));
   }
 
@@ -85,9 +85,21 @@ export class WorkflowController {
   async export_export(@Param('id') id: number, @Res({ passthrough: true }) res) {
     const wf = await this.workflowService.getExport(id, false);
     const json = JSON.stringify(wf, null, 2);
-    const filename = 'Export_' + wf.label + '_' + wf.version + '_' + wf.published_at;
+    const filename = this.buildWorkflowDefinitionFilename('Export', wf.label, wf.version);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '.json"');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
+    return new StreamableFile(Buffer.from(json, 'utf-8'));
+  }
+
+  @Get("validation/:id/export")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  async export_validation(@Param('id') id: number, @Res({ passthrough: true }) res) {
+    const wf = await this.workflowService.getValidation(id, false);
+    const json = JSON.stringify(wf, null, 2);
+    const filename = this.buildWorkflowDefinitionFilename('Validation', wf.label, wf.version);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
     return new StreamableFile(Buffer.from(json, 'utf-8'));
   }
 
@@ -146,18 +158,13 @@ export class WorkflowController {
     const contentType = this.getExportContentType(format);
 
     res.setHeader('Content-Type', contentType);
-
-    if (disposition === 'attachment') {
-      const filename = this.buildExportFilename(workflow.label, workflow.version, format);
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    }
+    const filename = this.buildExportFilename(workflow.label, workflow.version, format);
+    res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
 
     if (Buffer.isBuffer(result)) {
       return new StreamableFile(result, {
         type: contentType,
-        disposition: disposition === 'attachment'
-          ? `attachment; filename="${this.buildExportFilename(workflow.label, workflow.version, format)}"`
-          : undefined
+        disposition: `${disposition}; filename="${filename}"`
       });
     }
 
@@ -169,6 +176,27 @@ export class WorkflowController {
   @Permissions([{ role: 'admin', app: 'output' }])
   run_validation(@Param('id') id: number, @Req() req) {
     return this.workflowService.startValidation(id, req.user?.username);
+  }
+
+  @Post("import/:id/unlock")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  unlock_import(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.workflowService.unlockImport(id, req.user?.username);
+  }
+
+  @Post("export/:id/unlock")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  unlock_export(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.workflowService.unlockExport(id, req.user?.username);
+  }
+
+  @Post("validation/:id/unlock")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  unlock_validation(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.workflowService.unlockValidation(id, req.user?.username);
   }
 
   @Get('import/:id/run')
@@ -230,6 +258,7 @@ export class WorkflowController {
   @UseInterceptors(FileInterceptor('file'))
   import_import(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importImport(file);
   }
 
@@ -250,7 +279,29 @@ export class WorkflowController {
   @UseInterceptors(FileInterceptor('file'))
   import_export(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importExport(file);
+  }
+
+  @Post("validation/import")
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiConsumes('multipart/form-data') @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        }
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  import_validation(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
+    return this.workflowService.importValidation(file);
   }
 
   @Post("import")
@@ -491,7 +542,26 @@ export class WorkflowController {
   }
 
   private buildExportFilename(label?: string, version?: number, format: ExportFormat = 'json') {
-    const safeLabel = (label ?? 'Export').replace(/[^\w.-]+/g, '_');
-    return `${safeLabel}_v${version ?? 1}.${format}`;
+    const safeLabel = this.sanitizeFilenamePart(label ?? 'Export');
+    return `${safeLabel}_v${version ?? 1}_${this.formatFilenameTimestamp()}.${format}`;
+  }
+
+  private buildWorkflowDefinitionFilename(prefix: string, label?: string, version?: number) {
+    return `${this.sanitizeFilenamePart(prefix)}_${this.sanitizeFilenamePart(label ?? 'Workflow')}_v${version ?? 1}_${this.formatFilenameTimestamp()}.json`;
+  }
+
+  private sanitizeFilenamePart(value: string) {
+    return value.replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '') || 'Export';
+  }
+
+  private formatFilenameTimestamp(date = new Date()) {
+    const pad = (value: number) => value.toString().padStart(2, '0');
+    return [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate()),
+    ].join('')
+      + '_'
+      + [pad(date.getHours()), pad(date.getMinutes()), pad(date.getSeconds())].join('');
   }
 }

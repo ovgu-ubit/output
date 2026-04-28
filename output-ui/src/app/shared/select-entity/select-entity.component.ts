@@ -128,7 +128,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     this.form.get('input').disable();
 
     if (!this.ents.find(e => this.getValue(e) === event.value) && this.formComponent) {
-      const dialogData = new ConfirmDialogModel('Neuer ' + this.name, `Moechten Sie den ${this.name} "${event.value}" anlegen?`);
+      const dialogData = new ConfirmDialogModel('Neuer ' + this.name, `öchten Sie den ${this.name} "${event.value}" anlegen?`);
 
       this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',
@@ -152,14 +152,14 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
         }).afterClosed().subscribe(createResult => {
           this.form.get('input').enable();
           if (isPersistedEntityDialogResult<T>(createResult)) {
-            this.handlePersistedResult(createResult.entity, 'wurde hinzugefuegt');
+            this.handlePersistedResult(createResult.entity, 'wurde hinzugefügt');
             return;
           }
           if (!createResult) return;
 
           this.serviceClass.add(createResult).subscribe({
             next: data => {
-              this.handlePersistedResult(data, 'wurde hinzugefuegt');
+              this.handlePersistedResult(data, 'wurde hinzugefügt');
             },
             error: (error) => {
               this.errorPresentation.present(error, { action: 'create', entity: this.name });

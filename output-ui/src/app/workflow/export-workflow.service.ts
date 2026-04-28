@@ -39,6 +39,10 @@ export class ExportWorkflowService implements EntityService<ExportWorkflow, Expo
     return this.api.isExportLocked(id);
   }
 
+  unlock(id: number) {
+    return this.api.unlockExport(id);
+  }
+
   export(id: number) {
     return this.api.exportWorkflow(id);
   }

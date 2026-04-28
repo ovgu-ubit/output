@@ -15,7 +15,7 @@
 </mat-toolbar>
 <mat-dialog-content>
     <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
-        <mat-card-header><mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
+        <mat-card-header><mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
         <mat-card-content>
             <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
         </mat-card-content>

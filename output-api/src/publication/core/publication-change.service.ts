@@ -27,7 +27,7 @@ export class PublicationChangeService {
             publication: options.publication,
             workflowReport: options.workflowReport,
             timestamp: options.timestamp ?? new Date(),
-            by_user: options.by_user,
+            by_user: options.by_user ? 'user' : undefined,
             patch_data: options.patch_data,
             dry_change: options.dry_change ?? false,
         });
