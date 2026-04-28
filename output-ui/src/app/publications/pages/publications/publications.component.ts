@@ -8,6 +8,7 @@ import { Observable, concatMap, map, merge } from 'rxjs';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ConfigService} from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { StatusService } from 'src/app/services/entities/status.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
@@ -28,7 +29,8 @@ import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
-    private clipboard: Clipboard, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService) { }
+    private clipboard: Clipboard, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService,
+    private statusService: StatusService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
@@ -36,6 +38,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   indexOptions?: { soft: boolean, filter: SearchFilter, paths?: string[] };
 
   soft_deletes = false;
+  statusDescriptions = new Map<number, string>();
 
   buttons: TableButton[] = [
     { title: 'search', action_function: this.extendedFilters.bind(this), icon: true, tooltip: 'Publikationen suchen und filtern' },
@@ -86,7 +89,12 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["contract"]) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
       if (data.value["oa_category"]) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
       if (data.value["locked_status"]) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
-      if (data.value["status"]) headers.push({ colName: 'status', colTitle: 'Status', type: 'number' })
+      if (data.value["status"]) headers.push({
+        colName: 'status',
+        colTitle: 'Status',
+        type: 'number',
+        tooltip: (row: PublicationIndex) => this.getStatusDescription(row.status)
+      })
       if (data.value["pub_date"]) headers.push({ colName: 'pub_date', colTitle: 'Publikationsdatum', type: 'date' })
       if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
       if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
@@ -99,6 +107,14 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       }))
     })))
 
+    ob$ = merge(ob$, this.statusService.getAll().pipe(map(statuses => {
+      this.statusDescriptions = new Map(
+        statuses
+          .filter(status => status.id !== undefined && status.label)
+          .map(status => [status.id!, status.label])
+      );
+    })));
+
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
@@ -110,6 +126,10 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     })));
 
     return ob$;
+  }
+
+  getStatusDescription(status: number): string | null {
+    return this.statusDescriptions.get(status) ?? null;
   }
 
   ngOnDestroy(): void {

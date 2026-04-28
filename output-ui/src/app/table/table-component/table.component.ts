@@ -297,7 +297,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           this.loading = true;
           return this.updateData();
         }))
-      } else if (result && result.id) {
+      } else if (this.hasEntityId(result)) {
         return this.serviceClass.update(result);
       } else return of(null)
     })).pipe(catchError(err => {
@@ -494,6 +494,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   public format(text: any) {
     return Number(text).toLocaleString('de-DE');
   }
+
+  public getCellTooltip(row: T, col: TableHeader): string | null {
+    if (!col.tooltip) return null;
+    const tooltip = typeof col.tooltip === 'function' ? col.tooltip(row) : col.tooltip;
+    return tooltip || null;
+  }
+
   public formatEUR(text: any) {
     return Number(text).toLocaleString('de-DE') + ' €';
   }
@@ -661,6 +668,10 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
   hasRole(roles: string[]) {
     return roles.some(r => this.tokenService.hasRole(r))
+  }
+
+  private hasEntityId(entity: Entity | null | undefined): boolean {
+    return entity?.id !== undefined && entity?.id !== null;
   }
 
   public handlePage(event: PageEvent) {

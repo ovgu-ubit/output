@@ -7,6 +7,7 @@ import { provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
+import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
@@ -25,6 +26,10 @@ describe('PublicationsComponent', () => {
   const mockPublicationService = {
     getFilters: jasmine.createSpy('getFilters').and.returnValue(of([])),
     updateAll: jasmine.createSpy('updateAll').and.returnValue(of(0))
+  };
+
+  const mockStatusService = {
+    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
   };
 
   const mockConfigService = {
@@ -57,6 +62,7 @@ describe('PublicationsComponent', () => {
       providers: [
         provideMockStore({}),
         { provide: PublicationService, useValue: mockPublicationService },
+        { provide: StatusService, useValue: mockStatusService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: EnrichService, useValue: mockEnrichService },
         { provide: RuntimeConfigService, useValue: mockRuntimeConfigService },
