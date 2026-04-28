@@ -494,6 +494,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   public format(text: any) {
     return Number(text).toLocaleString('de-DE');
   }
+
+  public getCellTooltip(row: T, col: TableHeader): string | null {
+    if (!col.tooltip) return null;
+    const tooltip = typeof col.tooltip === 'function' ? col.tooltip(row) : col.tooltip;
+    return tooltip || null;
+  }
+
   public formatEUR(text: any) {
     return Number(text).toLocaleString('de-DE') + ' €';
   }

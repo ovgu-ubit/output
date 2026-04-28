@@ -11,7 +11,8 @@ export interface TableParent<T> {
 export interface TableHeader {
   colName: string,
   colTitle: string,
-  type?: string
+  type?: string,
+  tooltip?: string | ((row: any) => string)
 }
 
 export interface TableButton {
@@ -27,4 +28,3 @@ export interface TableButton {
     icon?: boolean;
     tooltip?: string;
 }
-
