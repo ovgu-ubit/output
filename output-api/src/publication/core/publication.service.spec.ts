@@ -806,7 +806,6 @@ describe('PublicationService', () => {
                 publicationChangeService as any,
                 dataSource as any,
             );
-            service.filter_joins = new Set();
         });
 
     it('binds string filter values as query parameters', async () => {
@@ -968,6 +967,43 @@ describe('PublicationService', () => {
         expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.invoices', 'invoice');
     });
 
+    it('keeps requested joins local to concurrent filter calls', async () => {
+        let resolveInstituteIds: ((value: number[]) => void) | undefined;
+        const deferredInstituteIds = new Promise<number[]>((resolve) => {
+            resolveInstituteIds = resolve;
+        });
+        const firstQueryBuilder = createQueryBuilderMock();
+        const secondQueryBuilder = createQueryBuilderMock();
+
+        instituteService.findInstituteIdsIncludingSubInstitutes.mockReturnValueOnce(deferredInstituteIds);
+
+        const firstFilter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id',
+                comp: CompareOperation.EQUALS,
+                value: 11,
+            }]
+        };
+        const secondFilter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'publisher',
+                comp: CompareOperation.EQUALS,
+                value: 'Concurrent Publisher',
+            }]
+        };
+
+        const firstCall = service.filter(firstFilter, firstQueryBuilder as any);
+        const secondCall = service.filter(secondFilter, secondQueryBuilder as any);
+        resolveInstituteIds?.([11, 12, 13]);
+
+        await Promise.all([firstCall, secondCall]);
+
+        expect(secondQueryBuilder.leftJoin).toHaveBeenCalledWith('publication.publisher', 'publisher');
+        expect(firstQueryBuilder.leftJoin).not.toHaveBeenCalled();
+    });
+
     it('uses the null-date fallback and negates filters for AND_NOT expressions', async () => {
         const queryBuilder = createQueryBuilderMock();
         const filter: SearchFilter = {
@@ -1030,4 +1066,35 @@ describe('PublicationService', () => {
         );
     });
 });
+
+    describe('indexQuery', () => {
+        it('loads pub_index_columns only once per query build', async () => {
+            const queryBuilder = {
+                leftJoin: jest.fn().mockReturnThis(),
+                select: jest.fn().mockReturnThis(),
+                addSelect: jest.fn().mockReturnThis(),
+                groupBy: jest.fn().mockReturnThis(),
+                addGroupBy: jest.fn().mockReturnThis(),
+            };
+
+            pubRepository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilder as any);
+            configService.get.mockImplementation(async (key: string) => {
+                if (key === 'pub_index_columns') {
+                    return {
+                        title: true,
+                        doi: true,
+                        authors: false,
+                    };
+                }
+                return 5;
+            });
+
+            await service.indexQuery();
+
+            expect(configService.get).toHaveBeenCalledTimes(1);
+            expect(configService.get).toHaveBeenCalledWith('pub_index_columns');
+            expect(queryBuilder.addSelect).toHaveBeenCalledWith('publication.title', 'title');
+            expect(queryBuilder.addSelect).toHaveBeenCalledWith('publication.doi', 'doi');
+        });
+    });
 });

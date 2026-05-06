@@ -1,6 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { firstValueFrom, of } from 'rxjs';
 import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
+import { UpdateOptions } from '../../../../output-interfaces/Config';
 import { JSONataImportService } from './jsonata-import';
 
 const expectApiError = async (
@@ -216,5 +217,98 @@ describe('JSONataImportService workflow report status', () => {
         expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
             status: 'Successfull import',
         }));
+    });
+});
+
+describe('JSONataImportService optional_fields config usage', () => {
+    const createService = (configService: { get: jest.Mock }) => new JSONataImportService(
+        { doi_regex: /10\.[0-9]{4,9}\/[-._;()/:A-Z0-9]+/i } as any,
+        { findOrSave: jest.fn() } as any,
+        { findOrSave: jest.fn() } as any,
+        { findOrSave: jest.fn() } as any,
+        { findOrSave: jest.fn(async () => null) } as any,
+        { findOrSave: jest.fn(async () => null), findByDOI: jest.fn(async () => null) } as any,
+        { findOrSave: jest.fn(() => of(null)) } as any,
+        { findOrSave: jest.fn(() => of(null)) } as any,
+        { findOrSaveCT: jest.fn(() => of(null)), findOrSaveCC: jest.fn(() => of(null)) } as any,
+        { write: jest.fn() } as any,
+        { findOrSave: jest.fn(() => of(null)) } as any,
+        { findOrSave: jest.fn(async () => null) } as any,
+        { findOrSave: jest.fn(async () => null) } as any,
+        configService as any,
+        { write: jest.fn(), updateStatus: jest.fn(), finish: jest.fn() } as any,
+        { get: jest.fn() } as any,
+    );
+
+    it('loads optional_fields once in mapNew', async () => {
+        const configService = {
+            get: jest.fn(async (key: string) => {
+                if (key === 'optional_fields') {
+                    return {
+                        abstract: true,
+                        page_count: true,
+                        peer_reviewed: true,
+                        pub_date_print: true,
+                        pub_date_submitted: true,
+                    };
+                }
+                return null;
+            }),
+        };
+        const service = createService(configService);
+        (service as any).dryRun = true;
+        jest.spyOn(service as any, 'importTest').mockResolvedValue(true);
+
+        await service.mapNew({
+            title: 'A title',
+            doi: '10.1000/test',
+            pub_date: new Date('2024-01-01T00:00:00.000Z'),
+            abstract: 'Summary',
+            page_count: 12,
+            peer_reviewed: true,
+        });
+
+        expect(configService.get.mock.calls.filter(([key]) => key === 'optional_fields')).toHaveLength(1);
+    });
+
+    it('loads optional_fields once in mapUpdate', async () => {
+        const configService = {
+            get: jest.fn(async (key: string) => {
+                if (key === 'optional_fields') {
+                    return {
+                        abstract: true,
+                        citation: true,
+                        page_count: true,
+                        peer_reviewed: true,
+                        pub_date_print: true,
+                        pub_date_submitted: true,
+                    };
+                }
+                return null;
+            }),
+        };
+        const service = createService(configService);
+        const ignoreMapping = Object.fromEntries(
+            Object.keys(service.getUpdateMapping()).map((key) => [key, UpdateOptions.IGNORE]),
+        );
+        (service as any).updateMapping = ignoreMapping;
+        (service as any).dryRun = true;
+
+        await service.mapUpdate(
+            {
+                title: 'Updated title',
+                doi: '10.1000/test',
+                pub_date: new Date('2024-01-01T00:00:00.000Z'),
+            },
+            {
+                id: 1,
+                locked_author: true,
+                locked_biblio: false,
+                locked_oa: true,
+                locked_finance: true,
+            } as any,
+        );
+
+        expect(configService.get.mock.calls.filter(([key]) => key === 'optional_fields')).toHaveLength(1);
     });
 });

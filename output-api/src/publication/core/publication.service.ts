@@ -44,6 +44,24 @@ interface FilterPredicate {
     parameters?: Record<string, unknown>;
 }
 
+type PublicationFilterJoin =
+    | 'contract'
+    | 'cost_center'
+    | 'cost_type'
+    | 'funder'
+    | 'greater_entity'
+    | 'identifier'
+    | 'invoice'
+    | 'language'
+    | 'oa_category'
+    | 'publication_type'
+    | 'publisher';
+
+interface PublicationFilterContext {
+    joinedRelations: Set<string>;
+    requestedJoins: Set<PublicationFilterJoin>;
+}
+
 const PUBLICATION_LOCK_SCOPE = 'publication';
 const PUBLICATION_FILTER_FIELDS = new Set<string>([
     'id',
@@ -94,21 +112,6 @@ const PUBLICATION_FILTER_FIELDS = new Set<string>([
 export class PublicationService {
     // eslint-disable-next-line no-useless-escape
     doi_regex = new RegExp('10\.[0-9]{4,9}/[-._;()/:A-Z0-9]+', 'i');
-
-    funder = false;
-    author = false;
-    languageRelation = false;
-    identifiers = false;
-    pub_type = false;
-    cost_center = false;
-    ge = false;
-    oa_cat = false;
-    contract = false;
-    publisher = false;
-    cost_type = false;
-    invoice = false;
-
-    filter_joins: Set<string> = new Set();
 
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         private configService: AppConfigService,
@@ -251,35 +254,36 @@ export class PublicationService {
             .leftJoinAndSelect("publication.pub_type", "publication_type")
             .leftJoinAndSelect("publication.contract", "contract")
             .leftJoinAndSelect("publication.greater_entity", "greater_entity")
-            .leftJoinAndSelect("publication.funders", "funders")
+            .leftJoinAndSelect("publication.funders", "funder")
             .leftJoinAndSelect("publication.authorPublications", "authorPublications")
             .leftJoinAndSelect("publication.supplements", "supplements")
-            .leftJoinAndSelect("publication.identifiers", "identifiers")
+            .leftJoinAndSelect("publication.identifiers", "identifier")
             .leftJoinAndSelect("authorPublications.author", "author")
             .leftJoinAndSelect("authorPublications.institute", "institute")
-            .leftJoinAndSelect("publication.invoices", "invoices")
-            .leftJoinAndSelect("invoices.cost_items", "cost_items")
-            .leftJoinAndSelect("invoices.cost_center", "cost_center")
-            .leftJoinAndSelect("cost_items.cost_type", "cost_type")
+            .leftJoinAndSelect("publication.invoices", "invoice")
+            .leftJoinAndSelect("invoice.cost_items", "cost_item")
+            .leftJoinAndSelect("invoice.cost_center", "cost_center")
+            .leftJoinAndSelect("cost_item.cost_type", "cost_type")
 
-        this.filter_joins = new Set();
-        this.filter_joins.add("publisher")
-        this.filter_joins.add("oa_category")
-        this.filter_joins.add("publication_type")
-        this.filter_joins.add("contract")
-        this.filter_joins.add("greater_entity")
-        this.filter_joins.add("funders")
-        this.filter_joins.add("authorPublications")
-        this.filter_joins.add("supplements")
-        this.filter_joins.add("identifiers")
-        this.filter_joins.add("author")
-        this.filter_joins.add("institute")
-        this.filter_joins.add("invoice")
-        this.filter_joins.add("cost_item")
-        this.filter_joins.add("cost_center")
-        this.filter_joins.add("cost_type")
+        const filterContext = this.createFilterContext([
+            'publisher',
+            'oa_category',
+            'publication_type',
+            'contract',
+            'greater_entity',
+            'funder',
+            'authorPublications',
+            'supplements',
+            'identifier',
+            'author',
+            'institute',
+            'invoice',
+            'cost_item',
+            'cost_center',
+            'cost_type',
+        ]);
 
-        query = await this.filter(filter, query);
+        query = await this.filter(filter, query, filterContext);
 
         const res = await query.getMany();
         if (!options?.serializeDates) return res;
@@ -287,8 +291,8 @@ export class PublicationService {
     }
 
     // base object to select a publication index
-    public async indexQuery(): Promise<SelectQueryBuilder<Publication>> {
-        this.filter_joins = new Set();
+    public async indexQuery(filterContext = this.createFilterContext()): Promise<SelectQueryBuilder<Publication>> {
+        const pubIndexColumns = (await this.configService.get("pub_index_columns")) ?? {};
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.authorPublications", "authorPublications")
             .leftJoin("authorPublications.author", "author")
@@ -297,61 +301,61 @@ export class PublicationService {
             .addSelect("publication.locked", "locked")
             .groupBy("publication.id")
 
-        if ((await this.configService.get("pub_index_columns"))["title"]) {
+        if (pubIndexColumns["title"]) {
             query = query.addSelect("publication.title", "title").addGroupBy("publication.title")
         }
-        if ((await this.configService.get("pub_index_columns"))["doi"]) {
+        if (pubIndexColumns["doi"]) {
             query = query.addSelect("publication.doi", "doi").addGroupBy("publication.doi")
         }
-        if ((await this.configService.get("pub_index_columns"))["authors"]) {
+        if (pubIndexColumns["authors"]) {
             query = query.addSelect("publication.authors", "authors").addGroupBy("publication.authors")
         }
-        if ((await this.configService.get("pub_index_columns"))["authors_inst"]) {
+        if (pubIndexColumns["authors_inst"]) {
             query = query.addSelect("STRING_AGG(CASE WHEN (author.last_name IS NOT NULL) THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "authors_inst")
                 .addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN CONCAT(author.last_name, ', ', author.first_name) ELSE NULL END, '; ')", "corr_author")
         }
-        if ((await this.configService.get("pub_index_columns"))["corr_inst"]) {
+        if (pubIndexColumns["corr_inst"]) {
             query = query.addSelect("STRING_AGG(CASE WHEN \"authorPublications\".\"corresponding\" THEN \"institute\".\"label\" ELSE NULL END, '; ')", "corr_inst")
         }
-        if ((await this.configService.get("pub_index_columns"))["greater_entity"]) {
-            this.filter_joins.add("greater_entity")
+        if (pubIndexColumns["greater_entity"]) {
+            filterContext.joinedRelations.add("greater_entity");
             query = query.leftJoin("publication.greater_entity", "greater_entity").addSelect("greater_entity.label", "greater_entity").addGroupBy("greater_entity.label")
         }
-        if ((await this.configService.get("pub_index_columns"))["oa_category"]) {
-            this.filter_joins.add("oa_category")
+        if (pubIndexColumns["oa_category"]) {
+            filterContext.joinedRelations.add("oa_category");
             query = query.leftJoin("publication.oa_category", "oa_category").addSelect("oa_category.label", "oa_category").addGroupBy("oa_category.label")
         }
-        if ((await this.configService.get("pub_index_columns"))["locked_status"]) {
+        if (pubIndexColumns["locked_status"]) {
             query = query.addSelect("CONCAT(CAST(publication.locked_author AS INT),CAST(publication.locked_biblio AS INT),CAST(publication.locked_oa AS INT),CAST(publication.locked_finance AS INT))", "locked_status")
         }
-        if ((await this.configService.get("pub_index_columns"))["status"]) {
+        if (pubIndexColumns["status"]) {
             query = query.addSelect("publication.status", "status").addGroupBy("publication.status")
         }
-        if ((await this.configService.get("pub_index_columns"))["edit_date"]) {
+        if (pubIndexColumns["edit_date"]) {
             query = query.addSelect("publication.edit_date", "edit_date")
         }
-        if ((await this.configService.get("pub_index_columns"))["import_date"]) {
+        if (pubIndexColumns["import_date"]) {
             query = query.addSelect("publication.import_date", "import_date")
         }
-        if ((await this.configService.get("pub_index_columns"))["pub_type"]) {
-            this.filter_joins.add("publication_type")
+        if (pubIndexColumns["pub_type"]) {
+            filterContext.joinedRelations.add("publication_type");
             query = query.leftJoin("publication.pub_type", "publication_type").addSelect("publication_type.label", "pub_type").addGroupBy("publication_type.label")
         }
-        if ((await this.configService.get("pub_index_columns"))["contract"]) {
-            this.filter_joins.add("contract")
+        if (pubIndexColumns["contract"]) {
+            filterContext.joinedRelations.add("contract");
             query = query.leftJoin("publication.contract", "contract").addSelect("contract.label", "contract").addGroupBy("contract.label")
         }
-        if ((await this.configService.get("pub_index_columns"))["publisher"]) {
-            this.filter_joins.add("publisher")
+        if (pubIndexColumns["publisher"]) {
+            filterContext.joinedRelations.add("publisher");
             query = query.leftJoin("publication.publisher", "publisher").addSelect("publisher.label", "publisher").addGroupBy("publisher.label")
         }
-        if ((await this.configService.get("pub_index_columns"))["pub_date"]) {
+        if (pubIndexColumns["pub_date"]) {
             query = query.addSelect("publication.pub_date", "pub_date").addGroupBy("publication.pub_date")
         }
-        if ((await this.configService.get("pub_index_columns"))["link"]) {
+        if (pubIndexColumns["link"]) {
             query = query.addSelect("publication.link", "link")
         }
-        if ((await this.configService.get("pub_index_columns"))["data_source"]) {
+        if (pubIndexColumns["data_source"]) {
             query = query.addSelect("publication.dataSource", "data_source")
         }
 
@@ -800,24 +804,16 @@ export class PublicationService {
 
     // retrieves a publication index based on a filter object
     async filterIndex(filter: SearchFilter) {
-        return (await this.filter(filter, await this.indexQuery())).getRawMany();
+        const filterContext = this.createFilterContext();
+        return (await this.filter(filter, await this.indexQuery(filterContext), filterContext)).getRawMany();
     }
 
     //processes a filter object and adds where conditions to the index query
-    async filter(filter: SearchFilter, indexQuery: SelectQueryBuilder<Publication>): Promise<SelectQueryBuilder<Publication>> {
-        this.funder = false;
-        this.author = false;
-        this.languageRelation = false;
-        this.identifiers = false;
-        this.pub_type = false;
-        this.cost_center = false;
-        this.ge = false;
-        this.oa_cat = false;
-        this.contract = false;
-        this.publisher = false;
-        this.cost_type = false;
-        this.invoice = false;
-
+    async filter(
+        filter: SearchFilter,
+        indexQuery: SelectQueryBuilder<Publication>,
+        filterContext = this.createFilterContext(),
+    ): Promise<SelectQueryBuilder<Publication>> {
         let first = true;
         let filterIndex = 0;
         if (filter) for (const expr of filter.expressions) {
@@ -833,7 +829,7 @@ export class PublicationService {
                 filterValue = await this.instService.findInstituteIdsIncludingSubInstitutes([instituteId]);
             }
 
-            const predicate = this.buildFilterPredicate(expr.key, compareOperation, filterValue, `filter_${filterIndex}`);
+            const predicate = this.buildFilterPredicate(expr.key, compareOperation, filterValue, `filter_${filterIndex}`, filterContext);
             filterIndex++;
             const clause = expr.op === JoinOperation.AND_NOT ? `NOT (${predicate.clause})` : predicate.clause;
 
@@ -853,45 +849,40 @@ export class PublicationService {
                     break;
             }
         }
-        if (this.funder && !this.filter_joins.has("funder")) indexQuery = indexQuery.leftJoin('publication.funders', 'funder')
-        if (this.languageRelation && !this.filter_joins.has("language")) indexQuery = indexQuery.leftJoin('publication.language', 'language')
-        if (this.identifiers && !this.filter_joins.has("identifier")) indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier')
-        if (this.pub_type && !this.filter_joins.has("publication_type")) indexQuery = indexQuery.leftJoin('publication.pub_type', 'publication_type')
-        if (this.ge && !this.filter_joins.has("greater_entity")) indexQuery = indexQuery.leftJoin('publication.greater_entity', 'greater_entity')
-        if (this.oa_cat && !this.filter_joins.has("oa_category")) indexQuery = indexQuery.leftJoin('publication.oa_category', 'oa_category')
-        if (this.contract && !this.filter_joins.has("contract")) indexQuery = indexQuery.leftJoin('publication.contract', 'contract')
-        if (this.publisher && !this.filter_joins.has("publisher")) indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher')
-        if ((this.invoice || this.cost_type) && !this.filter_joins.has("invoice")) indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice')
-        if (this.cost_center && !this.filter_joins.has("cost_center")) indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center')
-
-        if (this.cost_type && !this.filter_joins.has("cost_type")) {
-            indexQuery = indexQuery.leftJoin('invoice.cost_items', 'cost_item')
-            indexQuery = indexQuery.leftJoin('cost_item.cost_type', 'cost_type')
-        }
-        //console.log(indexQuery.getSql())
-        return indexQuery;
+        return this.applyRequestedJoins(indexQuery, filterContext);
     }
 
-    private buildFilterPredicate(key: string, compareOperation: CompareOperation, value: SearchFilterValue, parameterPrefix: string): FilterPredicate {
+    private buildFilterPredicate(
+        key: string,
+        compareOperation: CompareOperation,
+        value: SearchFilterValue,
+        parameterPrefix: string,
+        filterContext: PublicationFilterContext,
+    ): FilterPredicate {
         switch (compareOperation) {
             case CompareOperation.EQUALS:
-                return this.buildEqualsPredicate(key, value, parameterPrefix);
+                return this.buildEqualsPredicate(key, value, parameterPrefix, filterContext);
             case CompareOperation.INCLUDES:
-                return this.buildLikePredicate(key, value, parameterPrefix, 'contains');
+                return this.buildLikePredicate(key, value, parameterPrefix, 'contains', filterContext);
             case CompareOperation.STARTS_WITH:
-                return this.buildLikePredicate(key, value, parameterPrefix, 'startsWith');
+                return this.buildLikePredicate(key, value, parameterPrefix, 'startsWith', filterContext);
             case CompareOperation.GREATER_THAN:
-                return this.buildComparablePredicate(key, value, parameterPrefix, '>');
+                return this.buildComparablePredicate(key, value, parameterPrefix, '>', filterContext);
             case CompareOperation.SMALLER_THAN:
-                return this.buildComparablePredicate(key, value, parameterPrefix, '<');
+                return this.buildComparablePredicate(key, value, parameterPrefix, '<', filterContext);
             case CompareOperation.IN:
-                return this.buildInPredicate(key, value, parameterPrefix);
+                return this.buildInPredicate(key, value, parameterPrefix, filterContext);
             default:
                 throw createInvalidRequestHttpException(`Unsupported compare operation for ${key}`);
         }
     }
 
-    private buildEqualsPredicate(key: string, value: SearchFilterValue, parameterPrefix: string): FilterPredicate {
+    private buildEqualsPredicate(
+        key: string,
+        value: SearchFilterValue,
+        parameterPrefix: string,
+        filterContext: PublicationFilterContext,
+    ): FilterPredicate {
         if (key === 'invoice_year') {
             const year = Number(Array.isArray(value) ? value[0] : value);
             if (!Number.isInteger(year)) {
@@ -899,7 +890,7 @@ export class PublicationService {
             }
             const beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
-            this.invoice = true;
+            this.requestJoin(filterContext, 'invoice');
             return {
                 clause: `invoice.date > :${parameterPrefix}_beginDate AND invoice.date < :${parameterPrefix}_endDate`,
                 parameters: {
@@ -956,14 +947,20 @@ export class PublicationService {
             );
         }
 
-        const expression = this.resolveFilterExpression(key);
+        const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} = :${parameterPrefix}`,
             parameters: { [parameterPrefix]: Array.isArray(value) ? value[0] : value }
         };
     }
 
-    private buildLikePredicate(key: string, value: SearchFilterValue, parameterPrefix: string, mode: 'contains' | 'startsWith'): FilterPredicate {
+    private buildLikePredicate(
+        key: string,
+        value: SearchFilterValue,
+        parameterPrefix: string,
+        mode: 'contains' | 'startsWith',
+        filterContext: PublicationFilterContext,
+    ): FilterPredicate {
         const rawValue = String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
         const parameterValue = mode === 'contains' ? `%${rawValue}%` : `${rawValue}%`;
 
@@ -981,22 +978,33 @@ export class PublicationService {
             );
         }
 
-        const expression = this.resolveFilterExpression(key);
+        const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} ILIKE :${parameterPrefix}`,
             parameters: { [parameterPrefix]: parameterValue }
         };
     }
 
-    private buildComparablePredicate(key: string, value: SearchFilterValue, parameterPrefix: string, operator: '>' | '<'): FilterPredicate {
-        const expression = this.resolveFilterExpression(key);
+    private buildComparablePredicate(
+        key: string,
+        value: SearchFilterValue,
+        parameterPrefix: string,
+        operator: '>' | '<',
+        filterContext: PublicationFilterContext,
+    ): FilterPredicate {
+        const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} ${operator} :${parameterPrefix}`,
             parameters: { [parameterPrefix]: Array.isArray(value) ? value[0] : value }
         };
     }
 
-    private buildInPredicate(key: string, value: SearchFilterValue, parameterPrefix: string): FilterPredicate {
+    private buildInPredicate(
+        key: string,
+        value: SearchFilterValue,
+        parameterPrefix: string,
+        filterContext: PublicationFilterContext,
+    ): FilterPredicate {
         const values = this.normalizeInValues(value);
         if (values.length === 0) return { clause: '1 = 0' };
 
@@ -1028,7 +1036,7 @@ export class PublicationService {
             );
         }
 
-        const expression = this.resolveFilterExpression(key);
+        const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} IN (:...${parameterPrefix})`,
             parameters: { [parameterPrefix]: values }
@@ -1079,66 +1087,67 @@ export class PublicationService {
         };
     }
 
-    private resolveFilterExpression(key: string) {
+    private resolveFilterExpression(key: string, filterContext: PublicationFilterContext) {
         switch (key) {
             case 'greater_entity':
-                this.ge = true;
+                this.requestJoin(filterContext, 'greater_entity');
                 return 'greater_entity.label';
             case 'oa_category':
-                this.oa_cat = true;
+                this.requestJoin(filterContext, 'oa_category');
                 return 'oa_category.label';
             case 'pub_type':
-                this.pub_type = true;
+                this.requestJoin(filterContext, 'publication_type');
                 return 'publication_type.label';
             case 'publisher':
-                this.publisher = true;
+                this.requestJoin(filterContext, 'publisher');
                 return 'publisher.label';
             case 'contract':
-                this.contract = true;
+                this.requestJoin(filterContext, 'contract');
                 return 'contract.label';
             case 'funder':
-                this.funder = true;
+                this.requestJoin(filterContext, 'funder');
                 return 'funder.label';
             case 'institute':
                 return 'institute.label';
             case 'cost_center':
-                this.cost_center = true;
-                this.invoice = true;
+                this.requestJoin(filterContext, 'cost_center');
+                this.requestJoin(filterContext, 'invoice');
                 return 'cost_center.label';
             case 'cost_type':
-                this.cost_type = true;
+                this.requestJoin(filterContext, 'invoice');
+                this.requestJoin(filterContext, 'cost_type');
                 return 'cost_type.label';
             case 'language':
-                this.languageRelation = true;
+                this.requestJoin(filterContext, 'language');
                 return 'language.label';
             case 'other_ids':
-                this.identifiers = true;
+                this.requestJoin(filterContext, 'identifier');
                 return 'identifier.value';
             case 'contract_id':
-                this.contract = true;
+                this.requestJoin(filterContext, 'contract');
                 return 'contract.id';
             case 'funder_id':
-                this.funder = true;
+                this.requestJoin(filterContext, 'funder');
                 return 'funder.id';
             case 'greater_entity_id':
-                this.ge = true;
+                this.requestJoin(filterContext, 'greater_entity');
                 return 'greater_entity.id';
             case 'oa_category_id':
-                this.oa_cat = true;
+                this.requestJoin(filterContext, 'oa_category');
                 return 'oa_category.id';
             case 'pub_type_id':
-                this.pub_type = true;
+                this.requestJoin(filterContext, 'publication_type');
                 return 'publication_type.id';
             case 'publisher_id':
-                this.publisher = true;
+                this.requestJoin(filterContext, 'publisher');
                 return 'publisher.id';
             case 'cost_center_id':
-                this.cost_center = true;
-                this.invoice = true;
+                this.requestJoin(filterContext, 'cost_center');
+                this.requestJoin(filterContext, 'invoice');
                 return 'cost_center.id';
             case 'cost_type_id':
-                this.cost_type = true;
-                this.invoice = true;
+                this.requestJoin(filterContext, 'invoice');
+                this.requestJoin(filterContext, 'cost_type');
                 return 'cost_type.id';
             case 'secound_pub':
                 return 'publication.second_pub';
@@ -1146,6 +1155,70 @@ export class PublicationService {
                 if (PUBLICATION_FILTER_FIELDS.has(key)) return `publication.${key}`;
                 throw createInvalidRequestHttpException(`Unsupported filter key: ${key}`);
         }
+    }
+
+    private createFilterContext(joinedRelations: Iterable<string> = []): PublicationFilterContext {
+        return {
+            joinedRelations: new Set(joinedRelations),
+            requestedJoins: new Set<PublicationFilterJoin>(),
+        };
+    }
+
+    private requestJoin(filterContext: PublicationFilterContext, join: PublicationFilterJoin): void {
+        filterContext.requestedJoins.add(join);
+    }
+
+    private applyRequestedJoins(
+        indexQuery: SelectQueryBuilder<Publication>,
+        filterContext: PublicationFilterContext,
+    ): SelectQueryBuilder<Publication> {
+        if (filterContext.requestedJoins.has('funder') && !filterContext.joinedRelations.has('funder')) {
+            indexQuery = indexQuery.leftJoin('publication.funders', 'funder');
+            filterContext.joinedRelations.add('funder');
+        }
+        if (filterContext.requestedJoins.has('language') && !filterContext.joinedRelations.has('language')) {
+            indexQuery = indexQuery.leftJoin('publication.language', 'language');
+            filterContext.joinedRelations.add('language');
+        }
+        if (filterContext.requestedJoins.has('identifier') && !filterContext.joinedRelations.has('identifier')) {
+            indexQuery = indexQuery.leftJoin('publication.identifiers', 'identifier');
+            filterContext.joinedRelations.add('identifier');
+        }
+        if (filterContext.requestedJoins.has('publication_type') && !filterContext.joinedRelations.has('publication_type')) {
+            indexQuery = indexQuery.leftJoin('publication.pub_type', 'publication_type');
+            filterContext.joinedRelations.add('publication_type');
+        }
+        if (filterContext.requestedJoins.has('greater_entity') && !filterContext.joinedRelations.has('greater_entity')) {
+            indexQuery = indexQuery.leftJoin('publication.greater_entity', 'greater_entity');
+            filterContext.joinedRelations.add('greater_entity');
+        }
+        if (filterContext.requestedJoins.has('oa_category') && !filterContext.joinedRelations.has('oa_category')) {
+            indexQuery = indexQuery.leftJoin('publication.oa_category', 'oa_category');
+            filterContext.joinedRelations.add('oa_category');
+        }
+        if (filterContext.requestedJoins.has('contract') && !filterContext.joinedRelations.has('contract')) {
+            indexQuery = indexQuery.leftJoin('publication.contract', 'contract');
+            filterContext.joinedRelations.add('contract');
+        }
+        if (filterContext.requestedJoins.has('publisher') && !filterContext.joinedRelations.has('publisher')) {
+            indexQuery = indexQuery.leftJoin('publication.publisher', 'publisher');
+            filterContext.joinedRelations.add('publisher');
+        }
+        if (filterContext.requestedJoins.has('invoice') && !filterContext.joinedRelations.has('invoice')) {
+            indexQuery = indexQuery.leftJoin('publication.invoices', 'invoice');
+            filterContext.joinedRelations.add('invoice');
+        }
+        if (filterContext.requestedJoins.has('cost_center') && !filterContext.joinedRelations.has('cost_center')) {
+            indexQuery = indexQuery.leftJoin('invoice.cost_center', 'cost_center');
+            filterContext.joinedRelations.add('cost_center');
+        }
+        if (filterContext.requestedJoins.has('cost_type') && !filterContext.joinedRelations.has('cost_type')) {
+            indexQuery = indexQuery.leftJoin('invoice.cost_items', 'cost_item');
+            indexQuery = indexQuery.leftJoin('cost_item.cost_type', 'cost_type');
+            filterContext.joinedRelations.add('cost_item');
+            filterContext.joinedRelations.add('cost_type');
+        }
+        return indexQuery;
     }
 
     private async loadPublicationsForChangeLog(pubs: Publication[], manager?: EntityManager): Promise<Map<number, Publication>> {
