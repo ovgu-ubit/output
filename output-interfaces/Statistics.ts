@@ -7,6 +7,8 @@ export interface FilterOptions {
     notPublisherId?: number[],
     contractId?: number[],
     notContractId?: number[],
+    costCenterId?: number[],
+    notCostCenterId?: number[],
     pubTypeId?: number[],
     notPubTypeId?: number[],
     oaCatId?: number[],
@@ -19,6 +21,7 @@ export interface HighlightOptions {
     instituteId?: number,
     publisherId?: number,
     contractId?: number,
+    costCenterId?: number,
     pubTypeId?: number,
     oaCatId?: number
 }
@@ -32,7 +35,8 @@ export enum GROUP {
     CORRESPONDING_ANY,
     OA_CATEGORY,
     LOCK,
-    GREATER_ENTITY
+    GREATER_ENTITY,
+    COST_CENTER
 }
 
 export enum STATISTIC {

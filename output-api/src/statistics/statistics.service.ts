@@ -79,6 +79,15 @@ export class StatisticsService {
                 .addOrderBy('oa_category.id')
         }
 
+        if (by_entity.includes(GROUP.COST_CENTER)) {
+            query = this.addCostCenterJoin(query)
+                .addSelect("case when cost_center.label is not null then cost_center.label else 'Unbekannt' end", 'cost_center')
+                .addSelect('cost_center.id', 'cost_center_id')
+                .addGroupBy('cost_center')
+                .addGroupBy('cost_center.id')
+                .addOrderBy('cost_center.id')
+        }
+
         if (by_entity.includes(GROUP.GREATER_ENTITY)) {
             query = query
                 .leftJoin('publication.greater_entity', 'greater_entity')
@@ -145,6 +154,8 @@ export class StatisticsService {
             notPublisherId: filterOptions.notPublisherId ? [...filterOptions.notPublisherId] : undefined,
             contractId: filterOptions.contractId ? [...filterOptions.contractId] : undefined,
             notContractId: filterOptions.notContractId ? [...filterOptions.notContractId] : undefined,
+            costCenterId: filterOptions.costCenterId ? [...filterOptions.costCenterId] : undefined,
+            notCostCenterId: filterOptions.notCostCenterId ? [...filterOptions.notCostCenterId] : undefined,
             pubTypeId: filterOptions.pubTypeId ? [...filterOptions.pubTypeId] : undefined,
             notPubTypeId: filterOptions.notPubTypeId ? [...filterOptions.notPubTypeId] : undefined,
             oaCatId: filterOptions.oaCatId ? [...filterOptions.oaCatId] : undefined,
@@ -200,7 +211,7 @@ export class StatisticsService {
 
     addStat(query: SelectQueryBuilder<Publication>, costs: boolean) {
         if (!costs) query = query.addSelect('count(distinct publication.id)::int as value')
-        else query = query.leftJoin("publication.invoices", "invoice")
+        else query = this.addInvoiceJoin(query)
             .leftJoin("invoice.cost_items", "cost_item")
             .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
         return query//.orderBy('value', 'DESC');
@@ -281,6 +292,27 @@ export class StatisticsService {
             if (filterOptions.notContractId.length > 0) query = query.andWhere('(publication."contractId" NOT IN (:...notContractId) OR publication."contractId" IS NULL)', { notContractId: filterOptions.notContractId })
         }
         where = "";
+        if (filterOptions?.costCenterId !== undefined) {
+            query = this.addCostCenterJoin(query);
+            if (filterOptions.costCenterId.findIndex(e => e === null) !== -1) {
+                filterOptions.costCenterId = filterOptions.costCenterId.filter(e => e != null);
+                where = '(cost_center.id IS NULL'
+            }
+            if (filterOptions.costCenterId.length > 0) {
+                if (where) where+=' OR cost_center.id IN (:...costCenterId))'
+                else where='cost_center.id IN (:...costCenterId)'
+            } else where = where.substring(1,where.length)
+            query = query.andWhere(where, { costCenterId: filterOptions.costCenterId })
+        }
+        if (filterOptions?.notCostCenterId !== undefined) {
+            query = this.addCostCenterJoin(query);
+            if (filterOptions.notCostCenterId.findIndex(e => e === null) !== -1) {
+                filterOptions.notCostCenterId = filterOptions.notCostCenterId.filter(e => e != null);
+                query = query.andWhere('cost_center.id IS NOT NULL')
+            }
+            if (filterOptions.notCostCenterId.length > 0) query = query.andWhere('(cost_center.id NOT IN (:...notCostCenterId) OR cost_center.id IS NULL)', { notCostCenterId: filterOptions.notCostCenterId })
+        }
+        where = "";
         if (filterOptions?.pubTypeId !== undefined) {
             if (filterOptions.pubTypeId.findIndex(e => e === null) !== -1) {
                 filterOptions.pubTypeId = filterOptions.pubTypeId.filter(e => e != null);
@@ -355,6 +387,16 @@ export class StatisticsService {
                 highlightOptions.contractId
             );
         }
+        if (highlightOptions?.costCenterId !== undefined) {
+            query = this.addCostCenterJoin(query);
+            this.addHighlightIdClause(
+                highlightClauses,
+                highlightParameters,
+                'cost_center.id',
+                'highlightCostCenterId',
+                highlightOptions.costCenterId
+            );
+        }
         if (highlightOptions?.pubTypeId !== undefined) {
             this.addHighlightIdClause(
                 highlightClauses,
@@ -404,5 +446,21 @@ export class StatisticsService {
         }
 
         highlightClauses.push(`${field} IS NULL`);
+    }
+    
+    private addInvoiceJoin(query: SelectQueryBuilder<Publication>) {
+        if (this.hasAlias(query, 'invoice')) return query;
+        return query.leftJoin("publication.invoices", "invoice");
+    }
+
+    private addCostCenterJoin(query: SelectQueryBuilder<Publication>) {
+        query = this.addInvoiceJoin(query);
+        if (this.hasAlias(query, 'cost_center')) return query;
+        return query.leftJoin("invoice.cost_center", "cost_center");
+    }
+
+    private hasAlias(query: SelectQueryBuilder<Publication>, alias: string) {
+        return query.expressionMap.mainAlias?.name === alias
+            || query.expressionMap.joinAttributes.some(join => join.alias.name === alias);
     }
 }

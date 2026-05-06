@@ -151,4 +151,18 @@ export class StatisticsService {
         return { id: e1.contract_id, contract: e1.contract, value: e1.value }
       })))
   }
+
+  costCenter(year: number, costs: boolean, filterOptions?: FilterOptions) {
+    return this.http.post<{ cost_center: string, cost_center_id: number, value: number }[]>(this.runtimeConfigService.getValue("api") + 'statistics/publication_statistic',
+      {
+        year,
+        statistic: costs ? STATISTIC.NET_COSTS : STATISTIC.COUNT,
+        group: [GROUP.COST_CENTER],
+        timeframe: TIMEFRAME.CURRENT_YEAR,
+        filterOptions
+      })
+      .pipe(map(e => e.map(e1 => {
+        return { id: e1.cost_center_id, cost_center: e1.cost_center, value: e1.value }
+      })))
+  }
 }
