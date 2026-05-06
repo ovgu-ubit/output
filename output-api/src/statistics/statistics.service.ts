@@ -305,12 +305,19 @@ export class StatisticsService {
             query = query.andWhere(where, { costCenterId: filterOptions.costCenterId })
         }
         if (filterOptions?.notCostCenterId !== undefined) {
-            query = this.addCostCenterJoin(query);
             if (filterOptions.notCostCenterId.findIndex(e => e === null) !== -1) {
                 filterOptions.notCostCenterId = filterOptions.notCostCenterId.filter(e => e != null);
-                query = query.andWhere('cost_center.id IS NOT NULL')
+                query = query.andWhere(
+                    'EXISTS (SELECT 1 FROM invoice included_invoice WHERE included_invoice."publicationId" = publication.id AND included_invoice."costCenterId" IS NOT NULL)'
+                )
+                query = query.andWhere(
+                    'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IS NULL)'
+                )
             }
-            if (filterOptions.notCostCenterId.length > 0) query = query.andWhere('(cost_center.id NOT IN (:...notCostCenterId) OR cost_center.id IS NULL)', { notCostCenterId: filterOptions.notCostCenterId })
+            if (filterOptions.notCostCenterId.length > 0) query = query.andWhere(
+                'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IN (:...notCostCenterId))',
+                { notCostCenterId: filterOptions.notCostCenterId }
+            )
         }
         where = "";
         if (filterOptions?.pubTypeId !== undefined) {

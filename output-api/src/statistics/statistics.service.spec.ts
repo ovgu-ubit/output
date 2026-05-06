@@ -158,4 +158,35 @@ describe('StatisticsService', () => {
             { costCenterId: [5] }
         );
     });
+    
+    it('excludes cost centers at publication level', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, { notCostCenterId: [5] });
+
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IN (:...notCostCenterId))',
+            { notCostCenterId: [5] }
+        );
+        expect(queryBuilder.andWhere).not.toHaveBeenCalledWith(
+            '(cost_center.id NOT IN (:...notCostCenterId) OR cost_center.id IS NULL)',
+            { notCostCenterId: [5] }
+        );
+    });
+
+    it('excludes unknown cost centers at publication level', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, { notCostCenterId: [null] as any });
+
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM invoice included_invoice WHERE included_invoice."publicationId" = publication.id AND included_invoice."costCenterId" IS NOT NULL)'
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IS NULL)'
+        );
+        expect(queryBuilder.andWhere).not.toHaveBeenCalledWith('cost_center.id IS NOT NULL');
+    });
 });
