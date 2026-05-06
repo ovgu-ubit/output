@@ -665,7 +665,8 @@ export class StatisticsYearComponent implements OnInit {
           show: true,
           color: this.chartTextColor,
           width: 120,
-          overflow: 'truncate',
+          overflow: 'break',
+          lineHeight: 16,
           formatter: (params: PieLabelParams) => `${params.name}: ${(params.percent ?? 0).toFixed(1)} %`
         },
         labelLine: {
