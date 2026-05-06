@@ -11,6 +11,7 @@ import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationIdentifier } from './PublicationIdentifier.entity';
 import { PublicationSupplement } from './PublicationSupplement.entity';
 import { PublicationChangeService } from './publication-change.service';
+import { PublicationFilterService } from './publication-filter.service';
 import { PublicationService } from './publication.service';
 import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
 import { AbstractFilterService, getFilterServiceMeta } from '../../workflow/filter/abstract-filter.service';
@@ -37,7 +38,7 @@ import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
     DiscoveryModule
   ],
   controllers: [PublicationController],
-  providers: [PublicationService, PublicationChangeService, MissingInstAuthorFilterService, MissingInstFilterService, MissingInvoiceDataService,
+  providers: [PublicationService, PublicationChangeService, PublicationFilterService, MissingInstAuthorFilterService, MissingInstFilterService, MissingInvoiceDataService,
     {
       provide: 'Filters',
       inject: [DiscoveryService, ModuleRef],
@@ -55,6 +56,6 @@ import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
       }
     }
   ],
-  exports: [PublicationService, PublicationChangeService, TypeOrmModule, 'Filters']
+  exports: [PublicationService, PublicationChangeService, PublicationFilterService, TypeOrmModule, 'Filters']
 })
 export class PublicationCoreModule { }

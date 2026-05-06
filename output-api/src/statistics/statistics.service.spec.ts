@@ -189,4 +189,48 @@ describe('StatisticsService', () => {
         );
         expect(queryBuilder.andWhere).not.toHaveBeenCalledWith('cost_center.id IS NOT NULL');
     });
+
+    it('normalizes grouped statistics requests before delegating to the query builder', async () => {
+        const publicationStatisticSpy = jest.spyOn(service, 'publication_statistic').mockResolvedValue([]);
+
+        await service.getPublicationStatistic(
+            2025,
+            STATISTIC.COUNT,
+            [GROUP.PUBLISHER],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            { publisherId: 5 } as any,
+            { canReadNetCosts: true },
+        );
+
+        expect(publicationStatisticSpy).toHaveBeenCalledWith(
+            2025,
+            STATISTIC.COUNT,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            { publisherId: 5 }
+        );
+    });
+
+    it('rejects statistic requests without a reporting year', async () => {
+        expect(() => service.getPublicationStatistic(
+            undefined as any,
+            STATISTIC.COUNT,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+        )).toThrow();
+    });
+
+    it('rejects net-cost statistics when the caller lacks read permission', async () => {
+        expect(() => service.getPublicationStatistic(
+            2025,
+            STATISTIC.NET_COSTS,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            undefined,
+            { canReadNetCosts: false },
+        )).toThrow();
+    });
 });

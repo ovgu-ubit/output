@@ -34,6 +34,20 @@ export class AppConfigService {
         }
     }
 
+    public resolveScopeForUser(user?: { admin?: boolean; read?: boolean }): ConfigScope {
+        if (user?.admin) return 'admin';
+        if (user?.read) return 'user';
+        return 'public';
+    }
+
+    public async listAccessibleConfig(user?: { admin?: boolean; read?: boolean }, key?: string) {
+        const scope = this.resolveScopeForUser(user);
+        if (key) {
+            return (await this.listDatabaseConfig(scope, key))[0] ?? null;
+        }
+        return this.listDatabaseConfig(scope);
+    }
+
     public async listEnvConfig() {
         const keys = EnvSchemas.shape;
         const result = [];

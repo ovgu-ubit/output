@@ -1,38 +1,24 @@
-import { Body, Controller, Delete, Get, Inject, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Between } from "typeorm";
+import { Request } from "express";
 import { SearchFilter } from "../../../../output-interfaces/Config";
 import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
 import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
-import { AppConfigService } from "../../config/app-config.service";
-import { PublicationChangeService } from "./publication-change.service";
+import { PublicationFilterService } from "./publication-filter.service";
 import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
-import { AbstractFilterService, getFilterServiceMeta } from "../../workflow/filter/abstract-filter.service";
-import { createInternalErrorHttpException, createInvalidRequestHttpException, createNotFoundHttpException } from "../../common/api-error";
-import { assertCreateRequestHasNoId, hasProvidedEntityId } from "../../common/entity-id";
+import { assertCreateRequestHasNoId } from "../../common/entity-id";
 
 @Controller("publications")
 @ApiTags("publications")
 export class PublicationController {
 
-    constructor(@InjectRepository(Publication) private repository,
+    constructor(
         private publicationService: PublicationService,
-        private publicationChangeService: PublicationChangeService,
-        private appConfigService: AppConfigService,
-        private configService: AppConfigService,
-        @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[]) { }
-
-      list() {
-        return this.filterServices.map(i => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-          const meta = getFilterServiceMeta(i.constructor as Function)!;
-          return { path: meta.path };
-        });
-      }
+        private publicationFilterService: PublicationFilterService,
+    ) { }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -48,30 +34,7 @@ export class PublicationController {
         isArray: true
     })
     all(@Query('yop') yop: number, @Req() request: Request) {
-        let year;
-        if (!yop) year = this.appConfigService.get("reporting_year");
-        else year = yop;
-        const beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-        const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
-        //Show all
-        return this.repository.find({
-            where: [{ pub_date: Between(beginDate, endDate) },], relations: {
-                oa_category: true,
-                invoices: request['user'] ? request['user']['read'] : false,
-                authorPublications: {
-                    author: true,
-                    institute: true
-                },
-                greater_entity: true,
-                pub_type: true,
-                publisher: true,
-                contract: true,
-                funders: true
-            }
-        }).catch(err => {
-            console.log(err);
-            throw createInternalErrorHttpException();
-        });
+        return this.publicationService.getAllForReportingYear(yop, request['user'] ? request['user']['read'] : false);
     }
 
     @Get('one')
@@ -87,15 +50,12 @@ export class PublicationController {
         type: Publication
     })
     async one(@Query('id') id: number, @Req() request: Request) {
-        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given')
-        const publication = await this.publicationService.getPublication(
+        return this.publicationService.getPublicationOrFail(
             id,
             request['user'] ? request['user']['read'] : false,
             request['user'] ? request['user']['write_publication'] : false,
             request['user']?.['username'],
         );
-        if (!publication) throw createNotFoundHttpException('Publication not found.');
-        return publication;
     }
 
     @Get('changes')
@@ -109,8 +69,7 @@ export class PublicationController {
         example: "3"
     })
     async changes(@Query('id') id: number) {
-        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given');
-        return this.publicationChangeService.getPublicationChangesForPublication(id);
+        return this.publicationService.getPublicationChanges(id);
     }
 
     @Get('publicationIndex')
@@ -122,13 +81,7 @@ export class PublicationController {
         example: "2022"
     })
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
-        if ((yop === null || yop === undefined) && !soft) throw createInvalidRequestHttpException('reporting year or soft has to be given');
-
-        if (!soft) {
-            if (Number.isNaN(yop)) return await this.publicationService.index(null);
-            else return await this.publicationService.index(yop);
-        }
-        else return await this.publicationService.softIndex();
+        return this.publicationService.getIndexEntries(yop, soft);
     }
 
     @Post()
@@ -148,15 +101,14 @@ export class PublicationController {
     })
     async save(@Body() body: Publication, @Req() request: Request) {
         assertCreateRequestHasNoId(body);
-        return this.publicationService.save([body], { by_user: request['user']?.['username'] });
+        return this.publicationService.saveOne(body, request['user']?.['username']);
     }
 
     @Put()
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async update(@Body() body: Publication[] | Publication, @Req() request: Request) {
-        if (Array.isArray(body)) return this.publicationService.update(body, { by_user: request['user']?.['username'] });
-        else return this.publicationService.update([body], { by_user: request['user']?.['username'] });
+        return this.publicationService.updateEntries(body, request['user']?.['username']);
     }
 
     @Delete()
@@ -205,25 +157,13 @@ export class PublicationController {
         }
     })
     async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
-        let res = await this.publicationService.filterIndex(filter);
-        if (paths && paths.length > 0) for (const path of paths) {
-            const so = this.list().findIndex(e => e.path === path)
-            if (so === -1) throw createNotFoundHttpException('Filter not found.');
-            res = await this.filterServices[so].filter(res)
-        }
-        return res;
+        const filteredPublications = await this.publicationService.filterIndex(filter);
+        return this.publicationFilterService.applyPaths(filteredPublications, paths);
     }
 
     @Get('filter')
     async get_filter() {
-        const result = [];
-        for (let i = 0; i < this.list().length; i++) {
-            result.push({
-                path: this.list()[i].path,
-                label: this.filterServices[i].getName()
-            })
-        }
-        return result;
+        return this.publicationFilterService.listDefinitions();
     }
 
     @Get('duplicates')
@@ -235,8 +175,7 @@ export class PublicationController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
-        if (hasProvidedEntityId(id)) return this.publicationService.getDuplicates(id);
-        else return this.publicationService.getAllDuplicates(soft);
+        return this.publicationService.getDuplicateEntries(id, soft);
     }
 
     @Put('duplicates')
@@ -262,7 +201,7 @@ export class PublicationController {
         }
     })
     duplicate_save(@Body() duplicate: PublicationDuplicate) {
-        return this.publicationService.saveDuplicate(duplicate.id_first, duplicate.id_second, duplicate.description);
+        return this.publicationService.saveDuplicateEntry(duplicate);
     }
 
     @Delete('duplicates')
@@ -279,7 +218,7 @@ export class PublicationController {
         }
     })
     duplicate_del(@Body('duplicate') duplicate: PublicationDuplicate, @Body('soft') soft?: boolean) {
-        return this.publicationService.deleteDuplicate(duplicate.id, soft);
+        return this.publicationService.deleteDuplicateEntry(duplicate, soft);
     }
 
 }

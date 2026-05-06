@@ -4,42 +4,45 @@ import { PublicationController } from './PublicationController';
 
 describe('PublicationController', () => {
     let controller: PublicationController;
-    let publicationService: { save: jest.Mock; getDuplicates: jest.Mock; getAllDuplicates: jest.Mock; getPublication: jest.Mock };
-    let publicationChangeService: { getPublicationChangesForPublication: jest.Mock };
+    let publicationService: { saveOne: jest.Mock; getDuplicateEntries: jest.Mock; getPublicationOrFail: jest.Mock; getPublicationChanges: jest.Mock };
+    let publicationFilterService: { listDefinitions: jest.Mock; applyPaths: jest.Mock };
 
     beforeEach(() => {
         publicationService = {
-            save: jest.fn(),
-            getDuplicates: jest.fn(),
-            getAllDuplicates: jest.fn(),
-            getPublication: jest.fn(),
+            saveOne: jest.fn(),
+            getDuplicateEntries: jest.fn(),
+            getPublicationOrFail: jest.fn(),
+            getPublicationChanges: jest.fn(),
         };
-        publicationChangeService = {
-            getPublicationChangesForPublication: jest.fn(),
+        publicationFilterService = {
+            listDefinitions: jest.fn(),
+            applyPaths: jest.fn(),
         };
 
         controller = new PublicationController(
-            {} as any,
             publicationService as any,
-            publicationChangeService as any,
-            { get: jest.fn() } as any,
-            { get: jest.fn() } as any,
-            [],
+            publicationFilterService as any,
         );
     });
 
     it('returns publication changes for a publication id', async () => {
         const changes = [{ id: 1, publicationId: 42 }];
-        publicationChangeService.getPublicationChangesForPublication.mockResolvedValue(changes);
+        publicationService.getPublicationChanges.mockResolvedValue(changes);
 
         await expect(controller.changes(42)).resolves.toEqual(changes);
-        expect(publicationChangeService.getPublicationChangesForPublication).toHaveBeenCalledWith(42);
+        expect(publicationService.getPublicationChanges).toHaveBeenCalledWith(42);
     });
 
-    it('throws when no publication id is provided', async () => {
+    it('propagates change lookup errors from the service', async () => {
+        const error = new HttpException({
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+        }, 400);
+        publicationService.getPublicationChanges.mockRejectedValue(error);
+
         try {
-            await controller.changes(undefined);
-            fail('controller.changes should reject missing publication ids');
+            await controller.changes(undefined as any);
+            fail('controller.changes should propagate service errors');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);
             expect((error as HttpException).getResponse()).toMatchObject({
@@ -47,7 +50,7 @@ describe('PublicationController', () => {
                 code: ApiErrorCode.INVALID_REQUEST,
             });
         }
-        expect(publicationChangeService.getPublicationChangesForPublication).not.toHaveBeenCalled();
+        expect(publicationService.getPublicationChanges).toHaveBeenCalledWith(undefined);
     });
 
     it('rejects create requests that provide id 0', async () => {
@@ -61,11 +64,15 @@ describe('PublicationController', () => {
                 code: ApiErrorCode.INVALID_REQUEST,
             });
         }
-        expect(publicationService.save).not.toHaveBeenCalled();
+        expect(publicationService.saveOne).not.toHaveBeenCalled();
     });
 
-    it('throws a structured not-found error when a publication is missing', async () => {
-        publicationService.getPublication.mockResolvedValue(null);
+    it('propagates not-found errors from the publication service', async () => {
+        const error = new HttpException({
+            statusCode: 404,
+            code: ApiErrorCode.NOT_FOUND,
+        }, 404);
+        publicationService.getPublicationOrFail.mockRejectedValue(error);
 
         try {
             await controller.one(123, { user: { read: true, write_publication: true, username: 'alice' } } as any);
@@ -79,11 +86,10 @@ describe('PublicationController', () => {
         }
     });
 
-    it('treats duplicate id 0 as a provided id instead of loading all duplicates', async () => {
-        publicationService.getDuplicates.mockResolvedValue([{ id: 7 }]);
+    it('delegates duplicate lookup to the publication service', async () => {
+        publicationService.getDuplicateEntries.mockResolvedValue([{ id: 7 }]);
 
         await expect(controller.duplicates(0)).resolves.toEqual([{ id: 7 }]);
-        expect(publicationService.getDuplicates).toHaveBeenCalledWith(0);
-        expect(publicationService.getAllDuplicates).not.toHaveBeenCalled();
+        expect(publicationService.getDuplicateEntries).toHaveBeenCalledWith(0, undefined);
     });
 });

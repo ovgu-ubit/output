@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { Between, Brackets, DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, ILike, In, IsNull, LessThan, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CompareOperation, JoinOperation, SearchFilter, SearchFilterValue } from '../../../../output-interfaces/Config';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
 import { Author } from '../../author/Author.entity';
-import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from '../../common/api-error';
+import { createEntityLockedHttpException, createInternalErrorHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../../common/api-error';
 import { EditLockableEntity, EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../../common/edit-lock';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { mergeEntities } from '../../common/merge';
@@ -115,6 +115,81 @@ export class PublicationService {
         private instService: InstituteService,
         private publicationChangeService: PublicationChangeService,
         private dataSource: DataSource) { }
+
+    public async getAllForReportingYear(yop: number | null | undefined, canReadInvoices = false) {
+        let reportingYear = yop;
+        if (!reportingYear) {
+            reportingYear = Number(await this.configService.get('reporting_year'));
+        }
+
+        const beginDate = new Date(Date.UTC(reportingYear, 0, 1, 0, 0, 0, 0));
+        const endDate = new Date(Date.UTC(reportingYear, 11, 31, 23, 59, 59, 999));
+
+        return this.pubRepository.find({
+            where: [{ pub_date: Between(beginDate, endDate) }],
+            relations: {
+                oa_category: true,
+                invoices: canReadInvoices,
+                authorPublications: {
+                    author: true,
+                    institute: true,
+                },
+                greater_entity: true,
+                pub_type: true,
+                publisher: true,
+                contract: true,
+                funders: true,
+            }
+        }).catch((error: unknown) => {
+            console.log(error);
+            throw createInternalErrorHttpException();
+        });
+    }
+
+    public async getPublicationOrFail(id: number, reader: boolean, writer: boolean, user?: string) {
+        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given');
+        const publication = await this.getPublication(id, reader, writer, user);
+        if (!publication) throw createNotFoundHttpException('Publication not found.');
+        return publication;
+    }
+
+    public async getPublicationChanges(id: number) {
+        if (!hasProvidedEntityId(id)) throw createInvalidRequestHttpException('id must be given');
+        return this.publicationChangeService.getPublicationChangesForPublication(id);
+    }
+
+    public async getIndexEntries(yop: number, soft?: boolean): Promise<PublicationIndex[]> {
+        if ((yop === null || yop === undefined) && !soft) {
+            throw createInvalidRequestHttpException('reporting year or soft has to be given');
+        }
+
+        if (soft) return this.softIndex();
+
+        const reportingYear = Number(yop);
+        if (Number.isNaN(reportingYear)) return this.index(null);
+        return this.index(reportingYear);
+    }
+
+    public saveOne(publication: Publication, user?: string) {
+        return this.save([publication], { by_user: user });
+    }
+
+    public updateEntries(publications: Publication[] | Publication, user?: string) {
+        return this.update(Array.isArray(publications) ? publications : [publications], { by_user: user });
+    }
+
+    public getDuplicateEntries(id: number, soft?: boolean) {
+        if (hasProvidedEntityId(id)) return this.getDuplicates(id);
+        return this.getAllDuplicates(soft);
+    }
+
+    public saveDuplicateEntry(duplicate: PublicationDuplicate) {
+        return this.saveDuplicate(duplicate.id_first, duplicate.id_second, duplicate.description);
+    }
+
+    public deleteDuplicateEntry(duplicate: PublicationDuplicate, soft?: boolean) {
+        return this.deleteDuplicate(duplicate.id, soft);
+    }
 
     public async save(pub: Publication[], options?: SavePublicationOptions) {
         const manager = options?.manager;

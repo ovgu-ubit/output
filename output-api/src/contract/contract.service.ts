@@ -160,6 +160,14 @@ export class ContractService extends AbstractEntityService<Contract> {
         return this.splitContractComponentInvoices(component);
     }
 
+    public async oneComponentOrFail(id: number) {
+        const component = await this.oneComponent(id);
+        if (!component) {
+            throw createNotFoundHttpException('Contract component not found.');
+        }
+        return component;
+    }
+
     public async deleteComponents(components: Pick<ContractComponent, 'id'>[], manager?: EntityManager) {
         if (!manager) {
             return this.dataSource.transaction(async (m) => this.deleteComponents(components, m));

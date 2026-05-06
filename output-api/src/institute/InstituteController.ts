@@ -1,11 +1,11 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Request } from "express";
 import { InstituteService } from "./institute.service";
 import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
 import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { createNotFoundHttpException } from "../common/api-error";
 import { assertCreateRequestHasNoId } from "../common/entity-id";
 
 @Controller("institute")
@@ -35,9 +35,7 @@ export class InstituteController {
         type: Institute
     })
     async one(@Param('id') id: number, @Req() request: Request): Promise<Institute> {
-        const institute = await this.instService.one(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
-        if (!institute) throw createNotFoundHttpException('Institute not found.');
-        return institute;
+        return this.instService.oneOrFail(id, request['user']? request['user']['write'] : false, request['user']?.['username']);
     }
 
     @Post()
