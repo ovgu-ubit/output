@@ -16,7 +16,8 @@ describe('StatisticsYearComponent', () => {
       'oaCat',
       'publisher',
       'pub_type',
-      'contract'
+      'contract',
+      'costCenter'
     ]);
 
     statService.corresponding.and.returnValue(of([{ corresponding: true, value: 1000 }]));
@@ -26,6 +27,7 @@ describe('StatisticsYearComponent', () => {
     statService.publisher.and.returnValue(of([]));
     statService.pub_type.and.returnValue(of([]));
     statService.contract.and.returnValue(of([]));
+    statService.costCenter.and.returnValue(of([]));
 
     const route = {
       snapshot: {

@@ -32,8 +32,8 @@ type ChartBinding = {
   legendSeriesName?: string
 };
 
-type IncludedIdFilterKey = 'instituteId' | 'oaCatId' | 'contractId' | 'pubTypeId' | 'publisherId';
-type ExcludedIdFilterKey = 'notInstituteId' | 'notOaCatId' | 'notContractId' | 'notPubTypeId' | 'notPublisherId';
+type IncludedIdFilterKey = 'instituteId' | 'oaCatId' | 'contractId' | 'costCenterId' | 'pubTypeId' | 'publisherId';
+type ExcludedIdFilterKey = 'notInstituteId' | 'notOaCatId' | 'notContractId' | 'notCostCenterId' | 'notPubTypeId' | 'notPublisherId';
 
 type ChartClickEvent = {
   seriesName?: string,
@@ -202,6 +202,13 @@ export class StatisticsYearComponent implements OnInit {
       text: 'Anteil Verträge'
     }
   };
+  eChartOptionsCostCenter: EChartsCoreOption = {
+    ...this.eChartOptionsDefault,
+    title: {
+      ...this.eChartTitle,
+      text: 'Anteil Kostenstellen'
+    }
+  };
 
   charts: ChartBinding[] = [];
   chartDisplayMode: ChartDisplayMode = 'pie';
@@ -215,11 +222,13 @@ export class StatisticsYearComponent implements OnInit {
   publisherData: ChartDatum[] = [];
   publicationTypeData: ChartDatum[] = [];
   contractData: ChartDatum[] = [];
+  costCenterData: ChartDatum[] = [];
 
   institutes: LookupOption[] = [];
   oaCategories: LookupOption[] = [];
   publishers: LookupOption[] = [];
   contracts: LookupOption[] = [];
+  costCenters: LookupOption[] = [];
   publicationTypes: LookupOption[] = [];
 
   filter: FilterOptions = {};
@@ -302,6 +311,16 @@ export class StatisticsYearComponent implements OnInit {
         this.contracts = data.map(entry => ({ id: entry.id, label: entry.contract }));
         this.contractData = this.sortChartData(data.map(entry => ({
           name: entry.contract ? entry.contract : 'Unbekannt',
+          value: Number(entry.value)
+        })));
+        this.refreshChartOptions();
+      })));
+
+    ob$ = merge(ob$, this.statService.costCenter(this.year, costs, this.filter).pipe(map(
+      data => {
+        this.costCenters = data.map(entry => ({ id: entry.id, label: entry.cost_center }));
+        this.costCenterData = this.sortChartData(data.map(entry => ({
+          name: entry.cost_center ? entry.cost_center : 'Unbekannt',
           value: Number(entry.value)
         })));
         this.refreshChartOptions();
@@ -520,6 +539,10 @@ export class StatisticsYearComponent implements OnInit {
       return this.contracts;
     }
 
+    if (seriesName === 'Kostenstelle') {
+      return this.costCenters;
+    }
+
     return undefined;
   }
 
@@ -544,6 +567,11 @@ export class StatisticsYearComponent implements OnInit {
       return 'contractId';
     }
 
+    if (seriesName === 'Kostenstelle') {
+      return 'costCenterId';
+    }
+
+
     return undefined;
   }
 
@@ -566,6 +594,10 @@ export class StatisticsYearComponent implements OnInit {
 
     if (seriesName === 'Vertrag') {
       return 'notContractId';
+    }
+
+    if (seriesName === 'Kostenstelle') {
+      return 'notCostCenterId';
     }
 
     return undefined;
@@ -609,6 +641,8 @@ export class StatisticsYearComponent implements OnInit {
     this.eChartOptionsPublisher = this.createDistributionEChartOptions('Anteil Verlage', 'Verlag', this.publisherData, valueSuffix);
     this.eChartOptionsPubType = this.createDistributionEChartOptions('Anteil Publikationsarten', 'Publikationsart', this.publicationTypeData, valueSuffix);
     this.eChartOptionsContract = this.createDistributionEChartOptions('Anteil Verträge', 'Vertrag', this.contractData, valueSuffix);
+    this.eChartOptionsCostCenter = this.createDistributionEChartOptions('Anteil Kostenstellen', 'Kostenstelle', this.costCenterData, valueSuffix);
+
     this.charts = [
       { options: this.eChartOptionsLocked },
       { options: this.eChartOptions },
@@ -616,7 +650,8 @@ export class StatisticsYearComponent implements OnInit {
       { options: this.eChartOptionsOACat, legendSeriesName: 'OA-Kategorie' },
       { options: this.eChartOptionsPublisher, legendSeriesName: 'Verlag' },
       { options: this.eChartOptionsPubType, legendSeriesName: 'Publikationsart' },
-      { options: this.eChartOptionsContract, legendSeriesName: 'Vertrag' }
+      { options: this.eChartOptionsContract, legendSeriesName: 'Vertrag' },
+      { options: this.eChartOptionsCostCenter, legendSeriesName: 'Kostenstelle' }
     ];
   }
 
