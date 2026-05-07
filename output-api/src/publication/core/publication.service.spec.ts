@@ -566,7 +566,7 @@ describe('PublicationService', () => {
     it('checks DOI or title existence using case-insensitive matching', async () => {
         pubRepository.findOne.mockResolvedValue({ id: 42 } as Publication);
 
-        const exists = await service.checkDOIorTitleAlreadyExists('10.1234/doi', 'Some Title');
+        const exists = await publicationIndexService.checkDOIorTitleAlreadyExists('10.1234/doi', 'Some Title');
 
         expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
             where: expect.arrayContaining([
@@ -582,7 +582,7 @@ describe('PublicationService', () => {
         const matchedPub = { id: 11, title: 'Trimmed Title', doi: '10.5678/abc' } as Publication;
         pubRepository.findOne.mockResolvedValue(matchedPub);
 
-        const result = await service.getPubwithDOIorTitle(' 10.5678/abc ', ' Trimmed Title ');
+        const result = await publicationIndexService.getPubwithDOIorTitle(' 10.5678/abc ', ' Trimmed Title ');
 
         expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
             withDeleted: true,

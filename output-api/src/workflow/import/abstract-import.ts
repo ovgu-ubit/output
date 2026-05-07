@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
 import { WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
@@ -28,6 +28,7 @@ import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
 import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
 
 export function ImportService(meta: { path: string }): ClassDecorator {
     return (target) => Reflect.defineMetadata("import_service", meta, target);
@@ -42,6 +43,10 @@ export function getImportServiceMeta(target: Function): { path: string } | undef
  * abstract class for all imports
  */
 export abstract class AbstractImportService {
+    @Inject(PublicationIndexService)
+    protected publicationIndexService!: PublicationIndexService;
+
+    protected readonly doiRegex = /10\.[0-9]{4,9}\/[-._;()/:A-Z0-9]+/i;
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
@@ -392,7 +397,7 @@ export abstract class AbstractImportService {
         const cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(item));
 
         let doi;
-        const doi_a = this.publicationService.doi_regex.exec(this.getDOI(item)?.trim());
+        const doi_a = this.doiRegex.exec(this.getDOI(item)?.trim());
         if (doi_a) doi = doi_a[0];
 
         //construct publication object to save

@@ -14,6 +14,7 @@ import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
@@ -26,12 +27,13 @@ import { WorkflowReportService } from '../workflow-report.service';
 export class CrossrefEnrichService extends ApiEnrichDOIService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+        protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstituteService, 
         protected languageService:LanguageService,  protected roleService: RoleService,  protected configService: AppConfigService,
         protected workflowReportService: WorkflowReportService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, workflowReportService, http);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, workflowReportService, http);
         
     }
 

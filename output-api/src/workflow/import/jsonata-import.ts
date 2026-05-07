@@ -363,7 +363,7 @@ export class JSONataImportService extends AbstractImportService {
             return;
         }
 
-        const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+        const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
         if (!flag) {
             const pubNew = await this.mapNew(pub).catch(async e => {
                 await this.workflowReportService.write(this.workflowReport.id, {
@@ -392,7 +392,7 @@ export class JSONataImportService extends AbstractImportService {
 
         if (!update) return;
 
-        const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+        const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
         if (orig.locked || orig.delete_date) return;
         const pubUpd = await this.mapUpdate(pub, orig).catch(async e => {
             await this.workflowReportService.write(this.workflowReport.id, {
@@ -495,7 +495,7 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
                 try {
-                    orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                    orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                 } catch (err) {
                     result.result.issues.push({
                         message: 'Could not retrieve original via DOI or title', error: err instanceof Error
@@ -715,7 +715,7 @@ export class JSONataImportService extends AbstractImportService {
         try {
             if (!data) return;
             for (const pub of data) {
-                const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                 if (!flag) {
                     const pubNew = await this.mapNew(pub).catch(e =>
                         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` }));
@@ -724,7 +724,7 @@ export class JSONataImportService extends AbstractImportService {
                         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
                     }
                 } else if (update) {
-                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                    const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                     if (orig.locked) continue;
                     const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error updating publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
@@ -922,7 +922,7 @@ export class JSONataImportService extends AbstractImportService {
             throw createInvalidRequestHttpException('Enrich cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
 
-        const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
+        const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationIndexService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
             await this.finishWorkflowRun('Nothing to enrich', 'Nothing to enrich on ' + new Date(), {
                 count_import: 0,
@@ -953,7 +953,7 @@ export class JSONataImportService extends AbstractImportService {
                 try {
                     const item = await this.getDataEnrich(data);
 
-                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                    const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                     if (!orig?.locked) {
                         const pubUpd = await this.mapUpdate(item, orig).catch(async e => {
                             await this.workflowReportService.write(this.workflowReport.id, {

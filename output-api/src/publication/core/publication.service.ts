@@ -16,7 +16,6 @@ import { Role } from '../relations/Role.entity';
 import { Publication } from './Publication.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationChangeService } from './publication-change.service';
-import { PublicationIndexService } from './publication-index.service';
 
 interface SavePublicationOptions {
     workflowReport?: IWorkflowReport;
@@ -29,14 +28,10 @@ const PUBLICATION_LOCK_SCOPE = 'publication';
 
 @Injectable()
 export class PublicationService {
-    // Temporarily kept for callers that still reach into the service instead of using isDOIvalid().
-    readonly doi_regex = /10\.[0-9]{4,9}\/[-._;()/:A-Z0-9]+/i;
-
     constructor(@InjectRepository(Publication) private pubRepository: Repository<Publication>,
         private configService: AppConfigService,
         private publicationChangeService: PublicationChangeService,
         private dataSource: DataSource,
-        private publicationIndexService: PublicationIndexService,
         private publicationRelationService: PublicationRelationService) { }
 
     public async getPublicationOrFail(id: number, reader: boolean, writer: boolean, user?: string) {
@@ -186,18 +181,6 @@ export class PublicationService {
 
         if (!reader) pub.add_info = undefined;
         return pub;
-    }
-    
-    public isDOIvalid(pub: Publication): boolean {
-        return this.publicationIndexService.isDOIvalid(pub);
-    }
-
-    public async checkDOIorTitleAlreadyExists(doi: string, title: string) {
-        return this.publicationIndexService.checkDOIorTitleAlreadyExists(doi, title);
-    }
-
-    public async getPubwithDOIorTitle(doi: string, title: string): Promise<Publication> {
-        return this.publicationIndexService.getPubwithDOIorTitle(doi, title);
     }
 
     async combine(id1: number, ids: number[], alias_strings?: string[]) {

@@ -25,6 +25,18 @@ const expectApiError = async (
     }
 };
 
+const createPublicationIndexServiceMock = () => ({
+    checkDOIorTitleAlreadyExists: jest.fn(async () => false),
+    getPubwithDOIorTitle: jest.fn(async () => null),
+    isDOIvalid: jest.fn(() => true),
+});
+
+const createPublicationRelationServiceMock = () => ({
+    saveAuthorPublication: jest.fn(async () => undefined),
+    getAuthorsPublication: jest.fn(async () => []),
+    resetAuthorPublication: jest.fn(async () => undefined),
+});
+
 describe('JSONataImportService.setVariables', () => {
     let service: JSONataImportService;
     let configService: { get: jest.Mock };
@@ -41,6 +53,7 @@ describe('JSONataImportService.setVariables', () => {
         service = new JSONataImportService(
             {} as any,
             {} as any,
+            createPublicationRelationServiceMock() as any,
             {} as any,
             {} as any,
             {} as any,
@@ -56,6 +69,7 @@ describe('JSONataImportService.setVariables', () => {
             {} as any,
             http as any,
         );
+        (service as any).publicationIndexService = createPublicationIndexServiceMock();
 
         (service as any).reporting_year = '2024';
         (service as any).searchText = 'foo+or+bar';
@@ -142,10 +156,9 @@ describe('JSONataImportService workflow report status', () => {
         };
 
         service = new JSONataImportService(
-            {
-                checkDOIorTitleAlreadyExists: jest.fn(async () => false),
-            } as any,
             {} as any,
+            {} as any,
+            createPublicationRelationServiceMock() as any,
             {} as any,
             {} as any,
             {} as any,
@@ -163,6 +176,7 @@ describe('JSONataImportService workflow report status', () => {
             workflowReportService as any,
             http as any,
         );
+        (service as any).publicationIndexService = createPublicationIndexServiceMock();
 
         (service as any).workflowReport = { id: 11, params: {} };
         (service as any).importDefinition = {
@@ -221,9 +235,11 @@ describe('JSONataImportService workflow report status', () => {
 });
 
 describe('JSONataImportService optional_fields config usage', () => {
-    const createService = (configService: { get: jest.Mock }) => new JSONataImportService(
-        { doi_regex: /10\.[0-9]{4,9}\/[-._;()/:A-Z0-9]+/i } as any,
+    const createService = (configService: { get: jest.Mock }) => {
+        const service = new JSONataImportService(
+        {} as any,
         { findOrSave: jest.fn() } as any,
+        createPublicationRelationServiceMock() as any,
         { findOrSave: jest.fn() } as any,
         { findOrSave: jest.fn() } as any,
         { findOrSave: jest.fn(async () => null) } as any,
@@ -238,7 +254,10 @@ describe('JSONataImportService optional_fields config usage', () => {
         configService as any,
         { write: jest.fn(), updateStatus: jest.fn(), finish: jest.fn() } as any,
         { get: jest.fn() } as any,
-    );
+        );
+        (service as any).publicationIndexService = createPublicationIndexServiceMock();
+        return service;
+    };
 
     it('loads optional_fields once in mapNew', async () => {
         const configService = {

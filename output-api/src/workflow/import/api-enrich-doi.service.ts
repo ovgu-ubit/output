@@ -9,6 +9,7 @@ import { GreaterEntityService } from '../../greater_entity/greater-entitiy.servi
 import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { LanguageService } from '../../publication/lookups/language.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
@@ -33,12 +34,12 @@ export function getEnrichServiceMeta(target: Function): {path: string} | undefin
  */
 export abstract class ApiEnrichDOIService extends AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
         protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     private publicationsUpdate = [];
@@ -118,7 +119,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.errors = 0;
         const obs$ = [];
-        const publications = (await this.publicationService.get(this.whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
+        const publications = (await this.publicationService.get(this.whereClause)).filter(pub => this.publicationIndexService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
             this.progress = 0;
             this.status_text = 'Nothing to enrich on ' + new Date();
@@ -134,8 +135,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                 if (data) {
                     const item = this.getData(data);
                     if (item) {
-                        //let orig = publications.find(e => e.doi.toLocaleLowerCase().trim().includes(this.getDOI(item).toLocaleLowerCase().trim()));
-                        const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                        const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                         if (!orig.locked) {
                             const pubUpd = await this.mapUpdate(item, orig).catch(e => {
                                 this.reportService.write(this.report, { type: 'error', publication_id: orig?.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
