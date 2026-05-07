@@ -5,7 +5,7 @@ import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex
 import { Publication } from '../../publication/core/Publication.entity';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { AbstractExportService, ExportService } from './abstract-export.service';
-import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 
@@ -16,7 +16,7 @@ export class JulichExportService extends AbstractExportService {
     excel_response = true;
     df: Intl.DateTimeFormat;
 
-    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: AppConfigService
+    constructor(private publicationIndexService: PublicationIndexService, private reportService: ReportItemService, private configService: AppConfigService
     ) {
         super();
         this.df = new Intl.DateTimeFormat('de-DE');
@@ -28,7 +28,7 @@ export class JulichExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Export', this.name, by_user);
 
-        let pubs = await this.publicationService.getAll(filter?.filter);
+        let pubs = await this.publicationIndexService.getAll(filter?.filter);
         if (filter && filter.paths) for (const path of filter.paths) {
             const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;

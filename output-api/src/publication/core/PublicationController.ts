@@ -6,6 +6,7 @@ import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex
 import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { PublicationFilterService } from "./publication-filter.service";
+import { PublicationIndexService } from "./publication-index.service";
 import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
@@ -17,6 +18,7 @@ export class PublicationController {
 
     constructor(
         private publicationService: PublicationService,
+        private publicationIndexService: PublicationIndexService,
         private publicationFilterService: PublicationFilterService,
     ) { }
 
@@ -34,7 +36,7 @@ export class PublicationController {
         isArray: true
     })
     all(@Query('yop') yop: number, @Req() request: Request) {
-        return this.publicationService.getAllForReportingYear(yop, request['user'] ? request['user']['read'] : false);
+        return this.publicationIndexService.getAllForReportingYear(yop, request['user'] ? request['user']['read'] : false);
     }
 
     @Get('one')
@@ -81,7 +83,7 @@ export class PublicationController {
         example: "2022"
     })
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
-        return this.publicationService.getIndexEntries(yop, soft);
+        return this.publicationIndexService.getIndexEntries(yop, soft);
     }
 
     @Post()
@@ -120,7 +122,7 @@ export class PublicationController {
 
     @Get('reporting_year')
     getReportingYear() {
-        return this.publicationService.getReportingYears();
+        return this.publicationIndexService.getReportingYears();
     }
 
     @Post('combine')
@@ -157,7 +159,7 @@ export class PublicationController {
         }
     })
     async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
-        const filteredPublications = await this.publicationService.filterIndex(filter);
+        const filteredPublications = await this.publicationIndexService.filterIndex(filter);
         return this.publicationFilterService.applyPaths(filteredPublications, paths);
     }
 

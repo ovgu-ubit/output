@@ -12,7 +12,7 @@ import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { Publication } from '../../publication/core/Publication.entity';
-import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
@@ -44,7 +44,7 @@ export class JSONataExportService extends AbstractExportService {
     private workflowReport?: WorkflowReport;
 
     constructor(
-        private publicationService: PublicationService,
+        private publicationIndexService: PublicationIndexService,
         private configService: AppConfigService,
         private workflowReportService: WorkflowReportService,
         private invoiceService: InvoiceService,
@@ -120,7 +120,7 @@ export class JSONataExportService extends AbstractExportService {
         });
 
         try {
-            let publications = await this.publicationService.getAll(filter?.filter, { serializeDates: true });
+            let publications = await this.publicationIndexService.getAll(filter?.filter, { serializeDates: true });
             if (filter) {
                 const configuredFilterServices = (await this.configService.get('filter_services')) ?? [];
                 for (const path of filter.paths) {

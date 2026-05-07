@@ -13,7 +13,7 @@ import { ContractService } from '../../contract/contract.service';
 import { FunderService } from '../../funder/funder.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
-import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
@@ -26,7 +26,7 @@ export class ExcelExportService extends AbstractExportService {
     excel_response = true;
     df: Intl.DateTimeFormat;
 
-    constructor(private publicationService: PublicationService, private reportService: ReportItemService, private configService: AppConfigService, 
+    constructor(private publicationIndexService: PublicationIndexService, private reportService: ReportItemService, private configService: AppConfigService, 
         private invoiceService: InvoiceService, private authorService: AuthorService, private instService:InstituteService,
         private geService: GreaterEntityService, private publService: PublisherService, private contractService:ContractService,
         private funderService: FunderService, private oaService: OACategoryService, private ptService:PublicationTypeService
@@ -41,7 +41,7 @@ export class ExcelExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Export', this.name, by_user);
 
-        let pubs = await this.publicationService.getAll(filter?.filter);
+        let pubs = await this.publicationIndexService.getAll(filter?.filter);
         if (filter) for (const path of filter.paths) {
             const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;

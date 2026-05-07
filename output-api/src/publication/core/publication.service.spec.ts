@@ -17,6 +17,8 @@ import { AppConfigService } from '../../config/app-config.service';
 import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
 import { PublicationChangeService } from './publication-change.service';
+import { PublicationIndexService } from './publication-index.service';
+import { PublicationRelationService } from '../relations/publication-relation.service';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -41,6 +43,7 @@ const expectApiError = async (
 
 describe('PublicationService', () => {
     let service: PublicationService;
+    let publicationIndexService: PublicationIndexService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
     let pubAutRepository: jest.Mocked<Partial<Repository<AuthorPublication>>>;
     let invoiceRepository: jest.Mocked<Partial<Repository<Invoice>>>;
@@ -156,6 +159,8 @@ describe('PublicationService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PublicationService,
+                PublicationIndexService,
+                PublicationRelationService,
                 { provide: getRepositoryToken(Publication), useValue: pubRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
@@ -165,6 +170,7 @@ describe('PublicationService', () => {
         }).compile();
 
         service = module.get(PublicationService);
+        publicationIndexService = module.get(PublicationIndexService);
     });
 
     it('combines publications by preserving locked state and aggregating related records', async () => {
@@ -799,12 +805,10 @@ describe('PublicationService', () => {
                 findInstituteIdsIncludingSubInstitutes: jest.fn(),
             };
 
-            service = new PublicationService(
+            publicationIndexService = new PublicationIndexService(
                 pubRepository as any,
                 configService as any,
                 instituteService as any,
-                publicationChangeService as any,
-                dataSource as any,
             );
         });
 
@@ -819,7 +823,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publication.title ILIKE :filter_0',
@@ -839,7 +843,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11]);
         expect(queryBuilder.where).toHaveBeenCalledWith(
@@ -859,7 +863,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" = :filter_0)',
@@ -878,7 +882,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :filter_0)`,
@@ -898,7 +902,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND institute_filter.label ILIKE :filter_0)',
@@ -919,7 +923,7 @@ describe('PublicationService', () => {
         };
 
         try {
-            await service.filter(filter, queryBuilder as any);
+            await publicationIndexService.filter(filter, queryBuilder as any);
             fail('service.filter should reject unsupported filter keys');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);
@@ -950,7 +954,7 @@ describe('PublicationService', () => {
             ]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publisher.label = :filter_0',
@@ -994,8 +998,8 @@ describe('PublicationService', () => {
             }]
         };
 
-        const firstCall = service.filter(firstFilter, firstQueryBuilder as any);
-        const secondCall = service.filter(secondFilter, secondQueryBuilder as any);
+        const firstCall = publicationIndexService.filter(firstFilter, firstQueryBuilder as any);
+        const secondCall = publicationIndexService.filter(secondFilter, secondQueryBuilder as any);
         resolveInstituteIds?.([11, 12, 13]);
 
         await Promise.all([firstCall, secondCall]);
@@ -1023,7 +1027,7 @@ describe('PublicationService', () => {
             ]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publication.pub_date IS NULL AND publication.pub_date_print IS NULL AND publication.pub_date_accepted IS NULL AND publication.pub_date_submitted IS NULL',
@@ -1054,7 +1058,7 @@ describe('PublicationService', () => {
             ]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publication.title ILIKE :filter_0',
@@ -1089,7 +1093,7 @@ describe('PublicationService', () => {
                 return 5;
             });
 
-            await service.indexQuery();
+            await publicationIndexService.indexQuery();
 
             expect(configService.get).toHaveBeenCalledTimes(1);
             expect(configService.get).toHaveBeenCalledWith('pub_index_columns');

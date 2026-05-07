@@ -27,6 +27,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 
 export function ImportService(meta: { path: string }): ClassDecorator {
     return (target) => Reflect.defineMetadata("import_service", meta, target);
@@ -42,7 +43,7 @@ export function getImportServiceMeta(target: Function): { path: string } | undef
  */
 export abstract class AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
@@ -447,7 +448,7 @@ export abstract class AbstractImportService {
             //save publication object and assign authorships
             const pub_ent = (await this.publicationService.save([obj], { workflowReport: this.workflowReport })) [0];
             for (const aut of authors_entities) {
-                await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
+                await this.publicationRelationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
             }
 
             return pub_ent;
@@ -750,7 +751,7 @@ export abstract class AbstractImportService {
         }
 
         if (!orig.locked_author) if (this.updateMapping.author_inst !== UpdateOptions.IGNORE) {
-            const existing_aut = await this.publicationService.getAuthorsPublication(orig);
+            const existing_aut = await this.publicationRelationService.getAuthorsPublication(orig);
             if (!(this.updateMapping.author_inst === UpdateOptions.REPLACE_IF_EMPTY && existing_aut.length === 0)) {
                 const authors_entities: any[] = [];
                 const authors_inst = this.getInstAuthors(element);
@@ -765,12 +766,12 @@ export abstract class AbstractImportService {
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.REPLACE) {
                     //delete existing author publication relationships
-                    if (!this.dryRun) await this.publicationService.resetAuthorPublication(orig);
+                    if (!this.dryRun) await this.publicationRelationService.resetAuthorPublication(orig);
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.APPEND) {
                     for (const aut of authors_entities) if (
                         !existing_aut.find(e => e.authorId === aut.author.id)) {
-                        if (!this.dryRun) await this.publicationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
+                        if (!this.dryRun) await this.publicationRelationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
                         fields.push('author_inst')
                     }
                 }

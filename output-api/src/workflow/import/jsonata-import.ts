@@ -31,6 +31,7 @@ import { hasProvidedEntityId } from '../../common/entity-id';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 import { WorkflowReportService } from '../workflow-report.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 
 export interface JSONataParsedObject {
     title?: string;
@@ -74,12 +75,12 @@ type RequestMode = 'offset' | 'page';
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     protected updateMapping: UpdateMapping = {

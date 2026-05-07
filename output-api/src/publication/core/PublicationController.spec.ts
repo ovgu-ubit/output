@@ -5,6 +5,7 @@ import { PublicationController } from './PublicationController';
 describe('PublicationController', () => {
     let controller: PublicationController;
     let publicationService: { saveOne: jest.Mock; getDuplicateEntries: jest.Mock; getPublicationOrFail: jest.Mock; getPublicationChanges: jest.Mock };
+    let publicationIndexService: { getAllForReportingYear: jest.Mock; getIndexEntries: jest.Mock; getReportingYears: jest.Mock; filterIndex: jest.Mock };
     let publicationFilterService: { listDefinitions: jest.Mock; applyPaths: jest.Mock };
 
     beforeEach(() => {
@@ -14,6 +15,12 @@ describe('PublicationController', () => {
             getPublicationOrFail: jest.fn(),
             getPublicationChanges: jest.fn(),
         };
+        publicationIndexService = {
+            getAllForReportingYear: jest.fn(),
+            getIndexEntries: jest.fn(),
+            getReportingYears: jest.fn(),
+            filterIndex: jest.fn(),
+        };
         publicationFilterService = {
             listDefinitions: jest.fn(),
             applyPaths: jest.fn(),
@@ -21,6 +28,7 @@ describe('PublicationController', () => {
 
         controller = new PublicationController(
             publicationService as any,
+            publicationIndexService as any,
             publicationFilterService as any,
         );
     });
