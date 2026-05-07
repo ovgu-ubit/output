@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
-import { CompareOperation, JoinOperation } from '../../../output-interfaces/Config';
+import {  ApiErrorCode  } from '@output/interfaces';
+import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import { validateValidationWorkflow } from './validation-workflow.schema';
 
 const expectValidationFailure = (action: () => unknown) => {

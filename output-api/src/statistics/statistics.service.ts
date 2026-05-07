@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
+import {  FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 import { createForbiddenHttpException, createInvalidRequestHttpException } from '../common/api-error';
 import { InstituteService } from '../institute/institute.service';
 import { Publication } from '../publication/core/Publication.entity';

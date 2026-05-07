@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import { ValidationRule, ValidationTarget, ValidationWorkflow as IValidationWorkflow } from "../../../output-interfaces/Workflow";
-import { SearchFilter } from "../../../output-interfaces/Config";
+import {  ValidationRule, ValidationTarget, ValidationWorkflow as IValidationWorkflow  } from '@output/interfaces';
+import {  SearchFilter  } from '@output/interfaces';
 import { WorkflowReport } from "./WorkflowReport.entity";
 
 @Entity("workflow_validation")

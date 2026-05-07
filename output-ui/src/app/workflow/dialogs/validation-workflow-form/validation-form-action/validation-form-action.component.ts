@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ValidationWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow  } from '@output/interfaces';
 import { ValidationWorkflowService } from 'src/app/workflow/validation-workflow.service';
 import { ValidationFormFacade } from '../validation-form-facade.service';
 

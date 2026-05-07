@@ -4,7 +4,7 @@ import { ImportService } from 'src/app/administration/services/import.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
 import { map, merge, Subject, takeUntil } from 'rxjs';
-import { CSVMapping } from '../../../../../../output-interfaces/Config';
+import {  CSVMapping  } from '@output/interfaces';
 import { ConfigService } from '../../services/config.service';
 
 @Component({

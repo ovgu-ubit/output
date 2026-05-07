@@ -8,8 +8,8 @@ import {
     Repository,
     SelectQueryBuilder,
 } from 'typeorm';
-import { CompareOperation, JoinOperation, SearchFilter, SearchFilterValue } from '../../../../output-interfaces/Config';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import {  CompareOperation, JoinOperation, SearchFilter, SearchFilterValue  } from '@output/interfaces';
+import {  PublicationIndex  } from '@output/interfaces';
 import { createInternalErrorHttpException, createInvalidRequestHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';

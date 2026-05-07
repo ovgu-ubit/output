@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ExportWorkflow, ImportWorkflow, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import {  ExportWorkflow, ImportWorkflow, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { AppConfigService } from '../config/app-config.service';
 import { PublicationChangeService } from '../publication/core/publication-change.service';

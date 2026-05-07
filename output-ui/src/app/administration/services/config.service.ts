@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Config, HealthState } from '../../../../../output-interfaces/Config';
+import {  Config, HealthState  } from '@output/interfaces';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Injectable({

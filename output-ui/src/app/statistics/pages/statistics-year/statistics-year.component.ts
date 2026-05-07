@@ -4,7 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, map, merge } from 'rxjs';
 import { EChartsCoreOption } from 'echarts/core';
 import { StatisticsService } from 'src/app/statistics/statistics.service';
-import { FilterOptions } from '../../../../../../output-interfaces/Statistics';
+import {  FilterOptions  } from '@output/interfaces';
 
 type ChartDisplayMode = 'pie' | 'treemap';
 

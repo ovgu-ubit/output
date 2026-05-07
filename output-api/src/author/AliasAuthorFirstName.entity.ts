@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
-import { AliasAuthorFirstName as IAliasAuthorFirstName } from "../../../output-interfaces/Alias";
+import {  AliasAuthorFirstName as IAliasAuthorFirstName  } from '@output/interfaces';
 import { Author } from "./Author.entity";
 
 @Entity()

@@ -3,8 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
-import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
+import {  CompareOperation, JoinOperation, SearchFilter  } from '@output/interfaces';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';

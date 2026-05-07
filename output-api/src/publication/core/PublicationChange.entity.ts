@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, RelationId } from "typeorm";
-import { PublicationChange as IPublicationChange } from "../../../../output-interfaces/Workflow";
+import {  PublicationChange as IPublicationChange  } from '@output/interfaces';
 import { WorkflowReport } from "../../workflow/WorkflowReport.entity";
 import { Publication } from "./Publication.entity";
 

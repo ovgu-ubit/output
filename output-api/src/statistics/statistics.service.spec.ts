@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { StatisticsService } from './statistics.service';
 import { Publication } from '../publication/core/Publication.entity';
 import { InstituteService } from '../institute/institute.service';
-import { GROUP, STATISTIC, TIMEFRAME } from '../../../output-interfaces/Statistics';
+import {  GROUP, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 
 describe('StatisticsService', () => {
     let service: StatisticsService;

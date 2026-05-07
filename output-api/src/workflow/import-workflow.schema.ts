@@ -1,6 +1,6 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
-import { ImportStrategy } from "../../../output-interfaces/Workflow";
+import {  ImportStrategy  } from '@output/interfaces';
 import { createValidationHttpException } from "../common/api-error";
 
 const StrategyTypeSchema = z.enum([

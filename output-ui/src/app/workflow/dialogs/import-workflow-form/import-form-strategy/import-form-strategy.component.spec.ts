@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
-import { ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportStrategy  } from '@output/interfaces';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { ImportFormStrategyComponent } from './import-form-strategy.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';

@@ -11,8 +11,8 @@ import { OACategoryService } from 'src/app/services/entities/oa-category.service
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatisticsService } from 'src/app/statistics/statistics.service';
-import { Contract, Institute, OA_Category, PublicationType, Publisher } from '../../../../../../output-interfaces/Publication';
-import { FilterOptions, HighlightOptions } from '../../../../../../output-interfaces/Statistics';
+import {  Contract, Institute, OA_Category, PublicationType, Publisher  } from '@output/interfaces';
+import {  FilterOptions, HighlightOptions  } from '@output/interfaces';
 import { EChartsCoreOption } from 'echarts/core';
 
 type PercentageSeriesPoint = {

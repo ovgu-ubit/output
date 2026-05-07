@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { createNotFoundHttpException } from '../common/api-error';
 import { ContractController } from './ContractController';
 

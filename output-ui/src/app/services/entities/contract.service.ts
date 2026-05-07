@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ContractIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { Contract } from '../../../../../output-interfaces/Publication';
+import {  ContractIndex  } from '@output/interfaces';
+import {  Contract  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { StatusService } from './status.service';
 
 describe('StatusService', () => {

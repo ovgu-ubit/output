@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ExportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ExportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';

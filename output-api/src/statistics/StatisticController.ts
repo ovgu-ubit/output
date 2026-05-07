@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Post, Body, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
-import { GROUP, FilterOptions, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
+import {  GROUP, FilterOptions, HighlightOptions, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 import { StatisticsService } from "./statistics.service";
 import { AccessGuard } from "../authorization/access.guard";
 

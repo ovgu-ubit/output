@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
-import { SearchFilter } from "../../../../output-interfaces/Config";
-import { PublicationIndex } from "../../../../output-interfaces/PublicationIndex";
+import {  SearchFilter  } from '@output/interfaces';
+import {  PublicationIndex  } from '@output/interfaces';
 import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { PublicationFilterService } from "./publication-filter.service";

@@ -1,5 +1,5 @@
-import { CompareOperation } from '../../../output-interfaces/Config';
-import { WorkflowType } from '../../../output-interfaces/Workflow';
+import {  CompareOperation  } from '@output/interfaces';
+import {  WorkflowType  } from '@output/interfaces';
 import { ValidationService } from './validation.service';
 
 describe('ValidationService', () => {

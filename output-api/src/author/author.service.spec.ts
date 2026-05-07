@@ -5,7 +5,7 @@ import { DataSource } from 'typeorm';
 import { of } from 'rxjs';
 import { Repository, FindOperator } from 'typeorm';
 
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { AuthorService } from './author.service';
 import { Author } from './Author.entity';
 import { AuthorPublication } from '../publication/relations/AuthorPublication.entity';

@@ -1,5 +1,5 @@
 import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
-import { CostType as ICostType} from "../../../output-interfaces/Publication"
+import {  CostType as ICostType } from '@output/interfaces'
 
 @Entity()
 export class CostType implements ICostType {

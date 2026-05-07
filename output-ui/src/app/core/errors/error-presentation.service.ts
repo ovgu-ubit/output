@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormArray, FormGroup } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription, take } from 'rxjs';
-import { ApiErrorCode, ApiErrorDetail } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode, ApiErrorDetail  } from '@output/interfaces';
 import { ApiErrorParser } from './api-error-parser.service';
 import { BackendAvailabilityService } from './backend-availability.service';
 import { ErrorMessageService } from './error-message.service';

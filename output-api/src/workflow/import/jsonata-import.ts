@@ -7,8 +7,8 @@ import { concat, concatMap, firstValueFrom, map, mergeAll, Observable, queueSche
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { ImportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
+import {  ImportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowReportItemLevel  } from '@output/interfaces';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';

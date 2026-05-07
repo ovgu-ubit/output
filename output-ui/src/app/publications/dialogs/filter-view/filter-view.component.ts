@@ -3,7 +3,7 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { MatChipListbox } from '@angular/material/chips';
-import { CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression } from '../../../../../../output-interfaces/Config';
+import {  CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression  } from '@output/interfaces';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { map, merge } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';

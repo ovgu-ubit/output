@@ -1,5 +1,5 @@
 ﻿import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { ContractModel, ContractComponent as IContractComponent } from "../../../output-interfaces/Publication";
+import {  ContractModel, ContractComponent as IContractComponent  } from '@output/interfaces';
 import { GreaterEntity } from "../greater_entity/GreaterEntity.entity";
 import { CostType } from "../invoice/CostType.entity";
 import { Invoice } from "../invoice/Invoice.entity";

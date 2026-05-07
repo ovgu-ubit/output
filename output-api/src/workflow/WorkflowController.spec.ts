@@ -1,4 +1,4 @@
-import { WorkflowType } from '../../../output-interfaces/Workflow';
+import {  WorkflowType  } from '@output/interfaces';
 import { WorkflowController } from './WorkflowController';
 
 describe('WorkflowController', () => {

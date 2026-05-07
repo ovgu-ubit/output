@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, FindManyOptions, FindOptionsRelations, In, IsNull, LessThan, Not, Repository } from 'typeorm';
-import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
+import {  WorkflowReport as IWorkflowReport  } from '@output/interfaces';
 import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../../common/api-error';
 import { EditLockableEntity, EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../../common/edit-lock';
 import { hasProvidedEntityId } from '../../common/entity-id';

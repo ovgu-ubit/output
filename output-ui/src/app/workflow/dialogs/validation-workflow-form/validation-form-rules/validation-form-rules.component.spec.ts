@@ -8,7 +8,7 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ValidationFormFacade } from '../validation-form-facade.service';
 import { ValidationFormRulesComponent } from './validation-form-rules.component';
-import { CompareOperation } from '../../../../../../../output-interfaces/Config';
+import {  CompareOperation  } from '@output/interfaces';
 
 describe('ValidationFormRulesComponent', () => {
   let component: ValidationFormRulesComponent;

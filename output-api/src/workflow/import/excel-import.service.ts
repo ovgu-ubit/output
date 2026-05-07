@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as moment from 'moment';
 import * as XLSX from 'xlsx';
-import { CSVMapping, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import {  CSVMapping, UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { GEIdentifier } from '../../greater_entity/GEIdentifier.entity';

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ApiErrorCode } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { UiError, UiErrorContext } from './ui-error';
 
 @Injectable({

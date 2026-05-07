@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Post, Put, Query, Param, UseGuards, Req 
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
 import { InstituteService } from "./institute.service";
-import { InstituteIndex } from "../../../output-interfaces/PublicationIndex";
+import {  InstituteIndex  } from '@output/interfaces';
 import { Institute } from "./Institute.entity";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";

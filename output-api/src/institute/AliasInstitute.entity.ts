@@ -1,5 +1,5 @@
 import { Entity } from "typeorm";
-import { AliasInstitute as IAliasInstitute } from "../../../output-interfaces/Alias";
+import {  AliasInstitute as IAliasInstitute  } from '@output/interfaces';
 import { createAliasEntity } from "../common/entities/alias.entity";
 import { Institute } from "./Institute.entity";
 

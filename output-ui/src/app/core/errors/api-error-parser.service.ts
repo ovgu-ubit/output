@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ApiErrorCode, ApiErrorDetail, ApiErrorResponse } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode, ApiErrorDetail, ApiErrorResponse  } from '@output/interfaces';
 import { UiError, UiErrorCarrier, UiErrorCode } from './ui-error';
 
 @Injectable({

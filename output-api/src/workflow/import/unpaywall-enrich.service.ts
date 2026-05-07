@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { Publication } from '../../publication/core/Publication.entity';
 import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';

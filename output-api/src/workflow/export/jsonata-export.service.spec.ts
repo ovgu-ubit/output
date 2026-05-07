@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import * as XLSX from 'xlsx';
-import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
-import { ExportStrategy, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  ApiErrorCode  } from '@output/interfaces';
+import {  ExportStrategy, WorkflowType  } from '@output/interfaces';
 import { JSONataExportService } from './jsonata-export.service';
 
 const expectApiError = async (

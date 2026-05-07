@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { firstValueFrom, of } from 'rxjs';
-import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
-import { UpdateOptions } from '../../../../output-interfaces/Config';
+import {  ApiErrorCode  } from '@output/interfaces';
+import {  UpdateOptions  } from '@output/interfaces';
 import { JSONataImportService } from './jsonata-import';
 
 const expectApiError = async (

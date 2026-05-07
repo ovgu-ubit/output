@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { Publisher } from "./Publisher.entity";
-import { PublisherIndex } from "../../../output-interfaces/PublicationIndex";
+import {  PublisherIndex  } from '@output/interfaces';
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
 import { PublisherService } from "./publisher.service";

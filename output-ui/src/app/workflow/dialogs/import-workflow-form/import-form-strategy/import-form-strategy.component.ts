@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil, tap } from 'rxjs';
-import { ImportStrategy, ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportStrategy, ImportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';

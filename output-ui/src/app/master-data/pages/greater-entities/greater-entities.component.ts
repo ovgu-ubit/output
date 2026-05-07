@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
-import { GreaterEntityIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  GreaterEntityIndex  } from '@output/interfaces';
 import { GreaterEntityFormComponent } from '../../../form/greater-entity-form/greater-entity-form.component';
 
 @Component({

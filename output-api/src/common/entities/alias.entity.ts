@@ -1,5 +1,5 @@
 import { Column, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
-import { Alias } from "../../../../output-interfaces/Alias";
+import {  Alias  } from '@output/interfaces';
 
 type AliasOwner<TElement> = { aliases?: Alias<TElement>[] };
 

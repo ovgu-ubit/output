@@ -4,7 +4,7 @@ import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { ConfigValueValidationPipe } from "./config-value-validation.pipe";
-import { HealthState } from "../../../output-interfaces/Config";
+import {  HealthState  } from '@output/interfaces';
 import { Request } from "express";
 
 @Controller("config")

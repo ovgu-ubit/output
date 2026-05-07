@@ -2,7 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { EMPTY, Observable, concatMap, concatWith, delay, mergeAll, queueScheduler, scheduled } from 'rxjs';
 import * as xmljs from 'xml-js';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { Publication } from '../../publication/core/Publication.entity';

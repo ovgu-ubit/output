@@ -9,7 +9,7 @@ import { EMPTY, filter, firstValueFrom, map, of, switchMap, takeUntil } from 'rx
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ExportWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ExportWorkflow  } from '@output/interfaces';
 import { ExportWorkflowService } from '../../export-workflow.service';
 import { WorkflowFormPage } from '../workflow-form-page.interface';
 import { ExportFormFacade } from './export-form-facade.service';

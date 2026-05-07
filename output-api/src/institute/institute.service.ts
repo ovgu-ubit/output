@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
 import { DataSource, EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
-import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
+import {  InstituteIndex  } from '@output/interfaces';
 import { Author } from '../author/Author.entity';
 import { deleteAliasCollection, getProvidedOwnedCollection, LockableEntity, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';

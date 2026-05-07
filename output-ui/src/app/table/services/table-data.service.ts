@@ -5,7 +5,7 @@ import { FormControl } from '@angular/forms';
 import { map, Observable, Subject, takeUntil } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { TableHeader, TableParent } from 'src/app/table/table.interface';
-import { Entity } from '../../../../../output-interfaces/Publication';
+import {  Entity  } from '@output/interfaces';
 import { ViewConfig } from 'src/app/services/redux';
 
 @Injectable()

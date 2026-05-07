@@ -3,7 +3,7 @@ import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
-import { CostTypeIndex } from "../../../output-interfaces/PublicationIndex";
+import {  CostTypeIndex  } from '@output/interfaces';
 import { InvoiceService } from "./invoice.service";
 import { Invoice } from "./Invoice.entity";
 import { CostType } from "./CostType.entity";

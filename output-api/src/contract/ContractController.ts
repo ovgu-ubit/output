@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nes
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ContractService } from './contract.service';
 import { Contract } from './Contract.entity';
-import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
+import {  ContractIndex  } from '@output/interfaces';
 import { Permissions } from '../authorization/permission.decorator';
 import { AccessGuard } from '../authorization/access.guard';
 import { AbstractCrudController } from '../common/abstract-crud.controller';

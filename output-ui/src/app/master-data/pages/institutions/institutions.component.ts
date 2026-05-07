@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { InstituteService } from 'src/app/services/entities/institute.service';
-import { Institute } from '../../../../../../output-interfaces/Publication';
+import {  Institute  } from '@output/interfaces';
 import { InstituteFormComponent } from '../../../form/institute-form/institute-form.component';
 
 @Component({

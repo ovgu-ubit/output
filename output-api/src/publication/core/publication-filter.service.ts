@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import {  PublicationIndex  } from '@output/interfaces';
 import { createNotFoundHttpException } from '../../common/api-error';
 import { AbstractFilterService, getFilterServiceMeta } from '../../workflow/filter/abstract-filter.service';
 import { Publication } from './Publication.entity';

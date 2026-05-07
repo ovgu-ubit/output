@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, takeUntil } from 'rxjs';
-import { ImportWorkflow, WorkflowReport } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow, WorkflowReport  } from '@output/interfaces';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportFormFacade } from '../import-form-facade.service';
 

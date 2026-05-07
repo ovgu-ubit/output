@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CompareOperation, SearchFilterValue } from '../../../output-interfaces/Config';
-import { ValidationCompareCondition, ValidationCondition, ValidationConditionalRule, ValidationRule, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import {  CompareOperation, SearchFilterValue  } from '@output/interfaces';
+import {  ValidationCompareCondition, ValidationCondition, ValidationConditionalRule, ValidationRule, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { createInvalidRequestHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { Publication } from '../publication/core/Publication.entity';

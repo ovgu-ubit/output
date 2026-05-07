@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { CostType, Invoice, Publication } from '../../../../../output-interfaces/Publication';
+import {  CostType, Invoice, Publication  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { Observable } from 'rxjs';
 import { RuntimeConfigService } from '../runtime-config.service';

@@ -3,6 +3,10 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
+    "paths": {
+      "@output/interfaces": ["../output-interfaces/index.ts"],
+      "@output/interfaces/*": ["../output-interfaces/*"]
+    },
     "rootDir": "../",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,

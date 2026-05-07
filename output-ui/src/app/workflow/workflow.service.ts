@@ -2,10 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
-import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, ValidationWorkflow, Workflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  SearchFilter  } from '@output/interfaces';
+import {  ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, ValidationWorkflow, Workflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { catchError, concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
-import { UpdateMapping } from '../../../../output-interfaces/Config';
+import {  UpdateMapping  } from '@output/interfaces';
 
 @Injectable({
   providedIn: 'root'

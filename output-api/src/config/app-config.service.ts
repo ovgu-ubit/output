@@ -3,7 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
-import { HealthState } from '../../../output-interfaces/Config';
+import {  HealthState  } from '@output/interfaces';
 import { EnvSchemas } from './environment.schema';
 
 @Injectable()

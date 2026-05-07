@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ImportWorkflow, ImportWorkflowTestResult, ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow, ImportWorkflowTestResult, ImportStrategy  } from '@output/interfaces';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
 import { filter, finalize, takeUntil } from 'rxjs';

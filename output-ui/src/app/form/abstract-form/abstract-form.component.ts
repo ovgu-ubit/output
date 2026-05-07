@@ -10,7 +10,7 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
-import { Entity } from '../../../../../output-interfaces/Publication';
+import {  Entity  } from '@output/interfaces';
 import { CostTypeFormComponent } from '../cost-type-form/cost-type-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { AliasTableComponent } from 'src/app/shared/alias-table/alias-table.component';

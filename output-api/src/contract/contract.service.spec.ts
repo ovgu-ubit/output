@@ -4,14 +4,14 @@ import { HttpException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { ContractService } from './contract.service';
 import { Contract } from './Contract.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { AppConfigService } from '../config/app-config.service';
 import { ContractComponent } from './ContractComponent.entity';
-import { InvoiceKind, ContractModel } from '../../../output-interfaces/Publication';
+import {  InvoiceKind, ContractModel  } from '@output/interfaces';
 import { Invoice } from '../invoice/Invoice.entity';
 import { EditLockOwnerStore } from '../common/edit-lock';
 

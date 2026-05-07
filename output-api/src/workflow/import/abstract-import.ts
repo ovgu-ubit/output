@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
+import {  AppError, UpdateMapping, UpdateOptions  } from '@output/interfaces';
+import {  WorkflowReportItemLevel  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { Publication } from '../../publication/core/Publication.entity';

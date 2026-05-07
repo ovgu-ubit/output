@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
-import { ValidationWorkflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { WorkflowService } from './workflow.service';
 
 @Injectable({

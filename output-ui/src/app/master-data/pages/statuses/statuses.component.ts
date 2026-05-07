@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { StatusService } from 'src/app/services/entities/status.service';
-import { Status } from '../../../../../../output-interfaces/Publication';
+import {  Status  } from '@output/interfaces';
 import { StatusFormComponent } from '../../../form/status-form/status-form.component';
 
 @Component({

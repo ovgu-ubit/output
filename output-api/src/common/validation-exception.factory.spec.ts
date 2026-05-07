@@ -1,4 +1,4 @@
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { createValidationException } from './validation-exception.factory';
 
 describe('createValidationException', () => {

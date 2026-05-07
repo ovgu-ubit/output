@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Inject, Param, Post, Query, Req, Res, Up
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
-import { CSVMapping, UpdateMapping } from "../../../output-interfaces/Config";
+import {  CSVMapping, UpdateMapping  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AbstractImportService, getImportServiceMeta } from "./import/abstract-import";
@@ -12,7 +12,7 @@ import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
 import { WorkflowService } from "./workflow.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
-import { ImportStrategy } from "../../../output-interfaces/Workflow";
+import {  ImportStrategy  } from '@output/interfaces';
 import { createInvalidRequestHttpException, createNotFoundHttpException } from "../common/api-error";
 
 @Controller("import")

@@ -4,7 +4,7 @@ import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } 
 import { AliasFunder } from './AliasFunder.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { Funder } from './Funder.entity';
-import { FunderIndex } from '../../../output-interfaces/PublicationIndex';
+import {  FunderIndex  } from '@output/interfaces';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';

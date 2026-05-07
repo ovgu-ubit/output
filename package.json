@@ -1,0 +1,9 @@
+{
+  "name": "output-workspace",
+  "private": true,
+  "workspaces": [
+    "output-api",
+    "output-ui",
+    "output-interfaces"
+  ]
+}

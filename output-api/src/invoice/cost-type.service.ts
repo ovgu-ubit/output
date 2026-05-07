@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { ILike, Repository } from 'typeorm';
-import { CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
+import {  CostTypeIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AppConfigService } from '../config/app-config.service';
 import { CostType } from './CostType.entity';

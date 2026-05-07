@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { AuthorService } from 'src/app/services/entities/author.service';
-import { AuthorIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  AuthorIndex  } from '@output/interfaces';
 import { AuthorFormComponent } from 'src/app/form/author-form/author-form.component';
 
 @Component({

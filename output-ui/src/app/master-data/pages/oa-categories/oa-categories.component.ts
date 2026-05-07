@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
-import { OACategoryIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  OACategoryIndex  } from '@output/interfaces';
 import { OaCategoryFormComponent } from '../../../form/oa-category-form/oa-category-form.component';
 
 @Component({

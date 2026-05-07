@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
-import { SearchFilter, UpdateMapping } from "../../../output-interfaces/Config";
-import { ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType } from "../../../output-interfaces/Workflow";
+import {  SearchFilter, UpdateMapping  } from '@output/interfaces';
+import {  ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";

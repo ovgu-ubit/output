@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as XLSX from 'xlsx';
-import { SearchFilter } from '../../../../output-interfaces/Config';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import {  SearchFilter  } from '@output/interfaces';
+import {  PublicationIndex  } from '@output/interfaces';
 import { Publication } from '../../publication/core/Publication.entity';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { AbstractExportService, ExportService } from './abstract-export.service';

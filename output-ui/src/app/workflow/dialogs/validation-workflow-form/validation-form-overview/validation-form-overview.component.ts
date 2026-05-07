@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ValidationWorkflow, WorkflowReport } from '../../../../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow, WorkflowReport  } from '@output/interfaces';
 import { ValidationFormFacade } from '../validation-form-facade.service';
 
 @Component({

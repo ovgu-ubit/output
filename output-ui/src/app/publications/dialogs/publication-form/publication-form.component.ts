@@ -29,7 +29,7 @@ import { isPersistedEntityDialogResult } from 'src/app/services/entities/service
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
-import { AuthorPublication, Invoice, Publication, PublicationSupplement, Status } from '../../../../../../output-interfaces/Publication';
+import {  AuthorPublication, Invoice, Publication, PublicationSupplement, Status  } from '@output/interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {

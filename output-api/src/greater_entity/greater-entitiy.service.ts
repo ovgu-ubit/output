@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
-import { AppError } from '../../../output-interfaces/Config';
-import { GreaterEntityIndex } from '../../../output-interfaces/PublicationIndex';
+import {  AppError  } from '@output/interfaces';
+import {  GreaterEntityIndex  } from '@output/interfaces';
 import { GreaterEntity } from './GreaterEntity.entity';
 import { GEIdentifier } from './GEIdentifier.entity';
 import { Publication } from '../publication/core/Publication.entity';

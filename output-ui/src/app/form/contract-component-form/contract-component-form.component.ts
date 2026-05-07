@@ -4,7 +4,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { Observable, forkJoin, map, of, startWith, tap } from 'rxjs';
-import { ContractComponent, ContractModel, GreaterEntity, Invoice, OA_Category, PublicationType } from '../../../../../output-interfaces/Publication';
+import {  ContractComponent, ContractModel, GreaterEntity, Invoice, OA_Category, PublicationType  } from '@output/interfaces';
 import { GreaterEntityService } from '../../services/entities/greater-entity.service';
 import { OACategoryService } from '../../services/entities/oa-category.service';
 import { PublicationTypeService } from '../../services/entities/publication-type.service';

@@ -24,6 +24,7 @@
       "typescript-eslint": "^8.58.1"
    },
    "dependencies": {
+      "@output/interfaces": "*",
       "@nestjs/axios": "4.0.1",
       "@nestjs/cli": "^11.0.18",
       "@nestjs/common": "^11.1.18",

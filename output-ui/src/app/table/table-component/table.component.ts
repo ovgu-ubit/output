@@ -15,8 +15,8 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import { CompareOperation, JoinOperation } from '../../../../../output-interfaces/Config';
-import { Entity } from '../../../../../output-interfaces/Publication';
+import {  CompareOperation, JoinOperation  } from '@output/interfaces';
+import {  Entity  } from '@output/interfaces';
 import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
 

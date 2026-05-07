@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
-import { OACategoryIndex } from "../../../output-interfaces/PublicationIndex";
+import {  OACategoryIndex  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { OACategoryService } from "./oa-category.service";

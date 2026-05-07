@@ -4,7 +4,7 @@ import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.c
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { concatMap, of } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { Publication, PublicationDuplicate } from '../../../../../../output-interfaces/Publication';
+import {  Publication, PublicationDuplicate  } from '@output/interfaces';
 
 @Component({
     selector: 'app-duplicate-dialog',
