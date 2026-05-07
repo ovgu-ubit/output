@@ -2,17 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, FindManyOptions, FindOptionsRelations, In, IsNull, LessThan, Not, Repository } from 'typeorm';
 import { WorkflowReport as IWorkflowReport } from '../../../../output-interfaces/Workflow';
-import { Author } from '../../author/Author.entity';
 import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../../common/api-error';
 import { EditLockableEntity, EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../../common/edit-lock';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { mergeEntities } from '../../common/merge';
 import { AppConfigService } from '../../config/app-config.service';
-import { Institute } from '../../institute/Institute.entity';
 import { Invoice } from '../../invoice/Invoice.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
 import { PublicationRelationService } from '../relations/publication-relation.service';
-import { Role } from '../relations/Role.entity';
 import { Publication } from './Publication.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationChangeService } from './publication-change.service';
@@ -75,7 +72,7 @@ export class PublicationService {
 
         await this.ensurePublicationsCanBeSaved(pub, options?.by_user, manager);
         const shouldLogChanges = this.shouldCreatePublicationChange(options);
-        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pub, manager) : new Map<number, Publication>();
+        const beforeMap = shouldLogChanges ? await this.publicationChangeService.loadPublicationsForChangeLog(pub, manager) : new Map<number, Publication>();
         const ownedCollectionsByIndex = pub.map((publication) => this.publicationRelationService.getPublicationOwnedCollections(publication));
         const publicationsToSave = pub.map((publication) => this.publicationRelationService.withoutPublicationOwnedCollections(publication));
 
@@ -87,7 +84,7 @@ export class PublicationService {
             await this.publicationRelationService.replacePublicationOwnedCollections(saved[i], ownedCollectionsByIndex[i], manager);
         }
 
-        const afterMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(saved, manager) : new Map<number, Publication>();
+        const afterMap = shouldLogChanges ? await this.publicationChangeService.loadPublicationsForChangeLog(saved, manager) : new Map<number, Publication>();
         pub.forEach((publication) => this.syncPublicationLockOwner(publication, options?.by_user));
 
         if (shouldLogChanges) {
@@ -96,7 +93,7 @@ export class PublicationService {
                 if (this.isLockOnlyPayload(pub[i])) continue;
                 const before = hasProvidedEntityId(savedPub.id) ? beforeMap.get(savedPub.id) : null;
                 const after = hasProvidedEntityId(savedPub.id) ? afterMap.get(savedPub.id) ?? savedPub : savedPub;
-                const patch = this.buildPublicationChangePatch(before, after);
+                const patch = this.publicationChangeService.buildPublicationChangePatch(before, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
@@ -129,7 +126,7 @@ export class PublicationService {
         let i = 0;
         await this.ensurePublicationsCanBeSaved(pubs, options?.by_user, manager);
         const shouldLogChanges = this.shouldCreatePublicationChange(options);
-        const beforeMap = shouldLogChanges ? await this.loadPublicationsForChangeLog(pubs, manager) : new Map<number, Publication>();
+        const beforeMap = shouldLogChanges ? await this.publicationChangeService.loadPublicationsForChangeLog(pubs, manager) : new Map<number, Publication>();
         for (const pub of pubs) {
             const orig = shouldLogChanges ? beforeMap.get(pub.id) : undefined;
             const ownedCollections = this.publicationRelationService.getPublicationOwnedCollections(pub);
@@ -141,8 +138,8 @@ export class PublicationService {
             if (savedPub) i++;
             this.syncPublicationLockOwner(pub, options?.by_user);
             if (savedPub && shouldLogChanges && !this.isLockOnlyPayload(pub)) {
-                const after = hasProvidedEntityId(savedPub.id) ? await this.loadPublicationForChangeLog(savedPub.id, manager) : savedPub;
-                const patch = this.buildPublicationChangePatch(orig, after);
+                const after = hasProvidedEntityId(savedPub.id) ? await this.publicationChangeService.loadPublicationForChangeLog(savedPub.id, manager) : savedPub;
+                const patch = this.publicationChangeService.buildPublicationChangePatch(orig, after);
                 if (!patch) continue;
                 await this.publicationChangeService.createPublicationChange({
                     publication: { id: savedPub.id },
@@ -245,171 +242,6 @@ export class PublicationService {
         const repo = this.dataSource.getRepository(PublicationDuplicate);
         if (soft) return repo.softDelete(id);
         else return repo.delete(id);
-    }
-
-    private async loadPublicationsForChangeLog(pubs: Publication[], manager?: EntityManager): Promise<Map<number, Publication>> {
-        const ids = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
-        if (ids.length === 0) return new Map<number, Publication>();
-
-        const repo = manager ? manager.getRepository(Publication) : this.pubRepository;
-        const existing = await repo.find({
-            where: { id: In(ids) },
-            relations: {
-                pub_type: true,
-                oa_category: true,
-                greater_entity: true,
-                publisher: true,
-                contract: true,
-                funders: true,
-                invoices: {
-                    cost_items: {
-                        cost_type: true
-                    },
-                    cost_center: true
-                },
-                language: true,
-                identifiers: true,
-                supplements: true,
-                authorPublications: {
-                    author: true,
-                    institute: true,
-                    role: true
-                }
-            },
-            withDeleted: true
-        });
-
-        return new Map(existing.map((publication) => [publication.id, publication]));
-    }
-
-    private async loadPublicationForChangeLog(id: number, manager?: EntityManager): Promise<Publication | null> {
-        return (await this.loadPublicationsForChangeLog([{ id } as Publication], manager)).get(id) ?? null;
-    }
-
-    private buildPublicationChangePatch(before?: Publication | null, after?: Publication | null) {
-        const beforeSnapshot = before ? this.buildPublicationChangeSnapshot(before) : null;
-        const afterSnapshot = after ? this.buildPublicationChangeSnapshot(after) : null;
-        const beforePatch = {};
-        const afterPatch = {};
-
-        if (!beforeSnapshot && !afterSnapshot) return null;
-
-        const keys = beforeSnapshot
-            ? Array.from(new Set([...Object.keys(beforeSnapshot), ...Object.keys(afterSnapshot ?? {})]))
-            : Object.keys(afterSnapshot ?? {}).filter((key) => this.hasPublicationChangeValue(afterSnapshot?.[key]));
-
-        for (const key of keys) {
-            const beforeValue = beforeSnapshot?.[key];
-            const afterValue = afterSnapshot?.[key];
-
-            if (!beforeSnapshot && !this.hasPublicationChangeValue(afterValue)) continue;
-            if (this.arePublicationChangeValuesEqual(beforeValue, afterValue)) continue;
-
-            if (beforeSnapshot) beforePatch[key] = beforeValue ?? null;
-            if (afterSnapshot) afterPatch[key] = afterValue ?? null;
-        }
-
-        if (Object.keys(beforePatch).length === 0 && Object.keys(afterPatch).length === 0) return null;
-
-        return {
-            before: Object.keys(beforePatch).length > 0 ? beforePatch : null,
-            after: Object.keys(afterPatch).length > 0 ? afterPatch : null,
-        };
-    }
-
-    private buildPublicationChangeSnapshot(publication: Publication) {
-        return {
-            authors: publication.authors,
-            title: publication.title,
-            doi: publication.doi,
-            pub_date: this.serializeDate(publication.pub_date),
-            pub_date_submitted: this.serializeDate(publication.pub_date_submitted),
-            pub_date_accepted: this.serializeDate(publication.pub_date_accepted),
-            pub_date_print: this.serializeDate(publication.pub_date_print),
-            link: publication.link,
-            dataSource: publication.dataSource,
-            language: publication.language ? { id: publication.language.id, label: publication.language['label'] } : null,
-            add_info: publication.add_info,
-            status: publication.status,
-            is_oa: publication.is_oa,
-            oa_status: publication.oa_status,
-            is_journal_oa: publication.is_journal_oa,
-            best_oa_host: publication.best_oa_host,
-            best_oa_license: publication.best_oa_license,
-            abstract: publication.abstract,
-            volume: publication.volume,
-            issue: publication.issue,
-            first_page: publication.first_page,
-            last_page: publication.last_page,
-            publisher_location: publication.publisher_location,
-            edition: publication.edition,
-            article_number: publication.article_number,
-            page_count: publication.page_count,
-            peer_reviewed: publication.peer_reviewed,
-            cost_approach: publication.cost_approach,
-            cost_approach_currency: publication.cost_approach_currency,
-            not_budget_relevant: publication.not_budget_relevant,
-            grant_number: publication.grant_number,
-            contract_year: publication.contract_year,
-            pub_type: publication.pub_type ? { id: publication.pub_type.id, label: publication.pub_type['label'] } : null,
-            oa_category: publication.oa_category ? { id: publication.oa_category.id, label: publication.oa_category['label'] } : null,
-            greater_entity: publication.greater_entity ? { id: publication.greater_entity.id, label: publication.greater_entity['label'] } : null,
-            publisher: publication.publisher ? { id: publication.publisher.id, label: publication.publisher['label'] } : null,
-            contract: publication.contract ? { id: publication.contract.id, label: publication.contract['label'] } : null,
-            funders: publication.funders?.map((funder) => ({ id: funder.id, label: funder.label, doi: funder.doi })) ?? [],
-            invoices: publication.invoices?.map((invoice) => ({
-                id: invoice.id,
-                number: invoice.number,
-                date: this.serializeDate(invoice.date),
-                booking_date: this.serializeDate(invoice.booking_date),
-                booking_amount: invoice.booking_amount,
-                cost_center: invoice.cost_center ? { id: invoice.cost_center.id, label: invoice.cost_center['label'] } : null,
-                cost_items: invoice.cost_items?.map((costItem) => ({
-                    id: costItem.id,
-                    euro_value: costItem.euro_value,
-                    orig_value: costItem.orig_value,
-                    orig_currency: costItem.orig_currency,
-                    vat: costItem.vat,
-                    cost_type: costItem.cost_type ? { id: costItem.cost_type.id, label: costItem.cost_type['label'] } : null
-                })) ?? []
-            })) ?? [],
-            identifiers: publication.identifiers?.map((identifier) => ({
-                type: identifier.type,
-                value: identifier.value
-            })) ?? [],
-            supplements: publication.supplements?.map((supplement) => ({
-                link: supplement.link
-            })) ?? [],
-            authorPublications: publication.authorPublications?.map((ap) => ({
-                author: ap.author ? { id: ap.author.id, last_name: ap.author.last_name, first_name: ap.author.first_name } : { id: ap.authorId },
-                institute: ap.institute ? { id: ap.institute.id, label: ap.institute.label } : null,
-                role: ap.role ? { id: ap.role.id, label: ap.role.label } : null,
-                corresponding: ap.corresponding,
-                affiliation: ap.affiliation
-            })) ?? []
-        };
-    }
-
-    private arePublicationChangeValuesEqual(before: unknown, after: unknown): boolean {
-        if (before === after) return true;
-        if (this.isLogicalEmpty(before) && this.isLogicalEmpty(after)) return true;
-        return JSON.stringify(before) === JSON.stringify(after);
-    }
-
-    private isLogicalEmpty(value: unknown): boolean {
-        return value === null || value === undefined || value === '';
-    }
-
-    private hasPublicationChangeValue(value: unknown): boolean {
-        if (value === null || value === undefined) return false;
-        if (typeof value === 'string') return value.length > 0;
-        if (Array.isArray(value)) return value.length > 0;
-        if (typeof value === 'object') return Object.keys(value).length > 0;
-        return true;
-    }
-
-    private serializeDate(date?: Date) {
-        return date ? new Date(date).toISOString() : null;
     }
 
     private shouldCreatePublicationChange(options?: SavePublicationOptions): boolean {

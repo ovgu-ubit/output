@@ -16,7 +16,9 @@ import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
 import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
+import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
 import { PublicationChangeService } from './publication-change.service';
+import { PublicationChange } from './PublicationChange.entity';
 import { PublicationIndexService } from './publication-index.service';
 import { PublicationRelationService } from '../relations/publication-relation.service';
 
@@ -51,10 +53,11 @@ describe('PublicationService', () => {
     let idRepository: jest.Mocked<Partial<Repository<PublicationIdentifier>>>;
     let supplRepository: jest.Mocked<Partial<Repository<PublicationSupplement>>>;
     let duplRepository: jest.Mocked<Partial<Repository<PublicationDuplicate>>>;
-    let publicationChangeService: {
-        createPublicationChange: jest.Mock;
-        deletePublicationChangesForPublications: jest.Mock;
-    };
+    let publicationChangeRepository: jest.Mocked<Partial<Repository<PublicationChange>>>;
+    let workflowReportRepository: { existsBy: jest.Mock };
+    let publicationChangeService: PublicationChangeService;
+    let createPublicationChangeSpy: jest.SpyInstance;
+    let deletePublicationChangesForPublicationsSpy: jest.SpyInstance;
     let configService: { get: jest.Mock };
     let dataSource: { transaction: jest.Mock; getRepository: jest.Mock };
 
@@ -92,9 +95,12 @@ describe('PublicationService', () => {
             findOne: jest.fn(),
             save: jest.fn(),
         };
-        publicationChangeService = {
-            createPublicationChange: jest.fn(),
-            deletePublicationChangesForPublications: jest.fn(),
+        publicationChangeRepository = {
+            save: jest.fn(),
+            createQueryBuilder: jest.fn(),
+        };
+        workflowReportRepository = {
+            existsBy: jest.fn(async () => true),
         };
         configService = {
             get: jest.fn(async () => 5),
@@ -159,18 +165,23 @@ describe('PublicationService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PublicationService,
+                PublicationChangeService,
                 PublicationIndexService,
                 PublicationRelationService,
                 { provide: getRepositoryToken(Publication), useValue: pubRepository },
+                { provide: getRepositoryToken(PublicationChange), useValue: publicationChangeRepository },
+                { provide: getRepositoryToken(WorkflowReport), useValue: workflowReportRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
-                { provide: PublicationChangeService, useValue: publicationChangeService },
                 { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
         service = module.get(PublicationService);
         publicationIndexService = module.get(PublicationIndexService);
+        publicationChangeService = module.get(PublicationChangeService);
+        createPublicationChangeSpy = jest.spyOn(publicationChangeService, 'createPublicationChange').mockImplementation(async (change) => change as PublicationChange);
+        deletePublicationChangesForPublicationsSpy = jest.spyOn(publicationChangeService, 'deletePublicationChangesForPublications').mockResolvedValue(undefined);
     });
 
     it('combines publications by preserving locked state and aggregating related records', async () => {
@@ -268,7 +279,7 @@ describe('PublicationService', () => {
         expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([62, 63]) } });
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([62, 63]) } });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([62, 63]) });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([62, 63], expect.anything());
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
@@ -647,7 +658,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 9, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
 
-        expect(publicationChangeService.createPublicationChange).not.toHaveBeenCalled();
+        expect(createPublicationChangeSpy).not.toHaveBeenCalled();
     });
 
     it('does not log changes when values are logically empty (null, undefined, "")', async () => {
@@ -672,7 +683,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 8, add_info: '' } as Publication], { by_user: 'scanner' } as any);
 
-        expect(publicationChangeService.createPublicationChange).not.toHaveBeenCalled();
+        expect(createPublicationChangeSpy).not.toHaveBeenCalled();
     });
 
     it('logs change patches from reloaded entities instead of partial save payloads', async () => {
@@ -699,7 +710,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 7, title: 'After' } as Publication], { by_user: 'scanner' } as any);
 
-        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+        expect(createPublicationChangeSpy).toHaveBeenCalledWith(expect.objectContaining({
             patch_data: expect.objectContaining({
                 before: {
                     title: 'Before',
@@ -734,7 +745,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 7, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
 
-        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+        expect(createPublicationChangeSpy).toHaveBeenCalledWith(expect.objectContaining({
             patch_data: expect.objectContaining({
                 after: expect.objectContaining({
                     authorPublications: expect.arrayContaining([
@@ -755,7 +766,7 @@ describe('PublicationService', () => {
 
         await service.delete([{ id: 7 } as Publication], true);
 
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([7], expect.anything());
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
@@ -779,7 +790,7 @@ describe('PublicationService', () => {
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([7]) } });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([7]) });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([7]) });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([7], expect.anything());
 
         const parentDeleteOrder = pubRepository.delete.mock.invocationCallOrder[0];
         expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
@@ -788,7 +799,7 @@ describe('PublicationService', () => {
         expect(idRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
         expect(supplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
         expect(duplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
-        expect(publicationChangeService.deletePublicationChangesForPublications.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(deletePublicationChangesForPublicationsSpy.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
     });
     describe('filter', () => {
         const createQueryBuilderMock = () => ({
