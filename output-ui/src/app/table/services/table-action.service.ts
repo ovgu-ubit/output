@@ -4,7 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ComponentType } from '@angular/cdk/portal';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { catchError, concatMap, of } from 'rxjs';
+import { Observable, catchError, concatMap, of } from 'rxjs';
 import { EntityFormComponent, EntityService, isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
@@ -45,7 +45,7 @@ export class TableActionService<T extends Entity, E extends Entity> {
     this.combineAlias = config.combineAlias !== false;
   }
 
-  edit(row: any, updateDataCallback: () => void) {
+  edit(row: any, updateDataCallback: () => Observable<any>) {
     this.location.replaceState(this.router.url.split('?')[0], 'id=' + row.id)
     let dialogRef = this.dialog.open(this.formComponent, {
       width: '1000px',
@@ -60,14 +60,11 @@ export class TableActionService<T extends Entity, E extends Entity> {
     dialogRef.afterClosed().pipe(concatMap(result => {
       this.location.replaceState(this.router.url.split('?')[0])
       if (isPersistedEntityDialogResult(result)) {
-        this.showSuccess(`${this.nameSingle} geändert`);
-        updateDataCallback();
-        return of(null);
+        return updateDataCallback();
       } else if (result && result.updated) {
         return this.serviceClass.update(result).pipe(concatMap(() => {
           this.showSuccess(`${this.nameSingle} geändert`);
-          updateDataCallback();
-          return of(null);
+          return updateDataCallback();
         }));
       } else if (this.hasEntityId(result)) {
         return this.serviceClass.update(result);
@@ -80,7 +77,7 @@ export class TableActionService<T extends Entity, E extends Entity> {
     })).subscribe();
   }
 
-  add(updateDataCallback: () => void) {
+  add(updateDataCallback: () => Observable<any>) {
     let dialogRef = this.dialog.open(this.formComponent, {
       width: '800px',
       maxHeight: '800px',
@@ -94,13 +91,11 @@ export class TableActionService<T extends Entity, E extends Entity> {
     dialogRef.afterClosed().pipe(concatMap(result => {
       if (isPersistedEntityDialogResult(result)) {
         this.showSuccess(`${this.nameSingle} wurde angelegt`);
-        updateDataCallback();
-        return of(null);
+        return updateDataCallback();
       } else if (result) {
         return this.serviceClass.add(result).pipe(concatMap(() => {
           this.showSuccess(`${this.nameSingle} wurde angelegt`);
-          updateDataCallback();
-          return of(null);
+          return updateDataCallback();
         }));
       } else {
         return of(null);
@@ -111,7 +106,7 @@ export class TableActionService<T extends Entity, E extends Entity> {
     })).subscribe();
   }
 
-  delete(selectedItems: T[], updateDataCallback: () => void) {
+  delete(selectedItems: T[], updateDataCallback: () => Observable<any>) {
     if (!selectedItems || selectedItems.length === 0) return;
 
     let data: ConfirmDialogModel = {
@@ -129,8 +124,7 @@ export class TableActionService<T extends Entity, E extends Entity> {
       if (dialogResult) {
         return this.serviceClass.delete(selectedItems.map(e => e.id), dialogResult.soft).pipe(concatMap((res: any) => {
           this.showSuccess(`${res['affected']} ${this.name} gelöscht`);
-          updateDataCallback();
-          return of(null);
+          return updateDataCallback();
         }));
       } else {
         return of(null);
@@ -141,7 +135,7 @@ export class TableActionService<T extends Entity, E extends Entity> {
     })).subscribe();
   }
 
-  combine(selectedItems: T[], updateDataCallback: () => void) {
+  combine(selectedItems: T[], updateDataCallback: () => Observable<any>) {
     if (selectedItems.length < 2) {
       this._snackBar.open(`Bitte selektieren Sie min. zwei ${this.name}`, 'Alles klar!', {
         duration: 5000,
@@ -167,8 +161,7 @@ export class TableActionService<T extends Entity, E extends Entity> {
         let options = { aliases: result.aliases, aliases_first_name: result.aliases_first_name, aliases_last_name: result.aliases_last_name };
         return this.serviceClass.combine(result.id, otherIds, options).pipe(concatMap(() => {
           this.showSuccess(`${this.name} wurden zusammengeführt`);
-          updateDataCallback();
-          return of(null);
+          return updateDataCallback();
         }));
       } else {
         return of(null);

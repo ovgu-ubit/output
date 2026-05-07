@@ -161,10 +161,12 @@ export class PublicationService {
     public async delete(pubs: Publication[], soft?: boolean) {
         return this.dataSource.transaction(async (manager) => {
             const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
-            await this.publicationRelationService.deletePublicationRelations(publicationIds, manager);
+            if (!soft) {
+                await this.publicationRelationService.deletePublicationRelations(publicationIds, manager);
             await this.publicationChangeService.deletePublicationChangesForPublications(publicationIds, manager);
-            if (!soft) return await manager.getRepository(Publication).delete(publicationIds);
-            else return await manager.getRepository(Publication).softDelete(publicationIds);
+                return await manager.getRepository(Publication).delete(publicationIds);
+            } else return await manager.getRepository(Publication).softDelete(publicationIds);
+
         });
     }
 

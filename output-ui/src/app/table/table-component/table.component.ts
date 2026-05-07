@@ -204,19 +204,19 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   edit(row: any) {
-    this.tableAction.edit(row, () => this.updateData().subscribe());
+    this.tableAction.edit(row, () => this.updateData());
   }
 
   add() {
-    this.tableAction.add(() => this.updateData().subscribe());
+    this.tableAction.add(() => this.updateData());
   }
 
   delete() {
-    this.tableAction.delete(this.selection.selected, () => this.updateData().subscribe());
+    this.tableAction.delete(this.selection.selected, () => this.updateData());
   }
 
   combine() {
-    this.tableAction.combine(this.selection.selected, () => this.updateData().subscribe());
+    this.tableAction.combine(this.selection.selected, () => this.updateData());
   }
 
   async showPubs?(id: number, field?: string) {
