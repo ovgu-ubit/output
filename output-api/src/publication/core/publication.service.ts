@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, FindManyOptions, FindOptionsRelations, In, IsNull, LessThan, Not, Repository } from 'typeorm';
-import {  WorkflowReport as IWorkflowReport  } from '@output/interfaces';
+import { WorkflowReport as IWorkflowReport } from '@output/interfaces';
 import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../../common/api-error';
 import { EditLockableEntity, EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../../common/edit-lock';
 import { hasProvidedEntityId } from '../../common/entity-id';
@@ -161,9 +161,10 @@ export class PublicationService {
     public async delete(pubs: Publication[], soft?: boolean) {
         return this.dataSource.transaction(async (manager) => {
             const publicationIds = pubs.map((publication) => publication.id).filter((id): id is number => hasProvidedEntityId(id));
+            //always delete changes also for soft deletes to keep db clean
+            await this.publicationChangeService.deletePublicationChangesForPublications(publicationIds, manager);
             if (!soft) {
                 await this.publicationRelationService.deletePublicationRelations(publicationIds, manager);
-            await this.publicationChangeService.deletePublicationChangesForPublications(publicationIds, manager);
                 return await manager.getRepository(Publication).delete(publicationIds);
             } else return await manager.getRepository(Publication).softDelete(publicationIds);
 
