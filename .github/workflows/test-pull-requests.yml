@@ -9,10 +9,6 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: output-api
-
     permissions:
       contents: read
 
@@ -25,16 +21,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: output-api/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Run tests
-        run: npm test -- --watch=false
+        run: npm test -w output-api -- --watch=false
 
       - name: Build
-        run: npm run build
+        run: npm run build -w output-api
 
       - name: Build Docker image
-        run: docker build -t output-ci-test ../.
+        run: docker build -t output-ci-test .
