@@ -178,6 +178,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
       if (this.id) {
         this.edit({ id: this.id });
+        this.id = undefined;
       }
     }
     if (changes['data'] && changes['data'].currentValue) {
