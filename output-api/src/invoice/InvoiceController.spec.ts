@@ -1,24 +1,25 @@
 import { HttpException } from '@nestjs/common';
 import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import { createNotFoundHttpException } from '../common/api-error';
 import { InvoiceController } from './InvoiceController';
 
 describe('InvoiceController', () => {
     let controller: InvoiceController;
-    let invoiceService: { getForPub: jest.Mock; get: jest.Mock; save: jest.Mock; delete: jest.Mock };
-    let costTypeService: { get: jest.Mock; getCostTypeIndex: jest.Mock; one: jest.Mock; save: jest.Mock; update: jest.Mock; delete: jest.Mock };
-    let costCenterService: { get: jest.Mock; getCostCenterIndex: jest.Mock; one: jest.Mock; save: jest.Mock; update: jest.Mock; delete: jest.Mock };
+    let invoiceService: { getForPub: jest.Mock; getOrFail: jest.Mock; save: jest.Mock; delete: jest.Mock };
+    let costTypeService: { get: jest.Mock; getCostTypeIndex: jest.Mock; oneOrFail: jest.Mock; save: jest.Mock; update: jest.Mock; delete: jest.Mock };
+    let costCenterService: { get: jest.Mock; getCostCenterIndex: jest.Mock; oneOrFail: jest.Mock; save: jest.Mock; update: jest.Mock; delete: jest.Mock };
 
     beforeEach(() => {
         invoiceService = {
             getForPub: jest.fn(),
-            get: jest.fn(),
+            getOrFail: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),
         };
         costTypeService = {
             get: jest.fn(),
             getCostTypeIndex: jest.fn(),
-            one: jest.fn(),
+            oneOrFail: jest.fn(),
             save: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
@@ -26,7 +27,7 @@ describe('InvoiceController', () => {
         costCenterService = {
             get: jest.fn(),
             getCostCenterIndex: jest.fn(),
-            one: jest.fn(),
+            oneOrFail: jest.fn(),
             save: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
@@ -45,15 +46,15 @@ describe('InvoiceController', () => {
     });
 
     it('forwards writer flag and username when loading one invoice', async () => {
-        invoiceService.get.mockResolvedValue({ id: 5 });
+        invoiceService.getOrFail.mockResolvedValue({ id: 5 });
 
         await controller.one(5, { user: { write: true, username: 'alice' } } as any);
 
-        expect(invoiceService.get).toHaveBeenCalledWith(5, true, 'alice');
+        expect(invoiceService.getOrFail).toHaveBeenCalledWith(5, true, 'alice');
     });
 
     it('throws a structured not-found error when one invoice is missing', async () => {
-        invoiceService.get.mockResolvedValue(null);
+        invoiceService.getOrFail.mockRejectedValue(createNotFoundHttpException('Invoice not found.'));
 
         try {
             await controller.one(5, { user: { write: true, username: 'alice' } } as any);
@@ -104,15 +105,15 @@ describe('InvoiceController', () => {
     });
 
     it('forwards writer flag and username when loading one cost type', async () => {
-        costTypeService.one.mockResolvedValue({ id: 7, label: 'APC' });
+        costTypeService.oneOrFail.mockResolvedValue({ id: 7, label: 'APC' });
 
         await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
 
-        expect(costTypeService.one).toHaveBeenCalledWith(7, true, 'alice');
+        expect(costTypeService.oneOrFail).toHaveBeenCalledWith(7, true, 'alice', 'Cost type not found.');
     });
 
     it('throws a structured not-found error when one cost type is missing', async () => {
-        costTypeService.one.mockResolvedValue(null);
+        costTypeService.oneOrFail.mockRejectedValue(createNotFoundHttpException('Cost type not found.'));
 
         try {
             await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
@@ -149,15 +150,15 @@ describe('InvoiceController', () => {
     });
 
     it('forwards writer flag and username when loading one cost center', async () => {
-        costCenterService.one.mockResolvedValue({ id: 9, label: 'Center' });
+        costCenterService.oneOrFail.mockResolvedValue({ id: 9, label: 'Center' });
 
         await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);
 
-        expect(costCenterService.one).toHaveBeenCalledWith(9, true, 'alice');
+        expect(costCenterService.oneOrFail).toHaveBeenCalledWith(9, true, 'alice', 'Cost center not found.');
     });
 
     it('throws a structured not-found error when one cost center is missing', async () => {
-        costCenterService.one.mockResolvedValue(null);
+        costCenterService.oneOrFail.mockRejectedValue(createNotFoundHttpException('Cost center not found.'));
 
         try {
             await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);

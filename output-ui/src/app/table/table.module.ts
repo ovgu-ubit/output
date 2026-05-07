@@ -7,12 +7,22 @@ import { CombineDialogComponent } from './dialog/combine-dialog/combine-dialog.c
 import { AliasFormComponent } from './dialog/alias-form/alias-form.component';
 import { MatSortModule } from '@angular/material/sort';
 import { RouterModule } from '@angular/router';
+import { TableFilterComponent } from './table-filter/table-filter.component';
+import { TableAuthorsPipe, TableDoiPipe, TableEuroPipe, TableFormatNumberPipe, TableGndPipe, TableOrcidPipe, TableTruncatePipe } from './pipes/table-format.pipe';
 
 @NgModule({
   declarations: [
     TableComponent,
     CombineDialogComponent,
-    AliasFormComponent
+    AliasFormComponent,
+    TableFilterComponent,
+    TableDoiPipe,
+    TableOrcidPipe,
+    TableGndPipe,
+    TableEuroPipe,
+    TableAuthorsPipe,
+    TableFormatNumberPipe,
+    TableTruncatePipe
   ],
   imports: [
     SharedModule,
@@ -21,7 +31,14 @@ import { RouterModule } from '@angular/router';
     RouterModule
   ],
   exports: [
-    TableComponent
+    TableComponent,
+    TableDoiPipe,
+    TableOrcidPipe,
+    TableGndPipe,
+    TableEuroPipe,
+    TableAuthorsPipe,
+    TableFormatNumberPipe,
+    TableTruncatePipe
   ],
   providers: [
     { provide: MatPaginatorIntl, useClass: MatPaginatorDE },
