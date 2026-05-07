@@ -1,6 +1,6 @@
 import { Component, Inject, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { Contract, ContractComponent, ContractModel } from '../../../../../output-interfaces/Publication';
+import {  Contract, ContractComponent, ContractModel  } from '@output/interfaces';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { ContractComponentFormComponent } from '../contract-component-form/contract-component-form.component';

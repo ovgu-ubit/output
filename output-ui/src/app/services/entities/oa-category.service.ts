@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { OA_Category } from '../../../../../output-interfaces/Publication';
-import { OACategoryIndex } from '../../../../../output-interfaces/PublicationIndex';
+import {  OA_Category  } from '@output/interfaces';
+import {  OACategoryIndex  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

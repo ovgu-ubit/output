@@ -1,80 +1,36 @@
 import { Request } from "express";
 import { Author } from "./Author.entity";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { AuthorService } from "./author.service";
 import { Permissions } from "../authorization/permission.decorator";
 import { AccessGuard } from "../authorization/access.guard";
-import { createNotFoundHttpException } from "../common/api-error";
-import { assertCreateRequestHasNoId } from "../common/entity-id";
+import { AbstractCrudController } from "../common/abstract-crud.controller";
 
 @Controller("authors")
 @ApiTags("authors")
-export class AuthorController {
+export class AuthorController extends AbstractCrudController<Author, AuthorService> {
 
-    constructor(@InjectRepository(Author) private userRepository, private authorService: AuthorService) { }
-
-    @Get()
-    @UseGuards(AccessGuard)
-    @ApiResponse({ status: 200, description: 'Author objects are returned.' })
-    async all() {
-        return this.authorService.get();
+    constructor(authorService: AuthorService) {
+        super(authorService);
     }
 
     @Get('index')
     @ApiResponse({ status: 200, description: 'Author index is returned.' })
     async index(@Query('reporting_year') reporting_year: number) {
-        return await this.authorService.index(reporting_year);
+        return await this.service.index(reporting_year);
     }
 
     @Get('/:id')
     @UseGuards(AccessGuard)
     @ApiParam({ name: 'id', description: 'id for which author object should be obtained' })
     async one(@Param('id') id: number, @Req() request: Request) {
-        const author = await this.authorService.one(id, request['user'] ? request['user']['write'] : false, request['user']?.['username']);
-        if (!author) throw createNotFoundHttpException('Author not found.');
-        return author;
-    }
-
-    @Post()
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    @ApiBody({
-        schema: {
-            example: {
-                first_name: 'Max',
-                last_name: 'Mustermann'
-            }
-        }
-    })
-    @ApiResponse({ status: 201, description: 'Saved objects are returned.' })
-    async save(@Req() request: Request) {
-        assertCreateRequestHasNoId(request.body as Author | undefined);
-        return this.authorService.save(request.body, request['user']?.['username']);
-    }
-
-    @Put()
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    @ApiBody({
-        schema: {
-            example: {
-                id: 4,
-                given: 'Max',
-                family: 'Mustermann'
-            }
-        }
-    })
-    async update(@Body() author: Author, @Req() request: Request) {
-        return this.authorService.update(author, request['user']?.['username'])
-    }
-
-    @Delete()
-    @UseGuards(AccessGuard)
-    @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async remove(@Body() body: Author[]) {
-        return this.authorService.delete(body);
+        return this.service.oneOrFail(
+            id,
+            this.isWriter(request),
+            this.getUsername(request),
+            'Author not found.',
+        );
     }
 
     @Post('combine')
@@ -91,6 +47,6 @@ export class AuthorController {
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
-        return this.authorService.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
+        return this.service.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
     }
 }

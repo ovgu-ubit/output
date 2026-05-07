@@ -1,4 +1,4 @@
-import { ApiErrorCode, ApiErrorDetail } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode, ApiErrorDetail  } from '@output/interfaces';
 
 export type UiErrorCode = ApiErrorCode | 'NETWORK_ERROR' | 'UNKNOWN_ERROR';
 

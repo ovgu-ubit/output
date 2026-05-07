@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CompareOperation, SearchFilterValue } from '../../../output-interfaces/Config';
-import { ValidationCompareCondition, ValidationCondition, ValidationConditionalRule, ValidationRule, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../output-interfaces/Workflow';
+import {  CompareOperation, SearchFilterValue  } from '@output/interfaces';
+import {  ValidationCompareCondition, ValidationCondition, ValidationConditionalRule, ValidationRule, ValidationWorkflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { createInvalidRequestHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { Publication } from '../publication/core/Publication.entity';
-import { PublicationService } from '../publication/core/publication.service';
+import { PublicationIndexService } from '../publication/core/publication-index.service';
 import { WorkflowReport } from './WorkflowReport.entity';
 import { WorkflowReportService } from './workflow-report.service';
 
@@ -34,7 +34,7 @@ export class ValidationService {
     protected status_text = 'initialized';
 
     constructor(
-        private publicationService: PublicationService,
+        private publicationIndexService: PublicationIndexService,
         private workflowReportService: WorkflowReportService,
     ) { }
 
@@ -171,7 +171,7 @@ export class ValidationService {
     private async loadValidationTargets(): Promise<unknown[]> {
         switch (this.validationDefinition?.target) {
             case 'publication':
-                return this.publicationService.getAll(this.validationDefinition.target_filter, { serializeDates: true }) as Promise<Publication[]>;
+                return this.publicationIndexService.getAll(this.validationDefinition.target_filter, { serializeDates: true }) as Promise<Publication[]>;
             default:
                 throw createInvalidRequestHttpException(`Unsupported validation target: ${this.validationDefinition?.target}`);
         }

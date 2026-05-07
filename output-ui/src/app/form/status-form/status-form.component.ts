@@ -3,7 +3,7 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Observable, map } from 'rxjs';
 import { StatusService } from 'src/app/services/entities/status.service';
-import { Status } from '../../../../../output-interfaces/Publication';
+import {  Status  } from '@output/interfaces';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 export function createUniqueValidator(statuses: Status[]): ValidatorFn {

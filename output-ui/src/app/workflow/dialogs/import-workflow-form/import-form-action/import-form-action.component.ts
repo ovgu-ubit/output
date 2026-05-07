@@ -9,7 +9,7 @@ import { ImportConfigComponent } from 'src/app/administration/components/import-
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { ImportWorkflow, ImportStrategy } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow, ImportStrategy  } from '@output/interfaces';
 import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({

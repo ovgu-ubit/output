@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
-import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportWorkflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  SearchFilter  } from '@output/interfaces';
+import {  ExportWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { WorkflowService } from './workflow.service';
 
 @Injectable({

@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
-import { ExportStrategy } from '../../../output-interfaces/Workflow';
+import {  ApiErrorCode  } from '@output/interfaces';
+import {  ExportStrategy  } from '@output/interfaces';
 import { validateExportWorkflow } from './export-workflow.schema';
 
 describe('validateExportWorkflow', () => {

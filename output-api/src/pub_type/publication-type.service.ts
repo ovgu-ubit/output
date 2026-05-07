@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
-import { PublicationTypeIndex } from '../../../output-interfaces/PublicationIndex';
+import {  PublicationTypeIndex  } from '@output/interfaces';
 import { AliasPubType } from './AliasPubType.entity';
 import { PublicationService } from '../publication/core/publication.service';
 import { PublicationType } from './PublicationType.entity';

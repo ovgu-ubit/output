@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { FunderIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { Funder } from '../../../../../output-interfaces/Publication';
+import {  FunderIndex  } from '@output/interfaces';
+import {  Funder  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

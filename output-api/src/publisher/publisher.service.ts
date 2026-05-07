@@ -4,7 +4,7 @@ import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } 
 import { Publisher } from './Publisher.entity';
 import { AliasPublisher } from './AliasPublisher.entity';
 import { PublicationService } from '../publication/core/publication.service';
-import { PublisherIndex } from '../../../output-interfaces/PublicationIndex';
+import {  PublisherIndex  } from '@output/interfaces';
 import { Publication } from '../publication/core/Publication.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';

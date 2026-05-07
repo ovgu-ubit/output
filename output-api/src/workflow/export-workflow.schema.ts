@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod";
-import { ExportStrategy } from "../../../output-interfaces/Workflow";
+import {  ExportStrategy  } from '@output/interfaces';
 import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { createValidationHttpException } from "../common/api-error";
 

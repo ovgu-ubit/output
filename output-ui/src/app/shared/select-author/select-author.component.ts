@@ -1,5 +1,5 @@
 import { Component, OnChanges } from '@angular/core';
-import { Author } from '../../../../../output-interfaces/Publication';
+import {  Author  } from '@output/interfaces';
 import { SelectEntityComponent } from '../../shared/select-entity/select-entity.component';
 
 @Component({

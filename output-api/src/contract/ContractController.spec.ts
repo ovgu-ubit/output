@@ -1,6 +1,7 @@
 import { HttpException } from '@nestjs/common';
 
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
+import { createNotFoundHttpException } from '../common/api-error';
 import { ContractController } from './ContractController';
 
 describe('ContractController', () => {
@@ -8,7 +9,7 @@ describe('ContractController', () => {
     let service: {
         index: jest.Mock;
         getComponents: jest.Mock;
-        oneComponent: jest.Mock;
+        oneComponentOrFail: jest.Mock;
         combine: jest.Mock;
         one: jest.Mock;
         get: jest.Mock;
@@ -22,7 +23,7 @@ describe('ContractController', () => {
         service = {
             index: jest.fn(),
             getComponents: jest.fn(),
-            oneComponent: jest.fn(),
+            oneComponentOrFail: jest.fn(),
             combine: jest.fn(),
             one: jest.fn(),
             get: jest.fn(),
@@ -36,16 +37,16 @@ describe('ContractController', () => {
     });
 
     it('loads one contract component through the service', async () => {
-        service.oneComponent.mockResolvedValue({ id: 7, label: 'Main component' });
+        service.oneComponentOrFail.mockResolvedValue({ id: 7, label: 'Main component' });
 
         const result = await controller.oneComponent(7);
 
-        expect(service.oneComponent).toHaveBeenCalledWith(7);
+        expect(service.oneComponentOrFail).toHaveBeenCalledWith(7);
         expect(result).toEqual({ id: 7, label: 'Main component' });
     });
 
     it('throws a structured not-found error when one contract component is missing', async () => {
-        service.oneComponent.mockResolvedValue(null);
+        service.oneComponentOrFail.mockRejectedValue(createNotFoundHttpException('Contract component not found.'));
 
         try {
             await controller.oneComponent(7);

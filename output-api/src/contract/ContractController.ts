@@ -2,11 +2,10 @@ import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nes
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ContractService } from './contract.service';
 import { Contract } from './Contract.entity';
-import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
+import {  ContractIndex  } from '@output/interfaces';
 import { Permissions } from '../authorization/permission.decorator';
 import { AccessGuard } from '../authorization/access.guard';
 import { AbstractCrudController } from '../common/abstract-crud.controller';
-import { createNotFoundHttpException } from '../common/api-error';
 import { ContractComponent } from './ContractComponent.entity';
 
 @Controller('contract')
@@ -41,11 +40,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     @ApiResponse({ status: 200, description: 'The requested contract component.' })
     @ApiResponse({ status: 404, description: 'Contract component was not found.' })
     async oneComponent(@Query('id') id: number): Promise<ContractComponent> {
-        const component = await this.service.oneComponent(id);
-        if (!component) {
-            throw createNotFoundHttpException('Contract component not found.');
-        }
-        return component;
+        return this.service.oneComponentOrFail(id);
     }
 
     @Post('component')

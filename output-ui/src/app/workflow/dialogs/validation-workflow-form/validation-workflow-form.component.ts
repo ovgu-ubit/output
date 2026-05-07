@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, Router, RouterModule, RouterOutlet } from '@angular/router';
 import { EMPTY, filter, firstValueFrom, map, of, switchMap, takeUntil } from 'rxjs';
-import { ValidationWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { SharedModule } from 'src/app/shared/shared.module';

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { CostCenter, CostType } from '../../../../../output-interfaces/Publication';
-import { CostCenterIndex } from '../../../../../output-interfaces/PublicationIndex';
+import {  CostCenter, CostType  } from '@output/interfaces';
+import {  CostCenterIndex  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

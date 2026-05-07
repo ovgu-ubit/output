@@ -11,6 +11,11 @@
       "moduleResolution": "node16",
       "outDir": "./dist",
       "rootDir": "../",
+      "baseUrl": "./",
+      "paths": {
+        "@output/interfaces": ["../output-interfaces/index.ts"],
+        "@output/interfaces/*": ["../output-interfaces/*"]
+      },
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
       "sourceMap": true,

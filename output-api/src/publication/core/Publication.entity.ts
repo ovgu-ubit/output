@@ -3,7 +3,7 @@ import { AuthorPublication } from "../relations/AuthorPublication.entity";
 import { Contract } from "../../contract/Contract.entity";
 import { OA_Category } from "../../oa_category/OA_Category.entity";
 import { Publisher } from "../../publisher/Publisher.entity";
-import { Publication as IPublication } from "../../../../output-interfaces/Publication"
+import {  Publication as IPublication  } from '@output/interfaces'
 import { PublicationIdentifier } from "./PublicationIdentifier.entity";
 import { PublicationSupplement } from "./PublicationSupplement.entity";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";

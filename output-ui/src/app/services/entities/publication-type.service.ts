@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { PublicationType } from '../../../../../output-interfaces/Publication';
-import { PublicationTypeIndex } from '../../../../../output-interfaces/PublicationIndex';
+import {  PublicationType  } from '@output/interfaces';
+import {  PublicationTypeIndex  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { SearchFilter } from '../../../../output-interfaces/Config';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import {  SearchFilter  } from '@output/interfaces';
+import {  PublicationIndex  } from '@output/interfaces';
 import { Publication } from '../../publication/core/Publication.entity';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { AbstractFilterService } from '../filter/abstract-filter.service';

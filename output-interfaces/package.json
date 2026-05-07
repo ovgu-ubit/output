@@ -1,0 +1,6 @@
+{
+  "name": "@output/interfaces",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/output-interfaces/index.js"
+}

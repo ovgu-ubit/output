@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow  } from '@output/interfaces';
 import { WorkflowService } from '../../workflow.service';
 import { ImportWorkflowFormComponent } from '../../dialogs/import-workflow-form/import-workflow-form.component';
 import { TableComponent } from 'src/app/table/table-component/table.component';

@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { CostItem } from '../../../../../output-interfaces/Publication';
+import {  CostItem  } from '@output/interfaces';
 
 @Component({
     selector: 'app-cost-item-form',

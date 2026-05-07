@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { Config as IConfig } from "../../../output-interfaces/Config";
+import {  Config as IConfig  } from '@output/interfaces';
 
 export type ConfigScope = 'public' | 'user' | 'admin';
 

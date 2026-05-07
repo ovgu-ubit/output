@@ -1,5 +1,5 @@
 import { ZodError } from "zod";
-import { ContractModel } from "../../../output-interfaces/Publication";
+import {  ContractModel  } from '@output/interfaces';
 import {
     ContractModelParamsSchemaByModel,
     FlatrateDistributionFormulaSchema,

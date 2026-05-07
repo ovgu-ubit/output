@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, ValidationError } from '@nestjs/common';
-import { ApiErrorCode, ApiErrorDetail, ApiErrorResponse } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode, ApiErrorDetail, ApiErrorResponse  } from '@output/interfaces';
 
 export const CORRELATION_ID_HEADER = 'x-correlation-id';
 

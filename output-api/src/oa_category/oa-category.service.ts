@@ -4,7 +4,7 @@ import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { PublicationService } from '../publication/core/publication.service';
 import { OA_Category } from './OA_Category.entity';
-import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
+import {  OACategoryIndex  } from '@output/interfaces';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { mergeEntities } from '../common/merge';

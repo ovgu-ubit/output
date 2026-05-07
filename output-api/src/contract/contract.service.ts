@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
-import { InvoiceKind } from '../../../output-interfaces/Publication';
-import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
+import {  InvoiceKind  } from '@output/interfaces';
+import {  ContractIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
 import { assertCreateRequestHasNoId, hasProvidedEntityId } from '../common/entity-id';
@@ -158,6 +158,14 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
 
         return this.splitContractComponentInvoices(component);
+    }
+
+    public async oneComponentOrFail(id: number) {
+        const component = await this.oneComponent(id);
+        if (!component) {
+            throw createNotFoundHttpException('Contract component not found.');
+        }
+        return component;
     }
 
     public async deleteComponents(components: Pick<ContractComponent, 'id'>[], manager?: EntityManager) {

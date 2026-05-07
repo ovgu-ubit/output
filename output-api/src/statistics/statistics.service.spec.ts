@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { StatisticsService } from './statistics.service';
 import { Publication } from '../publication/core/Publication.entity';
 import { InstituteService } from '../institute/institute.service';
-import { GROUP, STATISTIC, TIMEFRAME } from '../../../output-interfaces/Statistics';
+import {  GROUP, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 
 describe('StatisticsService', () => {
     let service: StatisticsService;
@@ -188,5 +188,49 @@ describe('StatisticsService', () => {
             'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IS NULL)'
         );
         expect(queryBuilder.andWhere).not.toHaveBeenCalledWith('cost_center.id IS NOT NULL');
+    });
+
+    it('normalizes grouped statistics requests before delegating to the query builder', async () => {
+        const publicationStatisticSpy = jest.spyOn(service, 'publication_statistic').mockResolvedValue([]);
+
+        await service.getPublicationStatistic(
+            2025,
+            STATISTIC.COUNT,
+            [GROUP.PUBLISHER],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            { publisherId: 5 } as any,
+            { canReadNetCosts: true },
+        );
+
+        expect(publicationStatisticSpy).toHaveBeenCalledWith(
+            2025,
+            STATISTIC.COUNT,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            { publisherId: 5 }
+        );
+    });
+
+    it('rejects statistic requests without a reporting year', async () => {
+        expect(() => service.getPublicationStatistic(
+            undefined as any,
+            STATISTIC.COUNT,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+        )).toThrow();
+    });
+
+    it('rejects net-cost statistics when the caller lacks read permission', async () => {
+        expect(() => service.getPublicationStatistic(
+            2025,
+            STATISTIC.NET_COSTS,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            undefined,
+            { canReadNetCosts: false },
+        )).toThrow();
     });
 });

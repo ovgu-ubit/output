@@ -1,7 +1,7 @@
 ﻿import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from "typeorm";
 import { CostCenter } from "./CostCenter.entity";
 import { CostItem } from "./CostItem.entity";
-import { Invoice as IInvoice, InvoiceKind } from "../../../output-interfaces/Publication"
+import {  Invoice as IInvoice, InvoiceKind  } from '@output/interfaces'
 import { Publication } from "../publication/core/Publication.entity";
 import { ContractComponent } from "../contract/ContractComponent.entity";
 

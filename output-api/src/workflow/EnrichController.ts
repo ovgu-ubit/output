@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Inject, Param, Post, Query, Req, Res, Us
 import { ApiBody, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { Between, In } from "typeorm";
-import { UpdateMapping } from "../../../output-interfaces/Config";
+import {  UpdateMapping  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { ApiEnrichDOIService, getEnrichServiceMeta } from "./import/api-enrich-doi.service";

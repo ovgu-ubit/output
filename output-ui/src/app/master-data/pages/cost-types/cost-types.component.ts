@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
-import { CostType } from '../../../../../../output-interfaces/Publication';
+import {  CostType  } from '@output/interfaces';
 import { CostTypeFormComponent } from '../../../form/cost-type-form/cost-type-form.component';
-import { CostTypeIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  CostTypeIndex  } from '@output/interfaces';
 
 @Component({
     selector: 'app-cost-types',

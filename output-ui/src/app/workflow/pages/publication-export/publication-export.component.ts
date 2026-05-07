@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import { ExportWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ExportWorkflow  } from '@output/interfaces';
 import { ExportWorkflowFormComponent } from '../../dialogs/export-workflow-form/export-workflow-form.component';
 import { ExportWorkflowService } from '../../export-workflow.service';
 

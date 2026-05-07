@@ -6,8 +6,8 @@ import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { FilterViewComponent } from 'src/app/publications/dialogs/filter-view/filter-view.component';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { CompareOperation, SearchFilter, SearchFilterValue } from '../../../../../../../output-interfaces/Config';
-import { ValidationCompareCondition, ValidationCondition, ValidationRule, ValidationRuleResult, ValidationWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  CompareOperation, SearchFilter, SearchFilterValue  } from '@output/interfaces';
+import {  ValidationCompareCondition, ValidationCondition, ValidationRule, ValidationRuleResult, ValidationWorkflow  } from '@output/interfaces';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ValidationFormFacade } from '../validation-form-facade.service';
 

@@ -3,8 +3,8 @@ import { FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatTable } from '@angular/material/table';
 import { InstituteService } from 'src/app/services/entities/institute.service';
-import { AliasInstitute } from '../../../../../output-interfaces/Alias';
-import { Institute } from '../../../../../output-interfaces/Publication';
+import {  AliasInstitute  } from '@output/interfaces';
+import {  Institute  } from '@output/interfaces';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 @Component({

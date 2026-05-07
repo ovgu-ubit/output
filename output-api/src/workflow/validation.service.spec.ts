@@ -1,10 +1,10 @@
-import { CompareOperation } from '../../../output-interfaces/Config';
-import { WorkflowType } from '../../../output-interfaces/Workflow';
+import {  CompareOperation  } from '@output/interfaces';
+import {  WorkflowType  } from '@output/interfaces';
 import { ValidationService } from './validation.service';
 
 describe('ValidationService', () => {
     let service: ValidationService;
-    let publicationService: {
+    let publicationIndexService: {
         getAll: jest.Mock;
     };
     let workflowReportService: {
@@ -15,7 +15,7 @@ describe('ValidationService', () => {
     };
 
     beforeEach(() => {
-        publicationService = {
+        publicationIndexService = {
             getAll: jest.fn(),
         };
         workflowReportService = {
@@ -31,7 +31,7 @@ describe('ValidationService', () => {
         workflowReportService.finish.mockImplementation(async (id, value) => ({ id, ...value }));
 
         service = new ValidationService(
-            publicationService as never,
+            publicationIndexService as never,
             workflowReportService as never,
         );
     });
@@ -57,7 +57,7 @@ describe('ValidationService', () => {
     });
 
     it('evaluates required, compare and conditional rules and writes findings', async () => {
-        publicationService.getAll.mockResolvedValue([
+        publicationIndexService.getAll.mockResolvedValue([
             {
                 id: 1,
                 title: 'Missing DOI',
@@ -95,7 +95,7 @@ describe('ValidationService', () => {
 
         const summary = await service.validate('alice');
 
-        expect(publicationService.getAll).toHaveBeenCalledWith(undefined, { serializeDates: true });
+        expect(publicationIndexService.getAll).toHaveBeenCalledWith(undefined, { serializeDates: true });
         expect(workflowReportService.updateStatus).toHaveBeenCalledWith(91, expect.objectContaining({
             progress: -1,
             status: expect.stringContaining('Started on'),
@@ -136,7 +136,7 @@ describe('ValidationService', () => {
     });
 
     it('writes a clean info entry when validation produces no findings', async () => {
-        publicationService.getAll.mockResolvedValue([
+        publicationIndexService.getAll.mockResolvedValue([
             {
                 id: 3,
                 title: 'Clean',
@@ -166,7 +166,7 @@ describe('ValidationService', () => {
     });
 
     it('supports negated compare rules', async () => {
-        publicationService.getAll.mockResolvedValue([
+        publicationIndexService.getAll.mockResolvedValue([
             {
                 id: 11,
                 title: 'Draft',
@@ -200,7 +200,7 @@ describe('ValidationService', () => {
     });
 
     it('ignores empty values for compare rules', async () => {
-        publicationService.getAll.mockResolvedValue([
+        publicationIndexService.getAll.mockResolvedValue([
             {
                 id: 13,
                 title: 'No DOI',
@@ -233,7 +233,7 @@ describe('ValidationService', () => {
     });
 
     it('does not trigger conditional IF comparisons on empty values', async () => {
-        publicationService.getAll.mockResolvedValue([
+        publicationIndexService.getAll.mockResolvedValue([
             {
                 id: 15,
                 title: 'No OA Category',
@@ -267,7 +267,7 @@ describe('ValidationService', () => {
     });
 
     it('heartbeats clean validation runs during iteration to keep the report active', async () => {
-        publicationService.getAll.mockResolvedValue([
+        publicationIndexService.getAll.mockResolvedValue([
             {
                 id: 4,
                 title: 'Clean A',

@@ -11,8 +11,8 @@ import { FilterViewComponent } from 'src/app/publications/dialogs/filter-view/fi
 import { selectViewConfig } from 'src/app/services/redux';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ExportWorkflowService } from 'src/app/workflow/export-workflow.service';
-import { SearchFilter } from '../../../../../../../output-interfaces/Config';
-import { ExportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  SearchFilter  } from '@output/interfaces';
+import {  ExportWorkflow  } from '@output/interfaces';
 import { ExportFormFacade } from '../export-form-facade.service';
 
 type InlinePreviewKind = 'json' | 'xml' | 'csv' | 'text';

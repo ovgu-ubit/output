@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
-import { Author } from '../../../../../output-interfaces/Publication';
-import { AuthorIndex } from '../../../../../output-interfaces/PublicationIndex';
+import {  Author  } from '@output/interfaces';
+import {  AuthorIndex  } from '@output/interfaces';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
-import { PublisherIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  PublisherIndex  } from '@output/interfaces';
 import { PublisherFormComponent } from '../../../form/publisher-form/publisher-form.component';
 
 @Component({

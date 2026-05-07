@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom, interval, concatMap, Observable } from 'rxjs';
-import { CSVMapping, UpdateMapping } from '../../../../../output-interfaces/Config';
+import {  CSVMapping, UpdateMapping  } from '@output/interfaces';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Injectable({

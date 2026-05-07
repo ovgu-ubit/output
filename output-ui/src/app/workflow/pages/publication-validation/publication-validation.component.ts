@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import { ValidationWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow  } from '@output/interfaces';
 import { ValidationWorkflowFormComponent } from '../../dialogs/validation-workflow-form/validation-workflow-form.component';
 import { ValidationWorkflowService } from '../../validation-workflow.service';
 

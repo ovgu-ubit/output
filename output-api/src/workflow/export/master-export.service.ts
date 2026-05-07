@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { AbstractExportService, ExportService } from './abstract-export.service';
-import { PublicationService } from '../../publication/core/publication.service';
-import { SearchFilter } from '../../../../output-interfaces/Config';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
+import {  SearchFilter  } from '@output/interfaces';
 import { Publication } from '../../publication/core/Publication.entity';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import {  PublicationIndex  } from '@output/interfaces';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { ReportItemService } from '../report-item.service';
@@ -17,7 +17,7 @@ export class MasterExportService extends AbstractExportService {
     sep = ';';
     df:Intl.DateTimeFormat;
 
-    constructor(private publicationService:PublicationService, private reportService:ReportItemService, private configService:AppConfigService, private invoiceService:InvoiceService) {
+    constructor(private publicationIndexService:PublicationIndexService, private reportService:ReportItemService, private configService:AppConfigService, private invoiceService:InvoiceService) {
         super(); 
         this.df = new Intl.DateTimeFormat('de-DE');
     }
@@ -28,7 +28,7 @@ export class MasterExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Export',this.name, by_user);
 
-        let pubs = await this.publicationService.getAll(filter?.filter);
+        let pubs = await this.publicationIndexService.getAll(filter?.filter);
         if (filter) for (const path of filter.paths) {
             const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;

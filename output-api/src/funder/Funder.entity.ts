@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, OneToMany } from "typeorm";
-import { Funder as IFunder} from "../../../output-interfaces/Publication"
+import {  Funder as IFunder } from '@output/interfaces'
 import { Publication } from "../publication/core/Publication.entity";
 import { AliasFunder } from "./AliasFunder.entity";
 

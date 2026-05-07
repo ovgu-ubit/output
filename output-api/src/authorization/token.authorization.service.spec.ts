@@ -2,7 +2,7 @@ import { ExecutionContext, HttpException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { of } from "rxjs";
-import { ApiErrorCode } from "../../../output-interfaces/ApiError";
+import {  ApiErrorCode  } from '@output/interfaces';
 import { AppConfigService } from "../config/app-config.service";
 import { PermissionDecoration } from "./permission.decorator";
 import { TokenAuthorizationService } from "./token.authorization.service";

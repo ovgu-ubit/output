@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, of, Subject, tap } from "rxjs";
-import { ExportWorkflow, WorkflowReport } from "../../../../../../output-interfaces/Workflow";
+import {  ExportWorkflow, WorkflowReport  } from '@output/interfaces';
 import { ExportWorkflowService } from "../../export-workflow.service";
 
 @Injectable()

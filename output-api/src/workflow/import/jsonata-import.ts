@@ -7,8 +7,8 @@ import { concat, concatMap, firstValueFrom, map, mergeAll, Observable, queueSche
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { ImportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
+import {  ImportWorkflow, ImportWorkflowTestResult, ImportStrategy, WorkflowReportItemLevel  } from '@output/interfaces';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -31,6 +31,7 @@ import { hasProvidedEntityId } from '../../common/entity-id';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 import { WorkflowReportService } from '../workflow-report.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 
 export interface JSONataParsedObject {
     title?: string;
@@ -74,12 +75,12 @@ type RequestMode = 'offset' | 'page';
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -362,7 +363,7 @@ export class JSONataImportService extends AbstractImportService {
             return;
         }
 
-        const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+        const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
         if (!flag) {
             const pubNew = await this.mapNew(pub).catch(async e => {
                 await this.workflowReportService.write(this.workflowReport.id, {
@@ -391,7 +392,7 @@ export class JSONataImportService extends AbstractImportService {
 
         if (!update) return;
 
-        const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+        const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
         if (orig.locked || orig.delete_date) return;
         const pubUpd = await this.mapUpdate(pub, orig).catch(async e => {
             await this.workflowReportService.write(this.workflowReport.id, {
@@ -494,7 +495,7 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
                 try {
-                    orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                    orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                 } catch (err) {
                     result.result.issues.push({
                         message: 'Could not retrieve original via DOI or title', error: err instanceof Error
@@ -714,7 +715,7 @@ export class JSONataImportService extends AbstractImportService {
         try {
             if (!data) return;
             for (const pub of data) {
-                const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                 if (!flag) {
                     const pubNew = await this.mapNew(pub).catch(e =>
                         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` }));
@@ -723,7 +724,7 @@ export class JSONataImportService extends AbstractImportService {
                         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
                     }
                 } else if (update) {
-                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                    const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                     if (orig.locked) continue;
                     const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
                         this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error updating publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
@@ -921,7 +922,7 @@ export class JSONataImportService extends AbstractImportService {
             throw createInvalidRequestHttpException('Enrich cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
 
-        const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
+        const publications = (await this.publicationService.get(this.enrich_whereClause)).filter(pub => this.publicationIndexService.isDOIvalid(pub) && !pub.locked && !pub.delete_date);
         if (!publications || publications.length === 0) {
             await this.finishWorkflowRun('Nothing to enrich', 'Nothing to enrich on ' + new Date(), {
                 count_import: 0,
@@ -952,7 +953,7 @@ export class JSONataImportService extends AbstractImportService {
                 try {
                     const item = await this.getDataEnrich(data);
 
-                    const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
+                    const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
                     if (!orig?.locked) {
                         const pubUpd = await this.mapUpdate(item, orig).catch(async e => {
                             await this.workflowReportService.write(this.workflowReport.id, {

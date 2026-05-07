@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { RoleService } from 'src/app/services/entities/role.service';
-import { Role } from '../../../../../../output-interfaces/Publication';
+import {  Role  } from '@output/interfaces';
 import { RoleFormComponent } from '../../../form/role-form/role-form.component';
 
 @Component({

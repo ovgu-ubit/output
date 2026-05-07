@@ -88,6 +88,17 @@ describe('AppConfigService', () => {
         expect(getCall.where.scope._value).toEqual(expect.arrayContaining(['public', 'user']));
     });
 
+    it('lists accessible config based on user permissions', async () => {
+        repository.find.mockResolvedValueOnce([{ key: 'public_key', scope: 'public' }] as any);
+        repository.findOne.mockResolvedValueOnce({ key: 'user_key', scope: 'user' } as any);
+
+        await expect(service.listAccessibleConfig({ read: false }, undefined)).resolves.toEqual([{ key: 'public_key', scope: 'public' }]);
+        await expect(service.listAccessibleConfig({ read: true }, 'user_key')).resolves.toEqual({ key: 'user_key', scope: 'user' });
+        expect(service.resolveScopeForUser({ admin: true })).toBe('admin');
+        expect(service.resolveScopeForUser({ read: true })).toBe('user');
+        expect(service.resolveScopeForUser()).toBe('public');
+    });
+
     it('handles database config creation and updates', async () => {
         repository.findOneBy.mockResolvedValueOnce(null);
         repository.save.mockResolvedValueOnce({ key: 'x', value: 1 } as any);

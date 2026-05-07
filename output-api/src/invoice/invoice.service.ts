@@ -6,11 +6,11 @@ import { Invoice } from './Invoice.entity';
 import { CostType } from './CostType.entity';
 import { CostCenter } from './CostCenter.entity';
 import { Publication } from '../publication/core/Publication.entity';
-import { CostCenterIndex, CostTypeIndex } from '../../../output-interfaces/PublicationIndex';
+import {  CostCenterIndex, CostTypeIndex  } from '@output/interfaces';
 import { CostTypeService } from './cost-type.service';
 import { CostCenterService } from './cost-center.service';
 import { AppConfigService } from '../config/app-config.service';
-import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
+import { createEntityLockedHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { hasProvidedEntityId } from '../common/entity-id';
 
@@ -39,6 +39,12 @@ export class InvoiceService {
         });
         if (!invoice) return null;
         return this.resolveInvoiceReadLockState(invoice, writer, user);
+    }
+
+    public async getOrFail(id: number, writer = false, user?: string) {
+        const invoice = await this.get(id, writer, user);
+        if (!invoice) throw createNotFoundHttpException('Invoice not found.');
+        return invoice;
     }
 
     public getForPub(pub: Publication) {

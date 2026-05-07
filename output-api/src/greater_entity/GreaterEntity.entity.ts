@@ -1,5 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { GreaterEntity as IGreaterEntity } from "../../../output-interfaces/Publication";
+import {  GreaterEntity as IGreaterEntity  } from '@output/interfaces';
 import { Publication } from "../publication/core/Publication.entity";
 import { GEIdentifier } from "./GEIdentifier.entity";
 

@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod";
-import { CompareOperation, JoinOperation } from "../../../output-interfaces/Config";
+import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { createValidationHttpException } from "../common/api-error";
 

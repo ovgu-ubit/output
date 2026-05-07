@@ -7,7 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { map, Observable, startWith } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { EntityService, isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
-import { Entity } from '../../../../../output-interfaces/Publication';
+import {  Entity  } from '@output/interfaces';
 import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/confirm-dialog.component';
 
 @Component({

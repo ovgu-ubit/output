@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
-import { PublicationTypeIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  PublicationTypeIndex  } from '@output/interfaces';
 import { PubTypeFormComponent } from '../../../form/pub-type-form/pub-type-form.component';
 
 @Component({

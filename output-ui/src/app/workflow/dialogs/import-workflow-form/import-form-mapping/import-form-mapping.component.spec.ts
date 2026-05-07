@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, Subject } from 'rxjs';
-import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ImportFormFacade } from '../import-form-facade.service';
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ContractModel } from "../../../output-interfaces/Publication";
+import {  ContractModel  } from '@output/interfaces';
 
 const PercentageValueSchema = z.number().finite().min(0).max(100);
 const CurrencyValueSchema = z.number().finite().min(0);

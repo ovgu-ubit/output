@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { WorkflowReport as IWorkflowReport, WorkflowType } from "../../../output-interfaces/Workflow";
+import {  WorkflowReport as IWorkflowReport, WorkflowType  } from '@output/interfaces';
 import { PublicationChange } from "../publication/core/PublicationChange.entity";
 import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { ImportWorkflow } from "./ImportWorkflow.entity";

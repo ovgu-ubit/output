@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
-import { SearchFilter } from '../../../../../output-interfaces/Config';
-import { Publication } from '../../../../../output-interfaces/Publication';
-import { PublicationIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { PublicationChange } from '../../../../../output-interfaces/Workflow';
+import {  SearchFilter  } from '@output/interfaces';
+import {  Publication  } from '@output/interfaces';
+import {  PublicationIndex  } from '@output/interfaces';
+import {  PublicationChange  } from '@output/interfaces';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({

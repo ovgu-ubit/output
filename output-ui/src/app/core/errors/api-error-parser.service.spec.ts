@@ -1,5 +1,5 @@
 import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { ApiErrorCode } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { ApiErrorParser } from './api-error-parser.service';
 
 describe('ApiErrorParser', () => {

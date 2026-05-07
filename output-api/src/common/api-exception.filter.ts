@@ -1,7 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import { ApiErrorResponse, ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorResponse, ApiErrorCode  } from '@output/interfaces';
 import { buildApiErrorEnvelope, CORRELATION_ID_HEADER, normalizeHttpExceptionPayload } from './api-error';
 
 @Catch()

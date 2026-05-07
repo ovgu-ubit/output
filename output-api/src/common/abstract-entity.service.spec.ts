@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService, LockableEntity } from './abstract-entity.service';

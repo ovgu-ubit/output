@@ -1,11 +1,16 @@
 import { PublicationChangeService } from './publication-change.service';
+import { Publication } from './Publication.entity';
 
 describe('PublicationChangeService', () => {
     let service: PublicationChangeService;
+    let publicationRepository: { find: jest.Mock };
     let publicationChangeRepository: { save: jest.Mock };
     let workflowReportRepository: { existsBy: jest.Mock };
 
     beforeEach(() => {
+        publicationRepository = {
+            find: jest.fn(async () => []),
+        };
         publicationChangeRepository = {
             save: jest.fn(async (change) => change),
         };
@@ -14,6 +19,7 @@ describe('PublicationChangeService', () => {
         };
 
         service = new PublicationChangeService(
+            publicationRepository as never,
             publicationChangeRepository as never,
             workflowReportRepository as never,
         );
@@ -33,5 +39,25 @@ describe('PublicationChangeService', () => {
         expect(publicationChangeRepository.save).toHaveBeenCalledWith(expect.objectContaining({
             by_user: 'user',
         }));
+    });
+
+    it('ignores logically empty changes and relation row id churn when building patches', () => {
+        const author = { id: 101, last_name: 'Doe', first_name: 'Jane' } as any;
+        const before = {
+            id: 9,
+            add_info: null,
+            identifiers: [],
+            supplements: [],
+            authorPublications: [{ id: 1, authorId: 101, author, corresponding: true }],
+        } as Publication;
+        const after = {
+            id: 9,
+            add_info: '',
+            identifiers: [],
+            supplements: [],
+            authorPublications: [{ id: 2, authorId: 101, author, corresponding: true }],
+        } as Publication;
+
+        expect(service.buildPublicationChangePatch(before, after)).toBeNull();
     });
 });

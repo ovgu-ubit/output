@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import { ExportStrategy, ExportWorkflow as IExportWorkflow } from "../../../output-interfaces/Workflow";
+import {  ExportStrategy, ExportWorkflow as IExportWorkflow  } from '@output/interfaces';
 import { WorkflowReport } from "./WorkflowReport.entity";
 import { OneToMany } from "typeorm";
 
