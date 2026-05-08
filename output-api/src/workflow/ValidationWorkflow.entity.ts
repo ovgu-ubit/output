@@ -40,7 +40,7 @@ export class ValidationWorkflow implements IValidationWorkflow {
     @Column({ nullable: true, type: 'timestamptz' })
     locked_at?: Date;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, type: 'varchar' })
     target?: ValidationTarget;
 
     @Column({ nullable: true, type: 'jsonb' })
