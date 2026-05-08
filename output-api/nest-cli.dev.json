@@ -12,6 +12,6 @@
         }
       ]
     },
-    "entryFile": "output-api/src/main"
+    "entryFile": "src/main"
   }
   
