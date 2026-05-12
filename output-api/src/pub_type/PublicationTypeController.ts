@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
+import { Request } from "express";
 import { PublicationTypeService } from "./publication-type.service";
 import {  PublicationTypeIndex  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
@@ -16,8 +17,9 @@ export class PublicationTypeController extends AbstractCrudController<Publicatio
     }
 
     @Get("index")
-    async index(@Query('reporting_year') reporting_year:number) : Promise<PublicationTypeIndex[]> {
-        return await this.service.index(reporting_year);
+    @UseGuards(AccessGuard)
+    async index(@Query('reporting_year') reporting_year:number, @Req() request: Request) : Promise<PublicationTypeIndex[]> {
+        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false);
     }
 
     @Post('combine')

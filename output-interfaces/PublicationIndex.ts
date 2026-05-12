@@ -49,6 +49,7 @@ export interface ContractIndex {
     end_date?: Date;
     invoice_amount?: number;
 	pub_count: number;
+    net_costs?: number;
     pub_count_total: number;
 }
 export interface PublisherIndex {
@@ -78,6 +79,7 @@ export interface PublicationTypeIndex {
     label: string;
     review: boolean;
 	pub_count: number;
+    net_costs?: number;
     pub_count_total: number;
 }
 export interface OACategoryIndex {
@@ -85,6 +87,7 @@ export interface OACategoryIndex {
     label: string;
     is_oa: boolean;
 	pub_count: number;
+    net_costs?: number;
     pub_count_total: number;
 }
 export interface CostCenterIndex {
@@ -92,11 +95,13 @@ export interface CostCenterIndex {
     number?: string;
     label: string;
 	pub_count: number;
+    net_costs?: number;
     pub_count_total: number;
 }
 export interface CostTypeIndex {
     id?: number;
     label: string;
 	pub_count: number;
+    net_costs?: number;
     pub_count_total: number;
 }

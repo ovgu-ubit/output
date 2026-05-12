@@ -16,7 +16,7 @@ export class CostTypeService extends AbstractEntityService<CostType> {
         super(repository, appConfigService);
     }
 
-    public async getCostTypeIndex(reporting_year: number): Promise<CostTypeIndex[]> {
+    public async getCostTypeIndex(reporting_year: number, canReadNetCosts = false): Promise<CostTypeIndex[]> {
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
         let query = this.repository.createQueryBuilder("cost_type")
             .leftJoin("cost_item", "cost_item", "cost_item.\"costTypeId\"=cost_type.id")
@@ -33,11 +33,13 @@ export class CostTypeService extends AbstractEntityService<CostType> {
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
                 .setParameters({ beginDate, endDate });
         }
         else {
             query = query
-                .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count");
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs");
         }
 
         return query.getRawMany() as Promise<CostTypeIndex[]>;

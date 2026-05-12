@@ -45,6 +45,15 @@ describe('ContractController', () => {
         expect(result).toEqual({ id: 7, label: 'Main component' });
     });
 
+    it('forwards read access when loading the contract index', async () => {
+        service.index.mockResolvedValue([{ id: 1, label: 'Contract', net_costs: 100 }]);
+
+        const result = await controller.index(2025, { user: { read: true } } as any);
+
+        expect(service.index).toHaveBeenCalledWith(2025, true);
+        expect(result).toEqual([{ id: 1, label: 'Contract', net_costs: 100 }]);
+    });
+
     it('throws a structured not-found error when one contract component is missing', async () => {
         service.oneComponentOrFail.mockRejectedValue(createNotFoundHttpException('Contract component not found.'));
 

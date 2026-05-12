@@ -24,6 +24,7 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
     { colName: 'number', colTitle: 'Nummer' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' }
   ];
 

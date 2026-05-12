@@ -21,6 +21,7 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'is_oa', colTitle: 'Open-Access?', type: 'boolean' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 

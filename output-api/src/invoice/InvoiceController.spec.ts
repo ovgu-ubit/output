@@ -45,6 +45,15 @@ describe('InvoiceController', () => {
         expect(result).toEqual([{ id: 1, label: 'APC' }]);
     });
 
+    it('forwards read access when loading the cost type index', async () => {
+        costTypeService.getCostTypeIndex.mockResolvedValue([{ id: 1, label: 'APC', net_costs: 50 }]);
+
+        const result = await controller.cost_type_index(2025, { user: { read: true } } as any);
+
+        expect(costTypeService.getCostTypeIndex).toHaveBeenCalledWith(2025, true);
+        expect(result).toEqual([{ id: 1, label: 'APC', net_costs: 50 }]);
+    });
+
     it('forwards writer flag and username when loading one invoice', async () => {
         invoiceService.getOrFail.mockResolvedValue({ id: 5 });
 
@@ -155,6 +164,15 @@ describe('InvoiceController', () => {
         await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);
 
         expect(costCenterService.oneOrFail).toHaveBeenCalledWith(9, true, 'alice', 'Cost center not found.');
+    });
+
+    it('forwards read access when loading the cost center index', async () => {
+        costCenterService.getCostCenterIndex.mockResolvedValue([{ id: 9, label: 'Center', net_costs: 75 }]);
+
+        const result = await controller.ccIndex(2025, { user: { read: true } } as any);
+
+        expect(costCenterService.getCostCenterIndex).toHaveBeenCalledWith(2025, true);
+        expect(result).toEqual([{ id: 9, label: 'Center', net_costs: 75 }]);
     });
 
     it('throws a structured not-found error when one cost center is missing', async () => {
