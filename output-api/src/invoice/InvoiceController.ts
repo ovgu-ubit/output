@@ -90,11 +90,12 @@ export class InvoiceController {
     }
     
     @Get('cost_type_index')
+    @UseGuards(AccessGuard)
     @ApiResponse({
         type: Invoice
     })
-    async cost_type_index(@Query('reporting_year') reporting_year: number) : Promise<CostTypeIndex[]> {
-        return await this.costTypeService.getCostTypeIndex(reporting_year);
+    async cost_type_index(@Query('reporting_year') reporting_year: number, @Req() request: Request) : Promise<CostTypeIndex[]> {
+        return await this.costTypeService.getCostTypeIndex(reporting_year, request['user'] ? request['user']['read'] : false);
     }
     
     @Get('cost_type/:id')
@@ -151,9 +152,10 @@ export class InvoiceController {
     } 
 
     @Get('cost_center/index')
+    @UseGuards(AccessGuard)
     @ApiResponse({ status: 200, description: 'Author index is returned.' })
-    async ccIndex(@Query('reporting_year') reporting_year: number) {
-        return await this.costCenterService.getCostCenterIndex(reporting_year);
+    async ccIndex(@Query('reporting_year') reporting_year: number, @Req() request: Request) {
+        return await this.costCenterService.getCostCenterIndex(reporting_year, request['user'] ? request['user']['read'] : false);
     }
 
     

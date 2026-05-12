@@ -207,31 +207,41 @@ export class ContractService extends AbstractEntityService<Contract> {
         }));
     }
 
-    public async index(reporting_year: number): Promise<ContractIndex[]> {
+    public async index(reporting_year: number, canReadNetCosts = false): Promise<ContractIndex[]> {
         let query = this.repository.createQueryBuilder('contract')
             .leftJoin('contract.publisher', 'publisher')
+            .leftJoin('contract.publications', 'publication')
             .select('contract.id', 'id')
             .addSelect('contract.label', 'label')
             .addSelect('contract.start_date', 'start_date')
             .addSelect('contract.end_date', 'end_date')
             .addSelect('contract.invoice_amount', 'invoice_amount')
             .addSelect('publisher.label', 'publisher')
-            .addSelect('COUNT(publication.id)', 'pub_count')
+            .addSelect('COUNT(DISTINCT publication.id)', 'pub_count_total')
             .groupBy('contract.id')
             .addGroupBy('contract.start_date')
             .addGroupBy('contract.end_date')
             .addGroupBy('contract.invoice_amount')
             .addGroupBy('publisher.label');
 
+        if (canReadNetCosts) {
+            query = query
+                .leftJoin('publication.invoices', 'invoice')
+                .leftJoin('invoice.cost_items', 'cost_item');
+        }
+
         if (reporting_year) {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin('contract.publications', 'publication', 'publication."contractId" = contract.id and publication.pub_date between :beginDate and :endDate', { beginDate, endDate });
+                .addSelect('COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)', 'pub_count')
+                .addSelect(canReadNetCosts ? 'SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)' : 'NULL', 'net_costs')
+                .setParameters({ beginDate, endDate });
         }
         else {
             query = query
-                .leftJoin('contract.publications', 'publication', 'publication."contractId" = contract.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL');
+                .addSelect('COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)', 'pub_count')
+                .addSelect(canReadNetCosts ? 'SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)' : 'NULL', 'net_costs');
         }
 
         return query.getRawMany() as Promise<ContractIndex[]>;

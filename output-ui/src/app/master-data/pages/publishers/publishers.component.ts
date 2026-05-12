@@ -21,6 +21,7 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit 
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'doi_prefix', colTitle: 'DOI Prefix' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 
   constructor(public publisherService: PublisherService) { }
@@ -40,4 +41,3 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit 
     return '/Stammdaten/Verlage'
   }
 }
-
