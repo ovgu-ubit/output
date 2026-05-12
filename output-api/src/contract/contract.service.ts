@@ -210,13 +210,14 @@ export class ContractService extends AbstractEntityService<Contract> {
     public async index(reporting_year: number): Promise<ContractIndex[]> {
         let query = this.repository.createQueryBuilder('contract')
             .leftJoin('contract.publisher', 'publisher')
+            .leftJoin('contract.publications', 'publication')
             .select('contract.id', 'id')
             .addSelect('contract.label', 'label')
             .addSelect('contract.start_date', 'start_date')
             .addSelect('contract.end_date', 'end_date')
             .addSelect('contract.invoice_amount', 'invoice_amount')
             .addSelect('publisher.label', 'publisher')
-            .addSelect('COUNT(publication.id)', 'pub_count')
+            .addSelect('COUNT(publication.id)', 'pub_count_total')
             .groupBy('contract.id')
             .addGroupBy('contract.start_date')
             .addGroupBy('contract.end_date')
@@ -227,11 +228,12 @@ export class ContractService extends AbstractEntityService<Contract> {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin('contract.publications', 'publication', 'publication."contractId" = contract.id and publication.pub_date between :beginDate and :endDate', { beginDate, endDate });
+                .addSelect('SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN 1 ELSE 0 END)', 'pub_count')
+                .setParameters({ beginDate, endDate });
         }
         else {
             query = query
-                .leftJoin('contract.publications', 'publication', 'publication."contractId" = contract.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL');
+                .addSelect('SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN 1 ELSE 0 END)', 'pub_count');
         }
 
         return query.getRawMany() as Promise<ContractIndex[]>;

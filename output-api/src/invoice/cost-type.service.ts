@@ -11,24 +11,34 @@ import { CostType } from './CostType.entity';
 export class CostTypeService extends AbstractEntityService<CostType> {
     constructor(
         @InjectRepository(CostType) repository: Repository<CostType>,
-        configService: AppConfigService,
+        private readonly appConfigService: AppConfigService,
     ) {
-        super(repository, configService);
+        super(repository, appConfigService);
     }
 
-    public getCostTypeIndex(reporting_year: number) {
-        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-
-        const query = this.repository.createQueryBuilder("cost_type")
+    public async getCostTypeIndex(reporting_year: number): Promise<CostTypeIndex[]> {
+        if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
+        let query = this.repository.createQueryBuilder("cost_type")
             .leftJoin("cost_item", "cost_item", "cost_item.\"costTypeId\"=cost_type.id")
             .leftJoin("invoice", "invoice", "cost_item.\"invoiceId\"=invoice.id")
-            .leftJoin("invoice.publication", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+            .leftJoin("invoice.publication", "publication")
             .select("cost_type.id", "id")
             .addSelect("cost_type.label", "label")
-            .addSelect("COUNT(DISTINCT publication.id)", "pub_count")
+            .addSelect("COUNT(DISTINCT publication.id)", "pub_count_total")
             .groupBy("cost_type.id")
             .addGroupBy("cost_type.label");
+
+        if (reporting_year) {
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
+                .setParameters({ beginDate, endDate });
+        }
+        else {
+            query = query
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count");
+        }
 
         return query.getRawMany() as Promise<CostTypeIndex[]>;
     }

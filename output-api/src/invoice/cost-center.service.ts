@@ -18,18 +18,28 @@ export class CostCenterService extends AbstractEntityService<CostCenter> {
 
     public async getCostCenterIndex(reporting_year: number): Promise<CostCenterIndex[]> {
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
-        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        const query = this.repository.createQueryBuilder("cost_center")
+        let query = this.repository.createQueryBuilder("cost_center")
             .leftJoin("invoice", "invoice", "invoice.\"costCenterId\"=cost_center.id")
-            .leftJoin("invoice.publication", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+            .leftJoin("invoice.publication", "publication")
             .select("cost_center.id", "id")
             .addSelect("cost_center.label", "label")
             .addSelect("cost_center.number", "number")
-            .addSelect("COUNT(DISTINCT publication.id)", "pub_count")
+            .addSelect("COUNT(DISTINCT publication.id)", "pub_count_total")
             .groupBy("cost_center.id")
             .addGroupBy("cost_center.label")
             .addGroupBy("cost_center.number");
+
+        if (reporting_year) {
+            const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
+            query = query
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
+                .setParameters({ beginDate, endDate });
+        }
+        else {
+            query = query
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count");
+        }
 
         return query.getRawMany() as Promise<CostCenterIndex[]>;
     }

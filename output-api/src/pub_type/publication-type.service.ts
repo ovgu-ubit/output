@@ -65,10 +65,11 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
     public async index(reporting_year: number): Promise<PublicationTypeIndex[]> {
         let query = this.repository.createQueryBuilder("type")
+            .leftJoin("type.publications", "publication")
             .select("type.id", "id")
             .addSelect("type.label", "label")
             .addSelect("type.review", "review")
-            .addSelect("COUNT(publication.id)", "pub_count")
+            .addSelect("COUNT(publication.id)", "pub_count_total")
             .groupBy("type.id")
             .addGroupBy("type.label")
             .addGroupBy("type.review")
@@ -77,11 +78,12 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin("type.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+                .addSelect("SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN 1 ELSE 0 END)", "pub_count")
+                .setParameters({ beginDate, endDate })
         }
         else {
             query = query
-                .leftJoin("type.publications", "publication", "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
+                .addSelect("SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN 1 ELSE 0 END)", "pub_count")
         }
         //console.log(query.getSql());
 

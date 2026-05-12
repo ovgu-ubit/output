@@ -30,10 +30,11 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
 
     public async index(reporting_year: number): Promise<OACategoryIndex[]> {
         let query = this.repository.createQueryBuilder("oacat")
+            .leftJoin("oacat.publications", "publication")
             .select("oacat.id", "id")
             .addSelect("oacat.label", "label")
             .addSelect("oacat.is_oa", "is_oa")
-            .addSelect("COUNT(publication.id)", "pub_count")
+            .addSelect("COUNT(publication.id)", "pub_count_total")
             .groupBy("oacat.id")
             .addGroupBy("oacat.label")
             .addGroupBy("oacat.is_oa")
@@ -42,11 +43,12 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin("oacat.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+                .addSelect("SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN 1 ELSE 0 END)", "pub_count")
+                .setParameters({ beginDate, endDate })
         }
         else {
             query = query
-                .leftJoin("oacat.publications", "publication", "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
+                .addSelect("SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN 1 ELSE 0 END)", "pub_count")
         }
         //console.log(query.getSql());
 
@@ -81,4 +83,3 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         });
     }
 }
-
