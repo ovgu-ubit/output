@@ -86,7 +86,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige'];
   currencies = ['EUR', 'USD', 'CHF', 'GBP'];
   private readonly defaultDialogWidth: string;
-  private readonly defaultDialogHeight = '800px';
+  private readonly defaultDialogHeight = 'min(800px, calc(100vh - 32px))';
   optional_fields: {
     abstract?: boolean,
     citation?: boolean,
