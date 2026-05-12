@@ -5,13 +5,13 @@
     "compilerOptions": {
       "plugins": [
         {
-          "name": "@nestjs/swagger",
+          "name": "@nestjs/swagger/plugin",
           "options": {
             "introspectComments": true
           }
         }
       ]
     },
-    "entryFile": "output-api/src/main"
+    "entryFile": "src/main"
   }
   

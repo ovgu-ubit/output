@@ -26,11 +26,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build shared interfaces
+        run: npm run build:interfaces
+
       - name: Run tests
         run: npm test -w output-api -- --watch=false
 
       - name: Build
-        run: npm run build -w output-api
+        run: npm run build:api
 
       - name: Build Docker image
         run: docker build -t output-ci-test .

@@ -21,15 +21,15 @@ export const AppDataSource = new DataSource(<DataSourceOptions>{
     synchronize: ['true', '1'].includes(process.env.DATABASE_SYNCHRONIZE?.toLowerCase()),
     logging: false,
     entities: [
-        "dist/output-api/src/**/*.entity.js",
-        "dist/output-api/src/**/*.entity.ts"
+        "dist/src/**/*.entity.js",
+        "dist/src/**/*.entity.ts"
     ],
     migrations: [
-        "dist/output-api/src/migrations/**/*.js",
-        "dist/output-api/src/migrations/**/*.ts"
+        "dist/src/migrations/**/*.js",
+        "dist/src/migrations/**/*.ts"
     ],
     subscribers: [
-        "dist/output-api/src/subscriber/**/*.js",
-        "dist/output-api/src/subscriber/**/*.ts"
+        "dist/src/subscriber/**/*.js",
+        "dist/src/subscriber/**/*.ts"
     ],
 })

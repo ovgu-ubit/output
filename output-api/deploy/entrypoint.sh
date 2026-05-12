@@ -10,9 +10,9 @@ sed -i "s|href=\"/\"|href=\"${BASE_HREF%/}/\"|g" /var/www/html/index.html
 
 cd /usr/src/app/output-api
 # run pending migrations
-npm run typeorm-js migration:run -- -d /usr/src/app/output-api/dist/output-api/src/config/app.data.source.js || echo "errors while migrating"
+npm run typeorm-js migration:run -- -d /usr/src/app/output-api/dist/src/config/app.data.source.js || echo "errors while migrating"
 # start backend in background
-su -s /bin/sh -c "node /usr/src/app/output-api/dist/output-api/src/main.js" nodeuser &
+su -s /bin/sh -c "node /usr/src/app/output-api/dist/src/main.js" nodeuser &
 NODE_PID=$!
 
 # Short sleep to detect immediate startup failures
