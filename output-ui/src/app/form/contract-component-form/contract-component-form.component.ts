@@ -1,4 +1,4 @@
-﻿import { Component, Inject, ViewChild, inject } from '@angular/core';
+import { Component, Inject, ViewChild, inject } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -10,6 +10,7 @@ import { OACategoryService } from '../../services/entities/oa-category.service';
 import { PublicationTypeService } from '../../services/entities/publication-type.service';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
+import * as XLSX from 'xlsx';
 
 interface DiscountContractModelParams {
   percentage?: number;
@@ -69,6 +70,8 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     { value: 'first_come_first_serve', label: 'Nur bis Limit erreicht' },
   ];
 
+  override fields = [];
+
   oaCategoryInput = new FormControl('', { nonNullable: true });
   publicationTypeInput = new FormControl('', { nonNullable: true });
   greaterEntityInput = new FormControl('', { nonNullable: true });
@@ -80,6 +83,15 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
   filteredOACategories$: Observable<OA_Category[]> = of([]);
   filteredPublicationTypes$: Observable<PublicationType[]> = of([]);
   filteredGreaterEntities$: Observable<GreaterEntity[]> = of([]);
+
+  journalPrices: { issn?: string; greater_entity_id?: number; price: number }[] = [];
+  journalSearchQuery: string = '';
+  excelFile: File | null = null;
+  excelHeaders: string[] = [];
+  issnColumn: string = '';
+  priceColumn: string = '';
+  excelParsedData: any[] = [];
+  mappingError: string = '';
 
   constructor(
     public override dialogRef: MatDialogRef<ContractComponentFormComponent>,
@@ -247,7 +259,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
   }
 
   private patchContractModelParams() {
-    const params = this.entity?.contract_model_params as DiscountContractModelParams & PublishAndReadContractModelParams & FlatrateContractModelParams;
+    const params = this.entity?.contract_model_params as any;
     if (!params) {
       return;
     }
@@ -259,32 +271,185 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
       limit_type: params.limit_type ?? '',
       distribution_formula: params.distribution_formula ?? '',
     }, { emitEvent: false });
+
+    this.journalPrices = params.journal_prices ?? [];
   }
 
   private buildContractModelParams(model: ContractModel | null) {
+    let baseParams: any = null;
+
     if (model === ContractModel.DISCOUNT) {
-      return {
+      baseParams = {
         percentage: this.toNumber(this.form.get('percentage')?.value),
         service_fee: this.toNumber(this.form.get('service_fee')?.value),
       };
-    }
-
-    if (model === ContractModel.PUBLISH_AND_READ) {
-      return {
+    } else if (model === ContractModel.PUBLISH_AND_READ) {
+      baseParams = {
         par_fee: this.toNumber(this.form.get('par_fee')?.value),
         service_fee: this.toNumber(this.form.get('service_fee')?.value),
       };
-    }
-
-    if (model === ContractModel.FLATRATE) {
-      return {
+    } else if (model === ContractModel.FLATRATE) {
+      baseParams = {
         limit_type: this.form.get('limit_type')?.value || null,
         distribution_formula: this.form.get('distribution_formula')?.value || null,
         service_fee: this.toNumber(this.form.get('service_fee')?.value),
       };
     }
 
-    return null;
+    if (baseParams && this.journalPrices.length > 0) {
+      baseParams.journal_prices = this.journalPrices;
+    }
+
+    return baseParams;
+  }
+
+  onJournalSearch(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.journalSearchQuery = input.value.trim().toLowerCase();
+  }
+
+  get filteredJournalPrices() {
+    if (!this.journalSearchQuery) {
+      return this.journalPrices;
+    }
+    return this.journalPrices.filter(entry => 
+      (entry.issn && entry.issn.toLowerCase().includes(this.journalSearchQuery)) ||
+      (entry.greater_entity_id && entry.greater_entity_id.toString().includes(this.journalSearchQuery))
+    );
+  }
+
+  onExcelFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    this.excelFile = file;
+    this.mappingError = '';
+    this.excelHeaders = [];
+    this.excelParsedData = [];
+    this.issnColumn = '';
+    this.priceColumn = '';
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        if (jsonData.length > 0) {
+          this.excelHeaders = jsonData[0]
+            .map((h: any) => h?.toString().trim())
+            .filter((h: string | undefined): h is string => !!h);
+
+          this.excelParsedData = jsonData.slice(1);
+          
+          const lowerHeaders = this.excelHeaders.map(h => h.toLowerCase());
+          const issnIdx = lowerHeaders.findIndex(h => h.includes('issn'));
+          const priceIdx = lowerHeaders.findIndex(h => h.includes('price') || h.includes('apc') || h.includes('fee') || h.includes('gebühr') || h.includes('wert'));
+          
+          if (issnIdx !== -1) this.issnColumn = this.excelHeaders[issnIdx];
+          if (priceIdx !== -1) this.priceColumn = this.excelHeaders[priceIdx];
+        } else {
+          this.mappingError = 'Die Datei scheint leer zu sein.';
+        }
+      } catch (err) {
+        console.error(err);
+        this.mappingError = 'Fehler beim Lesen der Excel-Datei. Bitte überprüfen Sie das Format.';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  validateMapping() {
+    this.mappingError = '';
+  }
+
+  applyExcelMapping() {
+    if (!this.issnColumn || !this.priceColumn || this.excelHeaders.length === 0) {
+      this.mappingError = 'Bitte wählen Sie sowohl die ISSN- als auch die Preis-Spalte aus.';
+      return;
+    }
+
+    const issnIdx = this.excelHeaders.indexOf(this.issnColumn);
+    const priceIdx = this.excelHeaders.indexOf(this.priceColumn);
+
+    if (issnIdx === -1 || priceIdx === -1) {
+      this.mappingError = 'Ausgewählte Spalten wurden in der Datei nicht gefunden.';
+      return;
+    }
+
+    const newPrices: { issn: string; price: number }[] = [];
+    let errorCount = 0;
+
+    for (const row of this.excelParsedData) {
+      const rawIssn = row[issnIdx]?.toString().trim();
+      const rawPrice = row[priceIdx];
+
+      if (!rawIssn) continue;
+
+      let cleanPriceStr = rawPrice?.toString()
+        .replace(/[^0-9.,-]/g, '')
+        .replace(/,/g, '.');
+
+      const dotIndex = cleanPriceStr?.lastIndexOf('.');
+      if (dotIndex !== -1) {
+        const parts = cleanPriceStr?.split('.');
+        const lastPart = parts?.pop() || '';
+        const firstPart = parts?.join('');
+        cleanPriceStr = `${firstPart}.${lastPart}`;
+      }
+
+      const price = parseFloat(cleanPriceStr);
+
+      if (isNaN(price) || price < 0) {
+        errorCount++;
+        continue;
+      }
+
+      newPrices.push({ issn: rawIssn, price });
+    }
+
+    if (newPrices.length === 0) {
+      this.mappingError = 'Es konnten keine gültigen ISSN/Preis-Kombinationen importiert werden. Bitte überprüfen Sie die Spaltenauswahl.';
+      return;
+    }
+
+    const priceMap = new Map<string, { issn?: string; greater_entity_id?: number; price: number }>();
+    
+    for (const entry of this.journalPrices) {
+      if (entry.issn) {
+        priceMap.set(entry.issn, entry);
+      } else if (entry.greater_entity_id) {
+        priceMap.set(`id:${entry.greater_entity_id}`, entry);
+      }
+    }
+
+    for (const newEntry of newPrices) {
+      const existing = priceMap.get(newEntry.issn);
+      if (existing) {
+        existing.price = newEntry.price;
+      } else {
+        priceMap.set(newEntry.issn, { issn: newEntry.issn, price: newEntry.price });
+      }
+    }
+
+    this.journalPrices = Array.from(priceMap.values());
+    this.excelFile = null;
+    this.excelHeaders = [];
+    this.excelParsedData = [];
+    this.issnColumn = '';
+    this.priceColumn = '';
+
+    let successMsg = `${newPrices.length} Preise erfolgreich importiert.`;
+    if (errorCount > 0) {
+      successMsg += ` (${errorCount} Zeilen konnten wegen fehlerhafter Preiswerte nicht importiert werden.)`;
+    }
+    this.mappingError = successMsg;
+  }
+
+  removeJournalPrice(entry: any) {
+    this.journalPrices = this.journalPrices.filter(e => e !== entry);
   }
 
   private updateModelValidators(model: ContractModel | null) {

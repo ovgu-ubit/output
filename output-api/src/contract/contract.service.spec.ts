@@ -148,6 +148,65 @@ describe('ContractService', () => {
         }));
     });
 
+    it('resolves greater_entity_id from issn during component save', async () => {
+        const fakeGEIdentifierRepository = {
+            findOne: jest.fn().mockResolvedValue({
+                entity: { id: 123 }
+            })
+        };
+
+        dataSource.transaction.mockImplementationOnce(async (cb) => {
+            const manager = {
+                save: jest.fn().mockImplementation(async (entity, obj) => {
+                    if (entity === ContractComponent) return componentRepository.save(obj);
+                    return obj;
+                }),
+                getRepository: jest.fn().mockImplementation((entity) => {
+                    if (entity === ContractComponent) return componentRepository;
+                    return fakeGEIdentifierRepository;
+                }),
+            };
+            return cb(manager);
+        });
+
+        componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
+
+        const component = {
+            contract: { id: 1 },
+            label: 'PAR with ISSN',
+            contract_model: ContractModel.PUBLISH_AND_READ,
+            contract_model_version: 1,
+            contract_model_params: {
+                par_fee: 2000,
+                service_fee: 100,
+                journal_prices: [
+                    { issn: '1234-5678', price: 1500 }
+                ]
+            },
+        } as unknown as ContractComponent;
+
+        await service.saveComponent(component);
+
+        expect(fakeGEIdentifierRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+            where: [
+                { type: expect.anything(), value: expect.anything() },
+                { type: expect.anything(), value: expect.anything() }
+            ]
+        }));
+
+        expect(componentRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            contract_model_params: expect.objectContaining({
+                journal_prices: [
+                    expect.objectContaining({
+                        issn: '1234-5678',
+                        price: 1500,
+                        greater_entity_id: 123
+                    })
+                ]
+            })
+        }));
+    });
+
     it('persists invoices and pre_invoices with distinct invoice kinds', async () => {
         componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
 

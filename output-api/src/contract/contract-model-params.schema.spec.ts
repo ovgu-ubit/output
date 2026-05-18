@@ -24,12 +24,32 @@ describe("contract-model-params.schema", () => {
         const parsed = ContractModelParamsSchemaByModel[ContractModel.PUBLISH_AND_READ].parse({
             par_fee: 2200,
             service_fee: 150,
+            journal_prices: [
+                { issn: "1234-5678", price: 1500 },
+                { greater_entity_id: 42, price: 1800 },
+                { issn: "9876-5432", greater_entity_id: 99, price: 2000 }
+            ]
         });
 
         expect(parsed).toEqual({
             par_fee: 2200,
             service_fee: 150,
+            journal_prices: [
+                { issn: "1234-5678", price: 1500 },
+                { greater_entity_id: 42, price: 1800 },
+                { issn: "9876-5432", greater_entity_id: 99, price: 2000 }
+            ]
         });
+    });
+
+    it("rejects journal_prices without identifier", () => {
+        expect(() => ContractModelParamsSchemaByModel[ContractModel.PUBLISH_AND_READ].parse({
+            par_fee: 2200,
+            service_fee: 150,
+            journal_prices: [
+                { price: 1500 }
+            ]
+        })).toThrow(ZodError);
     });
 
     it("accepts FLATRATE params", () => {

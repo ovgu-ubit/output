@@ -4,14 +4,26 @@ import {  ContractModel  } from '@output/interfaces';
 const PercentageValueSchema = z.number().finite().min(0).max(100);
 const CurrencyValueSchema = z.number().finite().min(0);
 
+export const JournalPriceEntrySchema = z.object({
+    issn: z.string().trim().min(1).optional(),
+    greater_entity_id: z.number().int().positive().optional(),
+    price: CurrencyValueSchema,
+}).refine(data => data.issn !== undefined || data.greater_entity_id !== undefined, {
+    message: "Either issn or greater_entity_id must be provided",
+});
+
+export const JournalPricesSchema = z.array(JournalPriceEntrySchema).optional();
+
 export const DiscountContractModelParamsSchema = z.object({
     percentage: PercentageValueSchema,
     service_fee: CurrencyValueSchema,
+    journal_prices: JournalPricesSchema,
 }).strict();
 
 export const PublishAndReadContractModelParamsSchema = z.object({
     par_fee: CurrencyValueSchema,
     service_fee: CurrencyValueSchema,
+    journal_prices: JournalPricesSchema,
 }).strict();
 
 export const FlatrateLimitTypeSchema = z.enum(["count", "budget"]);
@@ -25,6 +37,7 @@ export const FlatrateContractModelParamsSchema = z.object({
     limit_type: FlatrateLimitTypeSchema,
     distribution_formula: FlatrateDistributionFormulaSchema,
     service_fee: CurrencyValueSchema,
+    journal_prices: JournalPricesSchema,
 }).strict();
 
 export const ContractModelParamsSchemaByModel = {

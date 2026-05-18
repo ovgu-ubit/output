@@ -1,4 +1,4 @@
-﻿.contract-component-form {
+.contract-component-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -23,4 +23,86 @@
 .component-params-empty {
   margin: 0;
   color: rgba(0, 0, 0, 0.6);
+}
+
+.excel-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #3f51b5;
+}
+
+.mapping-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  background-color: #f5f5f5;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.error-message {
+  color: #f44336;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.journal-prices-table-container {
+  margin-top: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.search-field {
+  width: 100%;
+}
+
+.journal-prices-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.journal-prices-table th, .journal-prices-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.journal-prices-table th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 4px;
+}
+
+.bg-secondary {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.bg-warning {
+  background-color: #ffc107;
+  color: #212529;
 }

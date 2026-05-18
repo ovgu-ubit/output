@@ -1,4 +1,4 @@
-﻿<app-window-toolbar
+<app-window-toolbar
     [name]="this.name"
     [disabled]="this.disabled"
     [parent]="this"></app-window-toolbar>
@@ -274,6 +274,85 @@
 
                 <p class="component-params-empty" *ngIf="this.selectedModel === null || this.selectedModel === undefined">
                     Wählen Sie ein Vertragsmodell, um die zugehörigen Parameter zu bearbeiten.
+                </p>
+            </mat-card-content>
+        </mat-card>
+
+        <mat-card *ngIf="this.selectedModel !== null && this.selectedModel !== undefined">
+            <mat-card-header>
+                <mat-card-subtitle>Zeitschriftenspezifische Preise / Rabatte (Excel-Import)</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                <div class="excel-upload-container" *ngIf="!this.disabled">
+                    <button mat-flat-button color="primary" type="button" (click)="excelFileInput.click()">
+                        <mat-icon>upload_file</mat-icon> Excel-Datei hochladen
+                    </button>
+                    <input #excelFileInput type="file" (change)="this.onExcelFileSelected($event)" accept=".xlsx,.xls,.csv" style="display: none;" />
+                    
+                    <span class="file-name" *ngIf="this.excelFile">{{ this.excelFile.name }}</span>
+                </div>
+
+                <div class="mapping-container" *ngIf="this.excelHeaders.length > 0 && !this.disabled">
+                    <mat-form-field appearance="fill">
+                        <mat-label>ISSN-Spalte</mat-label>
+                        <mat-select [(value)]="this.issnColumn" (selectionChange)="this.validateMapping()">
+                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header">{{ header }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Preis-Spalte</mat-label>
+                        <mat-select [(value)]="this.priceColumn" (selectionChange)="this.validateMapping()">
+                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header">{{ header }}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <button mat-raised-button color="accent" type="button" [disabled]="!this.issnColumn || !this.priceColumn" (click)="this.applyExcelMapping()">
+                        <mat-icon>play_for_work</mat-icon> Importieren
+                    </button>
+                </div>
+
+                <div class="error-message" *ngIf="this.mappingError">{{ this.mappingError }}</div>
+
+                <div class="journal-prices-table-container" *ngIf="this.journalPrices.length > 0">
+                    <mat-form-field appearance="fill" class="search-field">
+                        <mat-label>Suchen...</mat-label>
+                        <input matInput placeholder="ISSN oder Name..." (input)="this.onJournalSearch($event)" />
+                    </mat-form-field>
+
+                    <table class="journal-prices-table">
+                        <thead>
+                            <tr>
+                                <th>ISSN</th>
+                                <th>Größere Einheit ID</th>
+                                <th>Spezifischer Wert (netto)</th>
+                                <th *ngIf="!this.disabled">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let priceEntry of this.filteredJournalPrices">
+                                <td>{{ priceEntry.issn || '-' }}</td>
+                                <td>
+                                    <span class="badge bg-secondary" *ngIf="priceEntry.greater_entity_id">
+                                        ID: {{ priceEntry.greater_entity_id }}
+                                    </span>
+                                    <span class="badge bg-warning text-dark" *ngIf="!priceEntry.greater_entity_id">
+                                        Wird beim Speichern aufgelöst
+                                    </span>
+                                </td>
+                                <td>{{ priceEntry.price }} EUR</td>
+                                <td *ngIf="!this.disabled">
+                                    <button mat-icon-button color="warn" type="button" (click)="this.removeJournalPrice(priceEntry)" matTooltip="Eintrag löschen">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="component-params-empty" *ngIf="this.journalPrices.length === 0">
+                    Keine zeitschriftenspezifischen Preise definiert. Laden Sie eine Excel-Preisliste hoch, um Werte automatisch zuzuordnen.
                 </p>
             </mat-card-content>
         </mat-card>

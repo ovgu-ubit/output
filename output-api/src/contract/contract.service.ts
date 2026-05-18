@@ -16,6 +16,7 @@ import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { parseContractModelParams } from './contract-model-params.schema';
+import { GEIdentifier } from '../greater_entity/GEIdentifier.entity';
 
 type NormalizedContract = DeepPartial<Contract> & {
     identifiers?: (DeepPartial<ContractIdentifier> & { id?: number | null })[];
@@ -69,6 +70,12 @@ export class ContractService extends AbstractEntityService<Contract> {
                 throw createNotFoundHttpException(`Contract ${contract.id} not found.`);
             }
 
+            if (contract.components) {
+                for (const component of contract.components) {
+                    await this.resolveJournalPricesEntityIds(component, manager);
+                }
+            }
+
             const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
             const savedContract = await manager.getRepository(Contract).save(normalizedContract).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
@@ -102,6 +109,7 @@ export class ContractService extends AbstractEntityService<Contract> {
     public async saveComponent(component: DeepPartial<ContractComponent>) {
         return this.dataSource.transaction(async (manager) => {
             assertCreateRequestHasNoId(component);
+            await this.resolveJournalPricesEntityIds(component, manager);
             const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
 
             if (!normalizedComponent.contract?.id) {
@@ -129,6 +137,7 @@ export class ContractService extends AbstractEntityService<Contract> {
                 throw createNotFoundHttpException(`Contract component ${component.id} not found.`);
             }
 
+            await this.resolveJournalPricesEntityIds(component, manager);
             const normalizedComponent = this.validateAndNormalizeContractComponent(component);
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
@@ -451,6 +460,34 @@ export class ContractService extends AbstractEntityService<Contract> {
 
         if (duplicateId) {
             throw new BadRequestException(`Invoice ${duplicateId} cannot be assigned to invoices and pre_invoices at the same time`);
+        }
+    }
+
+    private async resolveJournalPricesEntityIds(component: DeepPartial<ContractComponent>, manager: EntityManager): Promise<void> {
+        if (!component?.contract_model_params) {
+            return;
+        }
+
+        const params = component.contract_model_params as any;
+        if (!params.journal_prices || !Array.isArray(params.journal_prices)) {
+            return;
+        }
+
+        for (const entry of params.journal_prices) {
+            if (entry.issn && (entry.greater_entity_id === undefined || entry.greater_entity_id === null)) {
+                const cleanIssn = entry.issn.trim();
+                const identifier = await manager.getRepository(GEIdentifier).findOne({
+                    where: [
+                        { type: ILike('issn'), value: ILike(cleanIssn) },
+                        { type: ILike('eissn'), value: ILike(cleanIssn) }
+                    ],
+                    relations: { entity: true }
+                });
+
+                if (identifier?.entity?.id) {
+                    entry.greater_entity_id = identifier.entity.id;
+                }
+            }
         }
     }
 
