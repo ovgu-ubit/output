@@ -296,14 +296,14 @@
                     <mat-form-field appearance="fill">
                         <mat-label>ISSN-Spalte</mat-label>
                         <mat-select [(value)]="this.issnColumn" (selectionChange)="this.validateMapping()">
-                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header">{{ header }}</mat-option>
+                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header" [disabled]="!header">{{ header || '(leere Spalte)' }}</mat-option>
                         </mat-select>
                     </mat-form-field>
 
                     <mat-form-field appearance="fill">
                         <mat-label>Preis-Spalte</mat-label>
                         <mat-select [(value)]="this.priceColumn" (selectionChange)="this.validateMapping()">
-                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header">{{ header }}</mat-option>
+                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header" [disabled]="!header">{{ header || '(leere Spalte)' }}</mat-option>
                         </mat-select>
                     </mat-form-field>
 

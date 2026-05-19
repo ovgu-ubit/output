@@ -70,13 +70,13 @@ export class ContractService extends AbstractEntityService<Contract> {
                 throw createNotFoundHttpException(`Contract ${contract.id} not found.`);
             }
 
-            if (contract.components) {
-                for (const component of contract.components) {
+            const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
+            if (normalizedContract.components) {
+                for (const component of normalizedContract.components) {
                     await this.resolveJournalPricesEntityIds(component, manager);
                 }
             }
 
-            const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
             const savedContract = await manager.getRepository(Contract).save(normalizedContract).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
@@ -109,8 +109,8 @@ export class ContractService extends AbstractEntityService<Contract> {
     public async saveComponent(component: DeepPartial<ContractComponent>) {
         return this.dataSource.transaction(async (manager) => {
             assertCreateRequestHasNoId(component);
-            await this.resolveJournalPricesEntityIds(component, manager);
             const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
+            await this.resolveJournalPricesEntityIds(normalizedComponent, manager);
 
             if (!normalizedComponent.contract?.id) {
                 throw new BadRequestException('contract.id is required to create a contract component');
@@ -137,8 +137,8 @@ export class ContractService extends AbstractEntityService<Contract> {
                 throw createNotFoundHttpException(`Contract component ${component.id} not found.`);
             }
 
-            await this.resolveJournalPricesEntityIds(component, manager);
             const normalizedComponent = this.validateAndNormalizeContractComponent(component);
+            await this.resolveJournalPricesEntityIds(normalizedComponent, manager);
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
             });

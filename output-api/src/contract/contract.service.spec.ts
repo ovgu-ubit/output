@@ -241,6 +241,24 @@ describe('ContractService', () => {
         expect(componentRepository.save).not.toHaveBeenCalled();
     });
 
+    it('rejects invalid journal price payloads before resolving ISSNs', async () => {
+        await expect(service.saveComponent({
+            contract: { id: 1 } as Contract,
+            label: 'Broken journal prices',
+            contract_model: ContractModel.PUBLISH_AND_READ,
+            contract_model_version: 1,
+            contract_model_params: {
+                par_fee: 2000,
+                service_fee: 100,
+                journal_prices: [
+                    { issn: 1234, price: 1500 },
+                ],
+            },
+        } as unknown as ContractComponent)).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(componentRepository.save).not.toHaveBeenCalled();
+    });
+
     it('rejects contract component params when no model is selected', async () => {
         await expect(service.saveComponent({
             contract: { id: 1 } as Contract,

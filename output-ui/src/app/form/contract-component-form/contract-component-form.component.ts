@@ -12,22 +12,6 @@ import { AbstractFormComponent } from '../abstract-form/abstract-form.component'
 import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
 import * as XLSX from 'xlsx';
 
-interface DiscountContractModelParams {
-  percentage?: number;
-  service_fee?: number;
-}
-
-interface PublishAndReadContractModelParams {
-  par_fee?: number;
-  service_fee?: number;
-}
-
-interface FlatrateContractModelParams {
-  limit_type?: 'count' | 'budget';
-  distribution_formula?: 'average' | 'list-price-porportional' | 'first_come_first_serve';
-  service_fee?: number;
-}
-
 type ContractComponentRelationKey = 'oa_categories' | 'pub_types' | 'greater_entities';
 type InvoiceCollectionKey = 'invoices' | 'pre_invoices';
 
@@ -339,8 +323,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
         
         if (jsonData.length > 0) {
           this.excelHeaders = jsonData[0]
-            .map((h: any) => h?.toString().trim())
-            .filter((h: string | undefined): h is string => !!h);
+            .map((h: any) => h?.toString().trim() ?? '');
 
           this.excelParsedData = jsonData.slice(1);
           
