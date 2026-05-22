@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
-import {  InvoiceKind  } from '@output/interfaces';
+import {  ContractModel, InvoiceKind  } from '@output/interfaces';
 import {  ContractIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
@@ -15,7 +15,7 @@ import { PublicationService } from '../publication/core/publication.service';
 import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
-import { parseContractModelParams } from './contract-model-params.schema';
+import { ContractModelParams, parseContractModelParams } from './contract-model-params.schema';
 import { GreaterEntity } from '../greater_entity/GreaterEntity.entity';
 import { GreaterEntityService } from '../greater_entity/greater-entitiy.service';
 
@@ -112,11 +112,12 @@ export class ContractService extends AbstractEntityService<Contract> {
         return this.dataSource.transaction(async (manager) => {
             assertCreateRequestHasNoId(component);
             const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
-            await this.resolveJournalPricesEntityIds(normalizedComponent);
 
             if (!normalizedComponent.contract?.id) {
                 throw new BadRequestException('contract.id is required to create a contract component');
             }
+
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
 
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
@@ -470,7 +471,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             return;
         }
 
-        const params = component.contract_model_params as any;
+        const params = component.contract_model_params as ContractModelParams;
         if (!params.journal_prices || !Array.isArray(params.journal_prices)) {
             return;
         }

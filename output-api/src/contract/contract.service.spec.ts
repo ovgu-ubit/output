@@ -227,6 +227,24 @@ describe('ContractService', () => {
         }));
     });
 
+    it('rejects component creation without contract id before resolving journal prices', async () => {
+        await expect(service.saveComponent({
+            label: 'PAR without contract id',
+            contract_model: ContractModel.PUBLISH_AND_READ,
+            contract_model_version: 1,
+            contract_model_params: {
+                par_fee: 2000,
+                service_fee: 100,
+                journal_prices: [
+                    { issn: '1234-5678', title: 'Journal of Tests', price: 1500 }
+                ]
+            },
+        } as unknown as ContractComponent)).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(greaterEntityService.findOrSave).not.toHaveBeenCalled();
+        expect(componentRepository.save).not.toHaveBeenCalled();
+    });
+
     it('persists invoices and pre_invoices with distinct invoice kinds', async () => {
         componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
 
