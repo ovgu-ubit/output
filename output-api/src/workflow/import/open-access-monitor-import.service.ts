@@ -72,7 +72,8 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 
     async setReportingYear(year: string) {
         this.param_string = await this.configService.get('SECRET_OAM');
-        this.ror_id = await this.configService.get('ror_id');
+        const ror_ids = await this.configService.get('ror_id') as string[];
+        this.ror_id = ror_ids.join('","');
         this.year = year;
     }
 
