@@ -292,22 +292,41 @@
                     <span class="file-name" *ngIf="this.excelFile">{{ this.excelFile.name }}</span>
                 </div>
 
-                <div class="mapping-container" *ngIf="this.excelHeaders.length > 0 && !this.disabled">
+                <div class="mapping-container" *ngIf="this.excelRows.length > 0 && !this.disabled">
+                    <mat-form-field appearance="fill">
+                        <mat-label>Zeilen überspringen</mat-label>
+                        <input matInput type="number" min="0" [value]="this.excelRowsToSkip" (input)="this.onExcelRowsToSkipChange($event)" />
+                    </mat-form-field>
+
                     <mat-form-field appearance="fill">
                         <mat-label>ISSN-Spalte</mat-label>
-                        <mat-select [(value)]="this.issnColumn" (selectionChange)="this.validateMapping()">
-                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header" [disabled]="!header">{{ header || '(leere Spalte)' }}</mat-option>
+                        <mat-select [(value)]="this.issnColumnIndex" (selectionChange)="this.validateMapping()">
+                            <mat-option *ngFor="let column of this.excelColumns" [value]="column.index" [disabled]="!column.label">
+                                {{ column.label || '(leere Spalte)' }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                        <mat-label>Titel-Spalte</mat-label>
+                        <mat-select [(value)]="this.titleColumnIndex" (selectionChange)="this.validateMapping()">
+                            <mat-option [value]="null">Keine Titel-Spalte</mat-option>
+                            <mat-option *ngFor="let column of this.excelColumns" [value]="column.index" [disabled]="!column.label">
+                                {{ column.label || '(leere Spalte)' }}
+                            </mat-option>
                         </mat-select>
                     </mat-form-field>
 
                     <mat-form-field appearance="fill">
                         <mat-label>Preis-Spalte</mat-label>
-                        <mat-select [(value)]="this.priceColumn" (selectionChange)="this.validateMapping()">
-                            <mat-option *ngFor="let header of this.excelHeaders" [value]="header" [disabled]="!header">{{ header || '(leere Spalte)' }}</mat-option>
+                        <mat-select [(value)]="this.priceColumnIndex" (selectionChange)="this.validateMapping()">
+                            <mat-option *ngFor="let column of this.excelColumns" [value]="column.index" [disabled]="!column.label">
+                                {{ column.label || '(leere Spalte)' }}
+                            </mat-option>
                         </mat-select>
                     </mat-form-field>
 
-                    <button mat-raised-button color="accent" type="button" [disabled]="!this.issnColumn || !this.priceColumn" (click)="this.applyExcelMapping()">
+                    <button mat-raised-button color="accent" type="button" [disabled]="this.issnColumnIndex === null || this.priceColumnIndex === null" (click)="this.applyExcelMapping()">
                         <mat-icon>play_for_work</mat-icon> Importieren
                     </button>
                 </div>
@@ -324,6 +343,7 @@
                         <thead>
                             <tr>
                                 <th>ISSN</th>
+                                <th>Titel</th>
                                 <th>Größere Einheit ID</th>
                                 <th>Spezifischer Wert (netto)</th>
                                 <th *ngIf="!this.disabled">Aktion</th>
@@ -332,6 +352,7 @@
                         <tbody>
                             <tr *ngFor="let priceEntry of this.filteredJournalPrices">
                                 <td>{{ priceEntry.issn || '-' }}</td>
+                                <td>{{ priceEntry.title || '-' }}</td>
                                 <td>
                                     <span class="badge bg-secondary" *ngIf="priceEntry.greater_entity_id">
                                         ID: {{ priceEntry.greater_entity_id }}

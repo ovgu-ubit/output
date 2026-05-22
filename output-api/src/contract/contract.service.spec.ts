@@ -14,6 +14,7 @@ import { ContractComponent } from './ContractComponent.entity';
 import {  InvoiceKind, ContractModel  } from '@output/interfaces';
 import { Invoice } from '../invoice/Invoice.entity';
 import { EditLockOwnerStore } from '../common/edit-lock';
+import { GreaterEntityService } from '../greater_entity/greater-entitiy.service';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -38,6 +39,7 @@ describe('ContractService', () => {
     let componentRepository: jest.Mocked<Partial<Repository<ContractComponent>>>;
     let invoiceRepository: { find: jest.Mock, save: jest.Mock };
     let publicationService: { save: jest.Mock };
+    let greaterEntityService: { findOrSave: jest.Mock };
     let dataSource: { transaction: jest.Mock };
 
     beforeEach(async () => {
@@ -65,6 +67,9 @@ describe('ContractService', () => {
         };
         publicationService = {
             save: jest.fn(),
+        };
+        greaterEntityService = {
+            findOrSave: jest.fn(),
         };
         dataSource = {
             transaction: jest.fn().mockImplementation(async (cb) => {
@@ -108,6 +113,7 @@ describe('ContractService', () => {
                 { provide: getRepositoryToken(ContractComponent), useValue: componentRepository },
                 { provide: getRepositoryToken(Invoice), useValue: invoiceRepository },
                 { provide: PublicationService, useValue: publicationService },
+                { provide: GreaterEntityService, useValue: greaterEntityService },
                 { provide: AppConfigService, useValue: { get: jest.fn() } },
                 { provide: DataSource, useValue: dataSource },
             ],
@@ -149,26 +155,7 @@ describe('ContractService', () => {
     });
 
     it('resolves greater_entity_id from issn during component save', async () => {
-        const fakeGEIdentifierRepository = {
-            findOne: jest.fn().mockResolvedValue({
-                entity: { id: 123 }
-            })
-        };
-
-        dataSource.transaction.mockImplementationOnce(async (cb) => {
-            const manager = {
-                save: jest.fn().mockImplementation(async (entity, obj) => {
-                    if (entity === ContractComponent) return componentRepository.save(obj);
-                    return obj;
-                }),
-                getRepository: jest.fn().mockImplementation((entity) => {
-                    if (entity === ContractComponent) return componentRepository;
-                    return fakeGEIdentifierRepository;
-                }),
-            };
-            return cb(manager);
-        });
-
+        greaterEntityService.findOrSave.mockResolvedValue({ id: 123, label: 'Journal of Tests' });
         componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
 
         const component = {
@@ -180,18 +167,16 @@ describe('ContractService', () => {
                 par_fee: 2000,
                 service_fee: 100,
                 journal_prices: [
-                    { issn: '1234-5678', price: 1500 }
+                    { issn: '1234-5678', title: 'Journal of Tests', price: 1500 }
                 ]
             },
         } as unknown as ContractComponent;
 
         await service.saveComponent(component);
 
-        expect(fakeGEIdentifierRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
-            where: [
-                { type: expect.anything(), value: expect.anything() },
-                { type: expect.anything(), value: expect.anything() }
-            ]
+        expect(greaterEntityService.findOrSave).toHaveBeenCalledWith(expect.objectContaining({
+            label: 'Journal of Tests',
+            identifiers: [{ type: 'issn', value: '1234-5678' }],
         }));
 
         expect(componentRepository.save).toHaveBeenCalledWith(expect.objectContaining({
@@ -199,8 +184,43 @@ describe('ContractService', () => {
                 journal_prices: [
                     expect.objectContaining({
                         issn: '1234-5678',
+                        title: 'Journal of Tests',
                         price: 1500,
                         greater_entity_id: 123
+                    })
+                ]
+            })
+        }));
+    });
+
+    it('uses the issn as greater entity label when no journal title is provided', async () => {
+        greaterEntityService.findOrSave.mockResolvedValue({ id: 124, label: '1234-5678' });
+        componentRepository.save!.mockImplementation(async entity => entity as ContractComponent);
+
+        await service.saveComponent({
+            contract: { id: 1 },
+            label: 'PAR without title',
+            contract_model: ContractModel.PUBLISH_AND_READ,
+            contract_model_version: 1,
+            contract_model_params: {
+                par_fee: 2000,
+                service_fee: 100,
+                journal_prices: [
+                    { issn: '1234-5678', price: 1500 }
+                ]
+            },
+        } as unknown as ContractComponent);
+
+        expect(greaterEntityService.findOrSave).toHaveBeenCalledWith(expect.objectContaining({
+            label: '1234-5678',
+            identifiers: [{ type: 'issn', value: '1234-5678' }],
+        }));
+        expect(componentRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            contract_model_params: expect.objectContaining({
+                journal_prices: [
+                    expect.objectContaining({
+                        issn: '1234-5678',
+                        greater_entity_id: 124
                     })
                 ]
             })

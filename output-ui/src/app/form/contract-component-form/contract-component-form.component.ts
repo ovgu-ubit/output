@@ -21,6 +21,18 @@ interface SelectableContractComponentEntity {
   identifiers?: { value?: string }[];
 }
 
+interface JournalPriceEntry {
+  issn?: string;
+  title?: string;
+  greater_entity_id?: number;
+  price: number;
+}
+
+interface ExcelColumn {
+  index: number;
+  label: string;
+}
+
 @Component({
     selector: 'app-contract-component-form',
     templateUrl: './contract-component-form.component.html',
@@ -68,13 +80,17 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
   filteredPublicationTypes$: Observable<PublicationType[]> = of([]);
   filteredGreaterEntities$: Observable<GreaterEntity[]> = of([]);
 
-  journalPrices: { issn?: string; greater_entity_id?: number; price: number }[] = [];
+  journalPrices: JournalPriceEntry[] = [];
   journalSearchQuery: string = '';
   excelFile: File | null = null;
   excelHeaders: string[] = [];
-  issnColumn: string = '';
-  priceColumn: string = '';
-  excelParsedData: any[] = [];
+  excelColumns: ExcelColumn[] = [];
+  issnColumnIndex: number | null = null;
+  titleColumnIndex: number | null = null;
+  priceColumnIndex: number | null = null;
+  excelRowsToSkip = 0;
+  excelRows: any[][] = [];
+  excelParsedData: any[][] = [];
   mappingError: string = '';
 
   constructor(
@@ -298,6 +314,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     }
     return this.journalPrices.filter(entry => 
       (entry.issn && entry.issn.toLowerCase().includes(this.journalSearchQuery)) ||
+      (entry.title && entry.title.toLowerCase().includes(this.journalSearchQuery)) ||
       (entry.greater_entity_id && entry.greater_entity_id.toString().includes(this.journalSearchQuery))
     );
   }
@@ -309,9 +326,12 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     this.excelFile = file;
     this.mappingError = '';
     this.excelHeaders = [];
+    this.excelColumns = [];
     this.excelParsedData = [];
-    this.issnColumn = '';
-    this.priceColumn = '';
+    this.excelRows = [];
+    this.issnColumnIndex = null;
+    this.titleColumnIndex = null;
+    this.priceColumnIndex = null;
 
     const reader = new FileReader();
     reader.onload = (e: any) => {
@@ -319,20 +339,11 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[][];
         
         if (jsonData.length > 0) {
-          this.excelHeaders = jsonData[0]
-            .map((h: any) => h?.toString().trim() ?? '');
-
-          this.excelParsedData = jsonData.slice(1);
-          
-          const lowerHeaders = this.excelHeaders.map(h => h.toLowerCase());
-          const issnIdx = lowerHeaders.findIndex(h => h.includes('issn'));
-          const priceIdx = lowerHeaders.findIndex(h => h.includes('price') || h.includes('apc') || h.includes('fee') || h.includes('gebühr') || h.includes('wert'));
-          
-          if (issnIdx !== -1) this.issnColumn = this.excelHeaders[issnIdx];
-          if (priceIdx !== -1) this.priceColumn = this.excelHeaders[priceIdx];
+          this.excelRows = jsonData;
+          this.updateExcelColumnsFromSkipRows();
         } else {
           this.mappingError = 'Die Datei scheint leer zu sein.';
         }
@@ -344,29 +355,37 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     reader.readAsArrayBuffer(file);
   }
 
+  onExcelRowsToSkipChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.excelRowsToSkip = Math.max(0, Math.floor(Number(input.value) || 0));
+    this.updateExcelColumnsFromSkipRows();
+  }
+
   validateMapping() {
     this.mappingError = '';
   }
 
   applyExcelMapping() {
-    if (!this.issnColumn || !this.priceColumn || this.excelHeaders.length === 0) {
+    if (this.issnColumnIndex === null || this.priceColumnIndex === null || this.excelColumns.length === 0) {
       this.mappingError = 'Bitte wählen Sie sowohl die ISSN- als auch die Preis-Spalte aus.';
       return;
     }
 
-    const issnIdx = this.excelHeaders.indexOf(this.issnColumn);
-    const priceIdx = this.excelHeaders.indexOf(this.priceColumn);
+    const issnIdx = this.issnColumnIndex;
+    const titleIdx = this.titleColumnIndex;
+    const priceIdx = this.priceColumnIndex;
 
     if (issnIdx === -1 || priceIdx === -1) {
       this.mappingError = 'Ausgewählte Spalten wurden in der Datei nicht gefunden.';
       return;
     }
 
-    const newPrices: { issn: string; price: number }[] = [];
+    const newPrices: JournalPriceEntry[] = [];
     let errorCount = 0;
 
     for (const row of this.excelParsedData) {
       const rawIssn = row[issnIdx]?.toString().trim();
+      const rawTitle = titleIdx === null ? '' : row[titleIdx]?.toString().trim();
       const rawPrice = row[priceIdx];
 
       if (!rawIssn) continue;
@@ -390,7 +409,11 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
         continue;
       }
 
-      newPrices.push({ issn: rawIssn, price });
+      newPrices.push({
+        issn: rawIssn,
+        ...(rawTitle ? { title: rawTitle } : {}),
+        price
+      });
     }
 
     if (newPrices.length === 0) {
@@ -398,7 +421,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
       return;
     }
 
-    const priceMap = new Map<string, { issn?: string; greater_entity_id?: number; price: number }>();
+    const priceMap = new Map<string, JournalPriceEntry>();
     
     for (const entry of this.journalPrices) {
       if (entry.issn) {
@@ -412,17 +435,21 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
       const existing = priceMap.get(newEntry.issn);
       if (existing) {
         existing.price = newEntry.price;
+        existing.title = newEntry.title ?? existing.title;
       } else {
-        priceMap.set(newEntry.issn, { issn: newEntry.issn, price: newEntry.price });
+        priceMap.set(newEntry.issn, newEntry);
       }
     }
 
     this.journalPrices = Array.from(priceMap.values());
     this.excelFile = null;
     this.excelHeaders = [];
+    this.excelColumns = [];
     this.excelParsedData = [];
-    this.issnColumn = '';
-    this.priceColumn = '';
+    this.excelRows = [];
+    this.issnColumnIndex = null;
+    this.titleColumnIndex = null;
+    this.priceColumnIndex = null;
 
     let successMsg = `${newPrices.length} Preise erfolgreich importiert.`;
     if (errorCount > 0) {
@@ -433,6 +460,40 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
 
   removeJournalPrice(entry: any) {
     this.journalPrices = this.journalPrices.filter(e => e !== entry);
+  }
+
+  private updateExcelColumnsFromSkipRows() {
+    this.mappingError = '';
+    this.excelHeaders = [];
+    this.excelColumns = [];
+    this.excelParsedData = [];
+    this.issnColumnIndex = null;
+    this.titleColumnIndex = null;
+    this.priceColumnIndex = null;
+
+    if (this.excelRows.length === 0) {
+      return;
+    }
+
+    if (this.excelRowsToSkip >= this.excelRows.length) {
+      this.mappingError = 'Die Anzahl der zu ueberspringenden Zeilen ist groesser als die Anzahl der Zeilen in der Datei.';
+      return;
+    }
+
+    const headerRow = this.excelRows[this.excelRowsToSkip] ?? [];
+    this.excelHeaders = headerRow.map((header: any) => header?.toString().trim() ?? '');
+    this.excelColumns = this.excelHeaders.map((label, index) => ({ index, label }));
+    this.excelParsedData = this.excelRows.slice(this.excelRowsToSkip + 1);
+
+    const lowerHeaders = this.excelHeaders.map(header => header.toLowerCase());
+    this.issnColumnIndex = this.findColumnIndex(lowerHeaders, ['issn']);
+    this.titleColumnIndex = this.findColumnIndex(lowerHeaders, ['titel', 'title', 'journal', 'zeitschrift', 'name']);
+    this.priceColumnIndex = this.findColumnIndex(lowerHeaders, ['price', 'preis', 'apc', 'fee', 'gebuehr', 'gebühr', 'wert']);
+  }
+
+  private findColumnIndex(headers: string[], terms: string[]): number | null {
+    const index = headers.findIndex(header => terms.some(term => header.includes(term)));
+    return index === -1 ? null : index;
   }
 
   private updateModelValidators(model: ContractModel | null) {

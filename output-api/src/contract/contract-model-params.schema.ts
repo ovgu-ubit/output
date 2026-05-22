@@ -6,6 +6,7 @@ const CurrencyValueSchema = z.number().finite().min(0);
 
 export const JournalPriceEntrySchema = z.object({
     issn: z.string().trim().min(1).optional(),
+    title: z.string().trim().min(1).optional(),
     greater_entity_id: z.number().int().positive().optional(),
     price: CurrencyValueSchema,
 }).refine(data => data.issn !== undefined || data.greater_entity_id !== undefined, {

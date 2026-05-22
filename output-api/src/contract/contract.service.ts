@@ -16,7 +16,8 @@ import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
 import { parseContractModelParams } from './contract-model-params.schema';
-import { GEIdentifier } from '../greater_entity/GEIdentifier.entity';
+import { GreaterEntity } from '../greater_entity/GreaterEntity.entity';
+import { GreaterEntityService } from '../greater_entity/greater-entitiy.service';
 
 type NormalizedContract = DeepPartial<Contract> & {
     identifiers?: (DeepPartial<ContractIdentifier> & { id?: number | null })[];
@@ -33,6 +34,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>,
         @InjectRepository(ContractComponent) private contractComponentRepository: Repository<ContractComponent>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
+        private greaterEntityService: GreaterEntityService,
         private dataSource: DataSource,
     ) {
         super(repository, configService);
@@ -73,7 +75,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
             if (normalizedContract.components) {
                 for (const component of normalizedContract.components) {
-                    await this.resolveJournalPricesEntityIds(component, manager);
+                    await this.resolveJournalPricesEntityIds(component);
                 }
             }
 
@@ -110,7 +112,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         return this.dataSource.transaction(async (manager) => {
             assertCreateRequestHasNoId(component);
             const normalizedComponent = this.normalizeContractComponentForCreate(this.validateAndNormalizeContractComponent(component));
-            await this.resolveJournalPricesEntityIds(normalizedComponent, manager);
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
 
             if (!normalizedComponent.contract?.id) {
                 throw new BadRequestException('contract.id is required to create a contract component');
@@ -138,7 +140,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             }
 
             const normalizedComponent = this.validateAndNormalizeContractComponent(component);
-            await this.resolveJournalPricesEntityIds(normalizedComponent, manager);
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
             });
@@ -463,7 +465,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
     }
 
-    private async resolveJournalPricesEntityIds(component: DeepPartial<ContractComponent>, manager: EntityManager): Promise<void> {
+    private async resolveJournalPricesEntityIds(component: DeepPartial<ContractComponent>): Promise<void> {
         if (!component?.contract_model_params) {
             return;
         }
@@ -476,16 +478,14 @@ export class ContractService extends AbstractEntityService<Contract> {
         for (const entry of params.journal_prices) {
             if (entry.issn && (entry.greater_entity_id === undefined || entry.greater_entity_id === null)) {
                 const cleanIssn = entry.issn.trim();
-                const identifier = await manager.getRepository(GEIdentifier).findOne({
-                    where: [
-                        { type: ILike('issn'), value: ILike(cleanIssn) },
-                        { type: ILike('eissn'), value: ILike(cleanIssn) }
-                    ],
-                    relations: { entity: true }
-                });
+                const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+                const greaterEntity = await this.greaterEntityService.findOrSave({
+                    label: title || cleanIssn,
+                    identifiers: [{ type: 'issn', value: cleanIssn }],
+                } as GreaterEntity);
 
-                if (identifier?.entity?.id) {
-                    entry.greater_entity_id = identifier.entity.id;
+                if (greaterEntity?.id) {
+                    entry.greater_entity_id = greaterEntity.id;
                 }
             }
         }

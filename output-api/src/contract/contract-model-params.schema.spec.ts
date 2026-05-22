@@ -25,7 +25,7 @@ describe("contract-model-params.schema", () => {
             par_fee: 2200,
             service_fee: 150,
             journal_prices: [
-                { issn: "1234-5678", price: 1500 },
+                { issn: "1234-5678", title: "Journal of Tests", price: 1500 },
                 { greater_entity_id: 42, price: 1800 },
                 { issn: "9876-5432", greater_entity_id: 99, price: 2000 }
             ]
@@ -35,7 +35,7 @@ describe("contract-model-params.schema", () => {
             par_fee: 2200,
             service_fee: 150,
             journal_prices: [
-                { issn: "1234-5678", price: 1500 },
+                { issn: "1234-5678", title: "Journal of Tests", price: 1500 },
                 { greater_entity_id: 42, price: 1800 },
                 { issn: "9876-5432", greater_entity_id: 99, price: 2000 }
             ]
