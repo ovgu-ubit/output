@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
-import {  InvoiceKind  } from '@output/interfaces';
+import {  ContractModel, InvoiceKind  } from '@output/interfaces';
 import {  ContractIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
@@ -15,7 +15,9 @@ import { PublicationService } from '../publication/core/publication.service';
 import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
-import { parseContractModelParams } from './contract-model-params.schema';
+import { ContractModelParams, parseContractModelParams } from './contract-model-params.schema';
+import { GreaterEntity } from '../greater_entity/GreaterEntity.entity';
+import { GreaterEntityService } from '../greater_entity/greater-entitiy.service';
 
 type NormalizedContract = DeepPartial<Contract> & {
     identifiers?: (DeepPartial<ContractIdentifier> & { id?: number | null })[];
@@ -32,6 +34,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>,
         @InjectRepository(ContractComponent) private contractComponentRepository: Repository<ContractComponent>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
+        private greaterEntityService: GreaterEntityService,
         private dataSource: DataSource,
     ) {
         super(repository, configService);
@@ -70,6 +73,12 @@ export class ContractService extends AbstractEntityService<Contract> {
             }
 
             const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
+            if (normalizedContract.components) {
+                for (const component of normalizedContract.components) {
+                    await this.resolveJournalPricesEntityIds(component);
+                }
+            }
+
             const savedContract = await manager.getRepository(Contract).save(normalizedContract).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
@@ -108,6 +117,8 @@ export class ContractService extends AbstractEntityService<Contract> {
                 throw new BadRequestException('contract.id is required to create a contract component');
             }
 
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
+
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
             });
@@ -130,6 +141,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             }
 
             const normalizedComponent = this.validateAndNormalizeContractComponent(component);
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
             });
@@ -451,6 +463,32 @@ export class ContractService extends AbstractEntityService<Contract> {
 
         if (duplicateId) {
             throw new BadRequestException(`Invoice ${duplicateId} cannot be assigned to invoices and pre_invoices at the same time`);
+        }
+    }
+
+    private async resolveJournalPricesEntityIds(component: DeepPartial<ContractComponent>): Promise<void> {
+        if (!component?.contract_model_params) {
+            return;
+        }
+
+        const params = component.contract_model_params as ContractModelParams;
+        if (!params.journal_prices || !Array.isArray(params.journal_prices)) {
+            return;
+        }
+
+        for (const entry of params.journal_prices) {
+            if (entry.issn && (entry.greater_entity_id === undefined || entry.greater_entity_id === null)) {
+                const cleanIssn = entry.issn.trim();
+                const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+                const greaterEntity = await this.greaterEntityService.findOrSave({
+                    label: title || cleanIssn,
+                    identifiers: [{ type: 'issn', value: cleanIssn }],
+                } as GreaterEntity);
+
+                if (greaterEntity?.id) {
+                    entry.greater_entity_id = greaterEntity.id;
+                }
+            }
         }
     }
 

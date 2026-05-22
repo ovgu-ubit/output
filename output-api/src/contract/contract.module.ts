@@ -8,11 +8,13 @@ import { ContractIdentifier } from './ContractIdentifier.entity';
 import { ContractService } from './contract.service';
 import { ContractComponent } from './ContractComponent.entity';
 import { Invoice } from '../invoice/Invoice.entity';
+import { GreaterEntityModule } from '../greater_entity/greater-entity.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Contract, ContractIdentifier, ContractComponent, Invoice]),
     PublicationModule,
+    GreaterEntityModule,
     AppConfigModule
   ],
   controllers: [ContractController],
