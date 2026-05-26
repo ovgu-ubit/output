@@ -46,5 +46,19 @@ describe('ImportFormStrategyComponent', () => {
     expect(component.strategyForm.contains('url_retrieve')).toBeTrue();
     expect(component.strategyForm.contains('get_lookup_ids')).toBeTrue();
     expect(component.strategyForm.contains('get_retrieve_item')).toBeTrue();
+    expect(component.strategyForm.contains('max_res')).toBeFalse();
+    expect(component.strategyForm.contains('max_res_name')).toBeFalse();
+    expect(component.strategyForm.contains('offset_name')).toBeFalse();
+  });
+
+  it('builds query-offset strategy forms without legacy query parameter fields', () => {
+    component.selectionForm.controls.strategy.setValue(ImportStrategy.URL_QUERY_OFFSET);
+
+    expect(component.selectedStrategyId).toBe('offset');
+    expect(component.strategyForm.contains('url_count')).toBeTrue();
+    expect(component.strategyForm.contains('url_items')).toBeTrue();
+    expect(component.strategyForm.contains('max_res')).toBeFalse();
+    expect(component.strategyForm.contains('max_res_name')).toBeFalse();
+    expect(component.strategyForm.contains('offset_name')).toBeFalse();
   });
 });

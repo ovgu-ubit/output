@@ -168,12 +168,12 @@ export class JSONataImportService extends AbstractImportService {
         this.importConfig = importDefinition.mapping;
         this.url = this.importDefinition.strategy.url_items;
         this.url_count = this.importDefinition.strategy.url_count;
-        this.max_res = this.importDefinition.strategy.max_res;
-        this.max_res_name = this.importDefinition.strategy.max_res_name;
-        this.mode = this.importDefinition.strategy.request_mode;
-        this.offset_name = this.importDefinition.strategy.offset_name;
-        this.offset_count = this.importDefinition.strategy.offset_count;
-        this.offset_start = this.importDefinition.strategy.offset_start;
+        this.max_res = this.importDefinition.strategy.max_res ?? this.max_res;
+        this.max_res_name = this.importDefinition.strategy.max_res_name ?? '';
+        this.mode = this.importDefinition.strategy.request_mode ?? this.mode;
+        this.offset_name = this.importDefinition.strategy.offset_name ?? '';
+        this.offset_count = this.importDefinition.strategy.offset_count ?? this.offset_count;
+        this.offset_start = this.importDefinition.strategy.offset_start ?? this.offset_start;
         this.parallelCalls = this.importDefinition.strategy.parallelCalls;
         this.search_text_combiner = this.importDefinition.strategy.search_text_combiner
         this.get_doi_item = this.importDefinition.strategy.get_doi_item;
@@ -854,7 +854,7 @@ export class JSONataImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async importLookupAndRetrieve(update: boolean, by_user?: string, dryRun = false) {
-        if (!this.lookupURL || !this.retrieveURL || !this.max_res_name || !this.max_res || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_lookup_ids || !this.importDefinition.strategy.get_retrieve_item) {
+        if (!this.lookupURL || !this.retrieveURL || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_lookup_ids || !this.importDefinition.strategy.get_retrieve_item) {
             throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         }
 
@@ -926,7 +926,7 @@ export class JSONataImportService extends AbstractImportService {
 
     public async import(update: boolean, by_user?: string, dryRun = false) {
         this.dryRun = dryRun;
-        if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
+        if (!this.url || !this.url_count || this.offset_count == undefined || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
             throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
 
@@ -1107,7 +1107,7 @@ export class JSONataImportService extends AbstractImportService {
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
         const url = this.applyVariables(
             this.lookupURL,
-            { offset }
+            { offset, page: offset }
         );
         return this.delayedGet(url);
     }

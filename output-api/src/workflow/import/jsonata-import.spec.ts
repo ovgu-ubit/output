@@ -260,15 +260,13 @@ describe('JSONataImportService URL parameters', () => {
         });
     });
 
-    it('delays the actual lookup request by delayInMs', async () => {
+    it('delays lookup requests and resolves paging placeholders from the URL', async () => {
         jest.useFakeTimers();
         const response = { data: { ok: true } };
         http.get.mockReturnValue(of(response));
 
-        (service as any).lookupURL = 'https://example.test/search';
-        (service as any).max_res_name = 'retmax';
         (service as any).max_res = 1000;
-        (service as any).offset_name = 'retstart';
+        (service as any).lookupURL = await service.setParameters('https://example.test/search?retmax=[max_res]&retstart=[offset]');
         (service as any).delayInMs = 250;
 
         const promise = firstValueFrom((service as any).retrieveLookupRequest(100));
@@ -287,10 +285,28 @@ describe('JSONataImportService URL parameters', () => {
 
         jest.advanceTimersByTime(1);
         await Promise.resolve();
-        expect(http.get).toHaveBeenCalledWith('https://example.test/search&retmax=1000&retstart=100');
+        expect(http.get).toHaveBeenCalledWith('https://example.test/search?retmax=1000&retstart=100');
 
         await expect(promise).resolves.toBe(response);
         expect(resolved).toBe(true);
+        jest.useRealTimers();
+    });
+
+    it('resolves page placeholders in item requests without legacy parameter fields', async () => {
+        jest.useFakeTimers();
+        const response = { data: { ok: true } };
+        http.get.mockReturnValue(of(response));
+
+        (service as any).max_res = 25;
+        (service as any).url = await service.setParameters('https://example.test/items?rows=[max_res]&page=[page]');
+        (service as any).delayInMs = 0;
+
+        const promise = firstValueFrom((service as any).request(undefined, 3));
+        jest.advanceTimersByTime(0);
+        await Promise.resolve();
+
+        expect(http.get).toHaveBeenCalledWith('https://example.test/items?rows=25&page=3');
+        await expect(promise).resolves.toBe(response);
         jest.useRealTimers();
     });
 });
