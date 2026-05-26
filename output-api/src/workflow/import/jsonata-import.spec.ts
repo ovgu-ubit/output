@@ -148,6 +148,48 @@ describe('JSONataImportService.setVariables', () => {
         });
     });
 
+    it('surfaces JSONata get_items errors as invalid request errors', async () => {
+        (service as any).importDefinition = {
+            strategy: {
+                format: 'json',
+                get_items: '$.items[',
+            },
+        };
+
+        try {
+            await (service as any).getData({ data: { items: [] } });
+            fail('Expected getData to reject with an API error');
+        } catch (error) {
+            expect(error).toBeInstanceOf(HttpException);
+            expect((error as HttpException).getResponse()).toMatchObject({
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: expect.stringContaining('JSONata expression for strategy.get_items failed'),
+                details: [
+                    expect.objectContaining({
+                        path: 'strategy.get_items',
+                        code: 'jsonata',
+                    }),
+                ],
+            });
+        }
+    });
+
+    it('surfaces non-array get_items results as invalid request errors', async () => {
+        (service as any).importDefinition = {
+            strategy: {
+                format: 'json',
+                get_items: '$.item',
+            },
+        };
+
+        await expectApiError((service as any).getData({ data: { item: { title: 'Single item' } } }), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'JSONata expression for strategy.get_items must return an array.',
+        });
+    });
+
     it('delays the actual lookup request by delayInMs', async () => {
         jest.useFakeTimers();
         const response = { data: { ok: true } };
@@ -277,6 +319,21 @@ describe('JSONataImportService workflow report status', () => {
         }));
         expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
             status: 'Successfull import',
+        }));
+    });
+
+    it('writes JSONata extraction errors into the workflow report', async () => {
+        (service as any).importDefinition.strategy.get_items = '$.items[';
+        jest.spyOn(service as any, 'retrieveCountRequest').mockReturnValue(of({ data: { count: 1 } } as any));
+        jest.spyOn(service as any, 'getNumber').mockResolvedValue(1);
+        jest.spyOn(service as any, 'request').mockReturnValue(of({ data: { items: [{ title: 'First' }] } } as any));
+
+        await service.import(false, 'tester', false);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        expect(workflowReportService.write).toHaveBeenCalledWith(11, expect.objectContaining({
+            level: 'error',
+            message: expect.stringContaining('JSONata expression for strategy.get_items failed'),
         }));
     });
 });

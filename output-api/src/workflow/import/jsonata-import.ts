@@ -273,6 +273,49 @@ export class JSONataImportService extends AbstractImportService {
         return value.join(separator);
     }
 
+    private async evaluateJsonataExpression(context: string, expression: string, data: unknown): Promise<unknown> {
+        try {
+            const mapping = jsonata(expression);
+            return await mapping.evaluate(data);
+        } catch (err) {
+            throw createInvalidRequestHttpException(
+                `JSONata expression for ${context} failed: ${this.getErrorMessage(err)}`,
+                [{
+                    path: context,
+                    code: 'jsonata',
+                    message: this.getErrorMessage(err),
+                }]
+            );
+        }
+    }
+
+    private ensureArrayResult(context: string, value: unknown): unknown[] {
+        if (Array.isArray(value)) return value;
+        if (value === null || value === undefined) return [];
+        throw createInvalidRequestHttpException(
+            `JSONata expression for ${context} must return an array.`,
+            [{
+                path: context,
+                code: 'jsonata_result_type',
+                message: 'Expected an array result.',
+            }]
+        );
+    }
+
+    private getErrorMessage(error: unknown): string {
+        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === 'string') return error;
+        try {
+            return JSON.stringify(error);
+        } catch {
+            return `${error}`;
+        }
+    }
+
+    private getReportErrorMessage(error: unknown): string {
+        return this.getErrorMessage(error);
+    }
+
     protected parseResponseData(response: AxiosResponse, format = this.importDefinition.strategy.format) {
         let data = response.data;
         if (format === 'xml') {
@@ -282,63 +325,38 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected async getData(response: AxiosResponse): Promise<JSONataParsedObject[]> {
-        try {
-            const data = this.parseResponseData(response);
-
-            const mapping = jsonata(this.importDefinition.strategy.get_items)
-            const items = (await mapping.evaluate(data))
-            return await Promise.all(items.map(e => this.transform(e)))
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const data = this.parseResponseData(response);
+        const items = await this.evaluateJsonataExpression('strategy.get_items', this.importDefinition.strategy.get_items, data);
+        const itemArray = this.ensureArrayResult('strategy.get_items', items);
+        return await Promise.all(itemArray.map(e => this.transform(e)))
     }
 
     protected async getDataEnrich(response: AxiosResponse): Promise<JSONataParsedObject> {
-        try {
-            const data = this.parseResponseData(response);
-            const mapping = jsonata(this.importDefinition.strategy.get_doi_item)
-            const item = (await mapping.evaluate(data))
-            return await this.transform(item)
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const data = this.parseResponseData(response);
+        const item = await this.evaluateJsonataExpression('strategy.get_doi_item', this.importDefinition.strategy.get_doi_item, data);
+        return await this.transform(item)
     }
 
     protected async getLookupIds(response: AxiosResponse): Promise<(string | number)[]> {
-        try {
-            const data = this.parseResponseData(response, this.lookupFormat);
-            const mapping = jsonata(this.importDefinition.strategy.get_lookup_ids)
-            const ids = await mapping.evaluate(data);
-            if (!ids) return [];
-            return Array.isArray(ids) ? ids : [ids];
-        } catch (err) {
-            console.log(err)
-            return [];
-        }
+        const data = this.parseResponseData(response, this.lookupFormat);
+        const ids = await this.evaluateJsonataExpression('strategy.get_lookup_ids', this.importDefinition.strategy.get_lookup_ids, data);
+        if (!ids) return [];
+        return Array.isArray(ids) ? ids as (string | number)[] : [ids as string | number];
     }
 
     protected async getDataRetrieve(response: AxiosResponse): Promise<JSONataParsedObject> {
-        try {
-            const data = this.parseResponseData(response, this.retrieveFormat);
-            const mapping = jsonata(this.importDefinition.strategy.get_retrieve_item)
-            const item = await mapping.evaluate(data);
-            return await this.transform(item)
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const data = this.parseResponseData(response, this.retrieveFormat);
+        const item = await this.evaluateJsonataExpression('strategy.get_retrieve_item', this.importDefinition.strategy.get_retrieve_item, data);
+        return await this.transform(item)
     }
 
     public async setReportingYear(year: string) {
         this.reporting_year = year;
     }
 
-    async transform(element: AxiosResponse): Promise<JSONataParsedObject> {
-        const mapping = jsonata(this.importConfig)
-        const obj = (await mapping.evaluate({ ...element, params: { cfg: this.config } }))
-        return obj;
+    async transform(element: unknown): Promise<JSONataParsedObject> {
+        const source = element && typeof element === 'object' ? element as object : {};
+        return await this.evaluateJsonataExpression('mapping', this.importConfig, { ...source, params: { cfg: this.config } }) as JSONataParsedObject;
     }
 
     protected async collectLookupIds(): Promise<(string | number)[]> {
@@ -842,7 +860,7 @@ export class JSONataImportService extends AbstractImportService {
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),
-                        message: `Error while processing data chunk: ${e}`
+                        message: `Error while processing data chunk: ${this.getReportErrorMessage(e)}`
                     });
                 } finally {
                     if (this.progress !== 0) {
@@ -925,7 +943,7 @@ export class JSONataImportService extends AbstractImportService {
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),
-                        message: `Error while processing data chunk: ${e}`
+                        message: `Error while processing data chunk: ${this.getReportErrorMessage(e)}`
                     });
                 } finally {
                     if (this.progress !== 0) {
@@ -1013,7 +1031,7 @@ export class JSONataImportService extends AbstractImportService {
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),
-                        message: `Error while processing data chunk: ${e}`
+                        message: `Error while processing data chunk: ${this.getReportErrorMessage(e)}`
                     });
                 } finally {
                     if (this.progress !== 0) {
