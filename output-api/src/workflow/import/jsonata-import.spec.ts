@@ -87,6 +87,40 @@ describe('JSONataImportService.setVariables', () => {
         expect(result).toBe('foo+or+bar[affiliation]');
     });
 
+    it('joins array placeholders with the configured separator operation', async () => {
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'openalex_id') return ['I123', 'I456'];
+            return null;
+        });
+
+        const result = await service.setVariables('https://example.test?filter=institutions.id:[openalex_id|join:%7C]');
+
+        expect(result).toBe('https://example.test?filter=institutions.id:I123%7CI456');
+        expect(configService.get).toHaveBeenCalledWith('openalex_id');
+    });
+
+    it('leaves atomic values unchanged when join is applied', async () => {
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'openalex_id') return 'I123';
+            return null;
+        });
+
+        const result = await service.setVariables('https://example.test?filter=institutions.id:[openalex_id|join:%7C]');
+
+        expect(result).toBe('https://example.test?filter=institutions.id:I123');
+    });
+
+    it('allows literal pipe separators in join operations', async () => {
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'openalex_id') return ['I123', 'I456'];
+            return null;
+        });
+
+        const result = await service.setVariables('https://example.test?filter=institutions.id:[openalex_id|join:|]');
+
+        expect(result).toBe('https://example.test?filter=institutions.id:I123|I456');
+    });
+
     it('unescapes literal brackets in safe mode as well', async () => {
         const result = await service.setVariables('https://example.test/[year]\\[dp\\]', undefined, true);
 
@@ -98,6 +132,19 @@ describe('JSONataImportService.setVariables', () => {
             statusCode: 400,
             code: ApiErrorCode.INVALID_REQUEST,
             message: 'value for missing is not available',
+        });
+    });
+
+    it('throws for unsupported placeholder operations', async () => {
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'openalex_id') return ['I123', 'I456'];
+            return null;
+        });
+
+        await expectApiError(service.setVariables('https://example.test/[openalex_id|first]'), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'operation for openalex_id is not supported',
         });
     });
 

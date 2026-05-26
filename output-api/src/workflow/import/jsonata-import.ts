@@ -72,6 +72,12 @@ export interface JSONataParsedObject {
 
 type RequestMode = 'offset' | 'page';
 
+type Placeholder = {
+    expression: string;
+    key: string;
+    operation?: string;
+};
+
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
@@ -220,10 +226,11 @@ export class JSONataImportService extends AbstractImportService {
         if (!queryString) return null;
         let result = queryString;
         const regex = /(?<!\\)\[([^\]]+)\]/g
-        const keys = [...result.matchAll(regex)].map(m => m[1]);
-        const values = await Promise.all(keys.map(k => this.configService.get(k)));
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
+        const placeholders = [...result.matchAll(regex)].map(m => this.parsePlaceholder(m[1]));
+        const values = await Promise.all(placeholders.map(placeholder => this.configService.get(placeholder.key)));
+        for (let i = 0; i < placeholders.length; i++) {
+            const placeholder = placeholders[i];
+            const key = placeholder.key;
             let value;
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
@@ -233,10 +240,37 @@ export class JSONataImportService extends AbstractImportService {
             else if (safe && key.includes('SECRET')) value = key
             else value = values[i] ?? ""; // oder Fehler werfen
 
-            if (value) result = result.replace(`[${key}]`, value);
+            if (placeholder.operation) value = this.applyPlaceholderOperation(placeholder, value);
+
+            if (value) result = result.replace(`[${placeholder.expression}]`, () => String(value));
             else if (!safe) throw createInvalidRequestHttpException(`value for ${key} is not available`);
         }
         return result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
+    }
+
+    private parsePlaceholder(expression: string): Placeholder {
+        const pipeIndex = expression.indexOf('|');
+        if (pipeIndex === -1) {
+            return { expression, key: expression };
+        }
+
+        return {
+            expression,
+            key: expression.slice(0, pipeIndex),
+            operation: expression.slice(pipeIndex + 1),
+        };
+    }
+
+    private applyPlaceholderOperation(placeholder: Placeholder, value: unknown): unknown {
+        const separatorPrefix = 'join:';
+        if (!placeholder.operation?.startsWith(separatorPrefix)) {
+            throw createInvalidRequestHttpException(`operation for ${placeholder.key} is not supported`);
+        }
+
+        const separator = placeholder.operation.slice(separatorPrefix.length);
+        if (!Array.isArray(value)) return value;
+
+        return value.join(separator);
     }
 
     protected parseResponseData(response: AxiosResponse, format = this.importDefinition.strategy.format) {
