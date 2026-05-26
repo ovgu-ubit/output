@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { firstValueFrom, of } from 'rxjs';
-import {  ApiErrorCode  } from '@output/interfaces';
+import {  ApiErrorCode, ImportStrategy  } from '@output/interfaces';
 import {  UpdateOptions  } from '@output/interfaces';
 import { JSONataImportService } from './jsonata-import';
 
@@ -127,6 +127,54 @@ describe('JSONataImportService URL parameters', () => {
         expect(result).toBe('https://example.test/2024[dp]');
     });
 
+    it('does not resolve free config placeholders in safe URLs', async () => {
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'SECRET_SCOPUS') return 'real-secret';
+            if (key === 'openalex_id') return ['I123', 'I456'];
+            return null;
+        });
+
+        const result = await (service as any).getSafeUrl(
+            'https://example.test?apiKey=[SECRET_SCOPUS]&filter=[openalex_id|join:%7C]&year=[year]&doi=[doi]',
+            { doi: '10.123/test' }
+        );
+
+        expect(result).toBe('https://example.test?apiKey=[SECRET_SCOPUS]&filter=[openalex_id|join:%7C]&year=2024&doi=10.123/test');
+        expect(configService.get).not.toHaveBeenCalledWith('SECRET_SCOPUS');
+        expect(configService.get).not.toHaveBeenCalledWith('openalex_id');
+    });
+
+    it('does not expose resolved secrets in workflow test source URLs', async () => {
+        configService.get.mockImplementation(async (key: string) => {
+            if (key === 'SECRET_SCOPUS') return 'real-secret';
+            return null;
+        });
+        http.get.mockReturnValue(of({ data: { item: {} } }));
+
+        const templateUrl = 'https://example.test?apiKey=[SECRET_SCOPUS]&doi=[doi]';
+        (service as any).workflowReport = { id: 22 };
+        (service as any).workflowReportService = {
+            save: jest.fn(async (_report: unknown) => ({ id: 22 })),
+        };
+        (service as any).publicationService = {
+            get: jest.fn(async () => [{ doi: '10.123/test' }]),
+        };
+        (service as any).importDefinition = {
+            workflow_id: 1,
+            strategy_type: ImportStrategy.URL_DOI,
+            strategy: {
+                url_doi: templateUrl,
+            },
+        };
+        (service as any).url_doi = await service.setParameters(templateUrl);
+        jest.spyOn(service as any, 'getDataEnrich').mockResolvedValue({ title: 'Title', doi: '10.123/test' });
+
+        const result = await service.test();
+
+        expect(http.get).toHaveBeenCalledWith('https://example.test?apiKey=real-secret&doi=10.123/test');
+        expect(result.read.source).toBe('https://example.test?apiKey=[SECRET_SCOPUS]&doi=10.123/test');
+    });
+
     it('keeps throwing for missing unescaped placeholders', async () => {
         await expectApiError(service.setParameters('https://example.test/[missing]'), {
             statusCode: 400,
@@ -163,7 +211,8 @@ describe('JSONataImportService URL parameters', () => {
         const query = await service.setParameters('https://example.test/[doi]/[id]?offset=[offset]&page=[page]\\[dp\\]');
         const result = (service as any).applyVariables(
             query,
-            service.setVariables(100, 3, '10.123/test', 'item-1')
+            { offset: 100, page: 3, doi: '10.123/test', id: 'item-1' },
+            true
         );
 
         expect(result).toBe('https://example.test/10.123/test/item-1?offset=100&page=3[dp]');

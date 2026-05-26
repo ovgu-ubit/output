@@ -146,7 +146,6 @@ export class JSONataImportService extends AbstractImportService {
     private affiliationText = '';
     protected search_text_combiner;
 
-    private completeURL = '';
     private lookupURL = '';
     private retrieveURL = '';
     private lookupFormat = 'json';
@@ -237,11 +236,7 @@ export class JSONataImportService extends AbstractImportService {
         let result = queryString;
         const regex = /(?<!\\)\[([^\]]+)\]/g
         const placeholders = [...result.matchAll(regex)].map(m => this.parsePlaceholder(m[1]));
-        const values = await Promise.all(placeholders.map(placeholder =>
-            this.isRuntimeVariable(placeholder.key) ? undefined : this.configService.get(placeholder.key)
-        ));
-        for (let i = 0; i < placeholders.length; i++) {
-            const placeholder = placeholders[i];
+        for (const placeholder of placeholders) {
             const key = placeholder.key;
             if (this.isRuntimeVariable(key)) continue;
 
@@ -253,12 +248,12 @@ export class JSONataImportService extends AbstractImportService {
             else if (key === 'max_res_name') value = this.max_res_name;
             else if (key === 'offset_name') value = this.offset_name;
             else if (key === 'offset_count') value = this.offset_count;
-            else if (safe && key.includes('SECRET')) value = key
-            else value = values[i] ?? ""; // oder Fehler werfen
+            else if (safe) continue;
+            else value = await this.configService.get(key) ?? ""; // oder Fehler werfen
 
             if (placeholder.operation) value = this.applyPlaceholderOperation(placeholder, value);
 
-            if (value) result = result.replace(`[${placeholder.expression}]`, () => String(value));
+            if (value !== undefined && value !== null && value !== '') result = result.replace(`[${placeholder.expression}]`, () => String(value));
             else if (!safe) throw createInvalidRequestHttpException(`value for ${key} is not available`);
         }
         return result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
@@ -287,8 +282,8 @@ export class JSONataImportService extends AbstractImportService {
         return result;
     }
 
-    private async getSafeUrl(queryString: string): Promise<string> {
-        return this.applyVariables(await this.setParameters(queryString, true), {}, true);
+    private async getSafeUrl(queryString: string, variables: RuntimeVariables = {}): Promise<string> {
+        return this.applyVariables(await this.setParameters(queryString, true), variables, true);
     }
 
     private isRuntimeVariable(key: string): key is keyof RuntimeVariables {
@@ -562,7 +557,7 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
 
-                result.read.source = this.applyVariables(this.url_doi, { doi: pub.doi }, true);
+                result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_doi, { doi: pub?.doi });
                 ob$ = this.http.get(this.applyVariables(this.url_doi, { doi: pub.doi }))
                 try {
                     resp = await firstValueFrom(ob$) as AxiosResponse;
@@ -630,7 +625,7 @@ export class JSONataImportService extends AbstractImportService {
             case ImportStrategy.URL_LOOKUP_AND_RETRIEVE: {
                 let ids: (string | number)[] = [];
 
-                result.read.source = this.applyVariables(this.lookupURL, {}, true);
+                result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_lookup);
                 try {
                     ids = await this.collectLookupIds();
                     count = ids.length;
@@ -651,7 +646,7 @@ export class JSONataImportService extends AbstractImportService {
 
                 try {
                     const id = ids[pos > 0 ? pos - 1 : 0];
-                    ob$ = this.http.get(this.applyVariables(this.retrieveURL, { lookup_id: id }, true));
+                    ob$ = this.http.get(this.applyVariables(this.retrieveURL, { id, lookup_id: id }));
                     resp = await firstValueFrom(ob$);
                     result.read.response = this.collectKeys(resp.data)
                 } catch (err) {
@@ -687,14 +682,12 @@ export class JSONataImportService extends AbstractImportService {
             }
             case ImportStrategy.URL_QUERY_OFFSET:
             default:
-                this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
-
-                result.read.source = this.applyVariables(this.url_count, {offset: this.offset_count}, true);
+                result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_count, { offset: this.offset_count });
                 try {
                     resp_count = await firstValueFrom(this.retrieveCountRequest())
                 } catch (err) {
                     result.result.issues.push({
-                        message: 'Error retrieving count with ' + this.completeURL, error: err instanceof Error
+                        message: 'Error retrieving count with ' + this.url_count, error: err instanceof Error
                             ? {
                                 name: err.name,
                                 message: err.message,
@@ -722,7 +715,7 @@ export class JSONataImportService extends AbstractImportService {
                 if (pos > count) result.result.issues.push({ message: 'Position greater than count', error: null })
 
                 if (this.mode === 'offset') {
-                    ob$ = this.request(this.offset_start + pos - 1);
+                    ob$ = this.request(this.offset_start + pos);
                 } else if (this.mode === 'page') {
                     const page = this.offset_start + Math.floor(pos / this.max_res)
                     ob$ = this.request(undefined, page);
@@ -733,7 +726,7 @@ export class JSONataImportService extends AbstractImportService {
                     result.read.response = this.collectKeys(resp.data)
                 } catch (err) {
                     result.result.issues.push({
-                        message: 'Error while retrieving items with ' + this.completeURL, error: err instanceof Error
+                        message: 'Error while retrieving items with ' + this.url, error: err instanceof Error
                             ? {
                                 name: err.name,
                                 message: err.message,
@@ -891,7 +884,7 @@ export class JSONataImportService extends AbstractImportService {
 
         const obs$ = [];
         for (const id of ids) {
-            const url = this.applyVariables(this.retrieveURL, { lookup_id: id });
+            const url = this.applyVariables(this.retrieveURL, { id, lookup_id: id });
             obs$.push(this.delayedGet(url));
         }
 
@@ -937,8 +930,6 @@ export class JSONataImportService extends AbstractImportService {
             throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
 
-        this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
-
         this.processedPublications = 0;
         this.newPublications = [];
         this.publicationsUpdate = [];
@@ -970,7 +961,7 @@ export class JSONataImportService extends AbstractImportService {
             } else if (this.mode === 'page') {
                 let page = this.offset_start - 1;
                 do {
-                    obs$.push(this.request(++page));
+                    obs$.push(this.request(undefined, ++page));
                 } while (page * this.max_res < this.numberOfPublications);
             }
             return null;
@@ -1105,7 +1096,7 @@ export class JSONataImportService extends AbstractImportService {
 
     protected retrieveCountRequest(): Observable<AxiosResponse> {
         const url = this.applyVariables(
-            this.url_count + `&${this.offset_name}=` + this.offset_count,
+            this.url_count,
             { offset: this.offset_count }
         );
         return this.http.get(url);
@@ -1115,16 +1106,15 @@ export class JSONataImportService extends AbstractImportService {
     }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
         const url = this.applyVariables(
-            this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset,
+            this.lookupURL,
             { offset }
         );
         return this.delayedGet(url);
     }
     protected request(offset?: number, page?: number): Observable<AxiosResponse> {
-        const pageOrOffset = offset ?? page;
         const url = this.applyVariables(
-            this.completeURL + `&${this.offset_name}=` + pageOrOffset,
-            { offset: pageOrOffset }
+            this.url,
+            { offset, page }
         );
         return this.delayedGet(url);
     }
