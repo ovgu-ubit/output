@@ -78,6 +78,14 @@ type Placeholder = {
     operation?: string;
 };
 
+type RuntimeVariables = {
+    offset?: number;
+    page?: number;
+    doi?: string;
+    id?: string | number;
+    lookup_id?: string | number;
+};
+
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
@@ -198,9 +206,11 @@ export class JSONataImportService extends AbstractImportService {
         if (this.affiliationText) this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
 
         //process query string
-        this.url = await this.setVariables(this.url);
-        this.url_count = await this.setVariables(this.url_count);
-        this.lookupURL = await this.setVariables(this.lookupURL);
+        this.url = await this.setParameters(this.url);
+        this.url_count = await this.setParameters(this.url_count);
+        this.lookupURL = await this.setParameters(this.lookupURL);
+        this.retrieveURL = await this.setParameters(this.retrieveURL);
+        this.url_doi = await this.setParameters(this.url_doi);
 
         this.name = this.importDefinition.label + '_v' + this.importDefinition.version;
 
@@ -212,31 +222,37 @@ export class JSONataImportService extends AbstractImportService {
                 reporting_year: this.reporting_year ?? undefined,
                 search_text: this.searchText ? this.searchText : undefined,
                 affiliation_text: this.affiliationText ? this.affiliationText : undefined,
-                url: await this.setVariables(this.url, undefined, true) ?? undefined,
-                url_count: await this.setVariables(this.url_count, undefined, true) ?? undefined,
-                url_lookup: await this.setVariables(this.lookupURL, undefined, true) ?? undefined,
-                url_retrieve: await this.setVariables(this.retrieveURL, undefined, true) ?? undefined,
-                url_doi: await this.setVariables(this.url_doi, undefined, true) ?? undefined,
+                url: await this.getSafeUrl(this.importDefinition.strategy.url_items) ?? undefined,
+                url_count: await this.getSafeUrl(this.importDefinition.strategy.url_count) ?? undefined,
+                url_lookup: await this.getSafeUrl(this.importDefinition.strategy.url_lookup) ?? undefined,
+                url_retrieve: await this.getSafeUrl(this.importDefinition.strategy.url_retrieve) ?? undefined,
+                url_doi: await this.getSafeUrl(this.importDefinition.strategy.url_doi) ?? undefined,
                 enrich_whereClause: this.enrich_whereClause ?? undefined,
             }
         })
     }
 
-    async setVariables(queryString: string, doi?: string, safe = false, id?: string | number): Promise<string> {
+    async setParameters(queryString: string, safe = false): Promise<string> {
         if (!queryString) return null;
         let result = queryString;
         const regex = /(?<!\\)\[([^\]]+)\]/g
         const placeholders = [...result.matchAll(regex)].map(m => this.parsePlaceholder(m[1]));
-        const values = await Promise.all(placeholders.map(placeholder => this.configService.get(placeholder.key)));
+        const values = await Promise.all(placeholders.map(placeholder =>
+            this.isRuntimeVariable(placeholder.key) ? undefined : this.configService.get(placeholder.key)
+        ));
         for (let i = 0; i < placeholders.length; i++) {
             const placeholder = placeholders[i];
             const key = placeholder.key;
+            if (this.isRuntimeVariable(key)) continue;
+
             let value;
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
-            else if (key === 'doi') value = doi;
-            else if (key === 'id' || key === 'lookup_id') value = id;
             else if (key === 'affiliation_tags') value = this.affiliationText;
+            else if (key === 'max_res') value = this.max_res;
+            else if (key === 'max_res_name') value = this.max_res_name;
+            else if (key === 'offset_name') value = this.offset_name;
+            else if (key === 'offset_count') value = this.offset_count;
             else if (safe && key.includes('SECRET')) value = key
             else value = values[i] ?? ""; // oder Fehler werfen
 
@@ -246,6 +262,37 @@ export class JSONataImportService extends AbstractImportService {
             else if (!safe) throw createInvalidRequestHttpException(`value for ${key} is not available`);
         }
         return result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
+    }
+
+    private applyVariables(queryString: string, variables: RuntimeVariables = {}, safe = false): string {
+        if (!queryString) return null;
+        let result = queryString;
+        const regex = /(?<!\\)\[([^\]]+)\]/g
+        const placeholders = [...result.matchAll(regex)].map(m => this.parsePlaceholder(m[1]));
+
+        for (const placeholder of placeholders) {
+            const key = placeholder.key;
+            if (!this.isRuntimeVariable(key)) continue;
+
+            let value: unknown = variables[key];
+            if (placeholder.operation) value = this.applyPlaceholderOperation(placeholder, value);
+
+            if (value !== undefined && value !== null && value !== '') {
+                result = result.replace(`[${placeholder.expression}]`, () => String(value));
+            } else if (!safe) {
+                throw createInvalidRequestHttpException(`value for ${key} is not available`);
+            }
+        }
+
+        return result;
+    }
+
+    private async getSafeUrl(queryString: string): Promise<string> {
+        return this.applyVariables(await this.setParameters(queryString, true), {}, true);
+    }
+
+    private isRuntimeVariable(key: string): key is keyof RuntimeVariables {
+        return ['offset', 'page', 'doi', 'id', 'lookup_id'].includes(key);
     }
 
     private parsePlaceholder(expression: string): Placeholder {
@@ -515,8 +562,8 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
 
-                result.read.source = await this.setVariables(this.url_doi, pub.doi, true);
-                ob$ = this.http.get(await this.setVariables(this.url_doi, pub.doi, false))
+                result.read.source = this.applyVariables(this.url_doi, { doi: pub.doi }, true);
+                ob$ = this.http.get(this.applyVariables(this.url_doi, { doi: pub.doi }))
                 try {
                     resp = await firstValueFrom(ob$) as AxiosResponse;
                     result.read.response = this.collectKeys(resp.data)
@@ -583,7 +630,7 @@ export class JSONataImportService extends AbstractImportService {
             case ImportStrategy.URL_LOOKUP_AND_RETRIEVE: {
                 let ids: (string | number)[] = [];
 
-                result.read.source = await this.setVariables(this.lookupURL, undefined, true);
+                result.read.source = this.applyVariables(this.lookupURL, {}, true);
                 try {
                     ids = await this.collectLookupIds();
                     count = ids.length;
@@ -604,7 +651,7 @@ export class JSONataImportService extends AbstractImportService {
 
                 try {
                     const id = ids[pos > 0 ? pos - 1 : 0];
-                    ob$ = this.http.get(await this.setVariables(this.retrieveURL, undefined, false, id));
+                    ob$ = this.http.get(this.applyVariables(this.retrieveURL, { lookup_id: id }, true));
                     resp = await firstValueFrom(ob$);
                     result.read.response = this.collectKeys(resp.data)
                 } catch (err) {
@@ -642,7 +689,7 @@ export class JSONataImportService extends AbstractImportService {
             default:
                 this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
-                result.read.source = await this.setVariables(this.url_count, undefined, true);
+                result.read.source = this.applyVariables(this.url_count, {offset: this.offset_count}, true);
                 try {
                     resp_count = await firstValueFrom(this.retrieveCountRequest())
                 } catch (err) {
@@ -678,7 +725,7 @@ export class JSONataImportService extends AbstractImportService {
                     ob$ = this.request(this.offset_start + pos - 1);
                 } else if (this.mode === 'page') {
                     const page = this.offset_start + Math.floor(pos / this.max_res)
-                    ob$ = this.request(page);
+                    ob$ = this.request(undefined, page);
                 }
 
                 try {
@@ -755,7 +802,7 @@ export class JSONataImportService extends AbstractImportService {
                 }
             });
         } else throw new NotImplementedException();
-        let data = [];
+        let data: JSONataParsedObject[];
         try {
             data = await Promise.all(jsonData.map(e => this.transform(e)))
         } catch (err) {
@@ -844,7 +891,7 @@ export class JSONataImportService extends AbstractImportService {
 
         const obs$ = [];
         for (const id of ids) {
-            const url = await this.setVariables(this.retrieveURL, undefined, false, id);
+            const url = this.applyVariables(this.retrieveURL, { lookup_id: id });
             obs$.push(this.delayedGet(url));
         }
 
@@ -991,7 +1038,7 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
 
         for (const pub of publications) {
-            const url = await this.setVariables(this.url_doi, pub.doi);
+            const url = this.applyVariables(this.url_doi, { doi: pub.doi });
             obs$.push(this.delayedGet(url))
         }
 
@@ -1057,18 +1104,28 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected retrieveCountRequest(): Observable<AxiosResponse> {
-        const url = this.url_count + `&${this.offset_name}=` + this.offset_count;
+        const url = this.applyVariables(
+            this.url_count + `&${this.offset_name}=` + this.offset_count,
+            { offset: this.offset_count }
+        );
         return this.http.get(url);
     }
     protected delayedGet(url: string): Observable<AxiosResponse> {
         return timer(this.delayInMs).pipe(concatMap(() => this.http.get(url)));
     }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
-        const url = this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset;
+        const url = this.applyVariables(
+            this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset,
+            { offset }
+        );
         return this.delayedGet(url);
     }
-    protected request(offset: number): Observable<AxiosResponse> {
-        const url = this.completeURL + `&${this.offset_name}=` + offset;
+    protected request(offset?: number, page?: number): Observable<AxiosResponse> {
+        const pageOrOffset = offset ?? page;
+        const url = this.applyVariables(
+            this.completeURL + `&${this.offset_name}=` + pageOrOffset,
+            { offset: pageOrOffset }
+        );
         return this.delayedGet(url);
     }
 

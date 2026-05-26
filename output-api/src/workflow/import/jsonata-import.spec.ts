@@ -37,7 +37,7 @@ const createPublicationRelationServiceMock = () => ({
     resetAuthorPublication: jest.fn(async () => undefined),
 });
 
-describe('JSONataImportService.setVariables', () => {
+describe('JSONataImportService URL parameters', () => {
     let service: JSONataImportService;
     let configService: { get: jest.Mock };
     let http: { get: jest.Mock };
@@ -76,13 +76,13 @@ describe('JSONataImportService.setVariables', () => {
     });
 
     it('resolves placeholders and unescapes literal brackets', async () => {
-        const result = await service.setVariables('https://example.test?term=[year]\\[dp\\]+and+');
+        const result = await service.setParameters('https://example.test?term=[year]\\[dp\\]+and+');
 
         expect(result).toBe('https://example.test?term=2024[dp]+and+');
     });
 
     it('preserves escaped bracket expressions after replacing search tags', async () => {
-        const result = await service.setVariables('[search_tags]\\[affiliation\\]');
+        const result = await service.setParameters('[search_tags]\\[affiliation\\]');
 
         expect(result).toBe('foo+or+bar[affiliation]');
     });
@@ -93,7 +93,7 @@ describe('JSONataImportService.setVariables', () => {
             return null;
         });
 
-        const result = await service.setVariables('https://example.test?filter=institutions.id:[openalex_id|join:%7C]');
+        const result = await service.setParameters('https://example.test?filter=institutions.id:[openalex_id|join:%7C]');
 
         expect(result).toBe('https://example.test?filter=institutions.id:I123%7CI456');
         expect(configService.get).toHaveBeenCalledWith('openalex_id');
@@ -105,7 +105,7 @@ describe('JSONataImportService.setVariables', () => {
             return null;
         });
 
-        const result = await service.setVariables('https://example.test?filter=institutions.id:[openalex_id|join:%7C]');
+        const result = await service.setParameters('https://example.test?filter=institutions.id:[openalex_id|join:%7C]');
 
         expect(result).toBe('https://example.test?filter=institutions.id:I123');
     });
@@ -116,19 +116,19 @@ describe('JSONataImportService.setVariables', () => {
             return null;
         });
 
-        const result = await service.setVariables('https://example.test?filter=institutions.id:[openalex_id|join:|]');
+        const result = await service.setParameters('https://example.test?filter=institutions.id:[openalex_id|join:|]');
 
         expect(result).toBe('https://example.test?filter=institutions.id:I123|I456');
     });
 
     it('unescapes literal brackets in safe mode as well', async () => {
-        const result = await service.setVariables('https://example.test/[year]\\[dp\\]', undefined, true);
+        const result = await service.setParameters('https://example.test/[year]\\[dp\\]', true);
 
         expect(result).toBe('https://example.test/2024[dp]');
     });
 
     it('keeps throwing for missing unescaped placeholders', async () => {
-        await expectApiError(service.setVariables('https://example.test/[missing]'), {
+        await expectApiError(service.setParameters('https://example.test/[missing]'), {
             statusCode: 400,
             code: ApiErrorCode.INVALID_REQUEST,
             message: 'value for missing is not available',
@@ -141,11 +141,32 @@ describe('JSONataImportService.setVariables', () => {
             return null;
         });
 
-        await expectApiError(service.setVariables('https://example.test/[openalex_id|first]'), {
+        await expectApiError(service.setParameters('https://example.test/[openalex_id|first]'), {
             statusCode: 400,
             code: ApiErrorCode.INVALID_REQUEST,
             message: 'operation for openalex_id is not supported',
         });
+    });
+
+    it('keeps runtime placeholders during parameter replacement', async () => {
+        const result = await service.setParameters('https://example.test/[doi]/[id]/[lookup_id]?offset=[offset]&page=[page]');
+
+        expect(result).toBe('https://example.test/[doi]/[id]/[lookup_id]?offset=[offset]&page=[page]');
+        expect(configService.get).not.toHaveBeenCalledWith('doi');
+        expect(configService.get).not.toHaveBeenCalledWith('id');
+        expect(configService.get).not.toHaveBeenCalledWith('lookup_id');
+        expect(configService.get).not.toHaveBeenCalledWith('offset');
+        expect(configService.get).not.toHaveBeenCalledWith('page');
+    });
+
+    it('applies runtime variables after parameter replacement', async () => {
+        const query = await service.setParameters('https://example.test/[doi]/[id]?offset=[offset]&page=[page]\\[dp\\]');
+        const result = (service as any).applyVariables(
+            query,
+            service.setVariables(100, 3, '10.123/test', 'item-1')
+        );
+
+        expect(result).toBe('https://example.test/10.123/test/item-1?offset=100&page=3[dp]');
     });
 
     it('surfaces JSONata get_items errors as invalid request errors', async () => {
