@@ -309,6 +309,63 @@ describe('JSONataImportService URL parameters', () => {
         await expect(promise).resolves.toBe(response);
         jest.useRealTimers();
     });
+
+    it('keeps legacy lookup pagination fields working when URLs have no placeholders', async () => {
+        jest.useFakeTimers();
+        const response = { data: { ok: true } };
+        http.get.mockReturnValue(of(response));
+
+        (service as any).lookupURL = 'https://example.test/search?term=test';
+        (service as any).max_res = 1000;
+        (service as any).max_res_name = 'retmax';
+        (service as any).offset_name = 'retstart';
+        (service as any).useLegacyLimitParameter = true;
+        (service as any).useLegacyCursorParameter = true;
+        (service as any).delayInMs = 0;
+
+        const promise = firstValueFrom((service as any).retrieveLookupRequest(100));
+        jest.advanceTimersByTime(0);
+        await Promise.resolve();
+
+        expect(http.get).toHaveBeenCalledWith('https://example.test/search?term=test&retmax=1000&retstart=100');
+        await expect(promise).resolves.toBe(response);
+        jest.useRealTimers();
+    });
+
+    it('keeps legacy item pagination fields working when URLs have no placeholders', async () => {
+        jest.useFakeTimers();
+        const response = { data: { ok: true } };
+        http.get.mockReturnValue(of(response));
+
+        (service as any).url = 'https://example.test/items?term=test';
+        (service as any).max_res = 25;
+        (service as any).max_res_name = 'rows';
+        (service as any).offset_name = 'offset';
+        (service as any).useLegacyLimitParameter = true;
+        (service as any).useLegacyCursorParameter = true;
+        (service as any).delayInMs = 0;
+
+        const promise = firstValueFrom((service as any).request(50));
+        jest.advanceTimersByTime(0);
+        await Promise.resolve();
+
+        expect(http.get).toHaveBeenCalledWith('https://example.test/items?term=test&rows=25&offset=50');
+        await expect(promise).resolves.toBe(response);
+        jest.useRealTimers();
+    });
+
+    it('keeps legacy count offset fields working when count URLs have no placeholders', async () => {
+        const response = { data: { ok: true } };
+        http.get.mockReturnValue(of(response));
+
+        (service as any).url_count = 'https://example.test/count?term=test';
+        (service as any).offset_name = 'offset';
+        (service as any).offset_count = 0;
+        (service as any).useLegacyCursorParameter = true;
+
+        await expect(firstValueFrom((service as any).retrieveCountRequest())).resolves.toBe(response);
+        expect(http.get).toHaveBeenCalledWith('https://example.test/count?term=test&offset=0');
+    });
 });
 
 describe('JSONataImportService workflow report status', () => {

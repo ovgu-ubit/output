@@ -134,6 +134,8 @@ export class JSONataImportService extends AbstractImportService {
     protected offset_name = 'offset';
     protected offset_count = 0;
     protected offset_start = 0;
+    private useLegacyLimitParameter = false;
+    private useLegacyCursorParameter = false;
     protected parallelCalls = 1;
     protected delayInMs = 200;
 
@@ -169,8 +171,10 @@ export class JSONataImportService extends AbstractImportService {
         this.url = this.importDefinition.strategy.url_items;
         this.url_count = this.importDefinition.strategy.url_count;
         this.max_res = this.importDefinition.strategy.max_res ?? this.max_res;
+        this.useLegacyLimitParameter = !!this.importDefinition.strategy.max_res_name;
         this.max_res_name = this.importDefinition.strategy.max_res_name ?? '';
         this.mode = this.importDefinition.strategy.request_mode ?? this.mode;
+        this.useLegacyCursorParameter = !!this.importDefinition.strategy.offset_name;
         this.offset_name = this.importDefinition.strategy.offset_name ?? '';
         this.offset_count = this.importDefinition.strategy.offset_count ?? this.offset_count;
         this.offset_start = this.importDefinition.strategy.offset_start ?? this.offset_start;
@@ -280,6 +284,36 @@ export class JSONataImportService extends AbstractImportService {
         }
 
         return result;
+    }
+
+    private appendLegacyQueryParameters(url: string, params: Record<string, string | number | undefined>): string {
+        const entries = Object.entries(params).filter(([, value]) => value !== undefined && value !== '');
+        if (entries.length === 0) return url;
+
+        const separator = url.includes('?') ? '&' : '?';
+        return url + separator + entries.map(([key, value]) => `${key}=${value}`).join('&');
+    }
+
+    private addLegacyPagingParameters(
+        url: string,
+        variables: RuntimeVariables,
+        options: { includeLimit: boolean, includeCursor: boolean },
+    ): string {
+        const params: Record<string, string | number | undefined> = {};
+        if (options.includeLimit && this.useLegacyLimitParameter && this.max_res_name && !this.hasQueryParameter(url, this.max_res_name)) {
+            params[this.max_res_name] = this.max_res;
+        }
+        if (options.includeCursor && this.useLegacyCursorParameter && this.offset_name && !this.hasQueryParameter(url, this.offset_name)) {
+            params[this.offset_name] = this.mode === 'page' ? variables.page : variables.offset;
+        }
+        return this.appendLegacyQueryParameters(url, params);
+    }
+
+    private hasQueryParameter(url: string, name: string): boolean {
+        const queryStart = url.indexOf('?');
+        if (queryStart === -1) return false;
+        const query = url.slice(queryStart + 1).split('#')[0];
+        return query.split('&').some(part => part.split('=')[0] === name);
     }
 
     private async getSafeUrl(queryString: string, variables: RuntimeVariables = {}): Promise<string> {
@@ -1095,27 +1129,30 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected retrieveCountRequest(): Observable<AxiosResponse> {
-        const url = this.applyVariables(
+        const variables: RuntimeVariables = { offset: this.offset_count };
+        const url = this.addLegacyPagingParameters(this.applyVariables(
             this.url_count,
-            { offset: this.offset_count }
-        );
+            variables
+        ), variables, { includeLimit: false, includeCursor: true });
         return this.http.get(url);
     }
     protected delayedGet(url: string): Observable<AxiosResponse> {
         return timer(this.delayInMs).pipe(concatMap(() => this.http.get(url)));
     }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
-        const url = this.applyVariables(
+        const variables: RuntimeVariables = { offset, page: offset };
+        const url = this.addLegacyPagingParameters(this.applyVariables(
             this.lookupURL,
-            { offset, page: offset }
-        );
+            variables
+        ), variables, { includeLimit: true, includeCursor: true });
         return this.delayedGet(url);
     }
     protected request(offset?: number, page?: number): Observable<AxiosResponse> {
-        const url = this.applyVariables(
+        const variables: RuntimeVariables = { offset, page };
+        const url = this.addLegacyPagingParameters(this.applyVariables(
             this.url,
-            { offset, page }
-        );
+            variables
+        ), variables, { includeLimit: true, includeCursor: true });
         return this.delayedGet(url);
     }
 
