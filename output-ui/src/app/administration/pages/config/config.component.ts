@@ -39,7 +39,7 @@ export class ConfigComponent implements OnInit {
       next: (configs) => {
         this.configs = configs.map(config => ({
           ...config,
-          editedValue: JSON.parse(JSON.stringify(config.value))
+          editedValue: this.cloneValue(config.value)
         }));
         this.loading = false;
       },
@@ -62,8 +62,8 @@ export class ConfigComponent implements OnInit {
     const payload = config.editedValue;
     this.configService.set(config.key, payload).subscribe({
       next: (updated) => {
-        config.value = updated.value;
-        config.editedValue = updated.value;
+        config.value = this.cloneValue(updated.value);
+        config.editedValue = this.cloneValue(updated.value);
         this.busy = false;
         this.snackBar.open('Konfiguration gespeichert.', 'Super!', {
           duration: 3000,
@@ -112,7 +112,12 @@ export class ConfigComponent implements OnInit {
   }
 
   reset(config: EditableConfig) {
-    config.editedValue = config.value ?? '';
+    config.editedValue = this.cloneValue(config.value ?? '');
+  }
+
+  private cloneValue<T>(value: T): T {
+    if (value === undefined) return value;
+    return JSON.parse(JSON.stringify(value));
   }
 
   getLink() {

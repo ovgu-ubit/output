@@ -13,10 +13,7 @@ describe('validateImportWorkflow', () => {
             strategy: {
                 url_lookup: 'https://example.org/search?term=[search_tags]',
                 url_retrieve: 'https://example.org/items/[id]',
-                max_res: 100,
-                max_res_name: 'retmax',
                 request_mode: 'offset',
-                offset_name: 'retstart',
                 offset_start: 0,
                 delayInMs: 0,
                 parallelCalls: 1,
@@ -50,10 +47,7 @@ describe('validateImportWorkflow', () => {
             strategy: {
                 url_count: 'https://example.org/count',
                 url_items: 'https://example.org/items',
-                max_res: 100,
-                max_res_name: 'retmax',
                 request_mode: 'offset',
-                offset_name: 'retstart',
                 offset_start: 0,
                 delayInMs: 0,
                 parallelCalls: 1,
@@ -86,10 +80,7 @@ describe('validateImportWorkflow', () => {
             strategy: {
                 url_lookup: 'https://example.org/search',
                 url_retrieve: 'https://example.org/items/[id]',
-                max_res: 100,
-                max_res_name: 'retmax',
                 request_mode: 'offset',
-                offset_name: 'retstart',
                 offset_start: 0,
                 delayInMs: 0,
                 parallelCalls: 1,

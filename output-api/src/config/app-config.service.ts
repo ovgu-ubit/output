@@ -67,6 +67,27 @@ export class AppConfigService {
         }
     }
 
+    public async normalizeAtomicArrayValues(keys: string[]) {
+        if (!keys.length) return;
+        const rows = await this.repository.find({
+            select: ['id', 'key', 'value'],
+            where: { key: In(keys) }
+        });
+        const updates = rows
+            .filter(row =>
+                row.id !== undefined &&
+                row.value !== null &&
+                row.value !== undefined &&
+                !Array.isArray(row.value) &&
+                typeof row.value !== 'object'
+            )
+            .map(row => ({ id: row.id, value: [row.value] }));
+
+        if (updates.length) {
+            await this.repository.save(updates);
+        }
+    }
+
     async reconcileDefaults(defaults: Record<string, unknown>, descriptions: Record<string, string>, scopes: Record<string, ConfigScope> = {}) {
         // schon vorhandene holen
         const existing = await this.repository.find({
@@ -156,4 +177,3 @@ export class AppConfigService {
         }
     }
 }
-

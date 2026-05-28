@@ -75,9 +75,10 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected parallelCalls = 1;
 
     async setReportingYear(year: string) {
-        this.id = await this.configService.get('openalex_id')
+        const openalexIDs = await this.configService.get('openalex_id') as string[];
+        this.id = openalexIDs.join('|');
         let tmp = `publication_year:${year}`;
-        tmp = tmp += `,institutions.id:${this.id}`
+        tmp += `,institutions.id:${this.id}`
         this.params = [
             { key: 'filter', value: tmp }]
     }

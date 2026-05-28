@@ -84,7 +84,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   today = new Date();
   disabled = false;
   licenses = ['cc-by', 'cc-by-nc', 'cc-by-nd', 'cc-by-sa', 'cc-by-nc-nd', 'cc-by-nc-sa', 'Sonstige'];
-  currencies = ['EUR', 'USD', 'CHF', 'GBP'];
+  currencies = ['EUR', 'USD', 'CHF', 'GBP', 'AUD', 'JPY', 'Andere'];
   private readonly defaultDialogWidth: string;
   private readonly defaultDialogHeight = 'min(800px, calc(100vh - 32px))';
   optional_fields: {

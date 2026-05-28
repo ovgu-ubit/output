@@ -72,7 +72,8 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 
     async setReportingYear(year: string) {
         this.param_string = await this.configService.get('SECRET_OAM');
-        this.ror_id = await this.configService.get('ror_id');
+        const ror_ids = await this.configService.get('ror_id') as string[];
+        this.ror_id = ror_ids.join('","');
         this.year = year;
     }
 
@@ -80,11 +81,11 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     ror_id;
 
     protected retrieveCountRequest() {
-         return this.http.get(`${this.url}token=${this.param_string}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}}`)
+         return this.http.get(`${this.url}token=${this.param_string}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id": { $in:["${this.ror_id}"]}}}`)
     }
 
     protected request(offset:number) {
-        return this.http.get(`${this.url}token=${this.param_string}&query={find:"Publications", filter:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}, limit: ${this.max_res}, skip: ${offset}}`)
+        return this.http.get(`${this.url}token=${this.param_string}&query={find:"Publications", filter:{year:${this.year}, "source_data.organisations._id": { $in:["${this.ror_id}"]}}, limit: ${this.max_res}, skip: ${offset}}`)
     }
 
     protected importTest(element: any): boolean {

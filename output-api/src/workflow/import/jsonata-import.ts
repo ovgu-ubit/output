@@ -72,6 +72,20 @@ export interface JSONataParsedObject {
 
 type RequestMode = 'offset' | 'page';
 
+type Placeholder = {
+    expression: string;
+    key: string;
+    operation?: string;
+};
+
+type RuntimeVariables = {
+    offset?: number;
+    page?: number;
+    doi?: string;
+    id?: string | number;
+    lookup_id?: string | number;
+};
+
 @Injectable()
 export class JSONataImportService extends AbstractImportService {
 
@@ -120,6 +134,8 @@ export class JSONataImportService extends AbstractImportService {
     protected offset_name = 'offset';
     protected offset_count = 0;
     protected offset_start = 0;
+    private useLegacyLimitParameter = false;
+    private useLegacyCursorParameter = false;
     protected parallelCalls = 1;
     protected delayInMs = 200;
 
@@ -132,7 +148,6 @@ export class JSONataImportService extends AbstractImportService {
     private affiliationText = '';
     protected search_text_combiner;
 
-    private completeURL = '';
     private lookupURL = '';
     private retrieveURL = '';
     private lookupFormat = 'json';
@@ -155,12 +170,14 @@ export class JSONataImportService extends AbstractImportService {
         this.importConfig = importDefinition.mapping;
         this.url = this.importDefinition.strategy.url_items;
         this.url_count = this.importDefinition.strategy.url_count;
-        this.max_res = this.importDefinition.strategy.max_res;
-        this.max_res_name = this.importDefinition.strategy.max_res_name;
-        this.mode = this.importDefinition.strategy.request_mode;
-        this.offset_name = this.importDefinition.strategy.offset_name;
-        this.offset_count = this.importDefinition.strategy.offset_count;
-        this.offset_start = this.importDefinition.strategy.offset_start;
+        this.max_res = this.importDefinition.strategy.max_res ?? this.max_res;
+        this.useLegacyLimitParameter = !!this.importDefinition.strategy.max_res_name;
+        this.max_res_name = this.importDefinition.strategy.max_res_name ?? '';
+        this.mode = this.importDefinition.strategy.request_mode ?? this.mode;
+        this.useLegacyCursorParameter = !!this.importDefinition.strategy.offset_name;
+        this.offset_name = this.importDefinition.strategy.offset_name ?? '';
+        this.offset_count = this.importDefinition.strategy.offset_count ?? this.offset_count;
+        this.offset_start = this.importDefinition.strategy.offset_start ?? this.offset_start;
         this.parallelCalls = this.importDefinition.strategy.parallelCalls;
         this.search_text_combiner = this.importDefinition.strategy.search_text_combiner
         this.get_doi_item = this.importDefinition.strategy.get_doi_item;
@@ -192,9 +209,11 @@ export class JSONataImportService extends AbstractImportService {
         if (this.affiliationText) this.affiliationText = this.affiliationText.slice(0, this.affiliationText.length - this.search_text_combiner.length)
 
         //process query string
-        this.url = await this.setVariables(this.url);
-        this.url_count = await this.setVariables(this.url_count);
-        this.lookupURL = await this.setVariables(this.lookupURL);
+        this.url = await this.setParameters(this.url);
+        this.url_count = await this.setParameters(this.url_count);
+        this.lookupURL = await this.setParameters(this.lookupURL);
+        this.retrieveURL = await this.setParameters(this.retrieveURL);
+        this.url_doi = await this.setParameters(this.url_doi);
 
         this.name = this.importDefinition.label + '_v' + this.importDefinition.version;
 
@@ -206,37 +225,171 @@ export class JSONataImportService extends AbstractImportService {
                 reporting_year: this.reporting_year ?? undefined,
                 search_text: this.searchText ? this.searchText : undefined,
                 affiliation_text: this.affiliationText ? this.affiliationText : undefined,
-                url: await this.setVariables(this.url, undefined, true) ?? undefined,
-                url_count: await this.setVariables(this.url_count, undefined, true) ?? undefined,
-                url_lookup: await this.setVariables(this.lookupURL, undefined, true) ?? undefined,
-                url_retrieve: await this.setVariables(this.retrieveURL, undefined, true) ?? undefined,
-                url_doi: await this.setVariables(this.url_doi, undefined, true) ?? undefined,
+                url: await this.getSafeUrl(this.importDefinition.strategy.url_items) ?? undefined,
+                url_count: await this.getSafeUrl(this.importDefinition.strategy.url_count) ?? undefined,
+                url_lookup: await this.getSafeUrl(this.importDefinition.strategy.url_lookup) ?? undefined,
+                url_retrieve: await this.getSafeUrl(this.importDefinition.strategy.url_retrieve) ?? undefined,
+                url_doi: await this.getSafeUrl(this.importDefinition.strategy.url_doi) ?? undefined,
                 enrich_whereClause: this.enrich_whereClause ?? undefined,
             }
         })
     }
 
-    async setVariables(queryString: string, doi?: string, safe = false, id?: string | number): Promise<string> {
+    async setParameters(queryString: string, safe = false): Promise<string> {
         if (!queryString) return null;
         let result = queryString;
         const regex = /(?<!\\)\[([^\]]+)\]/g
-        const keys = [...result.matchAll(regex)].map(m => m[1]);
-        const values = await Promise.all(keys.map(k => this.configService.get(k)));
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
+        const placeholders = [...result.matchAll(regex)].map(m => this.parsePlaceholder(m[1]));
+        for (const placeholder of placeholders) {
+            const key = placeholder.key;
+            if (this.isRuntimeVariable(key)) continue;
+
             let value;
             if (key === 'year') value = this.reporting_year;
             else if (key === 'search_tags') value = this.searchText;
-            else if (key === 'doi') value = doi;
-            else if (key === 'id' || key === 'lookup_id') value = id;
             else if (key === 'affiliation_tags') value = this.affiliationText;
-            else if (safe && key.includes('SECRET')) value = key
-            else value = values[i] ?? ""; // oder Fehler werfen
+            else if (key === 'max_res') value = this.max_res;
+            else if (key === 'max_res_name') value = this.max_res_name;
+            else if (key === 'offset_name') value = this.offset_name;
+            else if (key === 'offset_count') value = this.offset_count;
+            else if (safe) continue;
+            else value = await this.configService.get(key) ?? ""; // oder Fehler werfen
 
-            if (value) result = result.replace(`[${key}]`, value);
+            if (placeholder.operation) value = this.applyPlaceholderOperation(placeholder, value);
+
+            if (value !== undefined && value !== null && value !== '') result = result.replace(`[${placeholder.expression}]`, () => String(value));
             else if (!safe) throw createInvalidRequestHttpException(`value for ${key} is not available`);
         }
         return result.replace(/\\\[/g, '[').replace(/\\\]/g, ']');
+    }
+
+    private applyVariables(queryString: string, variables: RuntimeVariables = {}, safe = false): string {
+        if (!queryString) return null;
+        let result = queryString;
+        const regex = /(?<!\\)\[([^\]]+)\]/g
+        const placeholders = [...result.matchAll(regex)].map(m => this.parsePlaceholder(m[1]));
+
+        for (const placeholder of placeholders) {
+            const key = placeholder.key;
+            if (!this.isRuntimeVariable(key)) continue;
+
+            let value: unknown = variables[key];
+            if (placeholder.operation) value = this.applyPlaceholderOperation(placeholder, value);
+
+            if (value !== undefined && value !== null && value !== '') {
+                result = result.replace(`[${placeholder.expression}]`, () => String(value));
+            } else if (!safe) {
+                throw createInvalidRequestHttpException(`value for ${key} is not available`);
+            }
+        }
+
+        return result;
+    }
+
+    private appendLegacyQueryParameters(url: string, params: Record<string, string | number | undefined>): string {
+        const entries = Object.entries(params).filter(([, value]) => value !== undefined && value !== '');
+        if (entries.length === 0) return url;
+
+        const separator = url.includes('?') ? '&' : '?';
+        return url + separator + entries.map(([key, value]) => `${key}=${value}`).join('&');
+    }
+
+    private addLegacyPagingParameters(
+        url: string,
+        variables: RuntimeVariables,
+        options: { includeLimit: boolean, includeCursor: boolean },
+    ): string {
+        const params: Record<string, string | number | undefined> = {};
+        if (options.includeLimit && this.useLegacyLimitParameter && this.max_res_name && !this.hasQueryParameter(url, this.max_res_name)) {
+            params[this.max_res_name] = this.max_res;
+        }
+        if (options.includeCursor && this.useLegacyCursorParameter && this.offset_name && !this.hasQueryParameter(url, this.offset_name)) {
+            params[this.offset_name] = this.mode === 'page' ? variables.page : variables.offset;
+        }
+        return this.appendLegacyQueryParameters(url, params);
+    }
+
+    private hasQueryParameter(url: string, name: string): boolean {
+        const queryStart = url.indexOf('?');
+        if (queryStart === -1) return false;
+        const query = url.slice(queryStart + 1).split('#')[0];
+        return query.split('&').some(part => part.split('=')[0] === name);
+    }
+
+    private async getSafeUrl(queryString: string, variables: RuntimeVariables = {}): Promise<string> {
+        return this.applyVariables(await this.setParameters(queryString, true), variables, true);
+    }
+
+    private isRuntimeVariable(key: string): key is keyof RuntimeVariables {
+        return ['offset', 'page', 'doi', 'id', 'lookup_id'].includes(key);
+    }
+
+    private parsePlaceholder(expression: string): Placeholder {
+        const pipeIndex = expression.indexOf('|');
+        if (pipeIndex === -1) {
+            return { expression, key: expression };
+        }
+
+        return {
+            expression,
+            key: expression.slice(0, pipeIndex),
+            operation: expression.slice(pipeIndex + 1),
+        };
+    }
+
+    private applyPlaceholderOperation(placeholder: Placeholder, value: unknown): unknown {
+        const separatorPrefix = 'join:';
+        if (!placeholder.operation?.startsWith(separatorPrefix)) {
+            throw createInvalidRequestHttpException(`operation for ${placeholder.key} is not supported`);
+        }
+
+        const separator = placeholder.operation.slice(separatorPrefix.length);
+        if (!Array.isArray(value)) return value;
+
+        return value.join(separator);
+    }
+
+    private async evaluateJsonataExpression(context: string, expression: string, data: unknown): Promise<unknown> {
+        try {
+            const mapping = jsonata(expression);
+            return await mapping.evaluate(data);
+        } catch (err) {
+            throw createInvalidRequestHttpException(
+                `JSONata expression for ${context} failed: ${this.getErrorMessage(err)}`,
+                [{
+                    path: context,
+                    code: 'jsonata',
+                    message: this.getErrorMessage(err),
+                }]
+            );
+        }
+    }
+
+    private ensureArrayResult(context: string, value: unknown): unknown[] {
+        if (Array.isArray(value)) return value;
+        if (value === null || value === undefined) return [];
+        throw createInvalidRequestHttpException(
+            `JSONata expression for ${context} must return an array.`,
+            [{
+                path: context,
+                code: 'jsonata_result_type',
+                message: 'Expected an array result.',
+            }]
+        );
+    }
+
+    private getErrorMessage(error: unknown): string {
+        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === 'string') return error;
+        try {
+            return JSON.stringify(error);
+        } catch {
+            return `${error}`;
+        }
+    }
+
+    private getReportErrorMessage(error: unknown): string {
+        return this.getErrorMessage(error);
     }
 
     protected parseResponseData(response: AxiosResponse, format = this.importDefinition.strategy.format) {
@@ -248,63 +401,38 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected async getData(response: AxiosResponse): Promise<JSONataParsedObject[]> {
-        try {
-            const data = this.parseResponseData(response);
-
-            const mapping = jsonata(this.importDefinition.strategy.get_items)
-            const items = (await mapping.evaluate(data))
-            return await Promise.all(items.map(e => this.transform(e)))
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const data = this.parseResponseData(response);
+        const items = await this.evaluateJsonataExpression('strategy.get_items', this.importDefinition.strategy.get_items, data);
+        const itemArray = this.ensureArrayResult('strategy.get_items', items);
+        return await Promise.all(itemArray.map(e => this.transform(e)))
     }
 
     protected async getDataEnrich(response: AxiosResponse): Promise<JSONataParsedObject> {
-        try {
-            const data = this.parseResponseData(response);
-            const mapping = jsonata(this.importDefinition.strategy.get_doi_item)
-            const item = (await mapping.evaluate(data))
-            return await this.transform(item)
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const data = this.parseResponseData(response);
+        const item = await this.evaluateJsonataExpression('strategy.get_doi_item', this.importDefinition.strategy.get_doi_item, data);
+        return await this.transform(item)
     }
 
     protected async getLookupIds(response: AxiosResponse): Promise<(string | number)[]> {
-        try {
-            const data = this.parseResponseData(response, this.lookupFormat);
-            const mapping = jsonata(this.importDefinition.strategy.get_lookup_ids)
-            const ids = await mapping.evaluate(data);
-            if (!ids) return [];
-            return Array.isArray(ids) ? ids : [ids];
-        } catch (err) {
-            console.log(err)
-            return [];
-        }
+        const data = this.parseResponseData(response, this.lookupFormat);
+        const ids = await this.evaluateJsonataExpression('strategy.get_lookup_ids', this.importDefinition.strategy.get_lookup_ids, data);
+        if (!ids) return [];
+        return Array.isArray(ids) ? ids as (string | number)[] : [ids as string | number];
     }
 
     protected async getDataRetrieve(response: AxiosResponse): Promise<JSONataParsedObject> {
-        try {
-            const data = this.parseResponseData(response, this.retrieveFormat);
-            const mapping = jsonata(this.importDefinition.strategy.get_retrieve_item)
-            const item = await mapping.evaluate(data);
-            return await this.transform(item)
-        } catch (err) {
-            console.log(err)
-            return null;
-        }
+        const data = this.parseResponseData(response, this.retrieveFormat);
+        const item = await this.evaluateJsonataExpression('strategy.get_retrieve_item', this.importDefinition.strategy.get_retrieve_item, data);
+        return await this.transform(item)
     }
 
     public async setReportingYear(year: string) {
         this.reporting_year = year;
     }
 
-    async transform(element: AxiosResponse): Promise<JSONataParsedObject> {
-        const mapping = jsonata(this.importConfig)
-        const obj = (await mapping.evaluate({ ...element, params: { cfg: this.config } }))
-        return obj;
+    async transform(element: unknown): Promise<JSONataParsedObject> {
+        const source = element && typeof element === 'object' ? element as object : {};
+        return await this.evaluateJsonataExpression('mapping', this.importConfig, { ...source, params: { cfg: this.config } }) as JSONataParsedObject;
     }
 
     protected async collectLookupIds(): Promise<(string | number)[]> {
@@ -463,8 +591,8 @@ export class JSONataImportService extends AbstractImportService {
                     })
                 }
 
-                result.read.source = await this.setVariables(this.url_doi, pub.doi, true);
-                ob$ = this.http.get(await this.setVariables(this.url_doi, pub.doi, false))
+                result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_doi, { doi: pub?.doi });
+                ob$ = this.http.get(this.applyVariables(this.url_doi, { doi: pub.doi }))
                 try {
                     resp = await firstValueFrom(ob$) as AxiosResponse;
                     result.read.response = this.collectKeys(resp.data)
@@ -531,7 +659,7 @@ export class JSONataImportService extends AbstractImportService {
             case ImportStrategy.URL_LOOKUP_AND_RETRIEVE: {
                 let ids: (string | number)[] = [];
 
-                result.read.source = await this.setVariables(this.lookupURL, undefined, true);
+                result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_lookup);
                 try {
                     ids = await this.collectLookupIds();
                     count = ids.length;
@@ -552,7 +680,7 @@ export class JSONataImportService extends AbstractImportService {
 
                 try {
                     const id = ids[pos > 0 ? pos - 1 : 0];
-                    ob$ = this.http.get(await this.setVariables(this.retrieveURL, undefined, false, id));
+                    ob$ = this.http.get(this.applyVariables(this.retrieveURL, { id, lookup_id: id }));
                     resp = await firstValueFrom(ob$);
                     result.read.response = this.collectKeys(resp.data)
                 } catch (err) {
@@ -588,14 +716,12 @@ export class JSONataImportService extends AbstractImportService {
             }
             case ImportStrategy.URL_QUERY_OFFSET:
             default:
-                this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
-
-                result.read.source = await this.setVariables(this.url_count, undefined, true);
+                result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_count, { offset: this.offset_count });
                 try {
                     resp_count = await firstValueFrom(this.retrieveCountRequest())
                 } catch (err) {
                     result.result.issues.push({
-                        message: 'Error retrieving count with ' + this.completeURL, error: err instanceof Error
+                        message: 'Error retrieving count with ' + this.url_count, error: err instanceof Error
                             ? {
                                 name: err.name,
                                 message: err.message,
@@ -623,10 +749,10 @@ export class JSONataImportService extends AbstractImportService {
                 if (pos > count) result.result.issues.push({ message: 'Position greater than count', error: null })
 
                 if (this.mode === 'offset') {
-                    ob$ = this.request(this.offset_start + pos - 1);
+                    ob$ = this.request(this.offset_start + pos);
                 } else if (this.mode === 'page') {
                     const page = this.offset_start + Math.floor(pos / this.max_res)
-                    ob$ = this.request(page);
+                    ob$ = this.request(undefined, page);
                 }
 
                 try {
@@ -634,7 +760,7 @@ export class JSONataImportService extends AbstractImportService {
                     result.read.response = this.collectKeys(resp.data)
                 } catch (err) {
                     result.result.issues.push({
-                        message: 'Error while retrieving items with ' + this.completeURL, error: err instanceof Error
+                        message: 'Error while retrieving items with ' + this.url, error: err instanceof Error
                             ? {
                                 name: err.name,
                                 message: err.message,
@@ -703,7 +829,7 @@ export class JSONataImportService extends AbstractImportService {
                 }
             });
         } else throw new NotImplementedException();
-        let data = [];
+        let data: JSONataParsedObject[];
         try {
             data = await Promise.all(jsonData.map(e => this.transform(e)))
         } catch (err) {
@@ -762,7 +888,7 @@ export class JSONataImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async importLookupAndRetrieve(update: boolean, by_user?: string, dryRun = false) {
-        if (!this.lookupURL || !this.retrieveURL || !this.max_res_name || !this.max_res || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_lookup_ids || !this.importDefinition.strategy.get_retrieve_item) {
+        if (!this.lookupURL || !this.retrieveURL || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_lookup_ids || !this.importDefinition.strategy.get_retrieve_item) {
             throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         }
 
@@ -792,7 +918,7 @@ export class JSONataImportService extends AbstractImportService {
 
         const obs$ = [];
         for (const id of ids) {
-            const url = await this.setVariables(this.retrieveURL, undefined, false, id);
+            const url = this.applyVariables(this.retrieveURL, { id, lookup_id: id });
             obs$.push(this.delayedGet(url));
         }
 
@@ -808,7 +934,7 @@ export class JSONataImportService extends AbstractImportService {
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),
-                        message: `Error while processing data chunk: ${e}`
+                        message: `Error while processing data chunk: ${this.getReportErrorMessage(e)}`
                     });
                 } finally {
                     if (this.progress !== 0) {
@@ -834,11 +960,9 @@ export class JSONataImportService extends AbstractImportService {
 
     public async import(update: boolean, by_user?: string, dryRun = false) {
         this.dryRun = dryRun;
-        if (!this.url || !this.max_res_name || !this.max_res || !this.url_count || this.offset_count == undefined || !this.offset_name || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
+        if (!this.url || !this.url_count || this.offset_count == undefined || this.offset_start == undefined || !this.importDefinition.strategy.get_count || !this.importDefinition.strategy.get_items)
             throw createInvalidRequestHttpException('Import cannot be run due to missing parameters.')
         await this.startWorkflowRun(by_user, dryRun);
-
-        this.completeURL = this.url + `&${this.max_res_name}=${this.max_res}`;
 
         this.processedPublications = 0;
         this.newPublications = [];
@@ -871,7 +995,7 @@ export class JSONataImportService extends AbstractImportService {
             } else if (this.mode === 'page') {
                 let page = this.offset_start - 1;
                 do {
-                    obs$.push(this.request(++page));
+                    obs$.push(this.request(undefined, ++page));
                 } while (page * this.max_res < this.numberOfPublications);
             }
             return null;
@@ -891,7 +1015,7 @@ export class JSONataImportService extends AbstractImportService {
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),
-                        message: `Error while processing data chunk: ${e}`
+                        message: `Error while processing data chunk: ${this.getReportErrorMessage(e)}`
                     });
                 } finally {
                     if (this.progress !== 0) {
@@ -939,7 +1063,7 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
 
         for (const pub of publications) {
-            const url = await this.setVariables(this.url_doi, pub.doi);
+            const url = this.applyVariables(this.url_doi, { doi: pub.doi });
             obs$.push(this.delayedGet(url))
         }
 
@@ -979,7 +1103,7 @@ export class JSONataImportService extends AbstractImportService {
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),
-                        message: `Error while processing data chunk: ${e}`
+                        message: `Error while processing data chunk: ${this.getReportErrorMessage(e)}`
                     });
                 } finally {
                     if (this.progress !== 0) {
@@ -1005,18 +1129,30 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected retrieveCountRequest(): Observable<AxiosResponse> {
-        const url = this.url_count + `&${this.offset_name}=` + this.offset_count;
+        const variables: RuntimeVariables = { offset: this.offset_count, page: this.offset_count };
+        const url = this.addLegacyPagingParameters(this.applyVariables(
+            this.url_count,
+            variables
+        ), variables, { includeLimit: false, includeCursor: true });
         return this.http.get(url);
     }
     protected delayedGet(url: string): Observable<AxiosResponse> {
         return timer(this.delayInMs).pipe(concatMap(() => this.http.get(url)));
     }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
-        const url = this.lookupURL + `&${this.max_res_name}=${this.max_res}&${this.offset_name}=` + offset;
+        const variables: RuntimeVariables = { offset, page: offset };
+        const url = this.addLegacyPagingParameters(this.applyVariables(
+            this.lookupURL,
+            variables
+        ), variables, { includeLimit: true, includeCursor: true });
         return this.delayedGet(url);
     }
-    protected request(offset: number): Observable<AxiosResponse> {
-        const url = this.completeURL + `&${this.offset_name}=` + offset;
+    protected request(offset?: number, page?: number): Observable<AxiosResponse> {
+        const variables: RuntimeVariables = { offset, page };
+        const url = this.addLegacyPagingParameters(this.applyVariables(
+            this.url,
+            variables
+        ), variables, { includeLimit: true, includeCursor: true });
         return this.delayedGet(url);
     }
 

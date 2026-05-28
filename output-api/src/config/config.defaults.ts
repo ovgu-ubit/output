@@ -26,8 +26,8 @@ export const CONFIG_DEFAULTS = {
         "university hospital magdeburg",
         "universitätsmedizin magdeburg"
     ],
-    ror_id: "https://ror.org/xxxxx",
-    openalex_id: "xxxxx",
+    ror_id: ["https://ror.org/xxxxx"],
+    openalex_id: ["xxxxx"],
     doi_import_service: 'openalex',
     optional_fields: {
       abstract: false,
@@ -102,8 +102,8 @@ export const CONFIG_DESCRIPTIONS = {
     lock_timeout: "Ganze Anzahl an Minuten, für die ein geöffneter Datensatz für die Bearbeitung durch andere Nutzer:innen gesperrt wird",
     workflow_import_watchdog_timeout: "Ganze Anzahl an Minuten bis der Import-Ausführungs-Lock per Watchdog freigegeben wird",
     affiliation_tags: "Begriffe, von denen in der Affiliation einer Person mindestens einer vorkommen muss, damit sie der Einrichtung zugeordnet wird",
-    ror_id: "ROR-ID der Einrichtung als Webadresse",
-    openalex_id: "OpenAlex ID der Einrichtung",
+    ror_id: "ROR-IDs der Einrichtung als Webadressen",
+    openalex_id: "OpenAlex IDs der Einrichtung",
     doi_import_service: 'Pfad des verwendeten Anreicherungsdienst für DOI-importierte Publikationen',
     optional_fields: "Welche der optionalen Zitationsangaben sollen importiert, angereichert und angezeigt werden?",
     pub_index_columns: "Welche der möglichen Spalten sollen in der Publikationsübersicht angezeigt werden?",

@@ -35,7 +35,7 @@
     "rxjs": "~7.5.0",
     "service": "^0.1.4",
     "tslib": "^2.3.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "npm:@e965/xlsx@0.20.3",
     "zone.js": "^0.15.1"
   },
   "devDependencies": {

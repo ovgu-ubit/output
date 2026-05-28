@@ -12,6 +12,61 @@
   margin-top: 20px;
 }
 
+.issues-list {
+  display: grid;
+  gap: 12px;
+}
+
+.issue-item {
+  border: 1px solid rgba(179, 38, 30, 0.22);
+  border-left: 4px solid #b3261e;
+  border-radius: 6px;
+  background: #fff8f7;
+  padding: 12px;
+}
+
+.issue-title {
+  color: #7c1d18;
+  font-weight: 600;
+}
+
+.issue-message {
+  margin-top: 6px;
+  color: #2f2f2f;
+  overflow-wrap: anywhere;
+}
+
+.issue-details {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.issue-detail {
+  display: grid;
+  grid-template-columns: minmax(80px, max-content) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.issue-detail dt {
+  color: #666;
+  font-weight: 600;
+}
+
+.issue-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.issue-debug {
+  margin-top: 10px;
+}
+
+.issue-debug summary {
+  cursor: pointer;
+  color: #555;
+}
+
 pre {
   background-color: #f7f7f7;
   border-radius: 4px;

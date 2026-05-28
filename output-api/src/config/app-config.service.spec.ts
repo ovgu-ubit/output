@@ -113,6 +113,26 @@ describe('AppConfigService', () => {
         expect(repository.save).toHaveBeenNthCalledWith(2, { key: 'y', value: 3 });
     });
 
+    it('wraps legacy atomic config values in arrays', async () => {
+        repository.find.mockResolvedValueOnce([
+            { id: 1, key: 'ror_id', value: 'https://ror.org/xxxxx' },
+            { id: 2, key: 'openalex_id', value: ['I123'] },
+            { id: 3, key: 'ignored_object', value: { nested: true } },
+        ] as any);
+
+        await service.normalizeAtomicArrayValues(['ror_id', 'openalex_id']);
+
+        expect(repository.find).toHaveBeenCalledWith({
+            select: ['id', 'key', 'value'],
+            where: { key: expect.anything() }
+        });
+        const findArgs = repository.find.mock.calls[0][0] as any;
+        expect(findArgs.where.key._value).toEqual(['ror_id', 'openalex_id']);
+        expect(repository.save).toHaveBeenCalledWith([
+            { id: 1, value: ['https://ror.org/xxxxx'] }
+        ]);
+    });
+
     it('reconciles defaults by saving missing entries, updating descriptions, and deleting obsolete keys', async () => {
         repository.find.mockResolvedValueOnce([{ id: 1, key: 'keep', scope: 'public' }, { id: 2, key: 'remove', scope: 'user' }, {id: 3, key: 'null_value', scope: 'public'}] as any);
         repository.find.mockResolvedValueOnce([{ id: 3, key: 'null_value', scope: 'public', value: null }] as any);

@@ -65,15 +65,34 @@
                         <mat-panel-title>Probleme</mat-panel-title>
                         <mat-panel-description> {{result.result.issues?.length}} </mat-panel-description>
                     </mat-expansion-panel-header>
-                    <ul>
+                    <div class="issues-list">
                         @for (issue of result.result.issues; track issue) {
-                        <li>{{ issue.message }}
-                            <ul>
-                                <li>{{this.getErrorText(issue.error)}}</li>
-                            </ul>
-                        </li>
+                        <article class="issue-item">
+                            <div class="issue-title">{{ issue.message }}</div>
+                            @if (this.getErrorText(issue.error)) {
+                            <div class="issue-message">{{ this.getErrorText(issue.error) }}</div>
+                            }
+                            @if (this.getErrorDetails(issue.error); as details) {
+                            @if (details.length) {
+                            <dl class="issue-details">
+                                @for (detail of details; track detail.label) {
+                                <div class="issue-detail">
+                                    <dt>{{ detail.label }}</dt>
+                                    <dd>{{ detail.value }}</dd>
+                                </div>
+                                }
+                            </dl>
+                            }
+                            }
+                            @if (this.getErrorDebugText(issue.error)) {
+                            <details class="issue-debug">
+                                <summary>Technische Details</summary>
+                                <pre>{{ this.getErrorDebugText(issue.error) }}</pre>
+                            </details>
+                            }
+                        </article>
                         }
-                    </ul>
+                    </div>
                 </mat-expansion-panel>
                 }
 
