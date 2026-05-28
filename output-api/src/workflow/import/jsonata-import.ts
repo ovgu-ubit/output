@@ -1129,7 +1129,7 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected retrieveCountRequest(): Observable<AxiosResponse> {
-        const variables: RuntimeVariables = { offset: this.offset_count };
+        const variables: RuntimeVariables = { offset: this.offset_count, page: this.offset_count };
         const url = this.addLegacyPagingParameters(this.applyVariables(
             this.url_count,
             variables

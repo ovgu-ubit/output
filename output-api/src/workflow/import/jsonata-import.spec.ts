@@ -366,6 +366,20 @@ describe('JSONataImportService URL parameters', () => {
         await expect(firstValueFrom((service as any).retrieveCountRequest())).resolves.toBe(response);
         expect(http.get).toHaveBeenCalledWith('https://example.test/count?term=test&offset=0');
     });
+
+    it('keeps legacy count page fields working when count URLs have no placeholders', async () => {
+        const response = { data: { ok: true } };
+        http.get.mockReturnValue(of(response));
+
+        (service as any).url_count = 'https://example.test/count?term=test';
+        (service as any).mode = 'page';
+        (service as any).offset_name = 'page';
+        (service as any).offset_count = 1;
+        (service as any).useLegacyCursorParameter = true;
+
+        await expect(firstValueFrom((service as any).retrieveCountRequest())).resolves.toBe(response);
+        expect(http.get).toHaveBeenCalledWith('https://example.test/count?term=test&page=1');
+    });
 });
 
 describe('JSONataImportService workflow report status', () => {
