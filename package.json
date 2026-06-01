@@ -11,7 +11,9 @@
     "start:ui": "npm run build:interfaces && npm --workspace output-ui run start",
     "dev:api": "npm run build:interfaces && concurrently -k -n interfaces,api \"npm run watch:interfaces\" \"npm --workspace output run start:dev\"",
     "dev:ui": "npm run build:interfaces && concurrently -k -n interfaces,ui \"npm run watch:interfaces\" \"npm --workspace output-ui run start\"",
-    "dev": "npm run build:interfaces && concurrently -k -n interfaces,api,ui \"npm run watch:interfaces\" \"npm --workspace output run start:dev\" \"npm --workspace output-ui run start\""
+    "dev": "npm run build:interfaces && concurrently -k -n interfaces,api,ui \"npm run watch:interfaces\" \"npm --workspace output run start:dev\" \"npm --workspace output-ui run start\"",
+    "licenses:generate": "node scripts/generate-third-party-notices.mjs",
+    "licenses:check": "npm run licenses:generate"
   },
   "workspaces": [
     "output-api",
