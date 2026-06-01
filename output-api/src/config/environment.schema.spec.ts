@@ -29,6 +29,7 @@ describe('EnvSchemas', () => {
   ])('parses DEMO_MODE=%s as %s', (value, expected) => {
     const result = EnvSchemas.parse({
       ...validEnv,
+      AUTH: 'true',
       DEMO_MODE: value,
       DEMO_USER: 'demo',
       DEMO_PW: 'secret'
@@ -49,12 +50,33 @@ describe('EnvSchemas', () => {
   it('requires demo credentials when DEMO_MODE is enabled', () => {
     const result = EnvSchemas.safeParse({
       ...validEnv,
+      AUTH: 'true',
       DEMO_MODE: 'true'
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues.map(issue => issue.path.join('.'))).toEqual(expect.arrayContaining(['DEMO_USER', 'DEMO_PW']));
+    }
+  });
+
+  it.each([
+    ['false'],
+    ['0'],
+    ['enabled'],
+    [undefined],
+  ])('requires AUTH=true when DEMO_MODE is enabled and AUTH=%s', (auth) => {
+    const result = EnvSchemas.safeParse({
+      ...validEnv,
+      ...(auth === undefined ? {} : { AUTH: auth }),
+      DEMO_MODE: 'true',
+      DEMO_USER: 'demo',
+      DEMO_PW: 'secret'
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map(issue => issue.path.join('.'))).toContain('AUTH');
     }
   });
 });

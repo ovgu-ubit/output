@@ -10,6 +10,11 @@ const optionalBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+const isEnabledString = (value?: string) => {
+  if (!value) return false;
+  return ['true', '1'].includes(value.trim().toLowerCase());
+};
+
 export const EnvSchemas = z
   .object({
     AUTH: z.string().optional(),
@@ -42,6 +47,14 @@ export const EnvSchemas = z
   })
   .superRefine((env, ctx) => {
     if (!env.DEMO_MODE) return;
+
+    if (!isEnabledString(env.AUTH)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'AUTH must be true or 1 when DEMO_MODE is enabled.',
+        path: ['AUTH']
+      });
+    }
 
     if (!env.DEMO_USER) {
       ctx.addIssue({
