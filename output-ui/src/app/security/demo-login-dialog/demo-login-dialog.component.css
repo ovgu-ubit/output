@@ -1,0 +1,11 @@
+.demo-login-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+}
+
+.demo-login-error {
+  color: #b00020;
+  font-size: 0.9rem;
+}

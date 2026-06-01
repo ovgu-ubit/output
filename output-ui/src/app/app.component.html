@@ -75,7 +75,7 @@
         <button mat-button [matMenuTriggerFor]="loginMenu"> <mat-icon>face</mat-icon> {{user}}
         </button>
         <mat-menu #loginMenu="matMenu">
-          <button mat-menu-item (click)="this.details()"> Profil </button>
+          <button mat-menu-item (click)="this.details()" *ngIf="!this.demoAuth"> Profil </button>
           <button mat-menu-item (click)="this.logout()"> Logout </button>
         </mat-menu>
       </ng-container>

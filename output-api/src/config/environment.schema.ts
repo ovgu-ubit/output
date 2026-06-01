@@ -39,4 +39,23 @@ export const EnvSchemas = z
     SECRET_UNPAYWALL: z.string().optional(),
     SECRET_OAM: z.string().optional(),
     SECRET_SCOPUS: z.string().optional()
+  })
+  .superRefine((env, ctx) => {
+    if (!env.DEMO_MODE) return;
+
+    if (!env.DEMO_USER) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'DEMO_USER is required when DEMO_MODE is enabled.',
+        path: ['DEMO_USER']
+      });
+    }
+
+    if (!env.DEMO_PW) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'DEMO_PW is required when DEMO_MODE is enabled.',
+        path: ['DEMO_PW']
+      });
+    }
   });

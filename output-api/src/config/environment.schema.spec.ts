@@ -45,4 +45,16 @@ describe('EnvSchemas', () => {
       DEMO_MODE: 'enabled'
     })).toThrow();
   });
+
+  it('requires demo credentials when DEMO_MODE is enabled', () => {
+    const result = EnvSchemas.safeParse({
+      ...validEnv,
+      DEMO_MODE: 'true'
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map(issue => issue.path.join('.'))).toEqual(expect.arrayContaining(['DEMO_USER', 'DEMO_PW']));
+    }
+  });
 });
