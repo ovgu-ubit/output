@@ -2,9 +2,11 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { StartComponent } from './start/start.component';
 import { LoginGuard } from './security/login.guard';
+import { DemoInfoComponent } from './demo-info/demo-info.component';
 
 const routes: Routes = [
   { path: '', component: StartComponent, canActivate: [LoginGuard], data: { roles: null } },
+  { path: 'demo-info', component: DemoInfoComponent, canActivate: [LoginGuard], data: { roles: null } },
   {
     path: 'publications',
     loadChildren: () => import('./publications/publications.module').then(m => m.PublicationsModule),

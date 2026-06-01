@@ -83,4 +83,11 @@
     </div>
   </mat-toolbar-row>
 </mat-toolbar>
-<router-outlet></router-outlet>
+<main [class.demo-banner-offset]="this.demoAuth">
+  <router-outlet></router-outlet>
+</main>
+
+<div class="demo-banner" *ngIf="this.demoAuth">
+  <span>Demo-Version: Diese Instanz dient nur zur Erprobung.</span>
+  <a routerLink="/demo-info">Informationen zu Impressum, Datenschutz und Lizenz</a>
+</div>
