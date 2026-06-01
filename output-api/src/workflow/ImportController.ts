@@ -14,6 +14,7 @@ import { WorkflowService } from "./workflow.service";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
 import {  ImportStrategy  } from '@output/interfaces';
 import { createInvalidRequestHttpException, createNotFoundHttpException } from "../common/api-error";
+import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-policy";
 
 @Controller("import")
 @ApiTags("import")
@@ -112,8 +113,9 @@ export class ImportController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  importCSV(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
+  async importCSV(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
     if (!file || !file.originalname.endsWith('.csv')) throw createInvalidRequestHttpException('valid csv file required');
+    await this.assertDemoUploadAllowed(file, ['.csv']);
     this.csvService.setUp(file, format);
     return this.csvService.import(update, request["user"]["username"], dryRun);
   }
@@ -192,8 +194,9 @@ export class ImportController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  importExcel(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
+  async importExcel(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
     if (!file || !file.originalname.endsWith('.xlsx')) throw createInvalidRequestHttpException('valid excel file required');
+    await this.assertDemoUploadAllowed(file, ['.xlsx']);
     this.excelService.setUp(file, format);
     return this.excelService.import(update, request["user"]["username"], dryRun);
   }
@@ -261,5 +264,11 @@ export class ImportController {
     const so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw createNotFoundHttpException('Import service not found.');
     return this.importServices[so].setUpdateMapping(mapping);
+  }
+
+  private async assertDemoUploadAllowed(file: Express.Multer.File, allowedExtensions: string[]) {
+    if (isDemoModeValue(await this.configService.get('DEMO_MODE'))) {
+      assertDemoUploadAllowed(file, allowedExtensions);
+    }
   }
 }

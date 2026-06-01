@@ -14,6 +14,7 @@ import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowReportService } from "./workflow-report.service";
 import { createInvalidRequestHttpException } from "../common/api-error";
+import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-policy";
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -135,8 +136,9 @@ export class WorkflowController {
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
   @UseInterceptors(FileInterceptor('file'))
-  run_import(@Param('id') id: number, @Body('dry_run', new ParseBoolPipe({ optional: true })) dryRun: boolean, @Req() req, @Body('update', new ParseBoolPipe({ optional: true })) update: boolean,
+  async run_import(@Param('id') id: number, @Body('dry_run', new ParseBoolPipe({ optional: true })) dryRun: boolean, @Req() req, @Body('update', new ParseBoolPipe({ optional: true })) update: boolean,
     @Body('reporting_year') reporting_year?: number, @Body('ids') ids?: number[], @UploadedFile() file?: Express.Multer.File) {
+    await this.assertDemoUploadAllowed(file, ['.csv', '.xlsx']);
     return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
   }
 
@@ -256,8 +258,9 @@ export class WorkflowController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  import_import(@UploadedFile() file: Express.Multer.File) {
+  async import_import(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    await this.assertDemoUploadAllowed(file, ['.json']);
     if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importImport(file);
   }
@@ -277,8 +280,9 @@ export class WorkflowController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  import_export(@UploadedFile() file: Express.Multer.File) {
+  async import_export(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    await this.assertDemoUploadAllowed(file, ['.json']);
     if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importExport(file);
   }
@@ -298,8 +302,9 @@ export class WorkflowController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  import_validation(@UploadedFile() file: Express.Multer.File) {
+  async import_validation(@UploadedFile() file: Express.Multer.File) {
     if (!file || !file.originalname.endsWith('.json')) throw createInvalidRequestHttpException('valid json file required');
+    await this.assertDemoUploadAllowed(file, ['.json']);
     if (file.size > 5 * 1024 * 1024) throw createInvalidRequestHttpException('file size exceeds limit of 5MB');
     return this.workflowService.importValidation(file);
   }
@@ -560,5 +565,11 @@ export class WorkflowController {
     ].join('')
       + '_'
       + [pad(date.getHours()), pad(date.getMinutes()), pad(date.getSeconds())].join('');
+  }
+
+  private async assertDemoUploadAllowed(file: Express.Multer.File | undefined, allowedExtensions: string[]) {
+    if (isDemoModeValue(await this.configService.get('DEMO_MODE'))) {
+      assertDemoUploadAllowed(file, allowedExtensions);
+    }
   }
 }

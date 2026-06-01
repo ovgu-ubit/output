@@ -16,7 +16,7 @@
                 <mat-label>Publikationsjahr</mat-label>
                 <input matInput placeholder="Publikationsjahr" formControlName="reporting_year"/>
             </mat-form-field>
-            <input *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;" type="file" #fileUpload (change)="setFile($event)">
+            <input *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #fileUpload (change)="setFile($event)">
             <div *ngIf="im.path === 'csv' || im.path === 'xls'" style="display: flex; align-items: center;">{{this.csv_format?.name}}</div>
             <button *ngIf="im.path === 'csv' || im.path === 'xls'" mat-raised-button  class="secondary-button" type="button" (click)="this.csvFormat(im.path)">Import konfigurieren</button>
             <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
