@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query, Req, UseGuards, UsePipes } from "@nestjs/common";
-import { ApiBody, ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOkResponse, ApiQuery, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
@@ -15,6 +15,7 @@ export class ConfigController {
 
     @Get()
     @UseGuards(AccessGuard)
+    @ApiQuery({ name: 'key', required: false, type: String, description: 'Configuration key.' })
     async list(@Req() req: Request, @Query("key") key?: string) {
         return this.configService.listAccessibleConfig(req?.['user'], key);
     }

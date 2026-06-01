@@ -1,0 +1,27 @@
+.demo-info-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.demo-info-page h1 {
+  margin: 0 0 24px;
+}
+
+.demo-info-page section {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 20px 0;
+}
+
+.demo-info-page section:last-child {
+  border-bottom: 0;
+}
+
+.demo-info-page h2 {
+  margin: 0 0 12px;
+}
+
+.demo-info-page p {
+  line-height: 1.55;
+  margin: 0 0 12px;
+}

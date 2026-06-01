@@ -24,7 +24,7 @@
             <h3>Veröffentlicht</h3>
             <form [formGroup]="form">
                 @if (fileStrategy) {
-                <input type="file" #fileInput (change)="setFile($event)">
+                <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #fileInput (change)="setFile($event)">
                 } @else {
                 <mat-form-field appearance="fill">
                     <mat-label>Publikationsjahr</mat-label>

@@ -1,9 +1,9 @@
 {
-    "authorization_service": "cookie",
+    "authorization_service": "demo",
     "api": "api/",
     "auth_ui": "",
     "auth_api": "",
-    "security": false,
+    "security": true,
     "self": "127.0.0.1:4200/",
     "theme": "azure"
 }

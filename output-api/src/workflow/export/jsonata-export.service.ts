@@ -77,9 +77,9 @@ export class JSONataExportService extends AbstractExportService {
         (await this.configService.listDatabaseConfig('admin')).forEach((entry) => {
             config[entry.key] = entry.value;
         });
-        (await this.configService.listEnvConfig()).forEach((entry) => {
+        /*(await this.configService.listEnvConfig()).forEach((entry) => {
             config[entry.key] = entry.value;
-        });
+        });*/
         this.config = config;
 
         this.workflowReport = await this.workflowReportService.createReport({
