@@ -193,9 +193,9 @@ export class JSONataImportService extends AbstractImportService {
         (await this.configService.listDatabaseConfig('admin')).map(e => {
             this.config[e.key] = e.value;
         });
-        (await this.configService.listEnvConfig()).map(e => {
+        /*(await this.configService.listEnvConfig()).map(e => {
             this.config[e.key] = e.value;
-        });
+        });*/
         this.searchText = '';
         if (this.search_text_combiner) await this.config['search_tags'].forEach(tag => {
             this.searchText += tag + this.search_text_combiner;
