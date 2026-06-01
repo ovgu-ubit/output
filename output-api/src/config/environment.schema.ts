@@ -1,5 +1,15 @@
 import * as z from 'zod';
 
+const optionalBoolean = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (['true', '1'].includes(normalizedValue)) return true;
+  if (['false', '0'].includes(normalizedValue)) return false;
+
+  return value;
+}, z.boolean().optional());
+
 export const EnvSchemas = z
   .object({
     AUTH: z.string().optional(),
@@ -23,6 +33,9 @@ export const EnvSchemas = z
     DATABASE_NAME: z.string(),
     DATABASE_USER: z.string(),
     DATABASE_PASSWORD: z.string(),
+    DEMO_MODE: optionalBoolean,
+    DEMO_USER: z.string().optional(),
+    DEMO_PW: z.string().optional(),
     SECRET_UNPAYWALL: z.string().optional(),
     SECRET_OAM: z.string().optional(),
     SECRET_SCOPUS: z.string().optional()
