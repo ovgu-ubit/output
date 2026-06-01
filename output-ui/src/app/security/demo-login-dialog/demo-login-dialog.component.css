@@ -5,6 +5,11 @@
   min-width: 280px;
 }
 
+.demo-login-hint {
+  line-height: 1.45;
+  margin: 0;
+}
+
 .demo-login-error {
   color: #b00020;
   font-size: 0.9rem;
