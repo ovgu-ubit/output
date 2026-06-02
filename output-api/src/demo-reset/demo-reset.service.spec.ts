@@ -133,6 +133,22 @@ describe('DemoResetService', () => {
     expect(restoreCommand).toContain('ALTER TABLE %s ALTER CONSTRAINT %I %s');
   });
 
+  it('resets the preserved migrations sequence after importing the snapshot', async () => {
+    const { processRunner, service } = createService();
+
+    await service.resetOnStartup();
+
+    const [args] = processRunner.mock.calls[0];
+    const fileIndex = args.indexOf('--file');
+    const restoreCommandIndex = args.indexOf('--command', fileIndex);
+    const restoreCommand = args[restoreCommandIndex + 1];
+
+    expect(restoreCommand).toContain("to_regclass('public.migrations')");
+    expect(restoreCommand).toContain("pg_get_serial_sequence('public.migrations', 'id')");
+    expect(restoreCommand).toContain('setval(%L, COALESCE(MAX(id), 1), COUNT(*) > 0)');
+    expect(restoreCommand).toContain('FROM public.migrations');
+  });
+
   it('fails startup reset when DEMO_RESET_SQL_PATH is missing', async () => {
     const { dataSource, processRunner, service } = createService({ DEMO_RESET_SQL_PATH: '' });
 

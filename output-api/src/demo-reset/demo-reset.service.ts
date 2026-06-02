@@ -212,6 +212,23 @@ export class DemoResetService {
                     );
                 END LOOP;
             END $$;
+            DO $$
+            DECLARE migrations_sequence text;
+            BEGIN
+                IF to_regclass('public.migrations') IS NULL THEN
+                    RETURN;
+                END IF;
+
+                migrations_sequence := pg_get_serial_sequence('public.migrations', 'id');
+                IF migrations_sequence IS NULL THEN
+                    RETURN;
+                END IF;
+
+                EXECUTE format(
+                    'SELECT setval(%L, COALESCE(MAX(id), 1), COUNT(*) > 0) FROM public.migrations',
+                    migrations_sequence
+                );
+            END $$;
         `;
     }
 
