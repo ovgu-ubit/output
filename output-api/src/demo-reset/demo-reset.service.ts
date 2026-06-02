@@ -79,7 +79,8 @@ export class DemoResetService {
         this.logger.log(`Starting demo database reset (${reason}).`);
         await this.withResetLock(async queryRunner => {
             const prepareImportSql = await this.buildPrepareImportSql(queryRunner);
-            const args = await this.buildPsqlArgs(sqlPath, prepareImportSql);
+            const restoreConstraintSql = this.buildRestoreConstraintSql();
+            const args = await this.buildPsqlArgs(sqlPath, prepareImportSql, restoreConstraintSql);
             const env = await this.buildPsqlEnv();
             await this.processRunner(args, env);
         });
@@ -154,14 +155,23 @@ export class DemoResetService {
             .join(', ');
 
         return `
+            CREATE TEMP TABLE demo_reset_fk_constraints ON COMMIT DROP AS
+            SELECT format('%I.%I', table_namespace.nspname, table_class.relname) AS table_name,
+                   constraint_info.conname AS constraint_name,
+                   constraint_info.condeferrable AS condeferrable,
+                   constraint_info.condeferred AS condeferred
+            FROM pg_constraint constraint_info
+            JOIN pg_class table_class ON table_class.oid = constraint_info.conrelid
+            JOIN pg_namespace table_namespace ON table_namespace.oid = table_class.relnamespace
+            WHERE constraint_info.contype = 'f'
+              AND constraint_info.connamespace = 'public'::regnamespace;
+
             DO $$
             DECLARE constraint_row record;
             BEGIN
                 FOR constraint_row IN
-                    SELECT conrelid::regclass AS table_name, conname AS constraint_name
-                    FROM pg_constraint
-                    WHERE contype = 'f'
-                      AND connamespace = 'public'::regnamespace
+                    SELECT table_name, constraint_name
+                    FROM pg_temp.demo_reset_fk_constraints
                 LOOP
                     EXECUTE format(
                         'ALTER TABLE %s ALTER CONSTRAINT %I DEFERRABLE INITIALLY DEFERRED',
@@ -175,7 +185,37 @@ export class DemoResetService {
         `;
     }
 
-    private async buildPsqlArgs(sqlPath: string, prepareImportSql: string): Promise<string[]> {
+    private buildRestoreConstraintSql(): string {
+        return `
+            SET CONSTRAINTS ALL IMMEDIATE;
+            DO $$
+            DECLARE constraint_row record;
+            DECLARE deferrability_sql text;
+            BEGIN
+                FOR constraint_row IN
+                    SELECT table_name, constraint_name, condeferrable, condeferred
+                    FROM pg_temp.demo_reset_fk_constraints
+                LOOP
+                    IF constraint_row.condeferrable AND constraint_row.condeferred THEN
+                        deferrability_sql := 'DEFERRABLE INITIALLY DEFERRED';
+                    ELSIF constraint_row.condeferrable THEN
+                        deferrability_sql := 'DEFERRABLE INITIALLY IMMEDIATE';
+                    ELSE
+                        deferrability_sql := 'NOT DEFERRABLE';
+                    END IF;
+
+                    EXECUTE format(
+                        'ALTER TABLE %s ALTER CONSTRAINT %I %s',
+                        constraint_row.table_name,
+                        constraint_row.constraint_name,
+                        deferrability_sql
+                    );
+                END LOOP;
+            END $$;
+        `;
+    }
+
+    private async buildPsqlArgs(sqlPath: string, prepareImportSql: string, restoreConstraintSql: string): Promise<string[]> {
         return [
             '--host', await this.requiredConfig('DATABASE_HOST'),
             '--port', await this.requiredConfig('DATABASE_PORT'),
@@ -185,7 +225,8 @@ export class DemoResetService {
             '--single-transaction',
             '-v', 'ON_ERROR_STOP=1',
             '--command', prepareImportSql,
-            '--file', sqlPath
+            '--file', sqlPath,
+            '--command', restoreConstraintSql
         ];
     }
 

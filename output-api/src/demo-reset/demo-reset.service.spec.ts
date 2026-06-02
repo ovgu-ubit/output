@@ -105,6 +105,7 @@ describe('DemoResetService', () => {
 
     const [args] = processRunner.mock.calls[0];
     const command = args[args.indexOf('--command') + 1];
+    expect(command).toContain('CREATE TEMP TABLE demo_reset_fk_constraints');
     expect(command).toContain('ALTER TABLE %s ALTER CONSTRAINT %I DEFERRABLE INITIALLY DEFERRED');
     expect(command).toContain('SET CONSTRAINTS ALL DEFERRED');
     expect(command).toContain('TRUNCATE TABLE');
@@ -112,6 +113,24 @@ describe('DemoResetService', () => {
     expect(command).toContain('"public"."publication"');
     expect(command).toContain('RESTART IDENTITY CASCADE');
     expect(command).not.toContain('"public"."migrations"');
+  });
+
+  it('restores original foreign key deferrability after importing the snapshot', async () => {
+    const { processRunner, service } = createService();
+
+    await service.resetOnStartup();
+
+    const [args] = processRunner.mock.calls[0];
+    const fileIndex = args.indexOf('--file');
+    const restoreCommandIndex = args.indexOf('--command', fileIndex);
+    const restoreCommand = args[restoreCommandIndex + 1];
+
+    expect(restoreCommandIndex).toBeGreaterThan(fileIndex);
+    expect(restoreCommand).toContain('SET CONSTRAINTS ALL IMMEDIATE');
+    expect(restoreCommand).toContain('DEFERRABLE INITIALLY DEFERRED');
+    expect(restoreCommand).toContain('DEFERRABLE INITIALLY IMMEDIATE');
+    expect(restoreCommand).toContain('NOT DEFERRABLE');
+    expect(restoreCommand).toContain('ALTER TABLE %s ALTER CONSTRAINT %I %s');
   });
 
   it('fails startup reset when DEMO_RESET_SQL_PATH is missing', async () => {
