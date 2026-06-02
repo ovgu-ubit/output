@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { RouterModule } from '@angular/router';
 import { RuntimeConfigService } from '../../services/runtime-config.service';
 import { SharedModule } from '../../shared/shared.module';
 import { DemoLoginDialogComponent } from './demo-login-dialog.component';
@@ -25,7 +26,7 @@ describe('DemoLoginDialogComponent', () => {
 
     await TestBed.configureTestingModule({
       declarations: [DemoLoginDialogComponent],
-      imports: [SharedModule, NoopAnimationsModule],
+      imports: [SharedModule, NoopAnimationsModule, RouterModule.forRoot([])],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -71,5 +72,13 @@ describe('DemoLoginDialogComponent', () => {
     expect(component.errorMessage).toBe('Anmeldung fehlgeschlagen.');
     expect(component.isSubmitting).toBe(false);
     expect(dialogRef.close).not.toHaveBeenCalled();
+  });
+
+  it('closes the dialog before navigating to demo info', () => {
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[routerLink="/demo-info"]');
+
+    link.click();
+
+    expect(dialogRef.close).toHaveBeenCalledWith({ success: false });
   });
 });

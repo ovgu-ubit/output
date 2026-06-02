@@ -5,8 +5,17 @@ set -e
 # CONFIG_DIR
 export CONFIG_DIR=/config
 # BASE_HREF
-sed -i "s|\$BASE_HREF|${BASE_HREF%/}/|g" /etc/nginx/nginx.conf
-sed -i "s|href=\"/\"|href=\"${BASE_HREF%/}/\"|g" /var/www/html/index.html
+BASE_HREF_WITH_SLASH="${BASE_HREF%/}/"
+BASE_HREF_WITHOUT_SLASH="${BASE_HREF_WITH_SLASH%/}"
+
+if [ "$BASE_HREF_WITH_SLASH" = "/" ]; then
+  sed -i "/__BASE_HREF_REDIRECT__/d" /etc/nginx/nginx.conf
+else
+  sed -i "s|__BASE_HREF_REDIRECT__|location = ${BASE_HREF_WITHOUT_SLASH} { absolute_redirect off; return 301 \$uri/\$is_args\$args; }|g" /etc/nginx/nginx.conf
+fi
+
+sed -i "s|__BASE_HREF__|${BASE_HREF_WITH_SLASH}|g" /etc/nginx/nginx.conf
+sed -i "s|href=\"/\"|href=\"${BASE_HREF_WITH_SLASH}\"|g" /var/www/html/index.html
 
 cd /usr/src/app/output-api
 # run pending migrations
