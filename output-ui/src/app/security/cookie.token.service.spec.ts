@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { Location } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { CookieService } from 'ngx-cookie-service';
@@ -13,6 +14,7 @@ describe('CookieTokenService', () => {
   let runtimeConfigService: jasmine.SpyObj<RuntimeConfigService>;
   let dialog: jasmine.SpyObj<MatDialog>;
   let http: jasmine.SpyObj<HttpClient>;
+  let location: jasmine.SpyObj<Location>;
   let service: CookieTokenService;
   let runtimeValues: Record<string, string>;
 
@@ -22,6 +24,8 @@ describe('CookieTokenService', () => {
     runtimeConfigService = jasmine.createSpyObj<RuntimeConfigService>('RuntimeConfigService', ['getValue']);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     http = jasmine.createSpyObj<HttpClient>('HttpClient', ['post']);
+    location = jasmine.createSpyObj<Location>('Location', ['prepareExternalUrl']);
+    location.prepareExternalUrl.and.callFake((path: string) => '/output' + (path.startsWith('/') ? path : '/' + path));
     runtimeValues = {
       authorization_service: 'cookie',
       api: 'api/',
@@ -37,6 +41,7 @@ describe('CookieTokenService', () => {
       runtimeConfigService,
       dialog,
       http,
+      location,
     );
   });
 
@@ -60,7 +65,7 @@ describe('CookieTokenService', () => {
 
     service.login({ url: '/workflow' });
 
-    expect(redirectSpy).toHaveBeenCalledWith('/workflow');
+    expect(redirectSpy).toHaveBeenCalledWith('/output/workflow');
   });
 
   it('keeps the external auth redirect outside demo mode', () => {
@@ -69,6 +74,30 @@ describe('CookieTokenService', () => {
     service.login({ url: '/publications' });
 
     expect(dialog.open).not.toHaveBeenCalled();
-    expect(redirectSpy).toHaveBeenCalledWith('https://auth-ui/login?redirectURL=https://output//publications');
+    expect(redirectSpy).toHaveBeenCalledWith(
+      'https://auth-ui/login?redirectURL=' + encodeURIComponent(window.location.origin + '/output/publications')
+    );
+  });
+
+  it('redirects to the base href after demo logout', () => {
+    runtimeValues.authorization_service = 'demo';
+    runtimeValues.auth_api = '';
+    http.post.and.returnValue(of({}) as any);
+    const redirectSpy = spyOn<any>(service, 'redirectTo');
+
+    service.logout();
+
+    expect(http.post).toHaveBeenCalledWith('api/auth/logout', {}, { withCredentials: true });
+    expect(redirectSpy).toHaveBeenCalledWith('/output/');
+  });
+
+  it('uses the base href for profile return redirects', () => {
+    const redirectSpy = spyOn<any>(service, 'redirectTo');
+
+    service.details();
+
+    expect(redirectSpy).toHaveBeenCalledWith(
+      'https://auth-ui/profile?redirectURL=' + encodeURIComponent(window.location.origin + '/output/current')
+    );
   });
 });
