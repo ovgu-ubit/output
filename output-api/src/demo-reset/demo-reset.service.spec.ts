@@ -105,6 +105,8 @@ describe('DemoResetService', () => {
 
     const [args] = processRunner.mock.calls[0];
     const command = args[args.indexOf('--command') + 1];
+    expect(command).toContain('ALTER TABLE %s ALTER CONSTRAINT %I DEFERRABLE INITIALLY DEFERRED');
+    expect(command).toContain('SET CONSTRAINTS ALL DEFERRED');
     expect(command).toContain('TRUNCATE TABLE');
     expect(command).toContain('"public"."author"');
     expect(command).toContain('"public"."publication"');

@@ -78,8 +78,8 @@ export class DemoResetService {
 
         this.logger.log(`Starting demo database reset (${reason}).`);
         await this.withResetLock(async queryRunner => {
-            const truncateSql = await this.buildTruncateSql(queryRunner);
-            const args = await this.buildPsqlArgs(sqlPath, truncateSql);
+            const prepareImportSql = await this.buildPrepareImportSql(queryRunner);
+            const args = await this.buildPsqlArgs(sqlPath, prepareImportSql);
             const env = await this.buildPsqlEnv();
             await this.processRunner(args, env);
         });
@@ -133,7 +133,7 @@ export class DemoResetService {
         }
     }
 
-    private async buildTruncateSql(queryRunner: QueryRunner): Promise<string> {
+    private async buildPrepareImportSql(queryRunner: QueryRunner): Promise<string> {
         const rows = await queryRunner.query(`
             SELECT table_name
             FROM information_schema.tables
@@ -153,10 +153,29 @@ export class DemoResetService {
             .map(tableName => `${this.quoteIdentifier('public')}.${this.quoteIdentifier(tableName)}`)
             .join(', ');
 
-        return `TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE;`;
+        return `
+            DO $$
+            DECLARE constraint_row record;
+            BEGIN
+                FOR constraint_row IN
+                    SELECT conrelid::regclass AS table_name, conname AS constraint_name
+                    FROM pg_constraint
+                    WHERE contype = 'f'
+                      AND connamespace = 'public'::regnamespace
+                LOOP
+                    EXECUTE format(
+                        'ALTER TABLE %s ALTER CONSTRAINT %I DEFERRABLE INITIALLY DEFERRED',
+                        constraint_row.table_name,
+                        constraint_row.constraint_name
+                    );
+                END LOOP;
+            END $$;
+            SET CONSTRAINTS ALL DEFERRED;
+            TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE;
+        `;
     }
 
-    private async buildPsqlArgs(sqlPath: string, truncateSql: string): Promise<string[]> {
+    private async buildPsqlArgs(sqlPath: string, prepareImportSql: string): Promise<string[]> {
         return [
             '--host', await this.requiredConfig('DATABASE_HOST'),
             '--port', await this.requiredConfig('DATABASE_PORT'),
@@ -165,7 +184,7 @@ export class DemoResetService {
             '--no-password',
             '--single-transaction',
             '-v', 'ON_ERROR_STOP=1',
-            '--command', truncateSql,
+            '--command', prepareImportSql,
             '--file', sqlPath
         ];
     }

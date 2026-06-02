@@ -104,6 +104,7 @@ pg_dump --data-only --column-inserts --no-owner --no-privileges --exclude-table=
 ```
 
 The regular TypeORM migrations still manage the schema. The demo reset keeps the migrations table and restores only the demo data from the snapshot.
+`pg_dump` may warn about circular foreign-key constraints on tables such as `institute`, `cost_center`, or `invoice`. This is expected for the current schema; the reset defers foreign-key checks while importing the snapshot.
 
 ### Run backend api locally
 Run the backend from the repository root. This keeps `output-interfaces` in watch mode and starts the NestJS backend in watch mode:
