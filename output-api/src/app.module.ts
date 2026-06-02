@@ -1,8 +1,10 @@
 import { Module } from "@nestjs/common";
+import { ScheduleModule } from "@nestjs/schedule";
 import { AuthorModule } from './author/author.module';
 import { AuthorizationModule } from "./authorization/authorization.module";
 import { AppConfigModule } from "./config/app-config.module";
 import { ContractModule } from "./contract/contract.module";
+import { DemoResetModule } from "./demo-reset/demo-reset.module";
 import { FunderModule } from "./funder/funder.module";
 import { GreaterEntityModule } from "./greater_entity/greater-entity.module";
 import { InstituteModule } from "./institute/institute.module";
@@ -16,6 +18,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AuthorModule,
     PublicationModule,
     InstituteModule,
@@ -28,6 +31,7 @@ import { WorkflowModule } from "./workflow/workflow.module";
     PublicationTypeModule,
     PublisherModule,
     AppConfigModule,
+    DemoResetModule,
     WorkflowModule,
     StatisticsModule,
   ],

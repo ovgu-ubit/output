@@ -94,6 +94,17 @@ Run this from the repository root:
 > $ npm --workspace output run start:init
 > 
 
+### Demo database reset
+When `DEMO_MODE=true`, the backend resets the demo database on startup before accepting HTTP requests and daily at 03:00 Europe/Berlin. Set `DEMO_RESET_SQL_PATH` to a data-only PostgreSQL dump that is mounted into the container, for example `/config/demo-reset.sql`.
+
+Create the snapshot from a prepared demo database:
+
+```bash
+pg_dump --data-only --column-inserts --no-owner --no-privileges --exclude-table=public.migrations --file demo-reset.sql <demo-db>
+```
+
+The regular TypeORM migrations still manage the schema. The demo reset keeps the migrations table and restores only the demo data from the snapshot.
+
 ### Run backend api locally
 Run the backend from the repository root. This keeps `output-interfaces` in watch mode and starts the NestJS backend in watch mode:
 
