@@ -73,4 +73,12 @@ describe('DemoLoginDialogComponent', () => {
     expect(component.isSubmitting).toBe(false);
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
+
+  it('closes the dialog before navigating to demo info', () => {
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[routerLink="/demo-info"]');
+
+    link.click();
+
+    expect(dialogRef.close).toHaveBeenCalledWith({ success: false });
+  });
 });
