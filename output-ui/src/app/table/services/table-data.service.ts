@@ -35,7 +35,14 @@ export class TableDataService<T extends Entity, E extends Entity> {
   ) {
     this.serviceClass = serviceClass;
     this.parent = parent;
-    this.headers = headers;
+    this.setHeaders(headers);
+  }
+
+  setHeaders(headers: TableHeader[]) {
+    this.headers = headers ?? [];
+    this.dataSource.filterPredicate = this.getFilterPredicate();
+    this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
+    this.sortData();
   }
 
   setReportingYear(year: number) {

@@ -3,12 +3,13 @@ import { of } from 'rxjs';
 import { TableComponent } from './table.component';
 import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
-import { ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, SimpleChange } from '@angular/core';
 
 describe('TableComponent', () => {
   function createComponent() {
     const tableDataServiceMock = {
       init: jasmine.createSpy('init'),
+      setHeaders: jasmine.createSpy('setHeaders'),
       setReportingYear: jasmine.createSpy('setReportingYear'),
       destroy: jasmine.createSpy('destroy'),
       update: jasmine.createSpy('update'),
@@ -69,5 +70,16 @@ describe('TableComponent', () => {
     component.add();
 
     expect(tableActionServiceMock.add).toHaveBeenCalledWith(jasmine.any(Function));
+  });
+
+  it('syncs changed headers to TableDataService', () => {
+    const { component, tableDataServiceMock } = createComponent();
+    component.headers = [{ colName: 'status', colTitle: 'Status', type: 'number' }];
+
+    component.ngOnChanges({
+      headers: new SimpleChange(undefined, component.headers, true)
+    });
+
+    expect(tableDataServiceMock.setHeaders).toHaveBeenCalledWith(component.headers);
   });
 });
