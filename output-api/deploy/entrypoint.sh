@@ -23,31 +23,33 @@ npm run typeorm-js migration:run -- -d /usr/src/app/output-api/dist/src/config/a
 # start backend in background
 su -s /bin/sh -c "node /usr/src/app/output-api/dist/src/main.js" nodeuser &
 NODE_PID=$!
+NGINX_PID=
 
-# Short sleep to detect immediate startup failures
-sleep 5
+term_handler() {
+  echo "Termination received, stopping..."
+  kill "$NODE_PID" ${NGINX_PID:+"$NGINX_PID"} 2>/dev/null || true
+  exit 0
+}
 
-# Check if Node died immediately
-if ! kill -0 "$NODE_PID" 2>/dev/null; then
-  echo "Node failed to start. Exiting container."
-  exit 1
-fi
+# Forward signals to child processes, including while waiting for backend readiness.
+trap term_handler TERM INT
 
-echo "Node backend running (PID $NODE_PID). Starting nginx..."
+echo "Waiting for Node backend readiness (PID $NODE_PID)..."
+
+until wget -qO- --timeout=2 http://127.0.0.1:3000/config/health >/dev/null 2>&1; do
+  if ! kill -0 "$NODE_PID" 2>/dev/null; then
+    echo "Node failed to start. Exiting container."
+    exit 1
+  fi
+  sleep 2
+done
+
+echo "Node backend ready (PID $NODE_PID). Starting nginx..."
 
 nginx -g 'daemon off;' &
 NGINX_PID=$!
 
 echo "Waiting for Node or nginx to exit..."
-
-term_handler() {
-  echo "Termination received, stopping..."
-  kill "$NODE_PID" "$NGINX_PID" 2>/dev/null || true
-  exit 0
-}
-
-# Forward signals to both processes (important for docker stop)
-trap term_handler TERM INT
 
 # Wait for either node or nginx to exit
 while true; do

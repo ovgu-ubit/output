@@ -49,7 +49,7 @@ COPY output-api/package.json ./output-api/
 # ---- Frontend ----
 WORKDIR /usr/src/app/
 # install nginx
-RUN apt-get update && apt-get install -y nginx
+RUN apt-get update && apt-get install -y nginx postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /var/log/nginx /run/nginx
 
 # copy distributables

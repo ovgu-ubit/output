@@ -32,7 +32,8 @@ describe('EnvSchemas', () => {
       AUTH: 'true',
       DEMO_MODE: value,
       DEMO_USER: 'demo',
-      DEMO_PW: 'secret'
+      DEMO_PW: 'secret',
+      ...(expected ? { DEMO_RESET_SQL_PATH: '/config/demo-reset.sql' } : {})
     });
 
     expect(result.DEMO_MODE).toBe(expected);
@@ -51,7 +52,8 @@ describe('EnvSchemas', () => {
     const result = EnvSchemas.safeParse({
       ...validEnv,
       AUTH: 'true',
-      DEMO_MODE: 'true'
+      DEMO_MODE: 'true',
+      DEMO_RESET_SQL_PATH: '/config/demo-reset.sql'
     });
 
     expect(result.success).toBe(false);
@@ -71,12 +73,28 @@ describe('EnvSchemas', () => {
       ...(auth === undefined ? {} : { AUTH: auth }),
       DEMO_MODE: 'true',
       DEMO_USER: 'demo',
-      DEMO_PW: 'secret'
+      DEMO_PW: 'secret',
+      DEMO_RESET_SQL_PATH: '/config/demo-reset.sql'
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues.map(issue => issue.path.join('.'))).toContain('AUTH');
+    }
+  });
+
+  it('requires DEMO_RESET_SQL_PATH when DEMO_MODE is enabled', () => {
+    const result = EnvSchemas.safeParse({
+      ...validEnv,
+      AUTH: 'true',
+      DEMO_MODE: 'true',
+      DEMO_USER: 'demo',
+      DEMO_PW: 'secret'
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map(issue => issue.path.join('.'))).toContain('DEMO_RESET_SQL_PATH');
     }
   });
 });

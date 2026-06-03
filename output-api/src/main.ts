@@ -12,6 +12,7 @@ import * as https from 'https';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { createValidationException } from './common/validation-exception.factory';
+import { DemoResetService } from './demo-reset/demo-reset.service';
 
 async function bootstrap() {
     const server = express();
@@ -25,7 +26,7 @@ async function bootstrap() {
     const cert_chain: string = app.get(ConfigService).get<string>('APP_SSL_CHAIN').toLowerCase();
     const cert_passphrase: string = app.get(ConfigService).get<string>('APP_SSL_PASSPHRASE');
     let cors_origins: string[] = app.get(ConfigService).get<string>('APP_CORS_ORIGINS').split(',');
-    let base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
+    const base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
     const docker_mode: boolean = app.get(ConfigService).get<boolean>('APP_DOCKER_MODE');
 
     const swagger_path = "swagger";
@@ -34,7 +35,6 @@ async function bootstrap() {
         port = 3000;
         cors_origins = ["http://localhost:1080"];
         ssl = false;
-        base_path = ""
     }
 
     const processedCORS = [];
@@ -75,6 +75,7 @@ async function bootstrap() {
     app.use(bodyParser.urlencoded({ extended: true })); // parse requests of content-type "application/x-www-form-urlencoded"
     app.use(cookieParser());
     await app.init();
+    await app.get(DemoResetService).resetOnStartup();
 
     if (ssl) {
         const certOptions = {

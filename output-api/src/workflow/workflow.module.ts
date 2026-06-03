@@ -1,7 +1,6 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
 import { AuthorModule } from '../author/author.module';
 import { AppConfigModule } from '../config/app-config.module';
 import { ContractModule } from '../contract/contract.module';
@@ -84,7 +83,6 @@ import { WorkflowReportService } from './workflow-report.service';
       timeout: 50000,
       maxRedirects: 5,
     }),
-    ScheduleModule.forRoot(),
     DiscoveryModule,
     TypeOrmModule.forFeature([ImportWorkflow, ExportWorkflow, ValidationWorkflow, WorkflowReport, WorkflowReportItem])
   ],

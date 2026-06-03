@@ -41,6 +41,7 @@ export const EnvSchemas = z
     DEMO_MODE: optionalBoolean,
     DEMO_USER: z.string().optional(),
     DEMO_PW: z.string().optional(),
+    DEMO_RESET_SQL_PATH: z.string().optional(),
     SECRET_UNPAYWALL: z.string().optional(),
     SECRET_OAM: z.string().optional(),
     SECRET_SCOPUS: z.string().optional()
@@ -69,6 +70,14 @@ export const EnvSchemas = z
         code: z.ZodIssueCode.custom,
         message: 'DEMO_PW is required when DEMO_MODE is enabled.',
         path: ['DEMO_PW']
+      });
+    }
+
+    if (!env.DEMO_RESET_SQL_PATH) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'DEMO_RESET_SQL_PATH is required when DEMO_MODE is enabled.',
+        path: ['DEMO_RESET_SQL_PATH']
       });
     }
   });
