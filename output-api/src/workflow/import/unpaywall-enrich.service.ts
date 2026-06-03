@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { Publication } from '../../publication/core/Publication.entity';
 import { Publisher } from '../../publisher/Publisher.entity';
 import { AuthorService } from '../../author/author.service';
@@ -10,6 +10,7 @@ import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { ApiEnrichDOIService, EnrichService } from './api-enrich-doi.service';
 import { FunderService } from '../../funder/funder.service';
 import { Funder } from '../../funder/Funder.entity';
@@ -27,12 +28,13 @@ import { WorkflowReportService } from '../workflow-report.service';
 export class UnpaywallEnrichService extends ApiEnrichDOIService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+        protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService,
         protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService,
     ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
 
     }
 

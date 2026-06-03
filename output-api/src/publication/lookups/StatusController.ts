@@ -10,4 +10,12 @@ export class StatusController extends AbstractCrudController<Status, StatusServi
     constructor(statusService: StatusService) {
         super(statusService);
     }
+
+    protected override normalizeBodyForCreate(body: Status): Status {
+        return this.service.normalizeForCreate(body);
+    }
+
+    protected override createEntity(body: Status) {
+        return this.service.create(body);
+    }
 }

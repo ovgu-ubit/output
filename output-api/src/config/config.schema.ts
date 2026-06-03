@@ -1,6 +1,9 @@
 import * as z from 'zod';
 import { CONFIG_DEFAULTS } from './config.defaults';
 
+const atomicToArray = (value: unknown) =>
+  Array.isArray(value) || value === undefined ? value : [value];
+
 export const ConfigSchemas = z.object({
   reporting_year: z.number().int().min(1850).default(CONFIG_DEFAULTS.reporting_year),
   lock_timeout: z.number().int().min(0).default(CONFIG_DEFAULTS.lock_timeout),
@@ -9,8 +12,14 @@ export const ConfigSchemas = z.object({
   institution_short_label: z.string().max(10).default(CONFIG_DEFAULTS.institution_short_label),
   search_tags: z.array(z.string()).default(CONFIG_DEFAULTS.search_tags),
   affiliation_tags: z.array(z.string()).default(CONFIG_DEFAULTS.affiliation_tags),
-  ror_id: z.string().regex(/^https:\/\/ror\.org\/.*/).default(CONFIG_DEFAULTS.ror_id),
-  openalex_id: z.string().default(CONFIG_DEFAULTS.openalex_id),
+  ror_id: z.preprocess(
+    atomicToArray,
+    z.array(z.string().regex(/^https:\/\/ror\.org\/.*/)).default(CONFIG_DEFAULTS.ror_id)
+  ),
+  openalex_id: z.preprocess(
+    atomicToArray,
+    z.array(z.string()).default(CONFIG_DEFAULTS.openalex_id)
+  ),
   doi_import_service: z.string().default(CONFIG_DEFAULTS.doi_import_service),
   optional_fields: z.object({
     abstract: z.boolean(),

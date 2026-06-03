@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CombineDialogComponent } from './combine-dialog.component';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { SharedModule } from 'src/app/shared/shared.module';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('CombineDialogComponent', () => {
   let component: CombineDialogComponent<any>;
@@ -8,7 +11,12 @@ describe('CombineDialogComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CombineDialogComponent ]
+      imports: [MatDialogModule, SharedModule, NoopAnimationsModule],
+      declarations: [ CombineDialogComponent ],
+      providers: [
+        { provide: MatDialogRef, useValue: {} },
+        { provide: MAT_DIALOG_DATA, useValue: { ents: [{ id: 1, label: 'A' }, { id: 2, label: 'B' }] } }
+      ]
     })
     .compileComponents();
 

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { ContractService } from 'src/app/services/entities/contract.service';
-import { ContractIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  ContractIndex  } from '@output/interfaces';
 import { ContractFormComponent } from '../../../form/contract-form/contract-form.component';
 
 @Component({
@@ -24,6 +24,8 @@ export class ContractsComponent implements TableParent<ContractIndex>, OnInit {
     { colName: 'end_date', colTitle: 'Bis', type: 'date' },
     { colName: 'invoice_amount', colTitle: 'Rechnungsbetrag', type: 'euro' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 
   constructor(public contractService: ContractService) { }

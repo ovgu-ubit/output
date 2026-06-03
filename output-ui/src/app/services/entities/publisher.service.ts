@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Publisher } from '../../../../../output-interfaces/Publication';
-import { PublisherIndex } from '../../../../../output-interfaces/PublicationIndex';
+import {  Publisher  } from '@output/interfaces';
+import {  PublisherIndex  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

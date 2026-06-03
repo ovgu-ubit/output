@@ -1,5 +1,5 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, PrimaryColumn} from "typeorm";
-import { PublisherDOI as IPublisherDOI } from "../../../output-interfaces/Publication"
+import {  PublisherDOI as IPublisherDOI  } from '@output/interfaces'
 import { Publisher } from "./Publisher.entity";
 
 

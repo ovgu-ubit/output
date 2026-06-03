@@ -1,6 +1,6 @@
 import { SortDirection } from '@angular/material/sort';
 import { ActionReducer, createAction, createFeatureSelector, createReducer, createSelector, INIT, on, props, UPDATE } from '@ngrx/store';
-import { SearchFilter } from '../../../../output-interfaces/Config';
+import {  SearchFilter  } from '@output/interfaces';
 
 export const setViewConfig = createAction('Set ViewConfig', props<{ viewConfig: ViewConfig }>());
 export const resetViewConfig = createAction('Reset ViewConfig');

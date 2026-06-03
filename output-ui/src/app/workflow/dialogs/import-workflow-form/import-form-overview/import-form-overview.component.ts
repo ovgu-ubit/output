@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, takeUntil } from 'rxjs';
-import { ImportWorkflow, WorkflowReport } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow, WorkflowReport  } from '@output/interfaces';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-overview',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-overview.component.html',
   styleUrl: './import-form-overview.component.css',

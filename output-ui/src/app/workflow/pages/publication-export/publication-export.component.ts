@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import { ExportWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ExportWorkflow  } from '@output/interfaces';
 import { ExportWorkflowFormComponent } from '../../dialogs/export-workflow-form/export-workflow-form.component';
 import { ExportWorkflowService } from '../../export-workflow.service';
 
@@ -125,7 +125,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     input.value = '';
     if (!file) return;
     if (!file.name.endsWith('.json')) {
-      this.snackBar.open('Bitte eine JSON-Datei auswaehlen.', 'Nagut...', {
+      this.snackBar.open('Bitte eine JSON-Datei auswählen.', 'Nagut...', {
         duration: 5000,
         panelClass: ['danger-snackbar'],
         verticalPosition: 'top'
@@ -134,7 +134,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     }
     this.exportWorkflowService.importWorkflow(file).subscribe({
       next: () => {
-        this.snackBar.open('Export-Workflow wurde hinzugefuegt.', 'Super!', {
+        this.snackBar.open('Export-Workflow wurde hinzugefügt.', 'Super!', {
           duration: 5000,
           panelClass: ['success-snackbar'],
           verticalPosition: 'top'

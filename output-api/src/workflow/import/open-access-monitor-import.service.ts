@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { Publisher } from '../../publisher/Publisher.entity';
@@ -14,6 +14,7 @@ import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
@@ -27,12 +28,13 @@ import { WorkflowReportService } from '../workflow-report.service';
 export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+        protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService:InstituteService,
         protected languageService:LanguageService,  protected roleService: RoleService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService,
         ) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, workflowReportService, http);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService,instService, languageService, roleService, configService, workflowReportService, http);
     }
 
     protected updateMapping: UpdateMapping = {
@@ -70,7 +72,8 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
 
     async setReportingYear(year: string) {
         this.param_string = await this.configService.get('SECRET_OAM');
-        this.ror_id = await this.configService.get('ror_id');
+        const ror_ids = await this.configService.get('ror_id') as string[];
+        this.ror_id = ror_ids.join('","');
         this.year = year;
     }
 
@@ -78,11 +81,11 @@ export class OpenAccessMonitorImportService extends ApiImportOffsetService {
     ror_id;
 
     protected retrieveCountRequest() {
-         return this.http.get(`${this.url}token=${this.param_string}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}}`)
+         return this.http.get(`${this.url}token=${this.param_string}&query={count:"Publications", query:{year:${this.year}, "source_data.organisations._id": { $in:["${this.ror_id}"]}}}`)
     }
 
     protected request(offset:number) {
-        return this.http.get(`${this.url}token=${this.param_string}&query={find:"Publications", filter:{year:${this.year}, "source_data.organisations._id":"${this.ror_id}"}, limit: ${this.max_res}, skip: ${offset}}`)
+        return this.http.get(`${this.url}token=${this.param_string}&query={find:"Publications", filter:{year:${this.year}, "source_data.organisations._id": { $in:["${this.ror_id}"]}}, limit: ${this.max_res}, skip: ${offset}}`)
     }
 
     protected importTest(element: any): boolean {

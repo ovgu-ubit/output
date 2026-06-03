@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
-import { ValidationWorkflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { WorkflowService } from './workflow.service';
 
 @Injectable({
@@ -38,6 +38,10 @@ export class ValidationWorkflowService implements EntityService<ValidationWorkfl
     return this.api.isValidationLocked(id);
   }
 
+  unlock(id: number) {
+    return this.api.unlockValidation(id);
+  }
+
   run(id: number) {
     return this.api.runValidation(id);
   }
@@ -64,5 +68,13 @@ export class ValidationWorkflowService implements EntityService<ValidationWorkfl
 
   deleteWorkflowReport(reportId: number) {
     return this.api.deleteWorkflowReport(reportId);
+  }
+
+  exportValidation(id: number) {
+    return this.api.exportValidation(id);
+  }
+
+  importWorkflow(file: File) {
+    return this.api.importValidationWorkflow(file);
   }
 }

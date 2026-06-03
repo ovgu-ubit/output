@@ -1,5 +1,5 @@
 import { Entity } from "typeorm";
-import { AliasPublisher as IAliasPublisher } from "../../../output-interfaces/Alias";
+import {  AliasPublisher as IAliasPublisher  } from '@output/interfaces';
 import { createAliasEntity } from "../common/entities/alias.entity";
 import { Publisher } from "./Publisher.entity";
 

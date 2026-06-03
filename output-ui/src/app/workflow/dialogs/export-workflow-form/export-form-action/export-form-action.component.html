@@ -1,6 +1,41 @@
 <mat-card>
     <mat-card-title>Aktionen</mat-card-title>
     <mat-card-content>
+        @if (!isArchived) {
+        <div class="run-options">
+            @if (isPublished) {
+            <form [formGroup]="form">
+                <mat-checkbox formControlName="withMasterData">Stammdaten in den Export einbeziehen?</mat-checkbox>
+            </form>
+            }
+            <div class="publication-filter">
+                <div class="filter-summary">
+                    <mat-icon>filter_list</mat-icon>
+                    <span>{{ publicationFilterSummary }}</span>
+                </div>
+                <div class="filter-actions">
+                    <button mat-raised-button class="secondary-button" [disabled]="loading || !!this.ob$"
+                        (click)="editPublicationFilter()">
+                        <mat-icon>tune</mat-icon>
+                        Publikationsfilter bearbeiten
+                    </button>
+                    <button mat-raised-button class="secondary-button"
+                        [disabled]="loading || !!this.ob$ || !hasPublicationPageFilter"
+                        (click)="usePublicationPageFilter()">
+                        <mat-icon>content_paste_go</mat-icon>
+                        Filter aus Publikationsseite übernehmen
+                    </button>
+                    <button mat-raised-button class="secondary-button"
+                        [disabled]="loading || !!this.ob$ || !hasPublicationFilter"
+                        (click)="resetPublicationFilter()">
+                        <mat-icon>filter_alt_off</mat-icon>
+                        Filter zurücksetzen
+                    </button>
+                </div>
+            </div>
+        </div>
+        }
+
         @if (isDraft) {
         <div class="action-group">
             <h3>Entwurf</h3>
@@ -43,9 +78,6 @@
         @if (isPublished) {
         <div class="action-group">
             <h3>Veröffentlicht</h3>
-            <form [formGroup]="form">
-                <mat-checkbox formControlName="withMasterData">Stammdaten in den Export einbeziehen?</mat-checkbox>
-            </form>
             @if (status) {
             <p>Aktueller Status: {{ status.status }}</p>
             }

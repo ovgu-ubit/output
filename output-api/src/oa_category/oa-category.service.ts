@@ -4,7 +4,7 @@ import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { PublicationService } from '../publication/core/publication.service';
 import { OA_Category } from './OA_Category.entity';
-import { OACategoryIndex } from '../../../output-interfaces/PublicationIndex';
+import {  OACategoryIndex  } from '@output/interfaces';
 import { AppConfigService } from '../config/app-config.service';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { mergeEntities } from '../common/merge';
@@ -28,25 +28,35 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         }));
     }
 
-    public async index(reporting_year: number): Promise<OACategoryIndex[]> {
+    public async index(reporting_year: number, canReadNetCosts = false): Promise<OACategoryIndex[]> {
         let query = this.repository.createQueryBuilder("oacat")
+            .leftJoin("oacat.publications", "publication")
             .select("oacat.id", "id")
             .addSelect("oacat.label", "label")
             .addSelect("oacat.is_oa", "is_oa")
-            .addSelect("COUNT(publication.id)", "pub_count")
+            .addSelect("COUNT(DISTINCT publication.id)", "pub_count_total")
             .groupBy("oacat.id")
             .addGroupBy("oacat.label")
             .addGroupBy("oacat.is_oa")
+
+        if (canReadNetCosts) {
+            query = query
+                .leftJoin("publication.invoices", "invoice")
+                .leftJoin("invoice.cost_items", "cost_item")
+        }
 
         if (reporting_year) {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin("oacat.publications", "publication", "publication.pub_date between :beginDate and :endDate", { beginDate, endDate })
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
+                .setParameters({ beginDate, endDate })
         }
         else {
             query = query
-                .leftJoin("oacat.publications", "publication", "publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL")
+                .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
         }
         //console.log(query.getSql());
 
@@ -81,4 +91,3 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         });
     }
 }
-

@@ -1,13 +1,17 @@
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { SharedModule } from 'src/app/shared/shared.module';
+
 import { AbstractFormComponent } from './abstract-form.component';
 
 describe('AbstractFormComponent', () => {
@@ -26,20 +30,25 @@ describe('AbstractFormComponent', () => {
     tokenService.hasRole.and.returnValue(true);
 
     await TestBed.configureTestingModule({
-      imports: [ReactiveFormsModule],
+      imports: [
+        NoopAnimationsModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        SharedModule
+      ],
       declarations: [AbstractFormComponent],
       providers: [
+        FormBuilder,
         { provide: MatDialog, useValue: dialog },
         { provide: MatSnackBar, useValue: jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']) },
         { provide: ErrorPresentationService, useValue: errorPresentation },
         { provide: AuthorizationService, useValue: tokenService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-      ],
-      schemas: [NO_ERRORS_SCHEMA],
-    })
-    .overrideComponent(AbstractFormComponent, {
-      set: { template: '' }
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     })
     .compileComponents();
 
@@ -85,6 +94,51 @@ describe('AbstractFormComponent', () => {
       mode: 'create',
       entity: { id: 42, label: 'Institute' },
     });
+  });
+
+  it('preserves status id 0 when creating persisted entities', async () => {
+    const service = jasmine.createSpyObj('EntityService', ['add', 'update']);
+    service.add.and.returnValue(of({ id: 0, label: 'New status' }));
+    component.service = service;
+    component.data = { entity: {}, persistOnSave: true };
+    component.entity = {};
+    component.fields = [
+      { key: 'id', title: 'Status', type: 'status', required: true },
+      { key: 'label', title: 'Label', required: true },
+    ];
+    component.form.addControl('id', new FormControl(0));
+    component.form.get('label')?.setValue('New status');
+
+    await component.action();
+
+    expect(service.add).toHaveBeenCalledWith(jasmine.objectContaining({
+      id: 0,
+      label: 'New status',
+    }));
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('treats entity id 0 as an existing entity when saving', async () => {
+    const service = jasmine.createSpyObj('EntityService', ['add', 'update']);
+    service.update.and.returnValue(of({ id: 0, label: 'Existing status' }));
+    component.service = service;
+    component.data = { entity: { id: 0 }, persistOnSave: true };
+    component.entity = { id: 0 };
+    component.fields = [
+      { key: 'id', title: 'Status', type: 'status', required: true },
+      { key: 'label', title: 'Label', required: true },
+    ];
+    component.form.addControl('id', new FormControl(0));
+    component.form.get('label')?.setValue('Existing status');
+
+    await component.action();
+
+    expect(service.update).toHaveBeenCalledWith(jasmine.objectContaining({
+      id: 0,
+      label: 'Existing status',
+      locked_at: null,
+    }));
+    expect(service.add).not.toHaveBeenCalled();
   });
 
   it('releases the edit lock when a writable read-only form is closed', () => {

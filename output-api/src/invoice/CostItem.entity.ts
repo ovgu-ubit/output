@@ -1,7 +1,7 @@
 import {Entity, PrimaryGeneratedColumn, Column, ManyToOne} from "typeorm";
 import { CostType } from "./CostType.entity";
 import { Invoice } from "./Invoice.entity";
-import { CostItem as ICostItem} from "../../../output-interfaces/Publication"
+import {  CostItem as ICostItem } from '@output/interfaces'
 
 @Entity()
 export class CostItem implements ICostItem {

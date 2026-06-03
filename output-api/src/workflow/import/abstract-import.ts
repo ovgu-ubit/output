@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { AppError, UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
-import { WorkflowReportItemLevel } from '../../../../output-interfaces/Workflow';
+import {  AppError, UpdateMapping, UpdateOptions  } from '@output/interfaces';
+import {  WorkflowReportItemLevel  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { Publication } from '../../publication/core/Publication.entity';
@@ -27,6 +27,8 @@ import { AppConfigService } from '../../config/app-config.service';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
 
 export function ImportService(meta: { path: string }): ClassDecorator {
     return (target) => Reflect.defineMetadata("import_service", meta, target);
@@ -41,8 +43,12 @@ export function getImportServiceMeta(target: Function): { path: string } | undef
  * abstract class for all imports
  */
 export abstract class AbstractImportService {
+    @Inject(PublicationIndexService)
+    protected publicationIndexService!: PublicationIndexService;
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+    protected readonly doiRegex = /10\.[0-9]{4,9}\/[-._;()/:A-Z0-9]+/i;
+
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
@@ -284,6 +290,7 @@ export abstract class AbstractImportService {
      * @returns the persisted publication entity
      */
     async mapNew(item) {
+        const optionalFields = await this.getOptionalFields();
         if (!(await this.importTest(item))) {
             await this.writeReport({ type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
             return null;
@@ -390,7 +397,7 @@ export abstract class AbstractImportService {
         const cost_approach_currency = this.normalizeCostApproachCurrency(this.getCostApproachCurrency(item));
 
         let doi;
-        const doi_a = this.publicationService.doi_regex.exec(this.getDOI(item)?.trim());
+        const doi_a = this.doiRegex.exec(this.getDOI(item)?.trim());
         if (doi_a) doi = doi_a[0];
 
         //construct publication object to save
@@ -410,9 +417,9 @@ export abstract class AbstractImportService {
             funders: funder_ents,
             best_oa_license: this.getLicense(item)?.trim(),
             invoices,
-            abstract: await this.configService.get('optional_fields')['abstract'] ? this.getAbstract(item)?.trim() : undefined,
-            page_count: await this.configService.get('optional_fields')['page_count'] ? this.getPageCount(item) : undefined,
-            peer_reviewed: await this.configService.get('optional_fields')['peer_reviewed'] ? this.getPeerReviewed(item) : undefined,
+            abstract: optionalFields['abstract'] ? this.getAbstract(item)?.trim() : undefined,
+            page_count: optionalFields['page_count'] ? this.getPageCount(item) : undefined,
+            peer_reviewed: optionalFields['peer_reviewed'] ? this.getPeerReviewed(item) : undefined,
             status,
             add_info: remark,
             cost_approach,
@@ -430,9 +437,9 @@ export abstract class AbstractImportService {
         if (pub_date instanceof Date) obj.pub_date = pub_date ? pub_date : undefined;
         else {
             if (pub_date.pub_date && !isNaN(pub_date.pub_date as any)) obj.pub_date = pub_date.pub_date;
-            if (await this.configService.get('optional_fields')['pub_date_print'] && pub_date.pub_date_print && !isNaN(pub_date.pub_date_print as any)) obj.pub_date_print = pub_date.pub_date_print;
+            if (optionalFields['pub_date_print'] && pub_date.pub_date_print && !isNaN(pub_date.pub_date_print as any)) obj.pub_date_print = pub_date.pub_date_print;
             if (pub_date.pub_date_accepted && !isNaN(pub_date.pub_date_accepted as any)) obj.pub_date_accepted = pub_date.pub_date_accepted;
-            if (await this.configService.get('optional_fields')['pub_date_submitted'] && pub_date.pub_date_submitted && !isNaN(pub_date.pub_date_submitted as any)) obj.pub_date_submitted = pub_date.pub_date_submitted;
+            if (optionalFields['pub_date_submitted'] && pub_date.pub_date_submitted && !isNaN(pub_date.pub_date_submitted as any)) obj.pub_date_submitted = pub_date.pub_date_submitted;
         }
         //process citation information
         const cit = this.getCitation(item);
@@ -446,7 +453,7 @@ export abstract class AbstractImportService {
             //save publication object and assign authorships
             const pub_ent = (await this.publicationService.save([obj], { workflowReport: this.workflowReport })) [0];
             for (const aut of authors_entities) {
-                await this.publicationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
+                await this.publicationRelationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
             }
 
             return pub_ent;
@@ -460,6 +467,7 @@ export abstract class AbstractImportService {
      * @returns the updated publication entity or null if no update has been performed
      */
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
+        const optionalFields = await this.getOptionalFields();
         const fields = [];
         let text = "";
         let number = 0;
@@ -582,7 +590,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields')['pub_date_print'] && (!orig.pub_date_print || (orig.pub_date_print.getDate() === 1 && orig.pub_date_print.getMonth() === 0))) {
+                    if (optionalFields['pub_date_print'] && (!orig.pub_date_print || (orig.pub_date_print.getDate() === 1 && orig.pub_date_print.getMonth() === 0))) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -590,7 +598,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields')['pub_date_submitted'] && (!orig.pub_date_submitted || (orig.pub_date_submitted.getDate() === 1 && orig.pub_date_submitted.getMonth() === 0))) {
+                    if (optionalFields['pub_date_submitted'] && (!orig.pub_date_submitted || (orig.pub_date_submitted.getDate() === 1 && orig.pub_date_submitted.getMonth() === 0))) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
@@ -607,7 +615,7 @@ export abstract class AbstractImportService {
                         orig.pub_date = pd.pub_date;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields')['pub_date_print'] && pd.pub_date_print) {
+                    if (optionalFields['pub_date_print'] && pd.pub_date_print) {
                         orig.pub_date_print = pd.pub_date_print;
                         flag = true;
                     }
@@ -615,7 +623,7 @@ export abstract class AbstractImportService {
                         orig.pub_date_accepted = pd.pub_date_accepted;
                         flag = true;
                     }
-                    if (await this.configService.get('optional_fields')['pub_date_submitted'] && pd.pub_date_submitted) {
+                    if (optionalFields['pub_date_submitted'] && pd.pub_date_submitted) {
                         orig.pub_date_submitted = pd.pub_date_submitted;
                         flag = true;
                     }
@@ -748,7 +756,7 @@ export abstract class AbstractImportService {
         }
 
         if (!orig.locked_author) if (this.updateMapping.author_inst !== UpdateOptions.IGNORE) {
-            const existing_aut = await this.publicationService.getAuthorsPublication(orig);
+            const existing_aut = await this.publicationRelationService.getAuthorsPublication(orig);
             if (!(this.updateMapping.author_inst === UpdateOptions.REPLACE_IF_EMPTY && existing_aut.length === 0)) {
                 const authors_entities: any[] = [];
                 const authors_inst = this.getInstAuthors(element);
@@ -763,12 +771,12 @@ export abstract class AbstractImportService {
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.REPLACE) {
                     //delete existing author publication relationships
-                    if (!this.dryRun) await this.publicationService.resetAuthorPublication(orig);
+                    if (!this.dryRun) await this.publicationRelationService.resetAuthorPublication(orig);
                 }
                 if (this.updateMapping.author_inst === UpdateOptions.APPEND) {
                     for (const aut of authors_entities) if (
                         !existing_aut.find(e => e.authorId === aut.author.id)) {
-                        if (!this.dryRun) await this.publicationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
+                        if (!this.dryRun) await this.publicationRelationService.saveAuthorPublication(aut.author, orig, aut.corresponding, aut.affiliation, aut.institute);
                         fields.push('author_inst')
                     }
                 }
@@ -883,7 +891,7 @@ export abstract class AbstractImportService {
                 else orig.status = 0;
                 break;
         }
-        if (await this.configService.get('optional_fields')['abstract'] && !orig.locked_biblio) {
+        if (optionalFields['abstract'] && !orig.locked_biblio) {
             switch (this.updateMapping.abstract) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -900,7 +908,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (await this.configService.get('optional_fields')['citation'] && !orig.locked_biblio) {
+        if (optionalFields['citation'] && !orig.locked_biblio) {
             let cit;
             switch (this.updateMapping.citation) {
                 case UpdateOptions.IGNORE:
@@ -926,7 +934,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (await this.configService.get('optional_fields')['page_count'] && !orig.locked_biblio) {
+        if (optionalFields['page_count'] && !orig.locked_biblio) {
             switch (this.updateMapping.page_count) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -943,7 +951,7 @@ export abstract class AbstractImportService {
                     break;
             }
         }
-        if (await this.configService.get('optional_fields')['peer_reviewed'] && !orig.locked_biblio) {
+        if (optionalFields['peer_reviewed'] && !orig.locked_biblio) {
             switch (this.updateMapping.peer_reviewed) {
                 case UpdateOptions.IGNORE:
                     break;
@@ -1011,6 +1019,10 @@ export abstract class AbstractImportService {
         if (!currency) return 'EUR';
         const normalized = currency.trim().toUpperCase();
         return normalized || 'EUR';
+    }
+
+    protected async getOptionalFields(): Promise<Record<string, boolean>> {
+        return (await this.configService.get('optional_fields')) ?? {};
     }
 
     public status() {

@@ -1,8 +1,8 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
-import { CostCenter } from '../../../../../../output-interfaces/Publication';
-import { CostCenterIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  CostCenter  } from '@output/interfaces';
+import {  CostCenterIndex  } from '@output/interfaces';
 import { CostCenterFormComponent } from '../../../form/cost-center-form/cost-center-form.component';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 
@@ -23,7 +23,9 @@ export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'number', colTitle: 'Nummer' },
     { colName: 'label', colTitle: 'Bezeichnung' },
-    { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' }
+    { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' }
   ];
 
   constructor(public ccService: CostCenterService) { }

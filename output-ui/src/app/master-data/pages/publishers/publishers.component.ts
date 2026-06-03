@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
-import { PublisherIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  PublisherIndex  } from '@output/interfaces';
 import { PublisherFormComponent } from '../../../form/publisher-form/publisher-form.component';
 
 @Component({
@@ -21,6 +21,7 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit 
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'doi_prefix', colTitle: 'DOI Prefix' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 
   constructor(public publisherService: PublisherService) { }
@@ -40,4 +41,3 @@ export class PublishersComponent implements TableParent<PublisherIndex>, OnInit 
     return '/Stammdaten/Verlage'
   }
 }
-

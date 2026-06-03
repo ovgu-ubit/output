@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from "../../../output-interfaces/Statistics";
+import {  FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME  } from '@output/interfaces';
+import { createForbiddenHttpException, createInvalidRequestHttpException } from '../common/api-error';
 import { InstituteService } from '../institute/institute.service';
 import { Publication } from '../publication/core/Publication.entity';
 
@@ -24,6 +25,27 @@ export class StatisticsService {
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
         private instituteService: InstituteService
     ) { }
+
+    public getPublicationStatistic(
+        reportingYear: number,
+        statistic: STATISTIC,
+        groups: GROUP[] | undefined,
+        timeframe: TIMEFRAME,
+        filterOptions?: FilterOptions,
+        highlightOptions?: HighlightOptions,
+        options?: { canReadNetCosts?: boolean },
+    ) {
+        if (!reportingYear) {
+            throw createInvalidRequestHttpException('year has to be given');
+        }
+
+        const normalizedGroups = !groups || (highlightOptions && Object.keys(highlightOptions).length > 0) ? [] : groups;
+        if (statistic === STATISTIC.NET_COSTS && !options?.canReadNetCosts) {
+            throw createForbiddenHttpException();
+        }
+
+        return this.publication_statistic(reportingYear, statistic, normalizedGroups, timeframe, filterOptions, highlightOptions);
+    }
 
     async publication_statistic(reporting_year, statistic: STATISTIC, by_entity: GROUP[], timeframe: TIMEFRAME, filterOptions?: FilterOptions, highlightOptions?: HighlightOptions) {
         let query = this.pubRepository.createQueryBuilder('publication')
@@ -305,12 +327,19 @@ export class StatisticsService {
             query = query.andWhere(where, { costCenterId: filterOptions.costCenterId })
         }
         if (filterOptions?.notCostCenterId !== undefined) {
-            query = this.addCostCenterJoin(query);
             if (filterOptions.notCostCenterId.findIndex(e => e === null) !== -1) {
                 filterOptions.notCostCenterId = filterOptions.notCostCenterId.filter(e => e != null);
-                query = query.andWhere('cost_center.id IS NOT NULL')
+                query = query.andWhere(
+                    'EXISTS (SELECT 1 FROM invoice included_invoice WHERE included_invoice."publicationId" = publication.id AND included_invoice."costCenterId" IS NOT NULL)'
+                )
+                query = query.andWhere(
+                    'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IS NULL)'
+                )
             }
-            if (filterOptions.notCostCenterId.length > 0) query = query.andWhere('(cost_center.id NOT IN (:...notCostCenterId) OR cost_center.id IS NULL)', { notCostCenterId: filterOptions.notCostCenterId })
+            if (filterOptions.notCostCenterId.length > 0) query = query.andWhere(
+                'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IN (:...notCostCenterId))',
+                { notCostCenterId: filterOptions.notCostCenterId }
+            )
         }
         where = "";
         if (filterOptions?.pubTypeId !== undefined) {

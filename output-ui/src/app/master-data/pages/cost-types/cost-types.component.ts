@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
-import { CostType } from '../../../../../../output-interfaces/Publication';
+import {  CostType  } from '@output/interfaces';
 import { CostTypeFormComponent } from '../../../form/cost-type-form/cost-type-form.component';
-import { CostTypeIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  CostTypeIndex  } from '@output/interfaces';
 
 @Component({
     selector: 'app-cost-types',
@@ -20,7 +20,9 @@ export class CostTypesComponent implements TableParent<CostTypeIndex>, OnInit {
   headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
-    { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' }
+    { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
+    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' }
   ];
 
   constructor(public ctService: CostTypeService) { }

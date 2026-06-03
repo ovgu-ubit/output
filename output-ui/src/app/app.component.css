@@ -1,0 +1,26 @@
+.demo-banner-offset {
+  padding-bottom: 56px;
+}
+
+.demo-banner {
+  align-items: center;
+  background: #fff8e1;
+  border-top: 1px solid rgba(0, 0, 0, 0.16);
+  bottom: 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: center;
+  left: 0;
+  min-height: 44px;
+  padding: 8px 16px;
+  position: fixed;
+  right: 0;
+  text-align: center;
+  z-index: 1000;
+}
+
+.demo-banner a {
+  font-weight: 600;
+}

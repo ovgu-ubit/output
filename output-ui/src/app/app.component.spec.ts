@@ -54,7 +54,15 @@ describe('AppComponent', () => {
       schemas: [NO_ERRORS_SCHEMA],
     })
       .overrideComponent(AppComponent, {
-        set: { template: '' }
+        set: {
+          template: `
+            <main [class.demo-banner-offset]="this.demoAuth"></main>
+            <div class="demo-banner" *ngIf="this.demoAuth">
+              <span>Demo-Version: Diese Instanz dient nur zur Erprobung.</span>
+              <a routerLink="/demo-info">Informationen zu Impressum, Datenschutz und Lizenz</a>
+            </div>
+          `
+        }
       })
       .compileComponents();
   });
@@ -109,6 +117,24 @@ describe('AppComponent', () => {
       fallbackMessage: 'Backend nicht erreichbar oder nicht betriebsbereit.',
       bypassBackendUnavailableSuppression: true,
     });
+    discardPeriodicTasks();
+  }));
+
+  it('shows a demo banner in demo mode', fakeAsync(() => {
+    runtimeConfigService.getValue.and.callFake(<T>(key: string): T => {
+      if (key === 'security') return true as T;
+      if (key === 'authorization_service') return 'demo' as T;
+      if (key === 'theme') return 'ovgu' as T;
+      return null as T;
+    });
+
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
+
+    fixture.detectChanges();
+    tick();
+
+    expect(fixture.nativeElement.querySelector('.demo-banner')?.textContent).toContain('Demo-Version');
     discardPeriodicTasks();
   }));
 });

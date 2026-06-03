@@ -9,7 +9,7 @@ import { EMPTY, filter, firstValueFrom, map, of, switchMap, takeUntil } from 'rx
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { ImportWorkflow } from '../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow  } from '@output/interfaces';
 import { WorkflowService } from '../../workflow.service';
 import { WorkflowFormPage } from '../workflow-form-page.interface';
 import { ImportFormFacade } from './import-form-facade.service';
@@ -80,7 +80,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   ngOnDestroy(): void {
     if (this.entity?.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.workflowService.update({ id: this.entity.id, locked_at: null }).subscribe();
+      this.workflowService.unlockImport(this.entity.id).subscribe();
     }
     this.facade.destroy();
   }
@@ -109,7 +109,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
 
     if (this.entity.id && !this.release && !this.entity?.published_at && !this.entity?.deleted_at) {
       this.release = true;
-      this.workflowService.update({ id: this.entity.id, locked_at: null }).subscribe({
+      this.workflowService.unlockImport(this.entity.id).subscribe({
         next: () => {
           this.router.navigateByUrl('/workflow/publication_import');
         }
@@ -209,7 +209,7 @@ export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   private showSaveSuccess(id?: number) {
     this.snackBar.open(
       'Workflow erfolgreich gespeichert unter ID ' + id + '.',
-      'Sehr schoen.',
+      'Sehr schön.',
       { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
     );
   }

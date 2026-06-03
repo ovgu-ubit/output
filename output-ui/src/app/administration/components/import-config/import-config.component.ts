@@ -2,7 +2,7 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
-import { UpdateMapping, UpdateOptions } from '../../../../../../output-interfaces/Config';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
 

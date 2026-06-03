@@ -1,4 +1,4 @@
-import { ApiErrorCode } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { ErrorMessageService } from './error-message.service';
 
 describe('ErrorMessageService', () => {

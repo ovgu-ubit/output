@@ -2,7 +2,7 @@ import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/co
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
-import { CostItem, Invoice } from '../../../../../output-interfaces/Publication';
+import {  CostItem, Invoice  } from '@output/interfaces';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { CostCenterFormComponent } from '../cost-center-form/cost-center-form.component';
 import { CostItemFormComponent } from '../cost-item-form/cost-item-form.component';

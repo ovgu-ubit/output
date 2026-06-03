@@ -5,7 +5,7 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { EntityFormComponent } from 'src/app/services/entities/service.interface';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { InstituteService } from 'src/app/services/entities/institute.service';
-import { Author, Institute } from '../../../../../output-interfaces/Publication';
+import {  Author, Institute  } from '@output/interfaces';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 import { InstituteFormComponent } from '../institute-form/institute-form.component';
 import { map, Observable, of } from 'rxjs';

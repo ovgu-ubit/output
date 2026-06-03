@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
-import { GROUP, STATISTIC, TIMEFRAME } from '../../../../output-interfaces/Statistics';
+import {  GROUP, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import { StatisticsService } from './statistics.service';
 

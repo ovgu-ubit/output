@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
 import { DataSource, EntityManager, ILike, In, IsNull, LessThan, Repository, TreeRepository } from 'typeorm';
-import { InstituteIndex } from '../../../output-interfaces/PublicationIndex';
+import {  InstituteIndex  } from '@output/interfaces';
 import { Author } from '../author/Author.entity';
 import { deleteAliasCollection, getProvidedOwnedCollection, LockableEntity, replaceAliasCollection, stripOwnedCollections } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
-import { createEntityLockedHttpException, createPersistenceHttpException } from '../common/api-error';
+import { createEntityLockedHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
@@ -58,6 +58,12 @@ export class InstituteService {
         const inst = await this.repository.findOne({ where: { id }, relations: { super_institute: true, sub_institutes: true, aliases: true } });
         if (!inst || !writer) return inst;
         return this.acquireInstituteEditLock(inst, user);
+    }
+
+    public async oneOrFail(id: number, writer: boolean, user?: string) {
+        const institute = await this.one(id, writer, user);
+        if (!institute) throw createNotFoundHttpException('Institute not found.');
+        return institute;
     }
 
     public async delete(insts: Institute[]) {

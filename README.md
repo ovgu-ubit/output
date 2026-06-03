@@ -14,6 +14,42 @@ General information can be found in the [Wiki](https://github.com/ovgu-ubit/outp
 - Node.JS 22
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
+### Workspace setup
+This repository is managed as an npm workspace from the root directory. The workspace contains:
+
+- `output-api`: NestJS backend
+- `output-ui`: Angular frontend
+- `output-interfaces`: shared TypeScript interfaces used by backend and frontend
+
+Install dependencies from the repository root:
+
+> $ npm install
+>
+
+The shared interfaces are a separate package and must be built before backend or frontend builds can consume them. The root scripts do this automatically.
+
+Useful root-level commands:
+
+> $ npm run build:interfaces
+>
+> $ npm run build:api
+>
+> $ npm run build:ui
+>
+> $ npm run build:ui:prod
+>
+
+For local development, use the root watch scripts. They build `output-interfaces` once, keep it running in watch mode, and start the selected application:
+
+> $ npm run dev:api
+>
+> $ npm run dev:ui
+>
+> $ npm run dev
+>
+
+The workspace uses a nested npm install strategy. Keep application runtime dependencies in the package that uses them (`output-api` or `output-ui`) instead of adding them to the root package.
+
 ### Docker 
 A simple way to set up the application is to user our docker image. Pull the image:
 
@@ -49,33 +85,76 @@ For some services, abstract superclasses are defined. These can be extended by u
 ### Init Database
 The init service creates the DB schema and fills it with some basic master data such as open access categories. You may extend this service to initialize other master data of your institution.
 
-> $ npm run i
+Run this from the repository root:
+
+> $ npm install
 >
-> $ npm run start:init
+> $ npm run build:interfaces
+>
+> $ npm --workspace output run start:init
 > 
 
+### Demo database reset
+When `DEMO_MODE=true`, the backend resets the demo database on startup before accepting HTTP requests and daily at 03:00 Europe/Berlin. Set `DEMO_RESET_SQL_PATH` to a data-only PostgreSQL dump that is mounted into the container, for example `/config/demo-reset.sql`.
+
+Create the snapshot from a prepared demo database:
+
+```bash
+pg_dump --data-only --column-inserts --no-owner --no-privileges --exclude-table=public.migrations --file demo-reset.sql <demo-db>
+```
+
+The regular TypeORM migrations still manage the schema. The demo reset keeps the migrations table and restores only the demo data from the snapshot.
+`pg_dump` may warn about circular foreign-key constraints on tables such as `institute`, `cost_center`, or `invoice`. This is expected for the current schema; the reset defers foreign-key checks while importing the snapshot.
+
 ### Run backend api locally
-> $ npm run start:dev
+Run the backend from the repository root. This keeps `output-interfaces` in watch mode and starts the NestJS backend in watch mode:
+
+> $ npm run dev:api
+>
+
+For a non-watch dev start, use:
+
+> $ npm run start:api
 > 
 ### Run backend productively
 We recommend running the backend api on a Linux server using pm2, adapt `output-api/output-server-prod.config.js'  for this case and register it with pm2, running this command to update your application:
-> $ npm run i
+> $ npm install
 > 
-> $ npm run build
+> $ npm run build:api
 
 Before running the system the first time, use
-> $ npm run start:init_{test|prod}
+> $ npm run build:interfaces
 >
+> $ npm --workspace output run start:init_{test|prod}
+> 
+> $ npm --workspace output run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts --fake
 
-Alternatively to pm2, you can also use `npm run start:{test|prod}` after building the software.
+The last line ensures that the migrations table is populated for future migrations.
+
+Alternatively to pm2, you can also use `npm --workspace output run start:{test|prod}` after building the software.
 
 ### run frontend locally
-> $ npm i
+Run the frontend from the repository root. This keeps `output-interfaces` in watch mode and starts the Angular dev server:
+
+> $ npm run dev:ui
 > 
-> $ npm start
+To start both backend and frontend together, use:
+
+> $ npm run dev
 
 ### build frontend distributables
-> $ ng build --configuration {test|production} --base-href /output/
+Build frontend distributables from the repository root:
+
+> $ npm run build:ui
+>
+> $ npm run build:ui:prod
+>
+
+The root build scripts build `output-interfaces` first. If you need to pass additional Angular options such as a custom `base-href`, run the Angular workspace script directly after building the interfaces:
+
+> $ npm run build:interfaces
+>
+> $ npm --workspace output-ui run ng -- build --configuration {test|production} --base-href /output/
 
 Copy these distributables to your web server and configure it for an angular web app. For apache2, the configuration file can look as follows:
 
@@ -177,14 +256,19 @@ At Otto-von-Guericke University Magdeburg, authentication is handled through Shi
 
 ## Updating <a name="updating"></a>
 1. Fetch new codebase from GitHub
-2. Update dependencies in both output-api/ and output-ui/ with
+2. Update dependencies from the repository root with
 
-> $ npm i --force
+> $ npm install
    
-3. Build and deploy frontend distributables like in installation
+3. Build and deploy frontend distributables like in installation:
+
+> $ npm run build:ui:prod
+
 4. Build backend and run pending migrations for DB schema:
 
-> $ npm run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
+> $ npm run build:api
+
+> $ npm --workspace output run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts
 
 
 

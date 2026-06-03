@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
-import { OACategoryIndex } from "../../../output-interfaces/PublicationIndex";
+import { Request } from "express";
+import {  OACategoryIndex  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { OACategoryService } from "./oa-category.service";
@@ -16,8 +17,9 @@ export class OACategoryController extends AbstractCrudController<OA_Category, OA
     }
 
     @Get("index")
-    async index(@Query('reporting_year') reporting_year:number) : Promise<OACategoryIndex[]> {
-        return await this.service.index(reporting_year);
+    @UseGuards(AccessGuard)
+    async index(@Query('reporting_year') reporting_year:number, @Req() request: Request) : Promise<OACategoryIndex[]> {
+        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false);
     }
 
     @Post('combine')

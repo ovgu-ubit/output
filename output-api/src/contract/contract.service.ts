@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
 import { DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { ZodError } from 'zod';
-import { InvoiceKind } from '../../../output-interfaces/Publication';
-import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
+import {  ContractModel, InvoiceKind  } from '@output/interfaces';
+import {  ContractIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
 import { assertCreateRequestHasNoId, hasProvidedEntityId } from '../common/entity-id';
@@ -15,7 +15,9 @@ import { PublicationService } from '../publication/core/publication.service';
 import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
 import { ContractIdentifier } from './ContractIdentifier.entity';
-import { parseContractModelParams } from './contract-model-params.schema';
+import { ContractModelParams, parseContractModelParams } from './contract-model-params.schema';
+import { GreaterEntity } from '../greater_entity/GreaterEntity.entity';
+import { GreaterEntityService } from '../greater_entity/greater-entitiy.service';
 
 type NormalizedContract = DeepPartial<Contract> & {
     identifiers?: (DeepPartial<ContractIdentifier> & { id?: number | null })[];
@@ -32,6 +34,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         @InjectRepository(ContractIdentifier) private idRepository: Repository<ContractIdentifier>,
         @InjectRepository(ContractComponent) private contractComponentRepository: Repository<ContractComponent>,
         @InjectRepository(Invoice) private invoiceRepository: Repository<Invoice>,
+        private greaterEntityService: GreaterEntityService,
         private dataSource: DataSource,
     ) {
         super(repository, configService);
@@ -70,6 +73,12 @@ export class ContractService extends AbstractEntityService<Contract> {
             }
 
             const normalizedContract = this.normalizeContractIdentifiers(this.normalizeContractComponents(contract as NormalizedContract));
+            if (normalizedContract.components) {
+                for (const component of normalizedContract.components) {
+                    await this.resolveJournalPricesEntityIds(component);
+                }
+            }
+
             const savedContract = await manager.getRepository(Contract).save(normalizedContract).catch((error: unknown) => {
                 throw createPersistenceHttpException(error);
             });
@@ -108,6 +117,8 @@ export class ContractService extends AbstractEntityService<Contract> {
                 throw new BadRequestException('contract.id is required to create a contract component');
             }
 
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
+
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
             });
@@ -130,6 +141,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             }
 
             const normalizedComponent = this.validateAndNormalizeContractComponent(component);
+            await this.resolveJournalPricesEntityIds(normalizedComponent);
             const savedComponent = await manager.getRepository(ContractComponent).save(normalizedComponent).catch(err => {
                 throw createPersistenceHttpException(err)
             });
@@ -158,6 +170,14 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
 
         return this.splitContractComponentInvoices(component);
+    }
+
+    public async oneComponentOrFail(id: number) {
+        const component = await this.oneComponent(id);
+        if (!component) {
+            throw createNotFoundHttpException('Contract component not found.');
+        }
+        return component;
     }
 
     public async deleteComponents(components: Pick<ContractComponent, 'id'>[], manager?: EntityManager) {
@@ -199,31 +219,41 @@ export class ContractService extends AbstractEntityService<Contract> {
         }));
     }
 
-    public async index(reporting_year: number): Promise<ContractIndex[]> {
+    public async index(reporting_year: number, canReadNetCosts = false): Promise<ContractIndex[]> {
         let query = this.repository.createQueryBuilder('contract')
             .leftJoin('contract.publisher', 'publisher')
+            .leftJoin('contract.publications', 'publication')
             .select('contract.id', 'id')
             .addSelect('contract.label', 'label')
             .addSelect('contract.start_date', 'start_date')
             .addSelect('contract.end_date', 'end_date')
             .addSelect('contract.invoice_amount', 'invoice_amount')
             .addSelect('publisher.label', 'publisher')
-            .addSelect('COUNT(publication.id)', 'pub_count')
+            .addSelect('COUNT(DISTINCT publication.id)', 'pub_count_total')
             .groupBy('contract.id')
             .addGroupBy('contract.start_date')
             .addGroupBy('contract.end_date')
             .addGroupBy('contract.invoice_amount')
             .addGroupBy('publisher.label');
 
+        if (canReadNetCosts) {
+            query = query
+                .leftJoin('publication.invoices', 'invoice')
+                .leftJoin('invoice.cost_items', 'cost_item');
+        }
+
         if (reporting_year) {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
-                .leftJoin('contract.publications', 'publication', 'publication."contractId" = contract.id and publication.pub_date between :beginDate and :endDate', { beginDate, endDate });
+                .addSelect('COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)', 'pub_count')
+                .addSelect(canReadNetCosts ? 'SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)' : 'NULL', 'net_costs')
+                .setParameters({ beginDate, endDate });
         }
         else {
             query = query
-                .leftJoin('contract.publications', 'publication', 'publication."contractId" = contract.id and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL');
+                .addSelect('COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)', 'pub_count')
+                .addSelect(canReadNetCosts ? 'SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)' : 'NULL', 'net_costs');
         }
 
         return query.getRawMany() as Promise<ContractIndex[]>;
@@ -433,6 +463,32 @@ export class ContractService extends AbstractEntityService<Contract> {
 
         if (duplicateId) {
             throw new BadRequestException(`Invoice ${duplicateId} cannot be assigned to invoices and pre_invoices at the same time`);
+        }
+    }
+
+    private async resolveJournalPricesEntityIds(component: DeepPartial<ContractComponent>): Promise<void> {
+        if (!component?.contract_model_params) {
+            return;
+        }
+
+        const params = component.contract_model_params as ContractModelParams;
+        if (!params.journal_prices || !Array.isArray(params.journal_prices)) {
+            return;
+        }
+
+        for (const entry of params.journal_prices) {
+            if (entry.issn && (entry.greater_entity_id === undefined || entry.greater_entity_id === null)) {
+                const cleanIssn = entry.issn.trim();
+                const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+                const greaterEntity = await this.greaterEntityService.findOrSave({
+                    label: title || cleanIssn,
+                    identifiers: [{ type: 'issn', value: cleanIssn }],
+                } as GreaterEntity);
+
+                if (greaterEntity?.id) {
+                    entry.greater_entity_id = greaterEntity.id;
+                }
+            }
         }
     }
 

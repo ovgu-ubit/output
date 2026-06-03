@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Status } from '../../../../../output-interfaces/Publication';
+import {  Status  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

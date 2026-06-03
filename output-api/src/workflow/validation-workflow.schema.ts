@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod";
-import { CompareOperation, JoinOperation } from "../../../output-interfaces/Config";
+import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import { ValidationWorkflow } from "./ValidationWorkflow.entity";
 import { createValidationHttpException } from "../common/api-error";
 
@@ -35,6 +35,7 @@ const ValidationCompareConditionSchema = z.object({
   path: NonEmptyStringSchema,
   comp: z.nativeEnum(CompareOperation),
   value: SearchFilterValueSchema,
+  negate: z.boolean().optional(),
 }).strict();
 
 const ValidationConditionSchema = z.discriminatedUnion("type", [

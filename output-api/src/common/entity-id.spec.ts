@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { assertCreateRequestHasNoId, hasProvidedEntityId } from './entity-id';
 
 describe('entity-id', () => {

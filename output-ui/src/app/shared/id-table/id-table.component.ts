@@ -1,7 +1,7 @@
 import { Component, inject, Input, ViewChild } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
-import { Identifiable, IIdentifier } from '../../../../../output-interfaces/Publication';
+import {  Identifiable, IIdentifier  } from '@output/interfaces';
 
 @Component({
     selector: 'app-id-table',

@@ -3,7 +3,7 @@ import { TableButton, TableHeader, TableParent } from 'src/app/table/table.inter
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { DuplicateDialogComponent } from '../../components/duplicate-dialog/duplicate-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { PublicationDuplicate } from '../../../../../../output-interfaces/Publication';
+import {  PublicationDuplicate  } from '@output/interfaces';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 
 @Component({

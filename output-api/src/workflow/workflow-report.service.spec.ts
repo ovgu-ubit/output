@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
-import { WorkflowType } from '../../../output-interfaces/Workflow';
+import {  ApiErrorCode  } from '@output/interfaces';
+import {  WorkflowType  } from '@output/interfaces';
 import { WorkflowReportService } from './workflow-report.service';
 
 const expectApiError = async (

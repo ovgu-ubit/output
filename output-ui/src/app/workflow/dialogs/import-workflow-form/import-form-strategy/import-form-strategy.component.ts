@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil, tap } from 'rxjs';
-import { ImportStrategy, ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportStrategy, ImportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
@@ -9,6 +9,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
 
 @Component({
   selector: 'app-import-form-strategy',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-strategy.component.html',
   styleUrl: './import-form-strategy.component.css',
@@ -178,10 +179,7 @@ export class ImportFormStrategyComponent implements OnInit, WorkflowFormPage {
           parallelCalls: [1, [Validators.min(1), Validators.max(20)]],
           url_lookup: ['', Validators.required],
           url_retrieve: ['', Validators.required],
-          max_res: [100, [Validators.required, Validators.min(1), Validators.max(5000)]],
-          max_res_name: ['', Validators.required],
           request_mode: ['', Validators.required],
-          offset_name: ['', Validators.required],
           offset_start: [0, [Validators.min(0)]],
           search_text_combiner: ['', Validators.required],
           get_count: ['', Validators.required],
@@ -201,10 +199,7 @@ export class ImportFormStrategyComponent implements OnInit, WorkflowFormPage {
           parallelCalls: [1, [Validators.min(1), Validators.max(20)]],
           url_count: ['', Validators.required],
           url_items: ['', Validators.required],
-          max_res: [100, [Validators.required, Validators.min(1), Validators.max(5000)]],
-          max_res_name: ['', Validators.required],
           request_mode: ['', Validators.required],
-          offset_name: ['', Validators.required],
           offset_start: [0, [Validators.min(0)]],
           offset_count: [0, [Validators.min(0)]],
           search_text_combiner: ['', Validators.required],

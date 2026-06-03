@@ -20,6 +20,7 @@ export class AppComponent implements OnInit, OnDestroy {
   public institution: string = '';
   public isLoading: boolean = true;
   public security: boolean;
+  public demoAuth: boolean;
   private readonly heartbeatIntervalMs = 60000;
 
   constructor(public tokenService: AuthorizationService,
@@ -36,6 +37,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.user = this.tokenService.getUser();
     this.security = this.runtimeConfigService.getValue<boolean>("security");
+    this.demoAuth = this.runtimeConfigService.getValue<string>("authorization_service") === "demo";
     this.configService.get("institution_short_label").pipe(
       takeUntil(this.destroy$),
       catchError(() => of(null))

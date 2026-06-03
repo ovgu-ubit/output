@@ -1,12 +1,12 @@
-import { Body, Controller, Delete, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 import { ContractService } from './contract.service';
 import { Contract } from './Contract.entity';
-import { ContractIndex } from '../../../output-interfaces/PublicationIndex';
+import {  ContractIndex  } from '@output/interfaces';
 import { Permissions } from '../authorization/permission.decorator';
 import { AccessGuard } from '../authorization/access.guard';
 import { AbstractCrudController } from '../common/abstract-crud.controller';
-import { createNotFoundHttpException } from '../common/api-error';
 import { ContractComponent } from './ContractComponent.entity';
 
 @Controller('contract')
@@ -18,11 +18,12 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     }
 
     @Get('index')
+    @UseGuards(AccessGuard)
     @ApiOperation({ summary: 'List contract index entries' })
     @ApiQuery({ name: 'reporting_year', required: false, type: Number, description: 'Reporting year used to aggregate publication counts.' })
     @ApiResponse({ status: 200, description: 'Contract index entries for the requested reporting year.' })
-    async index(@Query('reporting_year') reporting_year: number): Promise<ContractIndex[]> {
-        return await this.service.index(reporting_year);
+    async index(@Query('reporting_year') reporting_year: number, @Req() request: Request): Promise<ContractIndex[]> {
+        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false);
     }
 
     @Get('component')
@@ -41,11 +42,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     @ApiResponse({ status: 200, description: 'The requested contract component.' })
     @ApiResponse({ status: 404, description: 'Contract component was not found.' })
     async oneComponent(@Query('id') id: number): Promise<ContractComponent> {
-        const component = await this.service.oneComponent(id);
-        if (!component) {
-            throw createNotFoundHttpException('Contract component not found.');
-        }
-        return component;
+        return this.service.oneComponentOrFail(id);
     }
 
     @Post('component')

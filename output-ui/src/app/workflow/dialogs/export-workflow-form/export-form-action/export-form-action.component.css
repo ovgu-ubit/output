@@ -10,6 +10,34 @@
   background: rgba(239, 83, 80, 0.18) !important;
 }
 
+.run-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.publication-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.filter-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .inline-result {
   width: 100%;
   margin-top: 8px;

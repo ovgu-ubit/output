@@ -88,6 +88,17 @@ describe('AppConfigService', () => {
         expect(getCall.where.scope._value).toEqual(expect.arrayContaining(['public', 'user']));
     });
 
+    it('lists accessible config based on user permissions', async () => {
+        repository.find.mockResolvedValueOnce([{ key: 'public_key', scope: 'public' }] as any);
+        repository.findOne.mockResolvedValueOnce({ key: 'user_key', scope: 'user' } as any);
+
+        await expect(service.listAccessibleConfig({ read: false }, undefined)).resolves.toEqual([{ key: 'public_key', scope: 'public' }]);
+        await expect(service.listAccessibleConfig({ read: true }, 'user_key')).resolves.toEqual({ key: 'user_key', scope: 'user' });
+        expect(service.resolveScopeForUser({ admin: true })).toBe('admin');
+        expect(service.resolveScopeForUser({ read: true })).toBe('user');
+        expect(service.resolveScopeForUser()).toBe('public');
+    });
+
     it('handles database config creation and updates', async () => {
         repository.findOneBy.mockResolvedValueOnce(null);
         repository.save.mockResolvedValueOnce({ key: 'x', value: 1 } as any);
@@ -100,6 +111,26 @@ describe('AppConfigService', () => {
 
         expect(repository.save).toHaveBeenNthCalledWith(1, { key: 'x', value: 1, scope: 'admin' });
         expect(repository.save).toHaveBeenNthCalledWith(2, { key: 'y', value: 3 });
+    });
+
+    it('wraps legacy atomic config values in arrays', async () => {
+        repository.find.mockResolvedValueOnce([
+            { id: 1, key: 'ror_id', value: 'https://ror.org/xxxxx' },
+            { id: 2, key: 'openalex_id', value: ['I123'] },
+            { id: 3, key: 'ignored_object', value: { nested: true } },
+        ] as any);
+
+        await service.normalizeAtomicArrayValues(['ror_id', 'openalex_id']);
+
+        expect(repository.find).toHaveBeenCalledWith({
+            select: ['id', 'key', 'value'],
+            where: { key: expect.anything() }
+        });
+        const findArgs = repository.find.mock.calls[0][0] as any;
+        expect(findArgs.where.key._value).toEqual(['ror_id', 'openalex_id']);
+        expect(repository.save).toHaveBeenCalledWith([
+            { id: 1, value: ['https://ror.org/xxxxx'] }
+        ]);
     });
 
     it('reconciles defaults by saving missing entries, updating descriptions, and deleting obsolete keys', async () => {

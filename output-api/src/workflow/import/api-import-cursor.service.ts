@@ -16,6 +16,7 @@ import { GreaterEntityService } from '../../greater_entity/greater-entitiy.servi
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { ContractService } from '../../contract/contract.service';
 import { LanguageService } from '../../publication/lookups/language.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { WorkflowReportService } from '../workflow-report.service';
 import { createWorkflowRunningHttpException } from '../../common/api-error';
@@ -23,12 +24,12 @@ import { createWorkflowRunningHttpException } from '../../common/api-error';
 @Injectable()
 export abstract class ApiImportCursorService extends AbstractImportService {
 
-    constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+    constructor(protected publicationService: PublicationService, protected authorService: AuthorService, protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected reportService: ReportItemService, protected instService: InstituteService, protected languageService: LanguageService, protected roleService: RoleService,
         protected invoiceService: InvoiceService, protected configService: AppConfigService, protected workflowReportService: WorkflowReportService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
     private newPublications: Publication[] = [];
@@ -63,14 +64,14 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         const data = this.getData(resp);
         this.numberOfPublications = this.getNumber(resp);
         for (const [idx, pub] of data.entries()) {
-            const flag = await this.publicationService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+            const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
             const flag2 = this.newPublications.find(e => e.doi.trim().toLocaleLowerCase() === this.getDOI(pub).trim().toLocaleLowerCase());
             if (flag2) console.log(`Redundant publication with DOI ${this.getDOI(pub)} at position ${idx} of request ${data['config']?.url}`)
             if (!flag && !flag2) {
                 const pubNew = await this.mapNew(pub);
                 if (pubNew) this.newPublications.push(pubNew);
             } else if (update) {
-                const orig = await this.publicationService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                 if (orig.locked || orig.delete_date) continue;
                 const pubUpd = await this.mapUpdate(pub, orig);
                 if (pubUpd) this.publicationsUpdate.push(pubUpd);

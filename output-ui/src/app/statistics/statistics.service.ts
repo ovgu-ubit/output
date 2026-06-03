@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map } from 'rxjs';
-import { FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME } from '../../../../output-interfaces/Statistics';
+import {  FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 
 @Injectable({

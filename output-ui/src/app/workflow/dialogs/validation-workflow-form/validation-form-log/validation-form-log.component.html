@@ -20,7 +20,7 @@
                 <div>{{ report.dry_run ? 'Ja' : 'Nein' }}</div>
             </div>
             <div>
-                <div class="eyebrow">Ausgeloest von</div>
+                <div class="eyebrow">Ausgeöst von</div>
                 <div>{{ report.by_user || 'unbekannt' }}</div>
             </div>
         </div>
@@ -37,22 +37,22 @@
 
         <div class="log-section">
             <div class="section-header">
-                <h3>Log-Eintraege</h3>
+                <h3>Log-Einträge</h3>
                 <div class="filter-controls">
                     <mat-form-field appearance="outline" class="filter-input">
                         <mat-label>Textfilter</mat-label>
                         <input matInput [(ngModel)]="messageFilter" placeholder="Nachricht durchsuchen">
                     </mat-form-field>
-                    <mat-checkbox [(ngModel)]="hideInfoItems">Info-Eintraege ausblenden</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="collapseLogEntries">Log-Eintraege einklappen</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="hideInfoItems">Info-Einträge ausblenden</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="collapseLogEntries">Log-Einträge einklappen</mat-checkbox>
                 </div>
             </div>
             @if (!report.items || report.items.length === 0) {
-            <p>Keine Log-Eintraege vorhanden.</p>
+            <p>Keine Log-Einträge vorhanden.</p>
             } @else if (filteredItems.length === 0) {
-            <p>Mit dem aktuellen Filter sind keine Log-Eintraege sichtbar.</p>
+            <p>Mit dem aktuellen Filter sind keine Log-Einträge sichtbar.</p>
             } @else if (collapseLogEntries) {
-            <p>{{ filteredItems.length }} Log-Eintraege eingeklappt.</p>
+            <p>{{ filteredItems.length }} Log-Einträge eingeklappt.</p>
             } @else {
             <div class="log-list">
                 <div *ngFor="let item of filteredItems" class="log-row" [ngClass]="getLevelClass(item.level)">

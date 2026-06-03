@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, of, throwError } from 'rxjs';
-import { ImportWorkflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  ImportWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import { WorkflowService } from './workflow.service';
 

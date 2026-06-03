@@ -3,7 +3,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
-import { HealthState } from '../../../output-interfaces/Config';
+import {  HealthState  } from '@output/interfaces';
 import { EnvSchemas } from './environment.schema';
 
 @Injectable()
@@ -34,6 +34,20 @@ export class AppConfigService {
         }
     }
 
+    public resolveScopeForUser(user?: { admin?: boolean; read?: boolean }): ConfigScope {
+        if (user?.admin) return 'admin';
+        if (user?.read) return 'user';
+        return 'public';
+    }
+
+    public async listAccessibleConfig(user?: { admin?: boolean; read?: boolean }, key?: string) {
+        const scope = this.resolveScopeForUser(user);
+        if (key) {
+            return (await this.listDatabaseConfig(scope, key))[0] ?? null;
+        }
+        return this.listDatabaseConfig(scope);
+    }
+
     public async listEnvConfig() {
         const keys = EnvSchemas.shape;
         const result = [];
@@ -50,6 +64,27 @@ export class AppConfigService {
         else {
             row.value = value
             return this.repository.save(row)
+        }
+    }
+
+    public async normalizeAtomicArrayValues(keys: string[]) {
+        if (!keys.length) return;
+        const rows = await this.repository.find({
+            select: ['id', 'key', 'value'],
+            where: { key: In(keys) }
+        });
+        const updates = rows
+            .filter(row =>
+                row.id !== undefined &&
+                row.value !== null &&
+                row.value !== undefined &&
+                !Array.isArray(row.value) &&
+                typeof row.value !== 'object'
+            )
+            .map(row => ({ id: row.id, value: [row.value] }));
+
+        if (updates.length) {
+            await this.repository.save(updates);
         }
     }
 
@@ -142,4 +177,3 @@ export class AppConfigService {
         }
     }
 }
-

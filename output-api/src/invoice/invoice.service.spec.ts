@@ -2,7 +2,7 @@ import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';

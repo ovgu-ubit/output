@@ -5,7 +5,7 @@
 <mat-dialog-content>
     <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
         <mat-card-header>
-            <mat-card-subtitle>Bitte pruefen Sie die Eingaben.</mat-card-subtitle>
+            <mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
             <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
@@ -13,7 +13,7 @@
     </mat-card>
     <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
         (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
-        <ng-container *ngFor="let field of this.fields; let i = index;">
+        <ng-container *ngFor="let field of this.displayFields; let i = index;">
             <div [ngSwitch]="field.type">
                 <mat-checkbox *ngSwitchCase="'boolean'" [formControlName]="field.key">{{field.title}}</mat-checkbox>
 

@@ -75,7 +75,7 @@
         <button mat-button [matMenuTriggerFor]="loginMenu"> <mat-icon>face</mat-icon> {{user}}
         </button>
         <mat-menu #loginMenu="matMenu">
-          <button mat-menu-item (click)="this.details()"> Profil </button>
+          <button mat-menu-item (click)="this.details()" *ngIf="!this.demoAuth"> Profil </button>
           <button mat-menu-item (click)="this.logout()"> Logout </button>
         </mat-menu>
       </ng-container>
@@ -83,4 +83,11 @@
     </div>
   </mat-toolbar-row>
 </mat-toolbar>
-<router-outlet></router-outlet>
+<main [class.demo-banner-offset]="this.demoAuth">
+  <router-outlet></router-outlet>
+</main>
+
+<div class="demo-banner" *ngIf="this.demoAuth">
+  <span>Demo-Version: Diese Instanz dient nur zur Erprobung.</span>
+  <a routerLink="/demo-info">Informationen zu Impressum, Datenschutz und Lizenz</a>
+</div>

@@ -42,6 +42,7 @@ export class AppConfigModule implements OnModuleInit {
 
   async onModuleInit() {
     await this.cfg.reconcileDefaults(CONFIG_DEFAULTS, CONFIG_DESCRIPTIONS, CONFIG_SCOPES); // legt fehlende Keys an
+    await this.cfg.normalizeAtomicArrayValues(['ror_id', 'openalex_id']);
   }
 
 }

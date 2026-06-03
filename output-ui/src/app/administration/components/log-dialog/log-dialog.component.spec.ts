@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LogDialogComponent } from './log-dialog.component';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 describe('LogDialogComponent', () => {
   let component: LogDialogComponent;
@@ -8,7 +9,11 @@ describe('LogDialogComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ LogDialogComponent ]
+      imports: [ LogDialogComponent ],
+      providers: [
+        { provide: MatDialogRef, useValue: {} },
+        { provide: MAT_DIALOG_DATA, useValue: { data: '', label: '' } }
+      ]
     })
     .compileComponents();
 

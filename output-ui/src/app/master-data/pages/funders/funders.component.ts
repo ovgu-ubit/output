@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { FunderService } from 'src/app/services/entities/funder.service';
-import { FunderIndex } from '../../../../../../output-interfaces/PublicationIndex';
+import {  FunderIndex  } from '@output/interfaces';
 import { FunderFormComponent } from '../../../form/funder-form/funder-form.component';
 
 @Component({

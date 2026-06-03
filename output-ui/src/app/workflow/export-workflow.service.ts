@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
-import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportWorkflow, WorkflowReport, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  SearchFilter  } from '@output/interfaces';
+import {  ExportWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { WorkflowService } from './workflow.service';
 
 @Injectable({
@@ -37,6 +37,10 @@ export class ExportWorkflowService implements EntityService<ExportWorkflow, Expo
 
   isLocked(id: number) {
     return this.api.isExportLocked(id);
+  }
+
+  unlock(id: number) {
+    return this.api.unlockExport(id);
   }
 
   export(id: number) {

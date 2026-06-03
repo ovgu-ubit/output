@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import { UpdateMapping } from "../../../output-interfaces/Config";
-import { ImportWorkflow as IImportWorkflow, ImportStrategy } from "../../../output-interfaces/Workflow";
+import {  UpdateMapping  } from '@output/interfaces';
+import {  ImportWorkflow as IImportWorkflow, ImportStrategy  } from '@output/interfaces';
 import { WorkflowReport } from "./WorkflowReport.entity";
 
 @Entity("workflow_import")

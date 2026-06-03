@@ -2,25 +2,28 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Language } from './Language.entity';
-import { createPersistenceHttpException } from '../../common/api-error';
+import { createNotFoundHttpException, createPersistenceHttpException } from '../../common/api-error';
+import { AppConfigService } from '../../config/app-config.service';
+import { AbstractEntityService } from '../../common/abstract-entity.service';
 
 @Injectable()
-export class LanguageService {
+export class LanguageService extends AbstractEntityService<Language> {
 
-    constructor(@InjectRepository(Language) private repository: Repository<Language>) { }
-
-    public save(pub: Language[]) {
-        return this.repository.save(pub).catch((error: unknown) => {
-            throw createPersistenceHttpException(error);
-        });
+    constructor(
+        @InjectRepository(Language) repository: Repository<Language>,
+        configService: AppConfigService,
+    ) {
+        super(repository, configService);
     }
 
-    public get() {
-        return this.repository.find();
-    }
-
-    public one(id:number) {
+    public override one(id:number) {
         return this.repository.findOne({where:{id}});
+    }
+
+    public override async oneOrFail(id: number, _writer = false, _user?: string, message = 'Language not found.') {
+        const language = await this.one(id);
+        if (!language) throw createNotFoundHttpException(message);
+        return language;
     }
 
     public async findOrSave(title: string, dryRun = false): Promise<Language> {

@@ -1,5 +1,5 @@
 import { Component, inject, Input, ViewChild } from '@angular/core';
-import { Alias, Aliasable } from '../../../../../output-interfaces/Alias';
+import {  Alias, Aliasable  } from '@output/interfaces';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 

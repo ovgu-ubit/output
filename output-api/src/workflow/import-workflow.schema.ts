@@ -1,6 +1,6 @@
 import { z, ZodError } from "zod";
 import { ImportWorkflow } from "./ImportWorkflow.entity";
-import { ImportStrategy } from "../../../output-interfaces/Workflow";
+import {  ImportStrategy  } from '@output/interfaces';
 import { createValidationHttpException } from "../common/api-error";
 
 const StrategyTypeSchema = z.enum([
@@ -116,10 +116,10 @@ const QueryOffsetStrategyConfig = z
       z.looseObject({
         url_count: z.string().min(1),
         url_items: z.string().min(1),
-        max_res: z.number().int().positive(),
-        max_res_name: z.string().min(1),
+        max_res: z.number().int().positive().optional(),
+        max_res_name: z.string().min(1).optional(),
         request_mode: z.enum(["offset", "page"]),
-        offset_name: z.string().min(1),
+        offset_name: z.string().min(1).optional(),
         offset_start: z.number().int(),
         get_count: JsonataExpr,
         get_items: JsonataExpr,
@@ -134,10 +134,10 @@ const LookupAndRetrieveStrategyConfig = z
       z.looseObject({
         url_lookup: z.string().min(1),
         url_retrieve: z.string().min(1),
-        max_res: z.number().int().positive(),
-        max_res_name: z.string().min(1),
+        max_res: z.number().int().positive().optional(),
+        max_res_name: z.string().min(1).optional(),
         request_mode: z.enum(["offset", "page"]),
-        offset_name: z.string().min(1),
+        offset_name: z.string().min(1).optional(),
         offset_start: z.number().int(),
         get_count: JsonataExpr,
         get_lookup_ids: JsonataExpr,

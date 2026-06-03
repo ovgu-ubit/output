@@ -1,7 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import { PublicationChange } from '../../../../../../output-interfaces/Workflow';
+import {  PublicationChange  } from '@output/interfaces';
 
 type PublicationChangePatch = {
   action?: string;

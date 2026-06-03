@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { ApiErrorCode } from '../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { AbstractCrudController } from './abstract-crud.controller';
 import { LockableEntity } from './abstract-entity.service';
 

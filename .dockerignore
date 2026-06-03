@@ -6,5 +6,6 @@ output-ui/node_modules
 output-ui/dist
 output-ui/.angular
 output-ui/.vscode
+node_modules/
 *.md
 .git

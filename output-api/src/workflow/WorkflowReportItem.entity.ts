@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { WorkflowReportItem as IWorkflowReportItem, WorkflowReportItemLevel } from "../../../output-interfaces/Workflow";
+import {  WorkflowReportItem as IWorkflowReportItem, WorkflowReportItemLevel  } from '@output/interfaces';
 import { WorkflowReport } from "./WorkflowReport.entity";
 
 @Entity("workflow_report_item")

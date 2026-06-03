@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
-import { ValidationWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow  } from '@output/interfaces';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
@@ -28,7 +28,7 @@ export class ValidationFormGeneralComponent implements OnInit, WorkflowFormPage 
     this.form = this.formBuilder.group({
       id: [{ value: '', disabled: true }],
       workflow_id: [{ value: '', disabled: true }],
-      label: [''],
+      label: ['', Validators.required],
       version: [{ value: '', disabled: true }],
       created_at: [{ value: new Date(), disabled: true }],
       modified_at: [{ value: new Date(), disabled: true }],
@@ -60,6 +60,9 @@ export class ValidationFormGeneralComponent implements OnInit, WorkflowFormPage 
   }
 
   async persistFormToBackend(): Promise<boolean> {
+    this.form.markAllAsTouched();
+    if (this.form.invalid) return false;
+
     const res = {
       id: this.form.get('id')?.value,
       label: this.form.get('label')?.value,

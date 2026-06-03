@@ -1,8 +1,40 @@
-import { WorkflowType } from '../../../output-interfaces/Workflow';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import {  ApiErrorCode, WorkflowType  } from '@output/interfaces';
+import { DEMO_UPLOAD_MAX_BYTES } from '../common/demo-upload-policy';
 import { WorkflowController } from './WorkflowController';
+
+const expectApiError = async (
+    promise: Promise<unknown>,
+    expected: {
+        statusCode: number;
+        code: ApiErrorCode;
+        message?: string;
+    },
+) => {
+    try {
+        await promise;
+        fail(`Expected promise to reject with ${expected.code}`);
+    } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getResponse()).toMatchObject({
+            statusCode: expected.statusCode,
+            code: expected.code,
+            ...(expected.message ? { message: expected.message } : {}),
+        });
+    }
+};
+
+const uploadFile = (originalname: string, size = 512): Express.Multer.File => ({
+    originalname,
+    size,
+    buffer: Buffer.alloc(0),
+} as Express.Multer.File);
 
 describe('WorkflowController', () => {
     let controller: WorkflowController;
+    let configService: {
+        get: jest.Mock;
+    };
     let workflowService: {
         getImport: jest.Mock;
         getExport: jest.Mock;
@@ -10,14 +42,24 @@ describe('WorkflowController', () => {
         getValidation: jest.Mock;
         deleteValidations: jest.Mock;
         startValidation: jest.Mock;
+        unlockImport: jest.Mock;
+        unlockExport: jest.Mock;
+        unlockValidation: jest.Mock;
         validationStatus: jest.Mock;
         startExport: jest.Mock;
+        startImport: jest.Mock;
+        importImport: jest.Mock;
+        importExport: jest.Mock;
+        importValidation: jest.Mock;
     };
     let workflowReportService: {
         getReports: jest.Mock;
     };
 
     beforeEach(() => {
+        configService = {
+            get: jest.fn().mockResolvedValue(undefined),
+        };
         workflowService = {
             getImport: jest.fn(),
             getExport: jest.fn(),
@@ -25,8 +67,15 @@ describe('WorkflowController', () => {
             getValidation: jest.fn(),
             deleteValidations: jest.fn(),
             startValidation: jest.fn(),
+            unlockImport: jest.fn(),
+            unlockExport: jest.fn(),
+            unlockValidation: jest.fn(),
             validationStatus: jest.fn(),
             startExport: jest.fn(),
+            startImport: jest.fn(),
+            importImport: jest.fn(),
+            importExport: jest.fn(),
+            importValidation: jest.fn(),
         };
         workflowReportService = {
             getReports: jest.fn(),
@@ -34,7 +83,7 @@ describe('WorkflowController', () => {
 
         controller = new WorkflowController(
             {} as never,
-            {} as never,
+            configService as never,
             workflowService as never,
             workflowReportService as never,
         );
@@ -135,6 +184,30 @@ describe('WorkflowController', () => {
         expect(workflowService.startValidation).toHaveBeenCalledWith(33, 'alice');
     });
 
+    it('unlocks import workflows without forwarding a workflow body', async () => {
+        workflowService.unlockImport.mockResolvedValue({ id: 31, locked_at: null });
+
+        await controller.unlock_import(31, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockImport).toHaveBeenCalledWith(31, 'alice');
+    });
+
+    it('unlocks export workflows without forwarding a workflow body', async () => {
+        workflowService.unlockExport.mockResolvedValue({ id: 32, locked_at: null });
+
+        await controller.unlock_export(32, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockExport).toHaveBeenCalledWith(32, 'alice');
+    });
+
+    it('unlocks validation workflows without forwarding a workflow body', async () => {
+        workflowService.unlockValidation.mockResolvedValue({ id: 33, locked_at: null });
+
+        await controller.unlock_validation(33, { user: { username: 'alice' } });
+
+        expect(workflowService.unlockValidation).toHaveBeenCalledWith(33, 'alice');
+    });
+
     it('reads validation workflow status via the workflow service', async () => {
         workflowService.validationStatus.mockResolvedValue({ progress: -1, status: 'Started' });
 
@@ -142,5 +215,65 @@ describe('WorkflowController', () => {
 
         expect(status).toEqual({ progress: -1, status: 'Started' });
         expect(workflowService.validationStatus).toHaveBeenCalledWith(44);
+    });
+
+    it('rejects oversized file workflow uploads in demo mode', async () => {
+        configService.get.mockResolvedValue('true');
+        const file = uploadFile('publications.csv', DEMO_UPLOAD_MAX_BYTES + 1);
+
+        await expectApiError(
+            controller.run_import(12, false, { user: { username: 'demo' } }, false, 2026, [], file),
+            {
+                statusCode: HttpStatus.BAD_REQUEST,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: 'In der Demo-Version sind Uploads auf 1 MB begrenzt.',
+            },
+        );
+
+        expect(workflowService.startImport).not.toHaveBeenCalled();
+    });
+
+    it('rejects unsupported file workflow uploads in demo mode', async () => {
+        configService.get.mockResolvedValue(true);
+        const file = uploadFile('publications.zip');
+
+        await expectApiError(
+            controller.run_import(12, false, { user: { username: 'demo' } }, false, 2026, [], file),
+            {
+                statusCode: HttpStatus.BAD_REQUEST,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: 'In der Demo-Version sind nur Dateien mit folgenden Endungen erlaubt: .csv, .xlsx.',
+            },
+        );
+
+        expect(workflowService.startImport).not.toHaveBeenCalled();
+    });
+
+    it('allows larger file workflow uploads outside demo mode', async () => {
+        configService.get.mockResolvedValue('false');
+        workflowService.startImport.mockResolvedValue({ started: true });
+        const file = uploadFile('publications.csv', DEMO_UPLOAD_MAX_BYTES + 1);
+
+        await expect(
+            controller.run_import(12, true, { user: { username: 'alice' } }, true, 2026, [1], file),
+        ).resolves.toEqual({ started: true });
+
+        expect(workflowService.startImport).toHaveBeenCalledWith(12, 2026, [1], file, true, 'alice', true);
+    });
+
+    it('rejects oversized workflow definition imports in demo mode', async () => {
+        configService.get.mockResolvedValue('true');
+        const file = uploadFile('workflow.json', DEMO_UPLOAD_MAX_BYTES + 1);
+
+        await expectApiError(
+            controller.import_import(file),
+            {
+                statusCode: HttpStatus.BAD_REQUEST,
+                code: ApiErrorCode.INVALID_REQUEST,
+                message: 'In der Demo-Version sind Uploads auf 1 MB begrenzt.',
+            },
+        );
+
+        expect(workflowService.importImport).not.toHaveBeenCalled();
     });
 });

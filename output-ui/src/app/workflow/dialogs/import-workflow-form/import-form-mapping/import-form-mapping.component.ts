@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
-import { ImportWorkflow } from '../../../../../../../output-interfaces/Workflow';
+import {  ImportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
@@ -23,6 +23,7 @@ interface ParsedMapping {
 
 @Component({
   selector: 'app-import-form-mapping',
+  standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-mapping.component.html',
   styleUrl: './import-form-mapping.component.css',

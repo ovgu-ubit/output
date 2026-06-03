@@ -1,12 +1,11 @@
 import { Body, Controller, Get, Post, Query, Req, UseGuards, UsePipes } from "@nestjs/common";
-import { ApiBody, ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOkResponse, ApiQuery, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import { AppConfigService } from "./app-config.service";
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { ConfigValueValidationPipe } from "./config-value-validation.pipe";
-import { HealthState } from "../../../output-interfaces/Config";
+import {  HealthState  } from '@output/interfaces';
 import { Request } from "express";
-import { ConfigScope } from "./Config.entity";
 
 @Controller("config")
 @ApiTags("config")
@@ -16,12 +15,9 @@ export class ConfigController {
 
     @Get()
     @UseGuards(AccessGuard)
+    @ApiQuery({ name: 'key', required: false, type: String, description: 'Configuration key.' })
     async list(@Req() req: Request, @Query("key") key?: string) {
-        const userScope: ConfigScope = req?.['user']?.admin ? 'admin' : req?.['user']?.read ? 'user' : 'public';
-        let res;
-        if (key) res = (await this.configService.listDatabaseConfig( userScope, key))[0];
-        else res = await this.configService.listDatabaseConfig(userScope)
-        return res;
+        return this.configService.listAccessibleConfig(req?.['user'], key);
     }
 
     @Post()

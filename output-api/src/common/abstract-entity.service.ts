@@ -2,7 +2,7 @@ import { DeepPartial, EntityManager, FindManyOptions, FindOptionsRelations, Find
 import { AppConfigService } from '../config/app-config.service';
 import { EditLockOwnerStore, normalizeEditLockDate } from './edit-lock';
 import { hasProvidedEntityId } from './entity-id';
-import { createEntityLockedHttpException, createInvalidRequestHttpException, createPersistenceHttpException } from './api-error';
+import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createPersistenceHttpException } from './api-error';
 
 export interface LockableEntity {
     id?: number;
@@ -201,6 +201,14 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
             ...entity,
             locked_at: undefined,
         };
+    }
+
+    public async oneOrFail(id: number, writer: boolean, user?: string, message = 'Entity not found.') {
+        const entity = await this.one(id, writer, user);
+        if (!entity) {
+            throw createNotFoundHttpException(message);
+        }
+        return entity;
     }
 
     public delete(entities: TEntity[]) {

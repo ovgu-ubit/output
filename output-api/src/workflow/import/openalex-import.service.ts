@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { UpdateMapping, UpdateOptions } from '../../../../output-interfaces/Config';
+import {  UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
 import { GreaterEntity } from '../../greater_entity/GreaterEntity.entity';
 import { Publisher } from '../../publisher/Publisher.entity';
@@ -14,6 +14,7 @@ import { LanguageService } from '../../publication/lookups/language.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import { RoleService } from '../../publication/relations/role.service';
 import { ApiImportOffsetService } from './api-import-offset.service';
@@ -29,12 +30,13 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     id: string;
 
     constructor(protected publicationService: PublicationService, protected authorService: AuthorService,
+        protected publicationRelationService: PublicationRelationService,
         protected geService: GreaterEntityService, protected funderService: FunderService, protected publicationTypeService: PublicationTypeService,
         protected publisherService: PublisherService, protected oaService: OACategoryService, protected contractService: ContractService,
         protected invoiceService: InvoiceService, protected reportService: ReportItemService, protected instService: InstituteService,
         protected languageService: LanguageService, protected roleService: RoleService, protected configService: AppConfigService,
         protected workflowReportService: WorkflowReportService, protected http: HttpService) {
-        super(publicationService, authorService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
+        super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, invoiceService, reportService, instService, languageService, roleService, configService, workflowReportService, http);
 
     }
 
@@ -73,9 +75,10 @@ export class OpenAlexImportService extends ApiImportOffsetService {
     protected parallelCalls = 1;
 
     async setReportingYear(year: string) {
-        this.id = await this.configService.get('openalex_id')
+        const openalexIDs = await this.configService.get('openalex_id') as string[];
+        this.id = openalexIDs.join('|');
         let tmp = `publication_year:${year}`;
-        tmp = tmp += `,institutions.id:${this.id}`
+        tmp += `,institutions.id:${this.id}`
         this.params = [
             { key: 'filter', value: tmp }]
     }

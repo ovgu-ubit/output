@@ -1,2 +1,4 @@
 output-ui/.vscode/launch.json
 output-ui/.vscode/
+node_modules/
+dist/

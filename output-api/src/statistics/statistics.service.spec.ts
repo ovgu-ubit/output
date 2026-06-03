@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { StatisticsService } from './statistics.service';
 import { Publication } from '../publication/core/Publication.entity';
 import { InstituteService } from '../institute/institute.service';
-import { GROUP, STATISTIC, TIMEFRAME } from '../../../output-interfaces/Statistics';
+import {  GROUP, STATISTIC, TIMEFRAME  } from '@output/interfaces';
 
 describe('StatisticsService', () => {
     let service: StatisticsService;
@@ -157,5 +157,80 @@ describe('StatisticsService', () => {
             'cost_center.id IN (:...costCenterId)',
             { costCenterId: [5] }
         );
+    });
+    
+    it('excludes cost centers at publication level', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, { notCostCenterId: [5] });
+
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IN (:...notCostCenterId))',
+            { notCostCenterId: [5] }
+        );
+        expect(queryBuilder.andWhere).not.toHaveBeenCalledWith(
+            '(cost_center.id NOT IN (:...notCostCenterId) OR cost_center.id IS NULL)',
+            { notCostCenterId: [5] }
+        );
+    });
+
+    it('excludes unknown cost centers at publication level', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2025, STATISTIC.COUNT, [], TIMEFRAME.CURRENT_YEAR, { notCostCenterId: [null] as any });
+
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM invoice included_invoice WHERE included_invoice."publicationId" = publication.id AND included_invoice."costCenterId" IS NOT NULL)'
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'NOT EXISTS (SELECT 1 FROM invoice excluded_invoice WHERE excluded_invoice."publicationId" = publication.id AND excluded_invoice."costCenterId" IS NULL)'
+        );
+        expect(queryBuilder.andWhere).not.toHaveBeenCalledWith('cost_center.id IS NOT NULL');
+    });
+
+    it('normalizes grouped statistics requests before delegating to the query builder', async () => {
+        const publicationStatisticSpy = jest.spyOn(service, 'publication_statistic').mockResolvedValue([]);
+
+        await service.getPublicationStatistic(
+            2025,
+            STATISTIC.COUNT,
+            [GROUP.PUBLISHER],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            { publisherId: 5 } as any,
+            { canReadNetCosts: true },
+        );
+
+        expect(publicationStatisticSpy).toHaveBeenCalledWith(
+            2025,
+            STATISTIC.COUNT,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            { publisherId: 5 }
+        );
+    });
+
+    it('rejects statistic requests without a reporting year', async () => {
+        expect(() => service.getPublicationStatistic(
+            undefined as any,
+            STATISTIC.COUNT,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+        )).toThrow();
+    });
+
+    it('rejects net-cost statistics when the caller lacks read permission', async () => {
+        expect(() => service.getPublicationStatistic(
+            2025,
+            STATISTIC.NET_COSTS,
+            [],
+            TIMEFRAME.CURRENT_YEAR,
+            undefined,
+            undefined,
+            { canReadNetCosts: false },
+        )).toThrow();
     });
 });

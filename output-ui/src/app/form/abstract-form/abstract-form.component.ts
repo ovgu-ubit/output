@@ -10,7 +10,7 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
-import { Entity } from '../../../../../output-interfaces/Publication';
+import {  Entity  } from '@output/interfaces';
 import { CostTypeFormComponent } from '../cost-type-form/cost-type-form.component';
 import { PublisherFormComponent } from '../publisher-form/publisher-form.component';
 import { AliasTableComponent } from 'src/app/shared/alias-table/alias-table.component';
@@ -34,6 +34,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   @Input() preProcessing?: Observable<any>
   @Input() postProcessing?: Observable<any>
 
+  displayFields: { key: string, title: string, type?: string, required?: boolean, pattern?: RegExp, select?: string[] }[] = [];
   entity: T;
   disabled: boolean;
   saving = false;
@@ -59,49 +60,52 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   });
 
   ngAfterViewInit(): void {
-    if (!this.preProcessing) this.preProcessing = of(null);
-    if (!this.postProcessing) this.postProcessing = of(null);
-    this.preProcessing.pipe(concatMap(data => {
-      if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data?.locked) {
-        this.disable();
-      }
-      if (this.data.entity?.id && this.service) {//edit mode with current db entity
-        this.form.controls.id.disable();
-        return this.service.getOne(this.data.entity.id).pipe(map(data => {
-          this.entity = data;
-          this.form.patchValue(this.entity)
-          if (this.entity.locked_at) {
-            this.disable();
-            this._snackBar.open(`${this.name} wird leider gerade durch einen anderen Nutzer bearbeitet`, 'Ok.', {
-              duration: 5000,
-              panelClass: [`warning-snackbar`],
-              verticalPosition: 'top'
-            })
-          }
+    setTimeout(() => {
+      if (!this.preProcessing) this.preProcessing = of(null);
+      if (!this.postProcessing) this.postProcessing = of(null);
+      this.preProcessing.pipe(concatMap(data => {
+        if ((!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) || this.data?.locked) {
+          this.disable();
         }
-        ))
-      } else if (this.data.entity?.id) { //Edit mode with giving entity
-        this.entity = this.data.entity;
-        this.form.patchValue(this.entity)
-        this.form.controls.id.disable();
-        return of(null)
-      }
-      else {
-        if (!this.fields) this.fields = [];
-        this.fields = this.fields.filter(e => e.key !== 'id' || e.type === 'status')
-        if (this.data.entity) {
-          for (let field of this.fields) {
-            if (this.data.entity[field.key]) this.form.get(field.key)?.setValue(this.data.entity[field.key])
+        if (this.hasEntityId(this.data.entity) && this.service) {//edit mode with current db entity
+          this.displayFields = this.fields;
+          this.form.controls.id.disable();
+          return this.service.getOne(this.data.entity.id).pipe(map(data => {
+            this.entity = data;
+            this.form.patchValue(this.entity)
+            if (this.entity.locked_at) {
+              this.disable();
+              this._snackBar.open(`${this.name} wird leider gerade durch einen anderen Nutzer bearbeitet`, 'Ok.', {
+                duration: 5000,
+                panelClass: [`warning-snackbar`],
+                verticalPosition: 'top'
+              })
+            }
           }
-          this.entity = this.data.entity as any
-        } else this.entity = {} as any
-        return of(null)
-      }
-    }), concatMap(data => {return this.postProcessing})).subscribe({
-      error: (error) => {
-        this.errorPresentation.present(error, { action: 'load', entity: this.name });
-        this.dialogRef.close(null);
-      }
+          ))
+        } else if (this.hasEntityId(this.data.entity)) { //Edit mode with giving entity
+          this.displayFields = this.fields;
+          this.entity = this.data.entity;
+          this.form.patchValue(this.entity)
+          this.form.controls.id.disable();
+          return of(null)
+        }
+        else {
+          this.displayFields = this.fields?.filter(e => e.key !== 'id' || e.type === 'status') || [];
+          if (this.data.entity) {
+            for (let field of this.fields) {
+              if (this.data.entity[field.key] !== undefined && this.data.entity[field.key] !== null) this.form.get(field.key)?.setValue(this.data.entity[field.key])
+            }
+            this.entity = this.data.entity as any
+          } else this.entity = {} as any
+          return of(null)
+        }
+      }), concatMap(data => { return this.postProcessing })).subscribe({
+        error: (error) => {
+          this.errorPresentation.present(error, { action: 'load', entity: this.name });
+          this.dialogRef.close(null);
+        }
+      });
     });
   }
 
@@ -173,7 +177,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
         this.addPrefix();
       }
     }
-    const isUpdate = !!this.entity?.id;
+    const isUpdate = this.hasEntityId(this.entity);
     this.entity = this.buildEntityPayload(isUpdate);
 
     if (!this.shouldPersistOnSave()) {
@@ -226,10 +230,10 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
       dialogRef.afterClosed().subscribe(dialogResult => {
         if (dialogResult) { //save
           this.action();
-        } else if (this.entity?.id) this.dialogRef.close({ id: this.entity.id, locked_at: null })
+        } else if (this.hasEntityId(this.entity)) this.dialogRef.close({ id: this.entity.id, locked_at: null })
         else this.close()
       });
-    } else if (this.entity?.id) this.dialogRef.close({ id: this.entity.id, locked_at: null })
+    } else if (this.hasEntityId(this.entity)) this.dialogRef.close({ id: this.entity.id, locked_at: null })
     else this.close()
   }
 
@@ -296,7 +300,7 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
     for (const field of this.fields) {
       if (entity[field.key] === '') entity[field.key] = null as never;
     }
-    if (!entity.id) entity.id = undefined;
+    if (entity.id === null || entity.id === undefined) entity.id = undefined;
     if (isUpdate) entity.locked_at = null;
 
     return entity as T;
@@ -316,8 +320,12 @@ export class AbstractFormComponent<T extends Entity> implements OnInit, AfterVie
   private shouldReleaseLockOnClose(): boolean {
     const canWrite = this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin');
     return !!this.service
-      && !!this.entity?.id
+      && this.hasEntityId(this.entity)
       && canWrite
       && !this.entity?.locked_at;
+  }
+
+  private hasEntityId(entity: Partial<Entity> | null | undefined): boolean {
+    return entity?.id !== undefined && entity?.id !== null;
   }
 }

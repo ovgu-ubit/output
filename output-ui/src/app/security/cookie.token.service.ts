@@ -1,15 +1,26 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Location } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
 import { CookieService } from 'ngx-cookie-service';
 import { AuthorizationService } from './authorization.service';
 import { Router } from '@angular/router';
 import { RuntimeConfigService } from '../services/runtime-config.service';
+import { DemoLoginDialogComponent, DemoLoginDialogResult } from './demo-login-dialog/demo-login-dialog.component';
 const COOKIE_DETAILS = 'auth-details';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CookieTokenService extends AuthorizationService {
-  constructor(private cookieService: CookieService, private router:Router, private runtimeConfigService:RuntimeConfigService) { super(); }
+  constructor(
+    private cookieService: CookieService,
+    private router: Router,
+    private runtimeConfigService: RuntimeConfigService,
+    private dialog: MatDialog,
+    private http: HttpClient,
+    private location: Location,
+  ) { super(); }
 
   public override isValid(): boolean {
     return this.cookieService.check(COOKIE_DETAILS);
@@ -35,15 +46,71 @@ export class CookieTokenService extends AuthorizationService {
   }
 
   public override login(state) {
-    window.location.href = this.runtimeConfigService.getValue('auth_ui') + '/login?redirectURL=' + this.runtimeConfigService.getValue('self') + state?.url;
+    const redirectUrl = this.getRequestedPath(state);
+
+    if (this.isDemoAuth()) {
+      const dialogRef = this.dialog.open(DemoLoginDialogComponent, {
+        width: '380px',
+        disableClose: true,
+        data: { redirectUrl }
+      });
+      dialogRef.afterClosed().subscribe((result?: DemoLoginDialogResult) => {
+        if (!result?.success) return;
+        this.redirectToAppPath(result.redirectUrl || redirectUrl);
+      });
+      return;
+    }
+
+    this.redirectTo(this.getAuthUiBaseUrl() + 'login?redirectURL=' + encodeURIComponent(this.getAbsoluteAppUrl(redirectUrl)));
   }
 
   public override logout() {
-    window.location.href = this.runtimeConfigService.getValue('auth_api') + 'auth/logout';
+    if (this.isDemoAuth()) {
+      this.http.post(this.getAuthBaseUrl() + 'auth/logout', {}, { withCredentials: true }).subscribe({
+        next: () => this.redirectToAppPath('/'),
+        error: () => this.redirectToAppPath('/'),
+      });
+      return;
+    }
+
+    this.redirectTo(this.runtimeConfigService.getValue('auth_api') + 'auth/logout');
   }
 
   public override details() {
-    window.location.href = this.runtimeConfigService.getValue('auth_ui') + '/profile?redirectURL=' + this.runtimeConfigService.getValue('self') + this.router.url;
+    if (this.isDemoAuth()) return;
+    this.redirectTo(this.getAuthUiBaseUrl() + 'profile?redirectURL=' + encodeURIComponent(this.getAbsoluteAppUrl(this.router.url)));
+  }
+
+  private isDemoAuth(): boolean {
+    return this.runtimeConfigService.getValue('authorization_service') === 'demo';
+  }
+
+  private getAuthBaseUrl(): string {
+    return this.runtimeConfigService.getValue<string>('auth_api') || this.runtimeConfigService.getValue<string>('api');
+  }
+
+  private getAuthUiBaseUrl(): string {
+    return this.withTrailingSlash(this.runtimeConfigService.getValue<string>('auth_ui') || '');
+  }
+
+  private getRequestedPath(state?: { url?: string }): string {
+    return state?.url || this.router.url || '/';
+  }
+
+  private getAbsoluteAppUrl(path: string): string {
+    return new URL(this.location.prepareExternalUrl(path || '/'), window.location.origin).toString();
+  }
+
+  private redirectToAppPath(path: string): void {
+    this.redirectTo(this.location.prepareExternalUrl(path || '/'));
+  }
+
+  private withTrailingSlash(url: string): string {
+    return url.endsWith('/') ? url : url + '/';
+  }
+
+  private redirectTo(url: string): void {
+    window.location.href = url;
   }
 
 }

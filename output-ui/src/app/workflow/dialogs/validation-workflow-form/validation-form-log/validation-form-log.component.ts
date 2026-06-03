@@ -4,7 +4,7 @@ import { filter, switchMap, takeUntil } from 'rxjs';
 import { PublicationChangeLogComponent } from 'src/app/publications/dialogs/publication-change-log/publication-change-log.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ValidationWorkflowService } from 'src/app/workflow/validation-workflow.service';
-import { ValidationWorkflow, WorkflowReport, WorkflowReportItemLevel } from '../../../../../../../output-interfaces/Workflow';
+import {  ValidationWorkflow, WorkflowReport, WorkflowReportItemLevel  } from '@output/interfaces';
 import { ValidationFormFacade } from '../validation-form-facade.service';
 
 @Component({

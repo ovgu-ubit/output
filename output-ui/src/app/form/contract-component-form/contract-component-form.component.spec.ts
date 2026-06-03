@@ -1,30 +1,80 @@
-﻿import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReactiveFormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
-import { GreaterEntityService } from '../../services/entities/greater-entity.service';
-import { OACategoryService } from '../../services/entities/oa-category.service';
-import { PublicationTypeService } from '../../services/entities/publication-type.service';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { AuthorizationService } from 'src/app/security/authorization.service';
+import { OACategoryService } from 'src/app/services/entities/oa-category.service';
+import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
+import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
+import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { CostTypeService } from 'src/app/services/entities/cost-type.service';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { SharedModule } from 'src/app/shared/shared.module';
+
 import { ContractComponentFormComponent } from './contract-component-form.component';
+import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 describe('ContractComponentFormComponent', () => {
   let component: ContractComponentFormComponent;
   let fixture: ComponentFixture<ContractComponentFormComponent>;
 
+  const mockDialogRef = {
+    close: jasmine.createSpy('close')
+  };
+
+  const mockAuthService = {
+    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
+  };
+
+  const mockErrorService = {
+    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
+    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
+    present: jasmine.createSpy('present')
+  };
+
+  const mockOaService = {
+    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
+  };
+
+  const mockPubTypeService = {
+    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
+  };
+
+  const mockGreaterEntityService = {
+    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ContractComponentFormComponent],
-      imports: [ReactiveFormsModule],
-      providers: [
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: MatDialogRef, useValue: { close: jasmine.createSpy('close') } },
-        { provide: MatDialog, useValue: { open: jasmine.createSpy('open') } },
-        { provide: OACategoryService, useValue: { getAll: () => of([]) } },
-        { provide: PublicationTypeService, useValue: { getAll: () => of([]) } },
-        { provide: GreaterEntityService, useValue: { getAll: () => of([]) } },
+      imports: [
+        NoopAnimationsModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        SharedModule
       ],
-      schemas: [NO_ERRORS_SCHEMA]
+      declarations: [ 
+        ContractComponentFormComponent,
+        AbstractFormComponent
+      ],
+      providers: [
+        FormBuilder,
+        { provide: MatDialogRef, useValue: mockDialogRef },
+        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+        { provide: AuthorizationService, useValue: mockAuthService },
+        { provide: ErrorPresentationService, useValue: mockErrorService },
+        { provide: OACategoryService, useValue: mockOaService },
+        { provide: PublicationTypeService, useValue: mockPubTypeService },
+        { provide: GreaterEntityService, useValue: mockGreaterEntityService },
+        { provide: PublisherService, useValue: {} },
+        { provide: CostTypeService, useValue: {} },
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     })
     .compileComponents();
 

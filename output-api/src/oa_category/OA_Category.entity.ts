@@ -1,5 +1,5 @@
 import {Entity, PrimaryGeneratedColumn, Column, OneToMany} from "typeorm";
-import { OA_Category as IOA_Category } from "../../../output-interfaces/Publication"
+import {  OA_Category as IOA_Category  } from '@output/interfaces'
 import { Publication } from "../publication/core/Publication.entity";
 
 @Entity()

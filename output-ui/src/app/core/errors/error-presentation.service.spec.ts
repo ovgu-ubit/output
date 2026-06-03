@@ -1,6 +1,6 @@
 import { FormControl, FormGroup } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiErrorCode } from '../../../../../output-interfaces/ApiError';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { ApiErrorParser } from './api-error-parser.service';
 import { BackendAvailabilityService } from './backend-availability.service';
 import { ErrorMessageService } from './error-message.service';

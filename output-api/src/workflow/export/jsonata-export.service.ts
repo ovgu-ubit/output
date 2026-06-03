@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
-import { SearchFilter } from '../../../../output-interfaces/Config';
-import { ExportDisposition, ExportFormat, ExportWorkflow, WorkflowReportItemLevel, WorkflowType } from '../../../../output-interfaces/Workflow';
+import {  SearchFilter  } from '@output/interfaces';
+import {  ExportDisposition, ExportFormat, ExportWorkflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -12,10 +12,10 @@ import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { Publication } from '../../publication/core/Publication.entity';
-import { PublicationService } from '../../publication/core/publication.service';
+import { PublicationIndexService } from '../../publication/core/publication-index.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';
-import { PublicationIndex } from '../../../../output-interfaces/PublicationIndex';
+import {  PublicationIndex  } from '@output/interfaces';
 import { createInvalidRequestHttpException } from '../../common/api-error';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
@@ -44,7 +44,7 @@ export class JSONataExportService extends AbstractExportService {
     private workflowReport?: WorkflowReport;
 
     constructor(
-        private publicationService: PublicationService,
+        private publicationIndexService: PublicationIndexService,
         private configService: AppConfigService,
         private workflowReportService: WorkflowReportService,
         private invoiceService: InvoiceService,
@@ -77,9 +77,9 @@ export class JSONataExportService extends AbstractExportService {
         (await this.configService.listDatabaseConfig('admin')).forEach((entry) => {
             config[entry.key] = entry.value;
         });
-        (await this.configService.listEnvConfig()).forEach((entry) => {
+        /*(await this.configService.listEnvConfig()).forEach((entry) => {
             config[entry.key] = entry.value;
-        });
+        });*/
         this.config = config;
 
         this.workflowReport = await this.workflowReportService.createReport({
@@ -120,7 +120,7 @@ export class JSONataExportService extends AbstractExportService {
         });
 
         try {
-            let publications = await this.publicationService.getAll(filter?.filter, { serializeDates: true });
+            let publications = await this.publicationIndexService.getAll(filter?.filter, { serializeDates: true });
             if (filter) {
                 const configuredFilterServices = (await this.configService.get('filter_services')) ?? [];
                 for (const path of filter.paths) {

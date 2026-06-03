@@ -52,15 +52,7 @@
 
   <div class="container-fluid">
     <div style="display: flex; flex-flow: row wrap; justify-content: space-between;">
-      <div style="display: flex; flex-direction: row;justify-content: flex-start; gap: 10px">
-        <mat-form-field>
-          <input matInput type="text" [formControl]="searchControl" placeholder="Alle Spalten filtern">
-          <button type="button" *ngIf="searchControl.value" matSuffix mat-icon-button aria-label="Clear"
-            (click)="searchControl.setValue('')">
-            <mat-icon>close</mat-icon>
-          </button>
-        </mat-form-field>
-      </div>
+      <app-table-filter [searchControl]="searchControl"></app-table-filter>
       <form [formGroup]="pageForm" (ngSubmit)="goToPage()">
         <mat-form-field class="pageInput">
           <input matInput type="text" placeholder="Seitenzahl" formControlName="pageNumber"
@@ -135,12 +127,14 @@
               </div>
             </th>
             <ng-container *ngIf="!col.type || col.type === 'string'">
-              <td mat-cell *matCellDef="let d" [innerText]="truncString(d[col.colName], this.trunc, col)"
+              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | tableTruncate:this.trunc"
                 [matTooltip]="d[col.colName] && d[col.colName].length > this.trunc? d[col.colName] : null"
-                [matTooltipShowDelay]="800" [matTooltipHideDelay]="500"></td>
+                [matTooltipShowDelay]="800" [matTooltipHideDelay]="500" matTooltipPosition="above"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'number'">
-              <td mat-cell *matCellDef="let d" [innerText]="format(d[col.colName])"></td>
+              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | tableFormatNumber"
+                [matTooltip]="getCellTooltip(d, col)" [matTooltipShowDelay]="800"
+                [matTooltipHideDelay]="500" matTooltipPosition="above"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'pubs'">
               <td mat-cell *matCellDef="let d">
@@ -152,7 +146,7 @@
               </td>
             </ng-container>
             <ng-container *ngIf="col.type === 'euro'">
-              <td mat-cell *matCellDef="let d" [innerText]="formatEUR(d[col.colName])"></td>
+              <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | tableEuro"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'datetime'">
               <td mat-cell *matCellDef="let d" [innerText]="d[col.colName] | date :'dd.MM.yyyy HH:mm'"></td>
@@ -167,13 +161,13 @@
               </td>
             </ng-container>
             <ng-container *ngIf="col.type === 'doi'">
-              <td mat-cell *matCellDef="let d" [innerHTML]="doiHTML(d[col.colName])"></td>
+              <td mat-cell *matCellDef="let d" [innerHTML]="d[col.colName] | tableDoi"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'orcid'">
-              <td mat-cell *matCellDef="let d" [innerHTML]="orcidHTML(d[col.colName])"></td>
+              <td mat-cell *matCellDef="let d" [innerHTML]="d[col.colName] | tableOrcid"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'gnd'">
-              <td mat-cell *matCellDef="let d" [innerHTML]="gndHTML(d[col.colName])"></td>
+              <td mat-cell *matCellDef="let d" [innerHTML]="d[col.colName] | tableGnd"></td>
             </ng-container>
             <ng-container *ngIf="col.type === 'link'">
               <td mat-cell *matCellDef="let d"><a [href]="d[col.colName]" class="link-secondary"
@@ -185,7 +179,7 @@
               </td>
             </ng-container>
             <ng-container *ngIf="col.type === 'authors'">
-              <td mat-cell *matCellDef="let d" [innerHTML]="formatAuthors(d)"></td>
+              <td mat-cell *matCellDef="let d" [innerHTML]="d | tableAuthors"></td>
             </ng-container>
           </ng-container>
           <ng-container [matColumnDef]="col.colName+'-filter'">

@@ -1,15 +1,15 @@
-import { DynamicModule, forwardRef, Global, Module } from '@nestjs/common';
-import { AUTH_SERVICE, AuthorizationService } from './authorization.service';
+import { DynamicModule, Global, Module } from '@nestjs/common';
+import { AUTH_SERVICE } from './authorization.service';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { AppConfigModule } from '../config/app-config.module';
-import { ConfigService } from '@nestjs/config';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import path = require('path');
 import * as fs from 'fs';
-import { pathToFileURL } from 'url';
 import { AppConfigService } from '../config/app-config.service';
 import { AccessGuard } from './access.guard';
+import { DemoAuthModule } from '../demo-auth/demo-auth.module';
+import { DemoAuthService } from '../demo-auth/demo-auth.service';
 
 @Global()
 @Module({})
@@ -23,7 +23,8 @@ export class AuthorizationModule {
           timeout: 50000,
           maxRedirects: 5,
         }),
-        AppConfigModule
+        AppConfigModule,
+        DemoAuthModule
       ],
       controllers: [],
       providers: [
@@ -35,7 +36,7 @@ export class AuthorizationModule {
         useFactory: async (cfg: AppConfigService, ref: ModuleRef) => {
           const rel = await cfg.get('AUTH_SERVICE_PATH')!;
           const exported = await cfg.get('AUTH_SERVICE_EXPORT')!;
-          const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), "dist/output-api/src/"+rel+".js");
+          const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), "dist/src/"+rel+".js");
           if (!fs.existsSync(abs)) {
             throw new Error(`AUTH_SERVICE_PATH not found: ${abs}`);
           }
@@ -50,14 +51,15 @@ export class AuthorizationModule {
             throw new Error(`Export ${exported} in ${abs} ist keine Klasse/Funktion.`);
           }
 
-          const [reflector, configSvc, jwt, http] = await Promise.all([
+          const [reflector, configSvc, jwt, http, demoAuthService] = await Promise.all([
           ref.resolve(Reflector, undefined, { strict: false }),
           ref.resolve(AppConfigService, undefined, { strict: false }),
           ref.resolve(JwtService, undefined, { strict: false }),
           ref.resolve(HttpService, undefined, { strict: false }),
+          ref.resolve(DemoAuthService, undefined, { strict: false }),
 ]);
           // Wenn die Klasse @Injectable-abhängigkeiten hat, löst ModuleRef.create() diese auf:
-          const instance = new Impl(reflector, configSvc, jwt, http)//await ref.create(Impl as any);
+          const instance = new Impl(reflector, configSvc, jwt, http, demoAuthService)//await ref.create(Impl as any);
 
           // Sanity-Check auf das erwartete API
           if (typeof (instance as any)?.verify !== 'function') {

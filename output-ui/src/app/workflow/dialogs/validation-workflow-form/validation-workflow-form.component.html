@@ -18,6 +18,9 @@
             </mat-chip-set>
         </div>
         <div style="display: flex;justify-content: flex-end;">
+            <button mat-icon-button (click)="this.export()"
+                [matTooltip]="(this.facade.validation$ | async)?.label + ' exportieren'"
+                [matTooltipShowDelay]="800"><mat-icon>share</mat-icon></button>
             <button mat-icon-button (click)="this.save()" matTooltip="Speichern"
                 [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
             <button mat-icon-button (click)="this.abort()" matTooltip="Schliessen"

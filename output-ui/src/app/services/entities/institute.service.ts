@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { InstituteIndex } from '../../../../../output-interfaces/PublicationIndex';
-import { Institute } from '../../../../../output-interfaces/Publication';
+import {  InstituteIndex  } from '@output/interfaces';
+import {  Institute  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 @Injectable({

@@ -3,8 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 
-import { CompareOperation, JoinOperation, SearchFilter } from '../../../../output-interfaces/Config';
-import { ApiErrorCode } from '../../../../output-interfaces/ApiError';
+import {  CompareOperation, JoinOperation, SearchFilter  } from '@output/interfaces';
+import {  ApiErrorCode  } from '@output/interfaces';
 import { PublicationService } from './publication.service';
 import { Publication } from './Publication.entity';
 import { AuthorPublication } from '../relations/AuthorPublication.entity';
@@ -16,7 +16,11 @@ import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { AppConfigService } from '../../config/app-config.service';
 import { EditLockOwnerStore } from '../../common/edit-lock';
 import { InstituteService } from '../../institute/institute.service';
+import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
 import { PublicationChangeService } from './publication-change.service';
+import { PublicationChange } from './PublicationChange.entity';
+import { PublicationIndexService } from './publication-index.service';
+import { PublicationRelationService } from '../relations/publication-relation.service';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -41,6 +45,7 @@ const expectApiError = async (
 
 describe('PublicationService', () => {
     let service: PublicationService;
+    let publicationIndexService: PublicationIndexService;
     let pubRepository: jest.Mocked<Partial<Repository<Publication>>>;
     let pubAutRepository: jest.Mocked<Partial<Repository<AuthorPublication>>>;
     let invoiceRepository: jest.Mocked<Partial<Repository<Invoice>>>;
@@ -48,10 +53,11 @@ describe('PublicationService', () => {
     let idRepository: jest.Mocked<Partial<Repository<PublicationIdentifier>>>;
     let supplRepository: jest.Mocked<Partial<Repository<PublicationSupplement>>>;
     let duplRepository: jest.Mocked<Partial<Repository<PublicationDuplicate>>>;
-    let publicationChangeService: {
-        createPublicationChange: jest.Mock;
-        deletePublicationChangesForPublications: jest.Mock;
-    };
+    let publicationChangeRepository: jest.Mocked<Partial<Repository<PublicationChange>>>;
+    let workflowReportRepository: { existsBy: jest.Mock };
+    let publicationChangeService: PublicationChangeService;
+    let createPublicationChangeSpy: jest.SpyInstance;
+    let deletePublicationChangesForPublicationsSpy: jest.SpyInstance;
     let configService: { get: jest.Mock };
     let dataSource: { transaction: jest.Mock; getRepository: jest.Mock };
 
@@ -89,9 +95,12 @@ describe('PublicationService', () => {
             findOne: jest.fn(),
             save: jest.fn(),
         };
-        publicationChangeService = {
-            createPublicationChange: jest.fn(),
-            deletePublicationChangesForPublications: jest.fn(),
+        publicationChangeRepository = {
+            save: jest.fn(),
+            createQueryBuilder: jest.fn(),
+        };
+        workflowReportRepository = {
+            existsBy: jest.fn(async () => true),
         };
         configService = {
             get: jest.fn(async () => 5),
@@ -156,15 +165,23 @@ describe('PublicationService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PublicationService,
+                PublicationChangeService,
+                PublicationIndexService,
+                PublicationRelationService,
                 { provide: getRepositoryToken(Publication), useValue: pubRepository },
+                { provide: getRepositoryToken(PublicationChange), useValue: publicationChangeRepository },
+                { provide: getRepositoryToken(WorkflowReport), useValue: workflowReportRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
-                { provide: PublicationChangeService, useValue: publicationChangeService },
                 { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
 
         service = module.get(PublicationService);
+        publicationIndexService = module.get(PublicationIndexService);
+        publicationChangeService = module.get(PublicationChangeService);
+        createPublicationChangeSpy = jest.spyOn(publicationChangeService, 'createPublicationChange').mockImplementation(async (change) => change as PublicationChange);
+        deletePublicationChangesForPublicationsSpy = jest.spyOn(publicationChangeService, 'deletePublicationChangesForPublications').mockResolvedValue(undefined);
     });
 
     it('combines publications by preserving locked state and aggregating related records', async () => {
@@ -262,7 +279,7 @@ describe('PublicationService', () => {
         expect(idRepository.delete).toHaveBeenCalledWith({ entity: { id: In([62, 63]) } });
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([62, 63]) } });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([62, 63]) });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([62, 63], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([62, 63], expect.anything());
         expect(pubRepository.delete).toHaveBeenCalledWith([62, 63]);
     });
 
@@ -560,7 +577,7 @@ describe('PublicationService', () => {
     it('checks DOI or title existence using case-insensitive matching', async () => {
         pubRepository.findOne.mockResolvedValue({ id: 42 } as Publication);
 
-        const exists = await service.checkDOIorTitleAlreadyExists('10.1234/doi', 'Some Title');
+        const exists = await publicationIndexService.checkDOIorTitleAlreadyExists('10.1234/doi', 'Some Title');
 
         expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
             where: expect.arrayContaining([
@@ -576,7 +593,7 @@ describe('PublicationService', () => {
         const matchedPub = { id: 11, title: 'Trimmed Title', doi: '10.5678/abc' } as Publication;
         pubRepository.findOne.mockResolvedValue(matchedPub);
 
-        const result = await service.getPubwithDOIorTitle(' 10.5678/abc ', ' Trimmed Title ');
+        const result = await publicationIndexService.getPubwithDOIorTitle(' 10.5678/abc ', ' Trimmed Title ');
 
         expect(pubRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
             withDeleted: true,
@@ -641,7 +658,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 9, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
 
-        expect(publicationChangeService.createPublicationChange).not.toHaveBeenCalled();
+        expect(createPublicationChangeSpy).not.toHaveBeenCalled();
     });
 
     it('does not log changes when values are logically empty (null, undefined, "")', async () => {
@@ -666,7 +683,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 8, add_info: '' } as Publication], { by_user: 'scanner' } as any);
 
-        expect(publicationChangeService.createPublicationChange).not.toHaveBeenCalled();
+        expect(createPublicationChangeSpy).not.toHaveBeenCalled();
     });
 
     it('logs change patches from reloaded entities instead of partial save payloads', async () => {
@@ -693,7 +710,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 7, title: 'After' } as Publication], { by_user: 'scanner' } as any);
 
-        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+        expect(createPublicationChangeSpy).toHaveBeenCalledWith(expect.objectContaining({
             patch_data: expect.objectContaining({
                 before: {
                     title: 'Before',
@@ -728,7 +745,7 @@ describe('PublicationService', () => {
 
         await service.save([{ id: 7, authorPublications: after.authorPublications } as Publication], { by_user: 'admin' } as any);
 
-        expect(publicationChangeService.createPublicationChange).toHaveBeenCalledWith(expect.objectContaining({
+        expect(createPublicationChangeSpy).toHaveBeenCalledWith(expect.objectContaining({
             patch_data: expect.objectContaining({
                 after: expect.objectContaining({
                     authorPublications: expect.arrayContaining([
@@ -749,7 +766,7 @@ describe('PublicationService', () => {
 
         await service.delete([{ id: 7 } as Publication], true);
 
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([7], expect.anything());
         expect(pubRepository.softDelete).toHaveBeenCalledWith([7]);
         expect(pubRepository.delete).not.toHaveBeenCalled();
     });
@@ -773,7 +790,7 @@ describe('PublicationService', () => {
         expect(supplRepository.delete).toHaveBeenCalledWith({ publication: { id: In([7]) } });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_first: In([7]) });
         expect(duplRepository.delete).toHaveBeenCalledWith({ id_second: In([7]) });
-        expect(publicationChangeService.deletePublicationChangesForPublications).toHaveBeenCalledWith([7], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([7], expect.anything());
 
         const parentDeleteOrder = pubRepository.delete.mock.invocationCallOrder[0];
         expect(pubAutRepository.delete.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
@@ -782,7 +799,7 @@ describe('PublicationService', () => {
         expect(idRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
         expect(supplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
         expect(duplRepository.delete!.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
-        expect(publicationChangeService.deletePublicationChangesForPublications.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
+        expect(deletePublicationChangesForPublicationsSpy.mock.invocationCallOrder[0]).toBeLessThan(parentDeleteOrder);
     });
     describe('filter', () => {
         const createQueryBuilderMock = () => ({
@@ -799,14 +816,11 @@ describe('PublicationService', () => {
                 findInstituteIdsIncludingSubInstitutes: jest.fn(),
             };
 
-            service = new PublicationService(
+            publicationIndexService = new PublicationIndexService(
                 pubRepository as any,
                 configService as any,
                 instituteService as any,
-                publicationChangeService as any,
-                dataSource as any,
             );
-            service.filter_joins = new Set();
         });
 
     it('binds string filter values as query parameters', async () => {
@@ -820,7 +834,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publication.title ILIKE :filter_0',
@@ -840,7 +854,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11]);
         expect(queryBuilder.where).toHaveBeenCalledWith(
@@ -860,7 +874,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" = :filter_0)',
@@ -879,7 +893,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             `EXISTS (SELECT 1 FROM author_publication ap INNER JOIN author author_filter ON author_filter.id = ap."authorId" WHERE ap."publicationId" = publication.id AND concat(author_filter.last_name, ', ' ,author_filter.first_name) ILIKE :filter_0)`,
@@ -899,7 +913,7 @@ describe('PublicationService', () => {
             }]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'EXISTS (SELECT 1 FROM author_publication ap INNER JOIN institute institute_filter ON institute_filter.id = ap."instituteId" WHERE ap."publicationId" = publication.id AND institute_filter.label ILIKE :filter_0)',
@@ -920,7 +934,7 @@ describe('PublicationService', () => {
         };
 
         try {
-            await service.filter(filter, queryBuilder as any);
+            await publicationIndexService.filter(filter, queryBuilder as any);
             fail('service.filter should reject unsupported filter keys');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);
@@ -951,7 +965,7 @@ describe('PublicationService', () => {
             ]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publisher.label = :filter_0',
@@ -966,6 +980,43 @@ describe('PublicationService', () => {
         );
         expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.publisher', 'publisher');
         expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.invoices', 'invoice');
+    });
+
+    it('keeps requested joins local to concurrent filter calls', async () => {
+        let resolveInstituteIds: ((value: number[]) => void) | undefined;
+        const deferredInstituteIds = new Promise<number[]>((resolve) => {
+            resolveInstituteIds = resolve;
+        });
+        const firstQueryBuilder = createQueryBuilderMock();
+        const secondQueryBuilder = createQueryBuilderMock();
+
+        instituteService.findInstituteIdsIncludingSubInstitutes.mockReturnValueOnce(deferredInstituteIds);
+
+        const firstFilter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id',
+                comp: CompareOperation.EQUALS,
+                value: 11,
+            }]
+        };
+        const secondFilter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'publisher',
+                comp: CompareOperation.EQUALS,
+                value: 'Concurrent Publisher',
+            }]
+        };
+
+        const firstCall = publicationIndexService.filter(firstFilter, firstQueryBuilder as any);
+        const secondCall = publicationIndexService.filter(secondFilter, secondQueryBuilder as any);
+        resolveInstituteIds?.([11, 12, 13]);
+
+        await Promise.all([firstCall, secondCall]);
+
+        expect(secondQueryBuilder.leftJoin).toHaveBeenCalledWith('publication.publisher', 'publisher');
+        expect(firstQueryBuilder.leftJoin).not.toHaveBeenCalled();
     });
 
     it('uses the null-date fallback and negates filters for AND_NOT expressions', async () => {
@@ -987,7 +1038,7 @@ describe('PublicationService', () => {
             ]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publication.pub_date IS NULL AND publication.pub_date_print IS NULL AND publication.pub_date_accepted IS NULL AND publication.pub_date_submitted IS NULL',
@@ -1018,7 +1069,7 @@ describe('PublicationService', () => {
             ]
         };
 
-        await service.filter(filter, queryBuilder as any);
+        await publicationIndexService.filter(filter, queryBuilder as any);
 
         expect(queryBuilder.where).toHaveBeenCalledWith(
             'publication.title ILIKE :filter_0',
@@ -1030,4 +1081,35 @@ describe('PublicationService', () => {
         );
     });
 });
+
+    describe('indexQuery', () => {
+        it('loads pub_index_columns only once per query build', async () => {
+            const queryBuilder = {
+                leftJoin: jest.fn().mockReturnThis(),
+                select: jest.fn().mockReturnThis(),
+                addSelect: jest.fn().mockReturnThis(),
+                groupBy: jest.fn().mockReturnThis(),
+                addGroupBy: jest.fn().mockReturnThis(),
+            };
+
+            pubRepository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilder as any);
+            configService.get.mockImplementation(async (key: string) => {
+                if (key === 'pub_index_columns') {
+                    return {
+                        title: true,
+                        doi: true,
+                        authors: false,
+                    };
+                }
+                return 5;
+            });
+
+            await publicationIndexService.indexQuery();
+
+            expect(configService.get).toHaveBeenCalledTimes(1);
+            expect(configService.get).toHaveBeenCalledWith('pub_index_columns');
+            expect(queryBuilder.addSelect).toHaveBeenCalledWith('publication.title', 'title');
+            expect(queryBuilder.addSelect).toHaveBeenCalledWith('publication.doi', 'doi');
+        });
+    });
 });

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { GreaterEntity } from '../../../../../output-interfaces/Publication';
-import { GreaterEntityIndex } from '../../../../../output-interfaces/PublicationIndex';
+import {  GreaterEntity  } from '@output/interfaces';
+import {  GreaterEntityIndex  } from '@output/interfaces';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 

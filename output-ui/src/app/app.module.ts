@@ -34,6 +34,8 @@ import localeDe from '@angular/common/locales/de';
 import { ApiErrorInterceptor } from './core/errors/api-error.interceptor';
 import { provideEchartsCore } from 'ngx-echarts';
 import 'moment/locale/de';
+import { DemoLoginDialogComponent } from './security/demo-login-dialog/demo-login-dialog.component';
+import { DemoInfoComponent } from './demo-info/demo-info.component';
 
 echarts.use([
     BarChart,
@@ -61,7 +63,9 @@ export function initRuntimeConfig(rc: RuntimeConfigService) {
 @NgModule({
     declarations: [
         AppComponent,
-        StartComponent
+        StartComponent,
+        DemoInfoComponent,
+        DemoLoginDialogComponent
     ],
     imports: [
         BrowserModule,
