@@ -21,7 +21,7 @@ import { ValidationService } from './validation.service';
 import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { hasProvidedEntityId } from '../common/entity-id';
-import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createWorkflowRunningHttpException } from '../common/api-error';
+import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createUniqueConstraintHttpException, createWorkflowRunningHttpException } from '../common/api-error';
 
 type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     repository: Repository<TWorkflow>;
@@ -30,6 +30,7 @@ type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     createDefaults?: (workflow: TWorkflow) => Partial<TWorkflow> | Promise<Partial<TWorkflow>>;
     ensureCanPublish?: (workflow: TWorkflow) => void | Promise<void>;
     reportWorkflowType?: WorkflowType;
+    useProvidedVersionOnCreate?: boolean;
 };
 
 type DeleteWorkflowOptions<TWorkflow extends Workflow> = {
@@ -86,12 +87,10 @@ export class WorkflowService {
             throw createInvalidRequestHttpException('invalid json');
         }
 
-        const nextVersion = await this.getNextDraftVersion(this.importRepository, workflow.workflow_id);
-
         const obj: ImportWorkflow = {
             workflow_id: workflow.workflow_id,
             label: workflow.label,
-            version: nextVersion,
+            version: workflow.version,
             description: workflow.description,
             strategy_type: workflow.strategy_type,
             strategy: workflow.strategy,
@@ -99,10 +98,10 @@ export class WorkflowService {
             update_config: workflow.update_config
         }
 
-        return this.saveImport(obj);
+        return this.saveImport(obj, undefined, true);
     }
 
-    async saveImport(workflow: ImportWorkflow, user?: string) {
+    async saveImport(workflow: ImportWorkflow, user?: string, useProvidedVersionOnCreate = false) {
         return this.saveWorkflow(workflow, user, {
             repository: this.importRepository,
             workflowType: WorkflowType.IMPORT,
@@ -111,6 +110,7 @@ export class WorkflowService {
                 update_config: draft.update_config ?? this.importService.getUpdateMapping(),
             }),
             reportWorkflowType: WorkflowType.IMPORT,
+            useProvidedVersionOnCreate,
         });
     }
 
@@ -122,22 +122,20 @@ export class WorkflowService {
             throw createInvalidRequestHttpException('invalid json');
         }
 
-        const nextVersion = await this.getNextDraftVersion(this.exportRepository, workflow.workflow_id);
-
         const obj: ExportWorkflow = {
             workflow_id: workflow.workflow_id,
             label: workflow.label,
-            version: nextVersion,
+            version: workflow.version,
             description: workflow.description,
             strategy_type: workflow.strategy_type,
             strategy: workflow.strategy,
             mapping: workflow.mapping,
         };
 
-        return this.saveExport(obj);
+        return this.saveExport(obj, undefined, true);
     }
 
-    async saveExport(workflow: ExportWorkflow, user?: string) {
+    async saveExport(workflow: ExportWorkflow, user?: string, useProvidedVersionOnCreate = false) {
         return this.saveWorkflow(workflow, user, {
             repository: this.exportRepository,
             workflowType: WorkflowType.EXPORT,
@@ -146,6 +144,7 @@ export class WorkflowService {
                 strategy_type: draft.strategy_type,
             }),
             reportWorkflowType: WorkflowType.EXPORT,
+            useProvidedVersionOnCreate,
         });
     }
 
@@ -157,12 +156,10 @@ export class WorkflowService {
             throw createInvalidRequestHttpException('invalid json');
         }
 
-        const nextVersion = await this.getNextDraftVersion(this.validationRepository, workflow.workflow_id);
-
         const obj: ValidationWorkflow = {
             workflow_id: workflow.workflow_id,
             label: workflow.label,
-            version: nextVersion,
+            version: workflow.version,
             description: workflow.description,
             target: workflow.target,
             target_filter: workflow.target_filter,
@@ -170,10 +167,10 @@ export class WorkflowService {
             mapping: workflow.mapping
         }
 
-        return this.saveValidation(obj);
+        return this.saveValidation(obj, undefined, true);
     }
 
-    async saveValidation(workflow: ValidationWorkflow, user?: string) {
+    async saveValidation(workflow: ValidationWorkflow, user?: string, useProvidedVersionOnCreate = false) {
         return this.saveWorkflow(workflow, user, {
             repository: this.validationRepository,
             workflowType: WorkflowType.VALIDATION,
@@ -192,6 +189,7 @@ export class WorkflowService {
                 throw createInvalidRequestHttpException('Error: validation workflows must define at least one rule before publishing');
             },
             reportWorkflowType: WorkflowType.VALIDATION,
+            useProvidedVersionOnCreate,
         });
     }
 
@@ -639,13 +637,19 @@ export class WorkflowService {
                 toSave = { ...db, ...workflow, workflow_id: db.workflow_id, version: db.version, locked_at: nextLockedAt };
             }
         } else {
+            if (options.useProvidedVersionOnCreate && (typeof workflow.workflow_id !== 'string' || !workflow.workflow_id.trim())) {
+                throw createInvalidRequestHttpException('Error: imported workflow must define a workflow_id');
+            }
             const workflowId = workflow.workflow_id ?? randomUUID();
             const createDefaults = options.createDefaults ? await options.createDefaults(workflow) : {};
+            const version = options.useProvidedVersionOnCreate
+                ? await this.resolveProvidedVersion(options.repository, workflowId, workflow.version)
+                : await this.getNextDraftVersion(options.repository, workflowId);
             toSave = {
                 ...toSave,
                 ...createDefaults,
                 workflow_id: workflowId,
-                version: await this.getNextDraftVersion(options.repository, workflowId),
+                version,
                 id: undefined,
                 created_at: undefined,
                 published_at: undefined,
@@ -666,6 +670,39 @@ export class WorkflowService {
         }
 
         return saved;
+    }
+
+    private async resolveProvidedVersion<T extends { workflow_id?: string; version?: number }>(
+        repository: Repository<T>,
+        workflowId: string,
+        version?: number,
+    ): Promise<number> {
+        if (!Number.isInteger(version) || version < 1) {
+            throw createInvalidRequestHttpException('Error: imported workflow must define a positive integer version');
+        }
+
+        const existing = await repository.findOne({
+            where: { workflow_id: workflowId, version } as never,
+            withDeleted: true,
+        });
+        if (existing) {
+            throw createUniqueConstraintHttpException('Workflow version already exists.', [
+                {
+                    path: 'workflow_id',
+                    code: 'unique',
+                    message: 'Workflow ID already exists with this version.',
+                    context: { value: workflowId },
+                },
+                {
+                    path: 'version',
+                    code: 'unique',
+                    message: 'Workflow version already exists for this workflow ID.',
+                    context: { value: version },
+                },
+            ]);
+        }
+
+        return version;
     }
 
     private async deleteWorkflows<TWorkflow extends Workflow>(
