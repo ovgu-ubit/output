@@ -108,7 +108,7 @@
             </mat-card-content>
         </mat-card>
 
-        <mat-card>
+        <mat-card *ngIf="this.invoiceCollectionsAvailable">
             <mat-card-header>
                 <mat-card-subtitle>Rechnungen</mat-card-subtitle>
             </mat-card-header>
@@ -165,7 +165,7 @@
             </mat-card-actions>
         </mat-card>
 
-        <mat-card>
+        <mat-card *ngIf="this.invoiceCollectionsAvailable">
             <mat-card-header>
                 <mat-card-subtitle>Vorabrechnungen</mat-card-subtitle>
             </mat-card-header>

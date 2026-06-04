@@ -7,6 +7,7 @@ import {  ContractIndex  } from '@output/interfaces';
 import { Permissions } from '../authorization/permission.decorator';
 import { AccessGuard } from '../authorization/access.guard';
 import { AbstractCrudController } from '../common/abstract-crud.controller';
+import { createNotFoundHttpException } from '../common/api-error';
 import { ContractComponent } from './ContractComponent.entity';
 
 @Controller('contract')
@@ -31,8 +32,24 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     @ApiOperation({ summary: 'List contract components' })
     @ApiQuery({ name: 'contract_id', required: false, type: Number, description: 'Optional contract id to restrict the result to a single contract.' })
     @ApiResponse({ status: 200, description: 'Contract components including related filters and linked invoices.' })
-    async components(@Query('contract_id') contractId?: number): Promise<ContractComponent[]> {
-        return this.service.getComponents(contractId);
+    async components(@Query('contract_id') contractId: number | undefined, @Req() request: Request): Promise<ContractComponent[]> {
+        return this.service.getComponents(contractId, request['user'] ? request['user']['read'] : false);
+    }
+
+    @Get('one')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ type: Object })
+    override async one(@Query('id') id: number, @Req() request: Request): Promise<Contract> {
+        const contract = await this.service.one(
+            id,
+            this.isWriter(request),
+            this.getUsername(request),
+            request['user'] ? request['user']['read'] : false,
+        );
+        if (!contract) {
+            throw createNotFoundHttpException();
+        }
+        return contract;
     }
 
     @Get('component/one')
@@ -41,8 +58,8 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     @ApiQuery({ name: 'id', required: true, type: Number, description: 'Contract component id.' })
     @ApiResponse({ status: 200, description: 'The requested contract component.' })
     @ApiResponse({ status: 404, description: 'Contract component was not found.' })
-    async oneComponent(@Query('id') id: number): Promise<ContractComponent> {
-        return this.service.oneComponentOrFail(id);
+    async oneComponent(@Query('id') id: number, @Req() request: Request): Promise<ContractComponent> {
+        return this.service.oneComponentOrFail(id, request['user'] ? request['user']['read'] : false);
     }
 
     @Post('component')

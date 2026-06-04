@@ -39,10 +39,28 @@ describe('ContractController', () => {
     it('loads one contract component through the service', async () => {
         service.oneComponentOrFail.mockResolvedValue({ id: 7, label: 'Main component' });
 
-        const result = await controller.oneComponent(7);
+        const result = await controller.oneComponent(7, { user: { read: true } } as any);
 
-        expect(service.oneComponentOrFail).toHaveBeenCalledWith(7);
+        expect(service.oneComponentOrFail).toHaveBeenCalledWith(7, true);
         expect(result).toEqual({ id: 7, label: 'Main component' });
+    });
+
+    it('omits invoice access when loading public contract components', async () => {
+        service.getComponents.mockResolvedValue([{ id: 7, label: 'Main component' }]);
+
+        const result = await controller.components(3, { user: { read: false } } as any);
+
+        expect(service.getComponents).toHaveBeenCalledWith(3, false);
+        expect(result).toEqual([{ id: 7, label: 'Main component' }]);
+    });
+
+    it('forwards read access when loading a contract', async () => {
+        service.one.mockResolvedValue({ id: 1, label: 'Contract' });
+
+        const result = await controller.one(1, { user: { read: true, write: false, username: 'reader' } } as any);
+
+        expect(service.one).toHaveBeenCalledWith(1, false, 'reader', true);
+        expect(result).toEqual({ id: 1, label: 'Contract' });
     });
 
     it('forwards read access when loading the contract index', async () => {
@@ -58,7 +76,7 @@ describe('ContractController', () => {
         service.oneComponentOrFail.mockRejectedValue(createNotFoundHttpException('Contract component not found.'));
 
         try {
-            await controller.oneComponent(7);
+            await controller.oneComponent(7, { user: { read: true } } as any);
             fail('controller.oneComponent should reject missing components');
         } catch (error) {
             expect(error).toBeInstanceOf(HttpException);

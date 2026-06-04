@@ -50,6 +50,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
 
   override name = 'Vertragskomponente';
   displayedInvoiceColumns: string[] = ['date', 'number', 'costs', 'edit', 'delete'];
+  invoiceCollectionsAvailable = true;
   contractModel = ContractModel;
   contractModels = [
     { value: ContractModel.DISCOUNT, label: 'Rabatt' },
@@ -102,7 +103,10 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
 
   override ngOnInit(): void {
     this.postProcessing = of(null).pipe(tap(() => {
-      this.ensureInvoiceCollections();
+      this.invoiceCollectionsAvailable = !this.disabled || this.hasProvidedInvoiceCollections();
+      if (this.invoiceCollectionsAvailable) {
+        this.ensureInvoiceCollections();
+      }
       this.patchContractModelParams();
       this.setRelationControlValue('oa_categories', this.entity?.oa_categories ?? []);
       this.setRelationControlValue('pub_types', this.entity?.pub_types ?? []);
@@ -685,6 +689,10 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
     if (!this.entity.pre_invoices) {
       this.entity.pre_invoices = [];
     }
+  }
+
+  private hasProvidedInvoiceCollections(): boolean {
+    return Array.isArray(this.entity?.invoices) || Array.isArray(this.entity?.pre_invoices);
   }
 
   private openInvoiceDialog(collection: InvoiceCollectionKey, invoice?: Invoice) {

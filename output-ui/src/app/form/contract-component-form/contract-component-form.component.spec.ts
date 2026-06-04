@@ -90,4 +90,22 @@ describe('ContractComponentFormComponent', () => {
   it('should return booking_amount even when it is zero', () => {
     expect(component.getInvoiceCosts({ booking_amount: 0 } as any)).toBe(0);
   });
+
+  it('does not treat undefined invoice collections as available', () => {
+    component.entity = {
+      invoices: undefined,
+      pre_invoices: undefined,
+    } as any;
+
+    expect((component as any).hasProvidedInvoiceCollections()).toBeFalse();
+  });
+
+  it('treats empty invoice arrays as available', () => {
+    component.entity = {
+      invoices: [],
+      pre_invoices: [],
+    } as any;
+
+    expect((component as any).hasProvidedInvoiceCollections()).toBeTrue();
+  });
 });

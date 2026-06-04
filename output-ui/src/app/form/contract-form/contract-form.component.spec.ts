@@ -81,4 +81,28 @@ describe('ContractFormComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('does not add undefined invoice collections when cloning components', () => {
+    const cloned = (component as any).cloneComponent({
+      id: 1,
+      label: 'Public component',
+      invoices: undefined,
+      pre_invoices: undefined,
+    });
+
+    expect(Object.prototype.hasOwnProperty.call(cloned, 'invoices')).toBeFalse();
+    expect(Object.prototype.hasOwnProperty.call(cloned, 'pre_invoices')).toBeFalse();
+  });
+
+  it('keeps delivered invoice collections when cloning components', () => {
+    const cloned = (component as any).cloneComponent({
+      id: 1,
+      label: 'Reader component',
+      invoices: [],
+      pre_invoices: [],
+    });
+
+    expect(cloned.invoices).toEqual([]);
+    expect(cloned.pre_invoices).toEqual([]);
+  });
 });

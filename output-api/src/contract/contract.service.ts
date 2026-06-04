@@ -103,9 +103,9 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
     }
 
-    public override async one(id: number, writer: boolean, user?: string) {
+    public override async one(id: number, writer: boolean, user?: string, canReadInvoices = true) {
         const contract = await super.one(id, writer, user);
-        return this.splitContractComponentInvoicesForContract(contract);
+        return this.splitContractComponentInvoicesForContract(contract, canReadInvoices);
     }
 
     public async saveComponent(component: DeepPartial<ContractComponent>) {
@@ -150,9 +150,9 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
     }
 
-    public async getComponents(contractId?: number) {
+    public async getComponents(contractId?: number, canReadInvoices = true) {
         const options: FindManyOptions<ContractComponent> = {
-            relations: this.getContractComponentRelations(),
+            relations: this.getContractComponentRelations(canReadInvoices),
         };
 
         if (contractId) {
@@ -160,20 +160,20 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
 
         const components = await this.contractComponentRepository.find(options);
-        return components.map(component => this.splitContractComponentInvoices(component));
+        return components.map(component => this.splitContractComponentInvoices(component, canReadInvoices));
     }
 
-    public async oneComponent(id: number) {
+    public async oneComponent(id: number, canReadInvoices = true) {
         const component = await this.contractComponentRepository.findOne({
             where: { id },
-            relations: this.getContractComponentRelations(),
+            relations: this.getContractComponentRelations(canReadInvoices),
         });
 
-        return this.splitContractComponentInvoices(component);
+        return this.splitContractComponentInvoices(component, canReadInvoices);
     }
 
-    public async oneComponentOrFail(id: number) {
-        const component = await this.oneComponent(id);
+    public async oneComponentOrFail(id: number, canReadInvoices = true) {
+        const component = await this.oneComponent(id, canReadInvoices);
         if (!component) {
             throw createNotFoundHttpException('Contract component not found.');
         }
@@ -311,12 +311,12 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
     }
 
-    private getContractComponentRelations(): FindOptionsRelations<ContractComponent> {
+    private getContractComponentRelations(canReadInvoices = true): FindOptionsRelations<ContractComponent> {
         return {
             contract: true,
-            linked_invoices: {
+            linked_invoices: canReadInvoices ? {
                 cost_items: true
-            },
+            } : false,
             oa_categories: true,
             pub_types: true,
             greater_entities: true,
@@ -393,20 +393,28 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
     }
 
-    private splitContractComponentInvoicesForContract(contract?: Contract | null) {
+    private splitContractComponentInvoicesForContract(contract?: Contract | null, canReadInvoices = true) {
         if (!contract?.components) {
             return contract;
         }
 
         return {
             ...contract,
-            components: contract.components.map(component => this.splitContractComponentInvoices(component)),
+            components: contract.components.map(component => this.splitContractComponentInvoices(component, canReadInvoices)),
         };
     }
 
-    private splitContractComponentInvoices(component?: ContractComponent | null) {
+    private splitContractComponentInvoices(component?: ContractComponent | null, canReadInvoices = true) {
         if (!component) {
             return component;
+        }
+        if (!canReadInvoices) {
+            return {
+                ...component,
+                invoices: undefined,
+                pre_invoices: undefined,
+                linked_invoices: undefined,
+            };
         }
 
         const linkedInvoices = component.linked_invoices ?? [];

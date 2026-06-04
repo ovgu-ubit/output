@@ -125,8 +125,10 @@ export class ContractFormComponent {
   }
 
   private cloneComponent(component: ContractComponent): ContractComponent {
+    const { invoices, pre_invoices, ...componentWithoutInvoiceCollections } = component;
+
     return {
-      ...component,
+      ...componentWithoutInvoiceCollections,
       contract_model_params: component.contract_model_params
         ? { ...(component.contract_model_params as Record<string, unknown>) }
         : null,
@@ -134,8 +136,8 @@ export class ContractFormComponent {
       pub_types: component.pub_types ? [...component.pub_types] : [],
       greater_entities: component.greater_entities ? [...component.greater_entities] : [],
       cost_types: component.cost_types ? [...component.cost_types] : [],
-      invoices: component.invoices ? [...component.invoices] : [],
-      pre_invoices: component.pre_invoices ? [...component.pre_invoices] : [],
+      ...(Array.isArray(invoices) ? { invoices: [...invoices] } : {}),
+      ...(Array.isArray(pre_invoices) ? { pre_invoices: [...pre_invoices] } : {}),
     };
   }
 }
