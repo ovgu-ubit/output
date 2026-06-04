@@ -7,6 +7,7 @@ import { TableButton, TableHeader, TableParent } from 'src/app/table/table.inter
 import {  ValidationWorkflow  } from '@output/interfaces';
 import { ValidationWorkflowFormComponent } from '../../dialogs/validation-workflow-form/validation-workflow-form.component';
 import { ValidationWorkflowService } from '../../validation-workflow.service';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 
 @Component({
   selector: 'app-publication-validation',
@@ -56,6 +57,7 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
     public validationWorkflowService: ValidationWorkflowService,
     private snackBar: MatSnackBar,
     private router: Router,
+    private errorPresentation: ErrorPresentationService,
   ) { }
 
   ngOnInit(): void {
@@ -139,12 +141,8 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
         });
         this.table.updateData().subscribe();
       },
-      error: () => {
-        this.snackBar.open('Import fehlgeschlagen.', 'OK', {
-          duration: 5000,
-          panelClass: ['danger-snackbar'],
-          verticalPosition: 'top'
-        });
+      error: (error) => {
+        this.errorPresentation.present(error, { action: 'create', entity: 'Validierung-Workflow' });
       }
     });
   }

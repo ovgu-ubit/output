@@ -157,6 +157,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['headers'] && this.headers) {
+      this.tableData.setHeaders(this.headers);
       this.headerNames = this.headers.map(x => x.colName);
       this.headerNames.unshift('edit');
       if (!this.parent.not_selectable) this.headerNames.unshift('select');

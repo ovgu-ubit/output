@@ -530,6 +530,30 @@ describe('ContractService', () => {
         ]);
     });
 
+    it('lists contract components without invoice data when invoice access is missing', async () => {
+        componentRepository.find!.mockResolvedValue([{
+            id: 1,
+            label: 'Component',
+        } as ContractComponent]);
+
+        const components = await service.getComponents(42, false);
+
+        expect(componentRepository.find).toHaveBeenCalledWith(expect.objectContaining({
+            where: { contract: { id: 42 } },
+            relations: expect.objectContaining({
+                linked_invoices: false,
+            }),
+        }));
+        expect(components).toEqual([
+            expect.objectContaining({
+                id: 1,
+                invoices: undefined,
+                pre_invoices: undefined,
+                linked_invoices: undefined,
+            }),
+        ]);
+    });
+
     it('detaches linked invoices before deleting contract components', async () => {
         invoiceRepository.find!.mockResolvedValue([
             { id: 101, contract_component: { id: 7 } as ContractComponent },

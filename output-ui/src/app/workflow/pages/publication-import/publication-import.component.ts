@@ -8,6 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { firstValueFrom } from 'rxjs';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 
 @Component({
   selector: 'app-publication-import',
@@ -52,7 +53,8 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
   @ViewChild('fileInput') fileInput: ElementRef<HTMLInputElement>;
 
-  constructor(public workflowService: WorkflowService, private _snackBar: MatSnackBar, private router: Router, private configService: ConfigService) { }
+  constructor(public workflowService: WorkflowService, private _snackBar: MatSnackBar, private router: Router, private configService: ConfigService,
+    private errorPresentation: ErrorPresentationService) { }
 
   ngOnInit(): void {
   }
@@ -135,12 +137,8 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
         });
         this.table.updateData().subscribe();
       },
-      error: () => {
-        this._snackBar.open('Import fehlgeschlagen.', 'Ok...', {
-          duration: 5000,
-          panelClass: ['danger-snackbar'],
-          verticalPosition: 'top'
-        });
+      error: (error) => {
+        this.errorPresentation.present(error, { action: 'create', entity: 'Import-Workflow' });
       }
     });
   }

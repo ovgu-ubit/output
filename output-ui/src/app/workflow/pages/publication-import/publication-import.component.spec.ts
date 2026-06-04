@@ -8,6 +8,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 
 describe('PublicationImportComponent', () => {
   let component: PublicationImportComponent;
@@ -21,7 +22,8 @@ describe('PublicationImportComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        provideStore({})
+        provideStore({}),
+        { provide: ErrorPresentationService, useValue: { present: jasmine.createSpy('present') } },
       ]
     })
     .compileComponents();

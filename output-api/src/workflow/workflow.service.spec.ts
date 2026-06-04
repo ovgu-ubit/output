@@ -383,6 +383,7 @@ describe('WorkflowService', () => {
             buffer: Buffer.from(JSON.stringify({
                 workflow_id: 'wf-invalid-import',
                 label: 'Invalid import',
+                version: 1,
                 strategy_type: ImportStrategy.URL_QUERY_OFFSET,
                 strategy: {},
                 mapping: '$',
@@ -403,6 +404,7 @@ describe('WorkflowService', () => {
             buffer: Buffer.from(JSON.stringify({
                 workflow_id: 'wf-invalid-export',
                 label: 'Invalid export',
+                version: 1,
                 strategy_type: ExportStrategy.HTTP_RESPONSE,
                 strategy: {
                     format: 'xml',
@@ -420,6 +422,116 @@ describe('WorkflowService', () => {
             code: ApiErrorCode.VALIDATION_FAILED,
         });
         expect(exportRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('keeps the template version when importing an import workflow', async () => {
+        const file = {
+            buffer: Buffer.from(JSON.stringify({
+                workflow_id: 'wf-template-import',
+                label: 'Template import',
+                version: 7,
+                strategy_type: ImportStrategy.FILE_UPLOAD,
+                strategy: {},
+                mapping: '$',
+            })),
+        } as Express.Multer.File;
+
+        importRepository.findOne!.mockResolvedValue(null);
+        importRepository.save!.mockImplementation(async (workflow) => workflow as ImportWorkflow);
+
+        const saved = await service.importImport(file);
+
+        expect(importRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'wf-template-import',
+            version: 7,
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'wf-template-import',
+            version: 7,
+        });
+    });
+
+    it('rejects imported workflows when the template version already exists', async () => {
+        const file = {
+            buffer: Buffer.from(JSON.stringify({
+                workflow_id: 'wf-template-import',
+                label: 'Template import',
+                version: 7,
+                strategy_type: ImportStrategy.FILE_UPLOAD,
+                strategy: {},
+                mapping: '$',
+            })),
+        } as Express.Multer.File;
+
+        importRepository.findOne!.mockResolvedValue({
+            id: 42,
+            workflow_id: 'wf-template-import',
+            version: 7,
+        } as ImportWorkflow);
+
+        await expectApiError(service.importImport(file), {
+            statusCode: 409,
+            code: ApiErrorCode.UNIQUE_CONSTRAINT,
+            message: 'Unique constraint violated.',
+        });
+        expect(importRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('keeps the template version when importing an export workflow', async () => {
+        const file = {
+            buffer: Buffer.from(JSON.stringify({
+                workflow_id: 'wf-template-export',
+                label: 'Template export',
+                version: 4,
+                strategy_type: ExportStrategy.HTTP_RESPONSE,
+                strategy: {
+                    format: 'json',
+                    disposition: 'inline',
+                },
+                mapping: '$',
+            })),
+        } as Express.Multer.File;
+
+        exportRepository.findOne!.mockResolvedValue(null);
+        exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
+
+        const saved = await service.importExport(file);
+
+        expect(exportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'wf-template-export',
+            version: 4,
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'wf-template-export',
+            version: 4,
+        });
+    });
+
+    it('keeps the template version when importing a validation workflow', async () => {
+        const file = {
+            buffer: Buffer.from(JSON.stringify({
+                workflow_id: 'wf-template-validation',
+                label: 'Template validation',
+                version: 5,
+                target: 'publication',
+                rules: [],
+                mapping: '$',
+            })),
+        } as Express.Multer.File;
+
+        validationRepository.findOne!.mockResolvedValue(null);
+        validationRepository.save!.mockImplementation(async (workflow) => workflow as ValidationWorkflow);
+
+        const saved = await service.importValidation(file);
+
+        expect(validationRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            workflow_id: 'wf-template-validation',
+            version: 5,
+        }));
+        expect(saved).toMatchObject({
+            workflow_id: 'wf-template-validation',
+            version: 5,
+        });
     });
 
     it('assigns the next persisted import version when creating a draft', async () => {
