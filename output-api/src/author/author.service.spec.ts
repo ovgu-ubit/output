@@ -214,7 +214,7 @@ describe('AuthorService', () => {
 
     it('enriches existing authors when ORCID or affiliation is provided', async () => {
         const existingAuthor = { id: 7, first_name: 'John', last_name: 'Smith', institutes: [], orcid: null } as Author;
-        const enrichedAuthor = { ...existingAuthor, orcid: '0000-0001', institutes: [{ id: 9, label: 'Institute' }] } as Author;
+        const enrichedAuthor = { ...existingAuthor, orcid: '0000-0002-1825-0097', institutes: [{ id: 9, label: 'Institute' }] } as Author;
 
         repository.findOne
             .mockResolvedValueOnce(null);
@@ -223,7 +223,7 @@ describe('AuthorService', () => {
         aliasLookupService.findAliases.mockResolvedValue([]);
         instService.findOrSave.mockReturnValue(of({ id: 9, label: 'Institute' }));
 
-        const result = await service.findOrSave('Smith', 'John', '0000-0001', 'Institute');
+        const result = await service.findOrSave('Smith', 'John', '0000-0002-1825-0097', 'Institute');
 
         expect(repository.find).toHaveBeenCalledWith({
             where: { last_name: expect.anything(), first_name: expect.anything() },
@@ -232,10 +232,72 @@ describe('AuthorService', () => {
         expect(instService.findOrSave).toHaveBeenCalledWith('Institute', false);
         expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
             id: 7,
-            orcid: '0000-0001',
+            orcid: '0000-0002-1825-0097',
             institutes: [expect.objectContaining({ id: 9 })],
         }));
         expect(result).toEqual({ author: enrichedAuthor, error: null });
+    });
+
+    it('extracts and stores valid ORCID values from ORCID URLs', async () => {
+        const savedAuthor = {
+            id: 12,
+            first_name: 'Jane',
+            last_name: 'Doe',
+            orcid: '0000-0002-1825-0097',
+            institutes: [null],
+        } as Author;
+
+        repository.findOne.mockResolvedValue(null);
+        repository.find.mockResolvedValue([]);
+        repository.save.mockResolvedValue(savedAuthor);
+        aliasLookupService.findAliases.mockResolvedValue([]);
+
+        const result = await service.findOrSave('Doe', 'Jane', 'https://orcid.org/0000-0002-1825-0097');
+
+        expect(repository.findOne).toHaveBeenCalledWith({
+            where: { orcid: '0000-0002-1825-0097' },
+            relations: { institutes: true },
+        });
+        expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
+            first_name: 'Jane',
+            last_name: 'Doe',
+            orcid: '0000-0002-1825-0097',
+        }));
+        expect(result).toEqual({ author: savedAuthor, error: null });
+    });
+
+    it('ignores invalid ORCID placeholder strings during author matching and creation', async () => {
+        repository.find.mockResolvedValue([]);
+        repository.save.mockImplementation(async (author) => ({ id: 13, ...(author as Author) }) as Author);
+        aliasLookupService.findAliases.mockResolvedValue([]);
+
+        await service.findOrSave('Doe', 'Jane', 'null');
+
+        expect(repository.findOne).not.toHaveBeenCalled();
+        expect(repository.find).toHaveBeenCalledWith({
+            where: { last_name: expect.anything(), first_name: expect.anything() },
+            relations: { institutes: true },
+        });
+        expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
+            first_name: 'Jane',
+            last_name: 'Doe',
+            orcid: undefined,
+        }));
+    });
+
+    it('does not use ORCID values with invalid checksums', async () => {
+        repository.find.mockResolvedValue([]);
+        repository.save.mockImplementation(async (author) => ({ id: 14, ...(author as Author) }) as Author);
+        aliasLookupService.findAliases.mockResolvedValue([]);
+
+        await service.findOrSave('Doe', 'Jane', 'https://orcid.org/0000-0002-1825-0098');
+
+        expect(repository.findOne).not.toHaveBeenCalled();
+        expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
+            first_name: 'Jane',
+            last_name: 'Doe',
+            orcid: undefined,
+        }));
     });
 
     it('merges duplicate author attributes when combining records', async () => {

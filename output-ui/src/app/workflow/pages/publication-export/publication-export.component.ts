@@ -8,6 +8,7 @@ import { TableButton, TableHeader, TableParent } from 'src/app/table/table.inter
 import {  ExportWorkflow  } from '@output/interfaces';
 import { ExportWorkflowFormComponent } from '../../dialogs/export-workflow-form/export-workflow-form.component';
 import { ExportWorkflowService } from '../../export-workflow.service';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 
 @Component({
   selector: 'app-publication-export',
@@ -56,7 +57,8 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     public exportWorkflowService: ExportWorkflowService,
     private snackBar: MatSnackBar,
     private router: Router,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private errorPresentation: ErrorPresentationService
   ) { }
 
   ngOnInit(): void {
@@ -141,12 +143,8 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
         });
         this.table.updateData().subscribe();
       },
-      error: () => {
-        this.snackBar.open('Import fehlgeschlagen.', 'Ok...', {
-          duration: 5000,
-          panelClass: ['danger-snackbar'],
-          verticalPosition: 'top'
-        });
+      error: (error) => {
+        this.errorPresentation.present(error, { action: 'create', entity: 'Export-Workflow' });
       }
     });
   }

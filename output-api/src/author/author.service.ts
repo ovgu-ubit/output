@@ -16,6 +16,8 @@ import { AliasAuthorFirstName } from './AliasAuthorFirstName.entity';
 import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
 import { Author } from './Author.entity';
 
+const ORCID_REGEX = /\b\d{4}-\d{4}-\d{4}-\d{3}[\dXx]\b/;
+
 @Injectable()
 export class AuthorService extends AbstractEntityService<Author> {
 
@@ -88,6 +90,7 @@ export class AuthorService extends AbstractEntityService<Author> {
     }
 
     public async findOrSave(last_name: string, first_name: string, orcid?: string, affiliation?: string, dryRun = false): Promise<{ author: Author, error: AppError }> {
+        orcid = this.normalizeOrcid(orcid);
         if (!orcid && (!last_name || !first_name)) throw { origin: 'authorService', text: `weder ORCID, noch Vor- und Nachname sind gegeben` } as AppError;
         let error: AppError = null;
         //1. find an existing entity
@@ -145,6 +148,27 @@ export class AuthorService extends AbstractEntityService<Author> {
         }
         else return {author, error}
         //3. if not found, save
+    }
+
+    private normalizeOrcid(orcid?: string): string | undefined {
+        const match = orcid?.trim().match(ORCID_REGEX);
+        if (!match) return undefined;
+
+        const normalized = match[0].toUpperCase();
+        return this.hasValidOrcidChecksum(normalized) ? normalized : undefined;
+    }
+
+    private hasValidOrcidChecksum(orcid: string): boolean {
+        const compact = orcid.replace(/-/g, '');
+        let total = 0;
+
+        for (const char of compact.slice(0, 15)) {
+            total = (total + Number(char)) * 2;
+        }
+
+        const checksum = (12 - (total % 11)) % 11;
+        const expected = checksum === 10 ? 'X' : String(checksum);
+        return compact[15] === expected;
     }
 
     public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
