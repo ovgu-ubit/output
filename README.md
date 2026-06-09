@@ -56,23 +56,24 @@ A simple way to set up the application is to user our docker image. Pull the ima
 > $ docker pull ghcr.io/ovgu-ubit/output:latest
 >
 
-Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
+Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions), put them into `$APPDATA`, and mount that directory as `/config`. The database may be initialized with
 
-> $ docker run --rm --cap-drop=ALL --security-opt no-new-privileges -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+> $ docker run --rm --cap-drop=ALL --security-opt no-new-privileges -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" --entrypoint /usr/src/app/deploy/init-entrypoint.sh output-app
 > 
 
 And for running the container (either via port mapping or base_href):
 
-> docker run --cap-drop=ALL --security-opt no-new-privileges -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+> docker run --cap-drop=ALL --security-opt no-new-privileges -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" ghcr.io/ovgu-ubit/output
 > 
-> docker run --cap-drop=ALL --security-opt no-new-privileges -e BASE_HREF=/$BASE_HREF -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+> docker run --cap-drop=ALL --security-opt no-new-privileges -e BASE_HREF=/$BASE_HREF -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" ghcr.io/ovgu-ubit/output
 
-The container renders runtime files below `/tmp/output-runtime`. If you additionally run it with a read-only root filesystem, provide a writable `/tmp`, for example via tmpfs.
+The container expects `/config/environment.json` for the frontend runtime configuration and renders runtime files below `/tmp/output-runtime`. If you additionally run it with a read-only root filesystem, provide a writable `/tmp`, for example via tmpfs.
 
 
 ### File actions
 - Copy `output-api/env.template` to `env.$NODE_ENV` and put your info in it
-- Edit `output-ui/src/assets/environment.json` and put your info in it
+- For local builds, edit `output-ui/src/assets/environment.json` and put your info in it
+- For Docker, place the frontend runtime config at `$APPDATA/environment.json`; the entrypoint copies it from `/config/environment.json` into the served runtime files
 
 For some services, abstract superclasses are defined. These can be extended by user-specific services which have to be added to the corresponding module definition:
 - `output-api/src/guards/authorization.service.ts` for handling authorization with one example implementation `token.authorization.service.ts` using JWT token

@@ -3,6 +3,8 @@ set -e
 
 export CONFIG_DIR=/config
 
+SOURCE_WWW_DIR=/usr/src/app/output-ui-dist
+SOURCE_NGINX_TEMPLATE=/usr/src/app/deploy/nginx.conf.template
 RUNTIME_DIR=/tmp/output-runtime
 RUNTIME_WWW_DIR="${RUNTIME_DIR}/www"
 RUNTIME_LOG_DIR="${RUNTIME_DIR}/log"
@@ -33,7 +35,11 @@ mkdir -p \
   "$RUNTIME_TEMP_DIR/uwsgi" \
   "$RUNTIME_TEMP_DIR/scgi"
 
-cp -R /var/www/html/. "$RUNTIME_WWW_DIR/"
+cp -R "$SOURCE_WWW_DIR/." "$RUNTIME_WWW_DIR/"
+if [ -f "${CONFIG_DIR}/environment.json" ]; then
+  mkdir -p "$RUNTIME_WWW_DIR/assets"
+  cp "${CONFIG_DIR}/environment.json" "$RUNTIME_WWW_DIR/assets/environment.json"
+fi
 
 if [ "$BASE_HREF_WITH_SLASH" = "/" ]; then
   BASE_HREF_REDIRECT=""
@@ -44,7 +50,7 @@ fi
 sed \
   -e "s|__BASE_HREF_REDIRECT__|${BASE_HREF_REDIRECT}|g" \
   -e "s|__BASE_HREF__|${BASE_HREF_WITH_SLASH}|g" \
-  /etc/nginx/nginx.conf > "$RUNTIME_NGINX_CONF"
+  "$SOURCE_NGINX_TEMPLATE" > "$RUNTIME_NGINX_CONF"
 
 sed "s|href=\"/\"|href=\"${BASE_HREF_WITH_SLASH}\"|g" \
   "$RUNTIME_WWW_DIR/index.html" > "$RUNTIME_WWW_DIR/index.html.tmp"
