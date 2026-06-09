@@ -56,9 +56,6 @@ COPY --chown=nodeuser:nodejs --chmod=700 ./output-api/deploy/entrypoint.sh ./dep
 COPY --chown=nodeuser:nodejs --chmod=700 ./output-api/deploy/init-entrypoint.sh ./deploy/init-entrypoint.sh
 COPY --chown=nodeuser:nodejs ./output-api/deploy/nginx.conf ./deploy/nginx.conf.template
 
-RUN mkdir -p /usr/src/app/output-api/log \
-    && chown -R nodeuser:nodejs /usr/src/app/output-api /usr/src/app/deploy /usr/src/app/output-ui-dist
-
 ENV HOME=/home/nodeuser
 ENV NPM_CONFIG_CACHE=/tmp/.npm
 ENV APP_DOCKER_MODE=true
@@ -69,4 +66,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD BASE="${BASE_HREF:-/}"; case "$BASE" in /*) ;; *) BASE="/$BASE";; esac; BASE="${BASE%/}/"; wget -qO- "http://localhost:1080${BASE}api/config/health" || exit 1
 
 USER nodeuser
+
+RUN mkdir -p /usr/src/app/output-api/log 
+
 ENTRYPOINT ["/usr/src/app/deploy/entrypoint.sh"]
