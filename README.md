@@ -58,14 +58,16 @@ A simple way to set up the application is to user our docker image. Pull the ima
 
 Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions) and link them into the container. The database may be initialized with
 
-> $ docker run --rm -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
+> $ docker run --rm --cap-drop=ALL --security-opt no-new-privileges -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" --entrypoint /init-entrypoint.sh output-app
 > 
 
 And for running the container (either via port mapping or base_href):
 
-> docker run -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+> docker run --cap-drop=ALL --security-opt no-new-privileges -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
 > 
-> docker run -e BASE_HREF=/$BASE_HREF -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+> docker run --cap-drop=ALL --security-opt no-new-privileges -e BASE_HREF=/$BASE_HREF -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" -v "$APPDATA/environment.json:/var/www/html/assets/environment.json" ghcr.io/ovgu-ubit/output
+
+The container renders runtime files below `/tmp/output-runtime`. If you additionally run it with a read-only root filesystem, provide a writable `/tmp`, for example via tmpfs.
 
 
 ### File actions

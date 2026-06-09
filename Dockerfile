@@ -50,13 +50,11 @@ COPY output-api/package.json ./output-api/
 WORKDIR /usr/src/app/
 # install nginx
 RUN apt-get update && apt-get install -y nginx postgresql-client && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /var/log/nginx /run/nginx
 
 # copy distributables
 ENV DIST_PATH=/var/www/html/
 RUN rm -rf ${DIST_PATH}*
 COPY --from=build /usr/src/app/output-ui/dist/output-ui/browser/ ${DIST_PATH}
-RUN chown -R www-data:www-data ${DIST_PATH}
 
 # copy config
 RUN rm -f /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*
@@ -67,16 +65,19 @@ COPY ./output-api/deploy/entrypoint.sh /entrypoint.sh
 COPY ./output-api/deploy/init-entrypoint.sh /init-entrypoint.sh
 RUN chmod +x /*entrypoint.sh
 
-# create unprivileged user 
-# ALPINE
-# RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs 
-# DEBIAN
-RUN groupadd -r nodejs && useradd -r -g nodejs nodeuser 
-RUN chown nodeuser:nodejs /usr/src/app/output-api/
+# create unprivileged user
+RUN groupadd -r nodejs && useradd -r -g nodejs -d /home/nodeuser -m nodeuser
+RUN mkdir -p /usr/src/app/output-api/log \
+    && chown nodeuser:nodejs /usr/src/app/output-api \
+    && chown -R nodeuser:nodejs /usr/src/app/output-api/config /usr/src/app/output-api/log
+
+ENV HOME=/home/nodeuser
+ENV NPM_CONFIG_CACHE=/tmp/.npm
 
 EXPOSE 1080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://localhost:1080$BASE_HREF/api/config/health || exit 1
+  CMD BASE="${BASE_HREF:-/}"; case "$BASE" in /*) ;; *) BASE="/$BASE";; esac; BASE="${BASE%/}/"; wget -qO- "http://localhost:1080${BASE}api/config/health" || exit 1
 
+USER nodeuser
 ENTRYPOINT ["/entrypoint.sh"]
