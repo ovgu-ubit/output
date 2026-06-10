@@ -16,11 +16,9 @@ case "$BASE_HREF" in
   /*) ;;
   *) BASE_HREF="/${BASE_HREF}" ;;
 esac
+BASE_HREF="${BASE_HREF%/}/"
 
-BASE_HREF_WITH_SLASH="${BASE_HREF%/}/"
-BASE_HREF_WITHOUT_SLASH="${BASE_HREF_WITH_SLASH%/}"
-
-if ! printf '%s\n' "$BASE_HREF_WITH_SLASH" | grep -Eq '^(/[A-Za-z0-9._~-]+)*/$'; then
+if ! printf '%s\n' "$BASE_HREF" | grep -Eq '^(/[A-Za-z0-9._~-]+)*/$'; then
   echo "Invalid BASE_HREF '${BASE_HREF}'. Use an absolute path like '/', '/demo', or '/demo/app'."
   exit 1
 fi
@@ -41,18 +39,18 @@ if [ -f "${CONFIG_DIR}/environment.json" ]; then
   cp "${CONFIG_DIR}/environment.json" "$RUNTIME_WWW_DIR/assets/environment.json"
 fi
 
-if [ "$BASE_HREF_WITH_SLASH" = "/" ]; then
+if [ "$BASE_HREF" = "/" ]; then
   BASE_HREF_REDIRECT=""
 else
-  BASE_HREF_REDIRECT="location = ${BASE_HREF_WITHOUT_SLASH} { absolute_redirect off; return 301 \$uri/\$is_args\$args; }"
+  BASE_HREF_REDIRECT="location = ${BASE_HREF%/} { absolute_redirect off; return 301 \$uri/\$is_args\$args; }"
 fi
 
 sed \
   -e "s|__BASE_HREF_REDIRECT__|${BASE_HREF_REDIRECT}|g" \
-  -e "s|__BASE_HREF__|${BASE_HREF_WITH_SLASH}|g" \
+  -e "s|__BASE_HREF__|${BASE_HREF}|g" \
   "$SOURCE_NGINX_TEMPLATE" > "$RUNTIME_NGINX_CONF"
 
-sed "s|href=\"/\"|href=\"${BASE_HREF_WITH_SLASH}\"|g" \
+sed "s|href=\"/\"|href=\"${BASE_HREF}\"|g" \
   "$RUNTIME_WWW_DIR/index.html" > "$RUNTIME_WWW_DIR/index.html.tmp"
 mv "$RUNTIME_WWW_DIR/index.html.tmp" "$RUNTIME_WWW_DIR/index.html"
 

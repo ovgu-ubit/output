@@ -59,12 +59,12 @@ A simple way to set up the application is to user our docker image. Pull the ima
 Create `env.$NODE_ENV` and `environment.json` from the given templates (see File Actions), put them into `$APPDATA`, and mount that directory as `/config`. The database may be initialized with
 
 > $ docker run --rm --cap-drop=ALL --security-opt no-new-privileges -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" --entrypoint /usr/src/app/deploy/init-entrypoint.sh output-app
-> 
+>
 
 And for running the container (either via port mapping or base_href):
 
 > docker run --cap-drop=ALL --security-opt no-new-privileges -p $OUTER_PORT:1080 -e NODE_ENV=$NODE_ENV -e BASE_HREF=/ -v "$APPDATA:/config:ro" ghcr.io/ovgu-ubit/output
-> 
+>
 > docker run --cap-drop=ALL --security-opt no-new-privileges -e BASE_HREF=/$BASE_HREF -e NODE_ENV=$NODE_ENV -v "$APPDATA:/config:ro" ghcr.io/ovgu-ubit/output
 
 The container expects `/config/environment.json` for the frontend runtime configuration and renders runtime files below `/tmp/output-runtime`. If you additionally run it with a read-only root filesystem, provide a writable `/tmp`, for example via tmpfs.

@@ -64,7 +64,7 @@ EXPOSE 1080
 
 USER nodeuser
 
-RUN mkdir -p /usr/src/app/output-api/log 
+RUN mkdir -p /usr/src/app/output-api/log
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD BASE="${BASE_HREF:-/}"; case "$BASE" in /*) ;; *) BASE="/$BASE";; esac; BASE="${BASE%/}/"; wget -qO- "http://localhost:1080${BASE}api/config/health" || exit 1
