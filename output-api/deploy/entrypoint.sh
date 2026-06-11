@@ -1,27 +1,64 @@
 #!/bin/sh
 set -e
 
-# process ENV
-# CONFIG_DIR
 export CONFIG_DIR=/config
-# BASE_HREF
-BASE_HREF_WITH_SLASH="${BASE_HREF%/}/"
-BASE_HREF_WITHOUT_SLASH="${BASE_HREF_WITH_SLASH%/}"
 
-if [ "$BASE_HREF_WITH_SLASH" = "/" ]; then
-  sed -i "/__BASE_HREF_REDIRECT__/d" /etc/nginx/nginx.conf
-else
-  sed -i "s|__BASE_HREF_REDIRECT__|location = ${BASE_HREF_WITHOUT_SLASH} { absolute_redirect off; return 301 \$uri/\$is_args\$args; }|g" /etc/nginx/nginx.conf
+SOURCE_WWW_DIR=/usr/src/app/output-ui-dist
+SOURCE_NGINX_TEMPLATE=/usr/src/app/deploy/nginx.conf.template
+RUNTIME_DIR=/tmp/output-runtime
+RUNTIME_WWW_DIR="${RUNTIME_DIR}/www"
+RUNTIME_LOG_DIR="${RUNTIME_DIR}/log"
+RUNTIME_TEMP_DIR="${RUNTIME_DIR}/nginx-temp"
+RUNTIME_NGINX_CONF="${RUNTIME_DIR}/nginx.conf"
+
+BASE_HREF="${BASE_HREF:-/}"
+case "$BASE_HREF" in
+  /*) ;;
+  *) BASE_HREF="/${BASE_HREF}" ;;
+esac
+BASE_HREF="${BASE_HREF%/}/"
+
+if ! printf '%s\n' "$BASE_HREF" | grep -Eq '^(/[A-Za-z0-9._~-]+)*/$'; then
+  echo "Invalid BASE_HREF '${BASE_HREF}'. Use an absolute path like '/', '/demo', or '/demo/app'."
+  exit 1
 fi
 
-sed -i "s|__BASE_HREF__|${BASE_HREF_WITH_SLASH}|g" /etc/nginx/nginx.conf
-sed -i "s|href=\"/\"|href=\"${BASE_HREF_WITH_SLASH}\"|g" /var/www/html/index.html
+rm -rf "$RUNTIME_WWW_DIR" "$RUNTIME_LOG_DIR" "$RUNTIME_TEMP_DIR" "$RUNTIME_NGINX_CONF"
+mkdir -p \
+  "$RUNTIME_WWW_DIR" \
+  "$RUNTIME_LOG_DIR" \
+  "$RUNTIME_TEMP_DIR/client-body" \
+  "$RUNTIME_TEMP_DIR/proxy" \
+  "$RUNTIME_TEMP_DIR/fastcgi" \
+  "$RUNTIME_TEMP_DIR/uwsgi" \
+  "$RUNTIME_TEMP_DIR/scgi"
+
+cp -R "$SOURCE_WWW_DIR/." "$RUNTIME_WWW_DIR/"
+if [ -f "${CONFIG_DIR}/environment.json" ]; then
+  mkdir -p "$RUNTIME_WWW_DIR/assets"
+  cp "${CONFIG_DIR}/environment.json" "$RUNTIME_WWW_DIR/assets/environment.json"
+fi
+
+if [ "$BASE_HREF" = "/" ]; then
+  BASE_HREF_REDIRECT=""
+else
+  BASE_HREF_REDIRECT="location = ${BASE_HREF%/} { absolute_redirect off; return 301 \$uri/\$is_args\$args; }"
+fi
+
+sed \
+  -e "s|__BASE_HREF_REDIRECT__|${BASE_HREF_REDIRECT}|g" \
+  -e "s|__BASE_HREF__|${BASE_HREF}|g" \
+  "$SOURCE_NGINX_TEMPLATE" > "$RUNTIME_NGINX_CONF"
+
+sed "s|href=\"/\"|href=\"${BASE_HREF}\"|g" \
+  "$RUNTIME_WWW_DIR/index.html" > "$RUNTIME_WWW_DIR/index.html.tmp"
+mv "$RUNTIME_WWW_DIR/index.html.tmp" "$RUNTIME_WWW_DIR/index.html"
 
 cd /usr/src/app/output-api
 # run pending migrations
 npm run typeorm-js migration:run -- -d /usr/src/app/output-api/dist/src/config/app.data.source.js || echo "errors while migrating"
 # start backend in background
-su -s /bin/sh -c "node /usr/src/app/output-api/dist/src/main.js" nodeuser &
+node /usr/src/app/output-api/dist/src/main.js &
 NODE_PID=$!
 NGINX_PID=
 
@@ -46,7 +83,7 @@ done
 
 echo "Node backend ready (PID $NODE_PID). Starting nginx..."
 
-nginx -g 'daemon off;' &
+nginx -c "$RUNTIME_NGINX_CONF" -g 'daemon off;' &
 NGINX_PID=$!
 
 echo "Waiting for Node or nginx to exit..."

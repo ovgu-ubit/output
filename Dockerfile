@@ -33,50 +33,40 @@ FROM node:22 AS runtime
 # ---- Backend ----
 WORKDIR /usr/src/app
 
-# Copy distributables from build container
-COPY --from=build /deploy /deploy
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/output-api/node_modules ./output-api/node_modules
-COPY --from=build /usr/src/app/output-api/dist ./output-api/dist
-COPY --from=build /usr/src/app/output-api/config ./output-api/config
-COPY --from=build /usr/src/app/output-interfaces ./output-interfaces
+# install runtime packages
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy environment file
+# create unprivileged user
+RUN groupadd -r nodejs && useradd -r -g nodejs -d /home/nodeuser -m nodeuser
+
+# Copy application files
+COPY --chown=nodeuser:nodejs --from=build /deploy /usr/src/app/deploy-log
+COPY --chown=nodeuser:nodejs --from=build /usr/src/app/node_modules ./node_modules
+COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-api/node_modules ./output-api/node_modules
+COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-api/dist ./output-api/dist
+COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-api/config ./output-api/config
+COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-interfaces ./output-interfaces
+COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-ui/dist/output-ui/browser/ ./output-ui-dist/
+
+COPY --chown=nodeuser:nodejs output-api/env.template ./output-api/
+COPY --chown=nodeuser:nodejs output-api/package.json ./output-api/
+COPY --chown=nodeuser:nodejs --chmod=700 ./output-api/deploy/entrypoint.sh ./deploy/entrypoint.sh
+COPY --chown=nodeuser:nodejs --chmod=700 ./output-api/deploy/init-entrypoint.sh ./deploy/init-entrypoint.sh
+COPY --chown=nodeuser:nodejs ./output-api/deploy/nginx.conf ./deploy/nginx.conf.template
+
+ENV HOME=/home/nodeuser
+ENV NPM_CONFIG_CACHE=/tmp/.npm
 ENV APP_DOCKER_MODE=true
-COPY output-api/env.template ./output-api/
-COPY output-api/package.json ./output-api/
-
-# ---- Frontend ----
-WORKDIR /usr/src/app/
-# install nginx
-RUN apt-get update && apt-get install -y nginx postgresql-client && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /var/log/nginx /run/nginx
-
-# copy distributables
-ENV DIST_PATH=/var/www/html/
-RUN rm -rf ${DIST_PATH}*
-COPY --from=build /usr/src/app/output-ui/dist/output-ui/browser/ ${DIST_PATH}
-RUN chown -R www-data:www-data ${DIST_PATH}
-
-# copy config
-RUN rm -f /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*
-COPY ./output-api/deploy/nginx.conf /etc/nginx/nginx.conf
-
-# copy run script
-COPY ./output-api/deploy/entrypoint.sh /entrypoint.sh
-COPY ./output-api/deploy/init-entrypoint.sh /init-entrypoint.sh
-RUN chmod +x /*entrypoint.sh
-
-# create unprivileged user 
-# ALPINE
-# RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs 
-# DEBIAN
-RUN groupadd -r nodejs && useradd -r -g nodejs nodeuser 
-RUN chown nodeuser:nodejs /usr/src/app/output-api/
 
 EXPOSE 1080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://localhost:1080$BASE_HREF/api/config/health || exit 1
+USER nodeuser
 
-ENTRYPOINT ["/entrypoint.sh"]
+RUN mkdir -p /usr/src/app/output-api/log
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD BASE="${BASE_HREF:-/}"; case "$BASE" in /*) ;; *) BASE="/$BASE";; esac; BASE="${BASE%/}/"; wget -qO- "http://localhost:1080${BASE}api/config/health" || exit 1
+
+ENTRYPOINT ["/usr/src/app/deploy/entrypoint.sh"]
