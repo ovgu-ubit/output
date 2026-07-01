@@ -339,6 +339,46 @@ describe('PublicationService', () => {
         expect(result).toBeNull();
     });
 
+    it('hides internal author remarks on publications when the caller lacks reader access', async () => {
+        pubRepository.findOne.mockResolvedValue({
+            id: 11,
+            add_info: 'publication remark',
+            authorPublications: [{
+                author: {
+                    id: 22,
+                    first_name: 'Ada',
+                    last_name: 'Lovelace',
+                    internal_remark: 'internal person remark',
+                },
+            }],
+        } as Publication);
+
+        const result = await service.getPublication(11, false, false);
+
+        expect(result.add_info).toBeUndefined();
+        expect(result.authorPublications[0].author.internal_remark).toBeUndefined();
+    });
+
+    it('keeps internal author remarks on publications when the caller has reader access', async () => {
+        pubRepository.findOne.mockResolvedValue({
+            id: 11,
+            add_info: 'publication remark',
+            authorPublications: [{
+                author: {
+                    id: 22,
+                    first_name: 'Ada',
+                    last_name: 'Lovelace',
+                    internal_remark: 'internal person remark',
+                },
+            }],
+        } as Publication);
+
+        const result = await service.getPublication(11, true, false);
+
+        expect(result.add_info).toBe('publication remark');
+        expect(result.authorPublications[0].author.internal_remark).toBe('internal person remark');
+    });
+
     it('wraps duplicate publication save errors in the shared API error format', async () => {
         pubRepository.save.mockRejectedValue({
             code: '23505',

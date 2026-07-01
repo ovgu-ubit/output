@@ -113,8 +113,15 @@
 
                             <ng-container matColumnDef="name">
                                 <th mat-header-cell *matHeaderCellDef> Person </th>
-                                <td mat-cell *matCellDef="let element"> {{element.author.last_name}},
-                                    {{element.author.first_name}} </td>
+                                <td mat-cell *matCellDef="let element">
+                                    <span class="author-name-with-remark">
+                                        <span>{{element.author.last_name}}, {{element.author.first_name}}</span>
+                                        <mat-icon *ngIf="element.author?.internal_remark"
+                                            class="author-remark-icon"
+                                            matTooltip="{{element.author.internal_remark}}"
+                                            [matTooltipShowDelay]="300">warning_amber</mat-icon>
+                                    </span>
+                                </td>
                             </ng-container>
 
                             <ng-container matColumnDef="role">

@@ -36,3 +36,18 @@ mat-form-field {
 .publication-panel-grid > mat-expansion-panel {
     margin: 0;
 }
+
+.author-name-with-remark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.author-remark-icon {
+    color: #b26a00;
+    cursor: help;
+    font-size: 18px;
+    height: 18px;
+    line-height: 18px;
+    width: 18px;
+}
