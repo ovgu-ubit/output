@@ -129,10 +129,6 @@ Before running the system the first time, use
 > $ npm run build:interfaces
 >
 > $ npm --workspace output run start:init_{test|prod}
-> 
-> $ npm --workspace output run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts --fake
-
-The last line ensures that the migrations table is populated for future migrations.
 
 Alternatively to pm2, you can also use `npm --workspace output run start:{test|prod}` after building the software.
 

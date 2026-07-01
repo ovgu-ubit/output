@@ -4,6 +4,7 @@ import { config as config } from "dotenv";
 import path from "node:path";
 
 const configDir = process.env.CONFIG_DIR || process.cwd();
+const sourceRoot = path.resolve(__dirname, "..");
 
 config({
     path: path.resolve(configDir, `env.${process.env.NODE_ENV}`)
@@ -21,15 +22,12 @@ export const AppDataSource = new DataSource(<DataSourceOptions>{
     synchronize: ['true', '1'].includes(process.env.DATABASE_SYNCHRONIZE?.toLowerCase()),
     logging: false,
     entities: [
-        "dist/src/**/*.entity.js",
-        "dist/src/**/*.entity.ts"
+        path.join(sourceRoot, "**", "*.entity{.ts,.js}")
     ],
     migrations: [
-        "dist/src/migrations/**/*.js",
-        "dist/src/migrations/**/*.ts"
+        path.join(sourceRoot, "migrations", "*{.ts,.js}")
     ],
     subscribers: [
-        "dist/src/subscriber/**/*.js",
-        "dist/src/subscriber/**/*.ts"
+        path.join(sourceRoot, "subscriber", "**", "*{.ts,.js}")
     ],
 })
