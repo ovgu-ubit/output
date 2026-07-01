@@ -11,6 +11,7 @@ import { CostCenter } from "./CostCenter.entity";
 import { CostTypeService } from "./cost-type.service";
 import { CostCenterService } from "./cost-center.service";
 import { assertCreateRequestHasNoId } from "../common/entity-id";
+import { EntityAccessRight } from "../common/abstract-entity.service";
 
 @Controller("invoice")
 @ApiTags("invoice")
@@ -104,7 +105,10 @@ export class InvoiceController {
         type: Invoice
     })
     async cost_type_one(@Param('id') id:number, @Req() request: Request) : Promise<CostType> {
-        return this.costTypeService.oneOrFail(id, request['user']? request['user']['write'] : false, request['user']?.['username'], 'Cost type not found.');
+        return this.costTypeService.oneOrFail(id, {
+            username: request['user']?.['username'],
+            rights: { [EntityAccessRight.Write]: request['user'] ? request['user']['write'] : false },
+        }, 'Cost type not found.');
     }
 
     @Post('cost_type')
@@ -162,7 +166,10 @@ export class InvoiceController {
     @Get('cost_center/:id')
     @UseGuards(AccessGuard)
     async cost_center_one(@Param('id') id:number, @Req() request: Request) : Promise<CostCenter> {
-        return this.costCenterService.oneOrFail(id, request['user']? request['user']['write'] : false, request['user']?.['username'], 'Cost center not found.');
+        return this.costCenterService.oneOrFail(id, {
+            username: request['user']?.['username'],
+            rights: { [EntityAccessRight.Write]: request['user'] ? request['user']['write'] : false },
+        }, 'Cost center not found.');
     }
 
     @Post('cost_center')

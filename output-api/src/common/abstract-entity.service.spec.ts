@@ -2,7 +2,7 @@ import { HttpException } from '@nestjs/common';
 import {  ApiErrorCode  } from '@output/interfaces';
 import { Repository } from 'typeorm';
 import { AppConfigService } from '../config/app-config.service';
-import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
+import { AbstractEntityService, EntityAccessRight, LockableEntity } from './abstract-entity.service';
 import { EditLockOwnerStore } from './edit-lock';
 
 interface TestEntity extends LockableEntity {
@@ -27,6 +27,10 @@ describe('AbstractEntityService', () => {
         metadata: { tableName: string };
     };
     let configService: { get: jest.Mock };
+    const writeScope = (username = 'alice') => ({
+        username,
+        rights: { [EntityAccessRight.Write]: true },
+    });
 
     beforeEach(() => {
         EditLockOwnerStore.clear();
@@ -54,7 +58,7 @@ describe('AbstractEntityService', () => {
         } as TestEntity);
         repository.update.mockResolvedValue({ affected: 1 } as any);
 
-        const result = await service.one(1, true, 'alice');
+        const result = await service.one(1, writeScope('alice'));
 
         expect(repository.update).toHaveBeenCalledWith(
             expect.objectContaining({ id: 1, locked_at: expect.any(Object) }),
@@ -80,8 +84,8 @@ describe('AbstractEntityService', () => {
             } as TestEntity);
         repository.update.mockResolvedValue({ affected: 1 } as any);
 
-        await service.one(1, true, 'alice');
-        const result = await service.one(1, true, 'mallory');
+        await service.one(1, writeScope('alice'));
+        const result = await service.one(1, writeScope('mallory'));
 
         expect(result?.locked_at).toBe(lockedAt);
     });
@@ -106,7 +110,7 @@ describe('AbstractEntityService', () => {
             locked_at: null,
         } as TestEntity);
 
-        await service.one(1, true, 'alice');
+        await service.one(1, writeScope('alice'));
         await expect(service.update({ id: 1, locked_at: null }, 'alice')).resolves.toMatchObject({
             id: 1,
             locked_at: null,
@@ -127,7 +131,7 @@ describe('AbstractEntityService', () => {
             } as TestEntity);
         repository.update.mockResolvedValue({ affected: 1 } as any);
 
-        await service.one(1, true, 'alice');
+        await service.one(1, writeScope('alice'));
 
         await expect(service.update({ id: 1, locked_at: null }, 'mallory')).rejects.toEqual(expect.objectContaining({
             getResponse: expect.any(Function),
@@ -157,7 +161,7 @@ describe('AbstractEntityService', () => {
         repository.update.mockResolvedValue({ affected: 1 } as any);
         repository.save.mockImplementation(async (entity) => entity);
 
-        await service.one(1, true, 'alice');
+        await service.one(1, writeScope('alice'));
         await expect(service.update({ id: 1, label: 'Updated' }, 'alice')).resolves.toMatchObject({
             id: 1,
             label: 'Updated',

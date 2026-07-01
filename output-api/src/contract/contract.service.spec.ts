@@ -13,6 +13,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { ContractComponent } from './ContractComponent.entity';
 import {  InvoiceKind, ContractModel  } from '@output/interfaces';
 import { Invoice } from '../invoice/Invoice.entity';
+import { EntityAccessRight } from '../common/abstract-entity.service';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { GreaterEntityService } from '../greater_entity/greater-entitiy.service';
 
@@ -395,7 +396,10 @@ describe('ContractService', () => {
         repository.update!.mockResolvedValue({ affected: 1 } as any);
         repository.save!.mockImplementation(async entity => entity as Contract);
 
-        const loaded = await service.one(11, true, 'alice');
+        const loaded = await service.one(11, {
+            username: 'alice',
+            rights: { [EntityAccessRight.Write]: true },
+        });
         const unlocked = await service.update({ id: 11, locked_at: null } as Contract, 'alice');
 
         expect(repository.update).toHaveBeenCalled();

@@ -11,6 +11,7 @@ import { CostTypeService } from './cost-type.service';
 import { CostCenterService } from './cost-center.service';
 import { AppConfigService } from '../config/app-config.service';
 import { createEntityLockedHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
+import { EntityAccessRight } from '../common/abstract-entity.service';
 import { EditLockOwnerStore, isExpiredEditLock, normalizeEditLockDate } from '../common/edit-lock';
 import { hasProvidedEntityId } from '../common/entity-id';
 
@@ -76,7 +77,10 @@ export class InvoiceService {
     }
 
     public getCostType(id: number, writer: boolean, user?: string) {
-        return this.costTypeService.one(id, writer, user);
+        return this.costTypeService.one(id, {
+            username: user,
+            rights: { [EntityAccessRight.Write]: writer },
+        });
     }
 
     public saveCT(ct: CostType, user?: string) {
@@ -104,7 +108,10 @@ export class InvoiceService {
     }
 
     public getCostCenter(id: number, writer: boolean, user?: string) {
-        return this.costCenterService.one(id, writer, user);
+        return this.costCenterService.one(id, {
+            username: user,
+            rights: { [EntityAccessRight.Write]: writer },
+        });
     }
 
     public saveCC(cc: CostCenter, user?: string) {
