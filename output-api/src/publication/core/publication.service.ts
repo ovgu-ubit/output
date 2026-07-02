@@ -176,11 +176,11 @@ export class PublicationService {
         if (!pub) return null;
 
         if (writer) {
-            return this.acquirePublicationEditLock(pub, reader, user);
+            const lockedPublication = await this.acquirePublicationEditLock(pub, reader, user);
+            return this.filterReaderScopedFields(lockedPublication, reader);
         }
 
-        if (!reader) pub.add_info = undefined;
-        return pub;
+        return this.filterReaderScopedFields(pub, reader);
     }
 
     async combine(id1: number, ids: number[], alias_strings?: string[]) {
@@ -362,6 +362,19 @@ export class PublicationService {
                 supplements: true
             }, withDeleted: true
         });
+    }
+
+    private filterReaderScopedFields(pub: Publication, reader: boolean): Publication {
+        if (!pub || reader) return pub;
+
+        pub.add_info = undefined;
+        pub.authorPublications?.forEach(authorPublication => {
+            if (authorPublication.author) {
+                authorPublication.author.internal_remark = undefined;
+            }
+        });
+
+        return pub;
     }
 
     private async getLockTimeoutMs(): Promise<number> {

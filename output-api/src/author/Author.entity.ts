@@ -30,6 +30,9 @@ export class Author implements IAuthor {
     @Column({ nullable: true })
     gnd_id?: string;
 
+    @Column({ default: '', nullable: true })
+    internal_remark?: string;
+
     @OneToMany(() => AuthorPublication, authorPublication => authorPublication.author, { cascade : true })
     authorPublications?: AuthorPublication[];
 

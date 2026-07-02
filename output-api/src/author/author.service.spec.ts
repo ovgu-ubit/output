@@ -14,6 +14,7 @@ import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
 import { InstituteService } from '../institute/institute.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { EntityAccessRight } from '../common/abstract-entity.service';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 
@@ -32,6 +33,11 @@ describe('AuthorService', () => {
     let aliasLookupService: { findAliases: jest.Mock };
     let dataSource: { transaction: jest.Mock };
     const mergeEntitiesMock = mergeEntities as jest.Mock;
+    const readScope = { rights: { [EntityAccessRight.Read]: true } };
+    const writeScope = (username = 'alice') => ({
+        username,
+        rights: { [EntityAccessRight.Write]: true },
+    });
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -191,6 +197,42 @@ describe('AuthorService', () => {
                 ]),
             });
         }
+    });
+
+    it('hides internal remarks from author lists when the caller lacks reader access', async () => {
+        repository.find.mockResolvedValue([
+            { id: 1, first_name: 'Alice', last_name: 'Smith', internal_remark: 'internal' } as Author,
+        ]);
+
+        const result = await service.get();
+
+        expect(result[0].internal_remark).toBeUndefined();
+    });
+
+    it('keeps internal remarks on single authors when the caller has reader access', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 1,
+            first_name: 'Alice',
+            last_name: 'Smith',
+            internal_remark: 'internal',
+        } as Author);
+
+        const result = await service.one(1, readScope);
+
+        expect(result.internal_remark).toBe('internal');
+    });
+
+    it('hides internal remarks on single authors when the caller lacks reader access', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 1,
+            first_name: 'Alice',
+            last_name: 'Smith',
+            internal_remark: 'internal',
+        } as Author);
+
+        const result = await service.one(1);
+
+        expect(result.internal_remark).toBeUndefined();
     });
 
     it('identifies authors via aliases', async () => {
@@ -445,8 +487,8 @@ describe('AuthorService', () => {
         repository.update!.mockResolvedValue({ affected: 1 } as any);
         configService.get.mockResolvedValue(5);
 
-        const first = await service.one(4, true, 'alice');
-        const second = await service.one(4, true, 'alice');
+        const first = await service.one(4, writeScope('alice'));
+        const second = await service.one(4, writeScope('alice'));
 
         expect(repository.update).toHaveBeenCalledWith(
             expect.objectContaining({ id: 4, locked_at: expect.any(Object) }),
@@ -462,7 +504,7 @@ describe('AuthorService', () => {
         repository.findOne.mockResolvedValueOnce({ id: 5, locked_at: new Date(), institutes: [] } as Author);
         configService.get.mockResolvedValue(5);
 
-        await service.one(5, true, 'alice');
+        await service.one(5, writeScope('alice'));
 
         try {
             await service.update({ id: 5, first_name: 'Mallory' } as Author, 'mallory');
@@ -502,7 +544,7 @@ describe('AuthorService', () => {
         repository.save.mockResolvedValue({ id: 6, locked_at: null } as Author);
         configService.get.mockResolvedValue(5);
 
-        await service.one(6, true, 'alice');
+        await service.one(6, writeScope('alice'));
 
         await expect(service.update({ id: 6, locked_at: null } as Author, 'alice'))
             .resolves.toEqual({ id: 6, locked_at: null });

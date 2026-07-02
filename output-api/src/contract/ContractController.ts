@@ -42,9 +42,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     override async one(@Query('id') id: number, @Req() request: Request): Promise<Contract> {
         const contract = await this.service.one(
             id,
-            this.isWriter(request),
-            this.getUsername(request),
-            request['user'] ? request['user']['read'] : false,
+            this.getAccessScope(request),
         );
         if (!contract) {
             throw createNotFoundHttpException();

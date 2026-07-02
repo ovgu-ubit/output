@@ -26,6 +26,7 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
     { key: 'last_name', title: 'Nachname', required: true },
     { key: 'orcid', title: 'ORCID', pattern: /^(\d{4}-){3}\d{3}(\d|X)$/ },
     { key: 'gnd_id', title: 'GND-ID', pattern: /^[0-9X-]*$/ },
+    { key: 'internal_remark', title: 'Interne Bemerkung' },
     // { key: 'inst', title: 'Institute', type: 'institute' },
     // { key: 'alias_first', title: 'Aliase Vorname', type: 'alias' },
     // { key: 'alias_last', title: 'Aliase Nachname', type: 'alias' },
@@ -56,7 +57,8 @@ export class AuthorFormComponent extends AbstractFormComponent<Author> implement
       first_name: ['', Validators.required],
       last_name: ['', Validators.required],
       orcid: ['', Validators.pattern(/^(\d{4}-){3}\d{3}(\d|X)$/)],
-      gnd_id: ['', Validators.pattern(/^[0-9X-]*$/)]
+      gnd_id: ['', Validators.pattern(/^[0-9X-]*$/)],
+      internal_remark: ['']
     });
   }
 

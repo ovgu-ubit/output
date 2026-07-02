@@ -9,6 +9,20 @@ export interface LockableEntity {
     locked_at?: Date | null;
 }
 
+export enum EntityAccessRight {
+    Read = 'read',
+    Write = 'write',
+}
+
+export interface EntityAccessScope {
+    username?: string;
+    rights?: Partial<Record<EntityAccessRight, boolean>>;
+}
+
+export function hasEntityAccess(scope: EntityAccessScope | undefined, right: EntityAccessRight): boolean {
+    return !!scope?.rights?.[right];
+}
+
 interface ReplaceOwnedCollectionOptions<TEntity extends LockableEntity, TChild extends object> {
     parent: TEntity;
     children: DeepPartial<TChild>[] | null | undefined;
@@ -150,18 +164,18 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         return saved;
     }
 
-    public get() {
+    public get(_scope: EntityAccessScope = {}) {
         return this.repository.find(this.getFindManyOptions());
     }
 
-    public async one(id: number, writer: boolean, user?: string) {
+    public async one(id: number, scope: EntityAccessScope = {}) {
         const entity = await this.findEntity(id);
 
         if (!entity) {
             return entity;
         }
 
-        if (!writer) {
+        if (!hasEntityAccess(scope, EntityAccessRight.Write)) {
             return entity;
         }
 
@@ -170,7 +184,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         const isExpired = !!lockedAt && (Date.now() - lockedAt.getTime()) > lockTimeoutMs;
 
         if (lockedAt && !isExpired) {
-            if (user && EditLockOwnerStore.getOwner(this.getEditLockScope(), entity.id) === user) {
+            if (scope.username && EditLockOwnerStore.getOwner(this.getEditLockScope(), entity.id) === scope.username) {
                 return {
                     ...entity,
                     locked_at: undefined,
@@ -193,8 +207,8 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
             return (await this.findEntity(id)) ?? entity;
         }
 
-        if (user && hasProvidedEntityId(entity.id)) {
-            EditLockOwnerStore.setOwner(this.getEditLockScope(), entity.id, user);
+        if (scope.username && hasProvidedEntityId(entity.id)) {
+            EditLockOwnerStore.setOwner(this.getEditLockScope(), entity.id, scope.username);
         }
 
         return {
@@ -203,8 +217,8 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         };
     }
 
-    public async oneOrFail(id: number, writer: boolean, user?: string, message = 'Entity not found.') {
-        const entity = await this.one(id, writer, user);
+    public async oneOrFail(id: number, scope: EntityAccessScope = {}, message = 'Entity not found.') {
+        const entity = await this.one(id, scope);
         if (!entity) {
             throw createNotFoundHttpException(message);
         }

@@ -5,7 +5,7 @@ import { DataSource, DeepPartial, EntityManager, FindManyOptions, FindOptionsRel
 import { ZodError } from 'zod';
 import {  ContractModel, InvoiceKind  } from '@output/interfaces';
 import {  ContractIndex  } from '@output/interfaces';
-import { AbstractEntityService } from '../common/abstract-entity.service';
+import { AbstractEntityService, EntityAccessRight, EntityAccessScope, hasEntityAccess } from '../common/abstract-entity.service';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../common/api-error';
 import { assertCreateRequestHasNoId, hasProvidedEntityId } from '../common/entity-id';
 import { mergeEntities } from '../common/merge';
@@ -103,9 +103,9 @@ export class ContractService extends AbstractEntityService<Contract> {
         });
     }
 
-    public override async one(id: number, writer: boolean, user?: string, canReadInvoices = true) {
-        const contract = await super.one(id, writer, user);
-        return this.splitContractComponentInvoicesForContract(contract, canReadInvoices);
+    public override async one(id: number, scope: EntityAccessScope = { rights: { [EntityAccessRight.Read]: true } }) {
+        const contract = await super.one(id, scope);
+        return this.splitContractComponentInvoicesForContract(contract, hasEntityAccess(scope, EntityAccessRight.Read));
     }
 
     public async saveComponent(component: DeepPartial<ContractComponent>) {
@@ -291,7 +291,7 @@ export class ContractService extends AbstractEntityService<Contract> {
             },
         });
 
-        return this.one(merged.id, false);
+        return this.one(merged.id);
     }
 
     public async delete(insts: Contract[]) {

@@ -1,5 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import {  ApiErrorCode  } from '@output/interfaces';
+import { EntityAccessRight } from '../common/abstract-entity.service';
 import { createNotFoundHttpException } from '../common/api-error';
 import { InvoiceController } from './InvoiceController';
 
@@ -113,12 +114,15 @@ describe('InvoiceController', () => {
         expect(invoiceService.save).not.toHaveBeenCalled();
     });
 
-    it('forwards writer flag and username when loading one cost type', async () => {
+    it('forwards access scope when loading one cost type', async () => {
         costTypeService.oneOrFail.mockResolvedValue({ id: 7, label: 'APC' });
 
         await controller.cost_type_one(7, { user: { write: true, username: 'alice' } } as any);
 
-        expect(costTypeService.oneOrFail).toHaveBeenCalledWith(7, true, 'alice', 'Cost type not found.');
+        expect(costTypeService.oneOrFail).toHaveBeenCalledWith(7, {
+            username: 'alice',
+            rights: { [EntityAccessRight.Write]: true },
+        }, 'Cost type not found.');
     });
 
     it('throws a structured not-found error when one cost type is missing', async () => {
@@ -158,12 +162,15 @@ describe('InvoiceController', () => {
         expect(costTypeService.save).not.toHaveBeenCalled();
     });
 
-    it('forwards writer flag and username when loading one cost center', async () => {
+    it('forwards access scope when loading one cost center', async () => {
         costCenterService.oneOrFail.mockResolvedValue({ id: 9, label: 'Center' });
 
         await controller.cost_center_one(9, { user: { write: true, username: 'alice' } } as any);
 
-        expect(costCenterService.oneOrFail).toHaveBeenCalledWith(9, true, 'alice', 'Cost center not found.');
+        expect(costCenterService.oneOrFail).toHaveBeenCalledWith(9, {
+            username: 'alice',
+            rights: { [EntityAccessRight.Write]: true },
+        }, 'Cost center not found.');
     });
 
     it('forwards read access when loading the cost center index', async () => {

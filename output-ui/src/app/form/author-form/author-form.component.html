@@ -42,6 +42,13 @@
             <mat-error *ngIf="getFieldError('gnd_id', 'GND-Nummer') as error">{{error}}</mat-error>
         </mat-form-field>
 
+        <mat-form-field appearance="fill"
+            *ngIf="this.tokenService.hasRole('admin') || this.tokenService.hasRole('writer') || this.tokenService.hasRole('reader')">
+            <mat-label>Interne Bemerkung</mat-label>
+            <textarea matInput placeholder="Interne Bemerkung" formControlName="internal_remark"></textarea>
+            <mat-error *ngIf="getFieldError('internal_remark', 'Interne Bemerkung') as error">{{error}}</mat-error>
+        </mat-form-field>
+
         <mat-card>
             <mat-card-header><mat-card-subtitle>Institute</mat-card-subtitle></mat-card-header>
             <mat-card-content>

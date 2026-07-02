@@ -26,7 +26,7 @@ export class LanguageController extends AbstractCrudController<Language, Languag
         type: Language
     })
     async one(@Query('id') id:number) : Promise<Language> {
-        return this.service.oneOrFail(id, false, undefined, 'Language not found.');
+        return this.service.oneOrFail(id, {}, 'Language not found.');
     }
 
 }

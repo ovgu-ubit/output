@@ -27,8 +27,7 @@ export class AuthorController extends AbstractCrudController<Author, AuthorServi
     async one(@Param('id') id: number, @Req() request: Request) {
         return this.service.oneOrFail(
             id,
-            this.isWriter(request),
-            this.getUsername(request),
+            this.getAccessScope(request),
             'Author not found.',
         );
     }

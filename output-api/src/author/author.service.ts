@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { DataSource, DeepPartial, ILike, In, Repository } from 'typeorm';
 import {  AppError  } from '@output/interfaces';
 import {  AuthorIndex  } from '@output/interfaces';
-import { AbstractEntityService } from '../common/abstract-entity.service';
+import { AbstractEntityService, EntityAccessRight, EntityAccessScope, hasEntityAccess } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { createPersistenceHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
@@ -38,6 +38,16 @@ export class AuthorService extends AbstractEntityService<Author> {
 
     protected override getFindOneRelations() {
         return { institutes: true, aliases_first_name: true, aliases_last_name: true };
+    }
+
+    public override async get(scope: EntityAccessScope = {}) {
+        const authors = await super.get(scope);
+        return authors.map(author => this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read)));
+    }
+
+    public override async one(id: number, scope: EntityAccessScope = {}) {
+        const author = await super.one(id, scope);
+        return this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read));
     }
 
     public override async save(entity: DeepPartial<Author>, _user?: string) {
@@ -269,6 +279,12 @@ export class AuthorService extends AbstractEntityService<Author> {
             await this.deleteAliasCollection(manager.getRepository(AliasAuthorLastName), authorIds);
             return await manager.getRepository(Author).delete(authorIds);
         });
+    }
+
+    private filterInternalRemark<T extends Author | null>(author: T, reader: boolean): T {
+        if (!author || reader) return author;
+        author.internal_remark = undefined;
+        return author;
     }
 
 }

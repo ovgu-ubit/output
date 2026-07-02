@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import {  ApiErrorCode  } from '@output/interfaces';
 import { AbstractCrudController } from './abstract-crud.controller';
-import { LockableEntity } from './abstract-entity.service';
+import { EntityAccessRight, LockableEntity } from './abstract-entity.service';
 
 interface TestEntity extends LockableEntity {
     label?: string;
@@ -30,12 +30,18 @@ describe('AbstractCrudController', () => {
         controller = new TestCrudController(service);
     });
 
-    it('forwards writer flag and username when loading one entity', async () => {
+    it('forwards access scope when loading one entity', async () => {
         service.one.mockResolvedValue({ id: 7 });
 
-        await controller.one(7, { user: { write: true, username: 'alice' } } as any);
+        await controller.one(7, { user: { read: true, write: true, username: 'alice' } } as any);
 
-        expect(service.one).toHaveBeenCalledWith(7, true, 'alice');
+        expect(service.one).toHaveBeenCalledWith(7, {
+            username: 'alice',
+            rights: {
+                [EntityAccessRight.Read]: true,
+                [EntityAccessRight.Write]: true,
+            },
+        });
     });
 
     it('forwards username when updating an entity', async () => {

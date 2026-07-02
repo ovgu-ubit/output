@@ -9,7 +9,7 @@
    },
    "devDependencies": {
       "@eslint/js": "^10.0.1",
-      "@nestjs/testing": "^11.1.18",
+      "@nestjs/testing": "^11.1.27",
       "@types/cookie-parser": "^1.4.10",
       "@types/jest": "^30.0.0",
       "@types/multer": "^2.1.0",

@@ -95,7 +95,7 @@ export class PublicationIndexService {
         private instService: InstituteService,
     ) { }
 
-    public async getAllForReportingYear(yop: number | null | undefined, canReadInvoices = false) {
+    public async getAllForReportingYear(yop: number | null | undefined, reader = false) {
         let reportingYear = yop;
         if (!reportingYear) {
             reportingYear = Number(await this.configService.get('reporting_year'));
@@ -104,11 +104,11 @@ export class PublicationIndexService {
         const beginDate = new Date(Date.UTC(reportingYear, 0, 1, 0, 0, 0, 0));
         const endDate = new Date(Date.UTC(reportingYear, 11, 31, 23, 59, 59, 999));
 
-        return this.pubRepository.find({
+        const publications = await this.pubRepository.find({
             where: [{ pub_date: Between(beginDate, endDate) }],
             relations: {
                 oa_category: true,
-                invoices: canReadInvoices,
+                invoices: reader,
                 authorPublications: {
                     author: true,
                     institute: true,
@@ -123,6 +123,22 @@ export class PublicationIndexService {
             console.log(error);
             throw createInternalErrorHttpException();
         });
+
+        return this.filterAuthorInternalRemarks(publications, reader);
+    }
+
+    private filterAuthorInternalRemarks(publications: Publication[], reader: boolean): Publication[] {
+        if (reader) return publications;
+
+        publications.forEach(publication => {
+            publication.authorPublications?.forEach(authorPublication => {
+                if (authorPublication.author) {
+                    authorPublication.author.internal_remark = undefined;
+                }
+            });
+        });
+
+        return publications;
     }
 
     public async getIndexEntries(yop: number, soft?: boolean): Promise<PublicationIndex[]> {

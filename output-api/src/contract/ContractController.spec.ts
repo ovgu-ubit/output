@@ -1,6 +1,7 @@
 import { HttpException } from '@nestjs/common';
 
 import {  ApiErrorCode  } from '@output/interfaces';
+import { EntityAccessRight } from '../common/abstract-entity.service';
 import { createNotFoundHttpException } from '../common/api-error';
 import { ContractController } from './ContractController';
 
@@ -59,7 +60,13 @@ describe('ContractController', () => {
 
         const result = await controller.one(1, { user: { read: true, write: false, username: 'reader' } } as any);
 
-        expect(service.one).toHaveBeenCalledWith(1, false, 'reader', true);
+        expect(service.one).toHaveBeenCalledWith(1, {
+            username: 'reader',
+            rights: {
+                [EntityAccessRight.Read]: true,
+                [EntityAccessRight.Write]: false,
+            },
+        });
         expect(result).toEqual({ id: 1, label: 'Contract' });
     });
 
