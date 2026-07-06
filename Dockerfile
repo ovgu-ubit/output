@@ -10,21 +10,16 @@ COPY . .
 
 # ---- Root Install & Build ----
 # Install the application dependencies at the workspace root
-RUN mkdir -p /deploy
 RUN npm ci
 
 # Build Backend
 RUN npm run build:api
-RUN npm audit fix -w output-api 2>&1 > /deploy/deploy.log || echo "Errors while performing audit fix for api"
-RUN npm upgrade jwa -w output-api
 
 # Build Frontend
 RUN npm run build:ui:prod
-RUN npm audit fix -w output-ui 2>&1 >> /deploy/deploy.log || echo "Errors while performing audit fix for ui"
 
 # Prod-Only Deps prune at root
 RUN npm prune --omit=dev
-RUN mkdir -p output-api/node_modules output-interfaces/node_modules
 
 # ------------ Runtime Image -------------
 # Use the official Node.js image as the base image
@@ -42,9 +37,7 @@ RUN apt-get update \
 RUN groupadd -r nodejs && useradd -r -g nodejs -d /home/nodeuser -m nodeuser
 
 # Copy application files
-COPY --chown=nodeuser:nodejs --from=build /deploy /usr/src/app/deploy-log
 COPY --chown=nodeuser:nodejs --from=build /usr/src/app/node_modules ./node_modules
-COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-api/node_modules ./output-api/node_modules
 COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-api/dist ./output-api/dist
 COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-api/config ./output-api/config
 COPY --chown=nodeuser:nodejs --from=build /usr/src/app/output-interfaces ./output-interfaces

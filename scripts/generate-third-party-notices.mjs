@@ -1,27 +1,26 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const repoRoot = path.resolve(new URL('..', import.meta.url).pathname);
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lockPath = path.join(repoRoot, 'package-lock.json');
 const outputPath = path.join(repoRoot, 'THIRD_PARTY_NOTICES.md');
 const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
 const packages = lock.packages ?? {};
 
 const APPS = [
-  { dir: 'output-api', label: 'output-api' },
-  { dir: 'output-ui', label: 'output-ui' },
-  { dir: 'output-interfaces', label: 'output-interfaces' },
+  { dir: '', label: 'workspace' },
 ];
 
 const MANUAL_LICENSES = new Map([
-  ['output-api/node_modules/busboy', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
-  ['output-api/node_modules/passport-local', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
-  ['output-api/node_modules/passport-strategy', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
-  ['output-api/node_modules/pause', { license: 'MIT', note: 'Manuell geprüft: Readme.md enthält MIT-Lizenztext.' }],
-  ['output-api/node_modules/streamsearch', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
-  ['output-ui/node_modules/daemon', { license: 'MIT', note: 'Manuell geprüft: LICENSE-Datei enthält MIT-Lizenztext.' }],
-  ['output-ui/node_modules/service', { license: 'NOASSERTION', note: 'Manuell geprüft: package.json und README.md enthalten kein Lizenzfeld bzw. keinen Lizenzhinweis.' }],
+  ['node_modules/busboy', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
+  ['node_modules/passport-local', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
+  ['node_modules/passport-strategy', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
+  ['node_modules/pause', { license: 'MIT', note: 'Manuell geprüft: Readme.md enthält MIT-Lizenztext.' }],
+  ['node_modules/streamsearch', { license: 'MIT', note: 'Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei.' }],
+  ['node_modules/daemon', { license: 'MIT', note: 'Manuell geprüft: LICENSE-Datei enthält MIT-Lizenztext.' }],
+  ['node_modules/service', { license: 'NOASSERTION', note: 'Manuell geprüft: package.json und README.md enthalten kein Lizenzfeld bzw. keinen Lizenzhinweis.' }],
 ]);
 
 function dependencyNameFromSpec(spec) {
@@ -75,7 +74,7 @@ function resolveDependency(fromPackagePath, depName) {
 
 function workspaceDependencyEntries(app) {
   const workspace = packages[app.dir];
-  if (!workspace) throw new Error(`Workspace ${app.dir} nicht in package-lock.json gefunden.`);
+  if (!workspace) throw new Error(`${app.label} nicht in package-lock.json gefunden.`);
   const result = [];
   for (const [name] of Object.entries(workspace.dependencies ?? {})) {
     result.push({ name, scope: 'runtime' });
@@ -182,7 +181,7 @@ lines.push('# Third Party Notices');
 lines.push('');
 lines.push(`Stand: ${generatedAt}`);
 lines.push('');
-lines.push('Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erzeugt. Sie enthält die tatsächlich aufgelösten npm-Pakete, die über die Workspace-Abhängigkeiten von `output-api`, `output-ui` und `output-interfaces` erreichbar sind. Interne Workspace-Pakete sind nicht als Drittanbieter-Komponenten aufgeführt.');
+lines.push('Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erzeugt. Sie enthält die tatsächlich aufgelösten npm-Pakete, die über die zentralen Root-Abhängigkeiten des Workspaces erreichbar sind. Interne Workspace-Pakete sind nicht als Drittanbieter-Komponenten aufgeführt.');
 lines.push('');
 lines.push('## Verteilungshinweise');
 lines.push('');
@@ -197,7 +196,10 @@ lines.push('| --- | --- | --- | --- |');
 for (const [lockPath, manual] of MANUAL_LICENSES) {
   const pkg = packages[lockPath];
   if (!pkg) continue;
-  const app = APPS.find((candidate) => lockPath.startsWith(`${candidate.dir}/`))?.label ?? 'workspace';
+  const app =
+    APPS.filter((candidate) => appPackageMaps.get(candidate.label).has(lockPath))
+      .map((candidate) => candidate.label)
+      .join('<br>') || 'workspace';
   lines.push(`| ${escapeCell(`${displayName(lockPath, pkg)}@${pkg.version ?? ''}`)} | ${app} | ${escapeCell(manual.license)} | ${escapeCell(manual.note)} |`);
 }
 lines.push('');
