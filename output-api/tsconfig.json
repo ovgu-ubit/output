@@ -18,6 +18,8 @@
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
       "skipLibCheck": true,
-      "strict": false
-   }
+      "strict": false,
+      "types": ["node", "multer"]
+   },
+   "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }
