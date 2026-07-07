@@ -56,6 +56,7 @@ describe('PublicationService', () => {
     let publicationChangeRepository: jest.Mocked<Partial<Repository<PublicationChange>>>;
     let workflowReportRepository: { existsBy: jest.Mock };
     let publicationChangeService: PublicationChangeService;
+    let publicationRelationService: PublicationRelationService;
     let createPublicationChangeSpy: jest.SpyInstance;
     let deletePublicationChangesForPublicationsSpy: jest.SpyInstance;
     let configService: { get: jest.Mock };
@@ -180,6 +181,7 @@ describe('PublicationService', () => {
         service = module.get(PublicationService);
         publicationIndexService = module.get(PublicationIndexService);
         publicationChangeService = module.get(PublicationChangeService);
+        publicationRelationService = module.get(PublicationRelationService);
         createPublicationChangeSpy = jest.spyOn(publicationChangeService, 'createPublicationChange').mockImplementation(async (change) => change as PublicationChange);
         deletePublicationChangesForPublicationsSpy = jest.spyOn(publicationChangeService, 'deletePublicationChangesForPublications').mockResolvedValue(undefined);
     });
@@ -324,6 +326,27 @@ describe('PublicationService', () => {
         });
         expect(pubRepository.save).not.toHaveBeenCalled();
         expect(pubRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('combines locked publications when lock checks are ignored', async () => {
+        const primary = { id: 61, locked: true, title: 'Primary Publication' } as Publication;
+        const duplicate = { id: 62, locked: false, title: 'Duplicate Publication' } as Publication;
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => {
+            if (where.id === 61) return primary;
+            if (where.id === 62) return duplicate;
+            return null;
+        });
+        pubRepository.save.mockImplementation(async entity => entity as Publication);
+        pubRepository.delete!.mockResolvedValue(undefined as never);
+        const deleteRelationsSpy = jest.spyOn(publicationRelationService, 'deletePublicationRelations').mockResolvedValue(undefined);
+
+        const combined = await service.combine(61, [62], undefined, { ignoreLocks: true });
+
+        expect(combined).toEqual(expect.objectContaining({ id: 61 }));
+        expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 61 }));
+        expect(deleteRelationsSpy).toHaveBeenCalledWith([62], expect.anything());
+        expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([62], expect.anything());
+        expect(pubRepository.delete).toHaveBeenCalledWith([62]);
     });
 
     it('returns null when a requested publication id does not exist', async () => {

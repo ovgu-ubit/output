@@ -4,7 +4,7 @@ import { PublicationController } from './PublicationController';
 
 describe('PublicationController', () => {
     let controller: PublicationController;
-    let publicationService: { saveOne: jest.Mock; getDuplicateEntries: jest.Mock; getPublicationOrFail: jest.Mock; getPublicationChanges: jest.Mock };
+    let publicationService: { saveOne: jest.Mock; getDuplicateEntries: jest.Mock; getPublicationOrFail: jest.Mock; getPublicationChanges: jest.Mock; combine: jest.Mock };
     let publicationIndexService: { getAllForReportingYear: jest.Mock; getIndexEntries: jest.Mock; getReportingYears: jest.Mock; filterIndex: jest.Mock };
     let publicationFilterService: { listDefinitions: jest.Mock; applyPaths: jest.Mock };
 
@@ -14,6 +14,7 @@ describe('PublicationController', () => {
             getDuplicateEntries: jest.fn(),
             getPublicationOrFail: jest.fn(),
             getPublicationChanges: jest.fn(),
+            combine: jest.fn(),
         };
         publicationIndexService = {
             getAllForReportingYear: jest.fn(),
@@ -99,5 +100,13 @@ describe('PublicationController', () => {
 
         await expect(controller.duplicates(0)).resolves.toEqual([{ id: 7 }]);
         expect(publicationService.getDuplicateEntries).toHaveBeenCalledWith(0, undefined);
+    });
+
+    it('passes the ignoreLocks flag to publication combine', async () => {
+        publicationService.combine.mockResolvedValue({ id: 1 });
+
+        await expect(controller.combine(1, [2], true)).resolves.toEqual({ id: 1 });
+
+        expect(publicationService.combine).toHaveBeenCalledWith(1, [2], undefined, { ignoreLocks: true });
     });
 });

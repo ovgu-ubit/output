@@ -1,10 +1,12 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.component';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
-import { concatMap, of } from 'rxjs';
+import { Observable, catchError, concatMap, of } from 'rxjs';
 import { PublicationService } from 'src/app/services/entities/publication.service';
-import {  Publication, PublicationDuplicate  } from '@output/interfaces';
+import {  ApiErrorCode, Publication, PublicationDuplicate  } from '@output/interfaces';
+import { ApiErrorParser } from 'src/app/core/errors/api-error-parser.service';
+import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
     selector: 'app-duplicate-dialog',
@@ -14,7 +16,11 @@ import {  Publication, PublicationDuplicate  } from '@output/interfaces';
 })
 export class DuplicateDialogComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<DuplicateDialogComponent>, @Inject(MAT_DIALOG_DATA) public data: any,
-    private dialog: MatDialog, private duplicateService: PublicationDuplicateService, private publicationService: PublicationService) { }
+    private dialog: MatDialog,
+    private duplicateService: PublicationDuplicateService,
+    private publicationService: PublicationService,
+    private errorPresentation: ErrorPresentationService,
+    private errorParser: ApiErrorParser) { }
 
   loading = true;
 
@@ -60,20 +66,46 @@ export class DuplicateDialogComponent implements OnInit {
     ob$.subscribe()
   }
 
-  action(pos: number) {
-    let ob$;
-    if (pos === null) { // not a suitable duplicate => soft delete
-      ob$ = this.duplicateService.delete([this.dupl.id], true)
-    } else if (pos === 0) {
-      ob$ = this.publicationService.combine(this.ent1.id, [this.ent2.id])
-    } else {
-      ob$ = this.publicationService.combine(this.ent2.id, [this.ent1.id])
-    }
-    ob$.subscribe({
+  action(pos: number | null) {
+    this.createActionRequest(pos).pipe(catchError(error => this.handleActionError(error, pos))).subscribe({
       next: data => {
-        this.dialogRef.close({ id: this.dupl.id, updated: true });
+        if (data) this.dialogRef.close({ id: this.dupl.id, updated: true });
       }
     })
+  }
+
+  private createActionRequest(pos: number | null, ignoreLocks = false): Observable<any> {
+    if (pos === null) { // not a suitable duplicate => soft delete
+      return this.duplicateService.delete([this.dupl.id], true)
+    } else if (pos === 0) {
+      return this.publicationService.combine(this.ent1.id, [this.ent2.id], ignoreLocks ? { ignoreLocks: true } : undefined)
+    } else {
+      return this.publicationService.combine(this.ent2.id, [this.ent1.id], ignoreLocks ? { ignoreLocks: true } : undefined)
+    }
+  }
+
+  private handleActionError(error: unknown, pos: number | null): Observable<any> {
+    const parsed = this.errorParser.parse(error);
+    if (pos === null || parsed.code !== ApiErrorCode.ENTITY_LOCKED) {
+      this.errorPresentation.present(parsed, { action: 'combine', entityPlural: 'Publikationen' });
+      return of(null);
+    }
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      maxWidth: "400px",
+      data: new ConfirmDialogModel(
+        'Publikation gesperrt',
+        'Mindestens eine Publikation ist gesperrt. Möchten Sie das Lock ignorieren und trotzdem zusammenführen?'
+      )
+    });
+
+    return dialogRef.afterClosed().pipe(concatMap(dialogResult => {
+      if (!dialogResult) return of(null);
+      return this.createActionRequest(pos, true).pipe(catchError(retryError => {
+        this.errorPresentation.present(retryError, { action: 'combine', entityPlural: 'Publikationen' });
+        return of(null);
+      }));
+    }));
   }
 
   restore() {
