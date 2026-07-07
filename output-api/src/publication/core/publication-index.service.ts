@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CompareOperation, JoinOperation, PublicationIndex, SearchFilter, SearchFilterValue } from '@output/interfaces';
 import {
     Between,
     Brackets,
-    FindManyOptions,
     ILike,
     Repository,
-    SelectQueryBuilder,
+    SelectQueryBuilder
 } from 'typeorm';
-import {  CompareOperation, JoinOperation, SearchFilter, SearchFilterValue  } from '@output/interfaces';
-import {  PublicationIndex  } from '@output/interfaces';
 import { createInternalErrorHttpException, createInvalidRequestHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
@@ -141,16 +139,16 @@ export class PublicationIndexService {
         return publications;
     }
 
-    public async getIndexEntries(yop: number, soft?: boolean): Promise<PublicationIndex[]> {
+    public async getIndexEntries(yop: number, soft?: boolean, canReadNetCosts = false): Promise<PublicationIndex[]> {
         if ((yop === null || yop === undefined) && !soft) {
             throw createInvalidRequestHttpException('reporting year or soft has to be given');
         }
 
-        if (soft) return this.softIndex();
+        if (soft) return this.softIndex(canReadNetCosts);
 
         const reportingYear = Number(yop);
-        if (Number.isNaN(reportingYear)) return this.index(null);
-        return this.index(reportingYear);
+        if (Number.isNaN(reportingYear)) return this.index(null, canReadNetCosts);
+        return this.index(reportingYear, canReadNetCosts);
     }
 
     public async getAll(filter?: SearchFilter, options?: GetAllPublicationOptions) {
@@ -196,7 +194,10 @@ export class PublicationIndexService {
         return this.serializeExportPublications(res);
     }
 
-    public async indexQuery(filterContext = this.createFilterContext()): Promise<SelectQueryBuilder<Publication>> {
+    public async indexQuery(
+        filterContext = this.createFilterContext(),
+        canReadNetCosts = false,
+    ): Promise<SelectQueryBuilder<Publication>> {
         const pubIndexColumns = (await this.configService.get("pub_index_columns")) ?? {};
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.authorPublications", "authorPublications")
@@ -263,12 +264,18 @@ export class PublicationIndexService {
         if (pubIndexColumns["data_source"]) {
             query = query.addSelect("publication.dataSource", "data_source");
         }
+        if (canReadNetCosts && pubIndexColumns["net_costs"]) {
+            query = query.addSelect(
+                'COALESCE((SELECT SUM(net_cost_item.euro_value) FROM cost_item net_cost_item INNER JOIN "invoice" net_invoice ON net_cost_item."invoiceId" = net_invoice.id WHERE net_invoice."publicationId" = publication.id), 0)',
+                "net_costs",
+            );
+        }
 
         return query;
     }
 
-    public async index(yop: number): Promise<PublicationIndex[]> {
-        const indexQuery = this.indexQuery();
+    public async index(yop: number, canReadNetCosts = false): Promise<PublicationIndex[]> {
+        const indexQuery = this.indexQuery(undefined, canReadNetCosts);
         let query;
         if (yop) {
             const beginDate = new Date(Date.UTC(yop, 0, 1, 0, 0, 0, 0));
@@ -295,17 +302,17 @@ export class PublicationIndexService {
         return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
-    public async softIndex(): Promise<PublicationIndex[]> {
-        const query = (await this.indexQuery())
+    public async softIndex(canReadNetCosts = false): Promise<PublicationIndex[]> {
+        const query = (await this.indexQuery(undefined, canReadNetCosts))
             .withDeleted()
             .where("publication.delete_date is not null");
 
         return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
-    public async filterIndex(filter: SearchFilter) {
+    public async filterIndex(filter: SearchFilter, canReadNetCosts = false) {
         const filterContext = this.createFilterContext();
-        return (await this.filter(filter, await this.indexQuery(filterContext), filterContext)).getRawMany();
+        return (await this.filter(filter, await this.indexQuery(filterContext, canReadNetCosts), filterContext)).getRawMany();
     }
 
     public async filter(

@@ -87,6 +87,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["greater_entity"]) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
       if (data.value["publisher"]) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
       if (data.value["contract"]) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
+      if (data.value["net_costs"]) headers.push({ colName: 'net_costs', colTitle: 'Kosten', type: 'euro' })
       if (data.value["oa_category"]) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
       if (data.value["locked_status"]) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
       if (data.value["status"]) headers.push({
