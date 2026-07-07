@@ -21,6 +21,10 @@ interface SavePublicationOptions {
     manager?: EntityManager;
 }
 
+interface CombinePublicationOptions {
+    ignoreLocks?: boolean;
+}
+
 const PUBLICATION_LOCK_SCOPE = 'publication';
 
 @Injectable()
@@ -183,7 +187,7 @@ export class PublicationService {
         return this.filterReaderScopedFields(pub, reader);
     }
 
-    async combine(id1: number, ids: number[], alias_strings?: string[]) {
+    async combine(id1: number, ids: number[], alias_strings?: string[], options?: CombinePublicationOptions) {
         return this.dataSource.transaction(async (manager) => {
             return mergeEntities<Publication>({
                 repository: this.pubRepository,
@@ -198,7 +202,7 @@ export class PublicationService {
                     withDeleted: true
                 },
                 validate: ({ primary, duplicates }) => {
-                    if (primary.locked || duplicates.some(duplicate => duplicate.locked)) {
+                    if (!options?.ignoreLocks && (primary.locked || duplicates.some(duplicate => duplicate.locked))) {
                         throw createEntityLockedHttpException();
                     }
                 },

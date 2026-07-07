@@ -5,11 +5,12 @@ import { ComponentType } from '@angular/cdk/portal';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable, catchError, concatMap, of } from 'rxjs';
+import {  ApiErrorCode, Entity  } from '@output/interfaces';
 import { EntityFormComponent, EntityService, isPersistedEntityDialogResult } from 'src/app/services/entities/service.interface';
+import { ApiErrorParser } from 'src/app/core/errors/api-error-parser.service';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { CombineDialogComponent } from '../dialog/combine-dialog/combine-dialog.component';
-import {  Entity  } from '@output/interfaces';
 
 @Injectable()
 export class TableActionService<T extends Entity, E extends Entity> {
@@ -26,7 +27,8 @@ export class TableActionService<T extends Entity, E extends Entity> {
     private _snackBar: MatSnackBar,
     private location: Location,
     private router: Router,
-    private errorPresentation: ErrorPresentationService
+    private errorPresentation: ErrorPresentationService,
+    private errorParser: ApiErrorParser
   ) {}
 
   public init(config: {
@@ -155,21 +157,60 @@ export class TableActionService<T extends Entity, E extends Entity> {
       disableClose: true
     });
     
+    let combineResult: any;
+
     dialogRef.afterClosed().pipe(concatMap(result => {
       if (result) {
-        let otherIds = selectedItems.filter(e => e.id !== result.id).map(e => e.id);
-        let options = { aliases: result.aliases, aliases_first_name: result.aliases_first_name, aliases_last_name: result.aliases_last_name };
-        return this.serviceClass.combine(result.id, otherIds, options).pipe(concatMap(() => {
-          this.showSuccess(`${this.name} wurden zusammengeführt`);
-          return updateDataCallback();
-        }));
+        combineResult = result;
+        return this.combineSelected(result, selectedItems, updateDataCallback);
       } else {
         return of(null);
       }
     }), catchError(err => {
-      this.errorPresentation.present(err, { action: 'combine', entityPlural: this.name });
-      return of(null)
+      return this.handleCombineError(err, () => {
+        if (!combineResult) return of(null);
+        return this.combineSelected(combineResult, selectedItems, updateDataCallback, true);
+      });
     })).subscribe();
+  }
+
+  private combineSelected(result: any, selectedItems: T[], updateDataCallback: () => Observable<any>, ignoreLocks = false): Observable<any> {
+    let otherIds = selectedItems.filter(e => e.id !== result.id).map(e => e.id);
+    let options = {
+      aliases: result.aliases,
+      aliases_first_name: result.aliases_first_name,
+      aliases_last_name: result.aliases_last_name,
+      ...(ignoreLocks ? { ignoreLocks: true } : {})
+    };
+
+    return this.serviceClass.combine!(result.id, otherIds, options).pipe(concatMap(() => {
+      this.showSuccess(`${this.name} wurden zusammengeführt`);
+      return updateDataCallback();
+    }));
+  }
+
+  private handleCombineError(error: unknown, retry: () => Observable<any>): Observable<any> {
+    const parsed = this.errorParser.parse(error);
+    if (parsed.code !== ApiErrorCode.ENTITY_LOCKED) {
+      this.errorPresentation.present(parsed, { action: 'combine', entityPlural: this.name });
+      return of(null);
+    }
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      maxWidth: "400px",
+      data: new ConfirmDialogModel(
+        'Datensatz gesperrt',
+        'Mindestens ein Datensatz ist gesperrt. Möchten Sie das Lock ignorieren und trotzdem zusammenführen?'
+      )
+    });
+
+    return dialogRef.afterClosed().pipe(concatMap(dialogResult => {
+      if (!dialogResult) return of(null);
+      return retry().pipe(catchError(retryError => {
+        this.errorPresentation.present(retryError, { action: 'combine', entityPlural: this.name });
+        return of(null);
+      }));
+    }));
   }
 
   private showSuccess(message: string) {

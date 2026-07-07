@@ -132,12 +132,13 @@ export class PublicationController {
         schema: {
             example: {
                 id1: 4,
-                id2: 6
+                ids: [6],
+                ignoreLocks: false
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        return this.publicationService.combine(id1, ids);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('ignoreLocks') ignoreLocks?: boolean) {
+        return this.publicationService.combine(id1, ids, undefined, { ignoreLocks: ignoreLocks === true });
     }
 
     @Post('filter')

@@ -43,8 +43,8 @@ export class PublicationService implements EntityService<Publication, Publicatio
   public getReportingYears() {
     return this.http.get<number[]>(this.runtimeConfigService.getValue("api") + 'publications/reporting_year', { withCredentials: true });
   }
-  public combine(id1: number, ids: number[]) {
-    return this.http.post(this.runtimeConfigService.getValue("api") + 'publications/combine', { id1, ids }, { withCredentials: true });
+  public combine(id1: number, ids: number[], options?: { ignoreLocks?: boolean }) {
+    return this.http.post(this.runtimeConfigService.getValue("api") + 'publications/combine', { id1, ids, ignoreLocks: options?.ignoreLocks === true }, { withCredentials: true });
   }
   public getFilters() {
     return this.http.get<{ path: string, label: string }[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', { withCredentials: true });
