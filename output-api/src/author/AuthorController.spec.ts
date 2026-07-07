@@ -34,4 +34,13 @@ describe('AuthorController', () => {
             'Author not found.',
         );
     });
+
+    it('forwards read access when loading the author index', async () => {
+        authorService.index.mockResolvedValue([{ id: 1, first_name: 'Ada', last_name: 'Lovelace', net_costs: 50 }]);
+
+        const result = await controller.index(2025, { user: { read: true } } as any);
+
+        expect(authorService.index).toHaveBeenCalledWith(2025, true);
+        expect(result).toEqual([{ id: 1, first_name: 'Ada', last_name: 'Lovelace', net_costs: 50 }]);
+    });
 });

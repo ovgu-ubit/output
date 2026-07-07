@@ -92,7 +92,7 @@ export class InstituteService {
         }));
     }
 
-    public async index(reporting_year: number): Promise<InstituteIndex[]> {
+    public async index(reporting_year: number, canReadNetCosts = false): Promise<InstituteIndex[]> {
         const result:InstituteIndex[] = [];
 
         const instIDs = (await this.repository.find({ relations: { authors: true } }))
@@ -112,10 +112,12 @@ export class InstituteService {
                 const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
                 const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
                 query = query
+                    .addSelect(canReadNetCosts ? this.buildCorrespondingInstituteNetCostsSelect('pub_cost.pub_date between :beginDate and :endDate') : "NULL", "net_costs")
                     .andWhere('(pub is NULL or pub_date between :beginDate and :endDate)', { beginDate, endDate })
             }
             else {
                 query = query
+                    .addSelect(canReadNetCosts ? this.buildCorrespondingInstituteNetCostsSelect('pub_cost.pub_date IS NULL and pub_cost.pub_date_print IS NULL and pub_cost.pub_date_accepted IS NULL and pub_cost.pub_date_submitted IS NULL') : "NULL", "net_costs")
                     .andWhere('(pub is NULL or (pub_date IS NULL and pub_date_print IS NULL and pub_date_accepted IS NULL and pub_date_submitted IS NULL))')
             }
             //console.log(query.getSql());
@@ -299,5 +301,32 @@ export class InstituteService {
         const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
         const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5;
         return resolvedMinutes * 60 * 1000;
+    }
+
+    private buildCorrespondingInstituteNetCostsSelect(publicationDateCondition: string): string {
+        return `COALESCE((
+            SELECT SUM(COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0))
+            FROM institute cost_institute
+            INNER JOIN institute_closure cost_ic ON cost_ic.id_descendant = cost_institute.id
+            INNER JOIN author_publication author_publication_net_cost ON author_publication_net_cost."instituteId" = cost_institute.id
+            INNER JOIN publication pub_cost ON pub_cost.id = author_publication_net_cost."publicationId"
+            LEFT JOIN (
+                SELECT invoice."publicationId" AS "publicationId",
+                    SUM(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) AS net_costs
+                FROM invoice invoice
+                LEFT JOIN cost_item cost_item ON cost_item."invoiceId" = invoice.id
+                GROUP BY invoice."publicationId"
+            ) publication_cost ON publication_cost."publicationId" = pub_cost.id
+            INNER JOIN (
+                SELECT corresponding_author_publication."publicationId" AS "publicationId",
+                    COUNT(*) AS authorship_count
+                FROM author_publication corresponding_author_publication
+                WHERE corresponding_author_publication."corresponding" = true
+                GROUP BY corresponding_author_publication."publicationId"
+            ) corresponding_authorship ON corresponding_authorship."publicationId" = pub_cost.id
+            WHERE cost_ic.id_ancestor = :id
+                AND author_publication_net_cost."corresponding" = true
+                AND ${publicationDateCondition}
+        ), 0)`;
     }
 }

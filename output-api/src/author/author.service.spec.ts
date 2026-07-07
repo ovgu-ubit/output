@@ -22,6 +22,46 @@ jest.mock('../common/merge', () => ({
     mergeEntities: jest.fn(),
 }));
 
+const createQueryBuilderMock = (rawManyResult: unknown[] = []) => {
+    const calls: Record<string, unknown[][]> = {
+        addSelect: [],
+        leftJoin: [],
+        select: [],
+        from: [],
+    };
+
+    const build = () => {
+        const qb: any = {};
+        qb.from = jest.fn((source, alias) => {
+            calls.from.push([source, alias]);
+            if (typeof source === 'function') source(build());
+            return qb;
+        });
+        qb.leftJoin = jest.fn((source, alias, condition) => {
+            calls.leftJoin.push([source, alias, condition]);
+            if (typeof source === 'function') source(build());
+            return qb;
+        });
+        qb.innerJoin = jest.fn(() => qb);
+        qb.select = jest.fn((...args) => {
+            calls.select.push(args);
+            return qb;
+        });
+        qb.addSelect = jest.fn((...args) => {
+            calls.addSelect.push(args);
+            return qb;
+        });
+        qb.groupBy = jest.fn(() => qb);
+        qb.addGroupBy = jest.fn(() => qb);
+        qb.where = jest.fn(() => qb);
+        qb.setParameters = jest.fn(() => qb);
+        qb.getRawMany = jest.fn().mockResolvedValue(rawManyResult);
+        return qb;
+    };
+
+    return { queryBuilder: build(), calls };
+};
+
 describe('AuthorService', () => {
     let service: AuthorService;
     let repository: jest.Mocked<Partial<Repository<Author>>>;
@@ -340,6 +380,42 @@ describe('AuthorService', () => {
             last_name: 'Doe',
             orcid: undefined,
         }));
+    });
+
+    it('adds reader-gated corresponding authorship net costs to the author index', async () => {
+        const { queryBuilder, calls } = createQueryBuilderMock([]);
+        (repository as any).manager = {
+            createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        };
+
+        await service.index(2025, true);
+
+        expect(calls.leftJoin).toEqual(expect.arrayContaining([
+            expect.arrayContaining([expect.any(Function), 'publication_cost']),
+            expect.arrayContaining([expect.any(Function), 'corresponding_authorship']),
+        ]));
+        expect(calls.addSelect).toEqual(expect.arrayContaining([
+            [
+                expect.stringContaining('COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0)'),
+                'net_costs',
+            ],
+            [expect.stringContaining('b.net_costs'), 'net_costs'],
+        ]));
+    });
+
+    it('does not join cost tables for non-reader author index calls', async () => {
+        const { queryBuilder, calls } = createQueryBuilderMock([]);
+        (repository as any).manager = {
+            createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        };
+
+        await service.index(2025, false);
+
+        expect(calls.leftJoin.find((call) => call[1] === 'publication_cost')).toBeUndefined();
+        expect(calls.leftJoin.find((call) => call[1] === 'corresponding_authorship')).toBeUndefined();
+        expect(calls.addSelect).toEqual(expect.arrayContaining([
+            ['NULL', 'net_costs'],
+        ]));
     });
 
     it('merges duplicate author attributes when combining records', async () => {

@@ -25,8 +25,9 @@ export class InstituteController {
     }
 
     @Get("index")
-    async index(@Query('reporting_year') reporting_year: number): Promise<InstituteIndex[]> {
-        return await this.instService.index(reporting_year);
+    @UseGuards(AccessGuard)
+    async index(@Query('reporting_year') reporting_year: number, @Req() request: Request): Promise<InstituteIndex[]> {
+        return await this.instService.index(reporting_year, request['user'] ? request['user']['read'] : false);
     }
 
     @Get('/:id')
