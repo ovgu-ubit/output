@@ -5,6 +5,7 @@ import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
 import {  HealthState  } from '@output/interfaces';
 import { EnvSchemas } from './environment.schema';
+import { CONFIG_DEFAULTS } from './config.defaults';
 
 @Injectable()
 export class AppConfigService {
@@ -43,9 +44,10 @@ export class AppConfigService {
     public async listAccessibleConfig(user?: { admin?: boolean; read?: boolean }, key?: string) {
         const scope = this.resolveScopeForUser(user);
         if (key) {
-            return (await this.listDatabaseConfig(scope, key))[0] ?? null;
+            const config = (await this.listDatabaseConfig(scope, key))[0] ?? null;
+            return config ? this.filterConfigForScope(config, scope) : null;
         }
-        return this.listDatabaseConfig(scope);
+        return (await this.listDatabaseConfig(scope)).map(config => this.filterConfigForScope(config, scope));
     }
 
     public async listEnvConfig() {
@@ -143,6 +145,23 @@ export class AppConfigService {
         if (scope === 'admin') return ['public', 'user', 'admin'];
         if (scope === 'user') return ['public', 'user'];
         return ['public'];
+    }
+
+    private filterConfigForScope(config: Config, scope: ConfigScope): Config {
+        if (config.key !== 'pub_index_columns' || !config.value || typeof config.value !== 'object' || Array.isArray(config.value)) {
+            return config;
+        }
+
+        const value = {
+            ...CONFIG_DEFAULTS.pub_index_columns,
+            ...config.value,
+        };
+        if (scope === 'public') value.net_costs = false;
+
+        return {
+            ...config,
+            value,
+        };
     }
 
     async checkHealth() {

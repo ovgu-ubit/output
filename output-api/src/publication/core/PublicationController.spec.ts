@@ -109,4 +109,22 @@ describe('PublicationController', () => {
 
         expect(publicationService.combine).toHaveBeenCalledWith(1, [2], undefined, { ignoreLocks: true });
     });
+
+    it('passes reader access to publication index lookups', async () => {
+        publicationIndexService.getIndexEntries.mockResolvedValue([]);
+
+        await expect(controller.index(2026, undefined, { user: { read: true } } as any)).resolves.toEqual([]);
+
+        expect(publicationIndexService.getIndexEntries).toHaveBeenCalledWith(2026, undefined, true);
+    });
+
+    it('passes public access to filtered publication index lookups', async () => {
+        publicationIndexService.filterIndex.mockResolvedValue([{ id: 1 }]);
+        publicationFilterService.applyPaths.mockResolvedValue([{ id: 1 }]);
+
+        await expect(controller.filter({ expressions: [] }, [], {} as any)).resolves.toEqual([{ id: 1 }]);
+
+        expect(publicationIndexService.filterIndex).toHaveBeenCalledWith({ expressions: [] }, false);
+        expect(publicationFilterService.applyPaths).toHaveBeenCalledWith([{ id: 1 }], []);
+    });
 });

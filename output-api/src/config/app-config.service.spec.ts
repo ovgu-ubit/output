@@ -99,6 +99,34 @@ describe('AppConfigService', () => {
         expect(service.resolveScopeForUser()).toBe('public');
     });
 
+    it('hides publication net costs column config from public users', async () => {
+        repository.findOne.mockResolvedValueOnce({
+            key: 'pub_index_columns',
+            scope: 'public',
+            value: { title: true },
+        } as any);
+        repository.findOne.mockResolvedValueOnce({
+            key: 'pub_index_columns',
+            scope: 'public',
+            value: { title: true, net_costs: true },
+        } as any);
+        repository.findOne.mockResolvedValueOnce({
+            key: 'pub_index_columns',
+            scope: 'public',
+            value: { title: true, net_costs: true },
+        } as any);
+
+        await expect(service.listAccessibleConfig(undefined, 'pub_index_columns')).resolves.toMatchObject({
+            value: { title: true, net_costs: false },
+        });
+        await expect(service.listAccessibleConfig(undefined, 'pub_index_columns')).resolves.toMatchObject({
+            value: { title: true, net_costs: false },
+        });
+        await expect(service.listAccessibleConfig({ read: true }, 'pub_index_columns')).resolves.toMatchObject({
+            value: { title: true, net_costs: true },
+        });
+    });
+
     it('handles database config creation and updates', async () => {
         repository.findOneBy.mockResolvedValueOnce(null);
         repository.save.mockResolvedValueOnce({ key: 'x', value: 1 } as any);

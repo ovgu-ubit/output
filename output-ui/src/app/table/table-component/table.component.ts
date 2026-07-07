@@ -116,7 +116,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         col = this.headers.find(e => e.colName === 'pub_count_corr')
         if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
         col = this.headers.find(e => e.colName === 'net_costs')
-        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+        if (col && !this.publication_table) col.colTitle += ' ' + (data ? data : 'ohne Datum')
       }), concatMap(data => this.updateData()))
     }));
 

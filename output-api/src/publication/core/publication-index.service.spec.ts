@@ -3,13 +3,14 @@ import { Publication } from './Publication.entity';
 
 describe('PublicationIndexService', () => {
     let service: PublicationIndexService;
-    let pubRepository: { find: jest.Mock };
+    let pubRepository: { find: jest.Mock; createQueryBuilder: jest.Mock };
     let configService: { get: jest.Mock };
     let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
 
     beforeEach(() => {
         pubRepository = {
             find: jest.fn(),
+            createQueryBuilder: jest.fn(),
         };
         configService = {
             get: jest.fn(),
@@ -68,5 +69,38 @@ describe('PublicationIndexService', () => {
                 invoices: true,
             }),
         }));
+    });
+
+    describe('indexQuery', () => {
+        const createQueryBuilderMock = () => ({
+            leftJoin: jest.fn().mockReturnThis(),
+            select: jest.fn().mockReturnThis(),
+            addSelect: jest.fn().mockReturnThis(),
+            groupBy: jest.fn().mockReturnThis(),
+            addGroupBy: jest.fn().mockReturnThis(),
+        });
+
+        it('selects net costs for reader users when the index column is enabled', async () => {
+            const queryBuilder = createQueryBuilderMock();
+            pubRepository.createQueryBuilder.mockReturnValue(queryBuilder as any);
+            configService.get.mockResolvedValue({ net_costs: true });
+
+            await service.indexQuery(undefined, true);
+
+            expect(queryBuilder.addSelect).toHaveBeenCalledWith(
+                'COALESCE((SELECT SUM(net_cost_item.euro_value) FROM cost_item net_cost_item INNER JOIN "invoice" net_invoice ON net_cost_item."invoiceId" = net_invoice.id WHERE net_invoice."publicationId" = publication.id), 0)',
+                'net_costs',
+            );
+        });
+
+        it('does not select net costs for public users even when the index column is enabled', async () => {
+            const queryBuilder = createQueryBuilderMock();
+            pubRepository.createQueryBuilder.mockReturnValue(queryBuilder as any);
+            configService.get.mockResolvedValue({ net_costs: true });
+
+            await service.indexQuery(undefined, false);
+
+            expect(queryBuilder.addSelect).not.toHaveBeenCalledWith(expect.any(String), 'net_costs');
+        });
     });
 });

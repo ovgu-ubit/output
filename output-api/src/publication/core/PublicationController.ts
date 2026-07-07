@@ -82,8 +82,9 @@ export class PublicationController {
         description: 'The YOP that should be reported.',
         example: "2022"
     })
-    async index(@Query('yop') yop: number, @Query('soft') soft?: boolean): Promise<PublicationIndex[]> {
-        return this.publicationIndexService.getIndexEntries(yop, soft);
+    @UseGuards(AccessGuard)
+    async index(@Query('yop') yop: number, @Query('soft') soft?: boolean, @Req() request?: Request): Promise<PublicationIndex[]> {
+        return this.publicationIndexService.getIndexEntries(yop, soft, !!request?.['user']?.['read']);
     }
 
     @Post()
@@ -159,8 +160,9 @@ export class PublicationController {
             }
         }
     })
-    async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[]) {
-        const filteredPublications = await this.publicationIndexService.filterIndex(filter);
+    @UseGuards(AccessGuard)
+    async filter(@Body('filter') filter: SearchFilter, @Body('paths') paths: string[], @Req() request?: Request) {
+        const filteredPublications = await this.publicationIndexService.filterIndex(filter, !!request?.['user']?.['read']);
         return this.publicationFilterService.applyPaths(filteredPublications, paths);
     }
 

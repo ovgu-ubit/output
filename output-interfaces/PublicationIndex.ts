@@ -17,6 +17,7 @@ export interface PublicationIndex {
     oa_category: string;
     publication_type: string;
     contract: string;
+    net_costs?: number;
     import_date: Date;
 }
 
