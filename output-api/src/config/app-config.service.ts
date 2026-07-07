@@ -1,11 +1,11 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
-import { Config, ConfigScope } from './Config.entity';
 import { ConfigService } from '@nestjs/config';
-import {  HealthState  } from '@output/interfaces';
-import { EnvSchemas } from './environment.schema';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { HealthState } from '@output/interfaces';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { CONFIG_DEFAULTS } from './config.defaults';
+import { Config, ConfigScope } from './Config.entity';
+import { EnvSchemas } from './environment.schema';
 
 @Injectable()
 export class AppConfigService {
