@@ -30,30 +30,31 @@ export class FilterViewComponent implements OnInit {
   ]
   compareOps: { op: CompareOperation, label: string, type: string[] }[] = [
     { op: CompareOperation.INCLUDES, label: 'enthält', type: ['string'] },
-    { op: CompareOperation.EQUALS, label: 'ist genau', type: ['string', 'number', 'date', 'boolean'] },
+    { op: CompareOperation.EQUALS, label: 'ist genau', type: ['string', 'number', 'date', 'boolean','id'] },
     { op: CompareOperation.STARTS_WITH, label: 'beginnt mit', type: ['string'] },
     { op: CompareOperation.GREATER_THAN, label: 'größer als', type: ['number', 'date'] },
     { op: CompareOperation.SMALLER_THAN, label: 'kleiner als', type: ['number', 'date'] },
+    { op: CompareOperation.IN , label: 'ist einer von (komma-getrennt)', type: ['string','id','number'] },
   ]
 
   keys: { key: string, label: string, type?: string }[] = [
-    { key: 'id', label: 'ID', type: 'number' },
+    { key: 'id', label: 'ID', type: 'id' },
     { key: 'title', label: 'Titel' },
     { key: 'doi', label: 'DOI' },
     { key: 'other_ids', label: 'Weitere Identifikatoren' },
     { key: 'authors', label: 'Autor*innen-Angabe' },
     { key: 'inst_authors', label: 'Personen der Institution' },
-    { key: 'author_id', label: 'ID einer Person der Institution', type: 'number' },
-    { key: 'author_id_corr', label: 'ID einer Person der Institution (corr.)', type: 'number' },
+    { key: 'author_id', label: 'ID einer Person der Institution', type: 'id' },
+    { key: 'author_id_corr', label: 'ID einer Person der Institution (corr.)', type: 'id' },
     { key: 'institute', label: 'Institute' },
-    { key: 'institute_id', label: 'ID eines Instituts', type: 'number' },
-    { key: 'institute_id_corr', label: 'ID eines Instituts (corr.)', type: 'number' },
+    { key: 'institute_id', label: 'ID eines Instituts', type: 'id' },
+    { key: 'institute_id_corr', label: 'ID eines Instituts (corr.)', type: 'id' },
     { key: 'pub_date', label: 'Publikationsdatum', type: 'date' },
     { key: 'pub_date_accepted', label: 'Datum der Akzeptanz', type: 'date' },
     { key: 'greater_entity', label: 'Größere Einheit' },
-    { key: 'greater_entity_id', label: 'ID einer größeren Einheit', type: 'number' },
+    { key: 'greater_entity_id', label: 'ID einer größeren Einheit', type: 'id' },
     { key: 'oa_category', label: 'OA-Kategorie' },
-    { key: 'oa_category_id', label: 'ID einer OA-Kategorie', type: 'number' },
+    { key: 'oa_category_id', label: 'ID einer OA-Kategorie', type: 'id' },
     { key: 'dataSource', label: 'Datenquelle' },
     { key: 'language', label: 'Sprache' },
     { key: 'secound_pub', label: 'Zweitveröffentlichung' },
@@ -61,17 +62,17 @@ export class FilterViewComponent implements OnInit {
     { key: 'locked', label: 'Gesperrt', type: 'boolean' },
     { key: 'status', label: 'Status', type: 'number' },
     { key: 'pub_type', label: 'Publikationstyp' },
-    { key: 'pub_type_id', label: 'ID eines Publikationstyps', type: 'number' },
+    { key: 'pub_type_id', label: 'ID eines Publikationstyps', type: 'id' },
     { key: 'publisher', label: 'Verlag' },
-    { key: 'publisher_id', label: 'ID eines Verlags', type: 'number' },
+    { key: 'publisher_id', label: 'ID eines Verlags', type: 'id' },
     { key: 'contract', label: 'Vertrag' },
-    { key: 'contract_id', label: 'ID eines Vertrags', type: 'number' },
+    { key: 'contract_id', label: 'ID eines Vertrags', type: 'id' },
     { key: 'funder', label: 'Förderer' },
-    { key: 'funder_id', label: 'ID eines Förderer', type: 'number' },
+    { key: 'funder_id', label: 'ID eines Förderer', type: 'id' },
     { key: 'cost_center', label: 'Kostenstelle' },
-    { key: 'cost_center_id', label: 'ID einer Kostenstelle', type: 'number' },
+    { key: 'cost_center_id', label: 'ID einer Kostenstelle', type: 'id' },
     { key: 'cost_type', label: 'Kostenart' },
-    { key: 'cost_type_id', label: 'ID einer Kostenart', type: 'number' },
+    { key: 'cost_type_id', label: 'ID einer Kostenart', type: 'id' },
     { key: 'invoice_year', label: 'Rechnungsjahr', type: 'number' },
     { key: 'contract_year', label: 'Vertragsjahr', type: 'number' },
     { key: 'edit_date', label: 'Letzte Bearbeitung', type: 'date' },
@@ -214,11 +215,13 @@ export class FilterViewComponent implements OnInit {
 
     for (let filter of this.getFiltersControls()) {
       if (!filter.get('field').value || !filter.get('value').value) continue;
+      const field = filter.get('field').value;
+      const compareOperator = filter.get('compare_operator').value;
       let expression: SearchFilterExpression = {
         op: filter.get('join_operator').value && filter.get('join_operator').value !== 'null' ? filter.get('join_operator').value : JoinOperation.AND,
-        key: filter.get('field').value,
-        comp: filter.get('compare_operator').value,
-        value: this.getValue(filter.get('field').value, filter.get('value').value)
+        key: field,
+        comp: compareOperator,
+        value: this.getValue(field, filter.get('value').value, compareOperator)
       }
       res.expressions.push(expression)
     }
@@ -226,7 +229,9 @@ export class FilterViewComponent implements OnInit {
     return res;
   }
 
-  getValue(key, value): any {
+  getValue(key, value, compareOperator?: CompareOperation): any {
+    if (compareOperator === CompareOperation.IN) return this.getListValue(key, value);
+
     let field = this.keys.find(e => e.key === key);
     if (field && field.type === 'boolean') {
       if (typeof value === 'boolean') return value;
@@ -235,6 +240,33 @@ export class FilterViewComponent implements OnInit {
       else return false;
     }
     return value;
+  }
+
+  private getListValue(key: string, value: any): Array<string | number | boolean> {
+    const fieldType = this.getFieldType(key);
+    const values = Array.isArray(value) ? value : String(value ?? '').split(/[\n,]+/);
+
+    return values
+      .map(entry => this.parseListEntry(fieldType, typeof entry === 'string' ? entry.trim() : entry))
+      .filter((entry): entry is string | number | boolean => entry !== null && entry !== '');
+  }
+
+  private parseListEntry(fieldType: string, value: any): string | number | boolean | null {
+    if (fieldType === 'number' || fieldType === 'id') {
+      if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
+      const numberValue = Number(value);
+      return Number.isNaN(numberValue) ? null : numberValue;
+    }
+
+    if (fieldType === 'boolean') {
+      if (typeof value === 'boolean') return value;
+      value = String(value).toLowerCase();
+      if (value.includes('true') || value.includes('wahr') || value.includes('1') || value.includes('ja')) return true;
+      if (value.includes('false') || value.includes('falsch') || value.includes('0') || value.includes('nein')) return false;
+      return null;
+    }
+
+    return value === null || value === undefined ? '' : String(value);
   }
 
   isBoolean(idx: number): boolean {

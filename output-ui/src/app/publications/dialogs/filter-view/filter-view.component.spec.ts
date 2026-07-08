@@ -81,4 +81,32 @@ describe('FilterViewComponent', () => {
       value: '2026'
     }));
   });
+
+  it('should pass comma separated string values as array for IN filters', () => {
+    const filter = component.getFiltersControls()[0];
+
+    filter.get('field').setValue('title');
+    filter.get('compare_operator').setValue(CompareOperation.IN);
+    filter.get('value').setValue('alpha, beta,gamma');
+
+    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
+      key: 'title',
+      comp: CompareOperation.IN,
+      value: ['alpha', 'beta', 'gamma']
+    }));
+  });
+
+  it('should pass comma separated numeric values as number array for IN filters', () => {
+    const filter = component.getFiltersControls()[0];
+
+    filter.get('field').setValue('contract_year');
+    filter.get('compare_operator').setValue(CompareOperation.IN);
+    filter.get('value').setValue('2024,2025');
+
+    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
+      key: 'contract_year',
+      comp: CompareOperation.IN,
+      value: [2024, 2025]
+    }));
+  });
 });
