@@ -1,6 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CompareOperation, JoinOperation, PublicationIndex, SearchFilter, SearchFilterValue } from '@output/interfaces';
+import {
+    CompareOperation,
+    getPublicationFilterFieldDefinition,
+    isPublicationFilterOperationAllowed,
+    JoinOperation,
+    PublicationFilterFieldType,
+    PublicationIndex,
+    SearchFilter,
+    SearchFilterValue,
+} from '@output/interfaces';
 import {
     Between,
     Brackets,
@@ -39,51 +48,6 @@ interface PublicationFilterContext {
     joinedRelations: Set<string>;
     requestedJoins: Set<PublicationFilterJoin>;
 }
-
-const PUBLICATION_FILTER_FIELDS = new Set<string>([
-    'id',
-    'authors',
-    'title',
-    'doi',
-    'pub_date',
-    'pub_date_submitted',
-    'pub_date_accepted',
-    'pub_date_print',
-    'link',
-    'dataSource',
-    'second_pub',
-    'add_info',
-    'import_date',
-    'edit_date',
-    'delete_date',
-    'locked',
-    'locked_author',
-    'locked_biblio',
-    'locked_finance',
-    'locked_oa',
-    'status',
-    'is_oa',
-    'oa_status',
-    'is_journal_oa',
-    'best_oa_host',
-    'best_oa_license',
-    'locked_at',
-    'abstract',
-    'volume',
-    'issue',
-    'first_page',
-    'last_page',
-    'publisher_location',
-    'edition',
-    'article_number',
-    'page_count',
-    'peer_reviewed',
-    'cost_approach',
-    'cost_approach_currency',
-    'not_budget_relevant',
-    'grant_number',
-    'contract_year',
-]);
 
 @Injectable()
 export class PublicationIndexService {
@@ -325,14 +289,14 @@ export class PublicationIndexService {
         if (filter) for (const expr of filter.expressions) {
             let compareOperation = expr.comp;
             let filterValue: SearchFilterValue = expr.value;
+            this.validateFilterExpression(expr.key, compareOperation);
 
-            if (expr.key.includes("institute_id")) {
-                const instituteId = Number(expr.value);
-                if (!Number.isInteger(instituteId)) {
-                    throw createInvalidRequestHttpException(`Invalid institute filter value for ${expr.key}`);
-                }
+            if (expr.key === 'institute_id' || expr.key === 'institute_id_corr') {
+                const instituteIds = this.normalizeIntegerValues(expr.value, expr.key);
                 compareOperation = CompareOperation.IN;
-                filterValue = await this.instService.findInstituteIdsIncludingSubInstitutes([instituteId]);
+                filterValue = instituteIds.length > 0
+                    ? await this.instService.findInstituteIdsIncludingSubInstitutes(instituteIds)
+                    : [];
             }
 
             const predicate = this.buildFilterPredicate(expr.key, compareOperation, filterValue, `filter_${filterIndex}`, filterContext);
@@ -420,6 +384,87 @@ export class PublicationIndexService {
         });
     }
 
+    private validateFilterExpression(key: string, compareOperation: CompareOperation): void {
+        if (!getPublicationFilterFieldDefinition(key)) {
+            throw createInvalidRequestHttpException(`Unsupported filter key: ${key}`);
+        }
+        if (!isPublicationFilterOperationAllowed(key, compareOperation)) {
+            throw createInvalidRequestHttpException(`Unsupported compare operation for ${key}`);
+        }
+    }
+
+    private validateFilterValue(key: string, value: SearchFilterValue): void {
+        const fieldType = this.getFilterFieldType(key);
+        if (fieldType === 'number' || fieldType === 'id' || fieldType === 'year' || fieldType === 'boolean') {
+            this.normalizeComparableValues(key, value);
+        }
+    }
+
+    private getFilterFieldType(key: string): PublicationFilterFieldType {
+        return getPublicationFilterFieldDefinition(key)?.type ?? 'string';
+    }
+
+    private normalizeComparableValue(key: string, value: SearchFilterValue): string | number | boolean | null {
+        const fieldType = this.getFilterFieldType(key);
+        if (fieldType === 'number') return this.normalizeNumberValue(value, key);
+        if (fieldType === 'id' || fieldType === 'year') return this.normalizeIntegerValue(value, key);
+        if (fieldType === 'boolean') return this.normalizeBooleanValue(value, key);
+        return this.getSingleFilterValue(value);
+    }
+
+    private normalizeComparableValues(key: string, value: SearchFilterValue): Array<string | number | boolean> {
+        const fieldType = this.getFilterFieldType(key);
+        const values = this.normalizeInValues(value);
+        if (fieldType === 'number') return values.map((entry) => this.normalizeNumberValue(entry, key));
+        if (fieldType === 'id' || fieldType === 'year') return values.map((entry) => this.normalizeIntegerValue(entry, key));
+        if (fieldType === 'boolean') return values.map((entry) => this.normalizeBooleanValue(entry, key));
+        return values;
+    }
+
+    private normalizeNumberValue(value: SearchFilterValue, key: string): number {
+        const rawValue = this.getSingleFilterValue(value);
+        if (rawValue === null || rawValue === undefined || (typeof rawValue === 'string' && rawValue.trim() === '')) {
+            throw createInvalidRequestHttpException(`${key} must be a number`);
+        }
+        const numberValue = Number(rawValue);
+        if (!Number.isFinite(numberValue)) {
+            throw createInvalidRequestHttpException(`${key} must be a number`);
+        }
+        return numberValue;
+    }
+
+    private normalizeIntegerValue(value: SearchFilterValue, key: string): number {
+        const numberValue = this.normalizeNumberValue(value, key);
+        if (!Number.isInteger(numberValue)) {
+            throw createInvalidRequestHttpException(`${key} must be an integer`);
+        }
+        return numberValue;
+    }
+
+    private normalizeIntegerValues(value: SearchFilterValue, key: string): number[] {
+        return this.normalizeInValues(value).map((entry) => this.normalizeIntegerValue(entry, key));
+    }
+
+    private normalizeBooleanValue(value: SearchFilterValue, key: string): boolean {
+        const rawValue = this.getSingleFilterValue(value);
+        if (typeof rawValue === 'boolean') return rawValue;
+        const normalized = String(rawValue).toLowerCase();
+        if (normalized === 'true' || normalized === 'wahr' || normalized === '1' || normalized === 'ja') return true;
+        if (normalized === 'false' || normalized === 'falsch' || normalized === '0' || normalized === 'nein') return false;
+        throw createInvalidRequestHttpException(`${key} must be a boolean`);
+    }
+
+    private getSingleFilterValue(value: SearchFilterValue): string | number | boolean | null {
+        return Array.isArray(value) ? value[0] ?? null : value;
+    }
+
+    private getYearDateRange(year: number) {
+        return {
+            beginDate: new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0)),
+            endDate: new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)),
+        };
+    }
+
     private buildFilterPredicate(
         key: string,
         compareOperation: CompareOperation,
@@ -452,12 +497,7 @@ export class PublicationIndexService {
         filterContext: PublicationFilterContext,
     ): FilterPredicate {
         if (key === 'invoice_year') {
-            const year = Number(Array.isArray(value) ? value[0] : value);
-            if (!Number.isInteger(year)) {
-                throw createInvalidRequestHttpException('invoice_year must be an integer');
-            }
-            const beginDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-            const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+            const { beginDate, endDate } = this.getYearDateRange(this.normalizeIntegerValue(value, 'invoice_year'));
             this.requestJoin(filterContext, 'invoice');
             return {
                 clause: `invoice.date > :${parameterPrefix}_beginDate AND invoice.date < :${parameterPrefix}_endDate`,
@@ -491,14 +531,14 @@ export class PublicationIndexService {
         if (key === 'author_id') {
             return this.buildAuthorPublicationExistsPredicate(
                 [`ap."authorId" = :${parameterPrefix}`],
-                { [parameterPrefix]: value }
+                { [parameterPrefix]: this.normalizeIntegerValue(value, key) }
             );
         }
 
         if (key === 'author_id_corr') {
             return this.buildAuthorPublicationExistsPredicate(
                 [`ap."authorId" = :${parameterPrefix}`, 'ap."corresponding" = true'],
-                { [parameterPrefix]: value }
+                { [parameterPrefix]: this.normalizeIntegerValue(value, key) }
             );
         }
 
@@ -515,10 +555,11 @@ export class PublicationIndexService {
             );
         }
 
+        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} = :${parameterPrefix}`,
-            parameters: { [parameterPrefix]: Array.isArray(value) ? value[0] : value }
+            parameters: { [parameterPrefix]: this.normalizeComparableValue(key, value) }
         };
     }
 
@@ -546,6 +587,7 @@ export class PublicationIndexService {
             );
         }
 
+        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} ILIKE :${parameterPrefix}`,
@@ -560,10 +602,20 @@ export class PublicationIndexService {
         operator: '>' | '<',
         filterContext: PublicationFilterContext,
     ): FilterPredicate {
+        if (key === 'invoice_year') {
+            const year = this.normalizeIntegerValue(value, 'invoice_year');
+            this.requestJoin(filterContext, 'invoice');
+            return {
+                clause: `EXTRACT(YEAR FROM invoice.date) ${operator} :${parameterPrefix}`,
+                parameters: { [parameterPrefix]: year }
+            };
+        }
+
+        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} ${operator} :${parameterPrefix}`,
-            parameters: { [parameterPrefix]: Array.isArray(value) ? value[0] : value }
+            parameters: { [parameterPrefix]: this.normalizeComparableValue(key, value) }
         };
     }
 
@@ -576,6 +628,16 @@ export class PublicationIndexService {
         const values = this.normalizeInValues(value);
         if (values.length === 0) return { clause: '1 = 0' };
 
+        if (key === 'invoice_year') {
+            const years = this.normalizeIntegerValues(value, 'invoice_year');
+            if (years.length === 0) return { clause: '1 = 0' };
+            this.requestJoin(filterContext, 'invoice');
+            return {
+                clause: `EXTRACT(YEAR FROM invoice.date) IN (:...${parameterPrefix})`,
+                parameters: { [parameterPrefix]: years }
+            };
+        }
+
         if (key === 'inst_authors') {
             return this.buildAuthorNameExistsPredicate(
                 `concat(author_filter.last_name, ', ' ,author_filter.first_name) IN (:...${parameterPrefix})`,
@@ -587,6 +649,19 @@ export class PublicationIndexService {
             return this.buildInstituteExistsPredicate(
                 `institute_filter.label IN (:...${parameterPrefix})`,
                 { [parameterPrefix]: values.map((entry) => String(entry)) }
+            );
+        }
+
+        if (key === 'author_id') {
+            return this.buildAuthorPublicationExistsInPredicate('ap."authorId"', value, parameterPrefix);
+        }
+
+        if (key === 'author_id_corr') {
+            return this.buildAuthorPublicationExistsInPredicate(
+                'ap."authorId"',
+                value,
+                parameterPrefix,
+                ['ap."corresponding" = true']
             );
         }
 
@@ -604,10 +679,11 @@ export class PublicationIndexService {
             );
         }
 
+        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} IN (:...${parameterPrefix})`,
-            parameters: { [parameterPrefix]: values }
+            parameters: { [parameterPrefix]: this.normalizeComparableValues(key, value) }
         };
     }
 
@@ -622,7 +698,7 @@ export class PublicationIndexService {
         parameterPrefix: string,
         extraConditions: string[] = [],
     ): FilterPredicate {
-        const values = this.normalizeInValues(value);
+        const values = this.normalizeIntegerValues(value, field);
         if (values.length === 0) return { clause: '1 = 0' };
 
         return this.buildAuthorPublicationExistsPredicate(
@@ -717,10 +793,12 @@ export class PublicationIndexService {
                 this.requestJoin(filterContext, 'invoice');
                 this.requestJoin(filterContext, 'cost_type');
                 return 'cost_type.id';
+            case 'second_pub':
             case 'secound_pub':
                 return 'publication.second_pub';
             default:
-                if (PUBLICATION_FILTER_FIELDS.has(key)) return `publication.${key}`;
+                const fieldDefinition = getPublicationFilterFieldDefinition(key);
+                if (fieldDefinition && fieldDefinition.key !== 'invoice_year') return `publication.${fieldDefinition.key}`;
                 throw createInvalidRequestHttpException(`Unsupported filter key: ${key}`);
         }
     }

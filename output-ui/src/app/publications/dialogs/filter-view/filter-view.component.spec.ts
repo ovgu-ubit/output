@@ -8,7 +8,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { CompareOperation } from '@output/interfaces';
+import { CompareOperation, getPublicationFilterOperationsForType } from '@output/interfaces';
 
 import { FilterViewComponent } from './filter-view.component';
 
@@ -63,8 +63,19 @@ describe('FilterViewComponent', () => {
     expect(component.keys).toContain(jasmine.objectContaining({
       key: 'contract_year',
       label: 'Vertragsjahr',
-      type: 'number'
+      type: 'year'
     }));
+  });
+
+  it('should use the shared operator matrix for field types', () => {
+    const availableOpsFor = (field: string) => {
+      component.getFiltersControls()[0].get('field').setValue(field);
+      return component.compareOps.filter((op) => component.display(0, op)).map((op) => op.op);
+    };
+
+    expect(availableOpsFor('title')).toEqual(getPublicationFilterOperationsForType('string'));
+    expect(availableOpsFor('contract_year')).toEqual(getPublicationFilterOperationsForType('year'));
+    expect(availableOpsFor('locked')).toEqual(getPublicationFilterOperationsForType('boolean'));
   });
 
   it('should reset the default operator when contract year is selected', () => {
@@ -78,7 +89,7 @@ describe('FilterViewComponent', () => {
     expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
       key: 'contract_year',
       comp: CompareOperation.EQUALS,
-      value: '2026'
+      value: 2026
     }));
   });
 
