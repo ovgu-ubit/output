@@ -1,7 +1,10 @@
 import { HttpException } from '@nestjs/common';
+import * as fs from 'fs';
+import jsonata from 'jsonata';
+import * as path from 'path';
 import * as XLSX from 'xlsx';
 import {  ApiErrorCode  } from '@output/interfaces';
-import {  ExportStrategy, WorkflowType  } from '@output/interfaces';
+import {  ExportStrategy, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { JSONataExportService } from './jsonata-export.service';
 
 const expectApiError = async (
@@ -184,6 +187,90 @@ describe('JSONataExportService', () => {
         const result = await service.export();
 
         expect(result).toBe('title,doi\r\nFirst,10.1/test\r\nSecond,10.2/test');
+    });
+
+    it('expands array mapping results into separate export rows', async () => {
+        await service.setUp({
+            label: 'JSON Export',
+            version: 2,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping: '[{ "title": title, "row": 1 }, { "title": title, "row": 2 }]'
+        });
+
+        const result = await service.export();
+
+        expect(result).toBe(JSON.stringify([
+            { title: 'First', row: 1 },
+            { title: 'First', row: 2 },
+            { title: 'Second', row: 1 },
+            { title: 'Second', row: 2 },
+        ], null, 2));
+        expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({
+            summary: expect.objectContaining({
+                count_source: 2,
+                count_export: 4,
+            })
+        }));
+    });
+
+    it('returns an invalid request when the mapping fails at runtime', async () => {
+        await service.setUp({
+            label: 'JSON Export',
+            version: 2,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping: '{ "year": $number(title) }'
+        });
+
+        await expectApiError(service.export(), {
+            statusCode: 400,
+            code: ApiErrorCode.INVALID_REQUEST,
+            message: 'Export mapping failed.',
+        });
+        expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({
+            status: 'Error while exporting',
+        }));
+        expect(workflowReportService.write).toHaveBeenCalledWith(41, expect.objectContaining({
+            level: WorkflowReportItemLevel.ERROR,
+            message: expect.stringContaining('mapping:jsonata - Unable to cast value to a number'),
+        }));
+        expect(workflowReportService.write).toHaveBeenCalledWith(41, expect.objectContaining({
+            level: WorkflowReportItemLevel.ERROR,
+            message: expect.stringContaining('doi=10.1/test'),
+        }));
+    });
+
+    it('keeps the Juelich export template tolerant of nullable VAT values', async () => {
+        const templatePath = path.resolve(__dirname, '../../../templates/export/Juelich Export.json');
+        const template = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+        const expression = jsonata(template.mapping);
+
+        const result = await expression.evaluate({
+            id: 2,
+            doi: '10.22266/ijies2025.1231.21',
+            invoices: [
+                {
+                    date: '2025-01-01T00:00:00.000Z',
+                    cost_items: [
+                        {
+                            label: 'APC',
+                            euro_value: 100,
+                            vat: null,
+                            cost_type: { label: 'Article Processing Charges' },
+                        },
+                    ],
+                },
+            ],
+        });
+        const row = Array.isArray(result) ? result[0] : result;
+
+        expect(row).toMatchObject({
+            DOI: '10.22266/ijies2025.1231.21',
+            'Euro netto': 100,
+            Steuersatz: 0,
+            'Euro brutto': 100,
+        });
     });
 
     it('renders an xlsx buffer for excel downloads', async () => {
