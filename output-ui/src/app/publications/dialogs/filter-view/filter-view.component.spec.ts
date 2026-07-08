@@ -8,6 +8,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { CompareOperation, getPublicationFilterOperationsForType } from '@output/interfaces';
 
 import { FilterViewComponent } from './filter-view.component';
 
@@ -56,5 +57,67 @@ describe('FilterViewComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should expose contract year as a numeric filter key', () => {
+    expect(component.keys).toContain(jasmine.objectContaining({
+      key: 'contract_year',
+      label: 'Vertragsjahr',
+      type: 'year'
+    }));
+  });
+
+  it('should use the shared operator matrix for field types', () => {
+    const availableOpsFor = (field: string) => {
+      component.getFiltersControls()[0].get('field').setValue(field);
+      return component.compareOps.filter((op) => component.display(0, op)).map((op) => op.op);
+    };
+
+    expect(availableOpsFor('title')).toEqual(getPublicationFilterOperationsForType('string'));
+    expect(availableOpsFor('contract_year')).toEqual(getPublicationFilterOperationsForType('year'));
+    expect(availableOpsFor('locked')).toEqual(getPublicationFilterOperationsForType('boolean'));
+  });
+
+  it('should reset the default operator when contract year is selected', () => {
+    const filter = component.getFiltersControls()[0];
+
+    expect(filter.get('compare_operator').value).toBe(CompareOperation.INCLUDES);
+
+    filter.get('field').setValue('contract_year');
+    filter.get('value').setValue('2026');
+
+    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
+      key: 'contract_year',
+      comp: CompareOperation.EQUALS,
+      value: 2026
+    }));
+  });
+
+  it('should pass comma separated string values as array for IN filters', () => {
+    const filter = component.getFiltersControls()[0];
+
+    filter.get('field').setValue('title');
+    filter.get('compare_operator').setValue(CompareOperation.IN);
+    filter.get('value').setValue('alpha, beta,gamma');
+
+    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
+      key: 'title',
+      comp: CompareOperation.IN,
+      value: ['alpha', 'beta', 'gamma']
+    }));
+  });
+
+  it('should pass comma separated numeric values as number array for IN filters', () => {
+    const filter = component.getFiltersControls()[0];
+
+    filter.get('field').setValue('contract_year');
+    filter.get('compare_operator').setValue(CompareOperation.IN);
+    filter.get('value').setValue('2024,2025');
+
+    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
+      key: 'contract_year',
+      comp: CompareOperation.IN,
+      value: [2024, 2025]
+    }));
   });
 });

@@ -945,6 +945,130 @@ describe('PublicationService', () => {
         );
     });
 
+    it('filters author membership with IN predicates', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'author_id',
+                    comp: CompareOperation.IN,
+                    value: [42, 43],
+                },
+                {
+                    op: JoinOperation.AND,
+                    key: 'author_id_corr',
+                    comp: CompareOperation.IN,
+                    value: [44],
+                }
+            ]
+        };
+
+        await publicationIndexService.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" IN (:...filter_0))',
+            { filter_0: [42, 43] }
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."authorId" IN (:...filter_1) AND ap."corresponding" = true)',
+            { filter_1: [44] }
+        );
+    });
+
+    it('expands institute IN filters and binds the resulting ids', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        instituteService.findInstituteIdsIncludingSubInstitutes.mockResolvedValue([11, 12, 13, 21]);
+        const filter: SearchFilter = {
+            expressions: [{
+                op: JoinOperation.AND,
+                key: 'institute_id',
+                comp: CompareOperation.IN,
+                value: [11, 21],
+            }]
+        };
+
+        await publicationIndexService.filter(filter, queryBuilder as any);
+
+        expect(instituteService.findInstituteIdsIncludingSubInstitutes).toHaveBeenCalledWith([11, 21]);
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXISTS (SELECT 1 FROM author_publication ap WHERE ap."publicationId" = publication.id AND ap."instituteId" IN (:...filter_0))',
+            { filter_0: [11, 12, 13, 21] }
+        );
+    });
+
+    it('filters invoice years with IN and comparable operations', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        const filter: SearchFilter = {
+            expressions: [
+                {
+                    op: JoinOperation.AND,
+                    key: 'invoice_year',
+                    comp: CompareOperation.IN,
+                    value: [2023, 2024],
+                },
+                {
+                    op: JoinOperation.AND,
+                    key: 'invoice_year',
+                    comp: CompareOperation.GREATER_THAN,
+                    value: 2020,
+                },
+                {
+                    op: JoinOperation.AND,
+                    key: 'invoice_year',
+                    comp: CompareOperation.SMALLER_THAN,
+                    value: 2026,
+                }
+            ]
+        };
+
+        await publicationIndexService.filter(filter, queryBuilder as any);
+
+        expect(queryBuilder.where).toHaveBeenCalledWith(
+            'EXTRACT(YEAR FROM invoice.date) IN (:...filter_0)',
+            { filter_0: [2023, 2024] }
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'EXTRACT(YEAR FROM invoice.date) > :filter_1',
+            { filter_1: 2020 }
+        );
+        expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+            'EXTRACT(YEAR FROM invoice.date) < :filter_2',
+            { filter_2: 2026 }
+        );
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith('publication.invoices', 'invoice');
+    });
+
+    it('rejects unsupported field and operator combinations', async () => {
+        const invalidFilters: SearchFilter[] = [
+            {
+                expressions: [{
+                    op: JoinOperation.AND,
+                    key: 'contract_year',
+                    comp: CompareOperation.INCLUDES,
+                    value: '2024',
+                }]
+            },
+            {
+                expressions: [{
+                    op: JoinOperation.AND,
+                    key: 'author_id',
+                    comp: CompareOperation.GREATER_THAN,
+                    value: 42,
+                }]
+            }
+        ];
+
+        for (const filter of invalidFilters) {
+            const queryBuilder = createQueryBuilderMock();
+            await expectApiError(publicationIndexService.filter(filter, queryBuilder as any), {
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+            expect(queryBuilder.where).not.toHaveBeenCalled();
+        }
+    });
+
     it('filters institutional author names via EXISTS without relying on outer author joins', async () => {
         const queryBuilder = createQueryBuilderMock();
         const filter: SearchFilter = {
