@@ -43,17 +43,17 @@ export class FilterViewComponent implements OnInit {
     { key: 'other_ids', label: 'Weitere Identifikatoren' },
     { key: 'authors', label: 'Autor*innen-Angabe' },
     { key: 'inst_authors', label: 'Personen der Institution' },
-    { key: 'author_id', label: 'ID einer Person der Institution' },
-    { key: 'author_id_corr', label: 'ID einer Person der Institution (corr.)' },
+    { key: 'author_id', label: 'ID einer Person der Institution', type: 'number' },
+    { key: 'author_id_corr', label: 'ID einer Person der Institution (corr.)', type: 'number' },
     { key: 'institute', label: 'Institute' },
-    { key: 'institute_id', label: 'ID eines Instituts' },
-    { key: 'institute_id_corr', label: 'ID eines Instituts (corr.)' },
+    { key: 'institute_id', label: 'ID eines Instituts', type: 'number' },
+    { key: 'institute_id_corr', label: 'ID eines Instituts (corr.)', type: 'number' },
     { key: 'pub_date', label: 'Publikationsdatum', type: 'date' },
     { key: 'pub_date_accepted', label: 'Datum der Akzeptanz', type: 'date' },
     { key: 'greater_entity', label: 'Größere Einheit' },
-    { key: 'greater_entity_id', label: 'ID einer größeren Einheit' },
+    { key: 'greater_entity_id', label: 'ID einer größeren Einheit', type: 'number' },
     { key: 'oa_category', label: 'OA-Kategorie' },
-    { key: 'oa_category_id', label: 'ID einer OA-Kategorie' },
+    { key: 'oa_category_id', label: 'ID einer OA-Kategorie', type: 'number' },
     { key: 'dataSource', label: 'Datenquelle' },
     { key: 'language', label: 'Sprache' },
     { key: 'secound_pub', label: 'Zweitveröffentlichung' },
@@ -61,13 +61,13 @@ export class FilterViewComponent implements OnInit {
     { key: 'locked', label: 'Gesperrt', type: 'boolean' },
     { key: 'status', label: 'Status', type: 'number' },
     { key: 'pub_type', label: 'Publikationstyp' },
-    { key: 'pub_type_id', label: 'ID eines Publikationstyps' },
+    { key: 'pub_type_id', label: 'ID eines Publikationstyps', type: 'number' },
     { key: 'publisher', label: 'Verlag' },
-    { key: 'publisher_id', label: 'ID eines Verlags' },
+    { key: 'publisher_id', label: 'ID eines Verlags', type: 'number' },
     { key: 'contract', label: 'Vertrag' },
-    { key: 'contract_id', label: 'ID eines Vertrags' },
+    { key: 'contract_id', label: 'ID eines Vertrags', type: 'number' },
     { key: 'funder', label: 'Förderer' },
-    { key: 'funder_id', label: 'ID eines Förderer' },
+    { key: 'funder_id', label: 'ID eines Förderer', type: 'number' },
     { key: 'cost_center', label: 'Kostenstelle' },
     { key: 'cost_center_id', label: 'ID einer Kostenstelle', type: 'number' },
     { key: 'cost_type', label: 'Kostenart' },
@@ -137,6 +137,7 @@ export class FilterViewComponent implements OnInit {
         this.getFiltersControls()[i].get('join_operator').setValue(e.op)
         this.getFiltersControls()[i].get('field').setValue(e.key)
         this.getFiltersControls()[i].get('compare_operator').setValue(e.comp)
+        this.normalizeCompareOperator(this.getFiltersControls()[i])
         this.getFiltersControls()[i].get('value').setValue(e.value)
         i++;
       }
@@ -165,6 +166,7 @@ export class FilterViewComponent implements OnInit {
         value: ['', Validators.required],
       });
     filterForm.get('compare_operator').setValue(this.compareOps[0].op)
+    filterForm.get('field').valueChanges.subscribe(() => this.normalizeCompareOperator(filterForm));
     this.getFilters().push(filterForm)
   }
 
@@ -243,8 +245,7 @@ export class FilterViewComponent implements OnInit {
 
   display(idx: number, op: { op: CompareOperation, label: string, type?: string[] }): boolean {
     if (!this.getFiltersControls()[idx].get('field').value) return true;
-    let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
-    let type = key && key.type ? key.type : 'string';
+    let type = this.getFieldType(this.getFiltersControls()[idx].get('field').value);
     if (op.type.find(e => e === type)) return true;
     else return false;
   }
@@ -253,5 +254,20 @@ export class FilterViewComponent implements OnInit {
     if (!this.getFiltersControls()[idx].get('field').value) return false;
     let key = this.keys.find(e => e.key === this.getFiltersControls()[idx].get('field').value);
     return key && (key.type == 'date' || key.type?.includes('date'))
+  }
+
+  private normalizeCompareOperator(filter: FormGroup): void {
+    const field = filter.get('field').value;
+    if (!field) return;
+
+    const compareOperator = filter.get('compare_operator');
+    const validOps = this.compareOps.filter(op => op.type.includes(this.getFieldType(field)));
+    if (!validOps.find(op => op.op === compareOperator.value)) {
+      compareOperator.setValue(validOps[0]?.op ?? CompareOperation.EQUALS);
+    }
+  }
+
+  private getFieldType(key: string): string {
+    return this.keys.find(e => e.key === key)?.type ?? 'string';
   }
 }

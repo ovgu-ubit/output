@@ -8,6 +8,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { CompareOperation } from '@output/interfaces';
 
 import { FilterViewComponent } from './filter-view.component';
 
@@ -63,6 +64,21 @@ describe('FilterViewComponent', () => {
       key: 'contract_year',
       label: 'Vertragsjahr',
       type: 'number'
+    }));
+  });
+
+  it('should reset the default operator when contract year is selected', () => {
+    const filter = component.getFiltersControls()[0];
+
+    expect(filter.get('compare_operator').value).toBe(CompareOperation.INCLUDES);
+
+    filter.get('field').setValue('contract_year');
+    filter.get('value').setValue('2026');
+
+    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
+      key: 'contract_year',
+      comp: CompareOperation.EQUALS,
+      value: '2026'
     }));
   });
 });
