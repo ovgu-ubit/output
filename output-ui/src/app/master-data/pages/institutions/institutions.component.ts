@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { InstituteService } from 'src/app/services/entities/institute.service';
-import {  Institute  } from '@output/interfaces';
+import {  InstituteIndex  } from '@output/interfaces';
 import { InstituteFormComponent } from '../../../form/institute-form/institute-form.component';
 
 @Component({
@@ -10,7 +10,7 @@ import { InstituteFormComponent } from '../../../form/institute-form/institute-f
     styleUrls: ['./institutions.component.css'],
     standalone: false
 })
-export class InstitutionsComponent implements TableParent<Institute>, OnInit {
+export class InstitutionsComponent implements TableParent<InstituteIndex>, OnInit {
   buttons: TableButton[] = [
   ];
 
@@ -26,6 +26,7 @@ export class InstitutionsComponent implements TableParent<Institute>, OnInit {
     { colName: 'author_count_total', colTitle: 'Anzahl Personen gesamt', type: 'number' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
     { colName: 'pub_count_corr', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
+    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
   ];
 
   constructor(public instService: InstituteService) { }
