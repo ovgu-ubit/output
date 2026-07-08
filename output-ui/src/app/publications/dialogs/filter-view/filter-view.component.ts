@@ -73,6 +73,7 @@ export class FilterViewComponent implements OnInit {
     { key: 'cost_type', label: 'Kostenart' },
     { key: 'cost_type_id', label: 'ID einer Kostenart', type: 'number' },
     { key: 'invoice_year', label: 'Rechnungsjahr', type: 'number' },
+    { key: 'contract_year', label: 'Vertragsjahr', type: 'number' },
     { key: 'edit_date', label: 'Letzte Bearbeitung', type: 'date' },
     { key: 'import_date', label: 'Importdatum', type: 'date' },
   ]

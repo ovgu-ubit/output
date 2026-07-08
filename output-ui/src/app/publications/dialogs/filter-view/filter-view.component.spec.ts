@@ -57,4 +57,12 @@ describe('FilterViewComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should expose contract year as a numeric filter key', () => {
+    expect(component.keys).toContain(jasmine.objectContaining({
+      key: 'contract_year',
+      label: 'Vertragsjahr',
+      type: 'number'
+    }));
+  });
 });
