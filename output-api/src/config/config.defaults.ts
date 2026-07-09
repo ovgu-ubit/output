@@ -55,6 +55,7 @@ export const CONFIG_DEFAULTS = {
         edit_date: true,
         import_date: false,
         data_source: false,
+        net_costs: false,
     },
     import_services: {
         base: true,

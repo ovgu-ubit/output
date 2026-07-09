@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { DataSource, DeepPartial, ILike, In, Repository } from 'typeorm';
 import {  AppError  } from '@output/interfaces';
 import {  AuthorIndex  } from '@output/interfaces';
-import { AbstractEntityService } from '../common/abstract-entity.service';
+import { AbstractEntityService, EntityAccessRight, EntityAccessScope, hasEntityAccess } from '../common/abstract-entity.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { createPersistenceHttpException } from '../common/api-error';
 import { hasProvidedEntityId } from '../common/entity-id';
@@ -38,6 +38,16 @@ export class AuthorService extends AbstractEntityService<Author> {
 
     protected override getFindOneRelations() {
         return { institutes: true, aliases_first_name: true, aliases_last_name: true };
+    }
+
+    public override async get(scope: EntityAccessScope = {}) {
+        const authors = await super.get(scope);
+        return authors.map(author => this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read)));
+    }
+
+    public override async one(id: number, scope: EntityAccessScope = {}) {
+        const author = await super.one(id, scope);
+        return this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read));
     }
 
     public override async save(entity: DeepPartial<Author>, _user?: string) {
@@ -196,7 +206,7 @@ export class AuthorService extends AbstractEntityService<Author> {
         });
     }
 
-    public async index(reporting_year: number): Promise<AuthorIndex[]> {
+    public async index(reporting_year: number, canReadNetCosts = false): Promise<AuthorIndex[]> {
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("author", "author")
@@ -214,17 +224,43 @@ export class AuthorService extends AbstractEntityService<Author> {
                 .addGroupBy("author.last_name")
                 .addGroupBy("author.orcid")
                 , "a")
-            .leftJoin((sq) => sq
-                .from(AuthorPublication, "authorPublication")
-                .innerJoin("publication", "publication", "publication.id = authorPublication.publicationId")
-                .select("publication.id", "id")
-                .addSelect("publication.pub_date", "pub_date")
-                .addSelect("publication.pub_date_print", "pub_date_print")
-                .addSelect("publication.pub_date_accepted", "pub_date_accepted")
-                .addSelect("publication.pub_date_submitted", "pub_date_submitted")
-                .addSelect("authorPublication.authorId", "authorId")
-                .addSelect("authorPublication.corresponding", "corresponding")
-                , "b", "b.\"authorId\" = a.id")
+            .leftJoin((sq) => {
+                let authorPublicationQuery = sq
+                    .from("author_publication", "author_publication")
+                    .innerJoin("publication", "publication", "publication.id = author_publication.\"publicationId\"")
+                    .select("publication.id", "id")
+                    .addSelect("publication.pub_date", "pub_date")
+                    .addSelect("publication.pub_date_print", "pub_date_print")
+                    .addSelect("publication.pub_date_accepted", "pub_date_accepted")
+                    .addSelect("publication.pub_date_submitted", "pub_date_submitted")
+                    .addSelect("author_publication.\"authorId\"", "authorId")
+                    .addSelect("author_publication.\"corresponding\"", "corresponding");
+
+                if (!canReadNetCosts) return authorPublicationQuery.addSelect("NULL", "net_costs");
+
+                authorPublicationQuery = authorPublicationQuery
+                    .leftJoin((costQuery) => costQuery
+                        .from("invoice", "invoice")
+                        .leftJoin("cost_item", "cost_item", "cost_item.\"invoiceId\" = invoice.id")
+                        .select("invoice.\"publicationId\"", "publicationId")
+                        .addSelect("SUM(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END)", "net_costs")
+                        .groupBy("invoice.\"publicationId\""),
+                        "publication_cost",
+                        "publication_cost.\"publicationId\" = publication.id")
+                    .leftJoin((correspondingQuery) => correspondingQuery
+                        .from("author_publication", "corresponding_author_publication")
+                        .select("corresponding_author_publication.\"publicationId\"", "publicationId")
+                        .addSelect("COUNT(*)", "authorship_count")
+                        .where("corresponding_author_publication.\"corresponding\" = true")
+                        .groupBy("corresponding_author_publication.\"publicationId\""),
+                        "corresponding_authorship",
+                        "corresponding_authorship.\"publicationId\" = publication.id")
+                    .addSelect(
+                        "CASE WHEN author_publication.\"corresponding\" THEN COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0) ELSE 0 END",
+                        "net_costs");
+
+                return authorPublicationQuery;
+            }, "b", "b.\"authorId\" = a.id")
             .select("a.id", "id")
             .addSelect("a.orcid", "orcid")
             .addSelect("a.gnd_id", "gnd_id")
@@ -248,12 +284,14 @@ export class AuthorService extends AbstractEntityService<Author> {
             query = query
                 .addSelect('SUM(CASE WHEN b.pub_date >= :beginDate and b.pub_date <= :endDate and b."corresponding" THEN 1 ELSE 0 END)', "pub_count_corr")
                 .addSelect('SUM(CASE WHEN b.pub_date >= :beginDate and b.pub_date <= :endDate THEN 1 ELSE 0 END)', "pub_count")
+                .addSelect(canReadNetCosts ? 'SUM(CASE WHEN b.pub_date >= :beginDate and b.pub_date <= :endDate THEN b.net_costs ELSE 0 END)' : 'NULL', "net_costs")
                 .setParameters({ beginDate, endDate })
         }
         else {
             query = query
                 .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.pub_date_print IS NULL and b.pub_date_accepted IS NULL and b.pub_date_submitted IS NULL and b.\"corresponding\" THEN 1 ELSE 0 END)", "pub_count_corr")
                 .addSelect("SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.pub_date_print IS NULL and b.pub_date_accepted IS NULL and b.pub_date_submitted IS NULL THEN 1 ELSE 0 END)", "pub_count")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN b.id IS NOT NULL and b.pub_date is NULL and b.pub_date_print IS NULL and b.pub_date_accepted IS NULL and b.pub_date_submitted IS NULL THEN b.net_costs ELSE 0 END)" : "NULL", "net_costs")
         }
 
         //console.log(query.getSql());
@@ -269,6 +307,12 @@ export class AuthorService extends AbstractEntityService<Author> {
             await this.deleteAliasCollection(manager.getRepository(AliasAuthorLastName), authorIds);
             return await manager.getRepository(Author).delete(authorIds);
         });
+    }
+
+    private filterInternalRemark<T extends Author | null>(author: T, reader: boolean): T {
+        if (!author || reader) return author;
+        author.internal_remark = undefined;
+        return author;
     }
 
 }

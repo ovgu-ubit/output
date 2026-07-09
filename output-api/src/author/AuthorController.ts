@@ -16,9 +16,10 @@ export class AuthorController extends AbstractCrudController<Author, AuthorServi
     }
 
     @Get('index')
+    @UseGuards(AccessGuard)
     @ApiResponse({ status: 200, description: 'Author index is returned.' })
-    async index(@Query('reporting_year') reporting_year: number) {
-        return await this.service.index(reporting_year);
+    async index(@Query('reporting_year') reporting_year: number, @Req() request: Request) {
+        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false);
     }
 
     @Get('/:id')
@@ -27,8 +28,7 @@ export class AuthorController extends AbstractCrudController<Author, AuthorServi
     async one(@Param('id') id: number, @Req() request: Request) {
         return this.service.oneOrFail(
             id,
-            this.isWriter(request),
-            this.getUsername(request),
+            this.getAccessScope(request),
             'Author not found.',
         );
     }

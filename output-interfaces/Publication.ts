@@ -80,6 +80,7 @@ export interface Author extends Entity {
     institutes?: Institute[]
     orcid?: string;
     gnd_id?: string;
+    internal_remark?: string;
     valid_from?: Date;
     authorPublications?: AuthorPublication[];
     aliases_first_name?: AliasAuthorFirstName[];

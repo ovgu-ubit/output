@@ -14,12 +14,53 @@ import { AliasAuthorLastName } from './AliasAuthorLastName.entity';
 import { InstituteService } from '../institute/institute.service';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
+import { EntityAccessRight } from '../common/abstract-entity.service';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { mergeEntities } from '../common/merge';
 
 jest.mock('../common/merge', () => ({
     mergeEntities: jest.fn(),
 }));
+
+const createQueryBuilderMock = (rawManyResult: unknown[] = []) => {
+    const calls: Record<string, unknown[][]> = {
+        addSelect: [],
+        leftJoin: [],
+        select: [],
+        from: [],
+    };
+
+    const build = () => {
+        const qb: any = {};
+        qb.from = jest.fn((source, alias) => {
+            calls.from.push([source, alias]);
+            if (typeof source === 'function') source(build());
+            return qb;
+        });
+        qb.leftJoin = jest.fn((source, alias, condition) => {
+            calls.leftJoin.push([source, alias, condition]);
+            if (typeof source === 'function') source(build());
+            return qb;
+        });
+        qb.innerJoin = jest.fn(() => qb);
+        qb.select = jest.fn((...args) => {
+            calls.select.push(args);
+            return qb;
+        });
+        qb.addSelect = jest.fn((...args) => {
+            calls.addSelect.push(args);
+            return qb;
+        });
+        qb.groupBy = jest.fn(() => qb);
+        qb.addGroupBy = jest.fn(() => qb);
+        qb.where = jest.fn(() => qb);
+        qb.setParameters = jest.fn(() => qb);
+        qb.getRawMany = jest.fn().mockResolvedValue(rawManyResult);
+        return qb;
+    };
+
+    return { queryBuilder: build(), calls };
+};
 
 describe('AuthorService', () => {
     let service: AuthorService;
@@ -32,6 +73,11 @@ describe('AuthorService', () => {
     let aliasLookupService: { findAliases: jest.Mock };
     let dataSource: { transaction: jest.Mock };
     const mergeEntitiesMock = mergeEntities as jest.Mock;
+    const readScope = { rights: { [EntityAccessRight.Read]: true } };
+    const writeScope = (username = 'alice') => ({
+        username,
+        rights: { [EntityAccessRight.Write]: true },
+    });
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -193,6 +239,42 @@ describe('AuthorService', () => {
         }
     });
 
+    it('hides internal remarks from author lists when the caller lacks reader access', async () => {
+        repository.find.mockResolvedValue([
+            { id: 1, first_name: 'Alice', last_name: 'Smith', internal_remark: 'internal' } as Author,
+        ]);
+
+        const result = await service.get();
+
+        expect(result[0].internal_remark).toBeUndefined();
+    });
+
+    it('keeps internal remarks on single authors when the caller has reader access', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 1,
+            first_name: 'Alice',
+            last_name: 'Smith',
+            internal_remark: 'internal',
+        } as Author);
+
+        const result = await service.one(1, readScope);
+
+        expect(result.internal_remark).toBe('internal');
+    });
+
+    it('hides internal remarks on single authors when the caller lacks reader access', async () => {
+        repository.findOne.mockResolvedValue({
+            id: 1,
+            first_name: 'Alice',
+            last_name: 'Smith',
+            internal_remark: 'internal',
+        } as Author);
+
+        const result = await service.one(1);
+
+        expect(result.internal_remark).toBeUndefined();
+    });
+
     it('identifies authors via aliases', async () => {
         const targetAuthor = { id: 3, first_name: 'Jane', last_name: 'Doe', institutes: [] } as Author;
 
@@ -298,6 +380,42 @@ describe('AuthorService', () => {
             last_name: 'Doe',
             orcid: undefined,
         }));
+    });
+
+    it('adds reader-gated corresponding authorship net costs to the author index', async () => {
+        const { queryBuilder, calls } = createQueryBuilderMock([]);
+        (repository as any).manager = {
+            createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        };
+
+        await service.index(2025, true);
+
+        expect(calls.leftJoin).toEqual(expect.arrayContaining([
+            expect.arrayContaining([expect.any(Function), 'publication_cost']),
+            expect.arrayContaining([expect.any(Function), 'corresponding_authorship']),
+        ]));
+        expect(calls.addSelect).toEqual(expect.arrayContaining([
+            [
+                expect.stringContaining('COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0)'),
+                'net_costs',
+            ],
+            [expect.stringContaining('b.net_costs'), 'net_costs'],
+        ]));
+    });
+
+    it('does not join cost tables for non-reader author index calls', async () => {
+        const { queryBuilder, calls } = createQueryBuilderMock([]);
+        (repository as any).manager = {
+            createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        };
+
+        await service.index(2025, false);
+
+        expect(calls.leftJoin.find((call) => call[1] === 'publication_cost')).toBeUndefined();
+        expect(calls.leftJoin.find((call) => call[1] === 'corresponding_authorship')).toBeUndefined();
+        expect(calls.addSelect).toEqual(expect.arrayContaining([
+            ['NULL', 'net_costs'],
+        ]));
     });
 
     it('merges duplicate author attributes when combining records', async () => {
@@ -445,8 +563,8 @@ describe('AuthorService', () => {
         repository.update!.mockResolvedValue({ affected: 1 } as any);
         configService.get.mockResolvedValue(5);
 
-        const first = await service.one(4, true, 'alice');
-        const second = await service.one(4, true, 'alice');
+        const first = await service.one(4, writeScope('alice'));
+        const second = await service.one(4, writeScope('alice'));
 
         expect(repository.update).toHaveBeenCalledWith(
             expect.objectContaining({ id: 4, locked_at: expect.any(Object) }),
@@ -462,7 +580,7 @@ describe('AuthorService', () => {
         repository.findOne.mockResolvedValueOnce({ id: 5, locked_at: new Date(), institutes: [] } as Author);
         configService.get.mockResolvedValue(5);
 
-        await service.one(5, true, 'alice');
+        await service.one(5, writeScope('alice'));
 
         try {
             await service.update({ id: 5, first_name: 'Mallory' } as Author, 'mallory');
@@ -502,7 +620,7 @@ describe('AuthorService', () => {
         repository.save.mockResolvedValue({ id: 6, locked_at: null } as Author);
         configService.get.mockResolvedValue(5);
 
-        await service.one(6, true, 'alice');
+        await service.one(6, writeScope('alice'));
 
         await expect(service.update({ id: 6, locked_at: null } as Author, 'alice'))
             .resolves.toEqual({ id: 6, locked_at: null });

@@ -4,7 +4,7 @@ import { ILike, Repository } from 'typeorm';
 import { Language } from './Language.entity';
 import { createNotFoundHttpException, createPersistenceHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
-import { AbstractEntityService } from '../../common/abstract-entity.service';
+import { AbstractEntityService, EntityAccessScope } from '../../common/abstract-entity.service';
 
 @Injectable()
 export class LanguageService extends AbstractEntityService<Language> {
@@ -20,7 +20,7 @@ export class LanguageService extends AbstractEntityService<Language> {
         return this.repository.findOne({where:{id}});
     }
 
-    public override async oneOrFail(id: number, _writer = false, _user?: string, message = 'Language not found.') {
+    public override async oneOrFail(id: number, _scope: EntityAccessScope = {}, message = 'Language not found.') {
         const language = await this.one(id);
         if (!language) throw createNotFoundHttpException(message);
         return language;

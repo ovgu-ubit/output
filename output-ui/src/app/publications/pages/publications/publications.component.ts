@@ -87,6 +87,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["greater_entity"]) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
       if (data.value["publisher"]) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
       if (data.value["contract"]) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
+      if (data.value["net_costs"]) headers.push({ colName: 'net_costs', colTitle: 'Kosten', type: 'euro' })
       if (data.value["oa_category"]) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
       if (data.value["locked_status"]) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
       if (data.value["status"]) headers.push({
@@ -287,20 +288,18 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
 
   filterToQuery(): string {
     if (!this.indexOptions) return '';
-    let res = '?';
+    const params = new URLSearchParams();
     if (this.indexOptions.filter) for (let expr of this.indexOptions.filter.expressions) {
-      res += 'filter=' + expr.op + ',' + expr.key + ',' + expr.comp + ',' + expr.value + '&';
+      params.append('filter', JSON.stringify(expr));
     }
-    if (this.indexOptions.filter?.expressions.length > 0) res = res.slice(0, res.length - 1) + '&';
     if (this.indexOptions.paths) for (let path of this.indexOptions.paths) {
-      res += 'path=' + path + '&';
+      params.append('path', path);
     }
-    if (this.indexOptions.paths?.length > 0) res = res.slice(0, res.length - 1);
-    return res;
+    const query = params.toString();
+    return query ? `?${query}` : '';
   }
 
   queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[] } {
-    let flag = false;
     let res = {
       filter: {
         expressions: []
@@ -308,19 +307,40 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     };
     let filters = paramMap.getAll('filter');
     res.paths = paramMap.getAll('path');
+    let flag = res.paths.length > 0;
     for (let e of filters) {
-      let split = e.split(',')
-      let expr: SearchFilterExpression = {
-        op: Number(split[0]) as JoinOperation,
-        key: split[1],
-        comp: Number(split[2]) as CompareOperation,
-        value: split[3]
-      }
+      let expr = this.parseFilterQueryExpression(e);
+      if (!expr) continue;
       res.filter.expressions.push(expr);
       flag = true;
     }
     if (flag) return res;
     else return null;
+  }
+
+  private parseFilterQueryExpression(value: string): SearchFilterExpression | null {
+    try {
+      const parsed = JSON.parse(value) as SearchFilterExpression;
+      if (
+        typeof parsed?.op === 'number'
+        && typeof parsed?.key === 'string'
+        && typeof parsed?.comp === 'number'
+        && Object.prototype.hasOwnProperty.call(parsed, 'value')
+      ) {
+        return parsed;
+      }
+    } catch {
+      // Fall back to the legacy comma-separated link format.
+    }
+
+    let split = value.split(',')
+    if (split.length < 4) return null;
+    return {
+      op: Number(split[0]) as JoinOperation,
+      key: split[1],
+      comp: Number(split[2]) as CompareOperation,
+      value: split.slice(3).join(',')
+    }
   }
 
   getName() {

@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { AccessGuard } from '../authorization/access.guard';
 import { Permissions } from '../authorization/permission.decorator';
 import { createNotFoundHttpException } from './api-error';
-import { AbstractEntityService, LockableEntity } from './abstract-entity.service';
+import { AbstractEntityService, EntityAccessRight, EntityAccessScope, LockableEntity } from './abstract-entity.service';
 import { assertCreateRequestHasNoId } from './entity-id';
 
 export abstract class AbstractCrudController<TEntity extends LockableEntity, TService extends AbstractEntityService<TEntity>> {
@@ -13,15 +13,15 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
     @Get()
     @UseGuards(AccessGuard)
     @ApiResponse({ type: Object, isArray: true })
-    async all(): Promise<TEntity[]> {
-        return this.getAllEntities();
+    async all(@Req() request: Request): Promise<TEntity[]> {
+        return this.getAllEntities(this.getAccessScope(request));
     }
 
     @Get('one')
     @UseGuards(AccessGuard)
     @ApiResponse({ type: Object })
     async one(@Query('id') id: number, @Req() request: Request): Promise<TEntity> {
-        return this.getSingleEntity(id, this.isWriter(request), this.getUsername(request));
+        return this.getSingleEntity(id, this.getAccessScope(request));
     }
 
     @Post()
@@ -78,16 +78,20 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
         return this.service.delete(body);
     }
 
-    protected getAllEntities() {
-        return this.service.get();
+    protected getAllEntities(scope: EntityAccessScope = {}) {
+        return this.service.get(scope);
     }
 
-    protected async getSingleEntity(id: number, writer: boolean, user?: string) {
-        const entity = await this.service.one(id, writer, user);
+    protected async getSingleEntity(id: number, scope: EntityAccessScope = {}) {
+        const entity = await this.service.one(id, scope);
         if (!entity) {
             throw createNotFoundHttpException();
         }
         return entity;
+    }
+
+    protected isReader(request: Request): boolean {
+        return request?.['user']?.['read'] ?? false;
     }
 
     protected isWriter(request: Request): boolean {
@@ -96,5 +100,15 @@ export abstract class AbstractCrudController<TEntity extends LockableEntity, TSe
 
     protected getUsername(request: Request): string | undefined {
         return request?.['user']?.['username'];
+    }
+
+    protected getAccessScope(request: Request): EntityAccessScope {
+        return {
+            username: this.getUsername(request),
+            rights: {
+                [EntityAccessRight.Read]: this.isReader(request),
+                [EntityAccessRight.Write]: this.isWriter(request),
+            },
+        };
     }
 }

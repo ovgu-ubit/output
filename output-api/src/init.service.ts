@@ -51,6 +51,7 @@ export class InitService {
         // Drop database schema:
         console.log("sync new schema")
         await this.dataSource.synchronize(true);
+        await this.markMigrationsAsExecuted();
         console.log("...creating sample data")
         // Init values:   
 
@@ -96,6 +97,16 @@ export class InitService {
         await this.roleRepository.save(roles);
 
         console.log("finished")
+    }
+
+    private async markMigrationsAsExecuted() {
+        if (this.dataSource.migrations.length === 0) {
+            throw new Error("No migrations were loaded. Cannot initialize the migrations table after schema sync.");
+        }
+
+        console.log("mark migrations as executed")
+        const migrations = await this.dataSource.runMigrations({ fake: true, transaction: "all" });
+        console.log(`...marked ${migrations.length} migrations as executed`)
     }
 
     async addFunder() {

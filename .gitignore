@@ -1,4 +1,5 @@
 output-ui/.vscode/launch.json
 output-ui/.vscode/
 node_modules/
+.npm-cache/
 dist/

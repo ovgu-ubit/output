@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 import { DataSourceOptions } from "typeorm";
 import { DatabaseType } from "typeorm/driver/types/DatabaseType";
+import path from "node:path";
 
 @Injectable()
 export class DatabaseConfigService implements TypeOrmOptionsFactory {
@@ -22,16 +23,13 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             synchronize: false,
             logging: false,
             entities: [
-                "dist/src/entity/**/*.js",
-                "dist/src/entity/**/*.ts"
+                path.join(__dirname, "..", "**", "*.entity{.ts,.js}")
             ],
             migrations: [
-                "dist/src/migrations/**/*.js",
-                "dist/src/migrations/**/*.ts"
+                path.join(__dirname, "..", "migrations", "*{.ts,.js}")
             ],
             subscribers: [
-                "dist/src/subscriber/**/*.js",
-                "dist/src/subscriber/**/*.ts"
+                path.join(__dirname, "..", "subscriber", "**", "*{.ts,.js}")
             ],
         } as DataSourceOptions;
     }

@@ -21,10 +21,12 @@ This repository is managed as an npm workspace from the root directory. The work
 - `output-ui`: Angular frontend
 - `output-interfaces`: shared TypeScript interfaces used by backend and frontend
 
-Install dependencies from the repository root:
+Install dependencies only from the repository root:
 
 > $ npm install
 >
+
+The repository uses npm's default hoisted workspace layout with dependencies declared centrally in the root `package.json`. Keep a single `package-lock.json` in the root directory and do not create lockfiles or run `npm install` inside `output-api`, `output-ui`, or `output-interfaces`.
 
 The shared interfaces are a separate package and must be built before backend or frontend builds can consume them. The root scripts do this automatically.
 
@@ -48,7 +50,7 @@ For local development, use the root watch scripts. They build `output-interfaces
 > $ npm run dev
 >
 
-The workspace uses a nested npm install strategy. Keep application runtime dependencies in the package that uses them (`output-api` or `output-ui`) instead of adding them to the root package.
+Keep application runtime and development dependencies in the root `package.json`. The package files in `output-api`, `output-ui`, and `output-interfaces` are only used for workspace names, package metadata, exports, and scripts.
 
 ### Docker 
 A simple way to set up the application is to user our docker image. Pull the image:
@@ -129,10 +131,6 @@ Before running the system the first time, use
 > $ npm run build:interfaces
 >
 > $ npm --workspace output run start:init_{test|prod}
-> 
-> $ npm --workspace output run typeorm:dev migration:run -- -d ./src/config/app.data.source.ts --fake
-
-The last line ensures that the migrations table is populated for future migrations.
 
 Alternatively to pm2, you can also use `npm --workspace output run start:{test|prod}` after building the software.
 

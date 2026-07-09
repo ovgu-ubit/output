@@ -2,9 +2,10 @@ import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testin
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
+import { CompareOperation, JoinOperation } from '@output/interfaces';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { StatusService } from 'src/app/services/entities/status.service';
@@ -83,5 +84,59 @@ describe('PublicationsComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should roundtrip JSON encoded filter links with array values', () => {
+    component.indexOptions = {
+      soft: false,
+      filter: {
+        expressions: [{
+          op: JoinOperation.AND,
+          key: 'title',
+          comp: CompareOperation.IN,
+          value: ['alpha,beta', 'gamma'],
+        }]
+      },
+      paths: ['missing-invoice']
+    };
+
+    const query = component.filterToQuery();
+    const params = new URLSearchParams(query.slice(1));
+    const roundtrip = component.queryToFilter(convertToParamMap({
+      filter: params.getAll('filter'),
+      path: params.getAll('path'),
+    }));
+
+    expect(roundtrip.filter.expressions[0]).toEqual(jasmine.objectContaining({
+      op: JoinOperation.AND,
+      key: 'title',
+      comp: CompareOperation.IN,
+      value: ['alpha,beta', 'gamma'],
+    }));
+    expect(roundtrip.paths).toEqual(['missing-invoice']);
+  });
+
+  it('should read legacy comma separated filter links', () => {
+    const result = component.queryToFilter(convertToParamMap({
+      filter: [`${JoinOperation.AND},title,${CompareOperation.EQUALS},alpha,beta`],
+      path: ['missing-invoice'],
+    }));
+
+    expect(result.filter.expressions[0]).toEqual(jasmine.objectContaining({
+      op: JoinOperation.AND,
+      key: 'title',
+      comp: CompareOperation.EQUALS,
+      value: 'alpha,beta',
+    }));
+    expect(result.paths).toEqual(['missing-invoice']);
+  });
+
+  it('should read links that only contain saved filter paths', () => {
+    const result = component.queryToFilter(convertToParamMap({
+      path: ['missing-invoice'],
+    }));
+
+    expect(result.filter.expressions).toEqual([]);
+    expect(result.paths).toEqual(['missing-invoice']);
   });
 });

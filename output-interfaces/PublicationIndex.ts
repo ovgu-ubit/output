@@ -17,6 +17,7 @@ export interface PublicationIndex {
     oa_category: string;
     publication_type: string;
     contract: string;
+    net_costs?: number;
     import_date: Date;
 }
 
@@ -28,6 +29,7 @@ export interface AuthorIndex {
 	pub_count: number;
 	pub_count_corr: number;
     pub_count_total: number;
+    net_costs?: number;
 	institutes?: string;
 }
 export interface InstituteIndex {
@@ -39,6 +41,7 @@ export interface InstituteIndex {
 	author_count_total: number;
 	pub_count: number;
 	pub_count_corr: number;
+    net_costs?: number;
 	sub_inst_count: number;
 }
 export interface ContractIndex {

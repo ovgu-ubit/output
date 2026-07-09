@@ -47,6 +47,7 @@ export const ConfigSchemas = z.object({
     edit_date: z.boolean(),
     import_date: z.boolean(),
     data_source: z.boolean(),
+    net_costs: z.boolean().default(CONFIG_DEFAULTS.pub_index_columns.net_costs),
   }).default(CONFIG_DEFAULTS.pub_index_columns),
   import_services: z.object({
     base: z.boolean(),

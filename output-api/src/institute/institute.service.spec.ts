@@ -12,6 +12,35 @@ import { AliasInstitute } from './AliasInstitute.entity';
 import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { EditLockOwnerStore } from '../common/edit-lock';
+
+const createQueryBuilderMock = (rawOneResult: unknown = {}) => {
+    const calls: Record<string, unknown[][]> = {
+        addSelect: [],
+        leftJoin: [],
+        select: [],
+    };
+
+    const qb: any = {};
+    qb.innerJoin = jest.fn(() => qb);
+    qb.leftJoin = jest.fn((...args) => {
+        calls.leftJoin.push(args);
+        return qb;
+    });
+    qb.select = jest.fn((...args) => {
+        calls.select.push(args);
+        return qb;
+    });
+    qb.addSelect = jest.fn((...args) => {
+        calls.addSelect.push(args);
+        return qb;
+    });
+    qb.where = jest.fn(() => qb);
+    qb.andWhere = jest.fn(() => qb);
+    qb.getRawOne = jest.fn().mockResolvedValue(rawOneResult);
+
+    return { queryBuilder: qb, calls };
+};
+
 describe('InstituteService', () => {
     let service: InstituteService;
     let repository: jest.Mocked<Partial<Repository<Institute>>>;
@@ -204,6 +233,47 @@ describe('InstituteService', () => {
         const ids = await service.findInstituteIdsIncludingSubInstitutes([1, 2]);
 
         expect(ids).toEqual([1, 2, 3, 4]);
+    });
+
+    it('adds reader-gated corresponding authorship net costs to the institute index', async () => {
+        const { queryBuilder, calls } = createQueryBuilderMock({
+            pub_count: 1,
+            pub_count_corr: 1,
+            author_count_total: 2,
+            sub_inst_count: 0,
+            net_costs: 150,
+        });
+        repository.find.mockResolvedValue([{ id: 11, label: 'Institute', authors: [] } as Institute]);
+        (repository as any).createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+
+        const result = await service.index(2025, true);
+
+        const netCostSelect = calls.addSelect.find((call) => call[1] === 'net_costs')?.[0] as string;
+        expect(netCostSelect).toContain('COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0)');
+        expect(netCostSelect).toContain('author_publication_net_cost."corresponding" = true');
+        expect(netCostSelect).toContain('cost_ic.id_ancestor = :id');
+        expect(result[0]).toEqual(expect.objectContaining({
+            id: 11,
+            label: 'Institute',
+            net_costs: 150,
+        }));
+    });
+
+    it('does not add the institute net cost subquery for non-reader index calls', async () => {
+        const { queryBuilder, calls } = createQueryBuilderMock({
+            pub_count: 1,
+            pub_count_corr: 1,
+            author_count_total: 2,
+            sub_inst_count: 0,
+        });
+        repository.find.mockResolvedValue([{ id: 11, label: 'Institute', authors: [] } as Institute]);
+        (repository as any).createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+
+        await service.index(2025, false);
+
+        expect(calls.addSelect).toEqual(expect.arrayContaining([
+            ['NULL', 'net_costs'],
+        ]));
     });
 
     it('clears references and aliases before deleting institutes', async () => {
