@@ -273,6 +273,70 @@ describe('JSONataExportService', () => {
         });
     });
 
+    it('creates one Juelich CostItem export row per invoice cost item', async () => {
+        const templatePath = path.resolve(__dirname, '../../../templates/export/JuelichExport CostItem.json');
+        const template = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+        const expression = jsonata(template.mapping);
+
+        const result = await expression.evaluate({
+            doi: '10.1/cost-items',
+            invoices: [
+                {
+                    date: '2024-01-15T00:00:00.000Z',
+                    cost_items: [
+                        {
+                            label: 'APC',
+                            euro_value: 100,
+                            vat: 19,
+                            cost_type: { label: 'Article Processing Charges' },
+                        },
+                        {
+                            label: 'Page Charges',
+                            euro_value: 50,
+                            vat: 0,
+                            cost_type: { label: 'Page Charges' },
+                        },
+                    ],
+                },
+                {
+                    date: '2025-02-20T00:00:00.000Z',
+                    cost_items: [
+                        {
+                            label: 'Color Charges',
+                            euro_value: 25,
+                            vat: null,
+                            cost_type: { label: 'Color Charges' },
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(result).toHaveLength(3);
+        expect(result).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                DOI: '10.1/cost-items',
+                Bemerkung: 'APC',
+                'Euro netto': 100,
+                Steuersatz: 0.19,
+                'Euro brutto': 119,
+                'Rechnungsjahr / Lizenzjahr': 2024,
+            }),
+            expect.objectContaining({
+                Bemerkung: 'Page Charges',
+                'Euro netto': 50,
+                'Euro brutto': 50,
+                'Rechnungsjahr / Lizenzjahr': 2024,
+            }),
+            expect.objectContaining({
+                Bemerkung: 'Color Charges',
+                'Euro netto': 25,
+                'Euro brutto': 25,
+                'Rechnungsjahr / Lizenzjahr': 2025,
+            }),
+        ]));
+    });
+
     it('renders an xlsx buffer for excel downloads', async () => {
         await service.setUp({
             label: 'Excel Export',
