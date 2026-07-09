@@ -1,0 +1,17 @@
+{
+  "workflow_id": "4c95ac2e-dafd-4f3c-99a2-8a0cc3786db5",
+  "label": "Juelich-Export",
+  "version": 1,
+  "created_at": "2026-07-08T00:00:00.000Z",
+  "modified_at": "2026-07-08T00:00:00.000Z",
+  "published_at": null,
+  "deleted_at": null,
+  "description": "Jülich/DFG-Publikationskostenexport als Excel-Workflow",
+  "strategy_type": 0,
+  "strategy": {
+    "format": "xlsx",
+    "sheet_name": "Publikationen",
+    "disposition": "attachment"
+  },
+  "mapping": "(\n  $cell := function($value) { $exists($value) and $type($value) != \"null\" ? $value : \"\" };\n  $year := function($date) {(\n    $dateText := $exists($date) and $type($date) != \"null\" ? $replace($string($date), /^\"|\"$/, \"\") : \"\";\n    $match($dateText, /^\\d{4}/) ? $number($substring($dateText, 0, 4)) : \"\"\n  )};\n  $firstDate := function($primary, $fallback) {\n    $exists($primary) and $type($primary) != \"null\" and $string($primary) != \"\" ? $primary : $fallback\n  };\n  $num := function($value) {(\n    $exists($value) and $type($value) != \"null\" ? (\n      $type($value) = \"number\" ? $value : (\n        $text := $replace($string($value), \",\", \".\");\n        $match($text, /^-?\\d+(\\.\\d+)?$/) ? $number($text) : 0\n      )\n    ) : 0\n  )};\n  $gebuehrenart := function($label) {(\n    $lower := $exists($label) and $type($label) != \"null\" ? $lowercase($string($label)) : \"\";\n    $contains($lower, \"gold\") ? \"gold-oa\" : ($contains($lower, \"hybrid\") ? \"hybrid-oa\" : \"\")\n  )};\n  $row := function($bemerkung, $originalwaehrung, $originalbetrag, $euroNetto, $steuersatz, $euroBrutto, $gebuehrenartValue, $mitgliedschaft, $rechnungsjahr) {\n    {\n      \"DOI\": $cell(doi),\n      \"förderfähig\": \"\",\n      \"Bemerkung\": $cell($bemerkung),\n      \"Name des Verlags\": $cell(publisher.label),\n      \"Publikationsform\": $cell(pub_type.label),\n      \"CC-Lizenz\": $cell(best_oa_license),\n      \"Originalwährung\": $cell($originalwaehrung),\n      \"Rechnungsbetrag in Originalwährung\": $cell($originalbetrag),\n      \"Euro netto\": $cell($euroNetto),\n      \"Steuersatz\": $cell($steuersatz),\n      \"Euro brutto\": $cell($euroBrutto),\n      \"Kostensplittung\": \"\",\n      \"Zuschussbetrag DFG\": \"\",\n      \"Gebührenart\": $cell($gebuehrenartValue),\n      \"Zuordnung zu Mitgliedschaft\": $cell($mitgliedschaft),\n      \"Zuordnung zu Transformationsvertrag\": $cell(contract.label),\n      \"Rechnungsjahr / Lizenzjahr\": $cell($rechnungsjahr),\n      \"Publikationsjahr\": $year($firstDate(pub_date, pub_date_print)),\n      \"Projektnummer/Projekt ID DFG\": $cell(grant_number),\n      \"DFG-Wissenschaftsbereich\": \"\"\n    }\n  };\n  $invoiceRow := function($invoice) {(\n    $item := $invoice.cost_items[0];\n    $net := $num($item.euro_value);\n    $vat := $num($item.vat);\n    $vatRate := $net != 0 ? $vat / $net : \"\";\n    $row($item.label, $item.orig_currency, $item.orig_value, $item.euro_value, $vatRate, $net + $vat, $item.cost_type.label, \"\", $year($invoice.date))\n  )};\n  $hasInvoices := $type(invoices) = \"array\" and $count(invoices) > 0;\n  $invoiceRows := $map(invoices[$count(cost_items) > 0], function($invoice) { $invoiceRow($invoice) });\n  $hasInvoices ? ($exists($invoiceRows) ? $invoiceRows : []) : (contract ? [$row(\"\", \"\", \"\", 0, 0, 0, $gebuehrenart(oa_category.label), \"\", contract_year)] : [])\n)"
+}

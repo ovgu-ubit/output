@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
 import {  SearchFilter  } from '@output/interfaces';
@@ -161,7 +161,7 @@ export class JSONataExportService extends AbstractExportService {
             await this.workflowReportService.write(this.workflowReport.id, {
                 timestamp: new Date(),
                 level: WorkflowReportItemLevel.ERROR,
-                message: `Error while exporting: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`
+                message: `Error while exporting: ${this.formatExportError(error)}`
             });
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Error while exporting',
@@ -174,6 +174,55 @@ export class JSONataExportService extends AbstractExportService {
             this.progress = 0;
             throw error;
         }
+    }
+
+    private formatExportError(error: unknown): string {
+        if (error instanceof HttpException) {
+            const response = this.asRecord(error.getResponse());
+            const message = typeof response?.message === 'string' ? response.message : error.message;
+            const details = Array.isArray(response?.details)
+                ? response.details.map((detail) => this.formatErrorDetail(detail)).filter((detail): detail is string => !!detail)
+                : [];
+            return [message, ...details].filter(Boolean).join('\n');
+        }
+
+        const stack = this.getErrorStack(error);
+        return stack ?? this.getErrorMessage(error);
+    }
+
+    private formatErrorDetail(detail: unknown): string | null {
+        const record = this.asRecord(detail);
+        if (!record || typeof record.message !== 'string') return null;
+
+        const path = typeof record.path === 'string' ? record.path : '-';
+        const code = typeof record.code === 'string' ? record.code : 'unknown';
+        const context = this.formatErrorContext(record.context);
+        return `${path}:${code} - ${record.message}${context ? ` (${context})` : ''}`;
+    }
+
+    private formatErrorContext(context: unknown): string {
+        if (!context || typeof context !== 'object' || Array.isArray(context)) return '';
+        return Object.entries(context)
+            .map(([key, value]) => `${key}=${String(value)}`)
+            .join(', ');
+    }
+
+    private asRecord(value: unknown): Record<string, unknown> | null {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+        return value as Record<string, unknown>;
+    }
+
+    private getErrorMessage(error: unknown): string {
+        if (error instanceof Error) return error.message;
+        const record = this.asRecord(error);
+        if (typeof record?.message === 'string') return record.message;
+        return String(error);
+    }
+
+    private getErrorStack(error: unknown): string | undefined {
+        if (error instanceof Error) return error.stack;
+        const record = this.asRecord(error);
+        return typeof record?.stack === 'string' ? record.stack : undefined;
     }
 
     private resolveFormat(): ExportFormat {
@@ -191,17 +240,58 @@ export class JSONataExportService extends AbstractExportService {
     private async transformPublications(
         publications: Publication[]
     ): Promise<unknown[]> {
-        const expression = jsonata(this.exportDefinition!.mapping!);
+        let expression: jsonata.Expression;
+        try {
+            expression = jsonata(this.exportDefinition!.mapping!);
+        } catch (error) {
+            throw this.createMappingHttpException(error);
+        }
         const items: unknown[] = [];
 
         for (const publication of publications) {
             const context = this.buildItemContext(publication);
-            const item = await expression.evaluate(context);
-            if (item === undefined || item === null) continue;
-            items.push(item);
+            let item: unknown;
+            try {
+                item = await expression.evaluate(context);
+            } catch (error) {
+                throw this.createMappingHttpException(error, publication);
+            }
+            this.appendTransformedItem(items, item);
         }
 
         return items;
+    }
+
+    private createMappingHttpException(error: unknown, publication?: Publication) {
+        const message = this.getErrorMessage(error);
+        const errorRecord = this.asRecord(error);
+        return createInvalidRequestHttpException('Export mapping failed.', [
+            {
+                path: 'mapping',
+                code: 'jsonata',
+                message,
+                context: {
+                    ...(hasProvidedEntityId(publication?.id) ? { publicationId: publication.id } : {}),
+                    ...(publication?.doi ? { doi: publication.doi } : {}),
+                    ...(typeof errorRecord?.code === 'string' ? { jsonataCode: errorRecord.code } : {}),
+                    ...(typeof errorRecord?.token === 'string' ? { token: errorRecord.token } : {}),
+                    ...(typeof errorRecord?.position === 'number' ? { position: errorRecord.position } : {}),
+                }
+            }
+        ]);
+    }
+
+    private appendTransformedItem(items: unknown[], item: unknown): void {
+        if (item === undefined || item === null) return;
+        if (Array.isArray(item) && item.every((entry) => this.isTabularRow(entry))) {
+            items.push(...item);
+            return;
+        }
+        items.push(item);
+    }
+
+    private isTabularRow(value: unknown): value is Record<string, unknown> {
+        return !!value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date);
     }
 
     private buildItemContext(
