@@ -331,6 +331,36 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     return res;
   }
 
+  resetView() {
+    this.viewConfig = {
+      sortState: [],
+      filterColumn: new Map<string, string>(),
+      filterValue: '',
+      page: 0,
+      pageSize: 10
+    };
+
+    this.tableData.sort_state = [];
+    this.tableData.filterValues = new Map<string, string>();
+    this.tableData.columnFilter = false;
+
+    this.searchControl.setValue('', { emitEvent: false });
+    Object.values(this.filterControls).forEach(control => {
+      control.setValue('', { emitEvent: false });
+    });
+    this.dataSource.filter = '';
+    this.dataSource2.filter = '';
+
+    if (this.paginator) {
+      this.paginator.pageIndex = 0;
+      this.paginator.pageSize = 10;
+    }
+    if (this.paginator2) {
+      this.paginator2.pageIndex = 0;
+      this.paginator2.pageSize = 10;
+    }
+  }
+
   setViewConfig(viewConfig: ViewConfig) {
     this.paginator.pageIndex = viewConfig.page !== null && viewConfig.page !== undefined ? viewConfig.page : this.paginator.pageIndex;
     this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize;
