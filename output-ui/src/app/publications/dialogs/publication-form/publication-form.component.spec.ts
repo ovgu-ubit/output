@@ -19,6 +19,7 @@ import { PublicationTypeService } from 'src/app/services/entities/publication-ty
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { TableModule } from 'src/app/table/table.module';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -71,6 +72,7 @@ describe('PublicationFormComponent', () => {
         MatSnackBarModule,
         MatTooltipModule,
         SharedModule,
+        TableModule,
         PublicationChangeLogComponent
       ],
       declarations: [ PublicationFormComponent ],

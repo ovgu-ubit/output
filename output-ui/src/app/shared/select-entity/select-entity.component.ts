@@ -128,7 +128,7 @@ export class SelectEntityComponent<T extends Entity> implements OnInit, OnChange
     this.form.get('input').disable();
 
     if (!this.ents.find(e => this.getValue(e) === event.value) && this.formComponent) {
-      const dialogData = new ConfirmDialogModel('Neuer ' + this.name, `öchten Sie den ${this.name} "${event.value}" anlegen?`);
+      const dialogData = new ConfirmDialogModel('Neue(r) ' + this.name, `Möchten Sie den/die ${this.name} "${event.value}" anlegen?`);
 
       this.dialog.open(ConfirmDialogComponent, {
         maxWidth: '400px',

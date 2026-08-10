@@ -1,4 +1,4 @@
-import { UntypedFormBuilder } from '@angular/forms';
+import { FormControl, UntypedFormBuilder } from '@angular/forms';
 import { of } from 'rxjs';
 import { TableComponent } from './table.component';
 import { TableDataService } from '../services/table-data.service';
@@ -20,6 +20,7 @@ describe('TableComponent', () => {
       filterValues: new Map(),
       searchControl: { valueChanges: of(''), value: '', setValue: jasmine.createSpy('setValue') },
       filterControls: {},
+      columnFilter: false,
       dataSource: { filter: '', data: [], _updateChangeSubscription: jasmine.createSpy('_updateChangeSubscription') },
       dataSource2: { filter: '', data: [] },
       loading: false,
@@ -81,5 +82,23 @@ describe('TableComponent', () => {
     });
 
     expect(tableDataServiceMock.setHeaders).toHaveBeenCalledWith(component.headers);
+  });
+
+  it('resets column filters and their visible controls', () => {
+    const { component, tableDataServiceMock } = createComponent();
+    const titleFilter = new FormControl('angular');
+    tableDataServiceMock.filterControls = { title: titleFilter };
+    tableDataServiceMock.filterValues = new Map([['title', 'angular']]);
+    tableDataServiceMock.columnFilter = true;
+    tableDataServiceMock.dataSource.filter = JSON.stringify({ title: 'angular' });
+    tableDataServiceMock.dataSource2.filter = JSON.stringify({ title: 'angular' });
+
+    component.resetView();
+
+    expect(titleFilter.value).toBe('');
+    expect(tableDataServiceMock.filterValues.size).toBe(0);
+    expect(tableDataServiceMock.columnFilter).toBeFalse();
+    expect(tableDataServiceMock.dataSource.filter).toBe('');
+    expect(tableDataServiceMock.dataSource2.filter).toBe('');
   });
 });

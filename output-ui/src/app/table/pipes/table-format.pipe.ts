@@ -40,7 +40,13 @@ export class TableGndPipe implements PipeTransform {
 export class TableEuroPipe implements PipeTransform {
   transform(value: any): string {
     if (value === null || value === undefined) return '';
-    return Number(value).toLocaleString('de-DE') + ' €';
+    const numericValue = Number(value);
+    const fractionDigits = Number.isInteger(numericValue) ? 0 : 2;
+
+    return numericValue.toLocaleString('de-DE', {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits
+    }) + ' €';
   }
 }
 

@@ -82,7 +82,7 @@
 
                     <ng-container matColumnDef="euro_value">
                         <th mat-header-cell *matHeaderCellDef> Nettobetrag in EUR </th>
-                        <td mat-cell *matCellDef="let element"> {{element.euro_value}} </td>
+                        <td mat-cell *matCellDef="let element"> {{element.euro_value | tableEuro}} </td>
                     </ng-container>
 
                     <ng-container matColumnDef="vat">
