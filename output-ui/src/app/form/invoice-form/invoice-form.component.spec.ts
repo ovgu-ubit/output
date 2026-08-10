@@ -13,6 +13,7 @@ import { CostCenterService } from 'src/app/services/entities/cost-center.service
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { TableModule } from 'src/app/table/table.module';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
 
@@ -51,7 +52,8 @@ describe('InvoiceFormComponent', () => {
         ReactiveFormsModule,
         MatDialogModule,
         MatSnackBarModule,
-        SharedModule
+        SharedModule,
+        TableModule
       ],
       declarations: [ InvoiceFormComponent ],
       providers: [
