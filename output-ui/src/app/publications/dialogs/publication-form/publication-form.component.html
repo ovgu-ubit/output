@@ -437,7 +437,7 @@
 
                             <ng-container matColumnDef="costs">
                                 <th mat-header-cell *matHeaderCellDef> Kosten </th>
-                                <td mat-cell *matCellDef="let element"> {{getCosts(element)}} EUR </td>
+                                <td mat-cell *matCellDef="let element"> {{getCosts(element) | tableEuro}} </td>
                             </ng-container>
 
                             <ng-container matColumnDef="edit">

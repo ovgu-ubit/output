@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { SharedModule } from '../shared/shared.module';
+import { TableModule } from '../table/table.module';
 import { AuthorFormComponent } from './author-form/author-form.component';
 import { AuthorshipFormComponent } from './authorship-form/authorship-form.component';
 import { ContractComponentFormComponent } from './contract-component-form/contract-component-form.component';
@@ -41,7 +42,8 @@ import { AbstractFormComponent } from './abstract-form/abstract-form.component';
     StatusFormComponent,
   ],
   imports: [
-    SharedModule
+    SharedModule,
+    TableModule
   ],
 })
 export class FormModule {}
