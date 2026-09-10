@@ -105,6 +105,22 @@ describe('ImportController', () => {
     expect(csvService.import).toHaveBeenCalledWith(false, 'alice', false);
   });
 
+  it('rejects unknown CSV dry-run values instead of enabling writes', async () => {
+    configService.get.mockResolvedValue('false');
+    const file = uploadFile('publications.csv');
+
+    await expectApiError(
+      controller.importCSV({ user: { username: 'alice' } }, 'false', file, {} as CSVMapping, 'on'),
+      {
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ApiErrorCode.INVALID_REQUEST,
+        message: 'valid boolean value required',
+      },
+    );
+
+    expect(csvService.import).not.toHaveBeenCalled();
+  });
+
   it('applies the demo upload limit to XLSX uploads', async () => {
     configService.get.mockResolvedValue(true);
     const file = uploadFile('publications.xlsx', DEMO_UPLOAD_MAX_BYTES + 1);
@@ -131,5 +147,21 @@ describe('ImportController', () => {
     ).resolves.toEqual({ started: true });
 
     expect(excelService.import).toHaveBeenCalledWith(false, 'alice', false);
+  });
+
+  it('rejects unknown XLSX dry-run values instead of enabling writes', async () => {
+    configService.get.mockResolvedValue('false');
+    const file = uploadFile('publications.xlsx');
+
+    await expectApiError(
+      controller.importExcel({ user: { username: 'alice' } }, 'false', file, {} as CSVMapping, '1'),
+      {
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ApiErrorCode.INVALID_REQUEST,
+        message: 'valid boolean value required',
+      },
+    );
+
+    expect(excelService.import).not.toHaveBeenCalled();
   });
 });

@@ -272,7 +272,10 @@ export class ImportController {
     }
   }
 
-  private parseBoolean(value: boolean | string | undefined): boolean {
-    return value === true || value === 'true';
+  private parseBoolean(value: boolean | string | undefined): boolean | undefined {
+    if (value === undefined) return undefined;
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    throw createInvalidRequestHttpException('valid boolean value required');
   }
 }
