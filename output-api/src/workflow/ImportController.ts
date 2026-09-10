@@ -113,11 +113,11 @@ export class ImportController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  async importCSV(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
+  async importCSV(@Req() request, @Body('update') update: boolean | string, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean | string) {
     if (!file || !file.originalname.endsWith('.csv')) throw createInvalidRequestHttpException('valid csv file required');
     await this.assertDemoUploadAllowed(file, ['.csv']);
     this.csvService.setUp(file, format);
-    return this.csvService.import(update, request["user"]["username"], dryRun);
+    return this.csvService.import(this.parseBoolean(update), request["user"]["username"], this.parseBoolean(dryRun));
   }
   @Get("csv")
   @UseGuards(AccessGuard)
@@ -194,11 +194,11 @@ export class ImportController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  async importExcel(@Req() request, @Body('update') update: boolean, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean) {
+  async importExcel(@Req() request, @Body('update') update: boolean | string, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean | string) {
     if (!file || !file.originalname.endsWith('.xlsx')) throw createInvalidRequestHttpException('valid excel file required');
     await this.assertDemoUploadAllowed(file, ['.xlsx']);
     this.excelService.setUp(file, format);
-    return this.excelService.import(update, request["user"]["username"], dryRun);
+    return this.excelService.import(this.parseBoolean(update), request["user"]["username"], this.parseBoolean(dryRun));
   }
   @Get("xls")
   @UseGuards(AccessGuard)
@@ -232,12 +232,12 @@ export class ImportController {
       }
     },
   })
-  async importStart(@Req() request, @Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean, @Body('dry_run') dryRun: boolean) {
+  async importStart(@Req() request, @Param('path') path: string, @Body('reporting_year') reporting_year: string, @Body('update') update: boolean | string, @Body('dry_run') dryRun: boolean | string) {
     if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw createInvalidRequestHttpException('reporting year is mandatory');
     const so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw createNotFoundHttpException('Import service not found.');
     await this.importServices[so].setReportingYear(reporting_year);
-    return this.importServices[so].import(update, request["user"]["username"], dryRun);
+    return this.importServices[so].import(this.parseBoolean(update), request["user"]["username"], this.parseBoolean(dryRun));
   }
 
   @Get(':path')
@@ -270,5 +270,9 @@ export class ImportController {
     if (isDemoModeValue(await this.configService.get('DEMO_MODE'))) {
       assertDemoUploadAllowed(file, allowedExtensions);
     }
+  }
+
+  private parseBoolean(value: boolean | string | undefined): boolean {
+    return value === true || value === 'true';
   }
 }

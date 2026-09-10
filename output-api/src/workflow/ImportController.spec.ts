@@ -94,6 +94,17 @@ describe('ImportController', () => {
     expect(csvService.import).toHaveBeenCalledWith(true, 'alice', false);
   });
 
+  it('parses CSV multipart boolean fields before starting the import', async () => {
+    configService.get.mockResolvedValue('false');
+    const file = uploadFile('publications.csv');
+
+    await expect(
+      controller.importCSV({ user: { username: 'alice' } }, 'false', file, {} as CSVMapping, 'false'),
+    ).resolves.toEqual({ started: true });
+
+    expect(csvService.import).toHaveBeenCalledWith(false, 'alice', false);
+  });
+
   it('applies the demo upload limit to XLSX uploads', async () => {
     configService.get.mockResolvedValue(true);
     const file = uploadFile('publications.xlsx', DEMO_UPLOAD_MAX_BYTES + 1);
@@ -109,5 +120,16 @@ describe('ImportController', () => {
 
     expect(excelService.setUp).not.toHaveBeenCalled();
     expect(excelService.import).not.toHaveBeenCalled();
+  });
+
+  it('parses XLSX multipart boolean fields before starting the import', async () => {
+    configService.get.mockResolvedValue('false');
+    const file = uploadFile('publications.xlsx');
+
+    await expect(
+      controller.importExcel({ user: { username: 'alice' } }, 'false', file, {} as CSVMapping, 'false'),
+    ).resolves.toEqual({ started: true });
+
+    expect(excelService.import).toHaveBeenCalledWith(false, 'alice', false);
   });
 });
