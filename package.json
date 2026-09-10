@@ -30,6 +30,8 @@
     "@angular/cli": "^20.3.33",
     "@angular/compiler-cli": "^20.3.27",
     "@angular/localize": "^20.3.27",
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3",
     "@eslint/js": "^10.0.1",
     "@nestjs/testing": "11.2.3",
     "@types/cookie-parser": "^1.4.10",
