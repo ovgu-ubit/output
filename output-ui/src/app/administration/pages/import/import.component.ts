@@ -74,7 +74,7 @@ export class ImportComponent implements OnInit {
       this.subjects[im.label] = new Subject<any>();
       this.forms[im.label] = this.formBuilder.group({
         reporting_year: ['', Validators.required],
-        update: [''],
+        update: [false],
         dry_run: [false],
       });
     }
