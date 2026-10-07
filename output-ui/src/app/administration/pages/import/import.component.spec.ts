@@ -18,8 +18,12 @@ describe('ImportComponent', () => {
 
   const mockImportService = {
     isRunning: jasmine.createSpy('isRunning').and.returnValue(of([])),
-    getImports: jasmine.createSpy('getImports').and.returnValue(of([])),
-    getStatus: jasmine.createSpy('getStatus').and.returnValue(of([]))
+    getImports: jasmine.createSpy('getImports').and.returnValue(of([
+      { path: 'crossref', label: 'Crossref' }
+    ])),
+    getStatus: jasmine.createSpy('getStatus').and.returnValue(of([])),
+    start: jasmine.createSpy('start').and.returnValue(of({})),
+    getProgress: jasmine.createSpy('getProgress').and.returnValue(of({ progress: 0, status: '' }))
   };
 
   const mockReportService = {
@@ -53,5 +57,14 @@ describe('ImportComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('starts legacy imports with a boolean update value', async () => {
+    await fixture.whenStable();
+    component.forms['Crossref'].controls['reporting_year'].setValue(2026);
+
+    component.startImport({ path: 'crossref', label: 'Crossref' });
+
+    expect(mockImportService.start).toHaveBeenCalledWith('crossref', false, 2026, false);
   });
 });
