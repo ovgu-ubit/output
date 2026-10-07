@@ -84,7 +84,8 @@ export class CrossrefImportService extends ApiImportOffsetService {
         this.params = [
             { key: 'query.affiliation', value: this.searchText.slice(0, this.searchText.length - 1) },
             { key: 'query.bibliographic', value: year },
-            { key: 'sort', value: 'indexed' }]//sorting avoids redundant publications in pages
+            { key: 'sort', value: 'indexed' },
+            { key: 'mailto', value: await this.configService.get('SECRET_CROSSREF') }]//sorting avoids redundant publications in pages
     }
     
     protected importTest(element: any): boolean {

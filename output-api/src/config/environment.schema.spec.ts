@@ -21,6 +21,17 @@ describe('EnvSchemas', () => {
     expect(result.success).toBe(true);
   });
 
+    it('exposes the Crossref and OpenAlex polite-pool secrets', () => {
+        const result = EnvSchemas.parse({
+            ...validEnv,
+            SECRET_CROSSREF: 'contact@example.org',
+            SECRET_OPENALEX: 'openalex-secret',
+        });
+
+        expect(result.SECRET_CROSSREF).toBe('contact@example.org');
+        expect(result.SECRET_OPENALEX).toBe('openalex-secret');
+    });
+
   it.each([
     ['true', true],
     ['1', true],
