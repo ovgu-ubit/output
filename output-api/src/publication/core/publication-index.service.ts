@@ -58,6 +58,7 @@ export class PublicationIndexService {
     ) { }
 
     public async getAllForReportingYear(yop: number | null | undefined, reader = false) {
+        const canRead = reader === true;
         let reportingYear = yop;
         if (!reportingYear) {
             reportingYear = Number(await this.configService.get('reporting_year'));
@@ -70,7 +71,7 @@ export class PublicationIndexService {
             where: [{ pub_date: Between(beginDate, endDate) }],
             relations: {
                 oa_category: true,
-                invoices: reader,
+                invoices: canRead,
                 authorPublications: {
                     author: true,
                     institute: true,
@@ -83,7 +84,7 @@ export class PublicationIndexService {
             }
         });
 
-        return this.filterAuthorInternalRemarks(publications, reader);
+        return this.filterAuthorInternalRemarks(publications, canRead);
     }
 
     private filterAuthorInternalRemarks(publications: Publication[], reader: boolean): Publication[] {
