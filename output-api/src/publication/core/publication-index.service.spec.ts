@@ -78,6 +78,18 @@ describe('PublicationIndexService', () => {
         await expect(service.getAllForReportingYear(2026, false)).rejects.toBe(databaseError);
     });
 
+    it('does not pass non-boolean permission values to TypeORM relations', async () => {
+        const publication = publicationWithInternalRemark();
+        pubRepository.find.mockResolvedValue([publication]);
+
+        await service.getAllForReportingYear(2026, { rolename: 'reader' } as any);
+
+        expect(pubRepository.find).toHaveBeenCalledWith(expect.objectContaining({
+            relations: expect.objectContaining({ invoices: false }),
+        }));
+        expect(publication.authorPublications[0].author.internal_remark).toBeUndefined();
+    });
+
     describe('indexQuery', () => {
         const createQueryBuilderMock = () => ({
             leftJoin: jest.fn().mockReturnThis(),

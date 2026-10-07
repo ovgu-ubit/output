@@ -70,9 +70,10 @@ describe("TokenAuthorizationService", () => {
         expect(jwtService.verify).toHaveBeenCalledWith("token", { publicKey: "public-key", algorithms: ["RS256"] });
         expect(request.user).toMatchObject({
             username: "user-1",
-            read: expect.anything(),
-            write: undefined,
-            admin: undefined,
+            read: true,
+            write_publication: false,
+            write: false,
+            admin: false,
         });
     });
 
@@ -94,7 +95,12 @@ describe("TokenAuthorizationService", () => {
         const result = await service.verify(context);
 
         expect(result).toBe(true);
-        expect(request.user.write).toBeTruthy();
+        expect(request.user).toMatchObject({
+            read: true,
+            write_publication: true,
+            write: true,
+            admin: false,
+        });
     });
 
     it("denies when token lacks required permission", async () => {
@@ -160,6 +166,11 @@ describe("TokenAuthorizationService", () => {
         expect(result).toBe(true);
         expect(jwtService.verify).toHaveBeenCalledWith("token", { publicKey: "demo-public-key", algorithms: ["RS256"] });
         expect(httpService.get).not.toHaveBeenCalled();
-        expect(request.user.admin).toBeTruthy();
+        expect(request.user).toMatchObject({
+            read: true,
+            write_publication: true,
+            write: true,
+            admin: true,
+        });
     });
 });
