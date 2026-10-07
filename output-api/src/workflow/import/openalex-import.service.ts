@@ -80,7 +80,8 @@ export class OpenAlexImportService extends ApiImportOffsetService {
         let tmp = `publication_year:${year}`;
         tmp += `,institutions.id:${this.id}`
         this.params = [
-            { key: 'filter', value: tmp }]
+            { key: 'filter', value: tmp },
+            { key: 'api_key', value: await this.configService.get('SECRET_OPENALEX') }]
     }
     protected getNumber(response: any): number {
         return response.data.meta['count'];

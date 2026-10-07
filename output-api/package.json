@@ -1,6 +1,6 @@
 {
   "name": "output",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Publication management for universities.",
   "scripts": {
     "prebuild": "rimraf dist",

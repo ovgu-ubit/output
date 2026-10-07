@@ -20,6 +20,7 @@ import { AbstractImportService } from './abstract-import';
 import { AppConfigService } from '../../config/app-config.service';
 import { WorkflowReportService } from '../workflow-report.service';
 import { createWorkflowRunningHttpException } from '../../common/api-error';
+import { formatHttpErrorForReport } from './http-error-report';
 
 export function EnrichService(meta: {path: string}): ClassDecorator {
   return (target) => Reflect.defineMetadata("enrich_service", meta, target);
@@ -94,7 +95,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
             } else if (error.response?.status === 422) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Unprocessable Entity: ' + doi })
             }
-            else this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${error}` })
+            else this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: formatHttpErrorForReport(error) })
             this.errors++;
             return of(null);
         }));

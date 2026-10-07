@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import {  ApiErrorCode, ImportStrategy  } from '@output/interfaces';
 import {  UpdateOptions  } from '@output/interfaces';
 import { JSONataImportService } from './jsonata-import';
@@ -491,6 +491,36 @@ describe('JSONataImportService workflow report status', () => {
         expect(workflowReportService.write).toHaveBeenCalledWith(11, expect.objectContaining({
             level: 'error',
             message: expect.stringContaining('JSONata expression for strategy.get_items failed'),
+        }));
+    });
+
+    it('writes count request errors and rate-limit headers into the workflow report', async () => {
+        const error = {
+            message: 'Request failed with status code 429',
+            response: {
+                status: 429,
+                statusText: 'Too Many Requests',
+                headers: {
+                    'x-rate-limit-limit': '100',
+                    'x-rate-limit-interval': '1s',
+                    'x-rate-limit-type': 'global',
+                    'x-concurrency-limit': '5',
+                    'retry-after': '30',
+                    authorization: 'must-not-be-logged',
+                },
+            },
+        };
+        jest.spyOn(service as any, 'retrieveCountRequest').mockReturnValue(throwError(() => error));
+
+        await service.import(false, 'tester', false);
+
+        expect(workflowReportService.write).toHaveBeenCalledWith(11, expect.objectContaining({
+            level: 'error',
+            message: expect.stringMatching(/HTTP request failed with status 429 Too Many Requests.*x-rate-limit-limit: 100.*x-rate-limit-interval: 1s.*x-rate-limit-type: global.*x-concurrency-limit: 5.*retry-after: 30/),
+        }));
+        expect(workflowReportService.write.mock.calls.flat().join(' ')).not.toContain('must-not-be-logged');
+        expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
+            status: 'Error while importing',
         }));
     });
 });

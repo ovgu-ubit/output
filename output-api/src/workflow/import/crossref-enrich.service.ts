@@ -73,6 +73,7 @@ export class CrossrefEnrichService extends ApiEnrichDOIService {
             this.searchText += tag + "+"
         })
         this.affiliation_tags = await this.configService.get('affiliation_tags')
+        this.param_string = 'mailto=' + await this.configService.get('SECRET_CROSSREF');
     }
 
     protected importTest(element: any): boolean {

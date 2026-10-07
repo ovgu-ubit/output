@@ -27,6 +27,7 @@ import { RoleService } from '../../publication/relations/role.service';
 import { Publisher } from '../../publisher/Publisher.entity';
 import { PublisherService } from '../../publisher/publisher.service';
 import { createInternalErrorHttpException, createInvalidRequestHttpException } from '../../common/api-error';
+import { formatHttpErrorForReport, isHttpRequestError } from './http-error-report';
 import { hasProvidedEntityId } from '../../common/entity-id';
 import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
@@ -389,7 +390,17 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     private getReportErrorMessage(error: unknown): string {
-        return this.getErrorMessage(error);
+        return isHttpRequestError(error) ? formatHttpErrorForReport(error) : this.getErrorMessage(error);
+    }
+
+    private async writeRunError(error: unknown, context?: string): Promise<void> {
+        if (!hasProvidedEntityId(this.workflowReport?.id)) return;
+        const message = this.getReportErrorMessage(error);
+        await this.workflowReportService.write(this.workflowReport.id, {
+            level: WorkflowReportItemLevel.ERROR,
+            timestamp: new Date(),
+            message: context ? `${context}: ${message}` : message,
+        });
     }
 
     protected parseResponseData(response: AxiosResponse, format = this.importDefinition.strategy.format) {
@@ -900,7 +911,17 @@ export class JSONataImportService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        const ids = await this.collectLookupIds();
+        let ids: (string | number)[];
+        try {
+            ids = await this.collectLookupIds();
+        } catch (err) {
+            await this.writeRunError(err, 'Error retrieving lookup ids');
+            await this.finishWorkflowRun('Error while importing', 'Error while importing on ' + new Date(), {
+                count_import: 0,
+                count_update: 0
+            });
+            return;
+        }
         this.numberOfPublications = ids.length;
         await this.workflowReportService.write(this.workflowReport.id, {
             level: WorkflowReportItemLevel.INFO,
@@ -950,6 +971,7 @@ export class JSONataImportService extends AbstractImportService {
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
+                await this.writeRunError(err, 'Error retrieving import data');
                 await this.finishWorkflowRun('Error while importing', 'Error while importing on ' + new Date(), {
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
@@ -970,36 +992,45 @@ export class JSONataImportService extends AbstractImportService {
         this.numberOfPublications = 0;
 
         const obs$ = [];
-        await firstValueFrom(this.retrieveCountRequest().pipe(map(async resp => {
-            this.numberOfPublications = await this.getNumber(resp);
-            await this.workflowReportService.write(this.workflowReport.id, {
-                level: WorkflowReportItemLevel.INFO,
-                timestamp: new Date(),
-                message: `${this.numberOfPublications} elements found`
-            });
-            if (this.numberOfPublications <= 0) {
-                //finalize
-                await this.finishWorkflowRun('Nothing to import', 'Nothing to import on ' + new Date(), {
-                    count_import: 0,
-                    count_update: 0
+        try {
+            await firstValueFrom(this.retrieveCountRequest().pipe(map(async resp => {
+                this.numberOfPublications = await this.getNumber(resp);
+                await this.workflowReportService.write(this.workflowReport.id, {
+                    level: WorkflowReportItemLevel.INFO,
+                    timestamp: new Date(),
+                    message: `${this.numberOfPublications} elements found`
                 });
-            }
+                if (this.numberOfPublications <= 0) {
+                    //finalize
+                    await this.finishWorkflowRun('Nothing to import', 'Nothing to import on ' + new Date(), {
+                        count_import: 0,
+                        count_update: 0
+                    });
+                }
 
-            //collect observables
-            if (this.mode === 'offset') {
-                let offset = this.offset_start - this.max_res;
-                do {
-                    offset += this.max_res;
-                    obs$.push(this.request(offset));
-                } while (offset + this.max_res <= this.numberOfPublications);
-            } else if (this.mode === 'page') {
-                let page = this.offset_start - 1;
-                do {
-                    obs$.push(this.request(undefined, ++page));
-                } while (page * this.max_res < this.numberOfPublications);
-            }
-            return null;
-        })));
+                //collect observables
+                if (this.mode === 'offset') {
+                    let offset = this.offset_start - this.max_res;
+                    do {
+                        offset += this.max_res;
+                        obs$.push(this.request(offset));
+                    } while (offset + this.max_res <= this.numberOfPublications);
+                } else if (this.mode === 'page') {
+                    let page = this.offset_start - 1;
+                    do {
+                        obs$.push(this.request(undefined, ++page));
+                    } while (page * this.max_res < this.numberOfPublications);
+                }
+                return null;
+            })));
+        } catch (err) {
+            await this.writeRunError(err, 'Error retrieving import count');
+            await this.finishWorkflowRun('Error while importing', 'Error while importing on ' + new Date(), {
+                count_import: 0,
+                count_update: 0
+            });
+            return;
+        }
         concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: AxiosResponse) => {
                 if (!data) return;
@@ -1032,6 +1063,7 @@ export class JSONataImportService extends AbstractImportService {
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
+                await this.writeRunError(err, 'Error retrieving import data');
                 await this.finishWorkflowRun('Error while importing', 'Error while importing on ' + new Date(), {
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
@@ -1120,6 +1152,7 @@ export class JSONataImportService extends AbstractImportService {
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
+                await this.writeRunError(err, 'Error retrieving enrich data');
                 await this.finishWorkflowRun('Error while enriching', 'Error while enriching on ' + new Date(), {
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length
