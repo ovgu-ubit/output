@@ -25,6 +25,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { EnrichService } from './api-enrich-doi.service';
 import { WorkflowReportService } from '../workflow-report.service';
 import { createWorkflowRunningHttpException } from '../../common/api-error';
+import { formatHttpErrorForReport } from './http-error-report';
 
 @EnrichService({path: 'doaj'})
 @Injectable()
@@ -183,7 +184,7 @@ export class DOAJEnrichService extends AbstractImportService {
             } else if (error.response?.status === 422) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Unprocessable Entity: ' + issn })
             }
-            else this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: `Error while processing data chunk: ${error}` })
+            else this.reportService.write(this.report, { type: 'error', timestamp: new Date(), origin: 'import', text: formatHttpErrorForReport(error) })
             this.errors++;
             return of(null);
         }));
