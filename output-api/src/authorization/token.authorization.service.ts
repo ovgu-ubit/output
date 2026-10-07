@@ -73,10 +73,16 @@ export class TokenAuthorizationService extends AuthorizationService {
         // enrich the request object with user info for further processing
         req['user'] = payload;
         req['user']['username'] = payload.id
-        req['user']['read'] = payload.permissions.find(e => (e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'reader' || e.rolename === 'admin' || e.rolename === 'publication_writer')) || (e.appname === null && e.rolename === 'admin'))
-        req['user']['write_publication'] = payload.permissions.find(e => ((e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'admin' || e.rolename === 'publication_writer')) || (e.appname === null && e.rolename === 'admin')))
-        req['user']['write'] = payload.permissions.find(e => ((e.appname === 'output' && (e.rolename === 'writer' || e.rolename === 'admin')) || (e.appname === null && e.rolename === 'admin')))
-        req['user']['admin'] = payload.permissions.find(e => ((e.appname === 'output' && e.rolename === 'admin') || (e.appname === null && e.rolename === 'admin')))
+        const permissions = payload.permissions as { appname: string | null; rolename: string }[];
+        const hasRole = (...roles: string[]) => permissions.some(permission =>
+            (permission.appname === 'output' && roles.includes(permission.rolename))
+            || (permission.appname === null && permission.rolename === 'admin')
+        );
+
+        req['user']['read'] = hasRole('writer', 'reader', 'admin', 'publication_writer');
+        req['user']['write_publication'] = hasRole('writer', 'admin', 'publication_writer');
+        req['user']['write'] = hasRole('writer', 'admin');
+        req['user']['admin'] = hasRole('admin');
     }
 
     private hasRequiredPermissions(permissions: { appname: string | null; rolename: string }[], requiredPermissions: PermissionDecoration[]) {

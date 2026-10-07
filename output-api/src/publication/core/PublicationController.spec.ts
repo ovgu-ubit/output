@@ -118,6 +118,15 @@ describe('PublicationController', () => {
         expect(publicationIndexService.getIndexEntries).toHaveBeenCalledWith(2026, undefined, true);
     });
 
+    it('normalizes reader permission objects for reporting-year lookups', async () => {
+        publicationIndexService.getAllForReportingYear.mockResolvedValue([]);
+
+        const permission = { appname: 'output', rolename: 'reader' };
+        await expect(controller.all(2027, { user: { read: permission } } as any)).resolves.toEqual([]);
+
+        expect(publicationIndexService.getAllForReportingYear).toHaveBeenCalledWith(2027, true);
+    });
+
     it('passes public access to filtered publication index lookups', async () => {
         publicationIndexService.filterIndex.mockResolvedValue([{ id: 1 }]);
         publicationFilterService.applyPaths.mockResolvedValue([{ id: 1 }]);

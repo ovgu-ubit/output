@@ -36,7 +36,7 @@ export class PublicationController {
         isArray: true
     })
     all(@Query('yop') yop: number, @Req() request: Request) {
-        return this.publicationIndexService.getAllForReportingYear(yop, request['user'] ? request['user']['read'] : false);
+        return this.publicationIndexService.getAllForReportingYear(yop, !!request?.['user']?.['read']);
     }
 
     @Get('one')
