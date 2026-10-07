@@ -71,6 +71,13 @@ describe('PublicationIndexService', () => {
         }));
     });
 
+    it('preserves database errors so the global exception filter can log their cause', async () => {
+        const databaseError = new Error('database query failed');
+        pubRepository.find.mockRejectedValue(databaseError);
+
+        await expect(service.getAllForReportingYear(2026, false)).rejects.toBe(databaseError);
+    });
+
     describe('indexQuery', () => {
         const createQueryBuilderMock = () => ({
             leftJoin: jest.fn().mockReturnThis(),
