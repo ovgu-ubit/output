@@ -17,7 +17,7 @@ import {
     Repository,
     SelectQueryBuilder
 } from 'typeorm';
-import { createInternalErrorHttpException, createInvalidRequestHttpException } from '../../common/api-error';
+import { createInvalidRequestHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
 import { Publication } from './Publication.entity';
@@ -81,9 +81,6 @@ export class PublicationIndexService {
                 contract: true,
                 funders: true,
             }
-        }).catch((error: unknown) => {
-            console.log(error);
-            throw createInternalErrorHttpException();
         });
 
         return this.filterAuthorInternalRemarks(publications, reader);
