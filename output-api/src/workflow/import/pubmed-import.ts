@@ -25,6 +25,7 @@ import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { WorkflowReportService } from '../workflow-report.service';
 import { createWorkflowRunningHttpException } from '../../common/api-error';
+import { formatHttpErrorForReport } from './http-error-report';
 
 @ImportService({ path: 'pubmed' })
 @Injectable()
@@ -201,7 +202,14 @@ export class PubMedImportService extends AbstractImportService {
             }, error: async err => {
                 console.log(err.message);
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
+                this.reportService.write(this.report, {
+                    type: 'error',
+                    timestamp: new Date(),
+                    origin: 'import',
+                    text: formatHttpErrorForReport(err)
+                });
                 this.progress = 0;
+                this.status_text = 'Error while importing on ' + new Date();
                 this.reportService.finish(this.report, {
                     status: 'Error while importing on ' + new Date(),
                     count_import: this.newPublications.length,

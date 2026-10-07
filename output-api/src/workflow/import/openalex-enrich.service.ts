@@ -41,6 +41,7 @@ export class OpenAlexEnrichService extends ApiEnrichDOIService {
 
     protected async init() {
         this.id = await this.configService.get('openalex_id')
+        this.param_string = 'api_key=' + await this.configService.get('SECRET_OPENALEX');
     }
 
     protected updateMapping: UpdateMapping = {

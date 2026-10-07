@@ -42,6 +42,8 @@ export const EnvSchemas = z
     DEMO_USER: z.string().optional(),
     DEMO_PW: z.string().optional(),
     DEMO_RESET_SQL_PATH: z.string().optional(),
+    SECRET_CROSSREF: z.string().optional(),
+    SECRET_OPENALEX: z.string().optional(),
     SECRET_UNPAYWALL: z.string().optional(),
     SECRET_OAM: z.string().optional(),
     SECRET_SCOPUS: z.string().optional()

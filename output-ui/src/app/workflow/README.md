@@ -47,7 +47,7 @@ Built-in placeholders:
 Configuration placeholders:
 
 - Any configuration key can be referenced as `[config_key]`.
-- This is used in templates for values like `[openalex_id]`, `[SECRET_SCOPUS]`, `[SECRET_UNPAYWALL]`.
+- This is used in templates for values like `[openalex_id]`, `[SECRET_CROSSREF]`, `[SECRET_OPENALEX]`, `[SECRET_SCOPUS]`, `[SECRET_UNPAYWALL]`.
 - If a placeholder has no value, validation fails with an error.
 
 ### A) Web-Abfrage per Suche und Offset (`URL_QUERY_OFFSET`)

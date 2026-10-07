@@ -321,8 +321,8 @@ export class WorkflowController {
         label: 'Crossref Import',
         strategy_type: ImportStrategy.URL_QUERY_OFFSET,
         strategy: {
-          url_count: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed&rows=0&offset=[offset]",
-          url_items: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed&rows=[max_res]&offset=[offset]",
+          url_count: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed&rows=0&offset=[offset]&mailto=[SECRET_CROSSREF]",
+          url_items: "https://api.crossref.org/works?query.affiliation=[search_tags]&query.bibliographic=[year]&sort=indexed&rows=[max_res]&offset=[offset]&mailto=[SECRET_CROSSREF]",
           request_mode: "offset",
           offset_count: 0,
           offset_start: 0,
