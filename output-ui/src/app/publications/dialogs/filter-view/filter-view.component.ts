@@ -278,9 +278,9 @@ export class FilterViewComponent implements OnInit {
   }
 
   private getVisibleFilterFields(): PublicationFilterFieldDefinition[] {
-    return PUBLICATION_FILTER_FIELD_DEFINITIONS.filter((field) => {
-      return !field.optionalField || this.optional_fields[field.optionalField] === true;
-    });
+    return PUBLICATION_FILTER_FIELD_DEFINITIONS
+      .filter((field) => !field.optionalField || this.optional_fields[field.optionalField] === true)
+      .sort((first, second) => first.label.localeCompare(second.label, 'de'));
   }
 
   private getCanonicalFilterKey(key: string): string {

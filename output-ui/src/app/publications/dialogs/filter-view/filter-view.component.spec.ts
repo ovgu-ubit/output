@@ -67,6 +67,12 @@ describe('FilterViewComponent', () => {
     }));
   });
 
+  it('should sort filter fields alphabetically by label', () => {
+    const labels = component.keys.map((field) => field.label);
+
+    expect(labels).toEqual([...labels].sort((first, second) => first.localeCompare(second, 'de')));
+  });
+
   it('should use the shared operator matrix for field types', () => {
     const availableOpsFor = (field: string) => {
       component.getFiltersControls()[0].get('field').setValue(field);
