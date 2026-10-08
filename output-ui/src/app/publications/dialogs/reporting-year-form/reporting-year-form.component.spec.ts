@@ -90,7 +90,7 @@ describe('ReportingYearFormComponent', () => {
   });
 
   it('should return a selected reporting year and allow it as the global default', () => {
-    component.reporting_year = 2025;
+    component.reporting_year = '2025' as any;
     component.checked = true;
 
     component.action();
@@ -100,5 +100,13 @@ describe('ReportingYearFormComponent', () => {
       reportingYear: 2025,
       allReportingYears: false,
     });
+  });
+
+  it('should convert reporting years returned by the backend to numbers', () => {
+    mockPubService.getReportingYears.and.returnValue(of([{ year: '2026' }, { year: null }]));
+
+    component.ngOnInit();
+
+    expect(component.reporting_years).toEqual([2026, null]);
   });
 });

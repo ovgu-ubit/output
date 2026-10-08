@@ -119,8 +119,14 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
       this.viewConfig = viewConfig ?? initialState.viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
-        let filter = this.queryToFilter(params);
-        if (filter) this.viewConfig = { ...this.viewConfig, filter }
+        const queryView = this.queryToFilter(params);
+        if (queryView) {
+          this.viewConfig = {
+            ...this.viewConfig,
+            filter: { filter: queryView.filter, paths: queryView.paths },
+            allReportingYears: queryView.allReportingYears,
+          };
+        }
 
         this.indexOptions = {
           soft: false,
@@ -307,19 +313,22 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     if (this.indexOptions.paths) for (let path of this.indexOptions.paths) {
       params.append('path', path);
     }
+    if (this.indexOptions.allReportingYears) params.set('allReportingYears', 'true');
     const query = params.toString();
     return query ? `?${query}` : '';
   }
 
-  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[] } {
+  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[], allReportingYears: boolean } {
     let res = {
       filter: {
         expressions: []
-      }, paths: []
+      },
+      paths: [],
+      allReportingYears: paramMap.get('allReportingYears') === 'true',
     };
     let filters = paramMap.getAll('filter');
     res.paths = paramMap.getAll('path');
-    let flag = res.paths.length > 0;
+    let flag = res.paths.length > 0 || res.allReportingYears;
     for (let e of filters) {
       let expr = this.parseFilterQueryExpression(e);
       if (!expr) continue;

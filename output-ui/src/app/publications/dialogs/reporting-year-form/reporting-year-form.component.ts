@@ -36,7 +36,7 @@ export class ReportingYearFormComponent implements OnInit {
       ? this.allReportingYearsValue
       : this.dialogData.reporting_year;
     this.pubService.getReportingYears().subscribe({
-      next: data => this.reporting_years = data.map(e => e['year'])
+      next: data => this.reporting_years = data.map(({ year }) => year === null ? null : Number(year))
     })
   }
 
@@ -47,11 +47,14 @@ export class ReportingYearFormComponent implements OnInit {
   action(): void {
     this.submitted = true;
     const allReportingYears = this.isAllReportingYears();
+    const reportingYear = allReportingYears
+      ? this.dialogData.reporting_year
+      : this.toReportingYear(this.reporting_year);
     if (this.checked && !allReportingYears) {
-      this.configService.set("reporting_year", this.reporting_year).subscribe();
+      this.configService.set("reporting_year", reportingYear).subscribe();
     }
     this.dialogRef.close({
-      reportingYear: allReportingYears ? this.dialogData.reporting_year : this.reporting_year,
+      reportingYear,
       allReportingYears,
     } satisfies ReportingYearSelection);
   }
@@ -62,5 +65,9 @@ export class ReportingYearFormComponent implements OnInit {
 
   reportingYearChanged(): void {
     if (this.isAllReportingYears()) this.checked = false;
+  }
+
+  private toReportingYear(value: number | null | typeof ALL_REPORTING_YEARS): number | null {
+    return value === null ? null : Number(value);
   }
 }

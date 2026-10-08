@@ -141,6 +141,24 @@ describe('PublicationsComponent', () => {
     expect(result.paths).toEqual(['missing-invoice']);
   });
 
+  it('should roundtrip the all-reporting-years mode in links', () => {
+    component.indexOptions = {
+      soft: false,
+      allReportingYears: true,
+    };
+
+    const query = component.filterToQuery();
+    const params = new URLSearchParams(query.slice(1));
+    const result = component.queryToFilter(convertToParamMap({
+      allReportingYears: params.get('allReportingYears'),
+    }));
+
+    expect(params.get('allReportingYears')).toBe('true');
+    expect(result.allReportingYears).toBeTrue();
+    expect(result.filter.expressions).toEqual([]);
+    expect(result.paths).toEqual([]);
+  });
+
   it('should restore the all-reporting-years mode from the view config', () => {
     const store = TestBed.inject(MockStore);
     store.setState({
