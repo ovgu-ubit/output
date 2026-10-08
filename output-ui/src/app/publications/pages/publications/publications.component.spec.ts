@@ -223,4 +223,48 @@ describe('PublicationsComponent', () => {
     expect(setTableReportingYear).toHaveBeenCalledWith(2024, false);
     expect(store.dispatch).toHaveBeenCalledWith(setReportingYear({ reporting_year: 2024 }));
   });
+
+  it('should preserve all reporting years when advanced filters are cleared', () => {
+    const updateData = jasmine.createSpy('updateData').and.returnValue(of([]));
+    component.table = {
+      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+      updateData,
+    } as any;
+    component.viewConfig = {
+      sortState: [],
+      filterColumn: new Map(),
+      allReportingYears: true,
+      filter: {
+        filter: {
+          expressions: [{
+            op: JoinOperation.AND,
+            key: 'title',
+            comp: CompareOperation.INCLUDES,
+            value: 'Angular',
+          }],
+        },
+        paths: ['missing-invoice'],
+      },
+    };
+    component.indexOptions = {
+      soft: false,
+      allReportingYears: true,
+      filter: component.viewConfig.filter.filter,
+      paths: component.viewConfig.filter.paths,
+    };
+    spyOn(component.dialog, 'open').and.returnValue({
+      afterClosed: () => of({ filter: { expressions: [] }, paths: [] }),
+    } as any);
+
+    component.extendedFilters();
+
+    expect(component.indexOptions).toEqual(jasmine.objectContaining({
+      soft: false,
+      allReportingYears: true,
+      filter: { expressions: [] },
+      paths: [],
+    }));
+    expect(component.viewConfig.allReportingYears).toBeTrue();
+    expect(updateData).toHaveBeenCalled();
+  });
 });

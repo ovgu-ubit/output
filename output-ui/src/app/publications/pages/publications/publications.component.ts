@@ -268,7 +268,16 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
             allReportingYears: this.viewConfig.allReportingYears === true,
           }
           this.table.updateData().subscribe();
-        } else this.resetView()
+        } else {
+          this.indexOptions = {
+            soft: false,
+            filter: result.filter,
+            paths: result.paths,
+            allReportingYears: this.viewConfig.allReportingYears === true,
+          };
+          this.persistViewConfig();
+          this.table.updateData().subscribe();
+        }
       }
     })
   }
