@@ -7,7 +7,7 @@
                 [selected]="this.selected[filter.path]">{{filter.label}}</mat-chip-option>
         </mat-chip-listbox>
     </ng-container>
-    <form [formGroup]="form">
+    <form [formGroup]="form" (ngSubmit)="action()">
         <ng-container formArrayName="filters">
             <ng-container *ngFor="let filter of getFiltersControls(); let i = index">
                 <div [formGroup]="filter" style="display: flex;gap: 10px;justify-content: center;">
@@ -66,19 +66,19 @@
             </ng-container>
         </ng-container>
         <div style="display: flex;justify-content: center;">
-            <button mat-mini-fab (click)="addRow(false)">
+            <button mat-mini-fab type="button" (click)="addRow(false)">
                 <mat-icon>add</mat-icon>
             </button>
         </div>
         <br />
         <div class="form-group" align="center">
-            <button mat-raised-button type="reset" (click)="this.reset()">Alle Filter
+            <button mat-raised-button type="button" (click)="this.reset()">Alle Filter
                 zurücksetzen</button>&nbsp;
-            <button mat-raised-button type="submit"  class="primary-button" (click)="this.action()">Filter
+            <button mat-raised-button type="submit" class="primary-button">Filter
                 anwenden</button>&nbsp;
-            <button mat-raised-button type="reset"  class="secondary-button" (click)="this.resetForm()">Formular
+            <button mat-raised-button type="button" class="secondary-button" (click)="this.resetForm()">Formular
                 zurücksetzen</button>&nbsp;
-            <button mat-raised-button  class="secondary-button"(click)="this.abort()">Abbrechen</button>
+            <button mat-raised-button type="button" class="secondary-button" (click)="this.abort()">Abbrechen</button>
         </div>
     </form>
 </div>

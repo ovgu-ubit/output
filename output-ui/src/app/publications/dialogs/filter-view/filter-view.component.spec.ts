@@ -120,4 +120,25 @@ describe('FilterViewComponent', () => {
       value: [2024, 2025]
     }));
   });
+
+  it('should apply the filter instead of adding a row when the form is submitted', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('title');
+    filter.get('value').setValue('Angular');
+
+    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+    form.dispatchEvent(new Event('submit'));
+
+    expect(component.getFiltersControls().length).toBe(1);
+    expect(mockDialogRef.close).toHaveBeenCalledWith({
+      filter: {
+        expressions: [jasmine.objectContaining({
+          key: 'title',
+          comp: CompareOperation.INCLUDES,
+          value: 'Angular'
+        })]
+      },
+      paths: []
+    });
+  });
 });
