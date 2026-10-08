@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
     CompareOperation,
+    getPublicationFilterValueValidationError,
     getPublicationFilterFieldDefinition,
     isPublicationFilterOperationAllowed,
     JoinOperation,
@@ -288,6 +289,7 @@ export class PublicationIndexService {
             let compareOperation = expr.comp;
             let filterValue: SearchFilterValue = expr.value;
             this.validateFilterExpression(expr.key, compareOperation);
+            this.validateFilterValue(expr.key, expr.value);
 
             if (expr.key === 'institute_id' || expr.key === 'institute_id_corr') {
                 const instituteIds = this.normalizeIntegerValues(expr.value, expr.key);
@@ -392,10 +394,10 @@ export class PublicationIndexService {
     }
 
     private validateFilterValue(key: string, value: SearchFilterValue): void {
-        const fieldType = this.getFilterFieldType(key);
-        if (fieldType === 'number' || fieldType === 'id' || fieldType === 'year' || fieldType === 'boolean') {
-            this.normalizeComparableValues(key, value);
-        }
+        const validationError = getPublicationFilterValueValidationError(key, value);
+        if (validationError === 'number') throw createInvalidRequestHttpException(`${key} must be a number`);
+        if (validationError === 'integer') throw createInvalidRequestHttpException(`${key} must be an integer`);
+        if (validationError === 'boolean') throw createInvalidRequestHttpException(`${key} must be a boolean`);
     }
 
     private getFilterFieldType(key: string): PublicationFilterFieldType {
@@ -553,7 +555,6 @@ export class PublicationIndexService {
             );
         }
 
-        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} = :${parameterPrefix}`,
@@ -585,7 +586,6 @@ export class PublicationIndexService {
             );
         }
 
-        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} ILIKE :${parameterPrefix}`,
@@ -609,7 +609,6 @@ export class PublicationIndexService {
             };
         }
 
-        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} ${operator} :${parameterPrefix}`,
@@ -677,7 +676,6 @@ export class PublicationIndexService {
             );
         }
 
-        this.validateFilterValue(key, value);
         const expression = this.resolveFilterExpression(key, filterContext);
         return {
             clause: `${expression} IN (:...${parameterPrefix})`,

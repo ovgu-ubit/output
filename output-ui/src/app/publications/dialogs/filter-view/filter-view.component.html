@@ -52,12 +52,13 @@
                         <mat-hint>T.M.JJJJ</mat-hint>
                         <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
                         <mat-datepicker #picker startView="year"></mat-datepicker>
+                        <mat-error>{{ getValueErrorMessage(i) }}</mat-error>
                     </mat-form-field>
                     <mat-checkbox *ngIf="isBoolean(i)" formControlName="value" style="align-self: center; margin-bottom: 15px;">Wahr</mat-checkbox>
                     <mat-form-field *ngIf="!date(i) && !isBoolean(i)">
                         <mat-label>Suchwert</mat-label>
                         <input matInput formControlName="value" placeholder="zu suchender Wert">
-                        <mat-error>Bitte geben Sie einen Wert ein</mat-error>
+                        <mat-error>{{ getValueErrorMessage(i) }}</mat-error>
                     </mat-form-field>
 
                     <mat-icon *ngIf="i!==0" (click)="deleteRow(i)">

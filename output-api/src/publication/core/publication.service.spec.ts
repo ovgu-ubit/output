@@ -1069,6 +1069,36 @@ describe('PublicationService', () => {
         }
     });
 
+    it('rejects invalid numeric filter values', async () => {
+        const invalidFilters: SearchFilter[] = [
+            {
+                expressions: [{
+                    op: JoinOperation.AND,
+                    key: 'id',
+                    comp: CompareOperation.EQUALS,
+                    value: '1a',
+                }]
+            },
+            {
+                expressions: [{
+                    op: JoinOperation.AND,
+                    key: 'contract_year',
+                    comp: CompareOperation.EQUALS,
+                    value: 2024.5,
+                }]
+            }
+        ];
+
+        for (const filter of invalidFilters) {
+            const queryBuilder = createQueryBuilderMock();
+            await expectApiError(publicationIndexService.filter(filter, queryBuilder as any), {
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+            expect(queryBuilder.where).not.toHaveBeenCalled();
+        }
+    });
+
     it('filters institutional author names via EXISTS without relying on outer author joins', async () => {
         const queryBuilder = createQueryBuilderMock();
         const filter: SearchFilter = {

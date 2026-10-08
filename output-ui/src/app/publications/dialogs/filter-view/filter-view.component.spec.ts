@@ -127,6 +127,35 @@ describe('FilterViewComponent', () => {
     }));
   });
 
+  it('should reject non-integer ID values and not apply the filter', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('id');
+    filter.get('value').setValue('1a');
+
+    expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
+
+    component.action();
+
+    expect(mockDialogRef.close).not.toHaveBeenCalled();
+  });
+
+  it('should reject invalid values in an ID list', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('author_id');
+    filter.get('compare_operator').setValue(CompareOperation.IN);
+    filter.get('value').setValue('1, 2a');
+
+    expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
+  });
+
+  it('should allow decimal values for numeric fields', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('cost_approach');
+    filter.get('value').setValue('12.5');
+
+    expect(filter.get('value').valid).toBeTrue();
+  });
+
   it('should apply the filter instead of adding a row when the form is submitted', () => {
     const filter = component.getFiltersControls()[0];
     filter.get('field').setValue('title');
