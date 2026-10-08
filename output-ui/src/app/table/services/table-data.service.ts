@@ -24,7 +24,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
 
   private serviceClass: EntityService<E, T>;
   private parent: TableParent<T>;
-  private reporting_year: number;
+  private reporting_year: number | null;
   private headers: TableHeader[];
   private destroy$ = new Subject<void>();
 
@@ -45,7 +45,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
     this.sortData();
   }
 
-  setReportingYear(year: number) {
+  setReportingYear(year: number | null) {
     this.reporting_year = year;
   }
 

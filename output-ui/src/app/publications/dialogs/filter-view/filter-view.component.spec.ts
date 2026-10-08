@@ -67,6 +67,12 @@ describe('FilterViewComponent', () => {
     }));
   });
 
+  it('should sort filter fields alphabetically by label', () => {
+    const labels = component.keys.map((field) => field.label);
+
+    expect(labels).toEqual([...labels].sort((first, second) => first.localeCompare(second, 'de')));
+  });
+
   it('should use the shared operator matrix for field types', () => {
     const availableOpsFor = (field: string) => {
       component.getFiltersControls()[0].get('field').setValue(field);
@@ -119,5 +125,55 @@ describe('FilterViewComponent', () => {
       comp: CompareOperation.IN,
       value: [2024, 2025]
     }));
+  });
+
+  it('should reject non-integer ID values and not apply the filter', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('id');
+    filter.get('value').setValue('1a');
+
+    expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
+
+    component.action();
+
+    expect(mockDialogRef.close).not.toHaveBeenCalled();
+  });
+
+  it('should reject invalid values in an ID list', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('author_id');
+    filter.get('compare_operator').setValue(CompareOperation.IN);
+    filter.get('value').setValue('1, 2a');
+
+    expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
+  });
+
+  it('should allow decimal values for numeric fields', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('cost_approach');
+    filter.get('value').setValue('12.5');
+
+    expect(filter.get('value').valid).toBeTrue();
+  });
+
+  it('should apply the filter instead of adding a row when the form is submitted', () => {
+    const filter = component.getFiltersControls()[0];
+    filter.get('field').setValue('title');
+    filter.get('value').setValue('Angular');
+
+    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+    form.dispatchEvent(new Event('submit'));
+
+    expect(component.getFiltersControls().length).toBe(1);
+    expect(mockDialogRef.close).toHaveBeenCalledWith({
+      filter: {
+        expressions: [jasmine.objectContaining({
+          key: 'title',
+          comp: CompareOperation.INCLUDES,
+          value: 'Angular'
+        })]
+      },
+      paths: []
+    });
   });
 });

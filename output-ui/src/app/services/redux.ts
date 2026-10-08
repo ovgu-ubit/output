@@ -4,12 +4,12 @@ import {  SearchFilter  } from '@output/interfaces';
 
 export const setViewConfig = createAction('Set ViewConfig', props<{ viewConfig: ViewConfig }>());
 export const resetViewConfig = createAction('Reset ViewConfig');
-export const setReportingYear = createAction('Set Reporting Year', props<{ reporting_year: number }>());
+export const setReportingYear = createAction('Set Reporting Year', props<{ reporting_year: number | null }>());
 export const resetReportingYear = createAction('Reset Reporting Year');
 
 export interface State {
   viewConfig: ViewConfig;
-  reporting_year?: number;
+  reporting_year?: number | null;
   valid_from: Date;
 }
 
@@ -20,12 +20,14 @@ export interface ViewConfig {
   filterValue?: string;
   filterColumn: Map<string, string>;
   filter?: { filter: SearchFilter, paths?: string[] };
+  allReportingYears?: boolean;
 }
 
 export const initialState: State = {
   viewConfig: {
     sortState: [],
     filterColumn: new Map<string, string>(),
+    allReportingYears: false,
     filter: {
       filter: {
         expressions: []
@@ -59,6 +61,7 @@ export const viewConfigReducer = createReducer(
       viewConfig: {
         sortState: [],
         filterColumn: new Map<string, string>(),
+        allReportingYears: false,
       },
       valid_from: new Date()
     }

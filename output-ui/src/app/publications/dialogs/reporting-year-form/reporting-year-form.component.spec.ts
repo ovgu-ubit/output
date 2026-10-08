@@ -67,4 +67,46 @@ describe('ReportingYearFormComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should initialize the all reporting years selection', () => {
+    component.dialogData.allReportingYears = true;
+
+    component.ngOnInit();
+
+    expect(component.reporting_year).toBe(component.allReportingYearsValue);
+  });
+
+  it('should return all reporting years without changing the global default', () => {
+    component.reporting_year = component.allReportingYearsValue;
+    component.checked = true;
+
+    component.action();
+
+    expect(mockConfigService.set).not.toHaveBeenCalled();
+    expect(mockDialogRef.close).toHaveBeenCalledWith({
+      reportingYear: 2024,
+      allReportingYears: true,
+    });
+  });
+
+  it('should return a selected reporting year and allow it as the global default', () => {
+    component.reporting_year = '2025' as any;
+    component.checked = true;
+
+    component.action();
+
+    expect(mockConfigService.set).toHaveBeenCalledWith('reporting_year', 2025);
+    expect(mockDialogRef.close).toHaveBeenCalledWith({
+      reportingYear: 2025,
+      allReportingYears: false,
+    });
+  });
+
+  it('should convert reporting years returned by the backend to numbers', () => {
+    mockPubService.getReportingYears.and.returnValue(of([{ year: '2026' }, { year: null }]));
+
+    component.ngOnInit();
+
+    expect(component.reporting_years).toEqual([2026, null]);
+  });
 });

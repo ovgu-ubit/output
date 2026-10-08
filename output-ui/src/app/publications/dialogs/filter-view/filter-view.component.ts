@@ -123,16 +123,25 @@ export class FilterViewComponent implements OnInit {
       join_operator: [''],
       field: ['', Validators.required],
       compare_operator: ['', Validators.required],
-      value: ['', this.valueRequiredValidator],
+      value: [''],
     })
       : this.formBuilder.group({
         join_operator: ['', Validators.required],
         field: ['', Validators.required],
         compare_operator: ['', Validators.required],
-        value: ['', this.valueRequiredValidator],
+        value: [''],
       });
+    const valueControl = filterForm.get('value');
+    valueControl.setValidators([this.valueRequiredValidator, this.filterValueValidator(filterForm)]);
     filterForm.get('compare_operator').setValue(this.compareOps[0].op)
-    filterForm.get('field').valueChanges.subscribe(() => this.normalizeCompareOperator(filterForm));
+    valueControl.updateValueAndValidity({ emitEvent: false });
+    filterForm.get('field').valueChanges.subscribe(() => {
+      this.normalizeCompareOperator(filterForm);
+      valueControl.updateValueAndValidity({ emitEvent: false });
+    });
+    filterForm.get('compare_operator').valueChanges.subscribe(() => {
+      valueControl.updateValueAndValidity({ emitEvent: false });
+    });
     this.getFilters().push(filterForm)
   }
 
@@ -225,6 +234,23 @@ export class FilterViewComponent implements OnInit {
     return this.getFieldType(this.getFiltersControls()[idx].get('field').value) === 'date'
   }
 
+  getValueErrorMessage(idx: number): string {
+    const valueControl = this.getFiltersControls()[idx].get('value');
+    if (valueControl.hasError('required')) return 'Bitte geben Sie einen Wert ein';
+    if (valueControl.hasError('matDatepickerParse')) return 'Bitte geben Sie ein gültiges Datum ein';
+
+    switch (valueControl.getError('publicationFilterValue')) {
+      case 'number':
+        return 'Bitte geben Sie eine gültige Zahl ein';
+      case 'integer':
+        return 'Bitte geben Sie eine ganze Zahl ein';
+      case 'boolean':
+        return 'Bitte geben Sie einen gültigen Wahrheitswert ein';
+      default:
+        return 'Bitte geben Sie einen gültigen Wert ein';
+    }
+  }
+
   private getListValue(key: string, value: any): Array<string | number | boolean> {
     const fieldType = this.getFieldType(key);
     const values = Array.isArray(value) ? value : String(value ?? '').split(/[\n,]+/);
@@ -271,6 +297,57 @@ export class FilterViewComponent implements OnInit {
     return getPublicationFilterOperationsForType(this.getFieldType(key));
   }
 
+  private filterValueValidator(filter: FormGroup): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const field = filter.get('field')?.value;
+      if (!field || !this.hasFilterValue(control.value)) return null;
+
+      const compareOperator = filter.get('compare_operator')?.value;
+      const value = compareOperator === CompareOperation.IN
+        ? this.getValidationList(control.value)
+        : control.value;
+      const validationError = this.getFilterValueValidationError(field, value);
+
+      return validationError ? { publicationFilterValue: validationError } : null;
+    };
+  }
+
+  private getFilterValueValidationError(
+    key: string,
+    value: SearchFilterValue,
+  ): 'number' | 'integer' | 'boolean' | null {
+    const fieldType = this.getFieldType(key);
+    const values = (Array.isArray(value) ? value : [value])
+      .filter((entry) => entry !== null && entry !== undefined);
+
+    if (fieldType === 'number' && values.some((entry) => !this.isFiniteNumber(entry))) return 'number';
+    if ((fieldType === 'id' || fieldType === 'year') && values.some((entry) => !this.isInteger(entry))) return 'integer';
+    if (fieldType === 'boolean' && values.some((entry) => !this.isValidBoolean(entry))) return 'boolean';
+    return null;
+  }
+
+  private isFiniteNumber(value: string | number | boolean): boolean {
+    if (typeof value === 'string' && value.trim() === '') return false;
+    return Number.isFinite(Number(value));
+  }
+
+  private isInteger(value: string | number | boolean): boolean {
+    return this.isFiniteNumber(value) && Number.isInteger(Number(value));
+  }
+
+  private isValidBoolean(value: string | number | boolean): boolean {
+    if (typeof value === 'boolean') return true;
+    return ['true', 'wahr', '1', 'ja', 'false', 'falsch', '0', 'nein'].includes(String(value).toLowerCase());
+  }
+
+  private getValidationList(value: SearchFilterValue): Array<string | number | boolean> {
+    if (Array.isArray(value)) return value;
+    return String(value ?? '')
+      .split(/[\n,]+/)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry !== '');
+  }
+
   private getTypesForOperation(operation: CompareOperation): PublicationFilterFieldType[] {
     return Object.entries(PUBLICATION_FILTER_OPERATIONS_BY_TYPE)
       .filter(([, operations]) => operations.includes(operation))
@@ -278,9 +355,9 @@ export class FilterViewComponent implements OnInit {
   }
 
   private getVisibleFilterFields(): PublicationFilterFieldDefinition[] {
-    return PUBLICATION_FILTER_FIELD_DEFINITIONS.filter((field) => {
-      return !field.optionalField || this.optional_fields[field.optionalField] === true;
-    });
+    return PUBLICATION_FILTER_FIELD_DEFINITIONS
+      .filter((field) => !field.optionalField || this.optional_fields[field.optionalField] === true)
+      .sort((first, second) => first.label.localeCompare(second.label, 'de'));
   }
 
   private getCanonicalFilterKey(key: string): string {

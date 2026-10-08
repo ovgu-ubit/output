@@ -144,6 +144,8 @@ export interface PublicationFilterFieldDefinition {
     legacyKeys?: string[];
 }
 
+export type PublicationFilterValueValidationError = 'number' | 'integer' | 'boolean';
+
 export const PUBLICATION_FILTER_OPERATIONS_BY_TYPE: Record<PublicationFilterFieldType, CompareOperation[]> = {
     string: [
         CompareOperation.INCLUDES,
@@ -262,4 +264,32 @@ export function getPublicationFilterOperationsForKey(key: string): CompareOperat
 
 export function isPublicationFilterOperationAllowed(key: string, operation: CompareOperation): boolean {
     return getPublicationFilterOperationsForKey(key).includes(operation);
+}
+
+export function getPublicationFilterValueValidationError(
+    key: string,
+    value: SearchFilterValue,
+): PublicationFilterValueValidationError | null {
+    const fieldType = getPublicationFilterFieldDefinition(key)?.type;
+    const values = (Array.isArray(value) ? value : [value])
+        .filter((entry) => entry !== null && entry !== undefined);
+
+    if (fieldType === 'number' && values.some((entry) => !isFiniteNumber(entry))) return 'number';
+    if ((fieldType === 'id' || fieldType === 'year') && values.some((entry) => !isInteger(entry))) return 'integer';
+    if (fieldType === 'boolean' && values.some((entry) => !isBoolean(entry))) return 'boolean';
+    return null;
+}
+
+function isFiniteNumber(value: string | number | boolean): boolean {
+    if (typeof value === 'string' && value.trim() === '') return false;
+    return Number.isFinite(Number(value));
+}
+
+function isInteger(value: string | number | boolean): boolean {
+    return isFiniteNumber(value) && Number.isInteger(Number(value));
+}
+
+function isBoolean(value: string | number | boolean): boolean {
+    if (typeof value === 'boolean') return true;
+    return ['true', 'wahr', '1', 'ja', 'false', 'falsch', '0', 'nein'].includes(String(value).toLowerCase());
 }

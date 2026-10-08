@@ -17,7 +17,7 @@ import {  Publication  } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
 import { FilterViewComponent } from '../../dialogs/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
-import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
+import { ReportingYearFormComponent, ReportingYearSelection } from '../../dialogs/reporting-year-form/reporting-year-form.component';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Component({
@@ -35,7 +35,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   name = 'Publikationen des Jahres ';
   institution = '';
 
-  indexOptions?: { soft: boolean, filter: SearchFilter, paths?: string[] };
+  indexOptions?: { soft: boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean };
 
   soft_deletes = false;
   statusDescriptions = new Map<number, string>();
@@ -117,12 +117,23 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     })));
 
     ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
-      this.viewConfig = viewConfig;
+      this.viewConfig = viewConfig ?? initialState.viewConfig;
       return this.route.queryParamMap.pipe(map(params => {
-        let filter = this.queryToFilter(params);
-        if (filter) this.viewConfig = { ...this.viewConfig, filter }
+        const queryView = this.queryToFilter(params);
+        if (queryView) {
+          this.viewConfig = {
+            ...this.viewConfig,
+            filter: { filter: queryView.filter, paths: queryView.paths },
+            allReportingYears: queryView.allReportingYears,
+          };
+        }
 
-        this.indexOptions = { soft: false, filter: this.viewConfig.filter?.filter, paths: this.viewConfig.filter?.paths }
+        this.indexOptions = {
+          soft: false,
+          filter: this.viewConfig.filter?.filter,
+          paths: this.viewConfig.filter?.paths,
+          allReportingYears: this.viewConfig.allReportingYears === true,
+        }
       }));
     })));
 
@@ -134,11 +145,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   }
 
   ngOnDestroy(): void {
-    if (this.table) {
-      this.store.dispatch(setViewConfig({
-        viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
-      }))
-    }
+    if (this.table) this.persistViewConfig();
   }
 
   changeReportingYear() {
@@ -146,13 +153,26 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       width: '400px',
       disableClose: true,
       data: {
-        reporting_year: this.table?.reporting_year
+        reporting_year: this.table?.reporting_year,
+        allReportingYears: this.indexOptions?.allReportingYears === true,
       }
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: ReportingYearSelection | undefined) => {
       if (result !== undefined) {
-        this.table.reporting_year = result;
-        this.store.dispatch(setReportingYear({ reporting_year: this.table.reporting_year }))
+        this.indexOptions = {
+          ...this.indexOptions,
+          soft: false,
+          allReportingYears: result.allReportingYears,
+        };
+        this.viewConfig = {
+          ...this.viewConfig,
+          allReportingYears: result.allReportingYears,
+        };
+        this.table.setReportingYear(result.reportingYear, result.allReportingYears);
+        if (!result.allReportingYears) {
+          this.store.dispatch(setReportingYear({ reporting_year: result.reportingYear }));
+        }
+        this.persistViewConfig();
         this.table.updateData().subscribe();
       }
     });
@@ -214,13 +234,15 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.indexOptions = {
       soft: false,
       filter: null,
-      paths: null
+      paths: null,
+      allReportingYears: false,
     }
     this.table.resetView();
     this.configService.get("reporting_year").pipe(concatMap(data => {
-      this.table.reporting_year = data?.value;
-      if (data) this.name = 'Publikationen des Jahres ' + data.value;
-      else this.name = 'Publikationen ohne Datumsangabe'
+      const reportingYear = data?.value ?? null;
+      this.table.setReportingYear(reportingYear, false);
+      if (reportingYear) this.name = 'Publikationen des Jahres ' + reportingYear;
+      else this.name = 'Publikationen ohne Datumsangabe';
       return this.table.updateData();
     })).subscribe();
   }
@@ -242,10 +264,20 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
           this.indexOptions = {
             soft: false,
             filter: result.filter,
-            paths: result.paths
+            paths: result.paths,
+            allReportingYears: this.viewConfig.allReportingYears === true,
           }
           this.table.updateData().subscribe();
-        } else this.resetView()
+        } else {
+          this.indexOptions = {
+            soft: false,
+            filter: result.filter,
+            paths: result.paths,
+            allReportingYears: this.viewConfig.allReportingYears === true,
+          };
+          this.persistViewConfig();
+          this.table.updateData().subscribe();
+        }
       }
     })
   }
@@ -259,18 +291,18 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
+    this.viewConfig = initialState.viewConfig;
     this.indexOptions = {
       soft: true,
       filter: null,
-      paths: null
+      paths: null,
+      allReportingYears: false,
     }
     this.table.updateData().subscribe()
   }
 
   createLink() {
-    this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
-    }))
+    this.persistViewConfig();
     let link = this.runtimeConfigService.getValue('self') + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
       this._snackBar.open(`Link wurde in die Zwischenablage kopiert`, 'Super!', {
@@ -290,19 +322,22 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     if (this.indexOptions.paths) for (let path of this.indexOptions.paths) {
       params.append('path', path);
     }
+    if (this.indexOptions.allReportingYears) params.set('allReportingYears', 'true');
     const query = params.toString();
     return query ? `?${query}` : '';
   }
 
-  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[] } {
+  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[], allReportingYears: boolean } {
     let res = {
       filter: {
         expressions: []
-      }, paths: []
+      },
+      paths: [],
+      allReportingYears: paramMap.get('allReportingYears') === 'true',
     };
     let filters = paramMap.getAll('filter');
     res.paths = paramMap.getAll('path');
-    let flag = res.paths.length > 0;
+    let flag = res.paths.length > 0 || res.allReportingYears;
     for (let e of filters) {
       let expr = this.parseFilterQueryExpression(e);
       if (!expr) continue;
@@ -348,6 +383,18 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
 
   getLabel() {
     return '/Publikationen'
+  }
+
+  private persistViewConfig(): void {
+    this.viewConfig = {
+      ...this.table.getViewConfig(),
+      filter: {
+        filter: this.indexOptions?.filter,
+        paths: this.indexOptions?.paths,
+      },
+      allReportingYears: this.indexOptions?.allReportingYears === true,
+    };
+    this.store.dispatch(setViewConfig({ viewConfig: this.viewConfig }));
   }
 
 }

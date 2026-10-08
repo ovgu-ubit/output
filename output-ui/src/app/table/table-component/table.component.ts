@@ -63,7 +63,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   destroy$ = new Subject();
   id;
   viewConfig: ViewConfig;
-  reporting_year: number;
+  reporting_year: number | null;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
@@ -105,12 +105,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
           return this.configService.get("reporting_year").pipe(map(e => e?.value));
         }
       }), map(data => {
-        this.reporting_year = data;
-        this.tableData.setReportingYear(data);
-        if (this.publication_table) {
-          if (this.reporting_year) this.name = 'Publikationen des Jahres ' + this.reporting_year;
-          else this.name = 'Publikationen ohne Datumsangabe'
-        }
+        this.setReportingYear(data, this.parent.indexOptions?.allReportingYears === true);
         let col = this.headers.find(e => e.colName === 'pub_count');
         if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
         col = this.headers.find(e => e.colName === 'pub_count_corr')
@@ -194,8 +189,19 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   getName(): string {
+    if (this.tableData.filterName && this.publication_table) return 'Gefilterte Publikationen';
     if (this.tableData.filterName) return "Gefilterte " + this.name.substring(0, this.name.indexOf(" "));
     else return this.name;
+  }
+
+  setReportingYear(reportingYear: number | null, allReportingYears = false): void {
+    this.reporting_year = reportingYear;
+    this.tableData.setReportingYear(reportingYear);
+
+    if (!this.publication_table) return;
+    if (allReportingYears) this.name = 'Alle Publikationen';
+    else if (reportingYear) this.name = 'Publikationen des Jahres ' + reportingYear;
+    else this.name = 'Publikationen ohne Datumsangabe';
   }
 
   public updateData() {
@@ -326,7 +332,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       page: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
       filterValue: this.searchControl.value,
-      filterColumn: this.tableData.filterValues
+      filterColumn: this.tableData.filterValues,
+      allReportingYears: this.parent.indexOptions?.allReportingYears === true,
     };
     return res;
   }

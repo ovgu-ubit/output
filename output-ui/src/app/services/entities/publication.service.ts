@@ -14,9 +14,14 @@ export class PublicationService implements EntityService<Publication, Publicatio
 
   constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
-  public index(yop: number, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[]}) {
+  public index(yop: number | null, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean}) {
     if (options?.soft) return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?soft=true', { withCredentials: true });
-    if (options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) return this.http.post<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', { filter: options.filter, paths: options.paths }, { withCredentials: true });
+    if (options?.allReportingYears || options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) {
+      return this.http.post<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', {
+        filter: options.filter ?? { expressions: [] },
+        paths: options.paths ?? [],
+      }, { withCredentials: true });
+    }
     return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?yop=' + yop, { withCredentials: true });
   }
   public getAll() {
@@ -41,7 +46,7 @@ export class PublicationService implements EntityService<Publication, Publicatio
     return this.http.delete<Publication[]>(this.runtimeConfigService.getValue("api") + 'publications', { withCredentials: true, body: { publications: ids.map(e => ({ id: e })), soft } });
   }
   public getReportingYears() {
-    return this.http.get<number[]>(this.runtimeConfigService.getValue("api") + 'publications/reporting_year', { withCredentials: true });
+    return this.http.get<Array<{ year: string | null }>>(this.runtimeConfigService.getValue("api") + 'publications/reporting_year', { withCredentials: true });
   }
   public combine(id1: number, ids: number[], options?: { ignoreLocks?: boolean }) {
     return this.http.post(this.runtimeConfigService.getValue("api") + 'publications/combine', { id1, ids, ignoreLocks: options?.ignoreLocks === true }, { withCredentials: true });

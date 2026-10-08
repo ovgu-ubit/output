@@ -3,7 +3,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { provideMockStore } from '@ngrx/store/testing';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
 import { of } from 'rxjs';
 import { CompareOperation, JoinOperation } from '@output/interfaces';
 import { AuthorizationService } from 'src/app/security/authorization.service';
@@ -17,6 +17,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
+import { setReportingYear } from 'src/app/services/redux';
 
 import { PublicationsComponent } from './publications.component';
 
@@ -138,5 +139,132 @@ describe('PublicationsComponent', () => {
 
     expect(result.filter.expressions).toEqual([]);
     expect(result.paths).toEqual(['missing-invoice']);
+  });
+
+  it('should roundtrip the all-reporting-years mode in links', () => {
+    component.indexOptions = {
+      soft: false,
+      allReportingYears: true,
+    };
+
+    const query = component.filterToQuery();
+    const params = new URLSearchParams(query.slice(1));
+    const result = component.queryToFilter(convertToParamMap({
+      allReportingYears: params.get('allReportingYears'),
+    }));
+
+    expect(params.get('allReportingYears')).toBe('true');
+    expect(result.allReportingYears).toBeTrue();
+    expect(result.filter.expressions).toEqual([]);
+    expect(result.paths).toEqual([]);
+  });
+
+  it('should restore the all-reporting-years mode from the view config', () => {
+    const store = TestBed.inject(MockStore);
+    store.setState({
+      viewConfigReducer: {
+        viewConfig: {
+          sortState: [],
+          filterColumn: new Map(),
+          allReportingYears: true,
+        },
+        valid_from: new Date(),
+      },
+    });
+
+    const subscription = component.preProcessing().subscribe();
+
+    expect(component.indexOptions?.allReportingYears).toBeTrue();
+    subscription.unsubscribe();
+  });
+
+  it('should switch to all reporting years and preserve the selected year', () => {
+    const setTableReportingYear = jasmine.createSpy('setReportingYear');
+    component.table = {
+      reporting_year: 2025,
+      setReportingYear: setTableReportingYear,
+      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+      updateData: () => of([]),
+    } as any;
+    component.viewConfig = { sortState: [], filterColumn: new Map() };
+    component.indexOptions = { soft: false, allReportingYears: false };
+    spyOn(component.dialog, 'open').and.returnValue({
+      afterClosed: () => of({ reportingYear: 2025, allReportingYears: true }),
+    } as any);
+    const store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+
+    component.changeReportingYear();
+
+    expect(component.indexOptions.allReportingYears).toBeTrue();
+    expect(setTableReportingYear).toHaveBeenCalledWith(2025, true);
+    expect(store.dispatch).not.toHaveBeenCalledWith(setReportingYear({ reporting_year: 2025 }));
+  });
+
+  it('should leave the all-reporting-years mode when a year is selected', () => {
+    const setTableReportingYear = jasmine.createSpy('setReportingYear');
+    component.table = {
+      reporting_year: 2025,
+      setReportingYear: setTableReportingYear,
+      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: false }),
+      updateData: () => of([]),
+    } as any;
+    component.viewConfig = { sortState: [], filterColumn: new Map(), allReportingYears: true };
+    component.indexOptions = { soft: false, allReportingYears: true };
+    spyOn(component.dialog, 'open').and.returnValue({
+      afterClosed: () => of({ reportingYear: 2024, allReportingYears: false }),
+    } as any);
+    const store = TestBed.inject(MockStore);
+    spyOn(store, 'dispatch');
+
+    component.changeReportingYear();
+
+    expect(component.indexOptions.allReportingYears).toBeFalse();
+    expect(setTableReportingYear).toHaveBeenCalledWith(2024, false);
+    expect(store.dispatch).toHaveBeenCalledWith(setReportingYear({ reporting_year: 2024 }));
+  });
+
+  it('should preserve all reporting years when advanced filters are cleared', () => {
+    const updateData = jasmine.createSpy('updateData').and.returnValue(of([]));
+    component.table = {
+      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+      updateData,
+    } as any;
+    component.viewConfig = {
+      sortState: [],
+      filterColumn: new Map(),
+      allReportingYears: true,
+      filter: {
+        filter: {
+          expressions: [{
+            op: JoinOperation.AND,
+            key: 'title',
+            comp: CompareOperation.INCLUDES,
+            value: 'Angular',
+          }],
+        },
+        paths: ['missing-invoice'],
+      },
+    };
+    component.indexOptions = {
+      soft: false,
+      allReportingYears: true,
+      filter: component.viewConfig.filter.filter,
+      paths: component.viewConfig.filter.paths,
+    };
+    spyOn(component.dialog, 'open').and.returnValue({
+      afterClosed: () => of({ filter: { expressions: [] }, paths: [] }),
+    } as any);
+
+    component.extendedFilters();
+
+    expect(component.indexOptions).toEqual(jasmine.objectContaining({
+      soft: false,
+      allReportingYears: true,
+      filter: { expressions: [] },
+      paths: [],
+    }));
+    expect(component.viewConfig.allReportingYears).toBeTrue();
+    expect(updateData).toHaveBeenCalled();
   });
 });
