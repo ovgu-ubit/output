@@ -14,9 +14,14 @@ export class PublicationService implements EntityService<Publication, Publicatio
 
   constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
-  public index(yop: number, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[]}) {
+  public index(yop: number | null, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean}) {
     if (options?.soft) return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?soft=true', { withCredentials: true });
-    if (options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) return this.http.post<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', { filter: options.filter, paths: options.paths }, { withCredentials: true });
+    if (options?.allReportingYears || options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) {
+      return this.http.post<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', {
+        filter: options.filter ?? { expressions: [] },
+        paths: options.paths ?? [],
+      }, { withCredentials: true });
+    }
     return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?yop=' + yop, { withCredentials: true });
   }
   public getAll() {

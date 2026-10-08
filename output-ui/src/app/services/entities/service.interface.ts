@@ -3,7 +3,7 @@ import { Observable } from "rxjs";
 export interface EntityService<T, E> {
     getAll():Observable<T[]>;
 
-    index(reporting_year: number, options?:any):Observable<E[]>;
+    index(reporting_year: number | null, options?:any):Observable<E[]>;
 
     getOne(id:number):Observable<T>;
     

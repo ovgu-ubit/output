@@ -84,6 +84,27 @@ describe('TableComponent', () => {
     expect(tableDataServiceMock.setHeaders).toHaveBeenCalledWith(component.headers);
   });
 
+  it('syncs the reporting year and labels the all-years publication view', () => {
+    const { component, tableDataServiceMock } = createComponent();
+    component.publication_table = true;
+
+    component.setReportingYear(2025, true);
+
+    expect(component.reporting_year).toBe(2025);
+    expect(tableDataServiceMock.setReportingYear).toHaveBeenCalledWith(2025);
+    expect(component.getName()).toBe('Alle Publikationen');
+  });
+
+  it('labels publications without a reporting date', () => {
+    const { component, tableDataServiceMock } = createComponent();
+    component.publication_table = true;
+
+    component.setReportingYear(null, false);
+
+    expect(tableDataServiceMock.setReportingYear).toHaveBeenCalledWith(null);
+    expect(component.getName()).toBe('Publikationen ohne Datumsangabe');
+  });
+
   it('resets column filters and their visible controls', () => {
     const { component, tableDataServiceMock } = createComponent();
     const titleFilter = new FormControl('angular');
