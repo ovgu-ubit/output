@@ -2,10 +2,20 @@ import { Observable } from "rxjs";
 
 export interface TableParent<T> {
   buttons: TableButton[];
+  rowActions?: TableRowAction<T>[];
   preProcessing?: (() => Observable<void>),
+  afterDataLoaded?: ((data: T[]) => Observable<void>),
   indexOptions?:any;
   not_editable?:boolean;
   not_selectable?:boolean;
+}
+
+export interface TableRowAction<T> {
+  icon: string;
+  tooltip: string | ((row: T) => string);
+  action: (row: T) => void;
+  visible?: (row: T) => boolean;
+  disabled?: (row: T) => boolean;
 }
 
 export interface TableHeader {

@@ -14,7 +14,7 @@ import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
-import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
+import { TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
 import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import {  Entity  } from '@output/interfaces';
 import { TableDataService } from '../services/table-data.service';
@@ -205,16 +205,37 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   public updateData() {
-    return this.tableData.updateData().pipe(map(() => {
-      this.selection.clear();
-      this.dataSource.paginator = this.paginator;
-      this.dataSource2.paginator = this.paginator2;
-      this.cdr.detectChanges();
-    }));
+    return this.tableData.updateData().pipe(
+      concatMap(data => this.parent.afterDataLoaded ? this.parent.afterDataLoaded(data) : of(undefined)),
+      map(() => {
+        this.selection.clear();
+        this.dataSource.paginator = this.paginator;
+        this.dataSource2.paginator = this.paginator2;
+        this.cdr.detectChanges();
+      })
+    );
   }
 
   edit(row: any) {
     this.tableAction.edit(row, () => this.updateData());
+  }
+
+  runRowAction(event: Event, action: TableRowAction<T>, row: T): void {
+    event.stopPropagation();
+    if (!this.isRowActionVisible(action, row) || this.isRowActionDisabled(action, row)) return;
+    action.action(row);
+  }
+
+  isRowActionVisible(action: TableRowAction<T>, row: T): boolean {
+    return action.visible ? action.visible(row) : true;
+  }
+
+  isRowActionDisabled(action: TableRowAction<T>, row: T): boolean {
+    return action.disabled ? action.disabled(row) : false;
+  }
+
+  getRowActionTooltip(action: TableRowAction<T>, row: T): string {
+    return typeof action.tooltip === 'function' ? action.tooltip(row) : action.tooltip;
   }
 
   add() {

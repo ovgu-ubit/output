@@ -78,6 +78,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
       body.append("file", file)
       body.append("update", update)
       body.append("dry_run", dryRun)
+      if (reporting_year !== undefined && reporting_year !== null) body.append("reporting_year", `${reporting_year}`)
     } else body = {
       dry_run: dryRun,
       reporting_year,

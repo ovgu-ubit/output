@@ -4,6 +4,7 @@ import { TableComponent } from './table.component';
 import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
 import { ChangeDetectorRef, SimpleChange } from '@angular/core';
+import { TableRowAction } from '../table.interface';
 
 describe('TableComponent', () => {
   function createComponent() {
@@ -71,6 +72,59 @@ describe('TableComponent', () => {
     component.add();
 
     expect(tableActionServiceMock.add).toHaveBeenCalledWith(jasmine.any(Function));
+  });
+
+  it('executes visible and enabled row actions with the selected row', () => {
+    const { component } = createComponent();
+    const row = { id: 1 };
+    const action: TableRowAction<any> = {
+      icon: 'play_arrow',
+      tooltip: (selected) => `Start ${selected.id}`,
+      action: jasmine.createSpy('action'),
+    };
+    const event = jasmine.createSpyObj<Event>('Event', ['stopPropagation']);
+
+    component.runRowAction(event, action, row);
+
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(action.action).toHaveBeenCalledWith(row);
+    expect(component.getRowActionTooltip(action, row)).toBe('Start 1');
+  });
+
+  it('runs parent post-processing after table data was loaded', () => {
+    const { component, tableDataServiceMock } = createComponent();
+    const rows = [{ id: 1 }];
+    const afterDataLoaded = jasmine.createSpy('afterDataLoaded').and.returnValue(of(undefined));
+    tableDataServiceMock.updateData.and.returnValue(of(rows));
+    component.parent = { buttons: [], afterDataLoaded };
+
+    component.updateData().subscribe();
+
+    expect(afterDataLoaded).toHaveBeenCalledWith(rows);
+  });
+
+  it('does not execute hidden or disabled row actions', () => {
+    const { component } = createComponent();
+    const row = { id: 1 };
+    const event = jasmine.createSpyObj<Event>('Event', ['stopPropagation']);
+    const hiddenAction: TableRowAction<any> = {
+      icon: 'play_arrow',
+      tooltip: 'Hidden',
+      action: jasmine.createSpy('hiddenAction'),
+      visible: () => false,
+    };
+    const disabledAction: TableRowAction<any> = {
+      icon: 'play_arrow',
+      tooltip: 'Disabled',
+      action: jasmine.createSpy('disabledAction'),
+      disabled: () => true,
+    };
+
+    component.runRowAction(event, hiddenAction, row);
+    component.runRowAction(event, disabledAction, row);
+
+    expect(hiddenAction.action).not.toHaveBeenCalled();
+    expect(disabledAction.action).not.toHaveBeenCalled();
   });
 
   it('syncs changed headers to TableDataService', () => {
