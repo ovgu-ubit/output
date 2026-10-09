@@ -1,11 +1,20 @@
 <mat-toolbar class="primary-toolbar">
   <mat-toolbar-row style="display: flex;justify-content:space-between;">
-    <div style="display: flex;flex-flow: row nowrap;">
-      <img src="assets/logo.png" width="35px">
+    <div class="application-branding">
+      <img src="assets/logo.png" width="35" alt="Output-Logo">
       <button mat-button [routerLink]="'/'">
         <div class="headline-small">{{title}}</div>
       </button>
-      <div class="label-small">{{this.version}}</div>
+      <div class="application-meta">
+        <div class="version-row">
+          <span class="label-small"><a class="releases-link" href="https://github.com/ovgu-ubit/output/releases" target="_blank"
+          rel="noopener noreferrer" matTooltip="Release-Infos">{{this.version}}</a></span>
+          <a class="help-link" mat-icon-button href="https://github.com/ovgu-ubit/output/wiki" target="_blank"
+            rel="noopener noreferrer" aria-label="Output-Wiki öffnen" matTooltip="Hilfe im Output-Wiki">
+            <mat-icon>help_outline</mat-icon>
+          </a>
+        </div>
+      </div>
     </div>
     <div style="display: flex;flex-flow: row wrap;">
       <div>

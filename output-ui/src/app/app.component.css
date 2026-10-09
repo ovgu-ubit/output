@@ -1,3 +1,49 @@
+.application-branding {
+  align-items: center;
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.application-meta {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: row;
+  line-height: 1;
+}
+
+.version-row {
+  align-items: center;
+  display: flex;
+}
+
+.version-row .label-small {
+  transform: translateY(-8px);
+}
+
+.help-link.mat-mdc-icon-button.mat-mdc-button-base {
+  --mat-icon-button-state-layer-size: 24px;
+  --mat-icon-button-touch-target-display: none;
+  --mdc-icon-button-state-layer-size: 24px;
+  flex: 0 0 24px;
+  height: 24px;
+  margin-left: 4px;
+  padding: 3px;
+  width: 24px;
+}
+
+.help-link mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.releases-link {
+  color: inherit;
+  font-size: 11px;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
 .demo-banner-offset {
   padding-bottom: 56px;
 }
