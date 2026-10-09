@@ -145,6 +145,8 @@ describe('PublicationImportComponent', () => {
     };
     const file = new File(['title'], 'publications.csv', { type: 'text/csv' });
     const input = { files: [file], value: 'selected' } as unknown as HTMLInputElement;
+    configService.get.calls.reset();
+    configService.get.and.returnValue(of({ value: null } as any));
     spyOn(component.quickStartFileInput.nativeElement, 'click');
     spyOn(component.table, 'updateData').and.returnValue(of(undefined));
 
@@ -152,7 +154,8 @@ describe('PublicationImportComponent', () => {
     component.onQuickStartFileSelected({ target: input } as unknown as Event);
 
     expect(input.value).toBe('');
-    expect(workflowService.run).toHaveBeenCalledWith(8, 2026, true, false, file);
+    expect(configService.get).not.toHaveBeenCalled();
+    expect(workflowService.run).toHaveBeenCalledWith(8, undefined, true, false, file);
   });
 
   it('does not start after an invalid or cancelled file selection', () => {

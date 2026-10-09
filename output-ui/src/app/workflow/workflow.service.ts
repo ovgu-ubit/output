@@ -71,7 +71,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   public deleteWorkflowReport(reportId: number) {
     return this.http.delete(this.runtimeConfigService.getValue("api") + 'workflow/workflow-report/' + reportId, { withCredentials: true });
   }
-  public run(id: number, reporting_year: number, update: boolean, dryRun = false, file?: File) {
+  public run(id: number, reporting_year: number | undefined, update: boolean, dryRun = false, file?: File) {
     let body;
     if (file) {
       body = new FormData();

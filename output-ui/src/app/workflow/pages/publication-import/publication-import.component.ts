@@ -248,19 +248,24 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     this.availableWorkflowIds.delete(workflowId);
     let started = false;
 
-    this.configService.get('reporting_year').pipe(
-      map((config) => Number(config?.value)),
-      switchMap((reportingYear) => {
-        if (!Number.isInteger(reportingYear) || reportingYear < 1850) {
-          this._snackBar.open('Quick-Start nicht möglich: Es ist kein gültiges Reporting Year konfiguriert.', 'OK', {
-            duration: 5000,
-            panelClass: ['danger-snackbar'],
-            verticalPosition: 'top'
-          });
-          return EMPTY;
-        }
-        return this.workflowService.run(workflowId, reportingYear, true, false, file);
-      }),
+    const run$ = workflow.strategy_type === ImportStrategy.FILE_UPLOAD
+      ? this.workflowService.run(workflowId, undefined, true, false, file)
+      : this.configService.get('reporting_year').pipe(
+        map((config) => Number(config?.value)),
+        switchMap((reportingYear) => {
+          if (!Number.isInteger(reportingYear) || reportingYear < 1850) {
+            this._snackBar.open('Quick-Start nicht möglich: Es ist kein gültiges Reporting Year konfiguriert.', 'OK', {
+              duration: 5000,
+              panelClass: ['danger-snackbar'],
+              verticalPosition: 'top'
+            });
+            return EMPTY;
+          }
+          return this.workflowService.run(workflowId, reportingYear, true, false, file);
+        })
+      );
+
+    run$.pipe(
       finalize(() => {
         if (!started) {
           this.runningWorkflowIds.delete(workflowId);
