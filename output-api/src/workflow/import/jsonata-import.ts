@@ -3,7 +3,7 @@ import { Injectable, NotImplementedException } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
-import { concat, concatMap, firstValueFrom, map, mergeAll, Observable, queueScheduler, scheduled, timer } from 'rxjs';
+import { catchError, concat, concatMap, firstValueFrom, from, map, mergeAll, Observable, of, queueScheduler, scheduled, timer } from 'rxjs';
 import { DeepPartial, FindManyOptions, IsNull, Not } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
@@ -1096,17 +1096,26 @@ export class JSONataImportService extends AbstractImportService {
 
         for (const pub of publications) {
             const url = this.applyVariables(this.url_doi, { doi: pub.doi });
-            obs$.push(this.delayedGet(url))
+            const safeUrl = await this.getSafeUrl(this.importDefinition.strategy.url_doi, { doi: pub.doi });
+            obs$.push(this.delayedGet(url).pipe(
+                catchError(error => from(this.writeRunError(
+                    error,
+                    `Error retrieving enrich data from URL ${safeUrl}`
+                )).pipe(
+                    map(() => null),
+                    catchError(() => of(null))
+                ))
+            ));
         }
 
         let errors = 0;
         concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
             next: async (data: AxiosResponse) => {
-                if (!data) {
-                    errors++
-                    return;
-                }
                 try {
+                    if (!data) {
+                        errors++;
+                        return;
+                    }
                     const item = await this.getDataEnrich(data);
 
                     const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(item)?.toLocaleLowerCase().trim(), this.getTitle(item)?.toLocaleLowerCase().trim())
@@ -1131,7 +1140,7 @@ export class JSONataImportService extends AbstractImportService {
                     }
                     this.processedPublications++;
                 } catch (e) {
-                    this.numberOfPublications -= this.max_res;
+                    errors++;
                     await this.workflowReportService.write(this.workflowReport.id, {
                         level: WorkflowReportItemLevel.ERROR,
                         timestamp: new Date(),

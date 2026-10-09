@@ -39,7 +39,7 @@
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.2",
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.6",
     "eslint": "^10.1.0",
     "globals": "^17.4.0",
     "jasmine-core": "~5.12.1",

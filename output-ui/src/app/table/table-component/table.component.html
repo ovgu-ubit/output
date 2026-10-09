@@ -99,13 +99,22 @@
               <div>{{renderHeader({colName: 'edit'}).text}}</div>
             </div>
           </th>
-          <td mat-cell *matCellDef="let row">
+          <td mat-cell *matCellDef="let row" class="row-actions-cell">
             <button mat-icon-button (click)="this.editFunction(row)" matTooltip="Element untersuchen"
               [matTooltipShowDelay]="800">
               <mat-icon
                 *ngIf="((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked); else else1">edit</mat-icon>
               <ng-template #else1><mat-icon>remove_red_eye</mat-icon></ng-template>
             </button>
+            <ng-container *ngFor="let action of this.parent.rowActions">
+              <button mat-icon-button *ngIf="isRowActionVisible(action, row)"
+                (click)="runRowAction($event, action, row)"
+                [disabled]="isRowActionDisabled(action, row)"
+                [matTooltip]="getRowActionTooltip(action, row)" [attr.aria-label]="getRowActionTooltip(action, row)"
+                [matTooltipShowDelay]="800">
+                <mat-icon>{{action.icon}}</mat-icon>
+              </button>
+            </ng-container>
           </td>
         </ng-container>
         <ng-container matColumnDef="edit-filter" sticky>

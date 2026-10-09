@@ -523,6 +523,63 @@ describe('JSONataImportService workflow report status', () => {
             status: 'Error while importing',
         }));
     });
+
+    it('logs a safe failed enrich URL and continues with remaining DOI requests', async () => {
+        const failedRequest = {
+            message: 'Request failed with status code 404',
+            code: 'ERR_BAD_REQUEST',
+            response: {
+                status: 404,
+                statusText: 'Not Found',
+                headers: {
+                    'x-rate-limit-limit': '10',
+                    'x-rate-limit-interval': '1s',
+                    'x-concurrency-limit': '3',
+                },
+            },
+        };
+        (service as any).publicationService = {
+            get: jest.fn(async () => [
+                { doi: '10.123/missing', locked: false },
+                { doi: '10.123/found', locked: false },
+            ]),
+        };
+        (service as any).publicationIndexService.getPubwithDOIorTitle.mockResolvedValue({
+            id: 42,
+            locked: true,
+        });
+        (service as any).importDefinition = {
+            strategy: {
+                url_doi: 'https://api.crossref.test/works/[doi]?mailto=[SECRET_CROSSREF]',
+                get_doi_item: '$.message',
+            },
+        };
+        (service as any).url_doi = 'https://api.crossref.test/works/[doi]?mailto=real-secret';
+        (service as any).delayInMs = 0;
+        (service as any).parallelCalls = 1;
+        http.get.mockImplementation((url: string) => url.includes('/missing')
+            ? throwError(() => failedRequest)
+            : of({ data: { message: { DOI: '10.123/found', title: 'Found' } } }));
+        jest.spyOn(service as any, 'getDataEnrich').mockResolvedValue({
+            doi: '10.123/found',
+            title: 'Found',
+        });
+
+        await service.enrich('tester', false);
+        await new Promise((resolve) => setTimeout(resolve, 25));
+
+        expect(http.get).toHaveBeenCalledTimes(2);
+        expect(workflowReportService.write).toHaveBeenCalledWith(11, expect.objectContaining({
+            level: 'error',
+            message: expect.stringContaining(
+                'Error retrieving enrich data from URL https://api.crossref.test/works/10.123/missing?mailto=[SECRET_CROSSREF]'
+            ),
+        }));
+        expect(workflowReportService.write.mock.calls.flat().join(' ')).not.toContain('real-secret');
+        expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
+            status: 'Successfull enrich',
+        }));
+    });
 });
 
 describe('JSONataImportService optional_fields config usage', () => {

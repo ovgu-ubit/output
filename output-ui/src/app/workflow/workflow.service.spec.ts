@@ -56,4 +56,30 @@ describe('WorkflowService', () => {
       { withCredentials: true }
     );
   });
+
+  it('starts an import with the supplied quick-start parameters', async () => {
+    http.post.and.returnValue(of({ status: 'started', dry_run: false }));
+
+    await firstValueFrom(service.run(7, 2026, true, false));
+
+    expect(http.post).toHaveBeenCalledWith(
+      'http://api/workflow/import/7/run',
+      { reporting_year: 2026, update: true, dry_run: false },
+      { withCredentials: true }
+    );
+  });
+
+  it('includes the reporting year in multipart file imports', async () => {
+    const file = new File(['title'], 'import.csv', { type: 'text/csv' });
+    http.post.and.returnValue(of({ status: 'started', dry_run: false }));
+
+    await firstValueFrom(service.run(8, 2026, true, false, file));
+
+    const body = http.post.calls.mostRecent().args[1] as FormData;
+    expect(http.post.calls.mostRecent().args[0]).toBe('http://api/workflow/import/8/run');
+    expect(body.get('file')).toBe(file);
+    expect(body.get('reporting_year')).toBe('2026');
+    expect(body.get('update')).toBe('true');
+    expect(body.get('dry_run')).toBe('false');
+  });
 });
