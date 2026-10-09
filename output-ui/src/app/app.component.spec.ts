@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
+import { Title } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
 import { ConfigService } from './administration/services/config.service';
@@ -18,6 +19,7 @@ describe('AppComponent', () => {
   let runtimeConfigService: jasmine.SpyObj<RuntimeConfigService>;
   let errorPresentation: jasmine.SpyObj<ErrorPresentationService>;
   let backendAvailability: BackendAvailabilityService;
+  let browserTitle: Title;
 
   beforeEach(async () => {
     configService = jasmine.createSpyObj<ConfigService>('ConfigService', ['get', 'health']);
@@ -56,6 +58,15 @@ describe('AppComponent', () => {
       .overrideComponent(AppComponent, {
         set: {
           template: `
+            <div class="application-meta">
+              <div class="version-row">
+                <span class="label-small">{{this.version}}</span>
+                <a class="help-link" href="https://github.com/ovgu-ubit/output/wiki" target="_blank"
+                  rel="noopener noreferrer" aria-label="Output-Wiki öffnen">Hilfe</a>
+              </div>
+              <a class="releases-link" href="https://github.com/ovgu-ubit/output/releases" target="_blank"
+                rel="noopener noreferrer">GitHub Releases</a>
+            </div>
             <main [class.demo-banner-offset]="this.demoAuth"></main>
             <div class="demo-banner" *ngIf="this.demoAuth">
               <span>Demo-Version: Diese Instanz dient nur zur Erprobung.</span>
@@ -65,6 +76,8 @@ describe('AppComponent', () => {
         }
       })
       .compileComponents();
+
+    browserTitle = TestBed.inject(Title);
   });
 
   afterEach(() => {
@@ -87,6 +100,7 @@ describe('AppComponent', () => {
     tick();
 
     expect(component.title).toBe('Output.TEST');
+    expect(browserTitle.getTitle()).toBe('Output.TEST');
     discardPeriodicTasks();
   }));
 
@@ -100,6 +114,7 @@ describe('AppComponent', () => {
     tick();
 
     expect(component.title).toBe('Output');
+    expect(browserTitle.getTitle()).toBe('Output');
     expect(errorPresentation.present).not.toHaveBeenCalled();
     discardPeriodicTasks();
   }));
@@ -135,6 +150,19 @@ describe('AppComponent', () => {
     tick();
 
     expect(fixture.nativeElement.querySelector('.demo-banner')?.textContent).toContain('Demo-Version');
+    discardPeriodicTasks();
+  }));
+
+  it('links the version area to releases and the wiki', fakeAsync(() => {
+    fixture = TestBed.createComponent(AppComponent);
+
+    fixture.detectChanges();
+    tick();
+
+    const releasesLink = fixture.nativeElement.querySelector('.releases-link') as HTMLAnchorElement;
+    const helpLink = fixture.nativeElement.querySelector('.help-link') as HTMLAnchorElement;
+    expect(releasesLink.href).toBe('https://github.com/ovgu-ubit/output/releases');
+    expect(helpLink.href).toBe('https://github.com/ovgu-ubit/output/wiki');
     discardPeriodicTasks();
   }));
 });
