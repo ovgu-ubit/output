@@ -11,6 +11,7 @@ import { assertCreateRequestHasNoId, hasProvidedEntityId } from '../common/entit
 import { mergeEntities } from '../common/merge';
 import { AppConfigService } from '../config/app-config.service';
 import { Invoice } from '../invoice/Invoice.entity';
+import { addInvoiceCounts, normalizeInvoiceCounts } from '../invoice/invoice-counts';
 import { PublicationService } from '../publication/core/publication.service';
 import { Contract } from './Contract.entity';
 import { ContractComponent } from './ContractComponent.entity';
@@ -219,7 +220,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         }));
     }
 
-    public async index(reporting_year: number, canReadNetCosts = false): Promise<ContractIndex[]> {
+    public async index(reporting_year: number, canReadNetCosts = false, canReadInvoices = false): Promise<ContractIndex[]> {
         let query = this.repository.createQueryBuilder('contract')
             .leftJoin('contract.publisher', 'publisher')
             .leftJoin('contract.publications', 'publication')
@@ -256,7 +257,9 @@ export class ContractService extends AbstractEntityService<Contract> {
                 .addSelect(canReadNetCosts ? 'SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)' : 'NULL', 'net_costs');
         }
 
-        return query.getRawMany() as Promise<ContractIndex[]>;
+        if (canReadInvoices) addInvoiceCounts(query, 'contract_id', reporting_year);
+        const rows = await query.getRawMany<ContractIndex>();
+        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {

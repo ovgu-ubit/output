@@ -22,6 +22,7 @@ export interface TableHeader {
   colName: string,
   colTitle: string,
   type?: string,
+  roles?: string[],
   tooltip?: string | ((row: any) => string)
 }
 

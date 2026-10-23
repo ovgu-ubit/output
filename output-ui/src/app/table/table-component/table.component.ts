@@ -17,13 +17,14 @@ import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, 
 import { TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
 import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import {  Entity  } from '@output/interfaces';
+import { InvoiceIndexEntityFilter, InvoiceIndexQuery } from '@output/interfaces';
 import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
 
 @Component({
     selector: 'appTable',
     templateUrl: './table.component.html',
-    styleUrls: ['./table.component.css'],
+    styleUrls: ['../table-appearance.css', './table.component.css'],
     standalone: false,
     providers: [TableDataService, TableActionService]
 })
@@ -41,6 +42,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() combineAlias? = true;
   @Input() softDelete? = false;
   @Input() filter_key? = "";
+  @Input() invoice_filter_key?: InvoiceIndexEntityFilter;
 
   @Input() editFunction? = this.edit.bind(this);
   @Input() addFunction? = this.add.bind(this);
@@ -112,6 +114,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
         col = this.headers.find(e => e.colName === 'net_costs')
         if (col && !this.publication_table) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+        col = this.headers.find(e => e.colName === 'invoice_count');
+        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum');
       }), concatMap(data => this.updateData()))
     }));
 
@@ -153,7 +157,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['headers'] && this.headers) {
       this.tableData.setHeaders(this.headers);
-      this.headerNames = this.headers.map(x => x.colName);
+      this.headerNames = this.headers
+        .filter(col => !col.roles || col.roles.some(role => this.tokenService.hasRole(role)))
+        .map(x => x.colName);
       this.headerNames.unshift('edit');
       if (!this.parent.not_selectable) this.headerNames.unshift('select');
       
@@ -299,7 +305,17 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterAvailable(col: TableHeader) {
-    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime' && col.type !== 'route-link');
+    return (col.type !== 'pubs' && col.type !== 'invoices' && col.type !== 'date' && col.type !== 'datetime' && col.type !== 'route-link');
+  }
+
+  invoiceQueryParams(id: number, field: string): InvoiceIndexQuery {
+    if (!this.invoice_filter_key) return {};
+    const params: InvoiceIndexQuery = { [this.invoice_filter_key]: id };
+    if (field === 'invoice_count') {
+      if (this.reporting_year) params.invoice_year = Number(this.reporting_year);
+      else params.invoice_date_missing = true;
+    }
+    return params;
   }
 
   public getCellTooltip(row: T, col: TableHeader): string | null {

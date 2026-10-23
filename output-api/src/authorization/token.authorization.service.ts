@@ -3,6 +3,7 @@ import { ExecutionContext, Injectable, Req } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { firstValueFrom } from "rxjs";
+import { ApplicationPermission, hasApplicationRole } from '@output/interfaces';
 import { createInternalErrorHttpException } from "../common/api-error";
 import { AppConfigService } from "../config/app-config.service";
 import { DemoAuthService } from "../demo-auth/demo-auth.service";
@@ -73,27 +74,19 @@ export class TokenAuthorizationService extends AuthorizationService {
         // enrich the request object with user info for further processing
         req['user'] = payload;
         req['user']['username'] = payload.id
-        const permissions = payload.permissions as { appname: string | null; rolename: string }[];
-        const hasRole = (...roles: string[]) => permissions.some(permission =>
-            (permission.appname === 'output' && roles.includes(permission.rolename))
-            || (permission.appname === null && permission.rolename === 'admin')
-        );
+        const permissions = payload.permissions as ApplicationPermission[];
+        const hasRole = (...roles: string[]) => roles.some(role => hasApplicationRole(permissions, 'output', role));
 
-        req['user']['read'] = hasRole('writer', 'reader', 'admin', 'publication_writer');
+        req['user']['read'] = hasRole('writer', 'reader', 'admin');
         req['user']['write_publication'] = hasRole('writer', 'admin', 'publication_writer');
         req['user']['write'] = hasRole('writer', 'admin');
         req['user']['admin'] = hasRole('admin');
     }
 
-    private hasRequiredPermissions(permissions: { appname: string | null; rolename: string }[], requiredPermissions: PermissionDecoration[]) {
+    private hasRequiredPermissions(permissions: ApplicationPermission[], requiredPermissions: PermissionDecoration[]) {
         // Case I/II: if permissions is an empty array, a valid token is required to proceed
         if (!requiredPermissions || requiredPermissions.length === 0) return true;
         // Case III: if permissions are given, the user is required to posess ANY of them or admin
-        for (const p of requiredPermissions) {
-            if (p.role === null && permissions.find(e => e.appname === p.app)) return true;
-            else if (permissions.find(e => e.appname === p.app && e.rolename === p.role)) return true;
-            else if (permissions.find(e => e.appname === null && e.rolename === 'admin')) return true;
-        }
-        return false;
+        return requiredPermissions.some(permission => hasApplicationRole(permissions, permission.app, permission.role));
     }
 }

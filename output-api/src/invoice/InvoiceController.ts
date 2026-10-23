@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} 
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
 import { AccessGuard } from "../authorization/access.guard";
+import { canReadInvoices } from "../authorization/invoice-read-access";
 import { Permissions } from "../authorization/permission.decorator";
 import {  CostTypeIndex  } from '@output/interfaces';
 import { InvoiceService } from "./invoice.service";
@@ -96,7 +97,7 @@ export class InvoiceController {
         type: Invoice
     })
     async cost_type_index(@Query('reporting_year') reporting_year: number, @Req() request: Request) : Promise<CostTypeIndex[]> {
-        return await this.costTypeService.getCostTypeIndex(reporting_year, request['user'] ? request['user']['read'] : false);
+        return await this.costTypeService.getCostTypeIndex(reporting_year, request['user'] ? request['user']['read'] : false, canReadInvoices(request['user']));
     }
     
     @Get('cost_type/:id')
@@ -159,7 +160,7 @@ export class InvoiceController {
     @UseGuards(AccessGuard)
     @ApiResponse({ status: 200, description: 'Author index is returned.' })
     async ccIndex(@Query('reporting_year') reporting_year: number, @Req() request: Request) {
-        return await this.costCenterService.getCostCenterIndex(reporting_year, request['user'] ? request['user']['read'] : false);
+        return await this.costCenterService.getCostCenterIndex(reporting_year, request['user'] ? request['user']['read'] : false, canReadInvoices(request['user']));
     }
 
     

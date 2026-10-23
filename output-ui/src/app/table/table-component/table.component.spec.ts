@@ -176,4 +176,18 @@ describe('TableComponent', () => {
     expect(tableDataServiceMock.dataSource.filter).toBe('');
     expect(tableDataServiceMock.dataSource2.filter).toBe('');
   });
+
+  for (const filter of ['contract_id', 'cost_center_id', 'cost_type_id'] as const) {
+    it(`creates independent invoice links for ${filter} without changing publication state`, () => {
+      const { component } = createComponent();
+      component.invoice_filter_key = filter;
+      component.reporting_year = 2026;
+      expect(component.invoiceQueryParams(42, 'invoice_count')).toEqual({ [filter]: 42, invoice_year: 2026 });
+      expect(component.invoiceQueryParams(42, 'invoice_count_total')).toEqual({ [filter]: 42 });
+      component.reporting_year = null;
+      expect(component.invoiceQueryParams(42, 'invoice_count')).toEqual({ [filter]: 42, invoice_date_missing: true });
+      expect(component.invoiceQueryParams(42, 'invoice_count_total')).toEqual({ [filter]: 42 });
+      expect((component as any).store.dispatch).not.toHaveBeenCalled();
+    });
+  }
 });

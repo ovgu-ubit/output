@@ -98,6 +98,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "prebundle": {
+              "exclude": ["@output/interfaces"]
+            }
+          },
           "configurations": {
             "production": {
               "buildTarget": "output-ui:build:production"

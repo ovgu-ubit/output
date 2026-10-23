@@ -6,6 +6,7 @@ import {  CostCenterIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AppConfigService } from '../config/app-config.service';
 import { CostCenter } from './CostCenter.entity';
+import { addInvoiceCounts, normalizeInvoiceCounts } from './invoice-counts';
 
 @Injectable()
 export class CostCenterService extends AbstractEntityService<CostCenter> {
@@ -16,7 +17,9 @@ export class CostCenterService extends AbstractEntityService<CostCenter> {
         super(repository, appConfigService);
     }
 
-    public async getCostCenterIndex(reporting_year: number, canReadNetCosts = false): Promise<CostCenterIndex[]> {
+    public async getCostCenterIndex(reporting_year: number, canReadNetCosts = false, canReadInvoices = false): Promise<CostCenterIndex[]> {
+        // Preserve "undated" for invoices independently of the legacy publication-year fallback.
+        const invoiceReportingYear = reporting_year;
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
         let query = this.repository.createQueryBuilder("cost_center")
             .leftJoin("invoice", "invoice", "invoice.\"costCenterId\"=cost_center.id")
@@ -47,7 +50,9 @@ export class CostCenterService extends AbstractEntityService<CostCenter> {
                 .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs");
         }
 
-        return query.getRawMany() as Promise<CostCenterIndex[]>;
+        if (canReadInvoices) addInvoiceCounts(query, 'cost_center_id', invoiceReportingYear);
+        const rows = await query.getRawMany<CostCenterIndex>();
+        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
     }
 
     public findOrSave(title: string, dryRun = false): Observable<CostCenter> {

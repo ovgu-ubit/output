@@ -123,6 +123,21 @@ describe("TokenAuthorizationService", () => {
         expect(result).toBe(false);
     });
 
+    it.each([
+        ['reader', true], ['publication_writer', true], ['writer', false], ['admin', false],
+    ])('checks inherited %s access for a publication writer without granting general write rights', async (requiredRole, allowed) => {
+        (configService.get as jest.Mock).mockImplementation(async (key: string) => key === 'AUTH' ? 'true' : 'http://auth/');
+        (reflector.get as jest.Mock).mockReturnValue([{ app: 'output', role: requiredRole }]);
+        (jwtService.verify as jest.Mock).mockReturnValue({
+            id: 'publication-author', permissions: [{ appname: 'output', rolename: 'publication_writer' }],
+        });
+        httpService.get.mockReturnValue(of({ data: 'public-key' }));
+        const request = { cookies: { 'auth-token': 'token' } } as any;
+
+        expect(await service.verify(createExecutionContext(request))).toBe(allowed);
+        expect(request.user).toMatchObject({ read: true, write_publication: true, write: false, admin: false });
+    });
+
     it("propagates server errors when public key lookup fails", async () => {
         (configService.get as jest.Mock).mockImplementation(async (key: string) => {
             if (key === "AUTH") return "true";

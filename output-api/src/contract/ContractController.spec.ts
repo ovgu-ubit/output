@@ -75,8 +75,18 @@ describe('ContractController', () => {
 
         const result = await controller.index(2025, { user: { read: true } } as any);
 
-        expect(service.index).toHaveBeenCalledWith(2025, true);
+        expect(service.index).toHaveBeenCalledWith(2025, true, true);
         expect(result).toEqual([{ id: 1, label: 'Contract', net_costs: 100 }]);
+    });
+
+    it.each(['reader', 'writer', 'admin', 'publication_writer'])('includes invoice counts for output %s', async rolename => {
+        await controller.index(2026, { user: { read: true, permissions: [{ appname: 'output', rolename }] } } as any);
+        expect(service.index).toHaveBeenCalledWith(2026, true, true);
+    });
+
+    it('does not expose invoice counts to anonymous users', async () => {
+        await controller.index(2026, {} as any);
+        expect(service.index).toHaveBeenLastCalledWith(2026, false, false);
     });
 
     it('throws a structured not-found error when one contract component is missing', async () => {
