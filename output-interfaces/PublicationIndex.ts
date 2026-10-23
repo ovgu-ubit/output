@@ -1,3 +1,5 @@
+import { InvoiceCounts } from './InvoiceIndex';
+
 export interface PublicationIndex {
     id: number;
     title: string;
@@ -44,7 +46,7 @@ export interface InstituteIndex {
     net_costs?: number;
 	sub_inst_count: number;
 }
-export interface ContractIndex {
+export interface ContractIndex extends Partial<InvoiceCounts> {
 	id: number;
     publisher: string;
     label: string;
@@ -93,7 +95,7 @@ export interface OACategoryIndex {
     net_costs?: number;
     pub_count_total: number;
 }
-export interface CostCenterIndex {
+export interface CostCenterIndex extends Partial<InvoiceCounts> {
     id?: number;
     number?: string;
     label: string;
@@ -101,7 +103,7 @@ export interface CostCenterIndex {
     net_costs?: number;
     pub_count_total: number;
 }
-export interface CostTypeIndex {
+export interface CostTypeIndex extends Partial<InvoiceCounts> {
     id?: number;
     label: string;
 	pub_count: number;

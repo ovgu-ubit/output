@@ -6,6 +6,7 @@ import { Contract } from './Contract.entity';
 import {  ContractIndex  } from '@output/interfaces';
 import { Permissions } from '../authorization/permission.decorator';
 import { AccessGuard } from '../authorization/access.guard';
+import { canReadInvoices } from '../authorization/invoice-read-access';
 import { AbstractCrudController } from '../common/abstract-crud.controller';
 import { createNotFoundHttpException } from '../common/api-error';
 import { ContractComponent } from './ContractComponent.entity';
@@ -21,10 +22,10 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
     @Get('index')
     @UseGuards(AccessGuard)
     @ApiOperation({ summary: 'List contract index entries' })
-    @ApiQuery({ name: 'reporting_year', required: false, type: Number, description: 'Reporting year used to aggregate publication counts.' })
+    @ApiQuery({ name: 'reporting_year', required: false, type: Number, description: 'Year for publication counts (publication date) and invoice counts (invoice date). Invoice counts are only returned to invoice readers.' })
     @ApiResponse({ status: 200, description: 'Contract index entries for the requested reporting year.' })
     async index(@Query('reporting_year') reporting_year: number, @Req() request: Request): Promise<ContractIndex[]> {
-        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false);
+        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false, canReadInvoices(request['user']));
     }
 
     @Get('component')

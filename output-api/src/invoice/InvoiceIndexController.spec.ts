@@ -20,7 +20,7 @@ describe('InvoiceIndexController', () => {
     });
 
     it.each([
-        ['reader', true], ['writer', true], ['admin', true], ['publication_writer', false], ['anonymous', false],
+        ['reader', true], ['writer', true], ['admin', true], ['publication_writer', true], ['anonymous', false],
     ])('enforces the endpoint permissions for %s', async (role, allowed) => {
         const config = { get: jest.fn(async (key: string) => key === 'AUTH' ? 'true' : 'http://auth/') };
         const jwt = { verify: jest.fn(() => ({ id: 'test', permissions: [{ appname: 'output', rolename: role }] })) };

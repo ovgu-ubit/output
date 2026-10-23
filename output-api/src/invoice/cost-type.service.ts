@@ -6,6 +6,7 @@ import {  CostTypeIndex  } from '@output/interfaces';
 import { AbstractEntityService } from '../common/abstract-entity.service';
 import { AppConfigService } from '../config/app-config.service';
 import { CostType } from './CostType.entity';
+import { addInvoiceCounts, normalizeInvoiceCounts } from './invoice-counts';
 
 @Injectable()
 export class CostTypeService extends AbstractEntityService<CostType> {
@@ -16,7 +17,9 @@ export class CostTypeService extends AbstractEntityService<CostType> {
         super(repository, appConfigService);
     }
 
-    public async getCostTypeIndex(reporting_year: number, canReadNetCosts = false): Promise<CostTypeIndex[]> {
+    public async getCostTypeIndex(reporting_year: number, canReadNetCosts = false, canReadInvoices = false): Promise<CostTypeIndex[]> {
+        // Preserve "undated" for invoices independently of the legacy publication-year fallback.
+        const invoiceReportingYear = reporting_year;
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
         let query = this.repository.createQueryBuilder("cost_type")
             .leftJoin("cost_item", "cost_item", "cost_item.\"costTypeId\"=cost_type.id")
@@ -42,7 +45,9 @@ export class CostTypeService extends AbstractEntityService<CostType> {
                 .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs");
         }
 
-        return query.getRawMany() as Promise<CostTypeIndex[]>;
+        if (canReadInvoices) addInvoiceCounts(query, 'cost_type_id', invoiceReportingYear);
+        const rows = await query.getRawMany<CostTypeIndex>();
+        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
     }
 
     public findOrSave(title: string, dryRun = false): Observable<CostType> {

@@ -1,5 +1,6 @@
 export * from './Alias';
 export * from './ApiError';
+export * from './Authorization';
 export * from './Config';
 export * from './Import';
 export * from './InvoiceIndex';

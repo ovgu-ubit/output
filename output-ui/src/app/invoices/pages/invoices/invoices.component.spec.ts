@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, ParamMap, Router, provideRouter } from '@angular/router';
-import { InvoiceIndex } from '@output/interfaces';
+import { InvoiceIndex, InvoiceKind } from '@output/interfaces';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ContractService } from 'src/app/services/entities/contract.service';
@@ -47,6 +47,48 @@ describe('InvoicesComponent', () => {
   });
 
   afterEach(() => fixture.destroy());
+
+  function renderInvoice(overrides: Partial<InvoiceIndex> = {}): HTMLElement {
+    const invoice: InvoiceIndex = {
+      id: 1, invoice_kind: InvoiceKind.INVOICE, number: null, date: null, booking_date: null, booking_amount: null,
+      net_amount_eur: null, vat_amount_eur: null, gross_amount_eur: null, item_count: 0, missing_amount_item_count: 0,
+      publication_id: null, publication_title: null, publication_doi: null, publication_deleted: false,
+      component_contract_id: null, component_contract_label: null, publication_contract_id: null, publication_contract_label: null,
+      contract_component_id: null, contract_component_label: null, contract_conflict: false, context: 'unassigned',
+      cost_center_id: null, cost_center_number: null, cost_center_label: null, cost_type_ids: [], cost_type_labels: [],
+      ...overrides,
+    };
+    service.index.and.returnValue(of({ items: [invoice], total: 1, page: 0, page_size: 50 }));
+    const host = fixture.nativeElement as HTMLElement;
+    host.style.display = 'block';
+    host.style.width = '1200px';
+    fixture.detectChanges();
+    return host;
+  }
+
+  for (const contractLabel of [null, 'Vertrag A']) {
+    it(`allows the ${contractLabel ? 'short' : 'empty'} contract column and table to shrink to their contents`, () => {
+      const host = renderInvoice({ component_contract_id: contractLabel ? 7 : null, component_contract_label: contractLabel });
+      expect(host.querySelector('table')!.getBoundingClientRect().width).toBeGreaterThan(0);
+      expect(host.querySelector('table')!.getBoundingClientRect().width).toBeLessThan(1500);
+      expect(host.querySelector('td.mat-column-contract')!.getBoundingClientRect().width).toBeLessThan(200);
+      expect(host.querySelector('td.mat-column-publication')!.getBoundingClientRect().width).toBeLessThan(200);
+      expect(getComputedStyle(host.querySelector('th.mat-column-contract')!).whiteSpace).toBe('normal');
+    });
+  }
+
+  it('wraps long reference labels without truncating or overflowing their cells', () => {
+    const label = 'LangerVertragsnameOhneLeerzeichen'.repeat(10);
+    const host = renderInvoice({ component_contract_id: 7, component_contract_label: label, publication_id: 9, publication_title: label });
+    for (const column of ['contract', 'publication']) {
+      const cell = host.querySelector<HTMLElement>(`td.mat-column-${column}`)!;
+      expect(cell.clientWidth).toBeGreaterThan(0);
+      expect(cell.textContent).toContain(label);
+      expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth + 1);
+      expect(getComputedStyle(cell).overflowWrap).toBe('anywhere');
+      expect(cell.querySelector('a')!.getClientRects().length).toBeGreaterThan(1);
+    }
+  });
 
   it('loads URL filters, shows their labels and follows subsequent URL changes', () => {
     fixture.detectChanges();

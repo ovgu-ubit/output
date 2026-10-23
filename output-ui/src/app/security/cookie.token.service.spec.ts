@@ -58,6 +58,36 @@ describe('CookieTokenService', () => {
     }));
   });
 
+  it('grants inherited reader access to publication writers but not general write or admin access', () => {
+    runtimeValues.security = 'true';
+    cookieService.check.and.returnValue(true);
+    cookieService.get.and.returnValue(JSON.stringify({
+      id: 'publication-author', permissions: [{ appname: 'output', rolename: 'publication_writer' }],
+    }));
+
+    expect(service.hasRole('reader')).toBeTrue();
+    expect(service.hasRole('publication_writer')).toBeTrue();
+    expect(service.hasRole('writer')).toBeFalse();
+    expect(service.hasRole('admin')).toBeFalse();
+  });
+
+  it('does not inherit reader access from publication-writer roles belonging to another application', () => {
+    runtimeValues.security = 'true';
+    cookieService.check.and.returnValue(true);
+    cookieService.get.and.returnValue(JSON.stringify({
+      id: 'other-author', permissions: [{ appname: 'other', rolename: 'publication_writer' }],
+    }));
+
+    expect(service.hasRole('reader')).toBeFalse();
+    expect(service.hasRole('publication_writer')).toBeFalse();
+  });
+
+  it('does not grant reader access to anonymous users while authentication is enabled', () => {
+    runtimeValues.security = 'true';
+    cookieService.check.and.returnValue(false);
+    expect(service.hasRole('reader')).toBeFalse();
+  });
+
   it('redirects to the guarded route after successful demo login', () => {
     runtimeValues.authorization_service = 'demo';
     dialog.open.and.returnValue({ afterClosed: () => of({ success: true, redirectUrl: '/workflow' }) } as any);

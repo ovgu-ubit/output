@@ -1,5 +1,14 @@
 import { InvoiceKind } from './Publication';
 
+export type InvoiceIndexEntityFilter = 'contract_id' | 'cost_center_id' | 'cost_type_id';
+
+export interface InvoiceCounts {
+    /** Distinct invoices by invoice date in the reporting year, or with no invoice date. */
+    invoice_count: number;
+    /** All distinct invoices, including pre-invoices and invoices without a date. */
+    invoice_count_total: number;
+}
+
 export const INVOICE_CONTEXTS = ['publication', 'contract_component', 'both', 'unassigned'] as const;
 export type InvoiceContext = typeof INVOICE_CONTEXTS[number];
 

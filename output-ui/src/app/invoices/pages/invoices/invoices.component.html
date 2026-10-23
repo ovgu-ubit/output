@@ -88,7 +88,7 @@
       </ng-container>
       <ng-container matColumnDef="number">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>
-          Rechnungsnummer <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'number'}"></ng-container>
+          Rechnungsnr. <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'number'}"></ng-container>
         </th>
         <td mat-cell *matCellDef="let invoice">{{invoice.number || '–'}}</td>
       </ng-container>

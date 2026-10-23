@@ -19,7 +19,7 @@ export class InvoiceIndexController {
     @ApiOperation({ summary: 'List invoices with aggregated positions, filters and server-side pagination' })
     @ApiResponse({ status: 200, type: InvoiceIndexPageDto, description: 'One row per invoice, including invoices of soft-deleted publications. Amounts are null if incomplete. Contract filters match either contract path.' })
     @ApiResponse({ status: 400, description: 'Invalid query parameters or date interval.' })
-    @ApiResponse({ status: 403, description: 'Requires reader, writer or admin access.' })
+    @ApiResponse({ status: 403, description: 'Requires reader access (also inherited by publication_writer), writer or admin access.' })
     index(@Query(new ValidationPipe({
         transform: true,
         whitelist: true,
