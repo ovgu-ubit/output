@@ -12,6 +12,10 @@ const routes: Routes = [
     loadChildren: () => import('./publications/publications.module').then(m => m.PublicationsModule),
   },
   {
+    path: 'invoices',
+    loadChildren: () => import('./invoices/invoices.module').then(m => m.InvoicesModule),
+  },
+  {
     path: 'master-data',
     loadChildren: () => import('./master-data/master-data.module').then(m => m.MasterDataModule),
   },{

@@ -23,7 +23,7 @@ import { TableActionService } from '../services/table-action.service';
 @Component({
     selector: 'appTable',
     templateUrl: './table.component.html',
-    styleUrls: ['./table.component.css'],
+    styleUrls: ['../table-appearance.css', './table.component.css'],
     standalone: false,
     providers: [TableDataService, TableActionService]
 })

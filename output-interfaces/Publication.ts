@@ -205,6 +205,7 @@ export interface Invoice extends Entity {
     cost_center?: CostCenter
     cost_items?: CostItem[]
     publication?: Publication
+    contract_component?: ContractComponent;
     invoice_kind?: InvoiceKind;
     number?: string;
     date?: Date;

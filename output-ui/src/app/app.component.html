@@ -21,6 +21,10 @@
         <button mat-button [routerLink]="'/publications'">
           <mat-icon>menu_book</mat-icon> Publikationen
         </button>
+        <button mat-button routerLink="/invoices"
+          *ngIf="tokenService.hasRole('reader') || tokenService.hasRole('writer') || tokenService.hasRole('admin')">
+          <mat-icon>receipt_long</mat-icon> Rechnungen
+        </button>
 
       <button mat-button [routerLink]="'/master-data/authors'">
         <mat-icon>person</mat-icon> Personen

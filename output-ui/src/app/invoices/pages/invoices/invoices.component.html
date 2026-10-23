@@ -1,0 +1,139 @@
+<app-breadcrump path="/invoices" label="/Rechnungen"></app-breadcrump>
+<section class="invoice-index" aria-labelledby="invoice-title">
+  <mat-toolbar class="secondary-toolbar invoice-heading">
+    <h4 id="invoice-title"><mat-icon>receipt_long</mat-icon> Rechnungen ({{result.total}})</h4>
+    <div class="toolbar-actions">
+      <button mat-raised-button (click)="copyLink()"><mat-icon>link</mat-icon> Link kopieren</button>
+    </div>
+  </mat-toolbar>
+  <p>Rechnungen und Vorabrechnungen zu Publikationen und Verträgen. Die Beträge werden getrennt nach Netto, MwSt., Brutto und Buchungsbetrag angezeigt.</p>
+
+  <mat-expansion-panel class="invoice-filters">
+    <mat-expansion-panel-header><mat-panel-title><mat-icon>filter_list</mat-icon> Rechnungen filtern</mat-panel-title></mat-expansion-panel-header>
+    <form [formGroup]="form" (ngSubmit)="applyFilters()">
+      <div class="filter-grid">
+        <mat-form-field class="search-field">
+          <mat-label>Nummer, Publikation, Kostenstelle oder Vertrag suchen</mat-label>
+          <input matInput formControlName="q" maxlength="200">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Belegart</mat-label>
+          <mat-select formControlName="invoice_kind"><mat-option value="">Alle</mat-option><mat-option [value]="kind.INVOICE">Rechnung</mat-option><mat-option [value]="kind.PRE_INVOICE">Vorabrechnung</mat-option></mat-select>
+        </mat-form-field>
+        <mat-form-field *ngFor="let year of years">
+          <mat-label>{{year.label}}</mat-label>
+          <input matInput type="number" min="1" max="9999" [formControlName]="year.key">
+          <mat-error>Bitte ein ganzzahliges Jahr von 1 bis 9999 eingeben.</mat-error>
+        </mat-form-field>
+        <mat-form-field *ngFor="let date of dates">
+          <mat-label>{{date.label}}</mat-label><input matInput type="date" [formControlName]="date.key">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Kostenstelle</mat-label>
+          <mat-select formControlName="cost_center_id"><mat-option value="">Alle</mat-option><mat-option *ngFor="let center of costCenters" [value]="center.id">{{center.number ? center.number + ' – ' : ''}}{{center.label}}</mat-option></mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Kostenart</mat-label>
+          <mat-select formControlName="cost_type_id"><mat-option value="">Alle</mat-option><mat-option *ngFor="let type of costTypes" [value]="type.id">{{type.label}}</mat-option></mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Vertrag</mat-label>
+          <mat-select formControlName="contract_id"><mat-option value="">Alle</mat-option><mat-option *ngFor="let contract of contracts" [value]="contract.id">{{contract.label}}</mat-option></mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Publikation (ID)</mat-label><input matInput type="number" min="1" formControlName="publication_id"><mat-error>Bitte eine gültige ID eingeben.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Vertragskomponente (ID)</mat-label><input matInput type="number" min="1" formControlName="contract_component_id"><mat-error>Bitte eine gültige ID eingeben.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Zuordnung</mat-label><mat-select formControlName="context"><mat-option value="">Alle</mat-option><mat-option *ngFor="let context of contextLabels | keyvalue" [value]="context.key">{{context.value}}</mat-option></mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Rechnungsdatum</mat-label><mat-select formControlName="invoice_date_missing"><mat-option value="">Alle</mat-option><mat-option [value]="true">Ohne Datum</mat-option><mat-option [value]="false">Mit Datum</mat-option></mat-select>
+        </mat-form-field>
+      </div>
+      <p class="filter-error" role="alert" *ngIf="form.hasError('dateRange')">Das Von-Datum muss vor oder am Bis-Datum liegen.</p>
+      <div class="filter-actions"><button mat-raised-button color="primary" type="submit">Filter anwenden</button><button mat-button type="button" (click)="clearFilters()">Zurücksetzen</button></div>
+    </form>
+  </mat-expansion-panel>
+
+  <mat-chip-set aria-label="Aktive Rechnungsfilter" class="active-filters">
+    <mat-chip *ngFor="let filter of activeFilters" (removed)="removeFilter(filter.key)">{{filter.label}}<button matChipRemove [attr.aria-label]="filter.label + ' entfernen'"><mat-icon>cancel</mat-icon></button></mat-chip>
+  </mat-chip-set>
+  <div *ngIf="loading" role="status" aria-live="polite">Rechnungen werden geladen …</div>
+  <div *ngIf="loadFailed && !loading" role="alert">Die Rechnungen konnten nicht geladen werden. <button mat-button (click)="reload()">Erneut laden</button></div>
+  <ng-template #sortIndicator let-column>
+    <div class="numbered-sort-header" aria-hidden="true">
+      <div style="display: flex; flex-direction: column;">
+        <mat-icon class="top" [class.active]="query.sort === column && query.sort_dir === 'asc'">arrow_drop_up</mat-icon>
+        <mat-icon class="bottom" [class.active]="query.sort === column && query.sort_dir === 'desc'">arrow_drop_down</mat-icon>
+      </div>
+      <div>{{query.sort === column ? '1' : ''}}</div>
+    </div>
+  </ng-template>
+  <div class="invoice-table mat-elevation-z8" [attr.aria-busy]="loading">
+    <table mat-table class="table" [dataSource]="result.items" matSort [matSortActive]="query.sort" [matSortDirection]="query.sort_dir" [matSortDisableClear]="true" (matSortChange)="sortChanged($event)">
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          ID <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'id'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice">{{invoice.id}}</td>
+      </ng-container>
+      <ng-container matColumnDef="invoice_kind">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          Belegart <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'invoice_kind'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice">{{invoice.invoice_kind === kind.PRE_INVOICE ? 'Vorabrechnung' : 'Rechnung'}}</td>
+      </ng-container>
+      <ng-container matColumnDef="number">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          Rechnungsnummer <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'number'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice">{{invoice.number || '–'}}</td>
+      </ng-container>
+      <ng-container matColumnDef="date">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          Rechnungsdatum <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'date'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice">{{(invoice.date | date:'dd.MM.yyyy':'UTC') || '–'}}</td>
+      </ng-container>
+      <ng-container matColumnDef="booking_date">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          Buchungsdatum <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'booking_date'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice">{{(invoice.booking_date | date:'dd.MM.yyyy':'UTC') || '–'}}</td>
+      </ng-container>
+      <ng-container matColumnDef="cost_center">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          Kostenstelle <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'cost_center'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice"><a *ngIf="invoice.cost_center_id; else emptyCenter" routerLink="/master-data/cost-centers" [queryParams]="{id: invoice.cost_center_id}">{{invoice.cost_center_number ? invoice.cost_center_number + ' – ' : ''}}{{invoice.cost_center_label}}</a><ng-template #emptyCenter>–</ng-template></td>
+      </ng-container>
+      <ng-container matColumnDef="publication"><th mat-header-cell *matHeaderCellDef>Publikation</th><td mat-cell *matCellDef="let invoice" class="reference-cell"><a *ngIf="invoice.publication_id; else emptyPublication" routerLink="/publications" [queryParams]="{id: invoice.publication_id}">{{invoice.publication_title || 'Publikation #' + invoice.publication_id}}</a><small *ngIf="invoice.publication_doi">{{invoice.publication_doi}}</small><ng-template #emptyPublication>–</ng-template></td></ng-container>
+      <ng-container matColumnDef="contract"><th mat-header-cell *matHeaderCellDef>Vertrag / Komponente</th><td mat-cell *matCellDef="let invoice" class="reference-cell">
+        <a *ngIf="invoice.component_contract_id" routerLink="/master-data/contracts" [queryParams]="{id: invoice.component_contract_id}">{{invoice.component_contract_label}}</a><small *ngIf="invoice.contract_component_id">{{invoice.contract_component_label || 'Komponente #' + invoice.contract_component_id}}</small>
+        <a *ngIf="invoice.publication_contract_id && invoice.publication_contract_id !== invoice.component_contract_id" routerLink="/master-data/contracts" [queryParams]="{id: invoice.publication_contract_id}">{{invoice.publication_contract_label}}<span *ngIf="invoice.contract_conflict"> (Publikation)</span></a>
+        <span *ngIf="!invoice.component_contract_id && !invoice.publication_contract_id">–</span>
+      </td></ng-container>
+      <ng-container matColumnDef="cost_types"><th mat-header-cell *matHeaderCellDef>Kostenarten</th><td mat-cell *matCellDef="let invoice">{{invoice.cost_type_labels.join(', ') || '–'}}</td></ng-container>
+      <ng-container *ngFor="let column of moneyColumns" [matColumnDef]="column.key">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          {{column.label}} <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: column.key}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice" class="money-cell">{{formatMoney(invoice[column.key])}}</td>
+      </ng-container>
+      <ng-container matColumnDef="item_count">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>
+          Positionen <ng-container *ngTemplateOutlet="sortIndicator; context: {$implicit: 'item_count'}"></ng-container>
+        </th>
+        <td mat-cell *matCellDef="let invoice">{{invoice.item_count}}</td>
+      </ng-container>
+      <ng-container matColumnDef="issues"><th mat-header-cell *matHeaderCellDef>Hinweise</th><td mat-cell *matCellDef="let invoice"><mat-icon *ngIf="issues(invoice) as issue" class="issue-icon" [matTooltip]="issue" [attr.aria-label]="issue" tabindex="0">info_outline</mat-icon></td></ng-container>
+      <tr mat-header-row *matHeaderRowDef="columns"></tr><tr mat-row *matRowDef="let row; columns: columns"></tr>
+      <tr class="mat-row" *matNoDataRow><td class="empty-state" [attr.colspan]="columns.length">{{loading ? 'Rechnungen werden geladen …' : loadFailed ? 'Keine Daten geladen.' : 'Keine Rechnungen für diese Auswahl gefunden.'}}</td></tr>
+    </table>
+  </div>
+  <mat-paginator [length]="result.total" [pageIndex]="query.page" [pageSize]="query.page_size" [pageSizeOptions]="[10, 25, 50, 100, 200]" [disabled]="loading" showFirstLastButtons (page)="pageChanged($event)" aria-label="Rechnungsseiten"></mat-paginator>
+  <p class="amount-note">„–“ bedeutet: Betrag unbekannt oder unvollständig. Fehlende Rechnungspositionen und Beträge sind unter „Hinweise“ gekennzeichnet. Neue Rechnungen werden bei der Publikation oder Vertragskomponente erfasst.</p>
+</section>

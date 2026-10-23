@@ -2,6 +2,7 @@ export * from './Alias';
 export * from './ApiError';
 export * from './Config';
 export * from './Import';
+export * from './InvoiceIndex';
 export * from './Publication';
 export * from './PublicationIndex';
 export * from './Statistics';

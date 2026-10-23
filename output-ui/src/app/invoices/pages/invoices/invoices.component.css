@@ -1,0 +1,19 @@
+.invoice-index { padding: 1rem 1.5rem; }
+.invoice-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; height: auto; min-height: 64px; }
+.invoice-heading h4 { margin: 0; }
+.toolbar-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.invoice-filters { margin: 1rem 0; }
+mat-panel-title { align-items: center; gap: .5rem; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .25rem 1rem; padding-top: .5rem; }
+.search-field { grid-column: 1 / -1; }
+.filter-actions { display: flex; gap: .5rem; }
+.filter-error { color: var(--mat-sys-error, #b3261e); }
+.active-filters { display: block; margin: .5rem 0; }
+.invoice-table { overflow-x: auto; margin-top: .75rem; }
+table { min-width: 1500px; width: 100%; }
+.reference-cell { min-width: 200px; max-width: 350px; overflow-wrap: anywhere; }
+.reference-cell small { display: block; }
+.money-cell { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.issue-icon { color: var(--mat-sys-error, #b3261e); }
+.empty-state { padding: 2rem; text-align: center; }
+.amount-note { font-size: .85rem; margin-top: 1rem; }
