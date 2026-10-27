@@ -8,21 +8,28 @@
             {{im.label}}
         </mat-panel-title>
         <mat-panel-description>
-            Status: {{status[idx]}}
+            Status: {{stoppingPaths.has(im.path) ? 'Wird gestoppt…' : status[idx]}}
         </mat-panel-description>
       </mat-expansion-panel-header>
-        <form [formGroup]="forms[im.label]" (ngSubmit)="this.startImport(im)" style="display: flex;justify-content: space-evenly;">
+        <form [formGroup]="forms[im.label]" (ngSubmit)="this.startImport(im)" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-evenly;">
             <mat-form-field *ngIf="im.path !== 'csv'" appearance="fill">
                 <mat-label>Publikationsjahr</mat-label>
                 <input matInput placeholder="Publikationsjahr" formControlName="reporting_year"/>
             </mat-form-field>
             <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
-            <button mat-raised-button type="button" class="secondary-button" [disabled]="this.obs$[im.label]" (click)="configureImport(im)">Anreicherung konfigurieren</button>
-            <button mat-raised-button type="submit" class="primary-button" [disabled]="this.obs$[im.label]">Anreicherung starten</button>
+            <button mat-raised-button type="button" class="secondary-button" [disabled]="!!obs$[im.label] || isStarting(im.path)" (click)="configureImport(im)">Anreicherung konfigurieren</button>
+            <button mat-raised-button type="submit" class="primary-button" [disabled]="!!obs$[im.label] || isStarting(im.path)">Anreicherung starten</button>
+            <button *ngIf="isRunning(im.path)" mat-raised-button type="button" class="warn-button"
+                [disabled]="stoppingPaths.has(im.path)" (click)="stop(im)">
+                <mat-icon>stop</mat-icon>{{stoppingPaths.has(im.path) ? 'Wird gestoppt…' : 'Stopp'}}
+            </button>
         </form>
             
-            <div *ngIf="this.obs$[im.label]">{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %</div>
-            <mat-progress-bar *ngIf="this.obs$[im.label]" mode="determinate" [value]="(this.obs$[im.label] | async)?.progress*100"></mat-progress-bar>
+            <ng-container *ngIf="obs$[im.label] | async as progress">
+                <div role="status">{{stoppingPaths.has(im.path) ? 'Wird gestoppt… Begonnene Datensätze werden abgeschlossen.' : progress.status}}</div>
+                <div *ngIf="progress.progress >= 0">{{progress.progress * 100 | number: '1.2-2'}} %</div>
+                <mat-progress-bar [mode]="progress.progress < 0 ? 'indeterminate' : 'determinate'" [value]="progress.progress * 100"></mat-progress-bar>
+            </ng-container>
             <table style="width: 100%;">
                 <tr>
                     <th>Dateiname</th>

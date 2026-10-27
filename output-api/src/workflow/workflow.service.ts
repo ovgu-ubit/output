@@ -1,3 +1,5 @@
+import { ImportRunStatus, ImportStopResponse } from '@output/interfaces';
+import { ImportExecutionService } from './import-execution.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import 'multer';
@@ -42,6 +44,7 @@ type DeleteWorkflowOptions<TWorkflow extends Workflow> = {
 @Injectable()
 export class WorkflowService {
     private readonly activeExecutionKeys = new Set<string>();
+    private readonly importRecoveries = new Map<number, Promise<ImportStopResponse>>();
 
     constructor(
         @InjectRepository(ImportWorkflow) private importRepository: Repository<ImportWorkflow>,
@@ -52,7 +55,8 @@ export class WorkflowService {
         private exportService: JSONataExportService,
         private validationService: ValidationService,
         @Inject('Filters') private filterServices: AbstractFilterService<PublicationIndex | Publication>[],
-        private workflowReportService: WorkflowReportService) { }
+        private workflowReportService: WorkflowReportService,
+        private importExecutions: ImportExecutionService = new ImportExecutionService()) { }
 
 
     getImports(type?: 'draft' | 'published' | 'archived') {
@@ -194,7 +198,9 @@ export class WorkflowService {
     }
 
     async startImport(id: number, reporting_year: number, ids: number[], file: Express.Multer.File, update: boolean, user?: string, dryRun = false) {
-        return this.startDetachedExecution('workflow-import-service', async () => {
+        this.ensureExecutionIsAvailable('workflow-import-service');
+        if (this.importRecoveries.has(Number(id))) throw createWorkflowRunningHttpException();
+        return this.importExecutions.run('workflow-import-service', { workflowId: Number(id) }, this.importService, async () => {
             const importDef = await this.importRepository.findOneBy({ id });
 
             if (!importDef) throw createNotFoundHttpException('Workflow not found.');
@@ -204,18 +210,15 @@ export class WorkflowService {
             if (importDef.strategy_type === ImportStrategy.URL_QUERY_OFFSET) {
                 await this.importService.setReportingYear(reporting_year + "");
                 await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-                const reportId = this.getImportExecutionReportId();
                 await this.importService.import(update, user, dryRun);
-                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
+                return;
             } else if (importDef.strategy_type === ImportStrategy.URL_LOOKUP_AND_RETRIEVE) {
                 await this.importService.setReportingYear(reporting_year + "");
                 await this.importService.setUp(importDef, update ? importDef.update_config : undefined);
-                const reportId = this.getImportExecutionReportId();
                 await this.importService.importLookupAndRetrieve(update, user, dryRun);
-                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
+                return;
             } else if (importDef.strategy_type === ImportStrategy.URL_DOI) {
                 await this.importService.setUp(importDef, importDef.update_config);
-                const reportId = this.getImportExecutionReportId();
                 if (ids && ids.length > 0) {
                     this.importService.enrich_whereClause = { where: { id: In(ids) } };
                 } else if (reporting_year) {
@@ -225,20 +228,20 @@ export class WorkflowService {
                     this.importService.setReportingYear(reporting_year + "")
                 } else throw createInvalidRequestHttpException('neither reporting_year nor ids are given')
                 await this.importService.enrich(user, dryRun);
-                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
+                return;
             } else if (importDef.strategy_type === ImportStrategy.FILE_UPLOAD) {
                 await this.importService.setUp(importDef, importDef.update_config);
-                const reportId = this.getImportExecutionReportId();
                 if (file) await this.importService.loadFile(update, file, user, dryRun);
                 else throw createInvalidRequestHttpException('no file supported')
-                return { completion: this.waitForImportCompletionOrWatchdog(reportId) };
+                return;
             }
 
-            return {};
-        });
+            throw createInvalidRequestHttpException("Unsupported import strategy");
+        }, () => this.getImportWatchdogTimeoutMs());
     }
 
     async testImport(id: number, pos = 1): Promise<ImportWorkflowTestResult> {
+        if (this.importRecoveries.has(Number(id))) throw createWorkflowRunningHttpException();
         return this.runExclusive('workflow-import-service', async () => {
             const importDef = await this.importRepository.findOneBy({ id });
             if (!importDef) throw createNotFoundHttpException('Workflow not found.');
@@ -327,8 +330,33 @@ export class WorkflowService {
         });
     }
 
-    async status(_id: number) {
-        return this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.IMPORT);
+    async status(_id: number): Promise<ImportRunStatus> {
+        const status = await this.workflowReportService.getStatusForWorkflow(_id, WorkflowType.IMPORT);
+        const run = this.importExecutions.get('workflow-import-service');
+        if (run && 'workflowId' in run.target && run.target.workflowId === Number(_id)) {
+            return { ...this.importService.status(), stale: false, reportId: this.importService.getCurrentWorkflowReportId() };
+        }
+        return { ...status, stopRequested: false };
+    }
+
+    async stopImport(id: number, user?: string): Promise<ImportStopResponse> {
+        if (!Number.isInteger(id) || id < 1) throw createInvalidRequestHttpException('Invalid workflow ID.');
+        const run = this.importExecutions.get('workflow-import-service');
+        const workflow = await this.importRepository.findOne({ where: { id }, withDeleted: true });
+        if (!workflow) throw createNotFoundHttpException('Workflow not found.');
+        if (run && 'workflowId' in run.target && run.target.workflowId === id) {
+            return this.importExecutions.requestStop('workflow-import-service', 'user', user, run);
+        }
+        const current = this.importExecutions.get('workflow-import-service');
+        if (current && 'workflowId' in current.target && current.target.workflowId === id) return { state: 'not-running' };
+        // A mapping test also uses this service and may have an open report.
+        if (this.activeExecutionKeys.has('workflow-import-service')) return { state: 'not-running' };
+        const recovery = this.importRecoveries.get(id);
+        if (recovery) return recovery;
+        const cleanup = this.workflowReportService.interruptLatestOpenImport(id, user)
+            .finally(() => this.importRecoveries.delete(id));
+        this.importRecoveries.set(id, cleanup);
+        return cleanup;
     }
 
     async exportStatus(_id: number) {
@@ -463,59 +491,8 @@ export class WorkflowService {
     }
 
     private ensureExecutionIsAvailable(key: string) {
-        if (this.activeExecutionKeys.has(key)) {
+        if (this.activeExecutionKeys.has(key) || this.importExecutions.get(key)) {
             throw createWorkflowRunningHttpException();
-        }
-    }
-
-    private async waitForImportCompletionOrWatchdog(reportId: number): Promise<void> {
-        this.workflowReportService.registerCompletionWait(reportId);
-        const timeoutMs = await this.getImportWatchdogTimeoutMs();
-        let timeoutReached = false;
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        const abortController = new AbortController();
-
-        const watchdogPromise = new Promise<void>((resolve) => {
-            timer = setTimeout(() => {
-                timeoutReached = true;
-                abortController.abort('workflow-import-watchdog-timeout');
-                void this.writeImportWatchdogWarning(reportId, timeoutMs).finally(resolve);
-            }, timeoutMs);
-        });
-
-        const completionPromise = this.workflowReportService
-            .waitForCompletion(reportId, 500, { allowStale: false, signal: abortController.signal })
-            .then(() => undefined)
-            .catch((error) => {
-                if (this.isAbortError(error)) return;
-                throw error;
-            });
-
-        try {
-            await Promise.race([
-                completionPromise,
-                watchdogPromise,
-            ]);
-        } finally {
-            this.workflowReportService.releaseCompletionWait(reportId);
-            if (!timeoutReached && timer) {
-                clearTimeout(timer);
-                abortController.abort('workflow-import-completed');
-            }
-        }
-    }
-
-    private async writeImportWatchdogWarning(reportId: number, timeoutMs: number): Promise<void> {
-        const timeoutMinutes = Math.round(timeoutMs / 60000);
-        try {
-            await this.workflowReportService.write(reportId, {
-                level: WorkflowReportItemLevel.WARNING,
-                timestamp: new Date(),
-                code: 'workflow-import-watchdog',
-                message: `Import watchdog timeout reached after ${timeoutMinutes} minute(s); lock released while run may still be active.`,
-            });
-        } catch {
-            return;
         }
     }
 
@@ -729,16 +706,6 @@ export class WorkflowService {
         });
 
         return options.repository.remove(workflows);
-    }
-
-    private isAbortError(error: unknown): boolean {
-        return error instanceof Error && error.name === 'AbortError';
-    }
-
-    private getImportExecutionReportId(): number {
-        const reportId = this.importService.getCurrentWorkflowReportId();
-        if (!reportId) throw createNotFoundHttpException('Workflow report not initialized');
-        return reportId;
     }
 
     private async getNextDraftVersion<T extends { workflow_id?: string; version?: number }>(

@@ -1,5 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
+import { defer, firstValueFrom, fromEvent, mergeMap, Observable, PartialObserver, takeUntil } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { ImportExecution } from '../import-execution.service';
+import { ImportRunStatus } from '@output/interfaces';
 import {  AppError, UpdateMapping, UpdateOptions  } from '@output/interfaces';
 import {  WorkflowReportItemLevel  } from '@output/interfaces';
 import { Funder } from '../../funder/Funder.entity';
@@ -59,6 +63,115 @@ export abstract class AbstractImportService {
     protected report: string;
     protected workflowReport: WorkflowReport;
     protected dryRun = false;
+    protected execution?: ImportExecution;
+    protected parallelCalls = 1;
+    protected newPublications: Publication[] = [];
+    protected publicationsUpdate: Publication[] = [];
+    private pendingFinish?: { status: string; count_import?: number; count_update?: number; summary?: unknown };
+    private stopLogged = false;
+
+    public bindExecution(execution: ImportExecution): void {
+        this.execution = execution;
+        this.workflowReport = undefined;
+        this.report = undefined;
+        this.pendingFinish = undefined;
+        this.stopLogged = false;
+        this.newPublications = [];
+        this.publicationsUpdate = [];
+        this.progress = -1;
+        this.status_text = 'Starting';
+    }
+
+    protected isStopRequested(): boolean { return this.execution?.signal.aborted ?? false; }
+
+    protected getImportRequest<T = any>(http: HttpService, url: string, config?: AxiosRequestConfig): Observable<AxiosResponse<T>> {
+        return defer(() => {
+            this.execution?.signal.throwIfAborted();
+            if (this.execution) return http.get<T>(url, { ...config, signal: this.execution.signal });
+            return config ? http.get<T>(url, config) : http.get<T>(url);
+        });
+    }
+
+    /** Track asynchronous observers as well as network subscriptions, including on unsubscribe. */
+    protected subscribeImport<T>(source: Observable<T>, observer: PartialObserver<T>): void {
+        const execution = this.execution;
+        const inFlight = new Set<Promise<unknown>>();
+        const work = new Promise<void>((resolve, reject) => {
+            const settle = async (error?: unknown) => {
+                await Promise.allSettled([...inFlight]);
+                if (error && !execution?.signal.aborted) {
+                    if (execution) execution.failure ??= error;
+                    await observer.error?.(error);
+                } else if (!execution?.signal.aborted) await observer.complete?.();
+            };
+            let stream = source.pipe(mergeMap(value => defer(() => {
+                if (execution?.signal.aborted) return Promise.resolve();
+                const task = Promise.resolve().then(() => {
+                    if (!execution?.signal.aborted) return observer.next?.(value);
+                });
+                inFlight.add(task);
+                void task.then(() => inFlight.delete(task), () => inFlight.delete(task));
+                return task;
+            }), this.parallelCalls));
+            if (execution) stream = stream.pipe(takeUntil(fromEvent(execution.signal, 'abort')));
+            if (execution?.signal.aborted) { resolve(); return; }
+            stream.subscribe({
+                error: error => { void settle(error).then(resolve, reject); },
+                complete: () => { void settle().then(resolve, reject); },
+            });
+        });
+        if (execution) execution.track(work);
+        else void work.catch(() => undefined);
+    }
+
+    protected deferRunFinish(content: { status: string; count_import?: number; count_update?: number; summary?: unknown }): boolean {
+        if (!this.execution) return false;
+        this.pendingFinish = content;
+        return true;
+    }
+
+    protected finishLegacyRun(report: string, content: { status: string; count_import?: number; count_update?: number }): void {
+        if (!this.deferRunFinish(content)) this.reportService.finish(report, content);
+    }
+
+    public async notifyStop(execution: ImportExecution): Promise<void> {
+        if (this.execution !== execution) return;
+        this.status_text = 'stopping';
+        await this.logStop(execution);
+        if (this.workflowReport?.id) await this.workflowReportService.updateStatus(this.workflowReport.id, { status: 'stopping' });
+    }
+
+    private async logStop(execution: ImportExecution): Promise<void> {
+        if (this.stopLogged || !execution.stop || (!this.report && !this.workflowReport?.id)) return;
+        await this.writeReport({ type: execution.stop.reason === 'watchdog' ? 'warning' : 'info',
+            timestamp: execution.stop.requested_at, origin: 'import-stop',
+            text: `Cancellation requested by ${execution.stop.by_user ?? 'system'} (${execution.stop.reason}), run ${execution.runId}` });
+        this.stopLogged = true;
+    }
+
+    public async finalizeExecution(execution: ImportExecution): Promise<void> {
+        if (this.execution !== execution) return;
+        const counts = { count_import: this.newPublications.length, count_update: this.publicationsUpdate.length };
+        const enrich = 'kind' in execution.target && execution.target.kind === 'enrich';
+        const fallback = /^(Nothing to|Successfull|Error while)/.test(this.status_text)
+            ? this.status_text : enrich ? 'Successfull enrich' : 'Successfull import';
+        let status = this.pendingFinish?.status ?? fallback;
+        if (execution.failure && !status.startsWith('Error')) status = enrich ? 'Error while enriching' : 'Error while importing';
+        if (execution.stop) status = 'cancelled';
+        try {
+            await this.logStop(execution);
+            if (this.workflowReport?.id) {
+                this.workflowReport = await this.workflowReportService.finish(this.workflowReport.id, {
+                    ...this.pendingFinish, ...counts, status,
+                });
+            }
+            if (this.report) this.reportService.finish(this.report, { ...counts, status });
+        } finally {
+            this.progress = 0;
+            this.status_text = status;
+            this.execution = undefined;
+        }
+    }
 
     /**
      * Class indicating how to proceed with publication data fields in an update case:
@@ -290,6 +403,7 @@ export abstract class AbstractImportService {
      * @returns the persisted publication entity
      */
     async mapNew(item) {
+        if (this.isStopRequested()) return null;
         const optionalFields = await this.getOptionalFields();
         if (!(await this.importTest(item))) {
             await this.writeReport({ type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
@@ -467,6 +581,7 @@ export abstract class AbstractImportService {
      * @returns the updated publication entity or null if no update has been performed
      */
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
+        if (this.isStopRequested()) return null;
         const optionalFields = await this.getOptionalFields();
         const fields = [];
         let text = "";
@@ -1025,10 +1140,12 @@ export abstract class AbstractImportService {
         return (await this.configService.get('optional_fields')) ?? {};
     }
 
-    public status() {
+    public status(): ImportRunStatus {
         return {
-            progress: this.progress,
-            status: this.status_text
+            progress: this.execution ? (this.progress || -1) : this.progress,
+            status: this.isStopRequested() ? 'stopping' : this.status_text,
+            stopRequested: this.isStopRequested(),
+            ...(this.execution ? { runId: this.execution.runId } : {}),
         };
     }
 }

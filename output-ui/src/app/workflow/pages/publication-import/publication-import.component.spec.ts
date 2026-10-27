@@ -25,7 +25,7 @@ describe('PublicationImportComponent', () => {
 
   beforeEach(async () => {
     workflowService = jasmine.createSpyObj<WorkflowService>('WorkflowService', [
-      'index', 'isLocked', 'importWorkflow', 'run', 'getProgress', 'getStatus'
+      'index', 'isLocked', 'importWorkflow', 'run', 'getProgress', 'getStatus', 'stopImport'
     ]);
     workflowService.index.and.returnValue(of([]));
     workflowService.isLocked.and.returnValue(of(false));
@@ -33,6 +33,7 @@ describe('PublicationImportComponent', () => {
     workflowService.run.and.returnValue(of({ status: 'started', dry_run: false }));
     workflowService.getProgress.and.returnValue(of({ progress: 0, status: 'finished' }));
     workflowService.getStatus.and.returnValue(of({ progress: 0, status: 'finished' }));
+    workflowService.stopImport.and.returnValue(of({ state: 'stopping', runId: 'run-1' }));
     configService = jasmine.createSpyObj<ConfigService>('ConfigService', ['get']);
     configService.get.and.returnValue(of({ value: 2026 } as any));
     snackBar = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
@@ -208,6 +209,82 @@ describe('PublicationImportComponent', () => {
       'OK',
       jasmine.objectContaining({ panelClass: ['danger-snackbar'] })
     );
+  });
+
+  it('renders the row stop action and forwards its click without opening the workflow', () => {
+    const workflow = { id: 11, label: 'Test' } as ImportWorkflow;
+    workflowService.getStatus.and.returnValue(of({ progress: -1, status: 'running' }));
+    workflowService.getProgress.and.returnValue(new Subject());
+    component.table.dataSource.data = [workflow];
+    component.afterDataLoaded([workflow]).subscribe();
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('button[aria-label="Workflow stoppen"]') as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    button.click();
+    fixture.detectChanges();
+    expect(workflowService.stopImport).toHaveBeenCalledOnceWith(11);
+    expect(workflowService.isLocked).not.toHaveBeenCalled();
+    expect(button.disabled).toBeTrue();
+  });
+
+  it('stops a running row once and waits beyond 100% for the terminal status', () => {
+    const workflow = { id: 11, label: 'Test' } as ImportWorkflow;
+    const progress = new Subject<{ progress: number; status: string }>();
+    workflowService.getStatus.and.returnValue(of({ progress: 1, status: 'running' }));
+    workflowService.getProgress.and.returnValue(progress);
+    spyOn(component.table, 'updateData').and.returnValue(of(undefined));
+    component.afterDataLoaded([workflow]).subscribe();
+    expect(component.rowActions[1].visible?.(workflow)).toBeTrue();
+    component.stopWorkflow(workflow);
+    component.stopWorkflow(workflow);
+    expect(workflowService.stopImport).toHaveBeenCalledOnceWith(11);
+    expect(component.rowActions[1].disabled?.(workflow)).toBeTrue();
+    progress.next({ progress: 1, status: 'stopping' });
+    expect(component.rowActions[0].disabled?.(workflow)).toBeTrue();
+    progress.next({ progress: 0, status: 'cancelled' });
+    expect(component.rowActions[1].visible?.(workflow)).toBeFalse();
+    expect(component.rowActions[0].disabled?.(workflow)).toBeFalse();
+  });
+
+  it('keeps stopping rows disabled after reload and offers cleanup for stale reports', () => {
+    const workflow = { id: 11 } as ImportWorkflow;
+    workflowService.getProgress.and.returnValue(new Subject());
+    workflowService.getStatus.and.returnValue(of({ progress: -1, status: 'stopping', stopRequested: true }));
+    component.afterDataLoaded([workflow]).subscribe();
+    expect(component.rowActions[1].disabled?.(workflow)).toBeTrue();
+    component.stopWorkflow(workflow);
+    expect(workflowService.stopImport).not.toHaveBeenCalled();
+
+    const stale = { id: 12 } as ImportWorkflow;
+    workflowService.getStatus.and.returnValue(of({ progress: 0, status: 'started [stale]', stale: true, reportId: 71 }));
+    component.afterDataLoaded([stale]).subscribe();
+    expect(component.rowActions[1].visible?.(stale)).toBeTrue();
+    workflowService.stopImport.and.returnValue(of({ state: 'interrupted', reportId: 71 }));
+    workflowService.getProgress.and.returnValue(of({ progress: 0, status: 'interrupted' }));
+    spyOn(component.table, 'updateData').and.returnValue(of(undefined));
+    component.stopWorkflow(stale);
+    expect(component.rowActions[1].visible?.(stale)).toBeFalse();
+  });
+
+  it('offers stop while a file start request is still pending and allows retry after errors', () => {
+    const workflow = { id: 8, strategy_type: ImportStrategy.FILE_UPLOAD, published_at: new Date() } as ImportWorkflow;
+    const request = new Subject<{ status: string; dry_run: boolean }>();
+    const progress = new Subject<{ progress: number; status: string }>();
+    workflowService.run.and.returnValue(request);
+    workflowService.getProgress.and.returnValue(progress);
+    component.quickStart(workflow);
+    component.onQuickStartFileSelected({ target: { files: [new File(['title'], 'test.csv')], value: '' } } as unknown as Event);
+    progress.next({ progress: 0, status: 'initialized' });
+    expect(component.isQuickStartRunning(8)).toBeTrue();
+    expect(component.rowActions[1].visible?.(workflow)).toBeFalse();
+    progress.next({ progress: -1, status: 'started' });
+    expect(component.rowActions[1].visible?.(workflow)).toBeTrue();
+    const error = new Error('stop failed');
+    workflowService.stopImport.and.returnValue(throwError(() => error));
+    component.stopWorkflow(workflow);
+    expect(component.rowActions[1].disabled?.(workflow)).toBeFalse();
+    expect(component.isQuickStartRunning(8)).toBeTrue();
+    expect(errorPresentation.present).toHaveBeenCalledWith(error, jasmine.objectContaining({ fallbackMessage: 'Workflow konnte nicht gestoppt werden.' }));
   });
 
   it('presents backend quick-start errors and re-enables the action', () => {

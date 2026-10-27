@@ -122,8 +122,6 @@ export class JSONataImportService extends AbstractImportService {
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
-    private newPublications: Publication[] = [];
-    private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
     private importConfig: string;
@@ -234,6 +232,11 @@ export class JSONataImportService extends AbstractImportService {
                 enrich_whereClause: this.enrich_whereClause ?? undefined,
             }
         })
+        if (this.execution) {
+            const reportId = this.workflowReport.id;
+            this.workflowReportService.registerCompletionWait(reportId);
+            void this.execution.completion.then(() => this.workflowReportService.releaseCompletionWait(reportId));
+        }
     }
 
     async setParameters(queryString: string, safe = false): Promise<string> {
@@ -394,6 +397,7 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     private async writeRunError(error: unknown, context?: string): Promise<void> {
+        if (this.isStopRequested()) return;
         if (!hasProvidedEntityId(this.workflowReport?.id)) return;
         const message = this.getReportErrorMessage(error);
         await this.workflowReportService.write(this.workflowReport.id, {
@@ -477,6 +481,7 @@ export class JSONataImportService extends AbstractImportService {
     }
 
     protected async processImportItem(pub: JSONataParsedObject, update: boolean) {
+        if (this.isStopRequested()) return;
         if (this.importDefinition.strategy.only_import_if_authors_inst && (!pub.authors_inst || pub.authors_inst.length == 0)) {
             await this.workflowReportService.write(this.workflowReport.id, {
                 level: WorkflowReportItemLevel.WARNING,
@@ -603,7 +608,7 @@ export class JSONataImportService extends AbstractImportService {
                 }
 
                 result.read.source = await this.getSafeUrl(this.importDefinition.strategy.url_doi, { doi: pub?.doi });
-                ob$ = this.http.get(this.applyVariables(this.url_doi, { doi: pub.doi }))
+                ob$ = this.getImportRequest(this.http, this.applyVariables(this.url_doi, { doi: pub.doi }))
                 try {
                     resp = await firstValueFrom(ob$) as AxiosResponse;
                     result.read.response = this.collectKeys(resp.data)
@@ -691,7 +696,7 @@ export class JSONataImportService extends AbstractImportService {
 
                 try {
                     const id = ids[pos > 0 ? pos - 1 : 0];
-                    ob$ = this.http.get(this.applyVariables(this.retrieveURL, { id, lookup_id: id }));
+                    ob$ = this.getImportRequest(this.http, this.applyVariables(this.retrieveURL, { id, lookup_id: id }));
                     resp = await firstValueFrom(ob$);
                     result.read.response = this.collectKeys(resp.data)
                 } catch (err) {
@@ -842,34 +847,42 @@ export class JSONataImportService extends AbstractImportService {
         } else throw new NotImplementedException();
         let data: JSONataParsedObject[];
         try {
-            data = await Promise.all(jsonData.map(e => this.transform(e)))
+            data = [];
+            for (const row of jsonData) {
+                if (this.isStopRequested()) break;
+                data.push(await this.transform(row));
+                if (data.length % 100 === 0) await new Promise<void>(resolve => setImmediate(resolve));
+            }
         } catch (err) {
             throw createInternalErrorHttpException()
         }
         this.numberOfPublications = data.length;
-        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `${this.numberOfPublications} elements found` })
+        await this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `${this.numberOfPublications} elements found` })
 
         try {
             if (!data) return;
             for (const pub of data) {
+                if (this.isStopRequested()) break;
                 const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                 if (!flag) {
-                    const pubNew = await this.mapNew(pub).catch(e =>
-                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` }));
+                    const pubNew = await this.mapNew(pub).catch(async () => {
+                        await this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error importing publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` });
+                        return null;
+                    });
                     if (pubNew) {
                         this.newPublications.push(pubNew);
-                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
+                        await this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `New publication imported with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
                     }
                 } else if (update) {
                     const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                     if (orig.locked) continue;
-                    const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error updating publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
+                    const pubUpd = await this.mapUpdate(pub, orig).catch(async () => {
+                        await this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.ERROR, timestamp: new Date(), message: `Error updating publication with title ${this.getTitle(pub)} and doi ${this.getDOI(pub)}` })
                         return null;
                     })
                     if (pubUpd?.pub) {
                         this.publicationsUpdate.push(pubUpd.pub);
-                        this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `Publication updated (${pubUpd.fields.join(',')})` })
+                        await this.workflowReportService.write(this.workflowReport.id, { level: WorkflowReportItemLevel.INFO, timestamp: new Date(), message: `Publication updated (${pubUpd.fields.join(',')})` })
                     }
                 }
                 // Update Progress Value
@@ -943,7 +956,7 @@ export class JSONataImportService extends AbstractImportService {
             obs$.push(this.delayedGet(url));
         }
 
-        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
+        this.subscribeImport(concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))), {
             next: async (data: AxiosResponse) => {
                 if (!data) return;
                 try {
@@ -1031,12 +1044,13 @@ export class JSONataImportService extends AbstractImportService {
             });
             return;
         }
-        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
+        this.subscribeImport(concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))), {
             next: async (data: AxiosResponse) => {
                 if (!data) return;
                 try {
                     const parsedData = await this.getData(data);
                     for (const pub of parsedData.values()) {
+                        if (this.isStopRequested()) break;
                         await this.processImportItem(pub, update);
                     }
                     // Update Progress Value
@@ -1095,6 +1109,7 @@ export class JSONataImportService extends AbstractImportService {
         const obs$ = [];
 
         for (const pub of publications) {
+            if (this.isStopRequested()) break;
             const url = this.applyVariables(this.url_doi, { doi: pub.doi });
             const safeUrl = await this.getSafeUrl(this.importDefinition.strategy.url_doi, { doi: pub.doi });
             obs$.push(this.delayedGet(url).pipe(
@@ -1109,7 +1124,7 @@ export class JSONataImportService extends AbstractImportService {
         }
 
         let errors = 0;
-        concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))).subscribe({
+        this.subscribeImport(concat(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls))), {
             next: async (data: AxiosResponse) => {
                 try {
                     if (!data) {
@@ -1176,10 +1191,10 @@ export class JSONataImportService extends AbstractImportService {
             this.url_count,
             variables
         ), variables, { includeLimit: false, includeCursor: true });
-        return this.http.get(url);
+        return this.getImportRequest(this.http, url);
     }
     protected delayedGet(url: string): Observable<AxiosResponse> {
-        return timer(this.delayInMs).pipe(concatMap(() => this.http.get(url)));
+        return timer(this.delayInMs).pipe(concatMap(() => this.getImportRequest(this.http, url)));
     }
     protected retrieveLookupRequest(offset: number): Observable<AxiosResponse> {
         const variables: RuntimeVariables = { offset, page: offset };
@@ -1342,6 +1357,7 @@ export class JSONataImportService extends AbstractImportService {
             summary?: unknown;
         }
     ) {
+        if (this.deferRunFinish({ status, ...content })) return;
         this.progress = 0;
         this.status_text = statusText;
         if (!hasProvidedEntityId(this.workflowReport?.id)) return;

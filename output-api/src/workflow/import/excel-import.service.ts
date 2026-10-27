@@ -65,8 +65,6 @@ export class ExcelImportService extends AbstractImportService {
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
-    private newPublications: Publication[] = [];
-    private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
     private file: Express.Multer.File;
@@ -94,7 +92,7 @@ export class ExcelImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -116,6 +114,7 @@ export class ExcelImportService extends AbstractImportService {
         try {
             if (!data) return;
             for (const pub of data) {
+                if (this.isStopRequested()) break;
                 const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
                 if (!flag) {
                     const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
@@ -141,7 +140,7 @@ export class ExcelImportService extends AbstractImportService {
             }
             //finalize
             this.progress = 0;
-            this.reportService.finish(this.report, {
+            this.finishLegacyRun(this.report, {
                 status: 'Successfull import on ' + new Date(),
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length
@@ -151,7 +150,7 @@ export class ExcelImportService extends AbstractImportService {
             this.progress = 0;
             this.status_text = 'Error while importing on ' + new Date();
             console.log(err.stack);
-            this.reportService.finish(this.report, {
+            this.finishLegacyRun(this.report, {
                 status: 'Error while importing on ' + new Date(),
                 count_import: this.newPublications.length,
                 count_update: this.publicationsUpdate.length

@@ -1,3 +1,4 @@
+import { ImportExecution, ImportExecutionService } from './import-execution.service';
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -43,10 +44,13 @@ const expectApiError = async (
 
 describe('WorkflowService', () => {
     let service: WorkflowService;
+    let executions: ImportExecutionService;
+    let currentRun: ImportExecution;
     let importRepository: jest.Mocked<Partial<Repository<ImportWorkflow>>>;
     let exportRepository: jest.Mocked<Partial<Repository<ExportWorkflow>>>;
     let validationRepository: jest.Mocked<Partial<Repository<ValidationWorkflow>>>;
     let workflowReportService: {
+        interruptLatestOpenImport: jest.Mock;
         deleteReportsForWorkflow: jest.Mock;
         getStatusForWorkflow: jest.Mock;
         registerCompletionWait: jest.Mock;
@@ -66,6 +70,10 @@ describe('WorkflowService', () => {
         getCurrentWorkflowReportId: jest.Mock;
     };
     let importService: {
+        bindExecution: jest.Mock;
+        notifyStop: jest.Mock;
+        finalizeExecution: jest.Mock;
+        status: jest.Mock;
         getUpdateMapping: jest.Mock;
         setReportingYear: jest.Mock;
         setUp: jest.Mock;
@@ -104,6 +112,7 @@ describe('WorkflowService', () => {
             remove: jest.fn(),
         };
         workflowReportService = {
+            interruptLatestOpenImport: jest.fn(async () => ({ state: 'not-running' })),
             deleteReportsForWorkflow: jest.fn(),
             getStatusForWorkflow: jest.fn(),
             registerCompletionWait: jest.fn(),
@@ -125,6 +134,10 @@ describe('WorkflowService', () => {
             getCurrentWorkflowReportId: jest.fn(),
         };
         importService = {
+            bindExecution: jest.fn((run: ImportExecution) => { currentRun = run; }),
+            notifyStop: jest.fn(async () => undefined),
+            finalizeExecution: jest.fn(async () => undefined),
+            status: jest.fn(() => ({ progress: -1, status: 'Started', stopRequested: false })),
             getUpdateMapping: jest.fn(),
             setReportingYear: jest.fn(),
             setUp: jest.fn(),
@@ -139,6 +152,7 @@ describe('WorkflowService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 WorkflowService,
+                ImportExecutionService,
                 { provide: getRepositoryToken(ImportWorkflow), useValue: importRepository },
                 { provide: getRepositoryToken(ExportWorkflow), useValue: exportRepository },
                 { provide: getRepositoryToken(ValidationWorkflow), useValue: validationRepository },
@@ -152,6 +166,7 @@ describe('WorkflowService', () => {
         }).compile();
 
         service = module.get(WorkflowService);
+        executions = module.get(ImportExecutionService);
     });
 
     it('deletes workflow reports after archiving a published workflow', async () => {
@@ -893,11 +908,7 @@ describe('WorkflowService', () => {
         expect(importService.setReportingYear).toHaveBeenCalledWith('2024');
         expect(importService.setUp).toHaveBeenCalledWith(publishedWorkflow, publishedWorkflow.update_config);
         expect(importService.importLookupAndRetrieve).toHaveBeenCalledWith(true, 'tester', false);
-        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(
-            7001,
-            500,
-            expect.objectContaining({ allowStale: false }),
-        );
+        expect(importService.finalizeExecution).toHaveBeenCalled();
     });
 
     it('keeps strategy_type undefined until explicitly set', async () => {
@@ -1216,7 +1227,7 @@ describe('WorkflowService', () => {
         importService.setUp.mockResolvedValue(undefined);
         importService.getCurrentWorkflowReportId.mockReturnValue(9001);
         importService.import.mockResolvedValue(undefined);
-        workflowReportService.waitForCompletion.mockReturnValue(completionPromise);
+        importService.import.mockImplementation(async () => { currentRun.track(completionPromise); });
 
         const firstStart = service.startImport(61, 2024, [], null, false, 'tester', false);
         await firstStart;
@@ -1225,11 +1236,7 @@ describe('WorkflowService', () => {
             service.startImport(61, 2024, [], null, false, 'tester', false),
             { statusCode: 409, code: ApiErrorCode.WORKFLOW_RUNNING },
         );
-        expect(workflowReportService.waitForCompletion).toHaveBeenCalledWith(
-            9001,
-            500,
-            expect.objectContaining({ allowStale: false }),
-        );
+        expect(executions.get('workflow-import-service')).toBe(currentRun);
 
         releaseCompletion!();
         await completionPromise;
@@ -1239,7 +1246,7 @@ describe('WorkflowService', () => {
         await expect(service.startImport(61, 2024, [], null, false, 'tester', false)).resolves.toBeUndefined();
     });
 
-    it('releases the import lock via watchdog timeout and writes a warning', async () => {
+    it('requests watchdog cancellation and keeps the lock until work drains', async () => {
         jest.useFakeTimers();
         try {
             const publishedWorkflow = {
@@ -1266,7 +1273,8 @@ describe('WorkflowService', () => {
                 deleted_at: null,
                 update_config: {},
             } as unknown as ImportWorkflow;
-            const neverCompletion = new Promise<void>(() => undefined);
+            let release: () => void;
+            const neverCompletion = new Promise<void>(resolve => { release = resolve; });
 
             configService.get.mockImplementation(async (key: string) => {
                 if (key === 'workflow_import_watchdog_timeout') return 1;
@@ -1276,7 +1284,7 @@ describe('WorkflowService', () => {
             importService.setReportingYear.mockResolvedValue(undefined);
             importService.setUp.mockResolvedValue(undefined);
             importService.getCurrentWorkflowReportId.mockReturnValue(9002);
-            importService.import.mockResolvedValue(undefined);
+            importService.import.mockImplementation(async () => { currentRun.track(neverCompletion); });
             workflowReportService.waitForCompletion
                 .mockReturnValueOnce(neverCompletion)
                 .mockResolvedValue(undefined);
@@ -1291,10 +1299,12 @@ describe('WorkflowService', () => {
             await jest.advanceTimersByTimeAsync(60_000);
             await Promise.resolve();
 
-            expect(workflowReportService.write).toHaveBeenCalledWith(9002, expect.objectContaining({
-                level: WorkflowReportItemLevel.WARNING,
-                code: 'workflow-import-watchdog',
-            }));
+            expect(currentRun.signal.aborted).toBe(true);
+            expect(currentRun.stop?.reason).toBe('watchdog');
+            await expectApiError(service.startImport(62, 2024, [], null, false, 'tester', false),
+                { statusCode: 409, code: ApiErrorCode.WORKFLOW_RUNNING });
+            release!();
+            await currentRun.completion;
             await expect(service.startImport(62, 2024, [], null, false, 'tester', false)).resolves.toBeUndefined();
         } finally {
             jest.useRealTimers();
@@ -1355,6 +1365,7 @@ describe('WorkflowService', () => {
         const status = await service.status(33);
 
         expect(status).toEqual({
+            stopRequested: false,
             progress: -1,
             status: 'Started on Tue Mar 19 2026 08:00:00 GMT+0100',
         });
@@ -1389,5 +1400,45 @@ describe('WorkflowService', () => {
             status: 'Successful validation',
         });
         expect(workflowReportService.getStatusForWorkflow).toHaveBeenCalledWith(88, 'validation');
+    });
+});
+
+describe('Workflow import stop routing', () => {
+    const setup = () => {
+        const executions = new ImportExecutionService();
+        const repository = { findOne: jest.fn(async () => ({ id: 1 })) };
+        const reports = { interruptLatestOpenImport: jest.fn(async () => ({ state: 'interrupted', reportId: 9 })),
+            getStatusForWorkflow: jest.fn(async () => ({ progress: 0, status: 'old [stale]', stale: true })) };
+        const importer = { bindExecution: jest.fn(), notifyStop: jest.fn(async () => undefined), finalizeExecution: jest.fn(async () => undefined),
+            status: jest.fn(() => ({ progress: -1, status: 'stopping', stopRequested: true, runId: 'active' })),
+            getCurrentWorkflowReportId: jest.fn(() => 71) };
+        const service = new WorkflowService(repository as never, {} as never, {} as never, {} as never,
+            importer as never, {} as never, {} as never, [], reports as never, executions);
+        return { executions, repository, reports, importer, service };
+    };
+
+    it('stops only the addressed workflow and overrides stale DB status while running', async () => {
+        const { executions, reports, importer, service } = setup();
+        let release!: () => void;
+        const work = new Promise<void>(resolve => { release = resolve; });
+        await executions.run('workflow-import-service', { workflowId: 1 }, importer,
+            async () => executions.get('workflow-import-service')!.track(work));
+        const run = executions.get('workflow-import-service')!;
+        expect(await service.stopImport(2, 'alice')).toEqual({ state: 'interrupted', reportId: 9 });
+        expect(run.signal.aborted).toBe(false);
+        expect(await service.stopImport(1, 'alice')).toEqual({ state: 'stopping', runId: run.runId });
+        expect(reports.interruptLatestOpenImport).toHaveBeenCalledTimes(1);
+        expect(await service.status(1)).toMatchObject({ progress: -1, status: 'stopping', stale: false, reportId: 71, stopRequested: true });
+        release();
+        await run.completion;
+    });
+
+    it('validates IDs and unknown workflows before touching reports', async () => {
+        const { repository, reports, service } = setup();
+        await expect(service.stopImport(0, 'alice')).rejects.toMatchObject({ status: 400 });
+        await expect(service.stopImport(1.5, 'alice')).rejects.toMatchObject({ status: 400 });
+        repository.findOne.mockResolvedValue(undefined);
+        await expect(service.stopImport(123, 'alice')).rejects.toMatchObject({ status: 404 });
+        expect(reports.interruptLatestOpenImport).not.toHaveBeenCalled();
     });
 });

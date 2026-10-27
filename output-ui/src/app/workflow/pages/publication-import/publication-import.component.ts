@@ -9,8 +9,9 @@ import { Router } from '@angular/router';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import {
   EMPTY, Observable, Subject, catchError, filter, finalize, firstValueFrom,
-  forkJoin, map, of, switchMap, take, takeUntil, tap
+  forkJoin, map, of, switchMap, take, takeUntil, tap, defer
 } from 'rxjs';
+import { isImportStopping } from 'src/app/shared/import-progress';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 
 @Component({
@@ -62,7 +63,15 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     visible: () => this.indexOptions.type === 'published',
     disabled: (workflow) => !workflow.id
       || this.runningWorkflowIds.has(workflow.id)
+      || this.startingWorkflowIds.has(workflow.id)
       || !this.availableWorkflowIds.has(workflow.id),
+  }, {
+    icon: 'stop',
+    tooltip: workflow => this.stoppingWorkflowIds.has(workflow.id) ? 'Wird gestoppt…'
+      : this.staleWorkflowIds.has(workflow.id) ? 'Liegen gebliebenen Lauf abschließen' : 'Workflow stoppen',
+    action: workflow => this.stopWorkflow(workflow),
+    visible: workflow => this.indexOptions.type === 'published' && this.stoppableWorkflowIds.has(workflow.id),
+    disabled: workflow => this.stoppingWorkflowIds.has(workflow.id),
   }];
 
   @ViewChild(TableComponent) table: TableComponent<ImportWorkflow, ImportWorkflow>;
@@ -72,6 +81,13 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   private readonly runningWorkflowIds = new Set<number>();
   private readonly availableWorkflowIds = new Set<number>();
   private readonly monitoredWorkflowIds = new Set<number>();
+  private readonly stoppingWorkflowIds = new Set<number>();
+  private readonly startingWorkflowIds = new Set<number>();
+  private readonly seenActiveWorkflowIds = new Set<number>();
+  private readonly stoppableWorkflowIds = new Set<number>();
+  private readonly staleWorkflowIds = new Set<number>();
+  private readonly stopRequestedDuringStart = new Set<number>();
+  private readonly workflowRows = new Map<number, ImportWorkflow>();
   private readonly destroy$ = new Subject<void>();
   private pendingFileWorkflow?: ImportWorkflow;
   private destroyed = false;
@@ -92,6 +108,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     if (this.indexOptions.type !== 'published') return of(undefined);
 
     const workflowIds = workflows.flatMap(workflow => workflow.id ? [workflow.id] : []);
+    workflows.forEach(workflow => this.workflowRows.set(workflow.id, workflow));
     this.availableWorkflowIds.clear();
     if (!workflowIds.length) return of(undefined);
 
@@ -105,6 +122,14 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
       tap(results => results.forEach(({ workflowId, status }) => {
         if (!status) return;
         if (status.progress === 0) {
+          if (status.stale && status.reportId) {
+            this.stoppableWorkflowIds.add(workflowId);
+            this.staleWorkflowIds.add(workflowId);
+          } else {
+            this.stoppableWorkflowIds.delete(workflowId);
+            this.staleWorkflowIds.delete(workflowId);
+            if (!this.monitoredWorkflowIds.has(workflowId)) this.stoppingWorkflowIds.delete(workflowId);
+          }
           if (!this.monitoredWorkflowIds.has(workflowId)) {
             this.runningWorkflowIds.delete(workflowId);
             this.availableWorkflowIds.add(workflowId);
@@ -113,6 +138,9 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
         }
 
         this.runningWorkflowIds.add(workflowId);
+        this.seenActiveWorkflowIds.add(workflowId);
+        this.stoppableWorkflowIds.add(workflowId);
+        if (isImportStopping(status)) this.stoppingWorkflowIds.add(workflowId);
         this.availableWorkflowIds.delete(workflowId);
         this.monitorWorkflow(workflowId);
       })),
@@ -205,7 +233,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   }
 
   quickStart(workflow: ImportWorkflow): void {
-    if (!workflow.id || this.indexOptions.type !== 'published' || this.runningWorkflowIds.has(workflow.id)) return;
+    if (!workflow.id || this.indexOptions.type !== 'published' || this.runningWorkflowIds.has(workflow.id) || this.startingWorkflowIds.has(workflow.id)) return;
 
     if (workflow.strategy_type === ImportStrategy.FILE_UPLOAD) {
       this.pendingFileWorkflow = workflow;
@@ -240,16 +268,44 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     return this.runningWorkflowIds.has(workflowId);
   }
 
+  stopWorkflow(workflow: ImportWorkflow): void {
+    const id = workflow.id;
+    if (!id || !this.stoppableWorkflowIds.has(id) || this.stoppingWorkflowIds.has(id)) return;
+    this.stoppingWorkflowIds.add(id);
+    this.workflowService.stopImport(id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: result => {
+        if (result.state === 'stopping') {
+          workflow.last_run_status = 'stopping';
+          if (this.startingWorkflowIds.has(id)) this.stopRequestedDuringStart.add(id);
+          this._snackBar.open('Stopp angefordert. Begonnene Datensätze werden noch abgeschlossen.', 'OK', { duration: 4500 });
+        }
+        this.monitorWorkflow(id);
+      },
+      error: error => {
+        this.stoppingWorkflowIds.delete(id);
+        this.errorPresentation.present(error, { action: 'run', entity: 'Import-Workflow', fallbackMessage: 'Workflow konnte nicht gestoppt werden.' });
+      },
+    });
+  }
+
   private startWorkflow(workflow: ImportWorkflow, file?: File): void {
     const workflowId = workflow.id;
-    if (!workflowId || this.runningWorkflowIds.has(workflowId)) return;
+    if (!workflowId || this.runningWorkflowIds.has(workflowId) || this.startingWorkflowIds.has(workflowId)) return;
 
     this.runningWorkflowIds.add(workflowId);
+    this.startingWorkflowIds.add(workflowId);
+    this.seenActiveWorkflowIds.delete(workflowId);
+    this.stoppableWorkflowIds.delete(workflowId);
+    this.workflowRows.set(workflowId, workflow);
     this.availableWorkflowIds.delete(workflowId);
     let started = false;
 
+    const execute = (reportingYear?: number) => defer(() => {
+      this.monitorWorkflow(workflowId);
+      return this.workflowService.run(workflowId, reportingYear, true, false, file);
+    });
     const run$ = workflow.strategy_type === ImportStrategy.FILE_UPLOAD
-      ? this.workflowService.run(workflowId, undefined, true, false, file)
+      ? execute()
       : this.configService.get('reporting_year').pipe(
         map((config) => Number(config?.value)),
         switchMap((reportingYear) => {
@@ -261,12 +317,14 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
             });
             return EMPTY;
           }
-          return this.workflowService.run(workflowId, reportingYear, true, false, file);
+          return execute(reportingYear);
         })
       );
 
     run$.pipe(
       finalize(() => {
+        this.startingWorkflowIds.delete(workflowId);
+        this.stopRequestedDuringStart.delete(workflowId);
         if (!started) {
           this.runningWorkflowIds.delete(workflowId);
           this.availableWorkflowIds.add(workflowId);
@@ -276,7 +334,8 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     ).subscribe({
       next: () => {
         started = true;
-        this._snackBar.open(`Workflow „${workflow.label ?? workflowId}“ wurde gestartet.`, 'OK', {
+        this.startingWorkflowIds.delete(workflowId);
+        if (!this.stopRequestedDuringStart.has(workflowId)) this._snackBar.open(`Workflow „${workflow.label ?? workflowId}“ wurde gestartet.`, 'OK', {
           duration: 4500,
           verticalPosition: 'top',
           panelClass: ['success-snackbar']
@@ -296,11 +355,32 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     let completed = false;
 
     this.workflowService.getProgress(workflowId).pipe(
-      filter((status) => status.progress === 0),
+      tap(status => {
+        const row = this.workflowRows.get(workflowId);
+        if (row) row.last_run_status = status.status;
+        if (status.progress !== 0) {
+          this.runningWorkflowIds.add(workflowId);
+          this.availableWorkflowIds.delete(workflowId);
+          this.seenActiveWorkflowIds.add(workflowId);
+          this.stoppableWorkflowIds.add(workflowId);
+          if (isImportStopping(status)) {
+            this.stoppingWorkflowIds.add(workflowId);
+            if (this.startingWorkflowIds.has(workflowId)) this.stopRequestedDuringStart.add(workflowId);
+          }
+        }
+      }),
+      filter(status => status.progress === 0 && (!this.startingWorkflowIds.has(workflowId) || this.seenActiveWorkflowIds.has(workflowId))),
       take(1),
       finalize(() => {
         this.monitoredWorkflowIds.delete(workflowId);
+        if (!completed && this.startingWorkflowIds.has(workflowId)) return;
         this.runningWorkflowIds.delete(workflowId);
+        if (completed) {
+          this.stoppingWorkflowIds.delete(workflowId);
+          this.stoppableWorkflowIds.delete(workflowId);
+          this.staleWorkflowIds.delete(workflowId);
+          this.seenActiveWorkflowIds.delete(workflowId);
+        }
         if (completed) this.availableWorkflowIds.add(workflowId);
         if (!this.destroyed) this.refreshTable();
       }),

@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { ImportProgress, isImportStopping } from 'src/app/shared/import-progress';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { filter, finalize, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
+import { filter, finalize, firstValueFrom, Observable, Subject, takeUntil, tap, shareReplay } from 'rxjs';
 import { ImportConfigComponent } from 'src/app/administration/components/import-config/import-config.component';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -19,13 +20,19 @@ import { ImportFormFacade } from '../import-form-facade.service';
   templateUrl: './import-form-action.component.html',
   styleUrl: './import-form-action.component.css',
 })
-export class ImportFormActionComponent implements OnInit {
+export class ImportFormActionComponent implements OnInit, OnDestroy {
   entity: ImportWorkflow | null = null;
   loading = false;
   subject = new Subject<any>();
-  ob$: Observable<{ progress: number, status: string }>;
+  ob$: Observable<ImportProgress>;
+  stopping = false;
+  private startPending = false;
+  private seenActive = false;
+  private stopWasRequested = false;
+  private statusVersion = 0;
+  private readonly destroy$ = new Subject<void>();
   isRunning = false;
-  status: { progress: number, status: string };
+  status: ImportProgress;
   file?: File;
 
   form: FormGroup = this.formBuilder.group({
@@ -45,7 +52,13 @@ export class ImportFormActionComponent implements OnInit {
   ) { }
 
   async ngOnInit() {
-    this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$)).subscribe((workflow) => {
+    this.facade.import$.pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$), takeUntil(this.destroy$)).subscribe((workflow) => {
+      if (this.entity?.id !== workflow.id) {
+        this.subject.next('');
+        this.ob$ = undefined;
+        this.seenActive = false;
+        this.stopping = false;
+      }
       this.entity = workflow;
       if (this.entity.strategy_type === ImportStrategy.URL_DOI) {
         this.form.controls.update.setValue(true);
@@ -55,23 +68,97 @@ export class ImportFormActionComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.statusVersion++;
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.subject.next('');
+    this.subject.complete();
+  }
+
   async update() {
-    if (!this.entity) return;
-    this.isRunning = await this.workflowService.isRunning(this.entity.id);
-    if (this.isRunning) {
-      this.form.disable();
-      this.ob$ = this.workflowService.getProgress(this.entity.id).pipe(takeUntil(this.subject), map(data => {
-        if (data.progress === 0 || data.progress >= 1) {
-          this.isRunning = false;
-          this.ob$ = undefined as never;
-          this.form.enable();
-          this.subject.next('');
+    if (!this.entity?.id) return;
+    const id = this.entity.id;
+    const version = ++this.statusVersion;
+    try {
+      const status = await firstValueFrom(this.workflowService.getStatus(id).pipe(takeUntil(this.destroy$)));
+      if (this.entity?.id !== id || version !== this.statusVersion || this.destroy$.isStopped) return;
+      this.status = status;
+      if (status.progress !== 0) {
+        this.isRunning = true;
+        this.seenActive = true;
+        if (isImportStopping(status)) {
+          this.stopping = true;
+          this.stopWasRequested = true;
         }
-        return data;
-      }));
-    } else {
-      this.status = await firstValueFrom(this.workflowService.getStatus(this.entity.id));
+        this.monitorRun();
+      } else if (!this.startPending || this.seenActive) {
+        this.finishMonitoring(status);
+      }
+    } catch (error) {
+      if (!this.destroy$.isStopped) this.errorPresentation.present(error, { action: 'load', entity: 'Workflow-Status' });
     }
+  }
+
+  get canStop(): boolean {
+    return this.seenActive || (!!this.status?.stale && !!this.status.reportId);
+  }
+
+  stop(): void {
+    if (!this.entity?.id || !this.canStop || this.stopping) return;
+    this.stopping = true;
+    this.workflowService.stopImport(this.entity.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: result => {
+        if (result.state === 'stopping') {
+          this.stopWasRequested = true;
+          this.snackBar.open('Stopp angefordert. Begonnene Datensätze werden noch abgeschlossen.', 'OK', { duration: 4500 });
+        }
+        void this.update();
+      },
+      error: error => {
+        this.stopping = false;
+        this.errorPresentation.present(error, { action: 'run', entity: 'Workflow', fallbackMessage: 'Workflow konnte nicht gestoppt werden.' });
+      },
+    });
+  }
+
+  private monitorRun(): void {
+    if (this.ob$ || !this.entity?.id) return;
+    this.form.disable();
+    const progress = this.workflowService.getProgress(this.entity.id).pipe(
+      takeUntil(this.subject),
+      takeUntil(this.destroy$),
+      tap(status => {
+        this.statusVersion++;
+        this.status = status;
+        if (status.progress !== 0) {
+          this.seenActive = true;
+          this.isRunning = true;
+          if (isImportStopping(status)) {
+            this.stopping = true;
+            this.stopWasRequested = true;
+          }
+        } else if (!this.startPending || this.seenActive) {
+          this.finishMonitoring(status);
+        }
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+    this.ob$ = progress;
+    progress.subscribe({
+      error: error => this.errorPresentation.present(error, { action: 'load', entity: 'Workflow-Status' }),
+    });
+  }
+
+  private finishMonitoring(status: ImportProgress): void {
+    this.status = status;
+    this.isRunning = false;
+    this.seenActive = false;
+    this.stopping = false;
+    this.ob$ = undefined;
+    this.subject.next('');
+    this.form.enable();
+    if (this.entity?.strategy_type === ImportStrategy.URL_DOI) this.form.controls.update.disable();
   }
 
   get isDraft(): boolean {
@@ -149,10 +236,15 @@ export class ImportFormActionComponent implements OnInit {
   }
 
   run(): void {
-    if (!this.entity?.id || this.loading) return;
+    if (!this.entity?.id || this.loading || this.isRunning) return;
 
     this.loading = true;
+    this.isRunning = true;
+    this.startPending = true;
+    this.seenActive = false;
+    this.stopWasRequested = false;
     this.form.disable();
+    this.monitorRun();
 
     const reporting_year = this.form.controls.reporting_year.value;
     const dryRun = this.form.controls.dry_run.value;
@@ -160,10 +252,11 @@ export class ImportFormActionComponent implements OnInit {
     if (!update) update = false;
     this.workflowService
       .run(this.entity.id, reporting_year, update, dryRun, this.file)
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(finalize(() => { this.loading = false; this.startPending = false; }), takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          this.snackBar.open(
+          this.startPending = false;
+          if (!this.stopWasRequested) this.snackBar.open(
             dryRun ? 'Dry-Run gestartet. Das Ergebnis wird im Report protokolliert.' : 'Workflow gestartet.',
             'OK',
             { duration: 4500, verticalPosition: 'top', panelClass: ['success-snackbar'] },
@@ -171,6 +264,7 @@ export class ImportFormActionComponent implements OnInit {
           void this.update();
         },
         error: (error) => {
+          this.startPending = false;
           this.errorPresentation.applyFieldErrors(this.form, error);
           this.errorPresentation.present(error, { action: 'run', entity: 'Workflow' });
           void this.update();

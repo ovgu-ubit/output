@@ -10,6 +10,8 @@ import { ReportItemService } from "./report-item.service";
 import { AppConfigService } from "../config/app-config.service";
 import { JSONataImportService } from "./import/jsonata-import";
 import { createInvalidRequestHttpException, createNotFoundHttpException } from "../common/api-error";
+import { ImportExecutionService } from './import-execution.service';
+import { ApiImportStop } from './import-stop-api';
 
 @Controller("enrich")
 @ApiTags("enrich")
@@ -17,7 +19,20 @@ export class EnrichController {
 
   constructor(private reportService: ReportItemService,
     private configService: AppConfigService,
-    @Inject('Enrichs') private enrichServices: ApiEnrichDOIService[]) { }
+    @Inject('Enrichs') private enrichServices: ApiEnrichDOIService[],
+    private executions: ImportExecutionService = new ImportExecutionService()) { }
+
+  @Post(':path/stop')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiImportStop()
+  async stop(@Param('path') path: string, @Req() req, @Res({ passthrough: true }) res: Response) {
+    const run = this.executions.get(`legacy-enrich:${path}`);
+    if (!(await this.list()).some(entry => entry.path === path)) throw createNotFoundHttpException('Enrich service not found.');
+    const result = this.executions.requestStop(`legacy-enrich:${path}`, 'user', req.user?.username, run ?? null);
+    res.status(result.state === 'stopping' ? 202 : 200);
+    return result;
+  }
 
   async list() {
     const allowed = await this.configService.get("enrich_services")
@@ -88,34 +103,25 @@ export class EnrichController {
     },
   })
   async enrichUnpaywall(@Req() request: Request, @Param('path') path: string, @Body('reporting_year') reporting_year: number, @Body('ids') ids: number[], @Body('dry_run') dryRun: boolean) {
-    if (path === 'jsonata') {
-      if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw createInvalidRequestHttpException('reporting year or array of IDs is mandatory');
-      const so = (await this.list()).findIndex(e => e.path === path)
-      if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
-      if (ids && ids.length >= 0) {
-        (this.enrichServices[so] as unknown as JSONataImportService).enrich_whereClause = { where: { id: In(ids) } };
-        return (this.enrichServices[so] as unknown as JSONataImportService).enrich(request["user"]["username"], dryRun);
-      } else {
-        const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-        const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-        const jsonata = this.enrichServices[so] as unknown as JSONataImportService
-        jsonata.enrich_whereClause = { where: { pub_date: Between(beginDate, endDate) } };
-        jsonata.setReportingYear(reporting_year+"")
+    if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw createInvalidRequestHttpException('reporting year or array of IDs is mandatory');
+    const so = (await this.list()).findIndex(e => e.path === path);
+    if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
+    const service = this.enrichServices[so];
+    return this.executions.run('legacy-enrich:' + path, { kind: 'enrich', path }, service, async () => {
+      const byIds = ids && ids.length >= 0;
+      const where = byIds ? { where: { id: In(ids) } } : { where: { pub_date: Between(
+        new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0)),
+        new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999)),
+      ) } };
+      if (path === 'jsonata') {
+        const jsonata = service as unknown as JSONataImportService;
+        jsonata.enrich_whereClause = where;
+        if (!byIds) await jsonata.setReportingYear(reporting_year + '');
         return jsonata.enrich(request["user"]["username"], dryRun);
       }
-    }
-    if (!((ids && ids.length >= 0) || (reporting_year && (reporting_year + '').match('[19|20][0-9]{2}')))) throw createInvalidRequestHttpException('reporting year or array of IDs is mandatory');
-    const so = (await this.list()).findIndex(e => e.path === path)
-    if (so === -1) throw createNotFoundHttpException('Enrich service not found.');
-    if (ids && ids.length >= 0) {
-      this.enrichServices[so].setWhereClause({ where: { id: In(ids) } });
-      return this.enrichServices[so].import(true, request["user"]["username"], dryRun);
-    } else {
-      const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-      const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-      this.enrichServices[so].setWhereClause({ where: { pub_date: Between(beginDate, endDate) } });
-      return this.enrichServices[so].import(true, request["user"]["username"], dryRun);
-    }
+      service.setWhereClause(where);
+      return service.import(true, request["user"]["username"], dryRun);
+    });
   }
   @Get(":path")
   @UseGuards(AccessGuard)
