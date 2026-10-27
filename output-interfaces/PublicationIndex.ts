@@ -19,6 +19,7 @@ export interface PublicationIndex {
     oa_category: string;
     publication_type: string;
     contract: string;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     import_date: Date;
 }
@@ -31,6 +32,7 @@ export interface AuthorIndex {
 	pub_count: number;
 	pub_count_corr: number;
     pub_count_total: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
 	institutes?: string;
 }
@@ -43,6 +45,7 @@ export interface InstituteIndex {
 	author_count_total: number;
 	pub_count: number;
 	pub_count_corr: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
 	sub_inst_count: number;
 }
@@ -54,6 +57,7 @@ export interface ContractIndex extends Partial<InvoiceCounts> {
     end_date?: Date;
     invoice_amount?: number;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
@@ -84,6 +88,7 @@ export interface PublicationTypeIndex {
     label: string;
     review: boolean;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
@@ -92,6 +97,7 @@ export interface OACategoryIndex {
     label: string;
     is_oa: boolean;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
@@ -100,6 +106,7 @@ export interface CostCenterIndex extends Partial<InvoiceCounts> {
     number?: string;
     label: string;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
@@ -107,6 +114,7 @@ export interface CostTypeIndex extends Partial<InvoiceCounts> {
     id?: number;
     label: string;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }

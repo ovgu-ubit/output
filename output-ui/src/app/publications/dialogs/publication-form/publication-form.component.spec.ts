@@ -31,6 +31,17 @@ describe('PublicationFormComponent', () => {
   let component: PublicationFormComponent;
   let fixture: ComponentFixture<PublicationFormComponent>;
 
+  it('uses the booking amount including zero, otherwise adds net amounts and VAT', () => {
+    const items = [{ euro_value: 100, vat: 19 }, { euro_value: 50, vat: 3.5 }];
+    const costs = PublicationFormComponent.prototype.getCosts;
+    expect(costs({ booking_amount: 200, cost_items: items })).toBe(200);
+    expect(costs({ booking_amount: 0, cost_items: items })).toBe(0);
+    expect(costs({ cost_items: items })).toBe(172.5);
+    expect(costs({ cost_items: [{ euro_value: 100 }, { vat: 7 }] })).toBe(107);
+    expect(costs({ cost_items: [] })).toBe(0);
+    expect(costs({})).toBe('');
+  });
+
   const mockDialogRef = {
     close: jasmine.createSpy('close'),
     addPanelClass: jasmine.createSpy('addPanelClass'),

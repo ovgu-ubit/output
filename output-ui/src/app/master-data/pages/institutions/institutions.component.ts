@@ -26,7 +26,7 @@ export class InstitutionsComponent implements TableParent<InstituteIndex>, OnIni
     { colName: 'author_count_total', colTitle: 'Anzahl Personen gesamt', type: 'number' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
     { colName: 'pub_count_corr', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
-    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' },
   ];
 
   constructor(public instService: InstituteService) { }

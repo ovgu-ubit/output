@@ -2,7 +2,8 @@
 <div style="display:flex;flex-flow: column nowrap;gap: 10px">
   <div>
     <h1 *ngIf="!this.costs">Anzahl Publikationen</h1>
-    <h1 *ngIf="this.costs">Kosten für Publikationsrechnungen</h1>
+    <h1 *ngIf="this.costs">Bruttokosten für Publikationsrechnungen</h1>
+    <p *ngIf="this.costs">Je Rechnung zählt der Buchungsbetrag, sonst die Summe der Positionen inklusive MwSt.</p>
   </div>
 <div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
   <div>

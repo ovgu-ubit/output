@@ -4,7 +4,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { Observable, forkJoin, map, of, startWith, tap } from 'rxjs';
-import {  ContractComponent, ContractModel, GreaterEntity, Invoice, OA_Category, PublicationType  } from '@output/interfaces';
+import { ContractComponent, ContractModel, getInvoiceGrossAmount, GreaterEntity, Invoice, OA_Category, PublicationType } from '@output/interfaces';
 import { GreaterEntityService } from '../../services/entities/greater-entity.service';
 import { OACategoryService } from '../../services/entities/oa-category.service';
 import { PublicationTypeService } from '../../services/entities/publication-type.service';
@@ -245,21 +245,7 @@ export class ContractComponentFormComponent extends AbstractFormComponent<Contra
   }
 
   getInvoiceCosts(invoice: Invoice) {
-    if (!invoice) {
-      return '';
-    }
-    if (invoice.booking_amount !== null && invoice.booking_amount !== undefined) {
-      return invoice.booking_amount;
-    }
-    if (!invoice.cost_items) {
-      return '';
-    }
-
-    let sum = 0;
-    for (const costItem of invoice.cost_items) {
-      sum += costItem.euro_value;
-    }
-    return sum;
+    return getInvoiceGrossAmount(invoice) ?? '';
   }
 
   private patchContractModelParams() {

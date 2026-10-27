@@ -41,6 +41,7 @@ export enum GROUP {
 
 export enum STATISTIC {
     COUNT,
+    /** Gross invoice costs (booking amount, otherwise items including VAT); legacy API name. */
     NET_COSTS
 }
 

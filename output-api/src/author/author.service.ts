@@ -1,3 +1,4 @@
+import { invoiceAmountsSql } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
@@ -240,11 +241,10 @@ export class AuthorService extends AbstractEntityService<Author> {
 
                 authorPublicationQuery = authorPublicationQuery
                     .leftJoin((costQuery) => costQuery
-                        .from("invoice", "invoice")
-                        .leftJoin("cost_item", "cost_item", "cost_item.\"invoiceId\" = invoice.id")
-                        .select("invoice.\"publicationId\"", "publicationId")
-                        .addSelect("SUM(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END)", "net_costs")
-                        .groupBy("invoice.\"publicationId\""),
+                        .from(`(${invoiceAmountsSql()})`, "invoice_amounts")
+                        .select("invoice_amounts.publication_id", "publicationId")
+                        .addSelect("SUM(invoice_amounts.gross_amount)", "net_costs")
+                        .groupBy("invoice_amounts.publication_id"),
                         "publication_cost",
                         "publication_cost.\"publicationId\" = publication.id")
                     .leftJoin((correspondingQuery) => correspondingQuery

@@ -5,6 +5,7 @@ import {  FilterOptions, GROUP, HighlightOptions, STATISTIC, TIMEFRAME  } from '
 import { createForbiddenHttpException, createInvalidRequestHttpException } from '../common/api-error';
 import { InstituteService } from '../institute/institute.service';
 import { Publication } from '../publication/core/Publication.entity';
+import { addInvoiceAmounts } from '../invoice/invoice-costs';
 
 @Injectable()
 export class StatisticsService {
@@ -233,9 +234,8 @@ export class StatisticsService {
 
     addStat(query: SelectQueryBuilder<Publication>, costs: boolean) {
         if (!costs) query = query.addSelect('count(distinct publication.id)::int as value')
-        else query = this.addInvoiceJoin(query)
-            .leftJoin("invoice.cost_items", "cost_item")
-            .addSelect("sum(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) as value")
+        else query = addInvoiceAmounts(this.addInvoiceJoin(query))
+            .addSelect("sum(COALESCE(invoice_amounts.gross_amount, 0)) as value")
         return query//.orderBy('value', 'DESC');
     }
 
