@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { ImportProgress, isImportStopping } from 'src/app/shared/import-progress';
+import { shareReplay, tap, finalize } from 'rxjs';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, Subject, catchError, firstValueFrom, from, map, merge, takeUntil } from 'rxjs';
+import { Observable, Subject, firstValueFrom, from, map, takeUntil } from 'rxjs';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ReportService } from 'src/app/administration/services/report.service';
 import { LogDialogComponent } from 'src/app/administration/components/log-dialog/log-dialog.component';
@@ -14,7 +16,7 @@ import { ImportConfigComponent } from '../../components/import-config/import-con
     styleUrls: ['./enrich.component.css'],
     standalone: false
 })
-export class EnrichComponent implements OnInit {
+export class EnrichComponent implements OnInit, OnDestroy {
 
   subjects: Subject<any>[] = [];
 
@@ -23,51 +25,43 @@ export class EnrichComponent implements OnInit {
   status = [];
   runningEnrichs = [];
 
-  obs$: Observable<{ progress: number, status: string }>[] = [];
+  obs$: Observable<ImportProgress>[] = [];
 
   current_progress = [];
+  readonly stoppingPaths = new Set<string>();
+  private readonly startingPaths = new Set<string>();
+  private readonly seenActivePaths = new Set<string>();
+  private readonly destroy$ = new Subject<void>();
 
   public forms: FormGroup[] = [];
 
   constructor(private reportService: ReportService, private enrichService: EnrichService, private formBuilder: FormBuilder, private dialog: MatDialog, private _snackBar: MatSnackBar) { }
 
   async ngOnInit() {
-    let ob$: Observable<any> = this.reportService.getReports('Enrich').pipe(map(
-      data => {
-        this.reportFiles = data.sort((a, b) => b.localeCompare(a));
-      }));
-    ob$ = merge(ob$, from(this.enrichService.isRunning()).pipe(map(
-      data => {
-        this.runningEnrichs = data;
-        for (let ri of this.runningEnrichs) {
-          this.forms[ri.label].disable();
-          this.obs$[ri.label] = this.enrichService.getProgress(ri.path).pipe(takeUntil(this.subjects[ri.label]), map(data => {
-            if (data.progress === 0 || data.progress >= 1) {//finish signal
-              this.runningEnrichs = this.runningEnrichs.filter(e => e.label !== ri.label)
-              this.obs$[ri.label] = undefined;
-              this.updateStatus();
-              this.forms[ri.label].enable();
-              this.subjects[ri.label].next('');
-            }
-            return data;
-          }));
-        }
-      })));
-    ob$ = merge(ob$, this.updateStatus());
-    ob$.subscribe({
-      error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
-    })
-    this.enrichs = await firstValueFrom(this.enrichService.getEnrichs())
-    for (let im of this.enrichs) {
-      this.subjects[im.label] = new Subject<any>();
-      this.forms[im.label] = this.formBuilder.group({
-        reporting_year: ['', Validators.required],
-        dry_run: [false],
+    try {
+      this.enrichs = await firstValueFrom(this.enrichService.getEnrichs().pipe(takeUntil(this.destroy$)));
+      for (const im of this.enrichs) {
+        this.subjects[im.label] = new Subject<any>();
+        this.forms[im.label] = this.formBuilder.group({
+          reporting_year: ['', Validators.required],
+          dry_run: [false],
+        });
+      }
+      this.reportService.getReports('Enrich').pipe(takeUntil(this.destroy$)).subscribe({
+        next: files => this.reportFiles = files.sort((a, b) => b.localeCompare(a)),
+        error: () => this.showError('Reports konnten nicht geladen werden.'),
       });
+      this.updateStatus().pipe(takeUntil(this.destroy$)).subscribe({ error: () => this.showError('Status konnte nicht geladen werden.') });
+      const running = await firstValueFrom(from(this.enrichService.isRunning()).pipe(takeUntil(this.destroy$)));
+      for (const im of running) this.monitorRun(im);
+    } catch {
+      if (!this.destroy$.isStopped) this.showError('Backend nicht erreichbar.');
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   updateStatus() {
@@ -81,33 +75,86 @@ export class EnrichComponent implements OnInit {
     return this.reportFiles?.filter(e => e.includes(import_label))
   }
 
-  startImport(importO) {
-    if (this.forms[importO.label].invalid) return;
-    this.forms[importO.label].disable();
-    this.enrichService.startYear(importO.path, this.forms[importO.label].get('reporting_year').value, this.forms[importO.label].get('dry_run').value).subscribe({
-      next: data => {
-        this.runningEnrichs.push(importO)
-        this.obs$[importO.label] = this.enrichService.getProgress(importO.path).pipe(takeUntil(this.subjects[importO.label]), map(data => {
-          if (data.progress === 0 || data.progress >= 1) {//finish signal
-            this.runningEnrichs = this.runningEnrichs.filter(e => e.label !== importO.label)
-            this.obs$[importO.label] = undefined;
-            this.updateStatus().subscribe();
-            this.forms[importO.label].enable();
-
-            this.reportService.getReports('Enrich').subscribe({
-              next: data => {
-                this.reportFiles = data.sort((a, b) => b.localeCompare(a));;
-              }
-            })
-            this.subjects[importO.label].next('');
-          }
-          return data;
-        }));
-      }, error: err => this._snackBar.open(`Backend nicht erreichbar`, 'Oh oh!', {
-        panelClass: [`danger-snackbar`],
-        verticalPosition: 'top'
-      })
+  startImport(im): void {
+    if (this.obs$[im.label] || this.startingPaths.has(im.path)) return;
+    const form = this.forms[im.label];
+    if (form.invalid) return;
+    const values = form.getRawValue();
+    const request = this.enrichService.startYear(im.path, values.reporting_year, values.dry_run);
+    this.startingPaths.add(im.path);
+    this.monitorRun(im);
+    request.pipe(finalize(() => this.startingPaths.delete(im.path)), takeUntil(this.destroy$)).subscribe({
+      next: () => this.startingPaths.delete(im.path),
+      error: () => {
+        this.finishMonitoring(im, false);
+        this.showError('Anreicherung konnte nicht gestartet werden.');
+      },
     });
+  }
+
+  isStarting(path: string): boolean { return this.startingPaths.has(path); }
+
+  isRunning(path: string): boolean {
+    return this.runningEnrichs.some(im => im.path === path);
+  }
+
+  stop(im): void {
+    if (!this.isRunning(im.path) || this.stoppingPaths.has(im.path)) return;
+    this.stoppingPaths.add(im.path);
+    this.enrichService.stop(im.path).pipe(takeUntil(this.destroy$)).subscribe({
+      next: result => {
+        if (result.state === 'stopping') {
+          this._snackBar.open('Stopp angefordert. Begonnene Datensätze werden noch abgeschlossen.', 'OK', { duration: 4500 });
+        }
+      },
+      error: () => {
+        this.stoppingPaths.delete(im.path);
+        this.showError('Anreicherung konnte nicht gestoppt werden. Bitte erneut versuchen.');
+      },
+    });
+  }
+
+  private monitorRun(im): void {
+    if (this.obs$[im.label]) return;
+    this.forms[im.label].disable();
+    if (!this.startingPaths.has(im.path)) this.runningEnrichs.push(im);
+    const progress = this.enrichService.getProgress(im.path).pipe(
+      takeUntil(this.subjects[im.label]),
+      takeUntil(this.destroy$),
+      tap(data => {
+        this.status[this.enrichs.findIndex(entry => entry.path === im.path)] = data.status;
+        if (data.progress !== 0) {
+          this.seenActivePaths.add(im.path);
+          if (!this.isRunning(im.path)) this.runningEnrichs.push(im);
+          if (isImportStopping(data)) this.stoppingPaths.add(im.path);
+        } else if (!this.startingPaths.has(im.path) || this.seenActivePaths.has(im.path)) {
+          this.finishMonitoring(im);
+        }
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+    this.obs$[im.label] = progress;
+    progress.subscribe({ error: () => this.showError('Laufstatus konnte nicht geladen werden. Bitte die Seite neu laden.') });
+  }
+
+  private finishMonitoring(im, refresh = true): void {
+    this.runningEnrichs = this.runningEnrichs.filter(entry => entry.path !== im.path);
+    if (!refresh) this.startingPaths.delete(im.path);
+    this.seenActivePaths.delete(im.path);
+    this.stoppingPaths.delete(im.path);
+    this.obs$[im.label] = undefined;
+    this.subjects[im.label].next('');
+    this.forms[im.label].enable();
+    if (refresh) {
+      this.reportService.getReports('Enrich').pipe(takeUntil(this.destroy$)).subscribe({
+        next: files => this.reportFiles = files.sort((a, b) => b.localeCompare(a)),
+        error: () => this.showError('Reports konnten nicht geladen werden.'),
+      });
+    }
+  }
+
+  private showError(message: string): void {
+    this._snackBar.open(message, 'OK', { duration: 5000, panelClass: ['danger-snackbar'], verticalPosition: 'top' });
   }
 
   openLog(rep) {

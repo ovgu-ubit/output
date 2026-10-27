@@ -24,7 +24,7 @@
             <h3>Veröffentlicht</h3>
             <form [formGroup]="form">
                 @if (fileStrategy) {
-                <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #fileInput (change)="setFile($event)">
+                <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #fileInput (change)="setFile($event)" [disabled]="isRunning || loading">
                 } @else {
                 <mat-form-field appearance="fill">
                     <mat-label>Publikationsjahr</mat-label>
@@ -32,20 +32,27 @@
                 </mat-form-field>
             }
                 <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
-                <button mat-raised-button [hidden]="!this.form.get('update').value" type="button"  class="secondary-button" [disabled]="this.ob$" (click)="configureImport()">Update konfigurieren</button>
+                <button mat-raised-button [hidden]="!this.form.get('update').value" type="button"  class="secondary-button" [disabled]="isRunning || loading" (click)="configureImport()">Update konfigurieren</button>
                 <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
             </form>
-            <div *ngIf="this.ob$">{{((this.ob$ | async)?.progress)*100 | number: '1.2-2'}} %</div>
-            <mat-progress-bar *ngIf="this.ob$" mode="determinate" [value]="(this.ob$ | async)?.progress*100"></mat-progress-bar>
-            <button mat-raised-button class="primary-button" (click)="run()" [disabled]="this.ob$">
+            <ng-container *ngIf="ob$ | async as progress">
+                <div role="status">{{stopping ? 'Wird gestoppt… Begonnene Datensätze werden abgeschlossen.' : progress.status}}</div>
+                <div *ngIf="progress.progress >= 0">{{progress.progress * 100 | number: '1.2-2'}} %</div>
+                <mat-progress-bar [mode]="progress.progress < 0 ? 'indeterminate' : 'determinate'" [value]="progress.progress * 100"></mat-progress-bar>
+            </ng-container>
+            <p *ngIf="!isRunning && status" role="status">Status: {{status.status}}</p>
+            <button *ngIf="canStop" mat-raised-button class="warn-button" [disabled]="stopping" (click)="stop()">
+                <mat-icon>stop</mat-icon>{{stopping ? 'Wird gestoppt…' : 'Stopp'}}
+            </button>
+            <button mat-raised-button class="primary-button" (click)="run()" [disabled]="isRunning || loading">
                 <mat-icon>play_arrow</mat-icon>
                 Importlauf starten
             </button>
-            <button mat-raised-button class="primary-button" [disabled]="this.ob$" (click)="duplicate()">
+            <button mat-raised-button class="primary-button" [disabled]="isRunning || loading" (click)="duplicate()">
                 <mat-icon>content_copy</mat-icon>
                 Neue Version als Entwurf speichern
             </button>
-            <button mat-raised-button class="warn-button" [disabled]="this.ob$" (click)="archive()">
+            <button mat-raised-button class="warn-button" [disabled]="isRunning || loading" (click)="archive()">
                 <mat-icon>archive</mat-icon>
                 Workflow archivieren
             </button>

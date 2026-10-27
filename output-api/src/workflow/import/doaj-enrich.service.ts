@@ -1,3 +1,4 @@
+import { EMPTY } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { Observable, catchError, delay, mergeAll, of, queueScheduler, scheduled } from 'rxjs';
@@ -147,7 +148,6 @@ export class DOAJEnrichService extends AbstractImportService {
         super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
-    private publicationsUpdate = [];
     private processedPublications = 0;
     private errors = 0;
 
@@ -178,7 +178,8 @@ export class DOAJEnrichService extends AbstractImportService {
 
     private request(issn: string): Observable<any> {
         const url = this.createUrl(issn);
-        return this.http.get(url).pipe(delay(100),catchError((error, caught) => {
+        return this.getImportRequest(this.http, url).pipe(delay(100),catchError((error, caught) => {
+            if (this.isStopRequested()) return EMPTY;
             if (error.response?.status === 404) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + issn })
             } else if (error.response?.status === 422) {
@@ -196,7 +197,7 @@ export class DOAJEnrichService extends AbstractImportService {
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -209,6 +210,7 @@ export class DOAJEnrichService extends AbstractImportService {
         const publications = (await this.publicationService.get({...this.whereClause, relations: {greater_entity:{identifiers:true}}})).filter(pub => pub.greater_entity && !pub.locked && !pub.delete_date);
         this.uniqueGE = [];
         for (const pub of publications) {
+            if (this.isStopRequested()) break;
             if (!pub.greater_entity.identifiers || !pub.greater_entity.identifiers.find(e => e.type === 'issn')) continue;
             let flag = false;
             for (const pub2 of this.uniqueGE) {
@@ -229,7 +231,7 @@ export class DOAJEnrichService extends AbstractImportService {
         for (const pub of this.uniqueGE) obs$.push(this.request(pub.greater_entity.identifiers.find(e => e.type === 'issn').value));
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
-        scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
+        this.subscribeImport(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)), {
             next: async (data: any) => {
                 if (data) {
                     const item = this.getData(data);
@@ -261,7 +263,7 @@ export class DOAJEnrichService extends AbstractImportService {
                     //console.log(this.publicationsUpdate.length + ' pubs update to DB, ' + this.errors + ' errors');
                     //finalize
                     this.progress = 0;
-                    this.reportService.finish(this.report, {
+                    this.finishLegacyRun(this.report, {
                         status: 'Successfull enrich on ' + new Date(),
                         count_import: 0,
                         count_update: this.publicationsUpdate.length
@@ -273,7 +275,7 @@ export class DOAJEnrichService extends AbstractImportService {
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
                 this.progress = 0;
                 this.status_text = 'Error while enriching on ' + new Date();
-                this.reportService.finish(this.report, {
+                this.finishLegacyRun(this.report, {
                     status: 'Error while importing on ' + new Date(),
                     count_import: 0,
                     count_update: this.publicationsUpdate.length

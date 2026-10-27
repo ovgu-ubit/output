@@ -1,5 +1,6 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
+import { ImportExecutionService } from './import-execution.service';
 import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
 import { AuthorModule } from '../author/author.module';
 import { AppConfigModule } from '../config/app-config.module';
@@ -94,6 +95,7 @@ import { WorkflowReportService } from './workflow-report.service';
     WorkflowController
   ],
   providers: [
+    ImportExecutionService,
     ReportItemService,
     CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,
     CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,

@@ -1,6 +1,21 @@
 import { CompareOperation, SearchFilter, SearchFilterValue } from "./Config";
 import { Publication } from "./Publication";
 
+export interface ImportRunStatus {
+    progress: number;
+    status: string;
+    runId?: string;
+    stopRequested: boolean;
+    stale?: boolean;
+    reportId?: number;
+}
+
+export interface ImportStopResponse {
+    state: 'stopping' | 'not-running' | 'interrupted';
+    runId?: string;
+    reportId?: number;
+}
+
 export interface Workflow {
     id?: number;
     workflow_id?: string;

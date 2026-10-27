@@ -69,6 +69,12 @@ describe('WorkflowService', () => {
     );
   });
 
+  it('posts an authenticated import stop request and preserves the backend result', async () => {
+    http.post.and.returnValue(of({ state: 'interrupted', reportId: 71 }));
+    expect(await firstValueFrom(service.stopImport(7))).toEqual({ state: 'interrupted', reportId: 71 });
+    expect(http.post).toHaveBeenCalledWith('http://api/workflow/import/7/stop', {}, { withCredentials: true });
+  });
+
   it('includes the reporting year in multipart file imports', async () => {
     const file = new File(['title'], 'import.csv', { type: 'text/csv' });
     http.post.and.returnValue(of({ status: 'started', dry_run: false }));

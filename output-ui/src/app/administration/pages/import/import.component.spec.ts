@@ -4,7 +4,9 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { ImportProgress } from 'src/app/shared/import-progress';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { ReportService } from 'src/app/administration/services/report.service';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -23,6 +25,7 @@ describe('ImportComponent', () => {
     ])),
     getStatus: jasmine.createSpy('getStatus').and.returnValue(of([])),
     start: jasmine.createSpy('start').and.returnValue(of({})),
+    stop: jasmine.createSpy('stop').and.returnValue(of({ state: 'stopping', runId: 'run-1' })),
     getProgress: jasmine.createSpy('getProgress').and.returnValue(of({ progress: 0, status: '' }))
   };
 
@@ -31,12 +34,15 @@ describe('ImportComponent', () => {
   };
 
   beforeEach(async () => {
+    mockImportService.getProgress.and.returnValue(of({ progress: 0, status: '' }));
+    mockImportService.stop.calls.reset();
     await TestBed.configureTestingModule({
       imports: [
         NoopAnimationsModule,
         ReactiveFormsModule,
         MatDialogModule,
         MatSnackBarModule,
+        MatProgressBarModule,
         SharedModule,
         RouterTestingModule
       ],
@@ -57,6 +63,26 @@ describe('ImportComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('renders a stop button and disables it after a click until cancellation completes', async () => {
+    await fixture.whenStable();
+    const progress = new Subject<ImportProgress>();
+    mockImportService.getProgress.and.returnValue(progress);
+    component.forms['Crossref'].controls['reporting_year'].setValue(2026);
+    component.startImport({ path: 'crossref', label: 'Crossref' });
+    progress.next({ progress: 0.5, status: 'running' });
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('button.warn-button') as HTMLButtonElement;
+    expect(button.textContent).toContain('Stopp');
+    button.click();
+    fixture.detectChanges();
+    expect(mockImportService.stop).toHaveBeenCalledOnceWith('crossref');
+    expect(button.disabled).toBeTrue();
+    expect(button.textContent).toContain('Wird gestoppt');
+    progress.next({ progress: 0, status: 'cancelled' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('button.warn-button')).toBeNull();
   });
 
   it('starts legacy imports with a boolean update value', async () => {

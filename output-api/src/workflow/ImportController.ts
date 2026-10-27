@@ -15,6 +15,8 @@ import { ImportWorkflow } from "./ImportWorkflow.entity";
 import {  ImportStrategy  } from '@output/interfaces';
 import { createInvalidRequestHttpException, createNotFoundHttpException } from "../common/api-error";
 import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-policy";
+import { ImportExecutionService } from './import-execution.service';
+import { ApiImportStop } from './import-stop-api';
 
 @Controller("import")
 @ApiTags("import")
@@ -25,7 +27,22 @@ export class ImportController {
     private configService: AppConfigService,
     @Inject('Imports') private importServices: AbstractImportService[],
     private csvService: CSVImportService, private excelService: ExcelImportService,
-    private workflowService: WorkflowService) { }
+    private workflowService: WorkflowService,
+    private executions: ImportExecutionService = new ImportExecutionService()) { }
+
+  @Post(':path/stop')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiImportStop()
+  async stop(@Param('path') path: string, @Req() req, @Res({ passthrough: true }) res: Response) {
+    const run = this.executions.get(`legacy-import:${path}`);
+    if (path !== 'csv' && path !== 'xls' && !(await this.list()).some(entry => entry.path === path)) {
+      throw createNotFoundHttpException('Import service not found.');
+    }
+    const result = this.executions.requestStop(`legacy-import:${path}`, 'user', req.user?.username, run ?? null);
+    res.status(result.state === 'stopping' ? 202 : 200);
+    return result;
+  }
 
 
   async list() {
@@ -116,8 +133,12 @@ export class ImportController {
   async importCSV(@Req() request, @Body('update') update: boolean | string, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean | string) {
     if (!file || !file.originalname.endsWith('.csv')) throw createInvalidRequestHttpException('valid csv file required');
     await this.assertDemoUploadAllowed(file, ['.csv']);
-    this.csvService.setUp(file, format);
-    return this.csvService.import(this.parseBoolean(update), request["user"]["username"], this.parseBoolean(dryRun));
+    const parsedUpdate = this.parseBoolean(update);
+    const parsedDryRun = this.parseBoolean(dryRun);
+    return this.executions.run('legacy-import:csv', { kind: 'import', path: 'csv' }, this.csvService, async () => {
+      await this.csvService.setUp(file, format);
+      return this.csvService.import(parsedUpdate, request["user"]["username"], parsedDryRun);
+    });
   }
   @Get("csv")
   @UseGuards(AccessGuard)
@@ -197,8 +218,12 @@ export class ImportController {
   async importExcel(@Req() request, @Body('update') update: boolean | string, @UploadedFile() file: Express.Multer.File, @Body('format') format: CSVMapping, @Body('dry_run') dryRun: boolean | string) {
     if (!file || !file.originalname.endsWith('.xlsx')) throw createInvalidRequestHttpException('valid excel file required');
     await this.assertDemoUploadAllowed(file, ['.xlsx']);
-    this.excelService.setUp(file, format);
-    return this.excelService.import(this.parseBoolean(update), request["user"]["username"], this.parseBoolean(dryRun));
+    const parsedUpdate = this.parseBoolean(update);
+    const parsedDryRun = this.parseBoolean(dryRun);
+    return this.executions.run('legacy-import:xls', { kind: 'import', path: 'xls' }, this.excelService, async () => {
+      await this.excelService.setUp(file, format);
+      return this.excelService.import(parsedUpdate, request["user"]["username"], parsedDryRun);
+    });
   }
   @Get("xls")
   @UseGuards(AccessGuard)
@@ -236,8 +261,12 @@ export class ImportController {
     if (!reporting_year || !reporting_year.match('[19|20][0-9]{2}')) throw createInvalidRequestHttpException('reporting year is mandatory');
     const so = (await this.list()).findIndex(e => e.path === path)
     if (so === -1) throw createNotFoundHttpException('Import service not found.');
-    await this.importServices[so].setReportingYear(reporting_year);
-    return this.importServices[so].import(this.parseBoolean(update), request["user"]["username"], this.parseBoolean(dryRun));
+    const parsedUpdate = this.parseBoolean(update);
+    const parsedDryRun = this.parseBoolean(dryRun);
+    return this.executions.run(`legacy-import:${path}`, { kind: 'import', path }, this.importServices[so], async () => {
+      await this.importServices[so].setReportingYear(reporting_year);
+      return this.importServices[so].import(parsedUpdate, request["user"]["username"], parsedDryRun);
+    });
   }
 
   @Get(':path')

@@ -6,6 +6,8 @@ import {  SearchFilter  } from '@output/interfaces';
 import {  ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, ValidationWorkflow, Workflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { catchError, concatMap, firstValueFrom, forkJoin, interval, map, Observable, of } from 'rxjs';
 import {  UpdateMapping  } from '@output/interfaces';
+import { ImportStopResponse } from '@output/interfaces';
+import { ImportProgress } from '../shared/import-progress';
 
 @Injectable({
   providedIn: 'root'
@@ -35,6 +37,9 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   }
   public unlockImport(id: number) {
     return this.http.post<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/unlock', {}, { withCredentials: true });
+  }
+  public stopImport(id: number): Observable<ImportStopResponse> {
+    return this.http.post<ImportStopResponse>(this.runtimeConfigService.getValue('api') + `workflow/import/${id}/stop`, {}, { withCredentials: true });
   }
   public getConfig(id: number) {
     return this.http.get<UpdateMapping>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id + '/config', { withCredentials: true })
@@ -99,7 +104,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   }
   async isRunning(id: number, workflowType: WorkflowType = WorkflowType.IMPORT) {
     if (!id) return false;
-    let resp = await firstValueFrom(this.http.get<{ progress: number, status: string }>(
+    let resp = await firstValueFrom(this.http.get<ImportProgress>(
       this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/run`,
       { withCredentials: true }
     ))
@@ -108,26 +113,26 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   async isExportRunning(id: number) {
     return this.isRunning(id, WorkflowType.EXPORT);
   }
-  getProgress(id: number, workflowType: WorkflowType = WorkflowType.IMPORT): Observable<{ progress: number, status: string }> {
+  getProgress(id: number, workflowType: WorkflowType = WorkflowType.IMPORT): Observable<ImportProgress> {
     let timer = interval(500);
     return timer.pipe(concatMap(data => {
       //console.log(new Date())
-      return this.http.get<{ progress: number, status: string }>(
+      return this.http.get<ImportProgress>(
         this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/run`,
         { withCredentials: true }
       )
     }))
   }
-  getExportProgress(id: number): Observable<{ progress: number, status: string }> {
+  getExportProgress(id: number): Observable<ImportProgress> {
     return this.getProgress(id, WorkflowType.EXPORT);
   }
-  getStatus(id: number, workflowType: WorkflowType = WorkflowType.IMPORT): Observable<{ progress: number, status: string }> {
-    return this.http.get<{ progress: number, status: string }>(
+  getStatus(id: number, workflowType: WorkflowType = WorkflowType.IMPORT): Observable<ImportProgress> {
+    return this.http.get<ImportProgress>(
       this.runtimeConfigService.getValue("api") + `workflow/${workflowType}/${id}/run`,
       { withCredentials: true }
     )
   }
-  getExportStatus(id: number): Observable<{ progress: number, status: string }> {
+  getExportStatus(id: number): Observable<ImportProgress> {
     return this.getStatus(id, WorkflowType.EXPORT);
   }
 
@@ -242,10 +247,10 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
   async isValidationRunning(id: number) {
     return this.isRunning(id, WorkflowType.VALIDATION);
   }
-  getValidationProgress(id: number): Observable<{ progress: number, status: string }> {
+  getValidationProgress(id: number): Observable<ImportProgress> {
     return this.getProgress(id, WorkflowType.VALIDATION);
   }
-  getValidationStatus(id: number): Observable<{ progress: number, status: string }> {
+  getValidationStatus(id: number): Observable<ImportProgress> {
     return this.getStatus(id, WorkflowType.VALIDATION);
   }
 

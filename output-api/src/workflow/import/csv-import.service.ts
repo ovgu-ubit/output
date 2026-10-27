@@ -65,8 +65,6 @@ export class CSVImportService extends AbstractImportService {
         cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
     };
 
-    private newPublications: Publication[] = [];
-    private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
     private file: Express.Multer.File;
@@ -94,7 +92,7 @@ export class CSVImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from CSV file and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The import is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
         this.progress = -1;
         this.status_text = 'Started on ' + new Date();
@@ -114,66 +112,71 @@ export class CSVImportService extends AbstractImportService {
             quoteChar: this.importConfig.quoteChar,
             delimiter,
             skipEmptyLines: true,
-            complete: async (result, file) => {
-                this.numberOfPublications = result.data.length;
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
-                this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
-                if (this.checkFormat(result.data, this.importConfig)) {
-                    try {
-                        const data = result.data;
-                        if (!data) return;
-                        for (const pub of data) {
-                            const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
-                            if (!flag) {
-                                const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
-                                if (pubNew) {
-                                    this.newPublications.push(pubNew);
-                                    this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
+            complete: (result, file) => {
+                const work = (async () => {
+                    this.numberOfPublications = result.data.length;
+                    this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with mapping ${this.importConfig.name} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
+                    this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
+                    if (this.checkFormat(result.data, this.importConfig)) {
+                        try {
+                            const data = result.data;
+                            if (!data) return;
+                            for (const pub of data) {
+                                if (this.isStopRequested()) break;
+                                const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
+                                if (!flag) {
+                                    const pubNew = await this.mapNew(pub).catch(e => this.reportService.write(this.report, { type: 'error', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: e.stack ? e.stack : e.message }));
+                                    if (pubNew) {
+                                        this.newPublications.push(pubNew);
+                                        this.reportService.write(this.report, { type: 'info', publication_doi: this.getDOI(pub), publication_title: this.getTitle(pub), timestamp: new Date(), origin: 'mapNew', text: `New publication imported` })
+                                    }
+                                } else if (update) {
+                                    const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
+                                    if (orig.locked) continue;
+                                    const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
+                                        this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
+                                        return null;
+                                    })
+                                    if (pubUpd?.pub) {
+                                        this.publicationsUpdate.push(pubUpd.pub);
+                                        this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
+                                    }
                                 }
-                            } else if (update) {
-                                const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
-                                if (orig.locked) continue;
-                                const pubUpd = await this.mapUpdate(pub, orig).catch(e => {
-                                    this.reportService.write(this.report, { type: 'error', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: e.stack ? e.stack : e.message })
-                                    return null;
-                                })
-                                if (pubUpd?.pub) {
-                                    this.publicationsUpdate.push(pubUpd.pub);
-                                    this.reportService.write(this.report, { type: 'info', publication_id: orig.id, timestamp: new Date(), origin: 'mapUpdate', text: `Publication updated (${pubUpd.fields.join(',')})` })
-                                }
+                                // Update Progress Value
+                                this.processedPublications++;
+                                if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
                             }
-                            // Update Progress Value
-                            this.processedPublications++;
-                            if (this.progress !== 0) this.progress = (this.processedPublications) / this.numberOfPublications;
+                            //finalize
+                            this.progress = 0;
+                            this.finishLegacyRun(this.report, {
+                                status: 'Successfull import on ' + new Date(),
+                                count_import: this.newPublications.length,
+                                count_update: this.publicationsUpdate.length
+                            })
+                            this.status_text = 'Successfull import on ' + new Date();
+                        } catch (err) {
+                            this.progress = 0;
+                            this.status_text = 'Error while importing on ' + new Date();
+                            console.log(err.message);
+                            this.finishLegacyRun(this.report, {
+                                status: 'Error while importing on ' + new Date(),
+                                count_import: this.newPublications.length,
+                                count_update: this.publicationsUpdate.length
+                            })
                         }
-                        //finalize
-                        this.progress = 0;
-                        this.reportService.finish(this.report, {
-                            status: 'Successfull import on ' + new Date(),
-                            count_import: this.newPublications.length,
-                            count_update: this.publicationsUpdate.length
-                        })
-                        this.status_text = 'Successfull import on ' + new Date();
-                    } catch (err) {
+                    } else {
                         this.progress = 0;
                         this.status_text = 'Error while importing on ' + new Date();
-                        console.log(err.message);
-                        this.reportService.finish(this.report, {
-                            status: 'Error while importing on ' + new Date(),
+                        //console.log(this.file.filename + ' does not match the expected format.');
+                        this.finishLegacyRun(this.report, {
+                            status: 'Error while importing on ' + new Date() + ': ' + this.file.filename + ' does not match the expected format.',
                             count_import: this.newPublications.length,
                             count_update: this.publicationsUpdate.length
                         })
                     }
-                } else {
-                    this.progress = 0;
-                    this.status_text = 'Error while importing on ' + new Date();
-                    //console.log(this.file.filename + ' does not match the expected format.');
-                    this.reportService.finish(this.report, {
-                        status: 'Error while importing on ' + new Date() + ': ' + this.file.filename + ' does not match the expected format.',
-                        count_import: this.newPublications.length,
-                        count_update: this.publicationsUpdate.length
-                    })
-                }
+                })();
+                if (this.execution) this.execution.track(work);
+                else void work.catch(() => undefined);
             }
         });
     }

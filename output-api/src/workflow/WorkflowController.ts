@@ -15,6 +15,7 @@ import { WorkflowService } from "./workflow.service";
 import { WorkflowReportService } from "./workflow-report.service";
 import { createInvalidRequestHttpException } from "../common/api-error";
 import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-policy";
+import { ApiImportStop } from './import-stop-api';
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -140,6 +141,16 @@ export class WorkflowController {
     @Body('reporting_year') reporting_year?: number, @Body('ids') ids?: number[], @UploadedFile() file?: Express.Multer.File) {
     await this.assertDemoUploadAllowed(file, ['.csv', '.xlsx']);
     return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
+  }
+
+  @Post('import/:id/stop')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiImportStop()
+  async stop_import(@Param('id', ParseIntPipe) id: number, @Req() req, @Res({ passthrough: true }) res: Response) {
+    const result = await this.workflowService.stopImport(id, req.user?.username);
+    res.status(result.state === 'stopping' ? 202 : 200);
+    return result;
   }
 
   @Post("export/:id/run")
