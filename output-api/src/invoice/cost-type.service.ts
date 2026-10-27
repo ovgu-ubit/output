@@ -1,3 +1,4 @@
+import { addInvoiceAmounts, allocatedCostItemGrossAmountSql } from './invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
@@ -31,18 +32,20 @@ export class CostTypeService extends AbstractEntityService<CostType> {
             .groupBy("cost_type.id")
             .addGroupBy("cost_type.label");
 
+        if (canReadNetCosts) query = addInvoiceAmounts(query);
+
         if (reporting_year) {
             const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
-                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
+                .addSelect(canReadNetCosts ? `SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN ${allocatedCostItemGrossAmountSql()} ELSE 0 END)` : "NULL", "net_costs")
                 .setParameters({ beginDate, endDate });
         }
         else {
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count")
-                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs");
+                .addSelect(canReadNetCosts ? `SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN ${allocatedCostItemGrossAmountSql()} ELSE 0 END)` : "NULL", "net_costs");
         }
 
         if (canReadInvoices) addInvoiceCounts(query, 'cost_type_id', invoiceReportingYear);

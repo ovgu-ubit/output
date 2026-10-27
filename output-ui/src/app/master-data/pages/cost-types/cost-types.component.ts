@@ -21,7 +21,7 @@ export class CostTypesComponent implements TableParent<CostTypeIndex>, OnInit {
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
-    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' },
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
     { colName: 'invoice_count', colTitle: 'Anzahl Rechnungen (Rechnungsdatum)', type: 'invoices', roles: ['reader', 'writer', 'admin'] },
     { colName: 'invoice_count_total', colTitle: 'Anzahl Rechnungen insg.', type: 'invoices', roles: ['reader', 'writer', 'admin'] },

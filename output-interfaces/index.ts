@@ -4,6 +4,7 @@ export * from './Authorization';
 export * from './Config';
 export * from './Import';
 export * from './InvoiceIndex';
+export * from './InvoiceCosts';
 export * from './Publication';
 export * from './PublicationIndex';
 export * from './Statistics';

@@ -88,7 +88,14 @@ describe('ContractComponentFormComponent', () => {
   });
 
   it('should return booking_amount even when it is zero', () => {
-    expect(component.getInvoiceCosts({ booking_amount: 0 } as any)).toBe(0);
+    expect(component.getInvoiceCosts({ booking_amount: 0, cost_items: [{ euro_value: 100, vat: 19 }] })).toBe(0);
+  });
+
+  it('uses gross costs consistently for invoices and pre-invoices', () => {
+    expect(component.getInvoiceCosts({ booking_amount: 200, cost_items: [{ euro_value: 100, vat: 19 }] })).toBe(200);
+    expect(component.getInvoiceCosts({ cost_items: [{ euro_value: 100, vat: 19 }, { euro_value: 50, vat: 3.5 }] })).toBe(172.5);
+    expect(component.getInvoiceCosts({ cost_items: [{ euro_value: 100 }, { vat: 7 }] })).toBe(107);
+    expect(component.getInvoiceCosts({})).toBe('');
   });
 
   it('does not treat undefined invoice collections as available', () => {

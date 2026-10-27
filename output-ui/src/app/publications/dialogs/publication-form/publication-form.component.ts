@@ -29,7 +29,7 @@ import { isPersistedEntityDialogResult } from 'src/app/services/entities/service
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
-import {  AuthorPublication, Invoice, Publication, PublicationSupplement, Status  } from '@output/interfaces';
+import { AuthorPublication, getInvoiceGrossAmount, Invoice, Publication, PublicationSupplement, Status } from '@output/interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -542,12 +542,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   getCosts(invoice: Invoice) {
-    if (!invoice) return '';
-    if (invoice.booking_amount) return invoice.booking_amount;
-    if (!invoice.cost_items) return '';
-    let sum = 0;
-    for (const ci of invoice.cost_items) sum += ci.euro_value;
-    return sum;
+    return getInvoiceGrossAmount(invoice) ?? '';
   }
 
   deleteInvoice(elem) {

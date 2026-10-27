@@ -50,8 +50,9 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     { key: 'booking_date_from', label: 'Buchungsdatum von' },
     { key: 'booking_date_to', label: 'Buchungsdatum bis' },
   ];
-  readonly columns = ['id', 'invoice_kind', 'number', 'date', 'booking_date', 'cost_center', 'publication', 'contract', 'cost_types', 'net_amount_eur', 'vat_amount_eur', 'gross_amount_eur', 'booking_amount', 'item_count', 'issues'];
+  readonly columns = ['id', 'invoice_kind', 'number', 'date', 'booking_date', 'cost_center', 'publication', 'contract', 'cost_types', 'costs_eur', 'net_amount_eur', 'vat_amount_eur', 'gross_amount_eur', 'booking_amount', 'item_count', 'issues'];
   readonly moneyColumns = [
+    { key: 'costs_eur', label: 'Kosten (brutto) EUR' },
     { key: 'net_amount_eur', label: 'Netto EUR' },
     { key: 'vat_amount_eur', label: 'MwSt. EUR' },
     { key: 'gross_amount_eur', label: 'Brutto EUR' },

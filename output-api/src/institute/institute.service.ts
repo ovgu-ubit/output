@@ -1,3 +1,4 @@
+import { invoiceAmountsSql } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { concatMap, from, Observable, of } from 'rxjs';
@@ -311,11 +312,10 @@ export class InstituteService {
             INNER JOIN author_publication author_publication_net_cost ON author_publication_net_cost."instituteId" = cost_institute.id
             INNER JOIN publication pub_cost ON pub_cost.id = author_publication_net_cost."publicationId"
             LEFT JOIN (
-                SELECT invoice."publicationId" AS "publicationId",
-                    SUM(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END) AS net_costs
-                FROM invoice invoice
-                LEFT JOIN cost_item cost_item ON cost_item."invoiceId" = invoice.id
-                GROUP BY invoice."publicationId"
+                SELECT invoice_amounts.publication_id AS "publicationId",
+                    SUM(invoice_amounts.gross_amount) AS net_costs
+                FROM (${invoiceAmountsSql()}) invoice_amounts
+                GROUP BY invoice_amounts.publication_id
             ) publication_cost ON publication_cost."publicationId" = pub_cost.id
             INNER JOIN (
                 SELECT corresponding_author_publication."publicationId" AS "publicationId",

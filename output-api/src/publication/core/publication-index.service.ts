@@ -1,3 +1,4 @@
+import { publicationGrossAmountSql } from '../../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -229,7 +230,7 @@ export class PublicationIndexService {
         }
         if (canReadNetCosts && pubIndexColumns["net_costs"]) {
             query = query.addSelect(
-                'COALESCE((SELECT SUM(net_cost_item.euro_value) FROM cost_item net_cost_item INNER JOIN "invoice" net_invoice ON net_cost_item."invoiceId" = net_invoice.id WHERE net_invoice."publicationId" = publication.id), 0)',
+                publicationGrossAmountSql(),
                 "net_costs",
             );
         }

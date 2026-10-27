@@ -6,6 +6,9 @@ import { createInvalidRequestHttpException } from '../common/api-error';
 import { CostItem } from './CostItem.entity';
 import { Invoice } from './Invoice.entity';
 import { InvoiceIndexQueryDto } from './dto/invoice-index-query.dto';
+import { costItemGrossAmountSql } from './invoice-costs';
+
+const COSTS_EXPRESSION = 'COALESCE(invoice.booking_amount, amounts.calculated_gross_amount_eur, 0)';
 
 const SORT_COLUMNS: Record<InvoiceIndexSortField, string> = {
     id: 'invoice.id',
@@ -15,6 +18,7 @@ const SORT_COLUMNS: Record<InvoiceIndexSortField, string> = {
     invoice_kind: 'invoice.invoice_kind',
     cost_center: 'cost_center.label',
     booking_amount: 'invoice.booking_amount',
+    costs_eur: COSTS_EXPRESSION,
     net_amount_eur: 'amounts.net_amount_eur',
     vat_amount_eur: 'amounts.vat_amount_eur',
     gross_amount_eur: 'amounts.gross_amount_eur',
@@ -72,6 +76,7 @@ export class InvoiceIndexService {
                 .addSelect('CASE WHEN COUNT(cost_item.euro_value) = COUNT(*) THEN SUM(cost_item.euro_value) END', 'net_amount_eur')
                 .addSelect('CASE WHEN COUNT(cost_item.vat) = COUNT(*) THEN SUM(cost_item.vat) END', 'vat_amount_eur')
                 .addSelect('CASE WHEN COUNT(cost_item.euro_value) = COUNT(*) AND COUNT(cost_item.vat) = COUNT(*) THEN SUM(cost_item.euro_value + cost_item.vat) END', 'gross_amount_eur')
+                .addSelect(`SUM(${costItemGrossAmountSql()})`, 'calculated_gross_amount_eur')
                 .addSelect('ARRAY_AGG(DISTINCT cost_type.id ORDER BY cost_type.id) FILTER (WHERE cost_type.id IS NOT NULL)', 'cost_type_ids')
                 .addSelect('ARRAY_AGG(DISTINCT cost_type.label ORDER BY cost_type.label) FILTER (WHERE cost_type.label IS NOT NULL)', 'cost_type_labels')
                 .from(CostItem, 'cost_item')
@@ -86,6 +91,7 @@ export class InvoiceIndexService {
             .addSelect("invoice.date AT TIME ZONE 'UTC'", 'date')
             .addSelect("invoice.booking_date AT TIME ZONE 'UTC'", 'booking_date')
             .addSelect('invoice.booking_amount', 'booking_amount')
+            .addSelect(COSTS_EXPRESSION, 'costs_eur')
             .addSelect('COALESCE(amounts.item_count, 0)', 'item_count')
             .addSelect('COALESCE(amounts.missing_amount_item_count, 0)', 'missing_amount_item_count')
             .addSelect('amounts.net_amount_eur', 'net_amount_eur')
@@ -175,6 +181,7 @@ export class InvoiceIndexService {
             date: row.date ? new Date(row.date).toISOString() : null,
             booking_date: row.booking_date ? new Date(row.booking_date).toISOString() : null,
             booking_amount: this.numberOrNull(row.booking_amount),
+            costs_eur: Number(row.costs_eur ?? 0),
             net_amount_eur: this.numberOrNull(row.net_amount_eur),
             vat_amount_eur: this.numberOrNull(row.vat_amount_eur),
             gross_amount_eur: this.numberOrNull(row.gross_amount_eur),
@@ -190,10 +197,11 @@ export class InvoiceIndexService {
     }
 }
 
-type RawInvoiceIndex = Omit<InvoiceIndex, 'date' | 'booking_date' | 'booking_amount' | 'net_amount_eur' | 'vat_amount_eur' | 'gross_amount_eur' | 'item_count' | 'missing_amount_item_count'> & {
+type RawInvoiceIndex = Omit<InvoiceIndex, 'date' | 'booking_date' | 'booking_amount' | 'costs_eur' | 'net_amount_eur' | 'vat_amount_eur' | 'gross_amount_eur' | 'item_count' | 'missing_amount_item_count'> & {
     date: string | Date | null;
     booking_date: string | Date | null;
     booking_amount: number | string | null;
+    costs_eur: number | string;
     net_amount_eur: number | string | null;
     vat_amount_eur: number | string | null;
     gross_amount_eur: number | string | null;

@@ -14,7 +14,7 @@ export type InvoiceContext = typeof INVOICE_CONTEXTS[number];
 
 export const INVOICE_INDEX_SORT_FIELDS = [
     'id', 'number', 'date', 'booking_date', 'invoice_kind', 'cost_center',
-    'net_amount_eur', 'vat_amount_eur', 'gross_amount_eur', 'booking_amount', 'item_count',
+    'net_amount_eur', 'vat_amount_eur', 'gross_amount_eur', 'booking_amount', 'costs_eur', 'item_count',
 ] as const;
 export type InvoiceIndexSortField = typeof INVOICE_INDEX_SORT_FIELDS[number];
 
@@ -26,6 +26,8 @@ export interface InvoiceIndex {
     date: string | null;
     booking_date: string | null;
     booking_amount: number | null;
+    /** Booking amount, otherwise the sum of positions including VAT; missing values count as zero. */
+    costs_eur: number;
 
     item_count: number;
     cost_type_ids: number[];

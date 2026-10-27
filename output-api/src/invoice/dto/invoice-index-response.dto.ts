@@ -8,6 +8,7 @@ export class InvoiceIndexDto implements InvoiceIndex {
     @ApiProperty({ type: String, format: 'date-time', nullable: true }) date: string | null;
     @ApiProperty({ type: String, format: 'date-time', nullable: true }) booking_date: string | null;
     @ApiProperty({ type: Number, nullable: true }) booking_amount: number | null;
+    @ApiProperty({ description: 'Gross costs: booking amount, otherwise sum of positions including VAT; missing values count as zero.' }) costs_eur: number;
 
     @ApiProperty() item_count: number;
     @ApiProperty({ type: [Number] }) cost_type_ids: number[];

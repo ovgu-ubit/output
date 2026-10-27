@@ -87,15 +87,22 @@ describe('InvoiceIndexService', () => {
     it('preserves zero and unknown amounts, converts counts and serializes dates', async () => {
         rows = [{
             id: 1, invoice_kind: InvoiceKind.PRE_INVOICE, context: 'contract_component',
-            date: new Date('2026-01-01T00:00:00Z'), booking_date: null, booking_amount: 0,
+            date: new Date('2026-01-01T00:00:00Z'), booking_date: null, booking_amount: 0, costs_eur: '0',
             net_amount_eur: '0', vat_amount_eur: null, gross_amount_eur: null,
             item_count: '2', missing_amount_item_count: '1', cost_type_ids: [3, 4], cost_type_labels: ['APC', 'BPC'],
         }];
         const result = await service.index(new InvoiceIndexQueryDto());
         expect(result.items[0]).toMatchObject({
-            booking_amount: 0, net_amount_eur: 0, vat_amount_eur: null, gross_amount_eur: null,
+            booking_amount: 0, costs_eur: 0, net_amount_eur: 0, vat_amount_eur: null, gross_amount_eur: null,
             date: '2026-01-01T00:00:00.000Z', booking_date: null, item_count: 2, missing_amount_item_count: 1,
         });
+    });
+
+    it('sorts gross costs by booking amount with a position gross fallback', async () => {
+        await service.index(Object.assign(new InvoiceIndexQueryDto(), { sort: 'costs_eur', sort_dir: 'asc' }));
+        expect(generatedSql).toContain('COALESCE("invoice"."booking_amount", amounts.calculated_gross_amount_eur, 0) AS "costs_eur"');
+        expect(generatedSql).toContain('SUM((COALESCE("cost_item"."euro_value", 0) + COALESCE("cost_item"."vat", 0)))');
+        expect(generatedSql).toContain('ORDER BY COALESCE("invoice"."booking_amount", amounts.calculated_gross_amount_eur, 0) ASC');
     });
 
     it('filters missing dates, kind, IDs and context using bound parameters', async () => {

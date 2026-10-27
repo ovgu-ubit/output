@@ -50,7 +50,7 @@ describe('InvoicesComponent', () => {
 
   function renderInvoice(overrides: Partial<InvoiceIndex> = {}): HTMLElement {
     const invoice: InvoiceIndex = {
-      id: 1, invoice_kind: InvoiceKind.INVOICE, number: null, date: null, booking_date: null, booking_amount: null,
+      id: 1, invoice_kind: InvoiceKind.INVOICE, number: null, date: null, booking_date: null, booking_amount: null, costs_eur: 0,
       net_amount_eur: null, vat_amount_eur: null, gross_amount_eur: null, item_count: 0, missing_amount_item_count: 0,
       publication_id: null, publication_title: null, publication_doi: null, publication_deleted: false,
       component_contract_id: null, component_contract_label: null, publication_contract_id: null, publication_contract_label: null,
@@ -165,7 +165,7 @@ describe('InvoicesComponent', () => {
 
   it('renders zero, missing amounts, context links and incomplete invoice notices', () => {
     service.index.and.returnValue(of({ items: [{
-      id: 1, invoice_kind: 'pre_invoice', number: null, date: null, booking_date: null, booking_amount: 0,
+      id: 1, invoice_kind: 'pre_invoice', number: null, date: null, booking_date: null, booking_amount: 0, costs_eur: 0,
       net_amount_eur: null, vat_amount_eur: null, gross_amount_eur: null, item_count: 2, missing_amount_item_count: 1,
       publication_id: 9, publication_title: 'Testpublikation', publication_doi: null, publication_deleted: false,
       component_contract_id: 7, component_contract_label: 'Vertrag A', publication_contract_id: 8, publication_contract_label: 'Vertrag B',
@@ -176,6 +176,7 @@ describe('InvoicesComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Vorabrechnung');
     expect(text).toContain('0,00');
+    expect(fixture.nativeElement.querySelector('td.mat-column-costs_eur').textContent).toContain('0,00');
     expect(text).toContain('Vertrag A');
     expect(text).toContain('Vertrag B');
     expect(fixture.nativeElement.querySelector('a[href="/publications?id=9"]')).toBeTruthy();
