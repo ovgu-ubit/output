@@ -6,7 +6,7 @@
     "prebuild": "rimraf dist",
     "ensure:interfaces": "npm --workspace @output/interfaces run build",
     "audit": "npm audit",
-    "build": "nest build",
+    "build": "npm run ensure:interfaces && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "npm run ensure:interfaces && node -v && cross-env NODE_ENV=dev nest start -c nest-cli.dev.json -p tsconfig.json",
     "start:dev": "npm run ensure:interfaces && node -v && cross-env NODE_ENV=dev nest start -c nest-cli.dev.json -p tsconfig.json --watch",
@@ -22,9 +22,9 @@
     "test:cov": "npm run ensure:interfaces && jest --coverage",
     "test:debug": "npm run ensure:interfaces && node --inspect-brk -r tsconfig-paths/register -r ts-node/register ../node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "npm run ensure:interfaces && jest --config ./test/jest-e2e.json",
-    "typeorm:dev": "cross-env NODE_ENV=dev typeorm-ts-node-commonjs",
-    "typeorm:test": "cross-env NODE_ENV=test typeorm-ts-node-commonjs",
-    "typeorm:prod": "cross-env NODE_ENV=prod typeorm-ts-node-commonjs",
+    "typeorm:dev": "npm run ensure:interfaces && cross-env NODE_ENV=dev typeorm-ts-node-commonjs",
+    "typeorm:test": "npm run ensure:interfaces && cross-env NODE_ENV=test typeorm-ts-node-commonjs",
+    "typeorm:prod": "npm run ensure:interfaces && cross-env NODE_ENV=prod typeorm-ts-node-commonjs",
     "typeorm-js": "typeorm"
   }
 }

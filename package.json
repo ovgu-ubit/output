@@ -4,7 +4,7 @@
   "scripts": {
     "build:interfaces": "npm --workspace @output/interfaces run build",
     "watch:interfaces": "npm --workspace @output/interfaces run watch",
-    "build:api": "npm run build:interfaces && npm --workspace output run build",
+    "build:api": "npm --workspace output run build",
     "build:ui": "npm run build:interfaces && npm --workspace output-ui run build",
     "build:ui:prod": "npm run build:interfaces && npm --workspace output-ui run build:prod",
     "start:api": "npm run build:interfaces && npm --workspace output run start",
