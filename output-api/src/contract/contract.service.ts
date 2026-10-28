@@ -46,6 +46,26 @@ export class ContractService extends AbstractEntityService<Contract> {
         return { relations: { publisher: true } };
     }
 
+    public getForExport() {
+        return this.repository.find({
+            relationLoadStrategy: 'query',
+            relations: {
+                publisher: true,
+                identifiers: true,
+                components: {
+                    oa_categories: true,
+                    pub_types: true,
+                    greater_entities: true,
+                    cost_types: true,
+                    linked_invoices: {
+                        cost_center: true,
+                        cost_items: { cost_type: true },
+                    },
+                },
+            },
+        });
+    }
+
     protected override getFindOneRelations(): FindOptionsRelations<Contract> {
         return {
             publisher: true,

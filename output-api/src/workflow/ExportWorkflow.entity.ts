@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
-import {  ExportStrategy, ExportWorkflow as IExportWorkflow  } from '@output/interfaces';
+import { ExportEntityType, ExportStrategy, ExportWorkflow as IExportWorkflow } from '@output/interfaces';
 import { WorkflowReport } from "./WorkflowReport.entity";
 import { OneToMany } from "typeorm";
 
@@ -33,6 +33,9 @@ export class ExportWorkflow implements IExportWorkflow {
 
     @Column({ nullable: true })
     description?: string;
+
+    @Column({ type: 'varchar', default: 'publication' })
+    source_entity?: ExportEntityType;
 
     @Column({ nullable: true, type: 'enum', enum: ExportStrategy })
     strategy_type?: ExportStrategy;

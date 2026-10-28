@@ -23,6 +23,7 @@ export class ExportFormFacade {
 
   createNew() {
     const wf: ExportWorkflow = {
+      source_entity: 'publication',
       created_at: null,
       modified_at: null,
       deleted_at: null,

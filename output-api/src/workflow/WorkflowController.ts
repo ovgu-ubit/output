@@ -364,12 +364,13 @@ export class WorkflowController {
         workflow_id: 'export-workflow-id',
         version: 1,
         label: 'JSONata Export',
+        source_entity: 'publication',
         strategy_type: ExportStrategy.HTTP_RESPONSE,
         strategy: {
           format: 'json',
           disposition: 'inline'
         },
-        mapping: '{ "items": publications.{ "id": id, "title": title, "doi": doi } }'
+        mapping: '{ "id": id, "title": title, "doi": doi }'
       } satisfies IExportWorkflow
     }
   })

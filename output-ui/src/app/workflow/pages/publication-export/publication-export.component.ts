@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
@@ -9,6 +9,7 @@ import {  ExportWorkflow  } from '@output/interfaces';
 import { ExportWorkflowFormComponent } from '../../dialogs/export-workflow-form/export-workflow-form.component';
 import { ExportWorkflowService } from '../../export-workflow.service';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { getExportEntityDetails } from '../../export-entity-options';
 
 @Component({
   selector: 'app-publication-export',
@@ -22,11 +23,18 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     { title: 'Export aus Datei hinzufügen', action_function: this.import.bind(this) }
   ];
   not_selectable?: boolean = true;
+  afterDataLoaded = (workflows: ExportWorkflow[]) => {
+    workflows.forEach(workflow => Object.assign(workflow, {
+      source_entity_label: getExportEntityDetails(workflow.source_entity).label,
+    }));
+    return of(undefined);
+  };
 
   common_headers: TableHeader[] = [
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'version', colTitle: 'Version', type: 'number' },
+    { colName: 'source_entity_label', colTitle: 'Entitätsklasse' },
   ];
 
   draft_headers: TableHeader[] = [
@@ -87,7 +95,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
   }
 
   add() {
-    this.router.navigate(['/workflow/publication_export/new/overview']);
+    this.router.navigate(['/workflow/publication_export/new/general']);
   }
 
   getLink() {
@@ -95,7 +103,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
   }
 
   getLabel() {
-    return '/Workflows/Publikationsexport';
+    return '/Workflows/Export';
   }
 
   change(event: any) {

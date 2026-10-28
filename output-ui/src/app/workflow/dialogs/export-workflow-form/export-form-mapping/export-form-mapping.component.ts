@@ -6,6 +6,7 @@ import {  ExportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';
+import { getExportEntityDetails } from '../../../export-entity-options';
 
 @Component({
   selector: 'app-export-form-mapping',
@@ -16,6 +17,10 @@ import { ExportFormFacade } from '../export-form-facade.service';
 export class ExportFormMappingComponent implements OnInit, WorkflowFormPage {
   form: FormGroup;
   entity: ExportWorkflow;
+
+  get sourceDetails() {
+    return getExportEntityDetails(this.entity?.source_entity);
+  }
 
   constructor(
     private facade: ExportFormFacade,

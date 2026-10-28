@@ -95,6 +95,10 @@ export class ExportFormActionComponent implements OnInit {
     return !!this.entity && !this.entity.published_at && !this.entity.deleted_at;
   }
 
+  get isPublicationSource(): boolean {
+    return (this.entity?.source_entity ?? 'publication') === 'publication';
+  }
+
   get isPublished(): boolean {
     return !!this.entity && !!this.entity.published_at && !this.entity.deleted_at;
   }
@@ -213,7 +217,7 @@ export class ExportFormActionComponent implements OnInit {
     this.form.disable();
 
     const withMasterData = !!this.form.controls.withMasterData.value;
-    const publicationFilter = this.hasPublicationFilter
+    const publicationFilter = this.isPublicationSource && this.hasPublicationFilter
       ? this.clonePublicationFilter(this.publicationFilter)
       : undefined;
     this.exportWorkflowService

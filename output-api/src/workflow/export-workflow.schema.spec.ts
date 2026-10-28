@@ -1,9 +1,76 @@
 import { HttpException } from '@nestjs/common';
 import {  ApiErrorCode  } from '@output/interfaces';
-import {  ExportStrategy  } from '@output/interfaces';
+import { EXPORT_ENTITY_TYPES, ExportStrategy } from '@output/interfaces';
 import { validateExportWorkflow } from './export-workflow.schema';
 
 describe('validateExportWorkflow', () => {
+    it.each([undefined, null, '', ' \n '])('accepts draft strategies before mapping is written: %p', (mapping) => {
+        const workflow = {
+            workflow_id: 'draft-export', label: 'Draft export', source_entity: 'author' as const,
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+            mapping, published_at: null,
+        };
+
+        expect(validateExportWorkflow(workflow)).toMatchObject({
+            strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: workflow.strategy,
+            source_entity: 'author',
+            mapping,
+        });
+    });
+
+    it.each([undefined, null, '', ' \n '])('requires a mapping for publication even without a strategy: %p', (mapping) => {
+        for (const strategy_type of [undefined, ExportStrategy.HTTP_RESPONSE]) {
+            try {
+                validateExportWorkflow({
+                    workflow_id: 'draft-export', label: 'Draft export', published_at: new Date(), mapping,
+                    strategy_type, strategy: { format: 'json', disposition: 'inline' },
+                });
+                fail('Publication without a mapping should fail');
+            } catch (error) {
+                expect((error as HttpException).getResponse()).toMatchObject({
+                    code: ApiErrorCode.VALIDATION_FAILED,
+                    details: expect.arrayContaining([expect.objectContaining({ path: 'mapping' })]),
+                });
+            }
+        }
+    });
+
+    it('still rejects an invalid strategy when the draft mapping is missing', () => {
+        try {
+            validateExportWorkflow({
+                workflow_id: 'draft-export', label: 'Draft export', strategy_type: ExportStrategy.HTTP_RESPONSE,
+                strategy: { format: 'xml', root_name: 'records' },
+            });
+            fail('Invalid strategy should fail');
+        } catch (error) {
+            expect((error as HttpException).getResponse()).toMatchObject({
+                code: ApiErrorCode.VALIDATION_FAILED,
+                details: expect.arrayContaining([expect.objectContaining({ path: 'strategy.item_name' })]),
+            });
+        }
+    });
+
+    it.each(EXPORT_ENTITY_TYPES)('accepts the source %s even in an incomplete draft', (source_entity) => {
+        expect(validateExportWorkflow({ source_entity })).toMatchObject({ source_entity });
+    });
+
+    it('defaults old definitions and incomplete drafts to publications', () => {
+        expect(validateExportWorkflow({})).toMatchObject({ source_entity: 'publication' });
+    });
+
+    it.each(['invoice', '', null, 123])('rejects an invalid source in an incomplete draft: %p', (source_entity) => {
+        try {
+            validateExportWorkflow({ source_entity } as any);
+            fail('Invalid source should fail');
+        } catch (error) {
+            expect((error as HttpException).getResponse()).toMatchObject({
+                code: ApiErrorCode.VALIDATION_FAILED,
+                details: [expect.objectContaining({ path: 'source_entity' })],
+            });
+        }
+    });
     it('accepts JSON HTTP_RESPONSE workflows', () => {
         const workflow = {
             workflow_id: 'wf-json',

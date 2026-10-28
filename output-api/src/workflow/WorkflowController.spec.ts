@@ -101,6 +101,17 @@ describe('WorkflowController', () => {
         expect(workflowService.getImport).toHaveBeenCalledWith(41, false);
     });
 
+    it('includes the source entity in exported workflow definitions without taking a lock', async () => {
+        workflowService.getExport.mockResolvedValue({ id: 71, source_entity: 'author', label: 'People', mapping: '{ "name": first_name }' });
+        const response = { setHeader: jest.fn() };
+        const file = await controller.export_export(71, response);
+        const chunks: Buffer[] = [];
+        for await (const chunk of file.getStream()) chunks.push(Buffer.from(chunk));
+
+        expect(JSON.parse(Buffer.concat(chunks).toString('utf-8'))).toMatchObject({ source_entity: 'author', mapping: '{ "name": first_name }' });
+        expect(workflowService.getExport).toHaveBeenCalledWith(71, false);
+    });
+
     it('reads export exports without locking the workflow', async () => {
         workflowService.getExport.mockResolvedValue({
             label: 'Export workflow',
