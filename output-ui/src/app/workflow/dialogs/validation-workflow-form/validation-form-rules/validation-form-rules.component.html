@@ -43,7 +43,7 @@
           </div>
         }
 
-        @for (rule of getRulesControls(); track trackByIndex(i, rule); let i = $index) {
+        @for (rule of getRulesControls(); track $index; let i = $index) {
           <section class="rule-item" [formGroupName]="i">
             <div class="rule-toolbar">
               <div class="rule-number">Regel {{ i + 1 }}</div>
@@ -129,7 +129,7 @@
                     </button>
                   </div>
                   <div formArrayName="if">
-                    @for (condition of getConditionControls(rule, 'if'); track trackByIndex(conditionIndex, condition); let conditionIndex = $index) {
+                    @for (condition of getConditionControls(rule, 'if'); track $index; let conditionIndex = $index) {
                       <div class="condition-row" [formGroupName]="conditionIndex">
                         <ng-container *ngTemplateOutlet="conditionEditor; context: { condition: condition, rule: rule, groupName: 'if', index: conditionIndex }"></ng-container>
                       </div>
@@ -144,7 +144,7 @@
                     </button>
                   </div>
                   <div formArrayName="then">
-                    @for (condition of getConditionControls(rule, 'then'); track trackByIndex(conditionIndex, condition); let conditionIndex = $index) {
+                    @for (condition of getConditionControls(rule, 'then'); track $index; let conditionIndex = $index) {
                       <div class="condition-row" [formGroupName]="conditionIndex">
                         <ng-container *ngTemplateOutlet="conditionEditor; context: { condition: condition, rule: rule, groupName: 'then', index: conditionIndex }"></ng-container>
                       </div>

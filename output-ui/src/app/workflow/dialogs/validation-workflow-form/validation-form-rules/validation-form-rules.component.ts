@@ -343,10 +343,6 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     }
   }
 
-  trackByIndex(index: number): number {
-    return index;
-  }
-
   private showSaveError(error: unknown) {
     this.errorPresentation.applyFieldErrors(this.form, error, {
       pathMap: {
