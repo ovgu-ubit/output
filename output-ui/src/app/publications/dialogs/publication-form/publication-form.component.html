@@ -1,566 +1,682 @@
 <app-window-toolbar name="Publikation" [disabled]="this.disabled" [parent]="this"
-    [lockable]="true" [maximizeable]="true"></app-window-toolbar>
+[lockable]="true" [maximizeable]="true"></app-window-toolbar>
 
-<div *ngIf="this.loading" class="d-flex justify-content-center">
+@if (this.loading) {
+  <div class="d-flex justify-content-center">
     <div class="spinner-border" role="status">
     </div>
-</div>
+  </div>
+}
 <mat-dialog-content class="publication-dialog-content" [hidden]="this.loading">
-    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
-        <mat-card-header>
-            <mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
-        </mat-card-content>
+  @if (getFormSummaryErrors().length > 0) {
+    <mat-card class="form-error-summary">
+      <mat-card-header>
+        <mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @for (error of getFormSummaryErrors(); track error) {
+          <div>{{error}}</div>
+        }
+      </mat-card-content>
     </mat-card>
-    <form class="publication-dialog-form" [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
-        (keyup)="escape($event)">
+  }
+  <form class="publication-dialog-form" [formGroup]="form" (ngSubmit)="this.action()" align="center" (keydown)="enter($event)"
+    (keyup)="escape($event)">
 
-        <div style="display: flex;flex-direction: row;justify-content: space-between;">
-            <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
-                <mat-label>ID</mat-label>
-                <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
-            </mat-form-field>
-            <mat-form-field style="max-width: 200px;">
-                <mat-label>Status</mat-label>
-                <input matInput [type]="'number'" onwheel="return false;" placeholder="Status"
-                    formControlName="status" />
-                <mat-hint [matTooltip]="showStatusLabel(true)">{{showStatusLabel(false)}}</mat-hint>
-                <mat-error *ngIf="getFieldError('status', 'Status') as error">{{error}}</mat-error>
-            </mat-form-field>
-        </div>
-
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Titel</mat-label>
-            <textarea matInput [type]="'text'" placeholder="Titel" formControlName="title"></textarea>
-            <mat-error *ngIf="getFieldError('title', 'Titel') as error">{{error}}</mat-error>
+    <div style="display: flex;flex-direction: row;justify-content: space-between;">
+      <mat-form-field [hidden]="!this.edit" style="max-width: 150px;">
+        <mat-label>ID</mat-label>
+        <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
+      </mat-form-field>
+      <mat-form-field style="max-width: 200px;">
+        <mat-label>Status</mat-label>
+        <input matInput [type]="'number'" onwheel="return false;" placeholder="Status"
+          formControlName="status" />
+          <mat-hint [matTooltip]="showStatusLabel(true)">{{showStatusLabel(false)}}</mat-hint>
+          @if (getFieldError('status', 'Status'); as error) {
+            <mat-error>{{error}}</mat-error>
+          }
         </mat-form-field>
+      </div>
 
+      <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-label>Titel</mat-label>
+        <textarea matInput [type]="'text'" placeholder="Titel" formControlName="title"></textarea>
+        @if (getFieldError('title', 'Titel'); as error) {
+          <mat-error>{{error}}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-label>DOI</mat-label>
+        <input matInput [type]="'text'" placeholder="DOI" formControlName="doi" />
+        @if (this.form.get('doi').value) {
+          <a matSuffix mat-icon-button
+            [href]="'https://dx.doi.org/'+this.form.get('doi').value" target="_blank" matTooltip="Link folgen"
+            [matTooltipShowDelay]="800">
+            <mat-icon>open_in_new</mat-icon>
+          </a>
+        }
+        @if (getFieldError('doi', 'DOI'); as error) {
+          <mat-error>{{error}}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            Andere Identifikatoren
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <app-id-table [disabled]="this.disabled" [entity]="this.pub"></app-id-table>
+      </mat-expansion-panel><br>
+
+      <mat-form-field appearance="fill" style="width: 100%;">
+        <mat-label>Link</mat-label>
+        <input matInput [type]="'text'" placeholder="Link" formControlName="link" />
+        @if (this.form.get('link').value) {
+          <a matSuffix mat-icon-button [href]="this.form.get('link').value"
+            target="_blank" matTooltip="Link folgen" [matTooltipShowDelay]="800">
+            <mat-icon>open_in_new</mat-icon>
+          </a>
+        }
+        @if (getFieldError('link', 'Link'); as error) {
+          <mat-error>{{error}}</mat-error>
+        }
+      </mat-form-field>
+
+      @if ((this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))) {
         <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>DOI</mat-label>
-            <input matInput [type]="'text'" placeholder="DOI" formControlName="doi" />
-            <a *ngIf="this.form.get('doi').value" matSuffix mat-icon-button
-                [href]="'https://dx.doi.org/'+this.form.get('doi').value" target="_blank" matTooltip="Link folgen"
-                [matTooltipShowDelay]="800">
-                <mat-icon>open_in_new</mat-icon>
-            </a>
-            <mat-error *ngIf="getFieldError('doi', 'DOI') as error">{{error}}</mat-error>
+          <mat-label>Weitere Informationen</mat-label>
+          <textarea matInput [type]="'text'" placeholder="Informationen" formControlName="add_info"></textarea>
+          @if (getFieldError('add_info', 'Weitere Informationen'); as error) {
+            <mat-error>{{error}}</mat-error>
+          }
         </mat-form-field>
+      }
 
-        <mat-expansion-panel>
+      <mat-accordion class="publication-panel-grid" multi="true">
+        <mat-expansion-panel formGroupName="author_info">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              Personeninformationen
+            </mat-panel-title>
+            <mat-panel-description style="display: flex;flex-direction: row;justify-content: space-between;">
+              {{this.getAuthorInfo()}}
+              <button type="button" (click)="this.lock('author')" mat-icon-button
+                matTooltip="Personeninformationen (ent)sperren" [matTooltipShowDelay]="800"
+                [disabled]="this.disabled || this.pub?.locked">
+                @if (this.pub?.locked_author) {
+                  <mat-icon>lock</mat-icon>
+                }
+                @if (!this.pub?.locked_author) {
+                  <mat-icon>lock_open</mat-icon>
+                }
+              </button>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <mat-form-field appearance="fill" style="width: 100%;">
+            <mat-label>Autor*innen-Angabe</mat-label>
+            <textarea matInput [type]="'text'" placeholder="Autor*innen" formControlName="authors"></textarea>
+            @if (getFieldError('author_info.authors', 'Autor*innen-Angabe'); as error) {
+              <mat-error>{{error}}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-card>
+            <mat-card-header><mat-card-subtitle>Beteiligte Personen der
+            Institution</mat-card-subtitle></mat-card-header>
+            <mat-card-content>
+              @if (this.pub?.authorPublications && this.pub?.authorPublications.length>0) {
+                <table #table
+                  mat-table [dataSource]="this.pub?.authorPublications">
+                  <ng-container matColumnDef="edit">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                      (click)="this.addAuthorship(element)" matTooltip="Beteiligung untersuchen"
+                      [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author || !element.id"><mat-icon>edit</mat-icon></button>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef> Person </th>
+                    <td mat-cell *matCellDef="let element">
+                      <span class="author-name-with-remark">
+                        <span>{{element.author.last_name}}, {{element.author.first_name}}</span>
+                        @if (element.author?.internal_remark) {
+                          <mat-icon
+                            class="author-remark-icon"
+                            matTooltip="{{element.author.internal_remark}}"
+                          [matTooltipShowDelay]="300">warning_amber</mat-icon>
+                        }
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="role">
+                    <th mat-header-cell *matHeaderCellDef> Rolle </th>
+                    <td mat-cell *matCellDef="let element"> {{element.role?.label}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="institute">
+                    <th mat-header-cell *matHeaderCellDef> Institut </th>
+                    <td mat-cell *matCellDef="let element"> {{element.institute?.short_label?
+                    element.institute?.short_label : element.institute?.label}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="corr">
+                    <th mat-header-cell *matHeaderCellDef> corr.? </th>
+                    <td mat-cell *matCellDef="let element"> @if (element.corresponding) {
+                      <mat-icon>check</mat-icon>
+                    }</td>
+                  </ng-container>
+                  <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                      (click)="this.deleteAuthorship(element)"
+                      matTooltip="Beteiligte Person entfernen"
+                      [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>delete</mat-icon></button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="displayedColumnsAuthors"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedColumnsAuthors;"></tr>
+                </table>
+              }
+            </mat-card-content>
+            <mat-card-actions>
+              <button matSuffix mat-icon-button type="button" (click)="this.addAuthorship()"
+                matTooltip="Beteiligte Person hinzufügen"
+                [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>add</mat-icon></button>
+              </mat-card-actions>
+            </mat-card><br>
+          </mat-expansion-panel>
+          <mat-expansion-panel formGroupName="biblio_info">
             <mat-expansion-panel-header>
-                <mat-panel-title>
-                    Andere Identifikatoren
-                </mat-panel-title>
+              <mat-panel-title>
+                Bibliografische Informationen
+              </mat-panel-title>
+              <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
+                <button type="button" (click)="this.lock('biblio')" mat-icon-button
+                  matTooltip="Bibl. Informationen (ent)sperren" [matTooltipShowDelay]="800"
+                  [disabled]="this.disabled || this.pub?.locked">
+                  @if (this.pub?.locked_biblio) {
+                    <mat-icon>lock</mat-icon>
+                  }
+                  @if (!this.pub?.locked_biblio) {
+                    <mat-icon>lock_open</mat-icon>
+                  }
+                </button>
+              </mat-panel-description>
             </mat-expansion-panel-header>
 
-            <app-id-table [disabled]="this.disabled" [entity]="this.pub"></app-id-table>
-        </mat-expansion-panel><br>
+            <app-select-entity name="Publikationstyp"
+              [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+              [serviceClass]="this.pubTypeService" [formComponent]="this.ptForm"
+              (selected)="this.setPubType($event)"
+            [ent]="this.pub? this.pub.pub_type : undefined"></app-select-entity>
 
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Link</mat-label>
-            <input matInput [type]="'text'" placeholder="Link" formControlName="link" />
-            <a *ngIf="this.form.get('link').value" matSuffix mat-icon-button [href]="this.form.get('link').value"
-                target="_blank" matTooltip="Link folgen" [matTooltipShowDelay]="800">
-                <mat-icon>open_in_new</mat-icon>
-            </a>
-            <mat-error *ngIf="getFieldError('link', 'Link') as error">{{error}}</mat-error>
-        </mat-form-field>
+            <app-select-entity name="Größere Einheit"
+              [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+              [serviceClass]="this.geService" [formComponent]="this.geForm" (selected)="this.setGE($event)"
+            [ent]="this.pub? this.pub.greater_entity : undefined"></app-select-entity>
+            <div style="float:left;margin-top: -20px;">{{this.pub?.greater_entity?.rating}}</div>
 
-        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
-            <mat-label>Weitere Informationen</mat-label>
-            <textarea matInput [type]="'text'" placeholder="Informationen" formControlName="add_info"></textarea>
-            <mat-error *ngIf="getFieldError('add_info', 'Weitere Informationen') as error">{{error}}</mat-error>
-        </mat-form-field>
+            @if (this.optional_fields?.peer_reviewed) {
+              <mat-checkbox formControlName="peer_reviewed"
+              >Peer-reviewed?</mat-checkbox>
+            }
 
-        <mat-accordion class="publication-panel-grid" multi="true">
-            <mat-expansion-panel formGroupName="author_info">
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        Personeninformationen
-                    </mat-panel-title>
-                    <mat-panel-description style="display: flex;flex-direction: row;justify-content: space-between;">
-                        {{this.getAuthorInfo()}}
-                        <button type="button" (click)="this.lock('author')" mat-icon-button
-                            matTooltip="Personeninformationen (ent)sperren" [matTooltipShowDelay]="800"
-                            [disabled]="this.disabled || this.pub?.locked">
-                            <mat-icon *ngIf="this.pub?.locked_author">lock</mat-icon>
-                            <mat-icon *ngIf="!this.pub?.locked_author">lock_open</mat-icon>
-                        </button>
-                    </mat-panel-description>
-                </mat-expansion-panel-header>
+            <app-select-entity name="Verlag"
+              [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+              [serviceClass]="this.publisherService" [formComponent]="this.publisherForm"
+              (selected)="this.setPublisher($event)"
+            [ent]="this.pub? this.pub.publisher : undefined"></app-select-entity>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Autor*innen-Angabe</mat-label>
-                    <textarea matInput [type]="'text'" placeholder="Autor*innen" formControlName="authors"></textarea>
-                    <mat-error *ngIf="getFieldError('author_info.authors', 'Autor*innen-Angabe') as error">{{error}}</mat-error>
-                </mat-form-field>
+            <mat-form-field appearance="fill" style="width: 100%;">
+              <mat-label>Publikationsdatum</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="pub_date">
+              <mat-hint>T.M.JJJJ</mat-hint>
+              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub?.pub_date : today"
+              startView="year"></mat-datepicker>
+              @if (getFieldError('biblio_info.pub_date', 'Publikationsdatum'); as error) {
+                <mat-error>{{error}}</mat-error>
+              }
+            </mat-form-field>
 
-                <mat-card>
-                    <mat-card-header><mat-card-subtitle>Beteiligte Personen der
-                            Institution</mat-card-subtitle></mat-card-header>
-                    <mat-card-content>
-                        <table #table *ngIf="this.pub?.authorPublications && this.pub?.authorPublications.length>0"
-                            mat-table [dataSource]="this.pub?.authorPublications">
-                            <ng-container matColumnDef="edit">
-                                <th mat-header-cell *matHeaderCellDef> </th>
-                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.addAuthorship(element)" matTooltip="Beteiligung untersuchen"
-                                        [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author || !element.id"><mat-icon>edit</mat-icon></button>
-                                </td>
-                            </ng-container>
+            @if (this.optional_fields?.pub_date_print) {
+              <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Publikationsdatum (print)</mat-label>
+                <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
+                <mat-hint>T.M.JJJJ</mat-hint>
+                <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub?.pub_date_print : today"
+                startView="year"></mat-datepicker>
+                @if (getFieldError('biblio_info.pub_date_print', 'Publikationsdatum (print)'); as error) {
+                  <mat-error>{{error}}</mat-error>
+                }
+              </mat-form-field>
+            }
 
-                            <ng-container matColumnDef="name">
-                                <th mat-header-cell *matHeaderCellDef> Person </th>
-                                <td mat-cell *matCellDef="let element">
-                                    <span class="author-name-with-remark">
-                                        <span>{{element.author.last_name}}, {{element.author.first_name}}</span>
-                                        <mat-icon *ngIf="element.author?.internal_remark"
-                                            class="author-remark-icon"
-                                            matTooltip="{{element.author.internal_remark}}"
-                                            [matTooltipShowDelay]="300">warning_amber</mat-icon>
-                                    </span>
-                                </td>
-                            </ng-container>
+            <mat-form-field appearance="fill" style="width: 100%;">
+              <mat-label>Datum der Akzeptanz</mat-label>
+              <input matInput [matDatepicker]="picker3" formControlName="pub_date_accepted">
+              <mat-hint>T.M.JJJJ</mat-hint>
+              <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
+              <mat-datepicker #picker3
+                [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today"
+              startView="year"></mat-datepicker>
+              @if (getFieldError('biblio_info.pub_date_accepted', 'Datum der Akzeptanz'); as error) {
+                <mat-error>{{error}}</mat-error>
+              }
+            </mat-form-field>
 
-                            <ng-container matColumnDef="role">
-                                <th mat-header-cell *matHeaderCellDef> Rolle </th>
-                                <td mat-cell *matCellDef="let element"> {{element.role?.label}} </td>
-                            </ng-container>
+            @if (this.optional_fields?.pub_date_submitted) {
+              <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Datum der Einreichung</mat-label>
+                <input matInput [matDatepicker]="picker4" formControlName="pub_date_submitted">
+                <mat-hint>T.M.JJJJ</mat-hint>
+                <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
+                <mat-datepicker #picker4
+                  [startAt]="this.pub?.pub_date_submitted? this.pub?.pub_date_submitted : today"
+                startView="year"></mat-datepicker>
+                @if (getFieldError('biblio_info.pub_date_submitted', 'Datum der Einreichung'); as error) {
+                  <mat-error>{{error}}</mat-error>
+                }
+              </mat-form-field>
+            }
 
-                            <ng-container matColumnDef="institute">
-                                <th mat-header-cell *matHeaderCellDef> Institut </th>
-                                <td mat-cell *matCellDef="let element"> {{element.institute?.short_label?
-                                    element.institute?.short_label : element.institute?.label}} </td>
-                            </ng-container>
+            <app-select-entity name="Sprache"
+              [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
+              [serviceClass]="this.languageService" (selected)="this.setLang($event)"
+            [ent]="this.pub? this.pub.language : undefined"></app-select-entity>
 
-                            <ng-container matColumnDef="corr">
-                                <th mat-header-cell *matHeaderCellDef> corr.? </th>
-                                <td mat-cell *matCellDef="let element"> <ng-container
-                                        *ngIf="element.corresponding"><mat-icon>check</mat-icon></ng-container></td>
-                            </ng-container>
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  Ergänzende Ressourcen
+                </mat-panel-title>
+              </mat-expansion-panel-header>
 
-                            <ng-container matColumnDef="delete">
-                                <th mat-header-cell *matHeaderCellDef> </th>
-                                <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.deleteAuthorship(element)"
-                                        matTooltip="Beteiligte Person entfernen"
-                                        [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>delete</mat-icon></button>
-                                </td>
-                            </ng-container>
+              @if (this.pub?.supplements && this.pub.supplements.length>0) {
+                <table #tableSuppl mat-table
+                  [dataSource]="this.pub.supplements">
+                  <ng-container matColumnDef="link">
+                    <th mat-header-cell *matHeaderCellDef> Link </th>
+                    <td mat-cell *matCellDef="let element"> {{element.link}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                      (click)="this.deleteSuppl(element)" matTooltip="Ressource löschen"
+                      [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="['link', 'delete']"></tr>
+                    <tr mat-row *matRowDef="let row; columns: ['link', 'delete'];"></tr>
+                  </table>
+                }
 
-                            <tr mat-header-row *matHeaderRowDef="displayedColumnsAuthors"></tr>
-                            <tr mat-row *matRowDef="let row; columns: displayedColumnsAuthors;"></tr>
-                        </table>
-                    </mat-card-content>
-                    <mat-card-actions>
-                        <button matSuffix mat-icon-button type="button" (click)="this.addAuthorship()"
-                            matTooltip="Beteiligte Person hinzufügen"
-                            [hidden]="this.disabled || this.pub?.locked || this.pub?.locked_author"><mat-icon>add</mat-icon></button>
-                    </mat-card-actions>
-                </mat-card><br>
-            </mat-expansion-panel>
-            <mat-expansion-panel formGroupName="biblio_info">
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        Bibliografische Informationen
-                    </mat-panel-title>
-                    <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
-                        <button type="button" (click)="this.lock('biblio')" mat-icon-button
-                            matTooltip="Bibl. Informationen (ent)sperren" [matTooltipShowDelay]="800"
-                            [disabled]="this.disabled || this.pub?.locked">
-                            <mat-icon *ngIf="this.pub?.locked_biblio">lock</mat-icon>
-                            <mat-icon *ngIf="!this.pub?.locked_biblio">lock_open</mat-icon>
-                        </button>
-                    </mat-panel-description>
-                </mat-expansion-panel-header>
+                <form [formGroup]="supplForm" style="width: 100%;display: flex;gap:5px;justify-content: space-around;">
+                  <mat-form-field style="width: 80%;">
+                    <mat-label>Link</mat-label>
+                    <input matInput placeholder="Link zur Ressource" formControlName="link" />
+                  </mat-form-field>
+                  <button matSuffix mat-icon-button type="button" (click)="this.addSuppl()"
+                    matTooltip="Ressource hinzufügen"
+                    [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                  </form>
 
-                <app-select-entity name="Publikationstyp"
-                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
-                    [serviceClass]="this.pubTypeService" [formComponent]="this.ptForm"
-                    (selected)="this.setPubType($event)"
-                    [ent]="this.pub? this.pub.pub_type : undefined"></app-select-entity>
-
-                <app-select-entity name="Größere Einheit"
-                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
-                    [serviceClass]="this.geService" [formComponent]="this.geForm" (selected)="this.setGE($event)"
-                    [ent]="this.pub? this.pub.greater_entity : undefined"></app-select-entity>
-                <div style="float:left;margin-top: -20px;">{{this.pub?.greater_entity?.rating}}</div>
-
-                <mat-checkbox formControlName="peer_reviewed"
-                    *ngIf="this.optional_fields?.peer_reviewed">Peer-reviewed?</mat-checkbox>
-
-                <app-select-entity name="Verlag"
-                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
-                    [serviceClass]="this.publisherService" [formComponent]="this.publisherForm"
-                    (selected)="this.setPublisher($event)"
-                    [ent]="this.pub? this.pub.publisher : undefined"></app-select-entity>
-
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Publikationsdatum</mat-label>
-                    <input matInput [matDatepicker]="picker" formControlName="pub_date">
-                    <mat-hint>T.M.JJJJ</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub?.pub_date : today"
-                        startView="year"></mat-datepicker>
-                    <mat-error *ngIf="getFieldError('biblio_info.pub_date', 'Publikationsdatum') as error">{{error}}</mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_print">
-                    <mat-label>Publikationsdatum (print)</mat-label>
-                    <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
-                    <mat-hint>T.M.JJJJ</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                    <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub?.pub_date_print : today"
-                        startView="year"></mat-datepicker>
-                    <mat-error *ngIf="getFieldError('biblio_info.pub_date_print', 'Publikationsdatum (print)') as error">{{error}}</mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Datum der Akzeptanz</mat-label>
-                    <input matInput [matDatepicker]="picker3" formControlName="pub_date_accepted">
-                    <mat-hint>T.M.JJJJ</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
-                    <mat-datepicker #picker3
-                        [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today"
-                        startView="year"></mat-datepicker>
-                    <mat-error *ngIf="getFieldError('biblio_info.pub_date_accepted', 'Datum der Akzeptanz') as error">{{error}}</mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.pub_date_submitted">
-                    <mat-label>Datum der Einreichung</mat-label>
-                    <input matInput [matDatepicker]="picker4" formControlName="pub_date_submitted">
-                    <mat-hint>T.M.JJJJ</mat-hint>
-                    <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
-                    <mat-datepicker #picker4
-                        [startAt]="this.pub?.pub_date_submitted? this.pub?.pub_date_submitted : today"
-                        startView="year"></mat-datepicker>
-                    <mat-error *ngIf="getFieldError('biblio_info.pub_date_submitted', 'Datum der Einreichung') as error">{{error}}</mat-error>
-                </mat-form-field>
-
-                <app-select-entity name="Sprache"
-                    [disabled]="this.disabled || this.pub?.locked_biblio || this.pub?.locked"
-                    [serviceClass]="this.languageService" (selected)="this.setLang($event)"
-                    [ent]="this.pub? this.pub.language : undefined"></app-select-entity>
-
-                <mat-expansion-panel>
-                    <mat-expansion-panel-header>
-                        <mat-panel-title>
-                            Ergänzende Ressourcen
-                        </mat-panel-title>
-                    </mat-expansion-panel-header>
-                    
-                    <table #tableSuppl *ngIf="this.pub?.supplements && this.pub.supplements.length>0" mat-table
-                        [dataSource]="this.pub.supplements">
-                        <ng-container matColumnDef="link">
-                            <th mat-header-cell *matHeaderCellDef> Link </th>
-                            <td mat-cell *matCellDef="let element"> {{element.link}} </td>
-                        </ng-container>
-            
-                        <ng-container matColumnDef="delete">
-                            <th mat-header-cell *matHeaderCellDef> </th>
-                            <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                    (click)="this.deleteSuppl(element)" matTooltip="Ressource löschen"
-                                    [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
-                        </ng-container>
-            
-                        <tr mat-header-row *matHeaderRowDef="['link', 'delete']"></tr>
-                        <tr mat-row *matRowDef="let row; columns: ['link', 'delete'];"></tr>
-                    </table>
-
-                    <form [formGroup]="supplForm" style="width: 100%;display: flex;gap:5px;justify-content: space-around;">
-                        <mat-form-field style="width: 80%;">
-                            <mat-label>Link</mat-label>
-                            <input matInput placeholder="Link zur Ressource" formControlName="link" />
-                        </mat-form-field>
-                        <button matSuffix mat-icon-button type="button" (click)="this.addSuppl()"
-                            matTooltip="Ressource hinzufügen"
-                            [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
-                    </form>
-                    
                 </mat-expansion-panel><br>
 
-                <mat-card
-                    *ngIf="this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract">
+                @if (this.optional_fields?.citation || this.optional_fields?.page_count || this.optional_fields?.abstract) {
+                  <mat-card
+                    >
                     <mat-card-header><mat-card-subtitle>Zitationsangaben</mat-card-subtitle></mat-card-header>
                     <mat-card-content>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
-                            <mat-label>Volume</mat-label>
-                            <input matInput placeholder="Volume" formControlName="volume" />
-                            <mat-error *ngIf="getFieldError('biblio_info.volume', 'Volume') as error">{{error}}</mat-error>
+                      @if (this.optional_fields?.citation) {
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                          <mat-label>Volume</mat-label>
+                          <input matInput placeholder="Volume" formControlName="volume" />
+                          @if (getFieldError('biblio_info.volume', 'Volume'); as error) {
+                            <mat-error>{{error}}</mat-error>
+                          }
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
-                            <mat-label>Issue</mat-label>
-                            <input matInput placeholder="Issue" formControlName="issue" />
-                            <mat-error *ngIf="getFieldError('biblio_info.issue', 'Issue') as error">{{error}}</mat-error>
+                      }
+                      @if (this.optional_fields?.citation) {
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                          <mat-label>Issue</mat-label>
+                          <input matInput placeholder="Issue" formControlName="issue" />
+                          @if (getFieldError('biblio_info.issue', 'Issue'); as error) {
+                            <mat-error>{{error}}</mat-error>
+                          }
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
-                            <mat-label>Erste Seite</mat-label>
-                            <input matInput placeholder="Erste Seite" formControlName="first_page" />
-                            <mat-error *ngIf="getFieldError('biblio_info.first_page', 'Erste Seite') as error">{{error}}</mat-error>
+                      }
+                      @if (this.optional_fields?.citation) {
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                          <mat-label>Erste Seite</mat-label>
+                          <input matInput placeholder="Erste Seite" formControlName="first_page" />
+                          @if (getFieldError('biblio_info.first_page', 'Erste Seite'); as error) {
+                            <mat-error>{{error}}</mat-error>
+                          }
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
-                            <mat-label>Letzte Seite</mat-label>
-                            <input matInput placeholder="Letzte Seite" formControlName="last_page" />
-                            <mat-error *ngIf="getFieldError('biblio_info.last_page', 'Letzte Seite') as error">{{error}}</mat-error>
+                      }
+                      @if (this.optional_fields?.citation) {
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                          <mat-label>Letzte Seite</mat-label>
+                          <input matInput placeholder="Letzte Seite" formControlName="last_page" />
+                          @if (getFieldError('biblio_info.last_page', 'Letzte Seite'); as error) {
+                            <mat-error>{{error}}</mat-error>
+                          }
                         </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.page_count">
-                            <mat-label>Seitenzahl</mat-label>
-                            <input matInput [type]="'number'" onwheel="return false;" placeholder="Seitenzahl"
-                                formControlName="page_count" />
-                            <mat-error *ngIf="getFieldError('biblio_info.page_count', 'Seitenzahl') as error">{{error}}</mat-error>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
+                      }
+                      @if (this.optional_fields?.page_count) {
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                          <mat-label>Seitenzahl</mat-label>
+                          <input matInput [type]="'number'" onwheel="return false;" placeholder="Seitenzahl"
+                            formControlName="page_count" />
+                            @if (getFieldError('biblio_info.page_count', 'Seitenzahl'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
+                        }
+                        @if (this.optional_fields?.citation) {
+                          <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Verlagsort</mat-label>
                             <input matInput placeholder="Verlagsort" formControlName="publisher_location" />
-                            <mat-error *ngIf="getFieldError('biblio_info.publisher_location', 'Verlagsort') as error">{{error}}</mat-error>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
+                            @if (getFieldError('biblio_info.publisher_location', 'Verlagsort'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
+                        }
+                        @if (this.optional_fields?.citation) {
+                          <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Ausgabe</mat-label>
                             <input matInput placeholder="Ausgabe" formControlName="edition" />
-                            <mat-error *ngIf="getFieldError('biblio_info.edition', 'Ausgabe') as error">{{error}}</mat-error>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.citation">
+                            @if (getFieldError('biblio_info.edition', 'Ausgabe'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
+                        }
+                        @if (this.optional_fields?.citation) {
+                          <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Artikelnummer</mat-label>
                             <input matInput placeholder="Artikelnummer" formControlName="article_number" />
-                            <mat-error *ngIf="getFieldError('biblio_info.article_number', 'Artikelnummer') as error">{{error}}</mat-error>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill" style="width: 100%;" *ngIf="this.optional_fields?.abstract">
+                            @if (getFieldError('biblio_info.article_number', 'Artikelnummer'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
+                        }
+                        @if (this.optional_fields?.abstract) {
+                          <mat-form-field appearance="fill" style="width: 100%;">
                             <mat-label>Abstract</mat-label>
                             <textarea matInput [type]="'text'" placeholder="Abstract"
-                                formControlName="abstract"></textarea>
-                            <mat-error *ngIf="getFieldError('biblio_info.abstract', 'Abstract') as error">{{error}}</mat-error>
-                        </mat-form-field>
-                    </mat-card-content>
-                </mat-card>
+                            formControlName="abstract"></textarea>
+                            @if (getFieldError('biblio_info.abstract', 'Abstract'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
+                        }
+                      </mat-card-content>
+                    </mat-card>
+                  }
 
-            </mat-expansion-panel>
+                </mat-expansion-panel>
 
-            <mat-expansion-panel formGroupName="oa_info">
-                <mat-expansion-panel-header>
+                <mat-expansion-panel formGroupName="oa_info">
+                  <mat-expansion-panel-header>
                     <mat-panel-title>
-                        Open-Access-Informationen
+                      Open-Access-Informationen
                     </mat-panel-title>
                     <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
-                        <button type="button" (click)="this.lock('oa')" mat-icon-button
-                            matTooltip="OA-Informationen (ent)sperren" [matTooltipShowDelay]="800"
-                            [disabled]="this.disabled || this.pub?.locked">
-                            <mat-icon *ngIf="this.pub?.locked_oa">lock</mat-icon>
-                            <mat-icon *ngIf="!this.pub?.locked_oa">lock_open</mat-icon>
-                        </button>
+                      <button type="button" (click)="this.lock('oa')" mat-icon-button
+                        matTooltip="OA-Informationen (ent)sperren" [matTooltipShowDelay]="800"
+                        [disabled]="this.disabled || this.pub?.locked">
+                        @if (this.pub?.locked_oa) {
+                          <mat-icon>lock</mat-icon>
+                        }
+                        @if (!this.pub?.locked_oa) {
+                          <mat-icon>lock_open</mat-icon>
+                        }
+                      </button>
                     </mat-panel-description>
-                </mat-expansion-panel-header>
+                  </mat-expansion-panel-header>
 
-                <app-select-entity name="OA-Kategorie"
+                  <app-select-entity name="OA-Kategorie"
                     [disabled]="this.disabled || this.pub?.locked_oa || this.pub?.locked"
                     [serviceClass]="this.oaService" [formComponent]="this.oaForm" (selected)="this.setOA($event)"
-                    [ent]="this.pub? this.pub.oa_category : undefined"></app-select-entity>
+                  [ent]="this.pub? this.pub.oa_category : undefined"></app-select-entity>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Zweitveröffentlichung</mat-label>
                     <textarea matInput [type]="'text'" placeholder="Zweitveröffentlichung"
-                        formControlName="second_pub"></textarea>
-                    <mat-error *ngIf="getFieldError('oa_info.second_pub', 'Zweitveröffentlichung') as error">{{error}}</mat-error>
-                </mat-form-field>
+                    formControlName="second_pub"></textarea>
+                    @if (getFieldError('oa_info.second_pub', 'Zweitveröffentlichung'); as error) {
+                      <mat-error>{{error}}</mat-error>
+                    }
+                  </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Ist OA (lt. Unpaywall)</mat-label>
                     <input matInput [type]="'text'" placeholder="Ist OA" formControlName="is_oa" />
-                </mat-form-field>
+                  </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>OA-Status (lt. Unpaywall)</mat-label>
                     <input matInput [type]="'text'" placeholder="OA-Status" formControlName="oa_status" />
-                </mat-form-field>
+                  </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Journal OA (lt. Unpaywall)</mat-label>
                     <input matInput [type]="'text'" placeholder="Journal OA" formControlName="is_journal_oa" />
-                </mat-form-field>
+                  </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Beste OA Quelle (lt. Unpaywall)</mat-label>
                     <input matInput [type]="'text'" placeholder="Beste OA Quelle" formControlName="best_oa_host" />
-                </mat-form-field>
+                  </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Beste OA Lizenz</mat-label>
                     <mat-select formControlName="best_oa_license">
-                        <mat-option [value]="null"></mat-option>
-                        <mat-option *ngFor="let value of this.licenses" [value]="value">{{value}}</mat-option>
+                      <mat-option [value]="null"></mat-option>
+                      @for (value of this.licenses; track value) {
+                        <mat-option [value]="value">{{value}}</mat-option>
+                      }
                     </mat-select>
-                    <mat-error *ngIf="getFieldError('oa_info.best_oa_license', 'Beste OA Lizenz') as error">{{error}}</mat-error>
-                </mat-form-field>
+                    @if (getFieldError('oa_info.best_oa_license', 'Beste OA Lizenz'); as error) {
+                      <mat-error>{{error}}</mat-error>
+                    }
+                  </mat-form-field>
 
-            </mat-expansion-panel>
+                </mat-expansion-panel>
 
-            <mat-expansion-panel formGroupName="finance_info">
-                <mat-expansion-panel-header>
+                <mat-expansion-panel formGroupName="finance_info">
+                  <mat-expansion-panel-header>
                     <mat-panel-title>
-                        Finanzielle Informationen
+                      Finanzielle Informationen
                     </mat-panel-title>
                     <mat-panel-description style="display: flex;flex-direction: row;justify-content: flex-end;">
-                        <button type="button" (click)="this.lock('finance')" mat-icon-button
-                            matTooltip="Finanzinformationen (ent)sperren" [matTooltipShowDelay]="800"
-                            [disabled]="this.disabled || this.pub?.locked">
-                            <mat-icon *ngIf="this.pub?.locked_finance">lock</mat-icon>
-                            <mat-icon *ngIf="!this.pub?.locked_finance">lock_open</mat-icon>
-                        </button>
+                      <button type="button" (click)="this.lock('finance')" mat-icon-button
+                        matTooltip="Finanzinformationen (ent)sperren" [matTooltipShowDelay]="800"
+                        [disabled]="this.disabled || this.pub?.locked">
+                        @if (this.pub?.locked_finance) {
+                          <mat-icon>lock</mat-icon>
+                        }
+                        @if (!this.pub?.locked_finance) {
+                          <mat-icon>lock_open</mat-icon>
+                        }
+                      </button>
                     </mat-panel-description>
-                </mat-expansion-panel-header>
+                  </mat-expansion-panel-header>
 
-                <app-select-entity name="Vertrag"
+                  <app-select-entity name="Vertrag"
                     [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
                     [serviceClass]="this.contractService" [formComponent]="this.contractForm"
                     (selected)="this.setContract($event)"
-                    [ent]="this.pub? this.pub.contract : undefined"></app-select-entity>
+                  [ent]="this.pub? this.pub.contract : undefined"></app-select-entity>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
+                  <mat-form-field appearance="fill" style="width: 100%;">
                     <mat-label>Vertragsjahr</mat-label>
                     <input matInput type="number" onwheel="return false;" placeholder="Vertragsjahr"
-                        formControlName="contract_year" />
-                    <mat-error *ngIf="getFieldError('finance_info.contract_year', 'Vertragsjahr') as error">{{error}}</mat-error>
-                </mat-form-field>
+                      formControlName="contract_year" />
+                      @if (getFieldError('finance_info.contract_year', 'Vertragsjahr'); as error) {
+                        <mat-error>{{error}}</mat-error>
+                      }
+                    </mat-form-field>
 
-                <mat-card
-                    *ngIf="(this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))">
-                    <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
-                    <mat-card-content>
-                        <table #tableInvoice
-                            *ngIf="this.pub?.invoices && this.pub?.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))"
-                            mat-table [dataSource]="this.pub?.invoices">
-                            <ng-container matColumnDef="date">
+                    @if ((this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))) {
+                      <mat-card
+                        >
+                        <mat-card-header><mat-card-subtitle>Rechnungen</mat-card-subtitle></mat-card-header>
+                        <mat-card-content>
+                          @if (this.pub?.invoices && this.pub?.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))) {
+                            <table #tableInvoice
+                              mat-table [dataSource]="this.pub?.invoices">
+                              <ng-container matColumnDef="date">
                                 <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
                                 <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="costs">
+                              </ng-container>
+                              <ng-container matColumnDef="costs">
                                 <th mat-header-cell *matHeaderCellDef> Kosten (brutto) </th>
                                 <td mat-cell *matCellDef="let element"> {{getCosts(element) | tableEuro}} </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="edit">
+                              </ng-container>
+                              <ng-container matColumnDef="edit">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.addInvoice(element)" matTooltip="Rechnung bearbeiten">
-                                        <mat-icon
-                                            *ngIf="this.disabled || this.pub?.locked || this.pub?.locked_finance; else elseInvoice">remove_red_eye</mat-icon>
-                                        <ng-template #elseInvoice><mat-icon>edit</mat-icon></ng-template>
-                                    </button> </td>
-                            </ng-container>
-
-                            <ng-container matColumnDef="delete">
+                                  (click)="this.addInvoice(element)" matTooltip="Rechnung bearbeiten">
+                                  @if (this.disabled || this.pub?.locked || this.pub?.locked_finance) {
+                                    <mat-icon
+                                    >remove_red_eye</mat-icon>
+                                  } @else {
+                                    <mat-icon>edit</mat-icon>
+                                  }
+                                </button> </td>
+                              </ng-container>
+                              <ng-container matColumnDef="delete">
                                 <th mat-header-cell *matHeaderCellDef> </th>
                                 <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                        (click)="this.deleteInvoice(element)"
-                                        [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"
-                                        matTooltip="Rechnung löschen"><mat-icon>delete</mat-icon></button> </td>
-                            </ng-container>
-
-                            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                        </table>
-                    </mat-card-content>
-                    <mat-card-actions>
-                        <button matSuffix mat-raised-button type="button" (click)="this.addInvoice()"
-                            matTooltip="Rechnung hinzufügen"
-                            [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"><mat-icon>add</mat-icon>Rechnung
+                                  (click)="this.deleteInvoice(element)"
+                                  [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"
+                                  matTooltip="Rechnung löschen"><mat-icon>delete</mat-icon></button> </td>
+                                </ng-container>
+                                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                              </table>
+                            }
+                          </mat-card-content>
+                          <mat-card-actions>
+                            <button matSuffix mat-raised-button type="button" (click)="this.addInvoice()"
+                              matTooltip="Rechnung hinzufügen"
+                              [disabled]="this.disabled || this.pub?.locked || this.pub?.locked_finance"><mat-icon>add</mat-icon>Rechnung
                             hinzufügen</button>
-                    </mat-card-actions>
-                </mat-card><br>
+                          </mat-card-actions>
+                        </mat-card>
+                        }<br>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Kostenansatz</mat-label>
-                    <input matInput type="number" onwheel="return false;" placeholder="Kostenansatz"
-                        formControlName="cost_approach" />
-                    <mat-error *ngIf="getFieldError('finance_info.cost_approach', 'Kostenansatz') as error">{{error}}</mat-error>
-                </mat-form-field>
+                        <mat-form-field appearance="fill" style="width: 100%;">
+                          <mat-label>Kostenansatz</mat-label>
+                          <input matInput type="number" onwheel="return false;" placeholder="Kostenansatz"
+                            formControlName="cost_approach" />
+                            @if (getFieldError('finance_info.cost_approach', 'Kostenansatz'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Währung des Kostenansatzes</mat-label>
-                    <mat-select formControlName="cost_approach_currency">
-                        <mat-option *ngFor="let currency of this.currencies" [value]="currency">{{currency}}</mat-option>
-                    </mat-select>
-                    <mat-error *ngIf="getFieldError('finance_info.cost_approach_currency', 'Währung des Kostenansatzes') as error">{{error}}</mat-error>
-                </mat-form-field>
+                          <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>Währung des Kostenansatzes</mat-label>
+                            <mat-select formControlName="cost_approach_currency">
+                              @for (currency of this.currencies; track currency) {
+                                <mat-option [value]="currency">{{currency}}</mat-option>
+                              }
+                            </mat-select>
+                            @if (getFieldError('finance_info.cost_approach_currency', 'Währung des Kostenansatzes'); as error) {
+                              <mat-error>{{error}}</mat-error>
+                            }
+                          </mat-form-field>
 
-                <mat-card>
-                    <mat-card-header><mat-card-subtitle>Förderer</mat-card-subtitle></mat-card-header>
-                    <mat-card-content>
-                        <app-select-entity name="Förderer"
-                            [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
-                            [serviceClass]="this.funderService" [formComponent]="this.funderForm"
-                            (selected)="this.setFunder($event)" [resetOnSelect]="true"></app-select-entity>
-                        <mat-chip-set [disabled]="this.disabled || this.pub?.locked">
-                            <mat-chip [removable]="true" *ngFor="let funder of this.pub?.funders"
-                                (removed)="removeFunder(funder)">
-                                {{funder.label}}
-                                <button matChipRemove
-                                    *ngIf="!this.pub?.locked && !this.disabled && !this.pub?.locked_finance">
-                                    <mat-icon>cancel</mat-icon>
-                                </button>
-                            </mat-chip>
-                        </mat-chip-set>
-                    </mat-card-content>
-                </mat-card><br>
+                          <mat-card>
+                            <mat-card-header><mat-card-subtitle>Förderer</mat-card-subtitle></mat-card-header>
+                            <mat-card-content>
+                              <app-select-entity name="Förderer"
+                                [disabled]="this.disabled || this.pub?.locked_finance || this.pub?.locked"
+                                [serviceClass]="this.funderService" [formComponent]="this.funderForm"
+                              (selected)="this.setFunder($event)" [resetOnSelect]="true"></app-select-entity>
+                              <mat-chip-set [disabled]="this.disabled || this.pub?.locked">
+                                @for (funder of this.pub?.funders; track funder) {
+                                  <mat-chip [removable]="true"
+                                    (removed)="removeFunder(funder)">
+                                    {{funder.label}}
+                                    @if (!this.pub?.locked && !this.disabled && !this.pub?.locked_finance) {
+                                      <button matChipRemove
+                                        >
+                                        <mat-icon>cancel</mat-icon>
+                                      </button>
+                                    }
+                                  </mat-chip>
+                                }
+                              </mat-chip-set>
+                            </mat-card-content>
+                          </mat-card><br>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>(DFG-)Fördernummer</mat-label>
-                    <input matInput placeholder="(DFG-)Fördernummer"
-                        formControlName="grant_number" />
-                    <mat-error *ngIf="getFieldError('finance_info.grant_number', '(DFG-)Fördernummer') as error">{{error}}</mat-error>
-                </mat-form-field>
+                          <mat-form-field appearance="fill" style="width: 100%;">
+                            <mat-label>(DFG-)Fördernummer</mat-label>
+                            <input matInput placeholder="(DFG-)Fördernummer"
+                              formControlName="grant_number" />
+                              @if (getFieldError('finance_info.grant_number', '(DFG-)Fördernummer'); as error) {
+                                <mat-error>{{error}}</mat-error>
+                              }
+                            </mat-form-field>
 
-                <mat-checkbox formControlName="not_budget_relevant">Nicht budgetrelevant</mat-checkbox>
+                            <mat-checkbox formControlName="not_budget_relevant">Nicht budgetrelevant</mat-checkbox>
 
-            </mat-expansion-panel>
+                          </mat-expansion-panel>
 
-            <mat-expansion-panel>
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        Meta-Informationen
-                    </mat-panel-title>
-                    <mat-panel-description>
+                          <mat-expansion-panel>
+                            <mat-expansion-panel-header>
+                              <mat-panel-title>
+                                Meta-Informationen
+                              </mat-panel-title>
+                              <mat-panel-description>
 
-                    </mat-panel-description>
-                </mat-expansion-panel-header>
+                              </mat-panel-description>
+                            </mat-expansion-panel-header>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Datenquelle</mat-label>
-                    <input matInput [type]="'text'" placeholder="Datenquelle" formControlName="dataSource" />
-                    <mat-error *ngIf="getFieldError('dataSource', 'Datenquelle') as error">{{error}}</mat-error>
-                </mat-form-field>
+                            <mat-form-field appearance="fill" style="width: 100%;">
+                              <mat-label>Datenquelle</mat-label>
+                              <input matInput [type]="'text'" placeholder="Datenquelle" formControlName="dataSource" />
+                              @if (getFieldError('dataSource', 'Datenquelle'); as error) {
+                                <mat-error>{{error}}</mat-error>
+                              }
+                            </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Hinzugefügt am</mat-label>
-                    <input matInput [value]="form.get('import_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
-                </mat-form-field>
+                            <mat-form-field appearance="fill" style="width: 100%;">
+                              <mat-label>Hinzugefügt am</mat-label>
+                              <input matInput [value]="form.get('import_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
+                            </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Geändert am</mat-label>
-                    <input matInput [value]="form.get('edit_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
-                </mat-form-field>
+                            <mat-form-field appearance="fill" style="width: 100%;">
+                              <mat-label>Geändert am</mat-label>
+                              <input matInput [value]="form.get('edit_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
+                            </mat-form-field>
 
-                <mat-form-field [hidden]="!this.pub?.delete_date" appearance="fill" style="width: 100%;">
-                    <mat-label>Soft-deleted am</mat-label>
-                    <input matInput [value]="form.get('delete_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
-                    <button type="button" matSuffix mat-icon-button (click)="restore()"
-                        matTooltip="Publikation wiederherstellen" [matTooltipShowDelay]="800">
-                        <mat-icon>recycling</mat-icon>
-                    </button>
-                </mat-form-field>
-            </mat-expansion-panel>
+                            <mat-form-field [hidden]="!this.pub?.delete_date" appearance="fill" style="width: 100%;">
+                              <mat-label>Soft-deleted am</mat-label>
+                              <input matInput [value]="form.get('delete_date').value | date: 'dd.MM.yyyy HH:mm:ss'" readonly />
+                              <button type="button" matSuffix mat-icon-button (click)="restore()"
+                                matTooltip="Publikation wiederherstellen" [matTooltipShowDelay]="800">
+                                <mat-icon>recycling</mat-icon>
+                              </button>
+                            </mat-form-field>
+                          </mat-expansion-panel>
 
-            <mat-expansion-panel *ngIf="this.pub?.id">
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        Änderungslog
-                    </mat-panel-title>
-                </mat-expansion-panel-header>
-
-                <app-publication-change-log [publicationId]="this.pub?.id"></app-publication-change-log>
-            </mat-expansion-panel>
-        </mat-accordion>
-    </form>
-</mat-dialog-content>
+                          @if (this.pub?.id) {
+                            <mat-expansion-panel>
+                              <mat-expansion-panel-header>
+                                <mat-panel-title>
+                                  Änderungslog
+                                </mat-panel-title>
+                              </mat-expansion-panel-header>
+                              <app-publication-change-log [publicationId]="this.pub?.id"></app-publication-change-log>
+                            </mat-expansion-panel>
+                          }
+                        </mat-accordion>
+                      </form>
+                    </mat-dialog-content>

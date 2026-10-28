@@ -1,26 +1,39 @@
 <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
-    <h1>{{this.name}}</h1>
-    <div style="display: flex;justify-content: flex-end;">
-        <button *ngIf="this.maximizeable" mat-icon-button (click)="this.parent.toggleMaximize()"
-            [matTooltip]="this.parent.isMaximized ? 'Fenster wiederherstellen' : 'Fenster maximieren'"
-            [matTooltipShowDelay]="800">
-            <mat-icon *ngIf="this.parent.isMaximized">close_fullscreen</mat-icon>
-            <mat-icon *ngIf="!this.parent.isMaximized">open_in_full</mat-icon>
-        </button>
-        <button *ngIf="this.lockable" mat-icon-button (click)="this.parent.lock()" [matTooltip]="this.name + ' (ent)sperren'" [matTooltipShowDelay]="800"
-            [disabled]="this.disabled">
-            <mat-icon *ngIf="this.parent.pub?.locked">lock</mat-icon>
-            <mat-icon *ngIf="!this.parent.pub?.locked">lock_open</mat-icon>
-        </button>
-        <div *ngIf="!this.disabled; else else1">
-            <button mat-icon-button (click)="this.parent.action()" [matTooltip]="this.name + ' speichern'"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
-            <button mat-icon-button (click)="this.parent.abort()" matTooltip="Abbrechen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+  <h1>{{this.name}}</h1>
+  <div style="display: flex;justify-content: flex-end;">
+    @if (this.maximizeable) {
+      <button mat-icon-button (click)="this.parent.toggleMaximize()"
+        [matTooltip]="this.parent.isMaximized ? 'Fenster wiederherstellen' : 'Fenster maximieren'"
+        [matTooltipShowDelay]="800">
+        @if (this.parent.isMaximized) {
+          <mat-icon>close_fullscreen</mat-icon>
+        }
+        @if (!this.parent.isMaximized) {
+          <mat-icon>open_in_full</mat-icon>
+        }
+      </button>
+    }
+    @if (this.lockable) {
+      <button mat-icon-button (click)="this.parent.lock()" [matTooltip]="this.name + ' (ent)sperren'" [matTooltipShowDelay]="800"
+        [disabled]="this.disabled">
+        @if (this.parent.pub?.locked) {
+          <mat-icon>lock</mat-icon>
+        }
+        @if (!this.parent.pub?.locked) {
+          <mat-icon>lock_open</mat-icon>
+        }
+      </button>
+    }
+    @if (!this.disabled) {
+      <div>
+        <button mat-icon-button (click)="this.parent.action()" [matTooltip]="this.name + ' speichern'"
+          [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+          <button mat-icon-button (click)="this.parent.abort()" matTooltip="Abbrechen"
+            [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+          </div>
+        } @else {
+          <button mat-icon-button (click)="this.parent.close()" matTooltip="Schließen"
+            [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+          }
         </div>
-        <ng-template #else1>
-            <button mat-icon-button (click)="this.parent.close()" matTooltip="Schließen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </ng-template>
-    </div>
-</mat-toolbar>
+      </mat-toolbar>

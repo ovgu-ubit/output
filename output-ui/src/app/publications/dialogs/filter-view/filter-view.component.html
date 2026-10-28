@@ -1,85 +1,99 @@
 <div style="padding: 5px;">
-    <h1>Erweiterte Filter</h1>
-    <ng-container *ngIf="!data.hideSavedFilters">
-        Verfügbare Filteransichten
-        <mat-chip-listbox multiple="true">
-            <mat-chip-option *ngFor="let filter of this.filters; let i = index" [value]="filter.path"
-                [selected]="this.selected[filter.path]">{{filter.label}}</mat-chip-option>
-        </mat-chip-listbox>
+  <h1>Erweiterte Filter</h1>
+  @if (!data.hideSavedFilters) {
+    Verfügbare Filteransichten
+    <mat-chip-listbox multiple="true">
+      @for (filter of this.filters; track filter; let i = $index) {
+        <mat-chip-option [value]="filter.path"
+        [selected]="this.selected[filter.path]">{{filter.label}}</mat-chip-option>
+      }
+    </mat-chip-listbox>
+  }
+  <form [formGroup]="form" (ngSubmit)="action()">
+    <ng-container formArrayName="filters">
+      @for (filter of getFiltersControls(); track filter; let i = $index) {
+        <div [formGroup]="filter" style="display: flex;gap: 10px;justify-content: center;">
+          <mat-form-field style="max-width: 150px;">
+            <mat-label>Logischer Operator</mat-label>
+            <mat-select formControlName="join_operator">
+              @if (i===0) {
+                <mat-option value="null"></mat-option>
+              }
+              @for (op of this.joinOps; track op) {
+                @if (i !== 0 || op.showFirst) {
+                  <mat-option [value]="op.op">
+                    {{ op.label }}
+                  </mat-option>
+                }
+              }
+            </mat-select>
+            <mat-error>Bitte wählen Sie eine Operation aus</mat-error>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Feld</mat-label>
+            <mat-select formControlName="field">
+              @for (key of this.keys; track key) {
+                <mat-option [value]="key.key">
+                  {{ key.label }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error>Bitte wählen Sie ein Feld aus</mat-error>
+          </mat-form-field>
+          <mat-form-field style="max-width: 200px;">
+            <mat-label>Vergleichsoperator</mat-label>
+            <mat-select formControlName="compare_operator">
+              @for (op of this.compareOps; track op; let idx = $index) {
+                @if (display(i,op)) {
+                  <mat-option [value]="op.op">
+                    {{ op.label }}
+                  </mat-option>
+                }
+              }
+            </mat-select>
+            <mat-error>Bitte wählen Sie ein Operator aus</mat-error>
+          </mat-form-field>
+          @if (date(i)) {
+            <mat-form-field>
+              <mat-label>Suchwert</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="value">
+              <mat-hint>T.M.JJJJ</mat-hint>
+              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker startView="year"></mat-datepicker>
+              <mat-error>{{ getValueErrorMessage(i) }}</mat-error>
+            </mat-form-field>
+          }
+          @if (isBoolean(i)) {
+            <mat-checkbox formControlName="value" style="align-self: center; margin-bottom: 15px;">Wahr</mat-checkbox>
+          }
+          @if (!date(i) && !isBoolean(i)) {
+            <mat-form-field>
+              <mat-label>Suchwert</mat-label>
+              <input matInput formControlName="value" placeholder="zu suchender Wert">
+              <mat-error>{{ getValueErrorMessage(i) }}</mat-error>
+            </mat-form-field>
+          }
+          @if (i!==0) {
+            <mat-icon (click)="deleteRow(i)">
+            delete_forever</mat-icon>
+          }
+        </div>
+      }
     </ng-container>
-    <form [formGroup]="form" (ngSubmit)="action()">
-        <ng-container formArrayName="filters">
-            <ng-container *ngFor="let filter of getFiltersControls(); let i = index">
-                <div [formGroup]="filter" style="display: flex;gap: 10px;justify-content: center;">
-                    <mat-form-field style="max-width: 150px;">
-                        <mat-label>Logischer Operator</mat-label>
-                        <mat-select formControlName="join_operator">
-                            <mat-option *ngIf="i===0" value="null"></mat-option>
-                            <ng-container *ngFor="let op of this.joinOps">
-                                <mat-option *ngIf="i !== 0 || op.showFirst" [value]="op.op">
-                                    {{ op.label }}
-                                </mat-option>
-                            </ng-container>
-                        </mat-select>
-                        <mat-error>Bitte wählen Sie eine Operation aus</mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field>
-                        <mat-label>Feld</mat-label>
-                        <mat-select formControlName="field">
-                            <mat-option *ngFor="let key of this.keys" [value]="key.key">
-                                {{ key.label }}
-                            </mat-option>
-                        </mat-select>
-                        <mat-error>Bitte wählen Sie ein Feld aus</mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field style="max-width: 200px;">
-                        <mat-label>Vergleichsoperator</mat-label>
-                        <mat-select formControlName="compare_operator">
-                            <ng-container *ngFor="let op of this.compareOps, let idx = index">
-                                <mat-option *ngIf="display(i,op)" [value]="op.op">
-                                    {{ op.label }}
-                                </mat-option>
-                            </ng-container>
-                        </mat-select>
-                        <mat-error>Bitte wählen Sie ein Operator aus</mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field *ngIf="date(i)">
-                        <mat-label>Suchwert</mat-label>
-                        <input matInput [matDatepicker]="picker" formControlName="value">
-                        <mat-hint>T.M.JJJJ</mat-hint>
-                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker startView="year"></mat-datepicker>
-                        <mat-error>{{ getValueErrorMessage(i) }}</mat-error>
-                    </mat-form-field>
-                    <mat-checkbox *ngIf="isBoolean(i)" formControlName="value" style="align-self: center; margin-bottom: 15px;">Wahr</mat-checkbox>
-                    <mat-form-field *ngIf="!date(i) && !isBoolean(i)">
-                        <mat-label>Suchwert</mat-label>
-                        <input matInput formControlName="value" placeholder="zu suchender Wert">
-                        <mat-error>{{ getValueErrorMessage(i) }}</mat-error>
-                    </mat-form-field>
-
-                    <mat-icon *ngIf="i!==0" (click)="deleteRow(i)">
-                        delete_forever</mat-icon>
-                </div>
-            </ng-container>
-        </ng-container>
-        <div style="display: flex;justify-content: center;">
-            <button mat-mini-fab type="button" (click)="addRow(false)">
-                <mat-icon>add</mat-icon>
-            </button>
-        </div>
-        <br />
-        <div class="form-group" align="center">
-            <button mat-raised-button type="button" (click)="this.reset()">Alle Filter
-                zurücksetzen</button>&nbsp;
-            <button mat-raised-button type="submit" class="primary-button">Filter
-                anwenden</button>&nbsp;
-            <button mat-raised-button type="button" class="secondary-button" (click)="this.resetForm()">Formular
-                zurücksetzen</button>&nbsp;
-            <button mat-raised-button type="button" class="secondary-button" (click)="this.abort()">Abbrechen</button>
-        </div>
-    </form>
+    <div style="display: flex;justify-content: center;">
+      <button mat-mini-fab type="button" (click)="addRow(false)">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+    <br />
+    <div class="form-group" align="center">
+      <button mat-raised-button type="button" (click)="this.reset()">Alle Filter
+      zurücksetzen</button>&nbsp;
+      <button mat-raised-button type="submit" class="primary-button">Filter
+      anwenden</button>&nbsp;
+      <button mat-raised-button type="button" class="secondary-button" (click)="this.resetForm()">Formular
+      zurücksetzen</button>&nbsp;
+      <button mat-raised-button type="button" class="secondary-button" (click)="this.abort()">Abbrechen</button>
+    </div>
+  </form>
 </div>

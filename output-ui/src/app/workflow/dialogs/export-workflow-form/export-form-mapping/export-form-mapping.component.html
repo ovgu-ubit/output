@@ -1,32 +1,34 @@
-<mat-card *ngIf="this.entity">
-  <mat-card-title>JSONata Mapping</mat-card-title>
-  <mat-card-content>
-    <p><strong>Entitätsklasse: {{ sourceDetails.label }}</strong></p>
-    <p>Das Mapping wird auf jeden Datensatz einzeln angewendet. Seine Felder stehen direkt zur Verfügung;
-      die Konfiguration ist über <code>params.cfg</code> erreichbar.</p>
-    <p>{{ sourceDetails.relations }}</p>
-    @if (entity.source_entity && entity.source_entity !== 'publication') {
-    <p>Die Quelle wird vollständig geladen. Einschränkungen erfolgen im Mapping; mit <code>null</code> oder
-      einem leeren Ergebnis wird ein Datensatz übersprungen. Rückwärtige Publikationslisten werden nicht geladen.</p>
-    }
-    <p>Beispiel:</p>
-    <pre style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ sourceDetails.example }}</pre>
-    <form [formGroup]="form">
-      <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>Mapping</mat-label>
-        <textarea
-          matInput
-          formControlName="mapping"
-          rows="20"
-          placeholder="JSONata Mapping eingeben"
-        ></textarea>
-      </mat-form-field>
-    </form>
-  </mat-card-content>
+@if (this.entity) {
+  <mat-card>
+    <mat-card-title>JSONata Mapping</mat-card-title>
+    <mat-card-content>
+      <p><strong>Entitätsklasse: {{ sourceDetails.label }}</strong></p>
+      <p>Das Mapping wird auf jeden Datensatz einzeln angewendet. Seine Felder stehen direkt zur Verfügung;
+        die Konfiguration ist über <code>params.cfg</code> erreichbar.</p>
+        <p>{{ sourceDetails.relations }}</p>
+        @if (entity.source_entity && entity.source_entity !== 'publication') {
+          <p>Die Quelle wird vollständig geladen. Einschränkungen erfolgen im Mapping; mit <code>null</code> oder
+        einem leeren Ergebnis wird ein Datensatz übersprungen. Rückwärtige Publikationslisten werden nicht geladen.</p>
+      }
+      <p>Beispiel:</p>
+      <pre style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ sourceDetails.example }}</pre>
+      <form [formGroup]="form">
+        <mat-form-field appearance="fill" style="width: 100%;">
+          <mat-label>Mapping</mat-label>
+          <textarea
+            matInput
+            formControlName="mapping"
+            rows="20"
+            placeholder="JSONata Mapping eingeben"
+          ></textarea>
+        </mat-form-field>
+      </form>
+    </mat-card-content>
     @if (!this.entity.published_at && !this.entity.deleted_at) {
-    <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
+      <mat-card-actions style="display: flex;flex-direction: row;gap:5px">
         <button mat-raised-button class="primary-button" (click)="this.action()">Speichern</button>
         <button mat-raised-button class="secondary-button" (click)="this.reset()">Zurücksetzen</button>
-    </mat-card-actions>
-  }
-</mat-card>
+      </mat-card-actions>
+    }
+  </mat-card>
+}

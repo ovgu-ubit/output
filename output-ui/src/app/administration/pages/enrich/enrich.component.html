@@ -1,48 +1,57 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
 <div class="jumbotron">
-    <div class="container-fluid">
-<mat-accordion>
-    <mat-expansion-panel  *ngFor="let im of this.enrichs, let idx = index">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-            {{im.label}}
-        </mat-panel-title>
-        <mat-panel-description>
-            Status: {{stoppingPaths.has(im.path) ? 'Wird gestoppt…' : status[idx]}}
-        </mat-panel-description>
-      </mat-expansion-panel-header>
-        <form [formGroup]="forms[im.label]" (ngSubmit)="this.startImport(im)" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-evenly;">
-            <mat-form-field *ngIf="im.path !== 'csv'" appearance="fill">
+  <div class="container-fluid">
+    <mat-accordion>
+      @for (im of this.enrichs; track im; let idx = $index) {
+        <mat-expansion-panel >
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              {{im.label}}
+            </mat-panel-title>
+            <mat-panel-description>
+              Status: {{stoppingPaths.has(im.path) ? 'Wird gestoppt…' : status[idx]}}
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <form [formGroup]="forms[im.label]" (ngSubmit)="this.startImport(im)" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-evenly;">
+            @if (im.path !== 'csv') {
+              <mat-form-field appearance="fill">
                 <mat-label>Publikationsjahr</mat-label>
                 <input matInput placeholder="Publikationsjahr" formControlName="reporting_year"/>
-            </mat-form-field>
+              </mat-form-field>
+            }
             <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
             <button mat-raised-button type="button" class="secondary-button" [disabled]="!!obs$[im.label] || isStarting(im.path)" (click)="configureImport(im)">Anreicherung konfigurieren</button>
             <button mat-raised-button type="submit" class="primary-button" [disabled]="!!obs$[im.label] || isStarting(im.path)">Anreicherung starten</button>
-            <button *ngIf="isRunning(im.path)" mat-raised-button type="button" class="warn-button"
+            @if (isRunning(im.path)) {
+              <button mat-raised-button type="button" class="warn-button"
                 [disabled]="stoppingPaths.has(im.path)" (click)="stop(im)">
                 <mat-icon>stop</mat-icon>{{stoppingPaths.has(im.path) ? 'Wird gestoppt…' : 'Stopp'}}
-            </button>
-        </form>
-            
-            <ng-container *ngIf="obs$[im.label] | async as progress">
-                <div role="status">{{stoppingPaths.has(im.path) ? 'Wird gestoppt… Begonnene Datensätze werden abgeschlossen.' : progress.status}}</div>
-                <div *ngIf="progress.progress >= 0">{{progress.progress * 100 | number: '1.2-2'}} %</div>
-                <mat-progress-bar [mode]="progress.progress < 0 ? 'indeterminate' : 'determinate'" [value]="progress.progress * 100"></mat-progress-bar>
-            </ng-container>
-            <table style="width: 100%;">
-                <tr>
-                    <th>Dateiname</th>
-                    <th>Anzeigen</th>
-                    <th>Löschen</th>
-                </tr>
-                <tr *ngFor="let rep of this.getReports(im.label)">
-                    <td>{{rep}}</td>
-                    <td><button mat-icon-button (click)="openLog(rep)"><mat-icon>remove_red_eye</mat-icon></button></td>
-                    <td><button mat-icon-button (click)="delete(rep)"><mat-icon>delete</mat-icon></button></td>
-                </tr>
-            </table>
-    </mat-expansion-panel>
+              </button>
+            }
+          </form>
+          @if (obs$[im.label] | async; as progress) {
+            <div role="status">{{stoppingPaths.has(im.path) ? 'Wird gestoppt… Begonnene Datensätze werden abgeschlossen.' : progress.status}}</div>
+            @if (progress.progress >= 0) {
+              <div>{{progress.progress * 100 | number: '1.2-2'}} %</div>
+            }
+            <mat-progress-bar [mode]="progress.progress < 0 ? 'indeterminate' : 'determinate'" [value]="progress.progress * 100"></mat-progress-bar>
+          }
+          <table style="width: 100%;">
+            <tr>
+              <th>Dateiname</th>
+              <th>Anzeigen</th>
+              <th>Löschen</th>
+            </tr>
+            @for (rep of this.getReports(im.label); track rep) {
+              <tr>
+                <td>{{rep}}</td>
+                <td><button mat-icon-button (click)="openLog(rep)"><mat-icon>remove_red_eye</mat-icon></button></td>
+                <td><button mat-icon-button (click)="delete(rep)"><mat-icon>delete</mat-icon></button></td>
+              </tr>
+            }
+          </table>
+        </mat-expansion-panel>
+      }
 
-  </mat-accordion>
-    </div></div>
+    </mat-accordion>
+  </div></div>

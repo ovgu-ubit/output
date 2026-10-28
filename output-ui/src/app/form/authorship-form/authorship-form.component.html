@@ -1,51 +1,53 @@
 <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
-    <h1>Beteiligung bearbeiten</h1>
-    <div style="display: flex;justify-content: flex-end;">
-        <div>
-            <button mat-icon-button (click)="this.action()" matTooltip="Beteiligung speichern"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
-            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+  <h1>Beteiligung bearbeiten</h1>
+  <div style="display: flex;justify-content: flex-end;">
+    <div>
+      <button mat-icon-button (click)="this.action()" matTooltip="Beteiligung speichern"
+        [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+        <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+          [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
         </div>
-    </div>
-</mat-toolbar>
-<div style="padding: 5px">
-    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
+      </div>
+    </mat-toolbar>
+    <div style="padding: 5px">
+      <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form">
         <app-select-author name="Person" [disabled]="this.disabled"
-                    [serviceClass]="this.authorService" [formComponent]="this.authorForm"
-                    (selected)="this.setAut($event)"
-                    [ent]="this.entity? this.entity['author'] : undefined"></app-select-author>
+          [serviceClass]="this.authorService" [formComponent]="this.authorForm"
+          (selected)="this.setAut($event)"
+        [ent]="this.entity? this.entity['author'] : undefined"></app-select-author>
 
         <mat-checkbox formControlName="corresponding">Corresponding?</mat-checkbox>
 
         <app-select-entity name="Rolle" style="width: 100%;"
-        [disabled]="this.disabled"
-        [serviceClass]="this.roleService" [formComponent]="this.roleForm"
-        (selected)="this.setRole($event)"
+          [disabled]="this.disabled"
+          [serviceClass]="this.roleService" [formComponent]="this.roleForm"
+          (selected)="this.setRole($event)"
         [ent]="this.entity? this.entity['role'] : undefined"></app-select-entity>
 
         <mat-card>
-            <mat-card-title><mat-card-subtitle>Institutszuordnung</mat-card-subtitle></mat-card-title>
-            <mat-card-content style="display: flex; flex-direction: column;justify-content: space-evenly;">
-                <mat-form-field appearance="fill">
-                    <mat-label>Affiliationsangabe (optional)</mat-label>
-                    <textarea matInput formControlName="affiliation"></textarea>
-                </mat-form-field>
+          <mat-card-title><mat-card-subtitle>Institutszuordnung</mat-card-subtitle></mat-card-title>
+          <mat-card-content style="display: flex; flex-direction: column;justify-content: space-evenly;">
+            <mat-form-field appearance="fill">
+              <mat-label>Affiliationsangabe (optional)</mat-label>
+              <textarea matInput formControlName="affiliation"></textarea>
+            </mat-form-field>
 
-                <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Institut d. Person auswählen</mat-label>
-                    <mat-select [(value)]="this.entity.institute" [compareWith]="compare" [disabled]="this.disabled">
-                        <mat-option [value]="null">- keine Angabe -</mat-option>
-                        <mat-option *ngFor="let inst of this.entity.author?.institutes"
-                            [value]="inst">{{inst.label}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+            <mat-form-field appearance="fill" style="width: 100%;">
+              <mat-label>Institut d. Person auswählen</mat-label>
+              <mat-select [(value)]="this.entity.institute" [compareWith]="compare" [disabled]="this.disabled">
+                <mat-option [value]="null">- keine Angabe -</mat-option>
+                @for (inst of this.entity.author?.institutes; track inst) {
+                  <mat-option
+                  [value]="inst">{{inst.label}}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
 
-                <app-select-entity name="Sonstiges Institut auswählen" style="width: 100%;"
-                [disabled]="this.disabled"
-                [serviceClass]="this.instService" [formComponent]="this.instForm"
-                (selected)="this.setInst($event)"></app-select-entity>
-            </mat-card-content>
+            <app-select-entity name="Sonstiges Institut auswählen" style="width: 100%;"
+              [disabled]="this.disabled"
+              [serviceClass]="this.instService" [formComponent]="this.instForm"
+            (selected)="this.setInst($event)"></app-select-entity>
+          </mat-card-content>
         </mat-card>
-    </form>
-</div>
+      </form>
+    </div>

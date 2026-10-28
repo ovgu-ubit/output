@@ -1,48 +1,62 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
 <div style="display:flex;flex-flow: column nowrap;gap: 10px">
   <div>
-    <h1 *ngIf="!this.costs">Anzahl Publikationen</h1>
-    <h1 *ngIf="this.costs">Bruttokosten für Publikationsrechnungen</h1>
-    <p *ngIf="this.costs">Je Rechnung zählt der Buchungsbetrag, sonst die Summe der Positionen inklusive MwSt.</p>
+    @if (!this.costs) {
+      <h1>Anzahl Publikationen</h1>
+    }
+    @if (this.costs) {
+      <h1>Bruttokosten für Publikationsrechnungen</h1>
+    }
+    @if (this.costs) {
+      <p>Je Rechnung zählt der Buchungsbetrag, sonst die Summe der Positionen inklusive MwSt.</p>
+    }
   </div>
-<div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
-  <div>
-    <button mat-raised-button class="primary-button" *ngIf="!this.costs" (click)="this.loadData(true)">Zu Kosten
-      wechseln</button>
-    <button mat-raised-button class="primary-button" *ngIf="this.costs" (click)="this.loadData(false)">Zu Anzahl
-      wechseln</button>
-  </div>
-  <div style="display:flex;flex-flow: row wrap;gap: 10px;">
-    <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'pie'"
+  <div style="display:flex;flex-flow: row wrap;justify-content: space-between;gap: 10px;">
+    <div>
+      @if (!this.costs) {
+        <button mat-raised-button class="primary-button" (click)="this.loadData(true)">Zu Kosten
+        wechseln</button>
+      }
+      @if (this.costs) {
+        <button mat-raised-button class="primary-button" (click)="this.loadData(false)">Zu Anzahl
+        wechseln</button>
+      }
+    </div>
+    <div style="display:flex;flex-flow: row wrap;gap: 10px;">
+      <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'pie'"
       [class.secondary-button]="this.chartDisplayMode !== 'pie'" (click)="setChartDisplayMode('pie')">Pie</button>
-    <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'treemap'"
+      <button mat-raised-button [class.primary-button]="this.chartDisplayMode === 'treemap'"
       [class.secondary-button]="this.chartDisplayMode !== 'treemap'" (click)="setChartDisplayMode('treemap')">Treemap</button>
+    </div>
+    <mat-card [hidden]="this.hidden()">
+      <mat-card-header>
+        Filter aktiv
+      </mat-card-header>
+      <mat-card-content>
+        <div style="display: flex; flex-flow: row wrap;justify-content: flex-end;gap: 5px">
+          @for (elem of this.filterChips; track elem) {
+            <mat-chip-listbox>
+              <mat-chip-option (removed)="removeFilter(elem)" selectable="false">
+                {{elem['text']}}
+                <button matChipRemove>
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip-option>
+            </mat-chip-listbox>
+          }
+          <button mat-raised-button  class="secondary-button" (click)="this.resetFilter()">Alle Filter zurücksetzen</button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
   </div>
-  <mat-card [hidden]="this.hidden()">
-    <mat-card-header>
-      Filter aktiv
-    </mat-card-header>
-    <mat-card-content>
-      <div style="display: flex; flex-flow: row wrap;justify-content: flex-end;gap: 5px">
-        <mat-chip-listbox *ngFor="let elem of this.filterChips">
-          <mat-chip-option (removed)="removeFilter(elem)" selectable="false">
-            {{elem['text']}}
-            <button matChipRemove>
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip-option>
-      </mat-chip-listbox>
-        <button mat-raised-button  class="secondary-button" (click)="this.resetFilter()">Alle Filter zurücksetzen</button>
-      </div>
-    </mat-card-content>
-  </mat-card>
-  
-</div>
-<div style="display: flex;flex-flow: row wrap;">
-  <div *ngFor="let chart of charts" echarts [options]="chart.options"
-     (chartClick)="onChartClick($event)"
-     (chartContextMenu)="onChartContextMenu($event)"
-     (chartLegendSelectChanged)="onChartLegendSelectChanged(chart.legendSeriesName, $event)"
-     class="chart"></div>
-</div>
+  <div style="display: flex;flex-flow: row wrap;">
+    @for (chart of charts; track chart) {
+      <div echarts [options]="chart.options"
+        (chartClick)="onChartClick($event)"
+        (chartContextMenu)="onChartContextMenu($event)"
+        (chartLegendSelectChanged)="onChartLegendSelectChanged(chart.legendSeriesName, $event)"
+      class="chart"></div>
+    }
+  </div>
 </div>

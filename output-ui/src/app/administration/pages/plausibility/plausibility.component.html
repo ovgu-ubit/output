@@ -1,39 +1,45 @@
 <app-breadcrump [path]="getLink()" [label]="getLabel()"></app-breadcrump>
 <div class="jumbotron">
-    <div class="container-fluid">
-        <mat-accordion>
-            <mat-expansion-panel *ngFor="let im of this.enrichs, let idx = index">
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        {{im.label}}
-                    </mat-panel-title>
-                    <mat-panel-description>
-                        Status: {{status[idx]}}
-                    </mat-panel-description>
-                </mat-expansion-panel-header>
+  <div class="container-fluid">
+    <mat-accordion>
+      @for (im of this.enrichs; track im; let idx = $index) {
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              {{im.label}}
+            </mat-panel-title>
+            <mat-panel-description>
+              Status: {{status[idx]}}
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <button mat-raised-button (click)="this.startImport(im)"  class="primary-button" [disabled]="this.obs$[im.label]">Check
+          starten</button>
+          @if (this.obs$[im.label]) {
+            <div>{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %
+            </div>
+          }
+          @if (this.obs$[im.label]) {
+            <mat-progress-bar mode="determinate"
+            [value]="(this.obs$[im.label] | async)?.progress*100"></mat-progress-bar>
+          }
+          <table style="width: 100%;">
+            <tr>
+              <th>Dateiname</th>
+              <th>Anzeigen</th>
+              <th>Löschen</th>
+            </tr>
+            @for (rep of this.getReports(im.label); track rep) {
+              <tr>
+                <td>{{rep}}</td>
+                <td><button mat-icon-button (click)="openLog(rep)"><mat-icon>remove_red_eye</mat-icon></button>
+              </td>
+              <td><button mat-icon-button (click)="delete(rep)"><mat-icon>delete</mat-icon></button></td>
+            </tr>
+          }
+        </table>
+      </mat-expansion-panel>
+    }
 
-                <button mat-raised-button (click)="this.startImport(im)"  class="primary-button" [disabled]="this.obs$[im.label]">Check
-                    starten</button>
-
-                <div *ngIf="this.obs$[im.label]">{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %
-                </div>
-                <mat-progress-bar *ngIf="this.obs$[im.label]" mode="determinate"
-                    [value]="(this.obs$[im.label] | async)?.progress*100"></mat-progress-bar>
-                <table style="width: 100%;">
-                    <tr>
-                        <th>Dateiname</th>
-                        <th>Anzeigen</th>
-                        <th>Löschen</th>
-                    </tr>
-                    <tr *ngFor="let rep of this.getReports(im.label)">
-                        <td>{{rep}}</td>
-                        <td><button mat-icon-button (click)="openLog(rep)"><mat-icon>remove_red_eye</mat-icon></button>
-                        </td>
-                        <td><button mat-icon-button (click)="delete(rep)"><mat-icon>delete</mat-icon></button></td>
-                    </tr>
-                </table>
-            </mat-expansion-panel>
-
-        </mat-accordion>
-    </div>
+  </mat-accordion>
+</div>
 </div>
