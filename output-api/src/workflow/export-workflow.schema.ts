@@ -23,7 +23,9 @@ const StrategyTypeToEnum = (value: unknown): ExportStrategy | unknown => {
   return value;
 };
 
-const JsonataExpr = z.string().min(1, "JSONata expression must not be empty");
+const RequiredMappingSchema = z.object({
+  mapping: z.string().refine(value => value.trim().length > 0, "JSONata expression must not be empty"),
+});
 const DispositionSchema = z.enum(["inline", "attachment"]);
 const XmlNameSchema = z.string().trim().min(1);
 const SheetNameSchema = z.string().trim().min(1);
@@ -91,7 +93,7 @@ const ExportMeta = SourceEntitySchema.extend({
   workflow_id: z.string(),
   label: z.string().min(1),
   strategy_type: z.preprocess(StrategyTypeFromNumber, StrategyTypeSchema),
-  mapping: JsonataExpr,
+  mapping: z.string().nullish(),
 });
 
 const Base = ExportMeta.extend({
@@ -133,6 +135,7 @@ export type ExportWorkflowSourceInput = z.infer<typeof ExportWorkflowSourceSchem
 export function validateExportWorkflow(workflow: ExportWorkflow): ExportWorkflow {
   try {
     const source = SourceEntitySchema.parse(workflow);
+    if (workflow.published_at) RequiredMappingSchema.parse(workflow);
     if (workflow.strategy_type === null || workflow.strategy_type === undefined) return { ...workflow, ...source };
 
     const parsed = ExportWorkflowSourceSchema.parse(workflow);

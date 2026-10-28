@@ -61,7 +61,7 @@ export class JSONataExportService extends AbstractExportService {
     }
 
     public async setUp(exportDefinition: ExportWorkflow) {
-        if (!exportDefinition?.mapping) {
+        if (!exportDefinition?.mapping?.trim()) {
             throw createInvalidRequestHttpException('Export workflow mapping is required.');
         }
 

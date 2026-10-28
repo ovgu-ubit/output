@@ -144,6 +144,14 @@ describe('JSONataExportService', () => {
         });
     });
 
+    it.each([undefined, null, '', ' \n '])('requires a mapping before execution: %p', async (mapping) => {
+        await expectApiError(service.setUp({ mapping }), {
+            statusCode: 400, code: ApiErrorCode.INVALID_REQUEST, message: 'Export workflow mapping is required.',
+        });
+        expect(publicationService.getAll).not.toHaveBeenCalled();
+        expect(workflowReportService.createReport).not.toHaveBeenCalled();
+    });
+
     it.each(['json', 'csv', 'xml', 'xlsx'] as const)('exports mapped persons as %s', async (format) => {
         authorService.get.mockResolvedValue([{
             id: 101, first_name: 'Ada', last_name: 'Lovelace', internal_remark: 'Internal; note',

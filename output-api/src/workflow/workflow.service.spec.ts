@@ -995,6 +995,67 @@ describe('WorkflowService', () => {
         });
     });
 
+    it('saves a strategy on an existing draft with a null mapping', async () => {
+        exportRepository.findOneBy!.mockResolvedValue({
+            id: 28, workflow_id: 'wf-persons', label: 'People', version: 1, source_entity: 'author',
+            mapping: null, strategy_type: null, published_at: null, locked_at: null,
+        } as ExportWorkflow);
+        exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);
+
+        const saved = await service.saveExport({
+            id: 28, strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format: 'json', disposition: 'inline' },
+        });
+
+        expect(saved).toMatchObject({
+            id: 28, source_entity: 'author', mapping: null, published_at: null,
+            strategy_type: ExportStrategy.HTTP_RESPONSE, strategy: { format: 'json', disposition: 'inline' },
+        });
+        expect(exportRepository.save).toHaveBeenCalledWith(expect.objectContaining({ mapping: null }));
+    });
+
+    it.each([undefined, null, '', ' \n '])('does not publish a draft without a mapping: %p', async (mapping) => {
+        exportRepository.findOneBy!
+            .mockResolvedValueOnce({
+                id: 28, workflow_id: 'wf-persons', label: 'People', version: 1, mapping,
+                strategy_type: ExportStrategy.HTTP_RESPONSE, strategy: { format: 'json' },
+                published_at: null, locked_at: null,
+            } as ExportWorkflow)
+            .mockResolvedValueOnce(null);
+
+        await expectApiError(service.saveExport({ id: 28, published_at: new Date() }), {
+            statusCode: 400, code: ApiErrorCode.VALIDATION_FAILED,
+        });
+        expect(exportRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('publishes a draft once a mapping is present', async () => {
+        exportRepository.findOneBy!
+            .mockResolvedValueOnce({
+                id: 28, workflow_id: 'wf-persons', label: 'People', version: 1, mapping: '$',
+                strategy_type: ExportStrategy.HTTP_RESPONSE, strategy: { format: 'json' },
+                published_at: null, locked_at: null,
+            } as ExportWorkflow)
+            .mockResolvedValueOnce(null);
+        exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);
+
+        expect(await service.saveExport({ id: 28, published_at: new Date() })).toMatchObject({
+            mapping: '$', published_at: expect.any(Date),
+        });
+    });
+
+    it('imports incomplete export drafts with a configured strategy', async () => {
+        exportRepository.findOne!.mockResolvedValue(null);
+        exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);
+        const saved = await service.importExport({ buffer: Buffer.from(JSON.stringify({
+            workflow_id: 'wf-unfinished', version: 1, label: 'Unfinished', source_entity: 'author',
+            strategy_type: ExportStrategy.HTTP_RESPONSE, strategy: { format: 'json' },
+        })) } as Express.Multer.File);
+
+        expect(saved).toMatchObject({ source_entity: 'author', strategy_type: ExportStrategy.HTTP_RESPONSE });
+        expect(saved.mapping).toBeUndefined();
+    });
+
     it('normalizes string strategy_type values before persisting export workflows', async () => {
         exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
 
