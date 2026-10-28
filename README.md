@@ -11,7 +11,7 @@ General information can be found in the [Wiki](https://github.com/ovgu-ubit/outp
 
 ## Installation <a name="installation"></a>
 ### Requirements
-- Node.JS 22
+- Node.JS 24
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
 ### Workspace setup
