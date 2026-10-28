@@ -492,10 +492,11 @@ describe('WorkflowService', () => {
         expect(importRepository.save).not.toHaveBeenCalled();
     });
 
-    it('keeps the template version when importing an export workflow', async () => {
+    it.each(['author', 'publication', undefined])('keeps the source and template version when importing an export workflow: %s', async (source_entity) => {
         const file = {
             buffer: Buffer.from(JSON.stringify({
                 workflow_id: 'wf-template-export',
+                source_entity,
                 label: 'Template export',
                 version: 4,
                 strategy_type: ExportStrategy.HTTP_RESPONSE,
@@ -519,7 +520,33 @@ describe('WorkflowService', () => {
         expect(saved).toMatchObject({
             workflow_id: 'wf-template-export',
             version: 4,
+            source_entity: source_entity ?? 'publication',
         });
+    });
+
+    it('preserves the source on partial export updates', async () => {
+        exportRepository.findOneBy!.mockResolvedValue({
+            id: 28, workflow_id: 'wf-persons', version: 1, source_entity: 'author', label: 'People',
+            locked_at: null, published_at: null, deleted_at: null,
+        } as ExportWorkflow);
+        exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
+
+        const saved = await service.saveExport({ id: 28, description: 'Updated description' });
+        expect(saved).toMatchObject({ source_entity: 'author', description: 'Updated description' });
+    });
+
+    it('preserves the source when creating another draft version', async () => {
+        exportRepository.save!.mockImplementation(async (workflow) => workflow as ExportWorkflow);
+        const saved = await service.saveExport({ workflow_id: 'wf-persons', source_entity: 'author', label: 'People' });
+        expect(saved).toMatchObject({ source_entity: 'author', workflow_id: 'wf-persons', version: expect.any(Number) });
+    });
+
+    it('rejects an invalid export source in an imported incomplete draft', async () => {
+        exportRepository.findOne!.mockResolvedValue(null);
+        await expectApiError(service.importExport({ buffer: Buffer.from(JSON.stringify({
+            workflow_id: 'wf-invalid-source', version: 1, label: 'Invalid source', source_entity: 'invoice',
+        })) } as Express.Multer.File), { statusCode: 400, code: ApiErrorCode.VALIDATION_FAILED });
+        expect(exportRepository.save).not.toHaveBeenCalled();
     });
 
     it('keeps the template version when importing a validation workflow', async () => {

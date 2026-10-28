@@ -2,7 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import jsonata from 'jsonata';
 import * as Papa from 'papaparse';
 import {  SearchFilter  } from '@output/interfaces';
-import {  ExportDisposition, ExportFormat, ExportWorkflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
+import { ExportDisposition, ExportEntityType, ExportFormat, ExportWorkflow, isExportEntityType, WorkflowReportItemLevel, WorkflowType } from '@output/interfaces';
 import { AuthorService } from '../../author/author.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { ContractService } from '../../contract/contract.service';
@@ -12,7 +12,6 @@ import { InstituteService } from '../../institute/institute.service';
 import { InvoiceService } from '../../invoice/invoice.service';
 import { OACategoryService } from '../../oa_category/oa-category.service';
 import { Publication } from '../../publication/core/Publication.entity';
-import { PublicationIndexService } from '../../publication/core/publication-index.service';
 import { PublicationTypeService } from '../../pub_type/publication-type.service';
 import { PublisherService } from '../../publisher/publisher.service';
 import {  PublicationIndex  } from '@output/interfaces';
@@ -22,6 +21,7 @@ import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
 import { AbstractExportService } from './abstract-export.service';
+import { ExportSourceEntity, ExportSourceService } from './export-source.service';
 import * as XLSX from 'xlsx';
 import * as xmljs from 'xml-js';
 
@@ -44,7 +44,7 @@ export class JSONataExportService extends AbstractExportService {
     private workflowReport?: WorkflowReport;
 
     constructor(
-        private publicationIndexService: PublicationIndexService,
+        private sourceService: ExportSourceService,
         private configService: AppConfigService,
         private workflowReportService: WorkflowReportService,
         private invoiceService: InvoiceService,
@@ -65,7 +65,13 @@ export class JSONataExportService extends AbstractExportService {
             throw createInvalidRequestHttpException('Export workflow mapping is required.');
         }
 
-        this.exportDefinition = exportDefinition;
+        const source = exportDefinition.source_entity === undefined ? 'publication' : exportDefinition.source_entity;
+        if (!isExportEntityType(source)) {
+            throw createInvalidRequestHttpException('Unsupported export source entity.', [
+                { path: 'source_entity', code: 'invalid_value', message: 'Unsupported export source entity.' },
+            ]);
+        }
+        this.exportDefinition = { ...exportDefinition, source_entity: source };
         this.excel_response = this.resolveFormat() === 'xlsx' && this.resolveDisposition() === 'attachment';
         this.name = exportDefinition.label && exportDefinition.version
             ? `${exportDefinition.label}_v${exportDefinition.version}`
@@ -88,6 +94,7 @@ export class JSONataExportService extends AbstractExportService {
             status: 'initialized',
             progress: 0,
             params: {
+                source_entity: this.resolveSourceEntity(),
                 format: this.resolveFormat(),
                 disposition: this.resolveDisposition(),
             }
@@ -120,22 +127,28 @@ export class JSONataExportService extends AbstractExportService {
         });
 
         try {
-            let publications = await this.publicationIndexService.getAll(filter?.filter, { serializeDates: true });
-            if (filter) {
+            const source = this.resolveSourceEntity();
+            if (source !== 'publication' && ((filter?.filter?.expressions?.length ?? 0) > 0 || (filter?.paths?.length ?? 0) > 0)) {
+                throw createInvalidRequestHttpException('Publication filters are only supported for publication exports.', [
+                    { path: 'filter', code: 'invalid_value', message: 'Use the JSONata mapping to filter other export sources.' },
+                ]);
+            }
+            let entities = await this.sourceService.load(source, source === 'publication' ? filter?.filter : undefined);
+            if (source === 'publication' && filter) {
                 const configuredFilterServices = (await this.configService.get('filter_services')) ?? [];
-                for (const path of filter.paths) {
+                for (const path of filter.paths ?? []) {
                     const serviceIndex = configuredFilterServices.findIndex((entry) => entry.path === path);
                     if (serviceIndex === -1 || !filterServices?.[serviceIndex]) continue;
-                    publications = await filterServices[serviceIndex].filter(publications) as Publication[];
+                    entities = await filterServices[serviceIndex].filter(entities as Publication[]) as Publication[];
                 }
             }
 
             await this.workflowReportService.write(this.workflowReport.id, {
                 timestamp: new Date(),
                 level: WorkflowReportItemLevel.INFO,
-                message: `${publications.length} publications selected for export`
+                message: `${entities.length} ${source} records selected for export`
             });
-            const items = await this.transformPublications(publications);
+            const items = await this.transformEntities(entities);
             const rendered = await this.render(items, !!withMasterData);
 
             await this.workflowReportService.write(this.workflowReport.id, {
@@ -147,7 +160,8 @@ export class JSONataExportService extends AbstractExportService {
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Successful export',
                 summary: {
-                    count_source: publications.length,
+                    source_entity: source,
+                    count_source: entities.length,
                     count_export: items.length,
                     format: this.resolveFormat(),
                     disposition: this.resolveDisposition(),
@@ -166,6 +180,7 @@ export class JSONataExportService extends AbstractExportService {
             await this.workflowReportService.finish(this.workflowReport.id, {
                 status: 'Error while exporting',
                 summary: {
+                    source_entity: this.resolveSourceEntity(),
                     format: this.resolveFormat(),
                     disposition: this.resolveDisposition(),
                 }
@@ -229,6 +244,10 @@ export class JSONataExportService extends AbstractExportService {
         return this.getStrategy().format ?? 'json';
     }
 
+    private resolveSourceEntity(): ExportEntityType {
+        return this.exportDefinition?.source_entity ?? 'publication';
+    }
+
     private resolveDisposition(): ExportDisposition {
         return this.getStrategy().disposition ?? (this.resolveFormat() === 'xlsx' ? 'attachment' : 'inline');
     }
@@ -237,8 +256,8 @@ export class JSONataExportService extends AbstractExportService {
         return (this.exportDefinition?.strategy ?? {}) as ExportStrategyData;
     }
 
-    private async transformPublications(
-        publications: Publication[]
+    private async transformEntities(
+        entities: ExportSourceEntity[]
     ): Promise<unknown[]> {
         let expression: jsonata.Expression;
         try {
@@ -248,13 +267,13 @@ export class JSONataExportService extends AbstractExportService {
         }
         const items: unknown[] = [];
 
-        for (const publication of publications) {
-            const context = this.buildItemContext(publication);
+        for (const entity of entities) {
+            const context = this.buildItemContext(entity);
             let item: unknown;
             try {
                 item = await expression.evaluate(context);
             } catch (error) {
-                throw this.createMappingHttpException(error, publication);
+                throw this.createMappingHttpException(error, entity);
             }
             this.appendTransformedItem(items, item);
         }
@@ -262,15 +281,18 @@ export class JSONataExportService extends AbstractExportService {
         return items;
     }
 
-    private createMappingHttpException(error: unknown, publication?: Publication) {
+    private createMappingHttpException(error: unknown, entity?: ExportSourceEntity) {
         const message = this.getErrorMessage(error);
         const errorRecord = this.asRecord(error);
+        const publication = this.resolveSourceEntity() === 'publication' ? entity as Publication | undefined : undefined;
         return createInvalidRequestHttpException('Export mapping failed.', [
             {
                 path: 'mapping',
                 code: 'jsonata',
                 message,
                 context: {
+                    source_entity: this.resolveSourceEntity(),
+                    ...(hasProvidedEntityId(entity?.id) ? { entityId: entity.id } : {}),
                     ...(hasProvidedEntityId(publication?.id) ? { publicationId: publication.id } : {}),
                     ...(publication?.doi ? { doi: publication.doi } : {}),
                     ...(typeof errorRecord?.code === 'string' ? { jsonataCode: errorRecord.code } : {}),
@@ -295,12 +317,12 @@ export class JSONataExportService extends AbstractExportService {
     }
 
     private buildItemContext(
-        publication: Publication
-    ): Publication & {
+        entity: ExportSourceEntity
+    ): ExportSourceEntity & {
         params: { cfg: Record<string, unknown> }
     } {
         return {
-            ...publication,
+            ...entity,
             params: {
                 cfg: this.config,
             }
@@ -332,7 +354,8 @@ export class JSONataExportService extends AbstractExportService {
 
         return xmljs.js2xml({
             [rootName]: {
-                [itemName]: items,
+                // xml-js requires ordinary objects; JSONata can return objects without a prototype.
+                [itemName]: JSON.parse(JSON.stringify(items)),
             }
         }, { compact: true, spaces: 2 });
     }

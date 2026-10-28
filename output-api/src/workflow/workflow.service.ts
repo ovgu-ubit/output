@@ -134,6 +134,7 @@ export class WorkflowService {
             strategy_type: workflow.strategy_type,
             strategy: workflow.strategy,
             mapping: workflow.mapping,
+            source_entity: workflow.source_entity,
         };
 
         return this.saveExport(obj, undefined, true);

@@ -46,6 +46,11 @@ export class AuthorService extends AbstractEntityService<Author> {
         return authors.map(author => this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read)));
     }
 
+    public async getForExport(scope: EntityAccessScope = {}) {
+        const authors = await this.repository.find({ relations: this.getFindOneRelations() });
+        return authors.map(author => this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read)));
+    }
+
     public override async one(id: number, scope: EntityAccessScope = {}) {
         const author = await super.one(id, scope);
         return this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read));

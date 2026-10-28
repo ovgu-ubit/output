@@ -8,6 +8,7 @@
                 <mat-checkbox formControlName="withMasterData">Stammdaten in den Export einbeziehen?</mat-checkbox>
             </form>
             }
+            @if (isPublicationSource) {
             <div class="publication-filter">
                 <div class="filter-summary">
                     <mat-icon>filter_list</mat-icon>
@@ -33,6 +34,7 @@
                     </button>
                 </div>
             </div>
+            }
         </div>
         }
 

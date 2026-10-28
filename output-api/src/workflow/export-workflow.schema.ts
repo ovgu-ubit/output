@@ -1,5 +1,5 @@
 import { z, ZodError } from "zod";
-import {  ExportStrategy  } from '@output/interfaces';
+import { EXPORT_ENTITY_TYPES, ExportStrategy } from '@output/interfaces';
 import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { createValidationHttpException } from "../common/api-error";
 
@@ -83,7 +83,11 @@ const HttpResponseStrategySchema = z.discriminatedUnion("format", [
   XlsxStrategySchema,
 ]);
 
-const ExportMeta = z.object({
+const SourceEntitySchema = z.object({
+  source_entity: z.enum(EXPORT_ENTITY_TYPES).default('publication'),
+});
+
+const ExportMeta = SourceEntitySchema.extend({
   workflow_id: z.string(),
   label: z.string().min(1),
   strategy_type: z.preprocess(StrategyTypeFromNumber, StrategyTypeSchema),
@@ -127,9 +131,10 @@ export const ExportWorkflowSourceSchema = z.preprocess((obj) => {
 export type ExportWorkflowSourceInput = z.infer<typeof ExportWorkflowSourceSchema>;
 
 export function validateExportWorkflow(workflow: ExportWorkflow): ExportWorkflow {
-  if (workflow.strategy_type === null || workflow.strategy_type === undefined) return workflow;
-
   try {
+    const source = SourceEntitySchema.parse(workflow);
+    if (workflow.strategy_type === null || workflow.strategy_type === undefined) return { ...workflow, ...source };
+
     const parsed = ExportWorkflowSourceSchema.parse(workflow);
     return {
       ...workflow,

@@ -31,6 +31,10 @@ export class PublisherService extends AbstractEntityService<Publisher> {
         return { aliases: true, doi_prefixes: true };
     }
 
+    public getForExport() {
+        return this.repository.find({ relations: this.getFindOneRelations() });
+    }
+
     public override async save(entity: DeepPartial<Publisher>, user?: string) {
         return this.dataSource.transaction(async (manager) => {
             const aliases = entity.aliases;

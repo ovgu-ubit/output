@@ -14,6 +14,18 @@
             </mat-form-field>
             }
             <mat-form-field appearance="fill">
+                <mat-label>Entitätsklasse</mat-label>
+                <mat-select formControlName="source_entity">
+                    @for (option of entityOptions; track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    }
+                </mat-select>
+                <mat-error>Bitte wählen Sie eine gültige Entitätsklasse.</mat-error>
+            </mat-form-field>
+            @if (sourceChanged) {
+            <p role="status">Die Entitätsklasse wurde geändert. Das Mapping bleibt erhalten; bitte passen Sie es an die neue Quelle an.</p>
+            }
+            <mat-form-field appearance="fill">
                 <mat-label>Bezeichnung</mat-label>
                 <input matInput placeholder="Bezeichnung" formControlName="label" />
             </mat-form-field>

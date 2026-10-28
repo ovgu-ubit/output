@@ -28,6 +28,10 @@ export class FunderService extends AbstractEntityService<Funder> {
         return { aliases: true };
     }
 
+    public getForExport() {
+        return this.repository.find({ relations: this.getFindOneRelations() });
+    }
+
     public override async save(entity: DeepPartial<Funder>, user?: string) {
         return this.dataSource.transaction(async (manager) => {
             const aliases = entity.aliases;

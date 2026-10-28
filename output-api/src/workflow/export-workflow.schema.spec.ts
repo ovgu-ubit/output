@@ -1,9 +1,28 @@
 import { HttpException } from '@nestjs/common';
 import {  ApiErrorCode  } from '@output/interfaces';
-import {  ExportStrategy  } from '@output/interfaces';
+import { EXPORT_ENTITY_TYPES, ExportStrategy } from '@output/interfaces';
 import { validateExportWorkflow } from './export-workflow.schema';
 
 describe('validateExportWorkflow', () => {
+    it.each(EXPORT_ENTITY_TYPES)('accepts the source %s even in an incomplete draft', (source_entity) => {
+        expect(validateExportWorkflow({ source_entity })).toMatchObject({ source_entity });
+    });
+
+    it('defaults old definitions and incomplete drafts to publications', () => {
+        expect(validateExportWorkflow({})).toMatchObject({ source_entity: 'publication' });
+    });
+
+    it.each(['invoice', '', null, 123])('rejects an invalid source in an incomplete draft: %p', (source_entity) => {
+        try {
+            validateExportWorkflow({ source_entity } as any);
+            fail('Invalid source should fail');
+        } catch (error) {
+            expect((error as HttpException).getResponse()).toMatchObject({
+                code: ApiErrorCode.VALIDATION_FAILED,
+                details: [expect.objectContaining({ path: 'source_entity' })],
+            });
+        }
+    });
     it('accepts JSON HTTP_RESPONSE workflows', () => {
         const workflow = {
             workflow_id: 'wf-json',

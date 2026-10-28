@@ -79,6 +79,23 @@ describe('AuthorService', () => {
         rights: { [EntityAccessRight.Write]: true },
     });
 
+    it.each([true, false])('loads export details without acquiring locks, reader=%s', async (reader) => {
+        repository.find!.mockResolvedValue([{
+            id: 1, first_name: 'Ada', last_name: 'Lovelace', internal_remark: 'Internal',
+            institutes: [{ id: 2, label: 'Math' }], aliases_first_name: [{ alias: 'Augusta' }],
+        } as Author]);
+
+        const authors = await service.getForExport({ rights: { [EntityAccessRight.Read]: reader } });
+
+        expect(authors[0].internal_remark).toBe(reader ? 'Internal' : undefined);
+        expect(authors[0].aliases_first_name).toEqual([{ alias: 'Augusta' }]);
+        expect(repository.find).toHaveBeenCalledWith({
+            relations: { institutes: true, aliases_first_name: true, aliases_last_name: true },
+        });
+        expect(repository.find).toHaveBeenCalledTimes(1);
+        expect(repository.update).not.toHaveBeenCalled();
+    });
+
     beforeEach(async () => {
         EditLockOwnerStore.clear();
         repository = {

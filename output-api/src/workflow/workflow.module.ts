@@ -66,6 +66,7 @@ import { WorkflowReportItem } from './WorkflowReportItem.entity';
 import { WorkflowController } from './WorkflowController';
 import { ValidationService } from './validation.service';
 import { WorkflowReportService } from './workflow-report.service';
+import { ExportSourceService } from './export/export-source.service';
 
 @Module({
   imports: [
@@ -103,7 +104,7 @@ import { WorkflowReportService } from './workflow-report.service';
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JSONataExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService, WorkflowService, WorkflowReportService, ValidationService,
+    DiscoveryService, WorkflowService, WorkflowReportService, ValidationService, ExportSourceService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],

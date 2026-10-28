@@ -39,7 +39,19 @@ export interface ImportWorkflow extends Workflow {
     strategy?: any;
 }
 
+export const EXPORT_ENTITY_TYPES = [
+    'publication', 'author', 'institute', 'greater_entity', 'publisher', 'contract',
+    'funder', 'oa_category', 'pub_type', 'cost_center', 'cost_type',
+] as const;
+
+export type ExportEntityType = typeof EXPORT_ENTITY_TYPES[number];
+
+export function isExportEntityType(value: unknown): value is ExportEntityType {
+    return typeof value === 'string' && EXPORT_ENTITY_TYPES.some((type) => type === value);
+}
+
 export interface ExportWorkflow extends Workflow {
+    source_entity?: ExportEntityType;
     strategy_type?: ExportStrategy;
     strategy?: any;
 }

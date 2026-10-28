@@ -3,9 +3,12 @@ import * as fs from 'fs';
 import jsonata from 'jsonata';
 import * as path from 'path';
 import * as XLSX from 'xlsx';
+import * as Papa from 'papaparse';
+import * as xmljs from 'xml-js';
 import {  ApiErrorCode  } from '@output/interfaces';
 import {  ExportStrategy, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { JSONataExportService } from './jsonata-export.service';
+import { ExportSourceService } from './export-source.service';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -105,8 +108,20 @@ describe('JSONataExportService', () => {
             get: jest.fn(async () => [{ id: 207, label: 'article', review: true }]),
         };
 
-        service = new JSONataExportService(
+        const sources = new ExportSourceService(
             publicationService as any,
+            { getForExport: authorService.get } as any,
+            instService as any,
+            geService as any,
+            { getForExport: publService.get } as any,
+            { getForExport: contractService.get } as any,
+            { getForExport: funderService.get } as any,
+            oaService as any,
+            { getForExport: ptService.get } as any,
+            invoiceService as any,
+        );
+        service = new JSONataExportService(
+            sources,
             configService as any,
             workflowReportService as any,
             invoiceService as any,
@@ -126,6 +141,109 @@ describe('JSONataExportService', () => {
             statusCode: 400,
             code: ApiErrorCode.INVALID_REQUEST,
             message: 'JSONata export workflow is not configured.',
+        });
+    });
+
+    it.each(['json', 'csv', 'xml', 'xlsx'] as const)('exports mapped persons as %s', async (format) => {
+        authorService.get.mockResolvedValue([{
+            id: 101, first_name: 'Ada', last_name: 'Lovelace', internal_remark: 'Internal; note',
+            institutes: [{ label: 'Math' }], aliases_first_name: [{ alias: 'Augusta Ada' }],
+        }]);
+        await service.setUp({
+            source_entity: 'author', strategy_type: ExportStrategy.HTTP_RESPONSE,
+            strategy: { format, disposition: 'attachment', delimiter: ';', quote_char: '"', root_name: 'records', item_name: 'record', sheet_name: 'People' },
+            mapping: '{ "name": first_name & " " & last_name, "remark": internal_remark, "institute": institutes[0].label, "alias": aliases_first_name[0].alias, "institution": params.cfg.institution }',
+        });
+
+        const result = await service.export();
+        const row = { name: 'Ada Lovelace', remark: 'Internal; note', institute: 'Math', alias: 'Augusta Ada', institution: 'Test University' };
+        if (format === 'json') expect(JSON.parse(result as string)).toEqual([row]);
+        if (format === 'csv') expect(Papa.parse(result as string, { header: true, delimiter: ';' }).data).toEqual([row]);
+        if (format === 'xml') expect(xmljs.xml2js(result as string, { compact: true })).toMatchObject({ records: { record: { name: { _text: row.name }, remark: { _text: row.remark } } } });
+        if (format === 'xlsx') {
+            const workbook = XLSX.read(result, { type: 'buffer' });
+            expect(XLSX.utils.sheet_to_json(workbook.Sheets.People)).toEqual([row]);
+        }
+        expect(publicationService.getAll).not.toHaveBeenCalled();
+        expect(authorService.get).toHaveBeenCalledWith({ rights: { read: true } });
+        expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({
+            summary: expect.objectContaining({ source_entity: 'author', count_source: 1, count_export: 1 }),
+        }));
+    });
+
+    it('exports contract component invoice costs as separate rows', async () => {
+        contractService.get.mockResolvedValue([{
+            id: 204, label: 'Agreement', publisher: { label: 'Publisher' },
+            identifiers: [{ value: 'agreement-id' }],
+            components: [{ linked_invoices: [{ cost_center: { label: 'Library' }, cost_items: [
+                { euro_value: 100, cost_type: { label: 'APC' } },
+                { euro_value: 20, cost_type: { label: 'Pages' } },
+            ] }] }],
+        }]);
+        await service.setUp({
+            source_entity: 'contract', strategy: { format: 'json' },
+            mapping: '($publisher := publisher.label; $identifier := identifiers[0].value; components.linked_invoices.($center := cost_center.label; cost_items.{ "publisher": $publisher, "identifier": $identifier, "center": $center, "type": cost_type.label, "amount": euro_value }))',
+        });
+
+        expect(JSON.parse(await service.export() as string)).toEqual([
+            { publisher: 'Publisher', identifier: 'agreement-id', center: 'Library', type: 'APC', amount: 100 },
+            { publisher: 'Publisher', identifier: 'agreement-id', center: 'Library', type: 'Pages', amount: 20 },
+        ]);
+    });
+
+    it('filters persons in JSONata and expands retained rows', async () => {
+        authorService.get.mockResolvedValue([{ id: 101 }, { id: 102 }]);
+        await service.setUp({ source_entity: 'author', mapping: 'id = 101 ? [{ "id": id, "row": 1 }, { "id": id, "row": 2 }] : null' });
+
+        expect(JSON.parse(await service.export() as string)).toEqual([{ id: 101, row: 1 }, { id: 101, row: 2 }]);
+        expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({
+            summary: expect.objectContaining({ count_source: 2, count_export: 2 }),
+        }));
+    });
+
+    it.each(['null', 'missing_field', '[]'])('skips empty mapping results: %s', async (mapping) => {
+        await service.setUp({ source_entity: 'author', mapping });
+        expect(await service.export()).toBe('[]');
+    });
+
+    it('exports an empty source', async () => {
+        authorService.get.mockResolvedValue([]);
+        await service.setUp({ source_entity: 'author', mapping: '$' });
+        expect(await service.export()).toBe('[]');
+    });
+
+    it.each([
+        { filter: { expressions: [] }, paths: ['missing-invoice-data'] },
+        { filter: { expressions: [{}] }, paths: [] },
+    ])('rejects publication filters on other sources', async (filter) => {
+        await service.setUp({ source_entity: 'author', mapping: '$' });
+        await expectApiError(service.export(filter as any), {
+            statusCode: 400, code: ApiErrorCode.INVALID_REQUEST,
+            message: 'Publication filters are only supported for publication exports.',
+        });
+        expect(authorService.get).not.toHaveBeenCalled();
+        expect(publicationService.getAll).not.toHaveBeenCalled();
+        expect(workflowReportService.finish).toHaveBeenCalledWith(41, expect.objectContaining({ status: 'Error while exporting' }));
+    });
+
+    it('accepts an empty publication filter for another source', async () => {
+        await service.setUp({ source_entity: 'author', mapping: '{ "name": first_name }' });
+        expect(JSON.parse(await service.export({ filter: { expressions: [] }, paths: [] }) as string)).toEqual([{ name: 'Ada' }]);
+        expect(configService.get).not.toHaveBeenCalled();
+    });
+
+    it('reports the source and record ID on mapping errors for persons', async () => {
+        await service.setUp({ source_entity: 'author', mapping: '$number(first_name)' });
+        await expectApiError(service.export(), { statusCode: 400, code: ApiErrorCode.INVALID_REQUEST });
+        expect(workflowReportService.write).toHaveBeenCalledWith(41, expect.objectContaining({
+            level: WorkflowReportItemLevel.ERROR,
+            message: expect.stringContaining('source_entity=author, entityId=101'),
+        }));
+    });
+
+    it('rejects unsupported source classes at setup', async () => {
+        await expectApiError(service.setUp({ source_entity: 'invoice' as any, mapping: '$' }), {
+            statusCode: 400, code: ApiErrorCode.INVALID_REQUEST,
         });
     });
 
@@ -173,6 +291,19 @@ describe('JSONataExportService', () => {
                 count_export: 2,
             })
         }));
+    });
+
+    it('retains publication field filters and filter services', async () => {
+        const fieldFilter = { expressions: [] };
+        const filterService = { filter: jest.fn(async (publications) => publications.slice(1)) };
+        configService.get.mockResolvedValue([{ path: 'selected' }]);
+        await service.setUp({ mapping: '{ "title": title }' });
+
+        const result = await service.export({ filter: fieldFilter, paths: ['selected'] }, [filterService as any]);
+
+        expect(publicationService.getAll).toHaveBeenCalledWith(fieldFilter, { serializeDates: true });
+        expect(filterService.filter).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(result as string)).toEqual([{ title: 'Second' }]);
     });
 
     it('renders mapped CSV output', async () => {
@@ -359,13 +490,14 @@ describe('JSONataExportService', () => {
         ]);
     });
 
-    it('adds master data sheets only for xlsx exports when requested', async () => {
+    it.each(['publication', 'author'] as const)('adds master data sheets for xlsx source %s when requested', async (source_entity) => {
         await service.setUp({
+            source_entity,
             label: 'Excel Export',
             version: 4,
             strategy_type: ExportStrategy.HTTP_RESPONSE,
             strategy: { format: 'xlsx', disposition: 'attachment', sheet_name: 'Rows' },
-            mapping: '{ "title": title, "doi": doi }'
+            mapping: source_entity === 'publication' ? '{ "title": title, "doi": doi }' : '{ "first_name": first_name }'
         });
 
         const result = await service.export(undefined, undefined, 'tester', true);

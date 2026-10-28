@@ -6,6 +6,7 @@ import {  ExportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';
+import { EXPORT_ENTITY_OPTIONS } from '../../../export-entity-options';
 
 @Component({
   selector: 'app-export-form-general',
@@ -17,6 +18,11 @@ import { ExportFormFacade } from '../export-form-facade.service';
 export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
   public form: FormGroup;
   entity: ExportWorkflow;
+  readonly entityOptions = EXPORT_ENTITY_OPTIONS;
+
+  get sourceChanged(): boolean {
+    return !!this.entity && this.form?.get('source_entity')?.value !== (this.entity.source_entity ?? 'publication');
+  }
 
   constructor(
     private formBuilder: FormBuilder,
@@ -35,13 +41,14 @@ export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
       published_at: [{ value: new Date(), disabled: true }],
       deleted_at: [{ value: new Date(), disabled: true }],
       description: [''],
+      source_entity: ['publication'],
     });
 
     this.facade.export$
       .pipe(filter((e): e is ExportWorkflow => e != null), takeUntil(this.facade.destroy$))
       .subscribe((e) => {
         this.entity = e;
-        this.form.patchValue(e, { emitEvent: false });
+        this.form.patchValue({ ...e, source_entity: e.source_entity ?? 'publication' }, { emitEvent: false });
         this.form.markAsPristine();
         if (this.entity.published_at || this.entity.deleted_at) this.form.disable();
       });
@@ -64,6 +71,7 @@ export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
       id: this.form.get('id')?.value,
       label: this.form.get('label')?.value,
       description: this.form.get('description')?.value,
+      source_entity: this.form.get('source_entity')?.value,
     };
     this.facade.patch(res);
 
@@ -78,7 +86,7 @@ export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
   }
 
   resetFormToFacade(): void {
-    this.form.patchValue(this.entity, { emitEvent: false });
+    this.form.patchValue({ ...this.entity, source_entity: this.entity.source_entity ?? 'publication' }, { emitEvent: false });
     this.form.markAsPristine();
   }
 

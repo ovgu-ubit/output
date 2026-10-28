@@ -161,8 +161,8 @@ export class ExportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   }
 
   getLabel(): string {
-    if (this.entity?.id) return '/Workflows/Publikationsexport/' + this.entity.label + ' (' + this.entity.version + ')';
-    return '/Workflows/Publikationsexport/Neuer Export';
+    if (this.entity?.id) return '/Workflows/Export/' + this.entity.label + ' (' + this.entity.version + ')';
+    return '/Workflows/Export/Neuer Export';
   }
 
   private async confirmSaveBeforeLeave(): Promise<boolean> {
