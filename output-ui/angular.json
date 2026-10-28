@@ -97,6 +97,10 @@
               "aot": false,
               "optimization": false,
               "extractLicenses": false,
+              "polyfills": [
+                "@angular/localize/init",
+                "zone.js"
+              ],
               "styles": [
                 "@angular/material/prebuilt-themes/indigo-pink.css",
                 "src/styles.scss"
@@ -139,10 +143,9 @@
               "html",
               "text-summary"
             ],
-            "setupFiles": [
-              "src/test.ts"
-            ],
             "buildTarget": ":build:testing",
+            "include": ["**/*.spec.ts"],
+            "browsers": ["chromiumHeadless"],
             "runner": "vitest"
           }
         }

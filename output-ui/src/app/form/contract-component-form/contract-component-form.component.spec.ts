@@ -19,100 +19,100 @@ import { ContractComponentFormComponent } from './contract-component-form.compon
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 describe('ContractComponentFormComponent', () => {
-  let component: ContractComponentFormComponent;
-  let fixture: ComponentFixture<ContractComponentFormComponent>;
+    let component: ContractComponentFormComponent;
+    let fixture: ComponentFixture<ContractComponentFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
 
-  const mockErrorService = {
-    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
-    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
-    present: jasmine.createSpy('present')
-  };
+    const mockErrorService = {
+        clearFieldErrors: vi.fn().mockName('clearFieldErrors'),
+        applyFieldErrors: vi.fn().mockName('applyFieldErrors'),
+        present: vi.fn().mockName('present')
+    };
 
-  const mockOaService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
+    const mockOaService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-  const mockPubTypeService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
+    const mockPubTypeService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-  const mockGreaterEntityService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
+    const mockGreaterEntityService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        ContractComponentFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        { provide: ErrorPresentationService, useValue: mockErrorService },
-        { provide: OACategoryService, useValue: mockOaService },
-        { provide: PublicationTypeService, useValue: mockPubTypeService },
-        { provide: GreaterEntityService, useValue: mockGreaterEntityService },
-        { provide: PublisherService, useValue: {} },
-        { provide: CostTypeService, useValue: {} },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                ContractComponentFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                { provide: ErrorPresentationService, useValue: mockErrorService },
+                { provide: OACategoryService, useValue: mockOaService },
+                { provide: PublicationTypeService, useValue: mockPubTypeService },
+                { provide: GreaterEntityService, useValue: mockGreaterEntityService },
+                { provide: PublisherService, useValue: {} },
+                { provide: CostTypeService, useValue: {} },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(ContractComponentFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(ContractComponentFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 
-  it('should return booking_amount even when it is zero', () => {
-    expect(component.getInvoiceCosts({ booking_amount: 0, cost_items: [{ euro_value: 100, vat: 19 }] })).toBe(0);
-  });
+    it('should return booking_amount even when it is zero', () => {
+        expect(component.getInvoiceCosts({ booking_amount: 0, cost_items: [{ euro_value: 100, vat: 19 }] })).toBe(0);
+    });
 
-  it('uses gross costs consistently for invoices and pre-invoices', () => {
-    expect(component.getInvoiceCosts({ booking_amount: 200, cost_items: [{ euro_value: 100, vat: 19 }] })).toBe(200);
-    expect(component.getInvoiceCosts({ cost_items: [{ euro_value: 100, vat: 19 }, { euro_value: 50, vat: 3.5 }] })).toBe(172.5);
-    expect(component.getInvoiceCosts({ cost_items: [{ euro_value: 100 }, { vat: 7 }] })).toBe(107);
-    expect(component.getInvoiceCosts({})).toBe('');
-  });
+    it('uses gross costs consistently for invoices and pre-invoices', () => {
+        expect(component.getInvoiceCosts({ booking_amount: 200, cost_items: [{ euro_value: 100, vat: 19 }] })).toBe(200);
+        expect(component.getInvoiceCosts({ cost_items: [{ euro_value: 100, vat: 19 }, { euro_value: 50, vat: 3.5 }] })).toBe(172.5);
+        expect(component.getInvoiceCosts({ cost_items: [{ euro_value: 100 }, { vat: 7 }] })).toBe(107);
+        expect(component.getInvoiceCosts({})).toBe('');
+    });
 
-  it('does not treat undefined invoice collections as available', () => {
-    component.entity = {
-      invoices: undefined,
-      pre_invoices: undefined,
-    } as any;
+    it('does not treat undefined invoice collections as available', () => {
+        component.entity = {
+            invoices: undefined,
+            pre_invoices: undefined,
+        } as any;
 
-    expect((component as any).hasProvidedInvoiceCollections()).toBeFalse();
-  });
+        expect((component as any).hasProvidedInvoiceCollections()).toBe(false);
+    });
 
-  it('treats empty invoice arrays as available', () => {
-    component.entity = {
-      invoices: [],
-      pre_invoices: [],
-    } as any;
+    it('treats empty invoice arrays as available', () => {
+        component.entity = {
+            invoices: [],
+            pre_invoices: [],
+        } as any;
 
-    expect((component as any).hasProvidedInvoiceCollections()).toBeTrue();
-  });
+        expect((component as any).hasProvidedInvoiceCollections()).toBe(true);
+    });
 });

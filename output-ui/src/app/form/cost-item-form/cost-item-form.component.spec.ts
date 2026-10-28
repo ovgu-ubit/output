@@ -16,46 +16,46 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { of } from 'rxjs';
 
 describe('CostItemFormComponent', () => {
-  let component: CostItemFormComponent;
-  let fixture: ComponentFixture<CostItemFormComponent>;
+    let component: CostItemFormComponent;
+    let fixture: ComponentFixture<CostItemFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        CostItemFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: AuthorizationService, useValue: { hasRole: () => true } },
-        { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => {}, applyFieldErrors: () => {}, present: () => {} } },
-        { provide: PublisherService, useValue: {} },
-        { provide: CostTypeService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                CostItemFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: AuthorizationService, useValue: { hasRole: () => true } },
+                { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => { }, applyFieldErrors: () => { }, present: () => { } } },
+                { provide: PublisherService, useValue: {} },
+                { provide: CostTypeService, useValue: { getAll: () => of([]) } },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(CostItemFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(CostItemFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

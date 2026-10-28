@@ -1,6 +1,7 @@
+import type { MockedObject } from "vitest";
 import { HttpErrorResponse } from '@angular/common/http';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
@@ -12,52 +13,76 @@ import { AuthorizationService } from './security/authorization.service';
 import { RuntimeConfigService } from './services/runtime-config.service';
 
 describe('AppComponent', () => {
-  let fixture: ComponentFixture<AppComponent>;
-  let component: AppComponent;
-  let configService: jasmine.SpyObj<ConfigService>;
-  let tokenService: jasmine.SpyObj<AuthorizationService>;
-  let runtimeConfigService: jasmine.SpyObj<RuntimeConfigService>;
-  let errorPresentation: jasmine.SpyObj<ErrorPresentationService>;
-  let backendAvailability: BackendAvailabilityService;
-  let browserTitle: Title;
-
-  beforeEach(async () => {
-    configService = jasmine.createSpyObj<ConfigService>('ConfigService', ['get', 'health']);
-    tokenService = jasmine.createSpyObj<AuthorizationService>('AuthorizationService', ['getUser', 'hasRole', 'login', 'logout', 'details']);
-    runtimeConfigService = jasmine.createSpyObj<RuntimeConfigService>('RuntimeConfigService', ['applyThemeFromConfig', 'getValue']);
-    errorPresentation = jasmine.createSpyObj<ErrorPresentationService>('ErrorPresentationService', ['present']);
-    backendAvailability = new BackendAvailabilityService();
-
-    tokenService.getUser.and.returnValue(null);
-    tokenService.hasRole.and.returnValue(false);
-    runtimeConfigService.getValue.and.callFake(<T>(key: string): T => {
-      if (key === 'security') return false as T;
-      if (key === 'theme') return 'ovgu' as T;
-      return null as T;
+    beforeEach(() => {
+        vi.useFakeTimers({ advanceTimeDelta: 1, shouldAdvanceTime: true });
     });
-    configService.get.and.returnValue(of({ key: 'institution_short_label', value: 'TEST' } as any));
-    configService.health.and.returnValue(of({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: 1,
-      checks: { database: 'up' }
-    }));
+    afterEach(() => {
+        fixture?.destroy();
+        vi.clearAllTimers();
+        vi.useRealTimers();
+    });
+    let fixture: ComponentFixture<AppComponent>;
+    let component: AppComponent;
+    let configService: MockedObject<Pick<ConfigService, 'get' | 'health'>>;
+    let tokenService: MockedObject<Pick<AuthorizationService, 'getUser' | 'hasRole' | 'login' | 'logout' | 'details'>>;
+    let runtimeConfigService: MockedObject<Pick<RuntimeConfigService, 'applyThemeFromConfig' | 'getValue'>>;
+    let errorPresentation: MockedObject<Pick<ErrorPresentationService, 'present'>>;
+    let backendAvailability: BackendAvailabilityService;
+    let browserTitle: Title;
 
-    await TestBed.configureTestingModule({
-      imports: [RouterTestingModule],
-      declarations: [AppComponent],
-      providers: [
-        { provide: AuthorizationService, useValue: tokenService },
-        { provide: ConfigService, useValue: configService },
-        { provide: RuntimeConfigService, useValue: runtimeConfigService },
-        { provide: ErrorPresentationService, useValue: errorPresentation },
-        { provide: BackendAvailabilityService, useValue: backendAvailability },
-      ],
-      schemas: [NO_ERRORS_SCHEMA],
-    })
-      .overrideComponent(AppComponent, {
-        set: {
-          template: `
+    beforeEach(async () => {
+        configService = {
+            get: vi.fn().mockName("ConfigService.get"),
+            health: vi.fn().mockName("ConfigService.health")
+        };
+        tokenService = {
+            getUser: vi.fn().mockName("AuthorizationService.getUser"),
+            hasRole: vi.fn().mockName("AuthorizationService.hasRole"),
+            login: vi.fn().mockName("AuthorizationService.login"),
+            logout: vi.fn().mockName("AuthorizationService.logout"),
+            details: vi.fn().mockName("AuthorizationService.details")
+        };
+        runtimeConfigService = {
+            applyThemeFromConfig: vi.fn().mockName("RuntimeConfigService.applyThemeFromConfig"),
+            getValue: vi.fn().mockName("RuntimeConfigService.getValue")
+        };
+        errorPresentation = {
+            present: vi.fn().mockName("ErrorPresentationService.present")
+        };
+        backendAvailability = new BackendAvailabilityService();
+
+        tokenService.getUser.mockReturnValue(null);
+        tokenService.hasRole.mockReturnValue(false);
+        runtimeConfigService.getValue.mockImplementation(<T>(key: string): T => {
+            if (key === 'security')
+                return false as T;
+            if (key === 'theme')
+                return 'ovgu' as T;
+            return null as T;
+        });
+        configService.get.mockReturnValue(of({ key: 'institution_short_label', value: 'TEST' } as any));
+        configService.health.mockReturnValue(of({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: 1,
+            checks: { database: 'up' }
+        }));
+
+        await TestBed.configureTestingModule({
+            imports: [RouterTestingModule],
+            declarations: [AppComponent],
+            providers: [
+                { provide: AuthorizationService, useValue: tokenService },
+                { provide: ConfigService, useValue: configService },
+                { provide: RuntimeConfigService, useValue: runtimeConfigService },
+                { provide: ErrorPresentationService, useValue: errorPresentation },
+                { provide: BackendAvailabilityService, useValue: backendAvailability },
+            ],
+            schemas: [NO_ERRORS_SCHEMA],
+        })
+            .overrideComponent(AppComponent, {
+            set: {
+                template: `
             <div class="application-meta">
               <div class="version-row">
                 <span class="label-small">{{this.version}}</span>
@@ -73,96 +98,88 @@ describe('AppComponent', () => {
               <a routerLink="/demo-info">Informationen zu Impressum, Datenschutz und Lizenz</a>
             </div>
           `
-        }
-      })
-      .compileComponents();
+            }
+        })
+            .compileComponents();
 
-    browserTitle = TestBed.inject(Title);
-  });
-
-  afterEach(() => {
-    if (fixture) {
-      fixture.destroy();
-    }
-  });
-
-  it('should create the app', () => {
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
-    expect(component).toBeTruthy();
-  });
-
-  it('sets the application title from config on init', fakeAsync(() => {
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
-
-    fixture.detectChanges();
-    tick();
-
-    expect(component.title).toBe('Output.TEST');
-    expect(browserTitle.getTitle()).toBe('Output.TEST');
-    discardPeriodicTasks();
-  }));
-
-  it('ignores institution short label lookup failures without surfacing a heartbeat error', fakeAsync(() => {
-    configService.get.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
-
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
-
-    fixture.detectChanges();
-    tick();
-
-    expect(component.title).toBe('Output');
-    expect(browserTitle.getTitle()).toBe('Output');
-    expect(errorPresentation.present).not.toHaveBeenCalled();
-    discardPeriodicTasks();
-  }));
-
-  it('presents a backend heartbeat error when the health check fails', fakeAsync(() => {
-    configService.health.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
-
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
-
-    fixture.detectChanges();
-    tick();
-
-    expect(errorPresentation.present).toHaveBeenCalledWith(jasmine.any(HttpErrorResponse), {
-      fallbackMessage: 'Backend nicht erreichbar oder nicht betriebsbereit.',
-      bypassBackendUnavailableSuppression: true,
-    });
-    discardPeriodicTasks();
-  }));
-
-  it('shows a demo banner in demo mode', fakeAsync(() => {
-    runtimeConfigService.getValue.and.callFake(<T>(key: string): T => {
-      if (key === 'security') return true as T;
-      if (key === 'authorization_service') return 'demo' as T;
-      if (key === 'theme') return 'ovgu' as T;
-      return null as T;
+        browserTitle = TestBed.inject(Title);
     });
 
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
+    it('should create the app', () => {
+        fixture = TestBed.createComponent(AppComponent);
+        component = fixture.componentInstance;
+        expect(component).toBeTruthy();
+    });
 
-    fixture.detectChanges();
-    tick();
+    it('sets the application title from config on init', async () => {
+        fixture = TestBed.createComponent(AppComponent);
+        component = fixture.componentInstance;
 
-    expect(fixture.nativeElement.querySelector('.demo-banner')?.textContent).toContain('Demo-Version');
-    discardPeriodicTasks();
-  }));
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
 
-  it('links the version area to releases and the wiki', fakeAsync(() => {
-    fixture = TestBed.createComponent(AppComponent);
+        expect(component.title).toBe('Output.TEST');
+        expect(browserTitle.getTitle()).toBe('Output.TEST');
+    });
 
-    fixture.detectChanges();
-    tick();
+    it('ignores institution short label lookup failures without surfacing a heartbeat error', async () => {
+        configService.get.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
 
-    const releasesLink = fixture.nativeElement.querySelector('.releases-link') as HTMLAnchorElement;
-    const helpLink = fixture.nativeElement.querySelector('.help-link') as HTMLAnchorElement;
-    expect(releasesLink.href).toBe('https://github.com/ovgu-ubit/output/releases');
-    expect(helpLink.href).toBe('https://github.com/ovgu-ubit/output/wiki');
-    discardPeriodicTasks();
-  }));
+        fixture = TestBed.createComponent(AppComponent);
+        component = fixture.componentInstance;
+
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(component.title).toBe('Output');
+        expect(browserTitle.getTitle()).toBe('Output');
+        expect(errorPresentation.present).not.toHaveBeenCalled();
+    });
+
+    it('presents a backend heartbeat error when the health check fails', async () => {
+        configService.health.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+
+        fixture = TestBed.createComponent(AppComponent);
+        component = fixture.componentInstance;
+
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(errorPresentation.present).toHaveBeenCalledWith(expect.any(HttpErrorResponse), {
+            fallbackMessage: 'Backend nicht erreichbar oder nicht betriebsbereit.',
+            bypassBackendUnavailableSuppression: true,
+        });
+    });
+
+    it('shows a demo banner in demo mode', async () => {
+        runtimeConfigService.getValue.mockImplementation(<T>(key: string): T => {
+            if (key === 'security')
+                return true as T;
+            if (key === 'authorization_service')
+                return 'demo' as T;
+            if (key === 'theme')
+                return 'ovgu' as T;
+            return null as T;
+        });
+
+        fixture = TestBed.createComponent(AppComponent);
+        component = fixture.componentInstance;
+
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(fixture.nativeElement.querySelector('.demo-banner')?.textContent).toContain('Demo-Version');
+    });
+
+    it('links the version area to releases and the wiki', async () => {
+        fixture = TestBed.createComponent(AppComponent);
+
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+
+        const releasesLink = fixture.nativeElement.querySelector('.releases-link') as HTMLAnchorElement;
+        const helpLink = fixture.nativeElement.querySelector('.help-link') as HTMLAnchorElement;
+        expect(releasesLink.href).toBe('https://github.com/ovgu-ubit/output/releases');
+        expect(helpLink.href).toBe('https://github.com/ovgu-ubit/output/wiki');
+    });
 });

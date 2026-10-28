@@ -73,7 +73,7 @@
 </mat-expansion-panel>
 
 <mat-chip-set aria-label="Aktive Rechnungsfilter" class="active-filters">
-  @for (filter of activeFilters; track filter) {
+  @for (filter of activeFilters; track filter.key) {
     <mat-chip (removed)="removeFilter(filter.key)">{{filter.label}}<button matChipRemove [attr.aria-label]="filter.label + ' entfernen'"><mat-icon>cancel</mat-icon></button></mat-chip>
   }
 </mat-chip-set>

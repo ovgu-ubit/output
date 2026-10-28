@@ -1,4 +1,4 @@
-import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -22,249 +22,256 @@ import { setReportingYear } from 'src/app/services/redux';
 import { PublicationsComponent } from './publications.component';
 
 describe('PublicationsComponent', () => {
-  let component: PublicationsComponent;
-  let fixture: ComponentFixture<PublicationsComponent>;
+    beforeEach(() => {
+        vi.useFakeTimers({ advanceTimeDelta: 1, shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+    let component: PublicationsComponent;
+    let fixture: ComponentFixture<PublicationsComponent>;
 
-  const mockPublicationService = {
-    getFilters: jasmine.createSpy('getFilters').and.returnValue(of([])),
-    updateAll: jasmine.createSpy('updateAll').and.returnValue(of(0))
-  };
-
-  const mockStatusService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
-
-  const mockConfigService = {
-    get: jasmine.createSpy('get').and.returnValue(of({ value: {} }))
-  };
-
-  const mockEnrichService = {
-    getEnrichs: jasmine.createSpy('getEnrichs').and.returnValue(of([])),
-    startID: jasmine.createSpy('startID').and.returnValue(of({}))
-  };
-
-  const mockRuntimeConfigService = {
-    getValue: jasmine.createSpy('getValue').and.returnValue('http://localhost/')
-  };
-
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
-
-  beforeEach(fakeAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        MatSnackBarModule,
-        MatTooltipModule,
-        SharedModule,
-        TableModule
-      ],
-      declarations: [ PublicationsComponent ],
-      providers: [
-        provideMockStore({}),
-        { provide: PublicationService, useValue: mockPublicationService },
-        { provide: StatusService, useValue: mockStatusService },
-        { provide: ConfigService, useValue: mockConfigService },
-        { provide: EnrichService, useValue: mockEnrichService },
-        { provide: RuntimeConfigService, useValue: mockRuntimeConfigService },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting(),
-        provideRouter([])
-      ]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(PublicationsComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    tick();
-    fixture.detectChanges();
-  }));
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should roundtrip JSON encoded filter links with array values', () => {
-    component.indexOptions = {
-      soft: false,
-      filter: {
-        expressions: [{
-          op: JoinOperation.AND,
-          key: 'title',
-          comp: CompareOperation.IN,
-          value: ['alpha,beta', 'gamma'],
-        }]
-      },
-      paths: ['missing-invoice']
+    const mockPublicationService = {
+        getFilters: vi.fn().mockName('getFilters').mockReturnValue(of([])),
+        updateAll: vi.fn().mockName('updateAll').mockReturnValue(of(0))
     };
 
-    const query = component.filterToQuery();
-    const params = new URLSearchParams(query.slice(1));
-    const roundtrip = component.queryToFilter(convertToParamMap({
-      filter: params.getAll('filter'),
-      path: params.getAll('path'),
-    }));
-
-    expect(roundtrip.filter.expressions[0]).toEqual(jasmine.objectContaining({
-      op: JoinOperation.AND,
-      key: 'title',
-      comp: CompareOperation.IN,
-      value: ['alpha,beta', 'gamma'],
-    }));
-    expect(roundtrip.paths).toEqual(['missing-invoice']);
-  });
-
-  it('should read legacy comma separated filter links', () => {
-    const result = component.queryToFilter(convertToParamMap({
-      filter: [`${JoinOperation.AND},title,${CompareOperation.EQUALS},alpha,beta`],
-      path: ['missing-invoice'],
-    }));
-
-    expect(result.filter.expressions[0]).toEqual(jasmine.objectContaining({
-      op: JoinOperation.AND,
-      key: 'title',
-      comp: CompareOperation.EQUALS,
-      value: 'alpha,beta',
-    }));
-    expect(result.paths).toEqual(['missing-invoice']);
-  });
-
-  it('should read links that only contain saved filter paths', () => {
-    const result = component.queryToFilter(convertToParamMap({
-      path: ['missing-invoice'],
-    }));
-
-    expect(result.filter.expressions).toEqual([]);
-    expect(result.paths).toEqual(['missing-invoice']);
-  });
-
-  it('should roundtrip the all-reporting-years mode in links', () => {
-    component.indexOptions = {
-      soft: false,
-      allReportingYears: true,
+    const mockStatusService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
     };
 
-    const query = component.filterToQuery();
-    const params = new URLSearchParams(query.slice(1));
-    const result = component.queryToFilter(convertToParamMap({
-      allReportingYears: params.get('allReportingYears'),
-    }));
+    const mockConfigService = {
+        get: vi.fn().mockName('get').mockReturnValue(of({ value: {} }))
+    };
 
-    expect(params.get('allReportingYears')).toBe('true');
-    expect(result.allReportingYears).toBeTrue();
-    expect(result.filter.expressions).toEqual([]);
-    expect(result.paths).toEqual([]);
-  });
+    const mockEnrichService = {
+        getEnrichs: vi.fn().mockName('getEnrichs').mockReturnValue(of([])),
+        startID: vi.fn().mockName('startID').mockReturnValue(of({}))
+    };
 
-  it('should restore the all-reporting-years mode from the view config', () => {
-    const store = TestBed.inject(MockStore);
-    store.setState({
-      viewConfigReducer: {
-        viewConfig: {
-          sortState: [],
-          filterColumn: new Map(),
-          allReportingYears: true,
-        },
-        valid_from: new Date(),
-      },
+    const mockRuntimeConfigService = {
+        getValue: vi.fn().mockName('getValue').mockReturnValue('http://localhost/')
+    };
+
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
+
+    beforeEach(async () => {
+        TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                MatSnackBarModule,
+                MatTooltipModule,
+                SharedModule,
+                TableModule
+            ],
+            declarations: [PublicationsComponent],
+            providers: [
+                provideMockStore({}),
+                { provide: PublicationService, useValue: mockPublicationService },
+                { provide: StatusService, useValue: mockStatusService },
+                { provide: ConfigService, useValue: mockConfigService },
+                { provide: EnrichService, useValue: mockEnrichService },
+                { provide: RuntimeConfigService, useValue: mockRuntimeConfigService },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                provideRouter([])
+            ]
+        })
+            .compileComponents();
+
+        fixture = TestBed.createComponent(PublicationsComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+        fixture.detectChanges();
+        await vi.runOnlyPendingTimersAsync();
     });
 
-    const subscription = component.preProcessing().subscribe();
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 
-    expect(component.indexOptions?.allReportingYears).toBeTrue();
-    subscription.unsubscribe();
-  });
+    it('should roundtrip JSON encoded filter links with array values', () => {
+        component.indexOptions = {
+            soft: false,
+            filter: {
+                expressions: [{
+                        op: JoinOperation.AND,
+                        key: 'title',
+                        comp: CompareOperation.IN,
+                        value: ['alpha,beta', 'gamma'],
+                    }]
+            },
+            paths: ['missing-invoice']
+        };
 
-  it('should switch to all reporting years and preserve the selected year', () => {
-    const setTableReportingYear = jasmine.createSpy('setReportingYear');
-    component.table = {
-      reporting_year: 2025,
-      setReportingYear: setTableReportingYear,
-      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
-      updateData: () => of([]),
-    } as any;
-    component.viewConfig = { sortState: [], filterColumn: new Map() };
-    component.indexOptions = { soft: false, allReportingYears: false };
-    spyOn(component.dialog, 'open').and.returnValue({
-      afterClosed: () => of({ reportingYear: 2025, allReportingYears: true }),
-    } as any);
-    const store = TestBed.inject(MockStore);
-    spyOn(store, 'dispatch');
+        const query = component.filterToQuery();
+        const params = new URLSearchParams(query.slice(1));
+        const roundtrip = component.queryToFilter(convertToParamMap({
+            filter: params.getAll('filter'),
+            path: params.getAll('path'),
+        }));
 
-    component.changeReportingYear();
-
-    expect(component.indexOptions.allReportingYears).toBeTrue();
-    expect(setTableReportingYear).toHaveBeenCalledWith(2025, true);
-    expect(store.dispatch).not.toHaveBeenCalledWith(setReportingYear({ reporting_year: 2025 }));
-  });
-
-  it('should leave the all-reporting-years mode when a year is selected', () => {
-    const setTableReportingYear = jasmine.createSpy('setReportingYear');
-    component.table = {
-      reporting_year: 2025,
-      setReportingYear: setTableReportingYear,
-      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: false }),
-      updateData: () => of([]),
-    } as any;
-    component.viewConfig = { sortState: [], filterColumn: new Map(), allReportingYears: true };
-    component.indexOptions = { soft: false, allReportingYears: true };
-    spyOn(component.dialog, 'open').and.returnValue({
-      afterClosed: () => of({ reportingYear: 2024, allReportingYears: false }),
-    } as any);
-    const store = TestBed.inject(MockStore);
-    spyOn(store, 'dispatch');
-
-    component.changeReportingYear();
-
-    expect(component.indexOptions.allReportingYears).toBeFalse();
-    expect(setTableReportingYear).toHaveBeenCalledWith(2024, false);
-    expect(store.dispatch).toHaveBeenCalledWith(setReportingYear({ reporting_year: 2024 }));
-  });
-
-  it('should preserve all reporting years when advanced filters are cleared', () => {
-    const updateData = jasmine.createSpy('updateData').and.returnValue(of([]));
-    component.table = {
-      getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
-      updateData,
-    } as any;
-    component.viewConfig = {
-      sortState: [],
-      filterColumn: new Map(),
-      allReportingYears: true,
-      filter: {
-        filter: {
-          expressions: [{
+        expect(roundtrip.filter.expressions[0]).toEqual(expect.objectContaining({
             op: JoinOperation.AND,
             key: 'title',
-            comp: CompareOperation.INCLUDES,
-            value: 'Angular',
-          }],
-        },
-        paths: ['missing-invoice'],
-      },
-    };
-    component.indexOptions = {
-      soft: false,
-      allReportingYears: true,
-      filter: component.viewConfig.filter.filter,
-      paths: component.viewConfig.filter.paths,
-    };
-    spyOn(component.dialog, 'open').and.returnValue({
-      afterClosed: () => of({ filter: { expressions: [] }, paths: [] }),
-    } as any);
+            comp: CompareOperation.IN,
+            value: ['alpha,beta', 'gamma'],
+        }));
+        expect(roundtrip.paths).toEqual(['missing-invoice']);
+    });
 
-    component.extendedFilters();
+    it('should read legacy comma separated filter links', () => {
+        const result = component.queryToFilter(convertToParamMap({
+            filter: [`${JoinOperation.AND},title,${CompareOperation.EQUALS},alpha,beta`],
+            path: ['missing-invoice'],
+        }));
 
-    expect(component.indexOptions).toEqual(jasmine.objectContaining({
-      soft: false,
-      allReportingYears: true,
-      filter: { expressions: [] },
-      paths: [],
-    }));
-    expect(component.viewConfig.allReportingYears).toBeTrue();
-    expect(updateData).toHaveBeenCalled();
-  });
+        expect(result.filter.expressions[0]).toEqual(expect.objectContaining({
+            op: JoinOperation.AND,
+            key: 'title',
+            comp: CompareOperation.EQUALS,
+            value: 'alpha,beta',
+        }));
+        expect(result.paths).toEqual(['missing-invoice']);
+    });
+
+    it('should read links that only contain saved filter paths', () => {
+        const result = component.queryToFilter(convertToParamMap({
+            path: ['missing-invoice'],
+        }));
+
+        expect(result.filter.expressions).toEqual([]);
+        expect(result.paths).toEqual(['missing-invoice']);
+    });
+
+    it('should roundtrip the all-reporting-years mode in links', () => {
+        component.indexOptions = {
+            soft: false,
+            allReportingYears: true,
+        };
+
+        const query = component.filterToQuery();
+        const params = new URLSearchParams(query.slice(1));
+        const result = component.queryToFilter(convertToParamMap({
+            allReportingYears: params.get('allReportingYears'),
+        }));
+
+        expect(params.get('allReportingYears')).toBe('true');
+        expect(result.allReportingYears).toBe(true);
+        expect(result.filter.expressions).toEqual([]);
+        expect(result.paths).toEqual([]);
+    });
+
+    it('should restore the all-reporting-years mode from the view config', () => {
+        const store = TestBed.inject(MockStore);
+        store.setState({
+            viewConfigReducer: {
+                viewConfig: {
+                    sortState: [],
+                    filterColumn: new Map(),
+                    allReportingYears: true,
+                },
+                valid_from: new Date(),
+            },
+        });
+
+        const subscription = component.preProcessing().subscribe();
+
+        expect(component.indexOptions?.allReportingYears).toBe(true);
+        subscription.unsubscribe();
+    });
+
+    it('should switch to all reporting years and preserve the selected year', () => {
+        const setTableReportingYear = vi.fn().mockName('setReportingYear');
+        component.table = {
+            reporting_year: 2025,
+            setReportingYear: setTableReportingYear,
+            getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+            updateData: () => of([]),
+        } as any;
+        component.viewConfig = { sortState: [], filterColumn: new Map() };
+        component.indexOptions = { soft: false, allReportingYears: false };
+        vi.spyOn(component.dialog, 'open').mockReturnValue({
+            afterClosed: () => of({ reportingYear: 2025, allReportingYears: true }),
+        } as any);
+        const store = TestBed.inject(MockStore);
+        vi.spyOn(store, 'dispatch').mockReturnValue(undefined);
+
+        component.changeReportingYear();
+
+        expect(component.indexOptions.allReportingYears).toBe(true);
+        expect(setTableReportingYear).toHaveBeenCalledWith(2025, true);
+        expect(store.dispatch).not.toHaveBeenCalledWith(setReportingYear({ reporting_year: 2025 }));
+    });
+
+    it('should leave the all-reporting-years mode when a year is selected', () => {
+        const setTableReportingYear = vi.fn().mockName('setReportingYear');
+        component.table = {
+            reporting_year: 2025,
+            setReportingYear: setTableReportingYear,
+            getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: false }),
+            updateData: () => of([]),
+        } as any;
+        component.viewConfig = { sortState: [], filterColumn: new Map(), allReportingYears: true };
+        component.indexOptions = { soft: false, allReportingYears: true };
+        vi.spyOn(component.dialog, 'open').mockReturnValue({
+            afterClosed: () => of({ reportingYear: 2024, allReportingYears: false }),
+        } as any);
+        const store = TestBed.inject(MockStore);
+        vi.spyOn(store, 'dispatch').mockReturnValue(undefined);
+
+        component.changeReportingYear();
+
+        expect(component.indexOptions.allReportingYears).toBe(false);
+        expect(setTableReportingYear).toHaveBeenCalledWith(2024, false);
+        expect(store.dispatch).toHaveBeenCalledWith(setReportingYear({ reporting_year: 2024 }));
+    });
+
+    it('should preserve all reporting years when advanced filters are cleared', () => {
+        const updateData = vi.fn().mockName('updateData').mockReturnValue(of([]));
+        component.table = {
+            getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+            updateData,
+        } as any;
+        component.viewConfig = {
+            sortState: [],
+            filterColumn: new Map(),
+            allReportingYears: true,
+            filter: {
+                filter: {
+                    expressions: [{
+                            op: JoinOperation.AND,
+                            key: 'title',
+                            comp: CompareOperation.INCLUDES,
+                            value: 'Angular',
+                        }],
+                },
+                paths: ['missing-invoice'],
+            },
+        };
+        component.indexOptions = {
+            soft: false,
+            allReportingYears: true,
+            filter: component.viewConfig.filter.filter,
+            paths: component.viewConfig.filter.paths,
+        };
+        vi.spyOn(component.dialog, 'open').mockReturnValue({
+            afterClosed: () => of({ filter: { expressions: [] }, paths: [] }),
+        } as any);
+
+        component.extendedFilters();
+
+        expect(component.indexOptions).toEqual(expect.objectContaining({
+            soft: false,
+            allReportingYears: true,
+            filter: { expressions: [] },
+            paths: [],
+        }));
+        expect(component.viewConfig.allReportingYears).toBe(true);
+        expect(updateData).toHaveBeenCalled();
+    });
 });

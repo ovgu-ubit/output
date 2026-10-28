@@ -14,40 +14,40 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 describe('SelectAuthorComponent', () => {
-  let component: SelectAuthorComponent;
-  let fixture: ComponentFixture<SelectAuthorComponent>;
+    let component: SelectAuthorComponent;
+    let fixture: ComponentFixture<SelectAuthorComponent>;
 
-  const mockAuthorService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
+    const mockAuthorService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatAutocompleteModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        MatFormFieldModule,
-        MatInputModule
-      ],
-      declarations: [ SelectAuthorComponent ],
-      providers: [
-        { provide: AuthorService, useValue: mockAuthorService },
-        { provide: ErrorPresentationService, useValue: { present: () => {} } },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatAutocompleteModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                MatFormFieldModule,
+                MatInputModule
+            ],
+            declarations: [SelectAuthorComponent],
+            providers: [
+                { provide: AuthorService, useValue: mockAuthorService },
+                { provide: ErrorPresentationService, useValue: { present: () => { } } },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(SelectAuthorComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(SelectAuthorComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

@@ -1,4 +1,4 @@
-import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -19,66 +19,73 @@ import { InstituteFormComponent } from './institute-form.component';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 describe('InstituteFormComponent', () => {
-  let component: InstituteFormComponent;
-  let fixture: ComponentFixture<InstituteFormComponent>;
+    beforeEach(() => {
+        vi.useFakeTimers({ advanceTimeDelta: 1, shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+    let component: InstituteFormComponent;
+    let fixture: ComponentFixture<InstituteFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
 
-  const mockErrorService = {
-    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
-    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
-    present: jasmine.createSpy('present')
-  };
+    const mockErrorService = {
+        clearFieldErrors: vi.fn().mockName('clearFieldErrors'),
+        applyFieldErrors: vi.fn().mockName('applyFieldErrors'),
+        present: vi.fn().mockName('present')
+    };
 
-  const mockInstService = {
-    getOne: jasmine.createSpy('getOne').and.returnValue(of({})),
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
+    const mockInstService = {
+        getOne: vi.fn().mockName('getOne').mockReturnValue(of({})),
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-  beforeEach(fakeAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        InstituteFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        { provide: ErrorPresentationService, useValue: mockErrorService },
-        { provide: InstituteService, useValue: mockInstService },
-        { provide: PublisherService, useValue: { getAll: () => of([]) } },
-        { provide: CostTypeService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting(),
-        provideRouter([]),
-        provideStore({})
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                InstituteFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                { provide: ErrorPresentationService, useValue: mockErrorService },
+                { provide: InstituteService, useValue: mockInstService },
+                { provide: PublisherService, useValue: { getAll: () => of([]) } },
+                { provide: CostTypeService, useValue: { getAll: () => of([]) } },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                provideRouter([]),
+                provideStore({})
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(InstituteFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    tick();
-    fixture.detectChanges();
-  }));
+        fixture = TestBed.createComponent(InstituteFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+        fixture.detectChanges();
+        await vi.runOnlyPendingTimersAsync();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

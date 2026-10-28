@@ -1,4 +1,4 @@
-import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
@@ -18,53 +18,60 @@ import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 describe('PubTypeFormComponent', () => {
-  let component: PubTypeFormComponent;
-  let fixture: ComponentFixture<PubTypeFormComponent>;
+    beforeEach(() => {
+        vi.useFakeTimers({ advanceTimeDelta: 1, shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+    let component: PubTypeFormComponent;
+    let fixture: ComponentFixture<PubTypeFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  const mockPubTypeService = {
-    getOne: jasmine.createSpy('getOne').and.returnValue(of({}))
-  };
+    const mockPubTypeService = {
+        getOne: vi.fn().mockName('getOne').mockReturnValue(of({}))
+    };
 
-  beforeEach(fakeAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        PubTypeFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: PublicationTypeService, useValue: mockPubTypeService },
-        { provide: AuthorizationService, useValue: { hasRole: () => true } },
-        { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => {}, applyFieldErrors: () => {}, present: () => {} } },
-        { provide: PublisherService, useValue: {} },
-        { provide: CostTypeService, useValue: {} },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting(),
-        provideRouter([]),
-        provideStore({})
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                PubTypeFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: PublicationTypeService, useValue: mockPubTypeService },
+                { provide: AuthorizationService, useValue: { hasRole: () => true } },
+                { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => { }, applyFieldErrors: () => { }, present: () => { } } },
+                { provide: PublisherService, useValue: {} },
+                { provide: CostTypeService, useValue: {} },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                provideRouter([]),
+                provideStore({})
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(PubTypeFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    tick();
-    fixture.detectChanges();
-  }));
+        fixture = TestBed.createComponent(PubTypeFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+        fixture.detectChanges();
+        await vi.runOnlyPendingTimersAsync();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

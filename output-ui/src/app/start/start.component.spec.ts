@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { SharedModule } from '../shared/shared.module';
 
 import { StartComponent } from './start.component';
 
@@ -8,6 +10,8 @@ describe('StartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      imports: [SharedModule],
+      providers: [provideRouter([])],
       declarations: [ StartComponent ]
     })
     .compileComponents();

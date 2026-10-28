@@ -16,56 +16,56 @@ import { DoiFormComponent } from './doi-form.component';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 describe('DoiFormComponent', () => {
-  let component: DoiFormComponent;
-  let fixture: ComponentFixture<DoiFormComponent>;
+    let component: DoiFormComponent;
+    let fixture: ComponentFixture<DoiFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
 
-  const mockErrorService = {
-    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
-    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
-    present: jasmine.createSpy('present')
-  };
+    const mockErrorService = {
+        clearFieldErrors: vi.fn().mockName('clearFieldErrors'),
+        applyFieldErrors: vi.fn().mockName('applyFieldErrors'),
+        present: vi.fn().mockName('present')
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        DoiFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        { provide: ErrorPresentationService, useValue: mockErrorService },
-        { provide: PublisherService, useValue: {} },
-        { provide: CostTypeService, useValue: {} },
-        provideHttpClient(withXhr()),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                DoiFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                { provide: ErrorPresentationService, useValue: mockErrorService },
+                { provide: PublisherService, useValue: {} },
+                { provide: CostTypeService, useValue: {} },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(DoiFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(DoiFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });
