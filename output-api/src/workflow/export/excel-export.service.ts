@@ -18,6 +18,7 @@ import { InvoiceService } from '../../invoice/invoice.service';
 import { ReportItemService } from '../report-item.service';
 import { AppConfigService } from '../../config/app-config.service';
 import { createInternalErrorHttpException } from '../../common/api-error';
+import { EntityAccessRight } from '../../common/abstract-entity.service';
 
 @ExportService({path: 'excel'})
 @Injectable()
@@ -115,7 +116,7 @@ export class ExcelExportService extends AbstractExportService {
         if (withMasterData) {
             //authors
             rows = [];
-            const authors = await this.authorService.get();
+            const authors = await this.authorService.get({ rights: { [EntityAccessRight.Read]: true } });
             for (const author of authors) {
                 const row = {
                     id: author.id,
@@ -124,7 +125,8 @@ export class ExcelExportService extends AbstractExportService {
                     last_name: author.last_name,
                     orcid: author.orcid,
                     gnd_id: author.gnd_id,
-                    institutes: author.institutes?.map(x => x.label).join(' | ')
+                    institutes: author.institutes?.map(x => x.label).join(' | '),
+                    internal_remark: author.internal_remark
                 }
                 rows.push(row);
             }
