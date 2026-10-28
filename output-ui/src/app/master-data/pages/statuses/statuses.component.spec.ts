@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StatusesComponent } from './statuses.component';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -26,7 +26,7 @@ describe('StatusesComponent', () => {
       declarations: [ StatusesComponent ],
       providers: [
         { provide: StatusService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

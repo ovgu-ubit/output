@@ -3,7 +3,7 @@ import { ImportFormOverviewComponent } from './import-form-overview.component';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -33,7 +33,7 @@ describe('ImportFormOverviewComponent', () => {
         { provide: ImportFormFacade, useValue: mockFacade },
         { provide: Router, useValue: mockRouter },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatChipListbox } from '@angular/material/chips';
@@ -25,6 +25,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
   templateUrl: './filter-view.component.html',
   styleUrls: ['./filter-view.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [SharedModule],
 })
 export class FilterViewComponent implements OnInit {

@@ -3,7 +3,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/materia
 import { of } from 'rxjs';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { provideRouter } from '@angular/router';
@@ -49,7 +49,7 @@ describe('PubTypeFormComponent', () => {
         { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => {}, applyFieldErrors: () => {}, present: () => {} } },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

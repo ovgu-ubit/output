@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { CompareOperation, getPublicationFilterOperationsForType } from '@output/interfaces';
@@ -44,7 +44,7 @@ describe('FilterViewComponent', () => {
         { provide: MAT_DIALOG_DATA, useValue: { hideSavedFilters: true } },
         { provide: PublicationService, useValue: mockPublicationService },
         { provide: ConfigService, useValue: mockConfigService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

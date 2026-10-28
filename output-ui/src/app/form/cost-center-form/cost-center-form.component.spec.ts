@@ -10,7 +10,7 @@ import { CostCenterService } from 'src/app/services/entities/cost-center.service
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 import { CostCenterFormComponent } from './cost-center-form.component';
@@ -60,7 +60,7 @@ describe('CostCenterFormComponent', () => {
         { provide: CostCenterService, useValue: mockCostCenterService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

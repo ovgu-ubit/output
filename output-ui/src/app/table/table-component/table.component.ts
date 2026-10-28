@@ -1,7 +1,7 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { ComponentType } from '@angular/cdk/portal';
 import { Location } from '@angular/common';
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -26,6 +26,7 @@ import { TableActionService } from '../services/table-action.service';
     templateUrl: './table.component.html',
     styleUrls: ['../table-appearance.css', './table.component.css'],
     standalone: false,
+    changeDetection: ChangeDetectionStrategy.Eager,
     providers: [TableDataService, TableActionService]
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {

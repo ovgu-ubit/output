@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 
@@ -6,6 +6,7 @@ import { PublisherService } from 'src/app/services/entities/publisher.service';
     selector: 'app-publisher-form',
     templateUrl: './publisher-form.component.html',
     styleUrls: ['./publisher-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PublisherFormComponent implements OnInit{

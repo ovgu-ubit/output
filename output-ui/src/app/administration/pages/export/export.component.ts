@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewChildren } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewChildren, ChangeDetectionStrategy } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -13,6 +13,7 @@ import { LogDialogComponent } from 'src/app/administration/components/log-dialog
     selector: 'app-export',
     templateUrl: './export.component.html',
     styleUrls: ['./export.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ExportComponent implements OnInit {

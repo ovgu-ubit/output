@@ -20,7 +20,7 @@ import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
@@ -105,7 +105,7 @@ describe('PublicationFormComponent', () => {
         { provide: LanguageService, useValue: { getAll: () => of([]) } },
         { provide: EnrichService, useValue: { startID: () => of({}) } },
         { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => {}, applyFieldErrors: () => {}, present: () => {} } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

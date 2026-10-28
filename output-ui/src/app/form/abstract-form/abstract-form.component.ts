@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, inject, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, inject, Input, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -20,6 +20,7 @@ import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
     selector: 'app-abstract-form',
     templateUrl: './abstract-form.component.html',
     styleUrl: './abstract-form.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AbstractFormComponent<T extends Entity> implements OnInit, AfterViewInit {

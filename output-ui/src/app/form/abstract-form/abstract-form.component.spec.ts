@@ -9,7 +9,7 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 import { AbstractFormComponent } from './abstract-form.component';
@@ -46,7 +46,7 @@ describe('AbstractFormComponent', () => {
         { provide: AuthorizationService, useValue: tokenService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

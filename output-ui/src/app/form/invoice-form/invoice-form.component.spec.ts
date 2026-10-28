@@ -11,7 +11,7 @@ import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
 import { provideRouter } from '@angular/router';
@@ -66,7 +66,7 @@ describe('InvoiceFormComponent', () => {
         { provide: CostCenterService, useValue: mockCostCenterService },
         { provide: PublisherService, useValue: { getAll: () => of([]) } },
         { provide: CostTypeService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

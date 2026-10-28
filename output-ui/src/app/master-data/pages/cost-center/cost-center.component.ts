@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
 import {  CostCenter  } from '@output/interfaces';
@@ -10,6 +10,7 @@ import { TableComponent } from 'src/app/table/table-component/table.component';
     selector: 'app-cost-center',
     templateUrl: './cost-center.component.html',
     styleUrls: ['./cost-center.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CostCenterComponent implements TableParent<CostCenterIndex>, OnInit {

@@ -13,7 +13,7 @@ import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
@@ -69,7 +69,7 @@ describe('PublicationsComponent', () => {
         { provide: EnrichService, useValue: mockEnrichService },
         { provide: RuntimeConfigService, useValue: mockRuntimeConfigService },
         { provide: AuthorizationService, useValue: mockAuthService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([])
       ]

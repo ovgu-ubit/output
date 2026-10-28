@@ -113,7 +113,7 @@
                 @if (showTextValue(rule)) {
                   <mat-form-field appearance="fill">
                     <mat-label>Wert</mat-label>
-                    <input matInput formControlName="value" [type]="isNumberField(rule.get('path')?.value) ? 'number' : 'text'">
+                    <input matInput formControlName="value" [type]="isNumberField($safeNavigationMigration(rule.get('path')?.value)) ? 'number' : 'text'">
                     <mat-error>Bitte geben Sie einen Wert ein.</mat-error>
                   </mat-form-field>
                 }
@@ -222,7 +222,7 @@
       @if (showTextValue(condition)) {
         <mat-form-field appearance="fill">
           <mat-label>Wert</mat-label>
-          <input matInput formControlName="value" [type]="isNumberField(condition.get('path')?.value) ? 'number' : 'text'">
+          <input matInput formControlName="value" [type]="isNumberField($safeNavigationMigration(condition.get('path')?.value)) ? 'number' : 'text'">
           <mat-error>Bitte geben Sie einen Wert ein.</mat-error>
         </mat-form-field>
       }

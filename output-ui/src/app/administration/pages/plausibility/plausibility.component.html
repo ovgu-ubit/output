@@ -15,12 +15,12 @@
           <button mat-raised-button (click)="this.startImport(im)"  class="primary-button" [disabled]="this.obs$[im.label]">Check
           starten</button>
           @if (this.obs$[im.label]) {
-            <div>{{((this.obs$[im.label] | async)?.progress)*100 | number: '1.2-2'}} %
+            <div>{{($safeNavigationMigration((this.obs$[im.label] | async)?.progress))*100 | number: '1.2-2'}} %
             </div>
           }
           @if (this.obs$[im.label]) {
             <mat-progress-bar mode="determinate"
-            [value]="(this.obs$[im.label] | async)?.progress*100"></mat-progress-bar>
+            [value]="$safeNavigationMigration((this.obs$[im.label] | async)?.progress)*100"></mat-progress-bar>
           }
           <table style="width: 100%;">
             <tr>

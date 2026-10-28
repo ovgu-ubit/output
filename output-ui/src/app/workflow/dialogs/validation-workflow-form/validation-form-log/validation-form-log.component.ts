@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { filter, switchMap, takeUntil } from 'rxjs';
 import { PublicationChangeLogComponent } from 'src/app/publications/dialogs/publication-change-log/publication-change-log.component';
@@ -11,6 +11,7 @@ import { ValidationFormFacade } from '../validation-form-facade.service';
   selector: 'app-validation-form-log',
   imports: [SharedModule, PublicationChangeLogComponent],
   templateUrl: './validation-form-log.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './validation-form-log.component.css',
 })
 export class ValidationFormLogComponent implements OnInit {

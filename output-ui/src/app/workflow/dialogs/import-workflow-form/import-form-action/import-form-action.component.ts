@@ -1,5 +1,5 @@
 import { ImportProgress, isImportStopping } from 'src/app/shared/import-progress';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -18,6 +18,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
   standalone: true,
   imports: [SharedModule, MatProgressBarModule],
   templateUrl: './import-form-action.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './import-form-action.component.css',
 })
 export class ImportFormActionComponent implements OnInit, OnDestroy {

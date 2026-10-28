@@ -7,7 +7,7 @@ import { of } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { SelectAuthorComponent } from './select-author.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -36,7 +36,7 @@ describe('SelectAuthorComponent', () => {
       providers: [
         { provide: AuthorService, useValue: mockAuthorService },
         { provide: ErrorPresentationService, useValue: { present: () => {} } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

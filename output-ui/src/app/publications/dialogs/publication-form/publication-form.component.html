@@ -131,7 +131,7 @@
             <mat-card-content>
               @if (this.pub?.authorPublications && this.pub?.authorPublications.length>0) {
                 <table #table
-                  mat-table [dataSource]="this.pub?.authorPublications">
+                  mat-table [dataSource]="$safeNavigationMigration(this.pub?.authorPublications)">
                   <ng-container matColumnDef="edit">
                     <th mat-header-cell *matHeaderCellDef> </th>
                     <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
@@ -235,7 +235,7 @@
               <input matInput [matDatepicker]="picker" formControlName="pub_date">
               <mat-hint>T.M.JJJJ</mat-hint>
               <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker [startAt]="this.pub?.pub_date? this.pub?.pub_date : today"
+              <mat-datepicker #picker [startAt]="this.pub?.pub_date? $safeNavigationMigration(this.pub?.pub_date) : today"
               startView="year"></mat-datepicker>
               @if (getFieldError('biblio_info.pub_date', 'Publikationsdatum'); as error) {
                 <mat-error>{{error}}</mat-error>
@@ -248,7 +248,7 @@
                 <input matInput [matDatepicker]="picker1" formControlName="pub_date_print">
                 <mat-hint>T.M.JJJJ</mat-hint>
                 <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? this.pub?.pub_date_print : today"
+                <mat-datepicker #picker1 [startAt]="this.pub?.pub_date_print? $safeNavigationMigration(this.pub?.pub_date_print) : today"
                 startView="year"></mat-datepicker>
                 @if (getFieldError('biblio_info.pub_date_print', 'Publikationsdatum (print)'); as error) {
                   <mat-error>{{error}}</mat-error>
@@ -262,7 +262,7 @@
               <mat-hint>T.M.JJJJ</mat-hint>
               <mat-datepicker-toggle matIconSuffix [for]="picker3"></mat-datepicker-toggle>
               <mat-datepicker #picker3
-                [startAt]="this.pub?.pub_date_accepted? this.pub?.pub_date_accepted : today"
+                [startAt]="this.pub?.pub_date_accepted? $safeNavigationMigration(this.pub?.pub_date_accepted) : today"
               startView="year"></mat-datepicker>
               @if (getFieldError('biblio_info.pub_date_accepted', 'Datum der Akzeptanz'); as error) {
                 <mat-error>{{error}}</mat-error>
@@ -276,7 +276,7 @@
                 <mat-hint>T.M.JJJJ</mat-hint>
                 <mat-datepicker-toggle matIconSuffix [for]="picker4"></mat-datepicker-toggle>
                 <mat-datepicker #picker4
-                  [startAt]="this.pub?.pub_date_submitted? this.pub?.pub_date_submitted : today"
+                  [startAt]="this.pub?.pub_date_submitted? $safeNavigationMigration(this.pub?.pub_date_submitted) : today"
                 startView="year"></mat-datepicker>
                 @if (getFieldError('biblio_info.pub_date_submitted', 'Datum der Einreichung'); as error) {
                   <mat-error>{{error}}</mat-error>
@@ -529,7 +529,7 @@
                         <mat-card-content>
                           @if (this.pub?.invoices && this.pub?.invoices.length>0 && (this.tokenService.hasRole('admin')||this.tokenService.hasRole('writer')||this.tokenService.hasRole('reader'))) {
                             <table #tableInvoice
-                              mat-table [dataSource]="this.pub?.invoices">
+                              mat-table [dataSource]="$safeNavigationMigration(this.pub?.invoices)">
                               <ng-container matColumnDef="date">
                                 <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
                                 <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
@@ -674,7 +674,7 @@
                                   Änderungslog
                                 </mat-panel-title>
                               </mat-expansion-panel-header>
-                              <app-publication-change-log [publicationId]="this.pub?.id"></app-publication-change-log>
+                              <app-publication-change-log [publicationId]="$safeNavigationMigration(this.pub?.id)"></app-publication-change-log>
                             </mat-expansion-panel>
                           }
                         </mat-accordion>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -22,6 +22,7 @@ type ExportPublicationFilter = { filter: SearchFilter, paths: string[] };
   selector: 'app-export-form-action',
   imports: [SharedModule, MatProgressBarModule],
   templateUrl: './export-form-action.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './export-form-action.component.css',
 })
 export class ExportFormActionComponent implements OnInit {

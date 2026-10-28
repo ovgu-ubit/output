@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import {  ImportWorkflow  } from '@output/interfaces';
@@ -12,6 +12,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
   templateUrl: './import-form-general.component.html',
   styleUrl: './import-form-general.component.css',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [SharedModule]
 })
 export class ImportFormGeneralComponent implements OnInit, WorkflowFormPage {

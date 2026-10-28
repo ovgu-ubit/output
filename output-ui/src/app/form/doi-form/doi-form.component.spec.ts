@@ -9,7 +9,7 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 import { DoiFormComponent } from './doi-form.component';
@@ -54,7 +54,7 @@ describe('DoiFormComponent', () => {
         { provide: ErrorPresentationService, useValue: mockErrorService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

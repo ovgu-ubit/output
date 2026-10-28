@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
 
@@ -6,6 +6,7 @@ import { OACategoryService } from 'src/app/services/entities/oa-category.service
     selector: 'app-oa-category-form',
     templateUrl: './oa-category-form.component.html',
     styleUrls: ['./oa-category-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OaCategoryFormComponent implements OnInit {

@@ -9,7 +9,7 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 import { CostTypeFormComponent } from './cost-type-form.component';
@@ -59,7 +59,7 @@ describe('CostTypeFormComponent', () => {
         { provide: ErrorPresentationService, useValue: mockErrorService },
         { provide: CostTypeService, useValue: mockCostTypeService },
         { provide: PublisherService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

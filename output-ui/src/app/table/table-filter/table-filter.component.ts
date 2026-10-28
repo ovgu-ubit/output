@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 
 @Component({
@@ -16,6 +16,7 @@ import { FormControl } from '@angular/forms';
       </mat-form-field>
     </div>
     `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class TableFilterComponent {

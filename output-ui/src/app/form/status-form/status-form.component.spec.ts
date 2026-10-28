@@ -9,7 +9,7 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { provideRouter } from '@angular/router';
@@ -63,7 +63,7 @@ describe('StatusFormComponent', () => {
         { provide: ErrorPresentationService, useValue: mockErrorService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

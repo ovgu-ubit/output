@@ -4,7 +4,7 @@ import { DuplicateDialogComponent } from './duplicate-dialog.component';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
@@ -43,7 +43,7 @@ describe('DuplicateDialogComponent', () => {
         { provide: PublicationDuplicateService, useValue: duplicateService },
         { provide: PublicationService, useValue: publicationService },
         { provide: ErrorPresentationService, useValue: errorPresentation },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

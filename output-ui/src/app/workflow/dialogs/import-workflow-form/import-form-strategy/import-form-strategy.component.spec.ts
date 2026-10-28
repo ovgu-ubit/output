@@ -4,7 +4,7 @@ import {  ImportStrategy  } from '@output/interfaces';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { ImportFormStrategyComponent } from './import-form-strategy.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 
@@ -23,7 +23,7 @@ describe('ImportFormStrategyComponent', () => {
       providers: [
         { provide: ImportFormFacade, useValue: facadeStub },
         { provide: ErrorPresentationService, useValue: { present: () => {} } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ],
     })

@@ -3,10 +3,10 @@
     @for (label of labels; track label; let i = $index) {
       <li class="breadcrumb-item" [ngClass]="{'active': i === this.labels.length-1}">
         @if (this.label) {
-          <a class="bg-dark link-light text-decoration-none" [routerLink]="links?.[i]">{{label}}</a>
+          <a class="bg-dark link-light text-decoration-none" [routerLink]="$safeNavigationMigration(links?.[i])">{{label}}</a>
         }
         @if (!this.label) {
-          <a class="bg-dark link-light text-decoration-none" [routerLink]="links?.[i]">{{label|titlecase}}</a>
+          <a class="bg-dark link-light text-decoration-none" [routerLink]="$safeNavigationMigration(links?.[i])">{{label|titlecase}}</a>
         }
       </li>
     }

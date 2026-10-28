@@ -10,7 +10,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { ReportService } from 'src/app/administration/services/report.service';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ImportComponent } from './import.component';
 
@@ -50,7 +50,7 @@ describe('ImportComponent', () => {
       providers: [
         { provide: ImportService, useValue: mockImportService },
         { provide: ReportService, useValue: mockReportService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

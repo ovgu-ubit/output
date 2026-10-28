@@ -12,7 +12,7 @@ import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { of } from 'rxjs';
 
 describe('CostItemFormComponent', () => {
@@ -44,7 +44,7 @@ describe('CostItemFormComponent', () => {
         { provide: ErrorPresentationService, useValue: { clearFieldErrors: () => {}, applyFieldErrors: () => {}, present: () => {} } },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

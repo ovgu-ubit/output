@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -13,6 +13,7 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
   selector: 'app-publication-validation',
   templateUrl: './publication-validation.component.html',
   styleUrl: './publication-validation.component.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class PublicationValidationComponent implements TableParent<ValidationWorkflow>, OnInit {

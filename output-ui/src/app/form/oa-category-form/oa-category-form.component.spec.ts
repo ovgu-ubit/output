@@ -10,7 +10,7 @@ import { OACategoryService } from 'src/app/services/entities/oa-category.service
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 import { OaCategoryFormComponent } from './oa-category-form.component';
@@ -60,7 +60,7 @@ describe('OaCategoryFormComponent', () => {
         { provide: OACategoryService, useValue: mockOaCategoryService },
         { provide: PublisherService, useValue: {} },
         { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

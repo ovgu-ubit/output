@@ -45,10 +45,10 @@
           <p>Aktueller Status: {{ status.status }}</p>
         }
         @if (this.ob$) {
-          <div>{{((this.ob$ | async)?.progress)*100 | number: '1.2-2'}} %</div>
+          <div>{{($safeNavigationMigration((this.ob$ | async)?.progress))*100 | number: '1.2-2'}} %</div>
         }
         @if (this.ob$) {
-          <mat-progress-bar mode="determinate" [value]="(this.ob$ | async)?.progress*100"></mat-progress-bar>
+          <mat-progress-bar mode="determinate" [value]="$safeNavigationMigration((this.ob$ | async)?.progress)*100"></mat-progress-bar>
         }
         <button mat-raised-button class="warn-button" [disabled]="loading" (click)="deleteDraft()">
           <mat-icon>delete</mat-icon>
@@ -88,10 +88,10 @@
           <p>Aktueller Status: {{ status.status }}</p>
         }
         @if (this.ob$) {
-          <div>{{((this.ob$ | async)?.progress)*100 | number: '1.2-2'}} %</div>
+          <div>{{($safeNavigationMigration((this.ob$ | async)?.progress))*100 | number: '1.2-2'}} %</div>
         }
         @if (this.ob$) {
-          <mat-progress-bar mode="determinate" [value]="(this.ob$ | async)?.progress*100"></mat-progress-bar>
+          <mat-progress-bar mode="determinate" [value]="$safeNavigationMigration((this.ob$ | async)?.progress)*100"></mat-progress-bar>
         }
         <button mat-raised-button class="primary-button" (click)="run()" [disabled]="loading || !!this.ob$">
           <mat-icon>play_arrow</mat-icon>

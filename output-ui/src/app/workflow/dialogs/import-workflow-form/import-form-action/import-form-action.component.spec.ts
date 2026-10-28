@@ -6,7 +6,7 @@ import { FormBuilder } from '@angular/forms';
 import { ImportStrategy, ImportStopResponse } from '@output/interfaces';
 import { ImportProgress } from 'src/app/shared/import-progress';
 import { WorkflowService } from 'src/app/workflow/workflow.service';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -24,7 +24,7 @@ describe('ImportFormActionComponent', () => {
       imports: [ImportFormActionComponent, NoopAnimationsModule],
       providers: [
         { provide: ImportFormFacade, useValue: mockFacade },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

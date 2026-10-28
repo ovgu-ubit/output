@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
@@ -15,6 +15,7 @@ export interface ReportingYearSelection {
   selector: 'app-reporting-year-form',
   templateUrl: './reporting-year-form.component.html',
   styleUrls: ['./reporting-year-form.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class ReportingYearFormComponent implements OnInit {

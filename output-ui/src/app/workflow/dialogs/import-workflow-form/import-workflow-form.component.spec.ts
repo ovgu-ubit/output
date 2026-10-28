@@ -4,7 +4,7 @@ import { ImportFormFacade } from './import-form-facade.service';
 import { WorkflowService } from '../../workflow.service';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -51,7 +51,7 @@ describe('ImportWorkflowFormComponent', () => {
         { provide: ImportFormFacade, useValue: mockFacade },
         { provide: WorkflowService, useValue: mockWorkflowService },
         { provide: ErrorPresentationService, useValue: { present: jasmine.createSpy('present') } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

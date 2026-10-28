@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { RoleService } from 'src/app/services/entities/role.service';
 
@@ -6,6 +6,7 @@ import { RoleService } from 'src/app/services/entities/role.service';
     selector: 'app-role-form',
     templateUrl: './role-form.component.html',
     styleUrls: ['./role-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class RoleFormComponent implements OnInit {

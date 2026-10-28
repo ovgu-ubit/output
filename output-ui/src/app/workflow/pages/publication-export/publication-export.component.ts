@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { firstValueFrom, of } from 'rxjs';
@@ -15,6 +15,7 @@ import { getExportEntityDetails } from '../../export-entity-options';
   selector: 'app-publication-export',
   templateUrl: './publication-export.component.html',
   styleUrl: './publication-export.component.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class PublicationExportComponent implements TableParent<ExportWorkflow>, OnInit {

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Inject, OnInit } from '@angular/core';
+import { AfterViewInit, Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { map, merge } from 'rxjs';
@@ -16,6 +16,7 @@ import { RoleFormComponent } from '../role-form/role-form.component';
     selector: 'app-authorship-form',
     templateUrl: './authorship-form.component.html',
     styleUrls: ['./authorship-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AuthorshipFormComponent extends AbstractFormComponent<any> implements OnInit, AfterViewInit {

@@ -5,7 +5,7 @@ import { ConfigService } from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { provideRouter } from '@angular/router';
@@ -49,7 +49,7 @@ describe('ReportingYearFormComponent', () => {
         { provide: PublicationService, useValue: mockPubService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: AuthorizationService, useValue: mockAuthService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

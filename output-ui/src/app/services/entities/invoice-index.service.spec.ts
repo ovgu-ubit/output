@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { InvoiceIndexService } from './invoice-index.service';
@@ -10,7 +10,7 @@ describe('InvoiceIndexService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [
-      provideHttpClient(), provideHttpClientTesting(), InvoiceIndexService,
+      provideHttpClient(withXhr()), provideHttpClientTesting(), InvoiceIndexService,
       { provide: RuntimeConfigService, useValue: { getValue: () => 'http://localhost/api/' } },
     ] });
     service = TestBed.inject(InvoiceIndexService);

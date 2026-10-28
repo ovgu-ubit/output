@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
@@ -13,6 +13,7 @@ import { ValidationFormFacade } from '../validation-form-facade.service';
   selector: 'app-validation-form-action',
   imports: [SharedModule, MatProgressBarModule],
   templateUrl: './validation-form-action.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './validation-form-action.component.css',
 })
 export class ValidationFormActionComponent implements OnInit {
