@@ -155,6 +155,8 @@ Use `npm run test:api` or `npm run test:ui` to run one suite. Run `npm test` ins
 
 Backend tests use Jest with NestJS 12's ESM packages. They require Node.js 24.9 or newer; the backend test scripts enable `--experimental-vm-modules` automatically. GitHub Actions uses Node.js 24.
 
+Run `npm run test:e2e` from the repository root or `output-api` for the backend HTTP regression tests. This builds the backend and tests the full module graph against both TypeScript sources and compiled CommonJS output. Configuration startup, dynamic authorization providers, JWT cookies, CORS, JSON/form parsers, multipart imports, Swagger and the API error envelope are covered. Database and import services are mocked; no external database or additional test packages are required. The pull request workflow runs these checks as well.
+
 ### frontend test browser
 
 Frontend tests use Vitest with headless Chromium, including checks for table layout and line wrapping. `npm test` in `output-ui` and `npm run test:ui` in the repository root check the browser before starting and automatically install or repair the matching version when it is missing. No separate browser installation is needed on Windows or macOS.

@@ -22,7 +22,7 @@
     "test:watch": "npm run ensure:interfaces && node --experimental-vm-modules ../node_modules/jest/bin/jest.js --watch",
     "test:cov": "npm run ensure:interfaces && node --experimental-vm-modules ../node_modules/jest/bin/jest.js --coverage",
     "test:debug": "npm run ensure:interfaces && node --experimental-vm-modules --inspect-brk -r tsconfig-paths/register -r ts-node/register ../node_modules/jest/bin/jest.js --runInBand",
-    "test:e2e": "npm run ensure:interfaces && node --experimental-vm-modules ../node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
+    "test:e2e": "npm run build && node --experimental-vm-modules ../node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "typeorm:dev": "npm run ensure:interfaces && cross-env NODE_ENV=dev typeorm-ts-node-commonjs",
     "typeorm:test": "npm run ensure:interfaces && cross-env NODE_ENV=test typeorm-ts-node-commonjs",
     "typeorm:prod": "npm run ensure:interfaces && cross-env NODE_ENV=prod typeorm-ts-node-commonjs",

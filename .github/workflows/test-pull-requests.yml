@@ -32,8 +32,8 @@ jobs:
       - name: Run tests
         run: npm test -w output-api -- --watch=false
 
-      - name: Build
-        run: npm run build:api
+      - name: Build backend and run HTTP regression tests
+        run: npm run test:e2e
 
       - name: Build Docker image
         run: docker build -t output-ci-test .

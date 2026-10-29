@@ -4,6 +4,7 @@
   "scripts": {
     "test": "npm run test:api && npm run test:ui",
     "test:api": "npm --workspace output run test -- --watch=false",
+    "test:e2e": "npm --workspace output run test:e2e -- --watch=false",
     "test:ui": "npm --workspace output-ui run test -- --watch=false",
     "test:ui:setup": "node scripts/run-ui-tests.mjs --install-browser",
     "build:interfaces": "npm --workspace @output/interfaces run build",
