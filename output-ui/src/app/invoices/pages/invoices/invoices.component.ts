@@ -1,5 +1,5 @@
 import { Clipboard, ClipboardModule } from '@angular/cdk/clipboard';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { MatPaginatorIntl, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -32,6 +32,7 @@ function dateRangeValidator(control: AbstractControl): ValidationErrors | null {
   styleUrls: ['../../../table/table-appearance.css', './invoices.component.css'],
   standalone: true,
   imports: [SharedModule, ClipboardModule, MatPaginatorModule, MatSortModule, RouterModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [{ provide: MatPaginatorIntl, useClass: MatPaginatorDE }],
 })
 export class InvoicesComponent implements OnInit, OnDestroy {

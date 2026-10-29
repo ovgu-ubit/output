@@ -1,76 +1,89 @@
 <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
-    <h1>Institut</h1>
-    <div style="display: flex;justify-content: flex-end;">
-        <div *ngIf="!this.disabled; else else1">
-            <button mat-icon-button (click)="this.action()" matTooltip="Institut speichern"
-                [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
-            <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+  <h1>Institut</h1>
+  <div style="display: flex;justify-content: flex-end;">
+    @if (!this.disabled) {
+      <div>
+        <button mat-icon-button (click)="this.action()" matTooltip="Institut speichern"
+          [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
+          <button mat-icon-button (click)="this.abort()" matTooltip="Abbrechen"
+            [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+          </div>
+        } @else {
+          <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
+            [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
+          }
         </div>
-        <ng-template #else1>
-            <button mat-icon-button (click)="this.close()" matTooltip="Schließen"
-                [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
-        </ng-template>
-    </div>
-</mat-toolbar>
-<mat-dialog-content>
-    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
-        <mat-card-header><mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
-        <mat-card-content>
-            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
-        </mat-card-content>
-    </mat-card>
-    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
-        (ngSubmit)="this.action()">
-        <mat-form-field *ngIf="this.entity?.id" appearance="fill">
-            <mat-label>ID</mat-label>
-            <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
-        </mat-form-field>
+      </mat-toolbar>
+      <mat-dialog-content>
+        @if (getFormSummaryErrors().length > 0) {
+          <mat-card class="form-error-summary">
+            <mat-card-header><mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
+            <mat-card-content>
+              @for (error of getFormSummaryErrors(); track error) {
+                <div>{{error}}</div>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+        <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+          (ngSubmit)="this.action()">
+          @if (this.entity?.id) {
+            <mat-form-field appearance="fill">
+              <mat-label>ID</mat-label>
+              <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
+            </mat-form-field>
+          }
 
-        <mat-form-field appearance="fill">
+          <mat-form-field appearance="fill">
             <mat-label>Bezeichnung</mat-label>
             <input matInput placeholder="Bezeichnung" formControlName="label" />
-            <mat-error *ngIf="getFieldError('label', 'Bezeichnung') as error">{{error}}</mat-error>
-        </mat-form-field>
+            @if (getFieldError('label', 'Bezeichnung'); as error) {
+              <mat-error>{{error}}</mat-error>
+            }
+          </mat-form-field>
 
-        <mat-form-field appearance="fill">
+          <mat-form-field appearance="fill">
             <mat-label>Kurzbezeichnung</mat-label>
             <input matInput placeholder="Kurzbezeichnung" formControlName="short_label" />
-            <mat-error *ngIf="getFieldError('short_label', 'Kurzbezeichnung') as error">{{error}}</mat-error>
-        </mat-form-field>
+            @if (getFieldError('short_label', 'Kurzbezeichnung'); as error) {
+              <mat-error>{{error}}</mat-error>
+            }
+          </mat-form-field>
 
-        <mat-form-field appearance="fill">
+          <mat-form-field appearance="fill">
             <mat-label>OPUS-ID</mat-label>
             <input matInput placeholder="OPUS-ID" formControlName="opus_id" />
-            <mat-error *ngIf="getFieldError('opus_id', 'OPUS-ID') as error">{{error}}</mat-error>
-        </mat-form-field>
+            @if (getFieldError('opus_id', 'OPUS-ID'); as error) {
+              <mat-error>{{error}}</mat-error>
+            }
+          </mat-form-field>
 
-        <app-select-entity name="Übergeordnetes Institut" [disabled]="this.disabled"
-                    [serviceClass]="this.service" [formComponent]="this.instForm"
-                    (selected)="this.setSuperInst($event)"
-                    [ent]="this.entity? this.entity['super_institute'] : undefined"></app-select-entity>
+          <app-select-entity name="Übergeordnetes Institut" [disabled]="this.disabled"
+            [serviceClass]="this.service" [formComponent]="this.instForm"
+            (selected)="this.setSuperInst($event)"
+          [ent]="this.entity? this.entity['super_institute'] : undefined"></app-select-entity>
 
-        <mat-card>
+          <mat-card>
             <mat-card-header><mat-card-subtitle>Untergeordnete Institute</mat-card-subtitle></mat-card-header>
             <mat-card-content>
-                <table *ngIf="this.entity?.sub_institutes && this.entity.sub_institutes.length>0" mat-table
-                    [dataSource]="this.entity.sub_institutes">
-                    <ng-container matColumnDef="id">
-                        <th mat-header-cell *matHeaderCellDef> ID </th>
-                        <td mat-cell *matCellDef="let element"> {{element.id}} </td>
-                    </ng-container>
-        
-                    <ng-container matColumnDef="label">
-                        <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
-                        <td mat-cell *matCellDef="let element"> {{element.label}} </td>
-                    </ng-container>
-        
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              @if (this.entity?.sub_institutes && this.entity.sub_institutes.length>0) {
+                <table mat-table
+                  [dataSource]="this.entity.sub_institutes">
+                  <ng-container matColumnDef="id">
+                    <th mat-header-cell *matHeaderCellDef> ID </th>
+                    <td mat-cell *matCellDef="let element"> {{element.id}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="label">
+                    <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
+                    <td mat-cell *matCellDef="let element"> {{element.label}} </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
                 </table>
+              }
             </mat-card-content>
-        </mat-card><br>   
+          </mat-card><br>
 
-        <app-alias-table [name]="this.name" [disabled]="this.disabled" [entity]="this.entity"></app-alias-table>
-    </form>
-</mat-dialog-content>
+          <app-alias-table [name]="this.name" [disabled]="this.disabled" [entity]="this.entity"></app-alias-table>
+        </form>
+      </mat-dialog-content>

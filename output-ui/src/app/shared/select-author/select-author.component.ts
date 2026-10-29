@@ -1,4 +1,4 @@
-import { Component, OnChanges } from '@angular/core';
+import { Component, OnChanges, ChangeDetectionStrategy } from '@angular/core';
 import {  Author  } from '@output/interfaces';
 import { SelectEntityComponent } from '../../shared/select-entity/select-entity.component';
 
@@ -6,6 +6,7 @@ import { SelectEntityComponent } from '../../shared/select-entity/select-entity.
     selector: 'app-select-author',
     templateUrl: './select-author.component.html',
     styleUrl: './select-author.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectAuthorComponent extends SelectEntityComponent<Author> {

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { InstituteService } from 'src/app/services/entities/institute.service';
 import {  InstituteIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { InstituteFormComponent } from '../../../form/institute-form/institute-f
     selector: 'app-institutions',
     templateUrl: './institutions.component.html',
     styleUrls: ['./institutions.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class InstitutionsComponent implements TableParent<InstituteIndex>, OnInit {

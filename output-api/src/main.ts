@@ -1,18 +1,12 @@
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger';
-import * as bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser';
 import express from 'express';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
 import { AppModule } from './app.module';
-import { ApiExceptionFilter } from './common/api-exception.filter';
-import { createValidationException } from './common/validation-exception.factory';
-import { DemoResetService } from './demo-reset/demo-reset.service';
+import { configureApplication, initializeApplication } from './application-bootstrap';
 
 async function bootstrap() {
     const server = express();
@@ -29,53 +23,14 @@ async function bootstrap() {
     const base_path: string = app.get(ConfigService).get<string>('APP_BASE_PATH');
     const docker_mode: boolean = app.get(ConfigService).get<boolean>('APP_DOCKER_MODE');
 
-    const swagger_path = "swagger";
-
     if (docker_mode) {
         port = 3000;
         cors_origins = ["http://localhost:1080"];
         ssl = false;
     }
 
-    const processedCORS = [];
-    for (const cors_or of cors_origins) {
-        let obj;
-        if (cors_or.endsWith('/')) obj = cors_or.substring(0, cors_or.length - 1)
-        else obj = cors_or;
-        processedCORS.push(obj)
-    }
-
-    const config = new DocumentBuilder()
-        .setTitle('Output API')
-        .setDescription('The Output API description')
-        .setVersion('dev')
-        .addServer(base_path)
-        .build();
-    const options: SwaggerDocumentOptions = {
-        operationIdFactory: (
-            controllerKey: string,
-            methodKey: string
-        ) => methodKey
-    };
-    const document = SwaggerModule.createDocument(app, config, options);
-    SwaggerModule.setup(swagger_path, app, document);
-
-    app.useGlobalPipes(new ValidationPipe({
-        transform: true,
-        exceptionFactory: createValidationException,
-    }));
-    app.useGlobalFilters(new ApiExceptionFilter());
-    app.enableCors({
-        origin: processedCORS,
-        methods: 'GET, PUT, POST, DELETE',
-        allowedHeaders: 'Content-Type, Authorization',
-        credentials: true
-    });
-    app.use(bodyParser.json({ limit: '1mb' })); // parse requests of content-type "application/json"
-    app.use(bodyParser.urlencoded({ extended: true })); // parse requests of content-type "application/x-www-form-urlencoded"
-    app.use(cookieParser());
-    await app.init();
-    await app.get(DemoResetService).resetOnStartup();
+    configureApplication(app, { basePath: base_path, corsOrigins: cors_origins });
+    await initializeApplication(app);
 
     if (ssl) {
         const certOptions = {

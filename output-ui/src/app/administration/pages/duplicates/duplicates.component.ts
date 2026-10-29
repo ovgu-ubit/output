@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { DuplicateDialogComponent } from '../../components/duplicate-dialog/duplicate-dialog.component';
@@ -10,6 +10,7 @@ import { TableComponent } from 'src/app/table/table-component/table.component';
     selector: 'app-duplicates',
     templateUrl: './duplicates.component.html',
     styleUrl: './duplicates.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DuplicatesComponent implements TableParent<PublicationDuplicate>, OnInit {

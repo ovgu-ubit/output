@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import {  CostType  } from '@output/interfaces';
@@ -9,6 +9,7 @@ import {  CostTypeIndex  } from '@output/interfaces';
     selector: 'app-cost-types',
     templateUrl: './cost-types.component.html',
     styleUrls: ['./cost-types.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CostTypesComponent implements TableParent<CostTypeIndex>, OnInit {

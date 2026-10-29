@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { ContractService } from 'src/app/services/entities/contract.service';
 import {  ContractIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { ContractFormComponent } from '../../../form/contract-form/contract-form
     selector: 'app-contracts',
     templateUrl: './contracts.component.html',
     styleUrls: ['./contracts.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ContractsComponent implements TableParent<ContractIndex>, OnInit {

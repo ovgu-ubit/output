@@ -1,139 +1,162 @@
 <app-window-toolbar [name]="this.name" [disabled]="this.disabled" [parent]="this"></app-window-toolbar>
 <mat-dialog-content>
-    <mat-card *ngIf="getFormSummaryErrors().length > 0" class="form-error-summary">
-        <mat-card-header><mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
-        <mat-card-content>
-            <div *ngFor="let error of getFormSummaryErrors()">{{error}}</div>
-        </mat-card-content>
+  @if (getFormSummaryErrors().length > 0) {
+    <mat-card class="form-error-summary">
+      <mat-card-header><mat-card-subtitle>Bitte prüfen Sie die Eingaben.</mat-card-subtitle></mat-card-header>
+      <mat-card-content>
+        @for (error of getFormSummaryErrors(); track error) {
+          <div>{{error}}</div>
+        }
+      </mat-card-content>
     </mat-card>
-    <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
-        (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
-        <mat-form-field *ngIf="this.entity?.id" appearance="fill">
-            <mat-label>ID</mat-label>
-            <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
-        </mat-form-field>
+  }
+  <form style="display: flex; flex-direction: column;justify-content: space-evenly;" [formGroup]="form"
+    (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
+    @if (this.entity?.id) {
+      <mat-form-field appearance="fill">
+        <mat-label>ID</mat-label>
+        <input matInput [type]="'number'" onwheel="return false;" placeholder="ID" formControlName="id" />
+      </mat-form-field>
+    }
 
-        <mat-form-field appearance="fill">
-            <mat-label>Titel</mat-label>
-            <textarea matInput placeholder="Titel" formControlName="title"> </textarea>
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Titel</mat-label>
+      <textarea matInput placeholder="Titel" formControlName="title"> </textarea>
+    </mat-form-field>
 
-        <mat-form-field appearance="fill">
-            <mat-label>Vorname</mat-label>
-            <input matInput placeholder="Vorname" formControlName="first_name" />
-            <mat-error *ngIf="getFieldError('first_name', 'Vorname') as error">{{error}}</mat-error>
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Vorname</mat-label>
+      <input matInput placeholder="Vorname" formControlName="first_name" />
+      @if (getFieldError('first_name', 'Vorname'); as error) {
+        <mat-error>{{error}}</mat-error>
+      }
+    </mat-form-field>
 
-        <mat-form-field appearance="fill">
-            <mat-label>Nachname</mat-label>
-            <input matInput placeholder="Nachname" formControlName="last_name" />
-            <mat-error *ngIf="getFieldError('last_name', 'Nachname') as error">{{error}}</mat-error>
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Nachname</mat-label>
+      <input matInput placeholder="Nachname" formControlName="last_name" />
+      @if (getFieldError('last_name', 'Nachname'); as error) {
+        <mat-error>{{error}}</mat-error>
+      }
+    </mat-form-field>
 
-        <mat-form-field appearance="fill">
-            <mat-label>ORCID</mat-label>
-            <input matInput placeholder="ORCID" formControlName="orcid" />
-            <mat-error *ngIf="getFieldError('orcid', 'ORCID') as error">{{error}}</mat-error>
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>ORCID</mat-label>
+      <input matInput placeholder="ORCID" formControlName="orcid" />
+      @if (getFieldError('orcid', 'ORCID'); as error) {
+        <mat-error>{{error}}</mat-error>
+      }
+    </mat-form-field>
 
-        <mat-form-field appearance="fill">
-            <mat-label>GND-Nummer</mat-label>
-            <input matInput placeholder="GND-Nummer" formControlName="gnd_id" />
-            <mat-error *ngIf="getFieldError('gnd_id', 'GND-Nummer') as error">{{error}}</mat-error>
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>GND-Nummer</mat-label>
+      <input matInput placeholder="GND-Nummer" formControlName="gnd_id" />
+      @if (getFieldError('gnd_id', 'GND-Nummer'); as error) {
+        <mat-error>{{error}}</mat-error>
+      }
+    </mat-form-field>
 
-        <mat-form-field appearance="fill"
-            *ngIf="this.tokenService.hasRole('admin') || this.tokenService.hasRole('writer') || this.tokenService.hasRole('reader')">
-            <mat-label>Interne Bemerkung</mat-label>
-            <textarea matInput placeholder="Interne Bemerkung" formControlName="internal_remark"></textarea>
-            <mat-error *ngIf="getFieldError('internal_remark', 'Interne Bemerkung') as error">{{error}}</mat-error>
-        </mat-form-field>
+    @if (this.tokenService.hasRole('admin') || this.tokenService.hasRole('writer') || this.tokenService.hasRole('reader')) {
+      <mat-form-field appearance="fill"
+        >
+        <mat-label>Interne Bemerkung</mat-label>
+        <textarea matInput placeholder="Interne Bemerkung" formControlName="internal_remark"></textarea>
+        @if (getFieldError('internal_remark', 'Interne Bemerkung'); as error) {
+          <mat-error>{{error}}</mat-error>
+        }
+      </mat-form-field>
+    }
 
-        <mat-card>
-            <mat-card-header><mat-card-subtitle>Institute</mat-card-subtitle></mat-card-header>
-            <mat-card-content>
-                <table *ngIf="this.entity?.institutes && this.entity.institutes.length>0" mat-table
-                    [dataSource]="this.entity.institutes">
-                    <ng-container matColumnDef="id">
-                        <th mat-header-cell *matHeaderCellDef> ID </th>
-                        <td mat-cell *matCellDef="let element"> {{element.id}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="label">
-                        <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
-                        <td mat-cell *matCellDef="let element"> {{element.label}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="short_label">
-                        <th mat-header-cell *matHeaderCellDef> Kurzbezeichnung </th>
-                        <td mat-cell *matCellDef="let element"> {{element.short_label}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="delete">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                                (click)="this.deleteInst(element)" matTooltip="Institut löschen"
-                                [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
-                    </ng-container>
-
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                </table>
-            </mat-card-content>
-            <mat-card-actions>
-                <app-select-entity name="Institut" style="width: 100%;" [disabled]="this.disabled"
-                    [serviceClass]="this.instService" [formComponent]="this.instForm" (selected)="this.setInst($event)"
-                    [resetOnSelect]="true"></app-select-entity>
-            </mat-card-actions>
-        </mat-card><br>
-
-        <mat-expansion-panel>
-            <mat-expansion-panel-header>
-                <mat-panel-title>
-                    Aliase
-                </mat-panel-title>
-                <mat-panel-description>
-                    Werden beim Import auf diese Person abgebildet
-                </mat-panel-description>
-            </mat-expansion-panel-header>
-            <table #tableAlias *ngIf="this.alias_data && this.alias_data.length>0" mat-table
-                [dataSource]="this.alias_data">
-                <ng-container matColumnDef="alias">
-                    <th mat-header-cell *matHeaderCellDef> Alias </th>
-                    <td mat-cell *matCellDef="let element"> {{element.alias}} </td>
-                </ng-container>
-                <ng-container matColumnDef="first_name">
-                    <th mat-header-cell *matHeaderCellDef> Für Vorname </th>
-                    <td mat-cell *matCellDef="let element">
-                        <mat-icon *ngIf="element.first_name">check_box</mat-icon>
-                        <mat-icon *ngIf="!element.first_name">check_box_outline_blank</mat-icon>
-                    </td>
-                </ng-container>
-                <ng-container matColumnDef="delete">
-                    <th mat-header-cell *matHeaderCellDef> </th>
-                    <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
-                            (click)="this.deleteAlias(element)" matTooltip="Alias löschen"
-                            [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="['alias','first_name','delete']"></tr>
-                <tr mat-row *matRowDef="let row; columns: ['alias','first_name','delete'];"></tr>
+    <mat-card>
+      <mat-card-header><mat-card-subtitle>Institute</mat-card-subtitle></mat-card-header>
+      <mat-card-content>
+        @if (this.entity?.institutes && this.entity.institutes.length>0) {
+          <table mat-table
+            [dataSource]="this.entity.institutes">
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef> ID </th>
+              <td mat-cell *matCellDef="let element"> {{element.id}} </td>
+            </ng-container>
+            <ng-container matColumnDef="label">
+              <th mat-header-cell *matHeaderCellDef> Bezeichnung </th>
+              <td mat-cell *matCellDef="let element"> {{element.label}} </td>
+            </ng-container>
+            <ng-container matColumnDef="short_label">
+              <th mat-header-cell *matHeaderCellDef> Kurzbezeichnung </th>
+              <td mat-cell *matCellDef="let element"> {{element.short_label}} </td>
+            </ng-container>
+            <ng-container matColumnDef="delete">
+              <th mat-header-cell *matHeaderCellDef> </th>
+              <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                (click)="this.deleteInst(element)" matTooltip="Institut löschen"
+                [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
             </table>
-            <form [formGroup]="aliasForm" style="display: flex;gap:5px" *ngIf="!this.disabled">
-                <mat-form-field style="width: 40%;">
-                    <mat-label>Alias</mat-label>
-                    <input matInput placeholder="Alias" formControlName="alias" />
-                </mat-form-field>
-                <mat-form-field style="width: 40%;">
-                    <mat-label>Vor- oder Nachname</mat-label>
-                    <mat-select formControlName="first_name">
-                        <mat-option [value]="true">Vorname</mat-option>
-                        <mat-option [value]="false">Nachname</mat-option>
-                    </mat-select>
-                </mat-form-field>
-                <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
-                    matTooltip="Alias hinzufügen"><mat-icon>add</mat-icon></button>
-            </form>
-        </mat-expansion-panel><br>
-    </form>
-</mat-dialog-content>
+          }
+        </mat-card-content>
+        <mat-card-actions>
+          <app-select-entity name="Institut" style="width: 100%;" [disabled]="this.disabled"
+            [serviceClass]="this.instService" [formComponent]="this.instForm" (selected)="this.setInst($event)"
+          [resetOnSelect]="true"></app-select-entity>
+        </mat-card-actions>
+      </mat-card><br>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            Aliase
+          </mat-panel-title>
+          <mat-panel-description>
+            Werden beim Import auf diese Person abgebildet
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+        @if (this.alias_data && this.alias_data.length>0) {
+          <table #tableAlias mat-table
+            [dataSource]="this.alias_data">
+            <ng-container matColumnDef="alias">
+              <th mat-header-cell *matHeaderCellDef> Alias </th>
+              <td mat-cell *matCellDef="let element"> {{element.alias}} </td>
+            </ng-container>
+            <ng-container matColumnDef="first_name">
+              <th mat-header-cell *matHeaderCellDef> Für Vorname </th>
+              <td mat-cell *matCellDef="let element">
+                @if (element.first_name) {
+                  <mat-icon>check_box</mat-icon>
+                }
+                @if (!element.first_name) {
+                  <mat-icon>check_box_outline_blank</mat-icon>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="delete">
+              <th mat-header-cell *matHeaderCellDef> </th>
+              <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
+                (click)="this.deleteAlias(element)" matTooltip="Alias löschen"
+                [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="['alias','first_name','delete']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['alias','first_name','delete'];"></tr>
+            </table>
+          }
+          @if (!this.disabled) {
+            <form [formGroup]="aliasForm" style="display: flex;gap:5px">
+              <mat-form-field style="width: 40%;">
+                <mat-label>Alias</mat-label>
+                <input matInput placeholder="Alias" formControlName="alias" />
+              </mat-form-field>
+              <mat-form-field style="width: 40%;">
+                <mat-label>Vor- oder Nachname</mat-label>
+                <mat-select formControlName="first_name">
+                  <mat-option [value]="true">Vorname</mat-option>
+                  <mat-option [value]="false">Nachname</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button matSuffix mat-icon-button type="button" (click)="this.addAlias()"
+                matTooltip="Alias hinzufügen"><mat-icon>add</mat-icon></button>
+              </form>
+            }
+          </mat-expansion-panel><br>
+        </form>
+      </mat-dialog-content>

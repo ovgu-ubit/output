@@ -31,22 +31,22 @@
 
             <mat-form-field appearance="fill" style="width: 100%;">
                 <mat-label>Erstellt am</mat-label>
-                <input matInput [value]="form.get('created_at')?.value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+                <input matInput [value]="$safeNavigationMigration(form.get('created_at')?.value) | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
             </mat-form-field>
 
             <mat-form-field appearance="fill" style="width: 100%;">
                 <mat-label>Geändert am</mat-label>
-                <input matInput [value]="form.get('modified_at')?.value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+                <input matInput [value]="$safeNavigationMigration(form.get('modified_at')?.value) | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
             </mat-form-field>
 
             <mat-form-field appearance="fill" style="width: 100%;">
                 <mat-label>Veröffentlicht am</mat-label>
-                <input matInput [value]="form.get('published_at')?.value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+                <input matInput [value]="$safeNavigationMigration(form.get('published_at')?.value) | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
             </mat-form-field>
 
             <mat-form-field appearance="fill" style="width: 100%;">
                 <mat-label>Archiviert am</mat-label>
-                <input matInput [value]="form.get('deleted_at')?.value | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
+                <input matInput [value]="$safeNavigationMigration(form.get('deleted_at')?.value) | date: 'dd.MM.yyyy HH:mm:ss'" disabled />
             </mat-form-field>
         </form>
     </mat-card-content>

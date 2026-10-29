@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Inject, Injectable, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Inject, Injectable, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -56,6 +56,7 @@ export class PubValidator {
   selector: 'app-publication-form',
   templateUrl: './publication-form.component.html',
   styleUrls: ['./publication-form.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class PublicationFormComponent implements OnInit, AfterViewInit {

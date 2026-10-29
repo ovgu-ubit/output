@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import {  AuthorIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { AuthorFormComponent } from 'src/app/form/author-form/author-form.compon
     selector: 'app-authors',
     templateUrl: './authors.component.html',
     styleUrls: ['./authors.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {

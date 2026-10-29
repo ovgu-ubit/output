@@ -1,6 +1,6 @@
 import { ImportProgress, isImportStopping } from 'src/app/shared/import-progress';
 import { shareReplay, tap, finalize } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -14,6 +14,7 @@ import { ImportConfigComponent } from '../../components/import-config/import-con
     selector: 'app-enrich',
     templateUrl: './enrich.component.html',
     styleUrls: ['./enrich.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class EnrichComponent implements OnInit, OnDestroy {

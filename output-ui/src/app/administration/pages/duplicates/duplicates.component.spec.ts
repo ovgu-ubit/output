@@ -4,7 +4,7 @@ import { PublicationDuplicateService } from 'src/app/services/entities/duplicate
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
@@ -26,7 +26,7 @@ describe('DuplicatesComponent', () => {
       declarations: [ DuplicatesComponent ],
       providers: [
         { provide: PublicationDuplicateService, useValue: { getAll: () => of([]), updateData: () => of([]) } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { RuntimeConfigService } from '../../services/runtime-config.service';
@@ -17,6 +17,7 @@ export interface DemoLoginDialogResult {
   selector: 'app-demo-login-dialog',
   templateUrl: './demo-login-dialog.component.html',
   styleUrls: ['./demo-login-dialog.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class DemoLoginDialogComponent {

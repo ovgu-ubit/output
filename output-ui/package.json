@@ -8,7 +8,7 @@
     "build": "npm run ensure:interfaces && ng build",
     "build:prod": "npm run ensure:interfaces && ng build --configuration production",
     "watch": "npm run ensure:interfaces && ng build --watch --configuration development",
-    "test": "npm run ensure:interfaces && ng test"
+    "test": "npm run ensure:interfaces && node ../scripts/run-ui-tests.mjs"
   },
   "private": true
 }

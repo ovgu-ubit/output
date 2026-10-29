@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import {  ImportWorkflow  } from '@output/interfaces';
@@ -26,6 +26,7 @@ interface ParsedMapping {
   standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-mapping.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './import-form-mapping.component.css',
 })
 export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {

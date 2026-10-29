@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, inject, Inject, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, inject, Inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
@@ -14,6 +14,7 @@ import { map, Observable, of } from 'rxjs';
     selector: 'app-author-form',
     templateUrl: './author-form.component.html',
     styleUrls: ['./author-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AuthorFormComponent extends AbstractFormComponent<Author> implements OnInit, AfterViewInit, EntityFormComponent<Author> {

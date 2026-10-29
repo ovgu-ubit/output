@@ -1,72 +1,78 @@
 <mat-card>
-    <mat-card-title>Aktionen</mat-card-title>
-    <mat-card-content>
-        @if (isDraft) {
-        <div class="action-group">
-            <h3>Entwurf</h3>
-            <button mat-raised-button class="warn-button" [disabled]="loading" (click)="deleteDraft()">
-                <mat-icon>delete</mat-icon>
-                Entwurf löschen
-            </button>
-            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="publish()">
-                <mat-icon>publish</mat-icon>
-                Entwurf veröffentlichen
-            </button>
-            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
-                <mat-icon>content_copy</mat-icon>
-                Nächste Entwurfsversion erstellen
-            </button>
-        </div>
-        }
+  <mat-card-title>Aktionen</mat-card-title>
+  <mat-card-content>
+    @if (isDraft) {
+      <div class="action-group">
+        <h3>Entwurf</h3>
+        <button mat-raised-button class="warn-button" [disabled]="loading" (click)="deleteDraft()">
+          <mat-icon>delete</mat-icon>
+          Entwurf löschen
+        </button>
+        <button mat-raised-button class="primary-button" [disabled]="loading" (click)="publish()">
+          <mat-icon>publish</mat-icon>
+          Entwurf veröffentlichen
+        </button>
+        <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
+          <mat-icon>content_copy</mat-icon>
+          Nächste Entwurfsversion erstellen
+        </button>
+      </div>
+    }
 
-        @if (isPublished) {
-        <div class="action-group">
-            <h3>Veröffentlicht</h3>
-            <form [formGroup]="form">
-                @if (fileStrategy) {
-                <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #fileInput (change)="setFile($event)" [disabled]="isRunning || loading">
-                } @else {
-                <mat-form-field appearance="fill">
-                    <mat-label>Publikationsjahr</mat-label>
-                    <input matInput placeholder="Publikationsjahr" formControlName="reporting_year" />
-                </mat-form-field>
-            }
-                <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
-                <button mat-raised-button [hidden]="!this.form.get('update').value" type="button"  class="secondary-button" [disabled]="isRunning || loading" (click)="configureImport()">Update konfigurieren</button>
-                <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
-            </form>
-            <ng-container *ngIf="ob$ | async as progress">
-                <div role="status">{{stopping ? 'Wird gestoppt… Begonnene Datensätze werden abgeschlossen.' : progress.status}}</div>
-                <div *ngIf="progress.progress >= 0">{{progress.progress * 100 | number: '1.2-2'}} %</div>
-                <mat-progress-bar [mode]="progress.progress < 0 ? 'indeterminate' : 'determinate'" [value]="progress.progress * 100"></mat-progress-bar>
-            </ng-container>
-            <p *ngIf="!isRunning && status" role="status">Status: {{status.status}}</p>
-            <button *ngIf="canStop" mat-raised-button class="warn-button" [disabled]="stopping" (click)="stop()">
-                <mat-icon>stop</mat-icon>{{stopping ? 'Wird gestoppt…' : 'Stopp'}}
-            </button>
-            <button mat-raised-button class="primary-button" (click)="run()" [disabled]="isRunning || loading">
-                <mat-icon>play_arrow</mat-icon>
-                Importlauf starten
-            </button>
-            <button mat-raised-button class="primary-button" [disabled]="isRunning || loading" (click)="duplicate()">
-                <mat-icon>content_copy</mat-icon>
-                Neue Version als Entwurf speichern
-            </button>
-            <button mat-raised-button class="warn-button" [disabled]="isRunning || loading" (click)="archive()">
-                <mat-icon>archive</mat-icon>
-                Workflow archivieren
-            </button>
-        </div>
+    @if (isPublished) {
+      <div class="action-group">
+        <h3>Veröffentlicht</h3>
+        <form [formGroup]="form">
+          @if (fileStrategy) {
+            <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" #fileInput (change)="setFile($event)" [disabled]="isRunning || loading">
+          } @else {
+            <mat-form-field appearance="fill">
+              <mat-label>Publikationsjahr</mat-label>
+              <input matInput placeholder="Publikationsjahr" formControlName="reporting_year" />
+            </mat-form-field>
+          }
+          <mat-checkbox formControlName="update">Existierende Publikationen aktualisieren?</mat-checkbox>
+          <button mat-raised-button [hidden]="!this.form.get('update').value" type="button"  class="secondary-button" [disabled]="isRunning || loading" (click)="configureImport()">Update konfigurieren</button>
+          <mat-checkbox formControlName="dry_run">Simulierter Lauf?</mat-checkbox>
+        </form>
+        @if (ob$ | async; as progress) {
+          <div role="status">{{stopping ? 'Wird gestoppt… Begonnene Datensätze werden abgeschlossen.' : progress.status}}</div>
+          @if (progress.progress >= 0) {
+            <div>{{progress.progress * 100 | number: '1.2-2'}} %</div>
+          }
+          <mat-progress-bar [mode]="progress.progress < 0 ? 'indeterminate' : 'determinate'" [value]="progress.progress * 100"></mat-progress-bar>
         }
+        @if (!isRunning && status) {
+          <p role="status">Status: {{status.status}}</p>
+        }
+        @if (canStop) {
+          <button mat-raised-button class="warn-button" [disabled]="stopping" (click)="stop()">
+            <mat-icon>stop</mat-icon>{{stopping ? 'Wird gestoppt…' : 'Stopp'}}
+          </button>
+        }
+        <button mat-raised-button class="primary-button" (click)="run()" [disabled]="isRunning || loading">
+          <mat-icon>play_arrow</mat-icon>
+          Importlauf starten
+        </button>
+        <button mat-raised-button class="primary-button" [disabled]="isRunning || loading" (click)="duplicate()">
+          <mat-icon>content_copy</mat-icon>
+          Neue Version als Entwurf speichern
+        </button>
+        <button mat-raised-button class="warn-button" [disabled]="isRunning || loading" (click)="archive()">
+          <mat-icon>archive</mat-icon>
+          Workflow archivieren
+        </button>
+      </div>
+    }
 
-        @if (isArchived) {
-        <div class="action-group">
-            <h3>Archiviert</h3>
-            <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
-                <mat-icon>content_copy</mat-icon>
-                Als neuen Entwurf duplizieren
-            </button>
-        </div>
-        }
-    </mat-card-content>
+    @if (isArchived) {
+      <div class="action-group">
+        <h3>Archiviert</h3>
+        <button mat-raised-button class="primary-button" [disabled]="loading" (click)="duplicate()">
+          <mat-icon>content_copy</mat-icon>
+          Als neuen Entwurf duplizieren
+        </button>
+      </div>
+    }
+  </mat-card-content>
 </mat-card>

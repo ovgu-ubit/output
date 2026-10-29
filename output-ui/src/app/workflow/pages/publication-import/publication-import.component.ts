@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
 import {  ImportStrategy, ImportWorkflow  } from '@output/interfaces';
 import { WorkflowService } from '../../workflow.service';
@@ -18,6 +18,7 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
   selector: 'app-publication-import',
   templateUrl: './publication-import.component.html',
   styleUrl: './publication-import.component.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class PublicationImportComponent implements TableParent<ImportWorkflow>, OnInit, OnDestroy {

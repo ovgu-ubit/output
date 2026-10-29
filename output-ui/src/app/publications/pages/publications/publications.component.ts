@@ -1,5 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -24,6 +24,7 @@ import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
     selector: 'app-publications',
     templateUrl: './publications.component.html',
     styleUrls: ['./publications.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {

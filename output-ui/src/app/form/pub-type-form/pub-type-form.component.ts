@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 
@@ -6,6 +6,7 @@ import { PublicationTypeService } from 'src/app/services/entities/publication-ty
     selector: 'app-pub-type-form',
     templateUrl: './pub-type-form.component.html',
     styleUrls: ['./pub-type-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PubTypeFormComponent implements OnInit {

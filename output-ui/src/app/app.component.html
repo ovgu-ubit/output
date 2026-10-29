@@ -21,15 +21,17 @@
         <button mat-button [routerLink]="'/publications'">
           <mat-icon>menu_book</mat-icon> Publikationen
         </button>
-        <button mat-button routerLink="/invoices"
-          *ngIf="tokenService.hasRole('reader') || tokenService.hasRole('writer') || tokenService.hasRole('admin')">
-          <mat-icon>receipt_long</mat-icon> Rechnungen
-        </button>
+        @if (tokenService.hasRole('reader') || tokenService.hasRole('writer') || tokenService.hasRole('admin')) {
+          <button mat-button routerLink="/invoices"
+            >
+            <mat-icon>receipt_long</mat-icon> Rechnungen
+          </button>
+        }
 
-      <button mat-button [routerLink]="'/master-data/authors'">
-        <mat-icon>person</mat-icon> Personen
-      </button>
-    </div>
+        <button mat-button [routerLink]="'/master-data/authors'">
+          <mat-icon>person</mat-icon> Personen
+        </button>
+      </div>
 
       <button mat-button [matMenuTriggerFor]="masterDataMenu"><mat-icon>table</mat-icon> Stammdaten verwalten </button>
       <mat-menu #masterDataMenu="matMenu">
@@ -50,12 +52,12 @@
 
       <button mat-button [matMenuTriggerFor]="adminMenu"
         [disabled]="!this.tokenService.hasRole('reader') && !this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"><mat-icon>settings</mat-icon>
-        Verwaltung </button>
+      Verwaltung </button>
       <mat-menu #adminMenu="matMenu">
         <button mat-menu-item routerLink="/administration/import" [disabled]="!this.tokenService.hasRole('admin')">
-          Imports verwalten </button>
+        Imports verwalten </button>
         <button mat-menu-item routerLink="/administration/enrich" [disabled]="!this.tokenService.hasRole('admin')">
-          Anreicherungen verwalten </button>
+        Anreicherungen verwalten </button>
         <button mat-menu-item routerLink="/administration/export"> Exportieren </button>
         <button mat-menu-item routerLink="/administration/plausibility"
           [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"> Plausibilitätschecks
@@ -64,43 +66,47 @@
           [disabled]="!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"> Dubletten verwalten
         </button>
         <button mat-menu-item routerLink="/administration/config"
-          [disabled]="!this.tokenService.hasRole('admin')"> Konfiguration </button>
+        [disabled]="!this.tokenService.hasRole('admin')"> Konfiguration </button>
       </mat-menu>
 
       <button mat-button [matMenuTriggerFor]="adminMenu2"
         [disabled]="!this.tokenService.hasRole('reader') && !this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')"><mat-icon>pending_actions</mat-icon>
-        Workflows (beta)</button>
+      Workflows (beta)</button>
       <mat-menu #adminMenu2="matMenu">
         <button mat-menu-item routerLink="/workflow/publication_import" [disabled]="!this.tokenService.hasRole('admin')">
-          Imports verwalten </button>
+        Imports verwalten </button>
         <button mat-menu-item routerLink="/workflow/publication_export" [disabled]="!this.tokenService.hasRole('admin')">
-          Exporte verwalten </button>
+        Exporte verwalten </button>
         <button mat-menu-item routerLink="/workflow/publication_validation" [disabled]="!this.tokenService.hasRole('admin')">
-          Validierungen verwalten </button>
+        Validierungen verwalten </button>
       </mat-menu>
 
-      <ng-container *ngIf="!this.user">
+      @if (!this.user) {
         <button mat-button (click)="this.login()" [disabled]="!(this.security)"> <mat-icon>face</mat-icon> Login
-        </button>
-      </ng-container>
+      </button>
+    }
 
-      <ng-container *ngIf="this.user">
-        <button mat-button [matMenuTriggerFor]="loginMenu"> <mat-icon>face</mat-icon> {{user}}
-        </button>
-        <mat-menu #loginMenu="matMenu">
-          <button mat-menu-item (click)="this.details()" *ngIf="!this.demoAuth"> Profil </button>
-          <button mat-menu-item (click)="this.logout()"> Logout </button>
-        </mat-menu>
-      </ng-container>
+    @if (this.user) {
+      <button mat-button [matMenuTriggerFor]="loginMenu"> <mat-icon>face</mat-icon> {{user}}
+    </button>
+    <mat-menu #loginMenu="matMenu">
+      @if (!this.demoAuth) {
+        <button mat-menu-item (click)="this.details()"> Profil </button>
+      }
+      <button mat-menu-item (click)="this.logout()"> Logout </button>
+    </mat-menu>
+  }
 
-    </div>
-  </mat-toolbar-row>
+</div>
+</mat-toolbar-row>
 </mat-toolbar>
 <main [class.demo-banner-offset]="this.demoAuth">
   <router-outlet></router-outlet>
 </main>
 
-<div class="demo-banner" *ngIf="this.demoAuth">
-  <span>Demo-Version: Diese Instanz dient nur zur Erprobung.</span>
-  <a routerLink="/demo-info">Informationen zu Impressum, Datenschutz und Lizenz</a>
-</div>
+@if (this.demoAuth) {
+  <div class="demo-banner">
+    <span>Demo-Version: Diese Instanz dient nur zur Erprobung.</span>
+    <a routerLink="/demo-info">Informationen zu Impressum, Datenschutz und Lizenz</a>
+  </div>
+}

@@ -4,7 +4,7 @@ import { GreaterEntitiesComponent } from './greater-entities.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
@@ -18,7 +18,7 @@ describe('GreaterEntitiesComponent', () => {
       imports: [SharedModule, TableModule, NoopAnimationsModule],
       declarations: [ GreaterEntitiesComponent ],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         provideStore({})

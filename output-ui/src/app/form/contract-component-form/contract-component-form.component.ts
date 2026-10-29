@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, inject } from '@angular/core';
+import { Component, Inject, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -37,6 +37,7 @@ interface ExcelColumn {
     selector: 'app-contract-component-form',
     templateUrl: './contract-component-form.component.html',
     styleUrls: ['./contract-component-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ContractComponentFormComponent extends AbstractFormComponent<ContractComponent> {

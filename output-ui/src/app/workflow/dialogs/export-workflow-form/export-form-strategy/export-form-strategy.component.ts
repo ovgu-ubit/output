@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -21,6 +21,7 @@ type ExportStrategyData = {
   selector: 'app-export-form-strategy',
   imports: [SharedModule],
   templateUrl: './export-form-strategy.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './export-form-strategy.component.css',
 })
 export class ExportFormStrategyComponent implements OnInit, WorkflowFormPage {

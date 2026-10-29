@@ -1,381 +1,433 @@
 <app-window-toolbar
-    [name]="this.name"
-    [disabled]="this.disabled"
-    [parent]="this"></app-window-toolbar>
+  [name]="this.name"
+  [disabled]="this.disabled"
+[parent]="this"></app-window-toolbar>
 <mat-dialog-content>
-    <form class="contract-component-form" [formGroup]="form"
-        (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
-        <mat-form-field *ngIf="this.entity?.id" appearance="fill">
-            <mat-label>ID</mat-label>
-            <input matInput type="number" onwheel="return false;" formControlName="id" />
-        </mat-form-field>
+  <form class="contract-component-form" [formGroup]="form"
+    (ngSubmit)="this.action()" (keydown)="enter($event)" (keyup)="escape($event)">
+    @if (this.entity?.id) {
+      <mat-form-field appearance="fill">
+        <mat-label>ID</mat-label>
+        <input matInput type="number" onwheel="return false;" formControlName="id" />
+      </mat-form-field>
+    }
 
-        <mat-form-field appearance="fill">
-            <mat-label>Bezeichnung</mat-label>
-            <input matInput placeholder="Bezeichnung" formControlName="label" />
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Bezeichnung</mat-label>
+      <input matInput placeholder="Bezeichnung" formControlName="label" />
+    </mat-form-field>
 
-        <mat-form-field appearance="fill">
-            <mat-label>Vertragsmodell</mat-label>
-            <mat-select formControlName="contract_model">
-                <mat-option [value]="null">Kein Contract Model</mat-option>
-                <mat-option *ngFor="let model of this.contractModels" [value]="model.value">{{model.label}}</mat-option>
-            </mat-select>
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Vertragsmodell</mat-label>
+      <mat-select formControlName="contract_model">
+        <mat-option [value]="null">Kein Contract Model</mat-option>
+        @for (model of this.contractModels; track model) {
+          <mat-option [value]="model.value">{{model.label}}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
 
-        <mat-form-field appearance="fill">
-            <mat-label>Version des Vertragsmodells</mat-label>
-            <input matInput type="number" onwheel="return false;" formControlName="contract_model_version" />
-        </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Version des Vertragsmodells</mat-label>
+      <input matInput type="number" onwheel="return false;" formControlName="contract_model_version" />
+    </mat-form-field>
 
-        <mat-card>
-            <mat-card-header>
-                <mat-card-subtitle>Zugeordnete Auswahlwerte</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content class="relation-selectors">
-                <mat-form-field appearance="fill" class="chip-field">
-                    <mat-label>OA-Kategorien</mat-label>
-                    <mat-chip-grid #oaCategoryGrid aria-label="Ausgewählte OA-Kategorien">
-                        <mat-chip-row *ngFor="let category of this.selectedOACategories" (removed)="this.removeOACategory(category)"
-                            [removable]="!this.disabled">
-                            {{category.label}}
-                            <button matChipRemove *ngIf="!this.disabled">
-                                <mat-icon>cancel</mat-icon>
-                            </button>
-                        </mat-chip-row>
-                        <input matInput [formControl]="this.oaCategoryInput" [matChipInputFor]="oaCategoryGrid"
-                            [matAutocomplete]="oaCategoryAuto" [readonly]="this.disabled"
-                            placeholder="OA-Kategorie auswählen" />
-                    </mat-chip-grid>
-                    <mat-autocomplete #oaCategoryAuto="matAutocomplete" (optionSelected)="this.addOACategory($event)">
-                        <mat-option *ngFor="let category of this.filteredOACategories$ | async" [value]="category.label">
-                            {{category.label}}
-                        </mat-option>
-                    </mat-autocomplete>
-                    <mat-hint>Leer bedeutet: keine Einschränkung.</mat-hint>
-                </mat-form-field>
+    <mat-card>
+      <mat-card-header>
+        <mat-card-subtitle>Zugeordnete Auswahlwerte</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="relation-selectors">
+        <mat-form-field appearance="fill" class="chip-field">
+          <mat-label>OA-Kategorien</mat-label>
+          <mat-chip-grid #oaCategoryGrid aria-label="Ausgewählte OA-Kategorien">
+            @for (category of this.selectedOACategories; track category) {
+              <mat-chip-row (removed)="this.removeOACategory(category)"
+                [removable]="!this.disabled">
+                {{category.label}}
+                @if (!this.disabled) {
+                  <button matChipRemove>
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                }
+              </mat-chip-row>
+            }
+            <input matInput [formControl]="this.oaCategoryInput" [matChipInputFor]="oaCategoryGrid"
+              [matAutocomplete]="oaCategoryAuto" [readonly]="this.disabled"
+              placeholder="OA-Kategorie auswählen" />
+            </mat-chip-grid>
+            <mat-autocomplete #oaCategoryAuto="matAutocomplete" (optionSelected)="this.addOACategory($event)">
+              @for (category of this.filteredOACategories$ | async; track category) {
+                <mat-option [value]="category.label">
+                  {{category.label}}
+                </mat-option>
+              }
+            </mat-autocomplete>
+            <mat-hint>Leer bedeutet: keine Einschränkung.</mat-hint>
+          </mat-form-field>
 
-                <mat-form-field appearance="fill" class="chip-field">
-                    <mat-label>Publikationstypen</mat-label>
-                    <mat-chip-grid #publicationTypeGrid aria-label="Ausgewählte Publikationstypen">
-                        <mat-chip-row *ngFor="let publicationType of this.selectedPublicationTypes"
-                            (removed)="this.removePublicationType(publicationType)" [removable]="!this.disabled">
-                            {{publicationType.label}}
-                            <button matChipRemove *ngIf="!this.disabled">
-                                <mat-icon>cancel</mat-icon>
-                            </button>
-                        </mat-chip-row>
-                        <input matInput [formControl]="this.publicationTypeInput" [matChipInputFor]="publicationTypeGrid"
-                            [matAutocomplete]="publicationTypeAuto" [readonly]="this.disabled"
-                            placeholder="Publikationstyp auswählen" />
-                    </mat-chip-grid>
-                    <mat-autocomplete #publicationTypeAuto="matAutocomplete" (optionSelected)="this.addPublicationType($event)">
-                        <mat-option *ngFor="let publicationType of this.filteredPublicationTypes$ | async"
-                            [value]="publicationType.label">
-                            {{publicationType.label}}
-                        </mat-option>
-                    </mat-autocomplete>
-                    <mat-hint>Mehrfachauswahl über Chips.</mat-hint>
-                </mat-form-field>
+          <mat-form-field appearance="fill" class="chip-field">
+            <mat-label>Publikationstypen</mat-label>
+            <mat-chip-grid #publicationTypeGrid aria-label="Ausgewählte Publikationstypen">
+              @for (publicationType of this.selectedPublicationTypes; track publicationType) {
+                <mat-chip-row
+                  (removed)="this.removePublicationType(publicationType)" [removable]="!this.disabled">
+                  {{publicationType.label}}
+                  @if (!this.disabled) {
+                    <button matChipRemove>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  }
+                </mat-chip-row>
+              }
+              <input matInput [formControl]="this.publicationTypeInput" [matChipInputFor]="publicationTypeGrid"
+                [matAutocomplete]="publicationTypeAuto" [readonly]="this.disabled"
+                placeholder="Publikationstyp auswählen" />
+              </mat-chip-grid>
+              <mat-autocomplete #publicationTypeAuto="matAutocomplete" (optionSelected)="this.addPublicationType($event)">
+                @for (publicationType of this.filteredPublicationTypes$ | async; track publicationType) {
+                  <mat-option
+                    [value]="publicationType.label">
+                    {{publicationType.label}}
+                  </mat-option>
+                }
+              </mat-autocomplete>
+              <mat-hint>Mehrfachauswahl über Chips.</mat-hint>
+            </mat-form-field>
 
-                <mat-form-field appearance="fill" class="chip-field">
-                    <mat-label>Größere Einheiten</mat-label>
-                    <mat-chip-grid #greaterEntityGrid aria-label="Ausgewählte größere Einheiten">
-                        <mat-chip-row *ngFor="let greaterEntity of this.selectedGreaterEntities"
-                            (removed)="this.removeGreaterEntity(greaterEntity)" [removable]="!this.disabled">
-                            {{greaterEntity.label}}
-                            <button matChipRemove *ngIf="!this.disabled">
-                                <mat-icon>cancel</mat-icon>
-                            </button>
-                        </mat-chip-row>
-                        <input matInput [formControl]="this.greaterEntityInput" [matChipInputFor]="greaterEntityGrid"
-                            [matAutocomplete]="greaterEntityAuto" [readonly]="this.disabled"
-                            placeholder="Größere Einheit auswählen" />
-                    </mat-chip-grid>
-                    <mat-autocomplete #greaterEntityAuto="matAutocomplete" (optionSelected)="this.addGreaterEntity($event)">
-                        <mat-option *ngFor="let greaterEntity of this.filteredGreaterEntities$ | async"
-                            [value]="greaterEntity.label">
-                            {{greaterEntity.label}}
-                            <ng-container *ngIf="greaterEntity.identifiers?.length">
-                                (<ng-container *ngFor="let identifier of greaterEntity.identifiers; let last = last">
-                                    {{identifier.value}}<span *ngIf="!last">, </span>
-                                </ng-container>)
-                            </ng-container>
-                        </mat-option>
-                    </mat-autocomplete>
-                    <mat-hint>Suche auch über Identifier.</mat-hint>
-                </mat-form-field>
-            </mat-card-content>
+            <mat-form-field appearance="fill" class="chip-field">
+              <mat-label>Größere Einheiten</mat-label>
+              <mat-chip-grid #greaterEntityGrid aria-label="Ausgewählte größere Einheiten">
+                @for (greaterEntity of this.selectedGreaterEntities; track greaterEntity) {
+                  <mat-chip-row
+                    (removed)="this.removeGreaterEntity(greaterEntity)" [removable]="!this.disabled">
+                    {{greaterEntity.label}}
+                    @if (!this.disabled) {
+                      <button matChipRemove>
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    }
+                  </mat-chip-row>
+                }
+                <input matInput [formControl]="this.greaterEntityInput" [matChipInputFor]="greaterEntityGrid"
+                  [matAutocomplete]="greaterEntityAuto" [readonly]="this.disabled"
+                  placeholder="Größere Einheit auswählen" />
+                </mat-chip-grid>
+                <mat-autocomplete #greaterEntityAuto="matAutocomplete" (optionSelected)="this.addGreaterEntity($event)">
+                  @for (greaterEntity of this.filteredGreaterEntities$ | async; track greaterEntity) {
+                    <mat-option
+                      [value]="greaterEntity.label">
+                      {{greaterEntity.label}}
+                      @if (greaterEntity.identifiers?.length) {
+                        (@for (identifier of greaterEntity.identifiers; track identifier; let last = $last) {
+                        {{identifier.value}}@if (!last) {
+                        <span>, </span>
+                      }
+                      })
+                    }
+                  </mat-option>
+                }
+              </mat-autocomplete>
+              <mat-hint>Suche auch über Identifier.</mat-hint>
+            </mat-form-field>
+          </mat-card-content>
         </mat-card>
 
-        <mat-card *ngIf="this.invoiceCollectionsAvailable">
+        @if (this.invoiceCollectionsAvailable) {
+          <mat-card>
             <mat-card-header>
-                <mat-card-subtitle>Rechnungen</mat-card-subtitle>
+              <mat-card-subtitle>Rechnungen</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-                <table #tableInvoice *ngIf="this.invoices.length > 0" mat-table [dataSource]="this.invoices">
-                    <ng-container matColumnDef="date">
-                        <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
-                        <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="number">
-                        <th mat-header-cell *matHeaderCellDef> Rechnungsnummer </th>
-                        <td mat-cell *matCellDef="let element"> {{element.number || '-'}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="costs">
-                        <th mat-header-cell *matHeaderCellDef> Kosten (brutto) </th>
-                        <td mat-cell *matCellDef="let element"> {{this.getInvoiceCosts(element)}} EUR </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="edit">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element">
-                            <button matSuffix mat-icon-button type="button" (click)="this.addInvoice(element)"
-                                [matTooltip]="this.disabled ? 'Rechnung ansehen' : 'Rechnung bearbeiten'">
-                                <mat-icon>{{this.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
-                            </button>
-                        </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="delete">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element">
-                            <button matSuffix mat-icon-button type="button" (click)="this.deleteInvoice(element)"
-                                [disabled]="this.disabled" matTooltip="Rechnung löschen">
-                                <mat-icon>delete</mat-icon>
-                            </button>
-                        </td>
-                    </ng-container>
-
-                    <tr mat-header-row *matHeaderRowDef="displayedInvoiceColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedInvoiceColumns;"></tr>
+              @if (this.invoices.length > 0) {
+                <table #tableInvoice mat-table [dataSource]="this.invoices">
+                  <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
+                    <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="number">
+                    <th mat-header-cell *matHeaderCellDef> Rechnungsnummer </th>
+                    <td mat-cell *matCellDef="let element"> {{element.number || '-'}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="costs">
+                    <th mat-header-cell *matHeaderCellDef> Kosten (brutto) </th>
+                    <td mat-cell *matCellDef="let element"> {{this.getInvoiceCosts(element)}} EUR </td>
+                  </ng-container>
+                  <ng-container matColumnDef="edit">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                      <button matSuffix mat-icon-button type="button" (click)="this.addInvoice(element)"
+                        [matTooltip]="this.disabled ? 'Rechnung ansehen' : 'Rechnung bearbeiten'">
+                        <mat-icon>{{this.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                      <button matSuffix mat-icon-button type="button" (click)="this.deleteInvoice(element)"
+                        [disabled]="this.disabled" matTooltip="Rechnung löschen">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="displayedInvoiceColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedInvoiceColumns;"></tr>
                 </table>
-
-                <p class="component-params-empty" *ngIf="this.invoices.length === 0">
-                    Für diese Vertragskomponente sind noch keine Rechnungen hinterlegt.
+              }
+              @if (this.invoices.length === 0) {
+                <p class="component-params-empty">
+                  Für diese Vertragskomponente sind noch keine Rechnungen hinterlegt.
                 </p>
+              }
             </mat-card-content>
             <mat-card-actions>
-                <button matSuffix mat-icon-button type="button" (click)="this.addInvoice()"
-                    [hidden]="this.disabled" matTooltip="Rechnung hinzufügen">
-                    <mat-icon>add</mat-icon>
-                </button>
+              <button matSuffix mat-icon-button type="button" (click)="this.addInvoice()"
+                [hidden]="this.disabled" matTooltip="Rechnung hinzufügen">
+                <mat-icon>add</mat-icon>
+              </button>
             </mat-card-actions>
-        </mat-card>
+          </mat-card>
+        }
 
-        <mat-card *ngIf="this.invoiceCollectionsAvailable">
+        @if (this.invoiceCollectionsAvailable) {
+          <mat-card>
             <mat-card-header>
-                <mat-card-subtitle>Vorabrechnungen</mat-card-subtitle>
+              <mat-card-subtitle>Vorabrechnungen</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-                <table #tablePreInvoice *ngIf="this.preInvoices.length > 0" mat-table [dataSource]="this.preInvoices">
-                    <ng-container matColumnDef="date">
-                        <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
-                        <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="number">
-                        <th mat-header-cell *matHeaderCellDef> Rechnungsnummer </th>
-                        <td mat-cell *matCellDef="let element"> {{element.number || '-'}} </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="costs">
-                        <th mat-header-cell *matHeaderCellDef> Kosten (brutto) </th>
-                        <td mat-cell *matCellDef="let element"> {{this.getInvoiceCosts(element)}} EUR </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="edit">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element">
-                            <button matSuffix mat-icon-button type="button" (click)="this.addPreInvoice(element)"
-                                [matTooltip]="this.disabled ? 'Vorabrechnung ansehen' : 'Vorabrechnung bearbeiten'">
-                                <mat-icon>{{this.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
-                            </button>
-                        </td>
-                    </ng-container>
-
-                    <ng-container matColumnDef="delete">
-                        <th mat-header-cell *matHeaderCellDef> </th>
-                        <td mat-cell *matCellDef="let element">
-                            <button matSuffix mat-icon-button type="button" (click)="this.deletePreInvoice(element)"
-                                [disabled]="this.disabled" matTooltip="Vorabrechnung löschen">
-                                <mat-icon>delete</mat-icon>
-                            </button>
-                        </td>
-                    </ng-container>
-
-                    <tr mat-header-row *matHeaderRowDef="displayedInvoiceColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedInvoiceColumns;"></tr>
+              @if (this.preInvoices.length > 0) {
+                <table #tablePreInvoice mat-table [dataSource]="this.preInvoices">
+                  <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef> Rechnungsdatum </th>
+                    <td mat-cell *matCellDef="let element"> {{element.date | date :'dd.MM.yyyy'}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="number">
+                    <th mat-header-cell *matHeaderCellDef> Rechnungsnummer </th>
+                    <td mat-cell *matCellDef="let element"> {{element.number || '-'}} </td>
+                  </ng-container>
+                  <ng-container matColumnDef="costs">
+                    <th mat-header-cell *matHeaderCellDef> Kosten (brutto) </th>
+                    <td mat-cell *matCellDef="let element"> {{this.getInvoiceCosts(element)}} EUR </td>
+                  </ng-container>
+                  <ng-container matColumnDef="edit">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                      <button matSuffix mat-icon-button type="button" (click)="this.addPreInvoice(element)"
+                        [matTooltip]="this.disabled ? 'Vorabrechnung ansehen' : 'Vorabrechnung bearbeiten'">
+                        <mat-icon>{{this.disabled ? 'remove_red_eye' : 'edit'}}</mat-icon>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="delete">
+                    <th mat-header-cell *matHeaderCellDef> </th>
+                    <td mat-cell *matCellDef="let element">
+                      <button matSuffix mat-icon-button type="button" (click)="this.deletePreInvoice(element)"
+                        [disabled]="this.disabled" matTooltip="Vorabrechnung löschen">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="displayedInvoiceColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedInvoiceColumns;"></tr>
                 </table>
-
-                <p class="component-params-empty" *ngIf="this.preInvoices.length === 0">
-                    Für diese Vertragskomponente sind noch keine Vorabrechnungen hinterlegt.
+              }
+              @if (this.preInvoices.length === 0) {
+                <p class="component-params-empty">
+                  Für diese Vertragskomponente sind noch keine Vorabrechnungen hinterlegt.
                 </p>
+              }
             </mat-card-content>
             <mat-card-actions>
-                <button matSuffix mat-icon-button type="button" (click)="this.addPreInvoice()"
-                    [hidden]="this.disabled" matTooltip="Vorabrechnung hinzufügen">
-                    <mat-icon>add</mat-icon>
-                </button>
+              <button matSuffix mat-icon-button type="button" (click)="this.addPreInvoice()"
+                [hidden]="this.disabled" matTooltip="Vorabrechnung hinzufügen">
+                <mat-icon>add</mat-icon>
+              </button>
             </mat-card-actions>
-        </mat-card>
+          </mat-card>
+        }
 
         <mat-card>
-            <mat-card-header>
-                <mat-card-subtitle>Modellspezifische Parameter</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.DISCOUNT">
-                    <mat-form-field appearance="fill">
-                        <mat-label>Rabatt in %</mat-label>
-                        <input matInput type="number" onwheel="return false;" formControlName="percentage" />
-                    </mat-form-field>
+          <mat-card-header>
+            <mat-card-subtitle>Modellspezifische Parameter</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            @if (this.selectedModel === this.contractModel.DISCOUNT) {
+              <div class="component-params">
+                <mat-form-field appearance="fill">
+                  <mat-label>Rabatt in %</mat-label>
+                  <input matInput type="number" onwheel="return false;" formControlName="percentage" />
+                </mat-form-field>
+                <mat-form-field appearance="fill">
+                  <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                  <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                </mat-form-field>
+              </div>
+            }
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
-                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
-                    </mat-form-field>
-                </div>
+            @if (this.selectedModel === this.contractModel.PUBLISH_AND_READ) {
+              <div class="component-params">
+                <mat-form-field appearance="fill">
+                  <mat-label>PAR-Gebühr in EUR (netto)</mat-label>
+                  <input matInput type="number" onwheel="return false;" formControlName="par_fee" />
+                </mat-form-field>
+                <mat-form-field appearance="fill">
+                  <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                  <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                </mat-form-field>
+              </div>
+            }
 
-                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.PUBLISH_AND_READ">
-                    <mat-form-field appearance="fill">
-                        <mat-label>PAR-Gebühr in EUR (netto)</mat-label>
-                        <input matInput type="number" onwheel="return false;" formControlName="par_fee" />
-                    </mat-form-field>
+            @if (this.selectedModel === this.contractModel.FLATRATE) {
+              <div class="component-params">
+                <mat-form-field appearance="fill">
+                  <mat-label>Limit-Typ</mat-label>
+                  <mat-select formControlName="limit_type">
+                    @for (type of this.limitTypes; track type) {
+                      <mat-option [value]="type.value">{{type.label}}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="fill">
+                  <mat-label>Verteilungsformel</mat-label>
+                  <mat-select formControlName="distribution_formula">
+                    @for (formula of this.distributionFormulas; track formula) {
+                      <mat-option [value]="formula.value">{{formula.label}}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="fill">
+                  <mat-label>Servicegebühr in EUR (netto)</mat-label>
+                  <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
+                </mat-form-field>
+              </div>
+            }
 
-                    <mat-form-field appearance="fill">
-                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
-                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
-                    </mat-form-field>
-                </div>
-
-                <div class="component-params" *ngIf="this.selectedModel === this.contractModel.FLATRATE">
-                    <mat-form-field appearance="fill">
-                        <mat-label>Limit-Typ</mat-label>
-                        <mat-select formControlName="limit_type">
-                            <mat-option *ngFor="let type of this.limitTypes" [value]="type.value">{{type.label}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Verteilungsformel</mat-label>
-                        <mat-select formControlName="distribution_formula">
-                            <mat-option *ngFor="let formula of this.distributionFormulas" [value]="formula.value">{{formula.label}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Servicegebühr in EUR (netto)</mat-label>
-                        <input matInput type="number" onwheel="return false;" formControlName="service_fee" />
-                    </mat-form-field>
-                </div>
-
-                <p class="component-params-empty" *ngIf="this.selectedModel === null || this.selectedModel === undefined">
-                    Wählen Sie ein Vertragsmodell, um die zugehörigen Parameter zu bearbeiten.
-                </p>
-            </mat-card-content>
+            @if (this.selectedModel === null || this.selectedModel === undefined) {
+              <p class="component-params-empty">
+                Wählen Sie ein Vertragsmodell, um die zugehörigen Parameter zu bearbeiten.
+              </p>
+            }
+          </mat-card-content>
         </mat-card>
 
-        <mat-card *ngIf="this.selectedModel !== null && this.selectedModel !== undefined">
+        @if (this.selectedModel !== null && this.selectedModel !== undefined) {
+          <mat-card>
             <mat-card-header>
-                <mat-card-subtitle>Zeitschriftenspezifische Preise / Rabatte (Excel-Import)</mat-card-subtitle>
+              <mat-card-subtitle>Zeitschriftenspezifische Preise / Rabatte (Excel-Import)</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-                <div class="excel-upload-container" *ngIf="!this.disabled">
-                    <button mat-flat-button color="primary" type="button" (click)="excelFileInput.click()">
-                        <mat-icon>upload_file</mat-icon> Excel-Datei hochladen
-                    </button>
-                    <input #excelFileInput type="file" (change)="this.onExcelFileSelected($event)" accept=".xlsx,.xls,.csv" style="display: none;" />
-                    
-                    <span class="file-name" *ngIf="this.excelFile">{{ this.excelFile.name }}</span>
+              @if (!this.disabled) {
+                <div class="excel-upload-container">
+                  <button mat-flat-button color="primary" type="button" (click)="excelFileInput.click()">
+                    <mat-icon>upload_file</mat-icon> Excel-Datei hochladen
+                  </button>
+                  <input #excelFileInput type="file" (change)="this.onExcelFileSelected($event)" accept=".xlsx,.xls,.csv" style="display: none;" />
+                  @if (this.excelFile) {
+                    <span class="file-name">{{ this.excelFile.name }}</span>
+                  }
                 </div>
-
-                <div class="mapping-container" *ngIf="this.excelRows.length > 0 && !this.disabled">
-                    <mat-form-field appearance="fill">
-                        <mat-label>Zeilen überspringen</mat-label>
-                        <input matInput type="number" min="0" [value]="this.excelRowsToSkip" (input)="this.onExcelRowsToSkipChange($event)" />
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>ISSN-Spalte</mat-label>
-                        <mat-select [(value)]="this.issnColumnIndex" (selectionChange)="this.validateMapping()">
-                            <mat-option *ngFor="let column of this.excelColumns" [value]="column.index" [disabled]="!column.label">
-                                {{ column.label || '(leere Spalte)' }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Titel-Spalte</mat-label>
-                        <mat-select [(value)]="this.titleColumnIndex" (selectionChange)="this.validateMapping()">
-                            <mat-option [value]="null">Keine Titel-Spalte</mat-option>
-                            <mat-option *ngFor="let column of this.excelColumns" [value]="column.index" [disabled]="!column.label">
-                                {{ column.label || '(leere Spalte)' }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                        <mat-label>Preis-Spalte</mat-label>
-                        <mat-select [(value)]="this.priceColumnIndex" (selectionChange)="this.validateMapping()">
-                            <mat-option *ngFor="let column of this.excelColumns" [value]="column.index" [disabled]="!column.label">
-                                {{ column.label || '(leere Spalte)' }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <button mat-raised-button color="accent" type="button" [disabled]="this.issnColumnIndex === null || this.priceColumnIndex === null" (click)="this.applyExcelMapping()">
-                        <mat-icon>play_for_work</mat-icon> Importieren
-                    </button>
+              }
+              @if (this.excelRows.length > 0 && !this.disabled) {
+                <div class="mapping-container">
+                  <mat-form-field appearance="fill">
+                    <mat-label>Zeilen überspringen</mat-label>
+                    <input matInput type="number" min="0" [value]="this.excelRowsToSkip" (input)="this.onExcelRowsToSkipChange($event)" />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label>ISSN-Spalte</mat-label>
+                    <mat-select [(value)]="this.issnColumnIndex" (selectionChange)="this.validateMapping()">
+                      @for (column of this.excelColumns; track column) {
+                        <mat-option [value]="column.index" [disabled]="!column.label">
+                          {{ column.label || '(leere Spalte)' }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label>Titel-Spalte</mat-label>
+                    <mat-select [(value)]="this.titleColumnIndex" (selectionChange)="this.validateMapping()">
+                      <mat-option [value]="null">Keine Titel-Spalte</mat-option>
+                      @for (column of this.excelColumns; track column) {
+                        <mat-option [value]="column.index" [disabled]="!column.label">
+                          {{ column.label || '(leere Spalte)' }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="fill">
+                    <mat-label>Preis-Spalte</mat-label>
+                    <mat-select [(value)]="this.priceColumnIndex" (selectionChange)="this.validateMapping()">
+                      @for (column of this.excelColumns; track column) {
+                        <mat-option [value]="column.index" [disabled]="!column.label">
+                          {{ column.label || '(leere Spalte)' }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <button mat-raised-button color="accent" type="button" [disabled]="this.issnColumnIndex === null || this.priceColumnIndex === null" (click)="this.applyExcelMapping()">
+                    <mat-icon>play_for_work</mat-icon> Importieren
+                  </button>
                 </div>
-
-                <div class="error-message" *ngIf="this.mappingError">{{ this.mappingError }}</div>
-
-                <div class="journal-prices-table-container" *ngIf="this.journalPrices.length > 0">
-                    <mat-form-field appearance="fill" class="search-field">
-                        <mat-label>Suchen...</mat-label>
-                        <input matInput placeholder="ISSN oder Name..." (input)="this.onJournalSearch($event)" />
-                    </mat-form-field>
-
-                    <table class="journal-prices-table">
-                        <thead>
-                            <tr>
-                                <th>ISSN</th>
-                                <th>Titel</th>
-                                <th>Größere Einheit ID</th>
-                                <th>Spezifischer Wert (netto)</th>
-                                <th *ngIf="!this.disabled">Aktion</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let priceEntry of this.filteredJournalPrices">
-                                <td>{{ priceEntry.issn || '-' }}</td>
-                                <td>{{ priceEntry.title || '-' }}</td>
-                                <td>
-                                    <span class="badge bg-secondary" *ngIf="priceEntry.greater_entity_id">
-                                        ID: {{ priceEntry.greater_entity_id }}
-                                    </span>
-                                    <span class="badge bg-warning text-dark" *ngIf="!priceEntry.greater_entity_id">
-                                        Wird beim Speichern aufgelöst
-                                    </span>
-                                </td>
-                                <td>{{ priceEntry.price }} EUR</td>
-                                <td *ngIf="!this.disabled">
-                                    <button mat-icon-button color="warn" type="button" (click)="this.removeJournalPrice(priceEntry)" matTooltip="Eintrag löschen">
-                                        <mat-icon>delete</mat-icon>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+              }
+              @if (this.mappingError) {
+                <div class="error-message">{{ this.mappingError }}</div>
+              }
+              @if (this.journalPrices.length > 0) {
+                <div class="journal-prices-table-container">
+                  <mat-form-field appearance="fill" class="search-field">
+                    <mat-label>Suchen...</mat-label>
+                    <input matInput placeholder="ISSN oder Name..." (input)="this.onJournalSearch($event)" />
+                  </mat-form-field>
+                  <table class="journal-prices-table">
+                    <thead>
+                      <tr>
+                        <th>ISSN</th>
+                        <th>Titel</th>
+                        <th>Größere Einheit ID</th>
+                        <th>Spezifischer Wert (netto)</th>
+                        @if (!this.disabled) {
+                          <th>Aktion</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (priceEntry of this.filteredJournalPrices; track priceEntry) {
+                        <tr>
+                          <td>{{ priceEntry.issn || '-' }}</td>
+                          <td>{{ priceEntry.title || '-' }}</td>
+                          <td>
+                            @if (priceEntry.greater_entity_id) {
+                              <span class="badge bg-secondary">
+                                ID: {{ priceEntry.greater_entity_id }}
+                              </span>
+                            }
+                            @if (!priceEntry.greater_entity_id) {
+                              <span class="badge bg-warning text-dark">
+                                Wird beim Speichern aufgelöst
+                              </span>
+                            }
+                          </td>
+                          <td>{{ priceEntry.price }} EUR</td>
+                          @if (!this.disabled) {
+                            <td>
+                              <button mat-icon-button color="warn" type="button" (click)="this.removeJournalPrice(priceEntry)" matTooltip="Eintrag löschen">
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
                 </div>
-
-                <p class="component-params-empty" *ngIf="this.journalPrices.length === 0">
-                    Keine zeitschriftenspezifischen Preise definiert. Laden Sie eine Excel-Preisliste hoch, um Werte automatisch zuzuordnen.
+              }
+              @if (this.journalPrices.length === 0) {
+                <p class="component-params-empty">
+                  Keine zeitschriftenspezifischen Preise definiert. Laden Sie eine Excel-Preisliste hoch, um Werte automatisch zuzuordnen.
                 </p>
+              }
             </mat-card-content>
-        </mat-card>
-    </form>
-</mat-dialog-content>
+          </mat-card>
+        }
+      </form>
+    </mat-dialog-content>

@@ -11,7 +11,7 @@ General information can be found in the [Wiki](https://github.com/ovgu-ubit/outp
 
 ## Installation <a name="installation"></a>
 ### Requirements
-- Node.JS 22
+- Node.JS 24
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
 ### Workspace setup
@@ -142,6 +142,37 @@ Run the frontend from the repository root. This keeps `output-interfaces` in wat
 To start both backend and frontend together, use:
 
 > $ npm run dev
+
+### tests
+
+Run backend and frontend tests once from the repository root:
+
+```sh
+npm test
+```
+
+Use `npm run test:api` or `npm run test:ui` to run one suite. Run `npm test` inside `output-ui` to use the frontend test watcher.
+
+Backend tests use Jest with NestJS 12's ESM packages. They require Node.js 24.9 or newer; the backend test scripts enable `--experimental-vm-modules` automatically. GitHub Actions uses Node.js 24.
+
+Scoped dependency overrides keep Babel's coverage tooling on `test-exclude` 8 and TypeORM 0.3 on `glob` 13, replacing deprecated transitive packages. Revisit these overrides when the upstream packages update their dependency ranges.
+
+Run `npm run test:e2e` from the repository root or `output-api` for the backend HTTP regression tests. This builds the backend and tests the full module graph against both TypeScript sources and compiled CommonJS output. Configuration startup, dynamic authorization providers, JWT cookies, CORS, JSON/form parsers, multipart imports, Swagger and the API error envelope are covered. Database and import services are mocked; no external database or additional test packages are required. The pull request workflow runs these checks as well.
+
+### frontend test browser
+
+Frontend tests use Vitest with headless Chromium, including checks for table layout and line wrapping. `npm test` in `output-ui` and `npm run test:ui` in the repository root check the browser before starting and automatically install or repair the matching version when it is missing. No separate browser installation is needed on Windows or macOS.
+
+The default browser location is `node_modules/.cache/output-ui-playwright` in this workspace. Setup and tests use the same location, including when `PLAYWRIGHT_BROWSERS_PATH` is explicitly configured.
+
+On Linux, install the browser and required system libraries once from the repository root:
+
+```sh
+npm run test:ui:setup -- --with-deps
+npm run test:ui
+```
+
+The pull request workflow runs this setup after `npm ci` and then executes the frontend tests on Linux and Windows.
 
 ### build frontend distributables
 Build frontend distributables from the repository root:

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -9,6 +9,7 @@ import { ExportFormFacade } from '../export-form-facade.service';
   selector: 'app-export-form-overview',
   imports: [SharedModule],
   templateUrl: './export-form-overview.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './export-form-overview.component.css',
 })
 export class ExportFormOverviewComponent implements OnInit {

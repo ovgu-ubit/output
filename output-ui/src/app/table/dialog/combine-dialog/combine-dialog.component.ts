@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.component';
 
@@ -6,6 +6,7 @@ import { AliasFormComponent } from 'src/app/table/dialog/alias-form/alias-form.c
     selector: 'app-combine-dialog',
     templateUrl: './combine-dialog.component.html',
     styleUrls: ['./combine-dialog.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CombineDialogComponent<T> implements OnInit {

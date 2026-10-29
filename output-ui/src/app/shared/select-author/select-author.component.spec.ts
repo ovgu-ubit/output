@@ -7,47 +7,47 @@ import { of } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import { SelectAuthorComponent } from './select-author.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 describe('SelectAuthorComponent', () => {
-  let component: SelectAuthorComponent;
-  let fixture: ComponentFixture<SelectAuthorComponent>;
+    let component: SelectAuthorComponent;
+    let fixture: ComponentFixture<SelectAuthorComponent>;
 
-  const mockAuthorService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
+    const mockAuthorService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatAutocompleteModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        MatFormFieldModule,
-        MatInputModule
-      ],
-      declarations: [ SelectAuthorComponent ],
-      providers: [
-        { provide: AuthorService, useValue: mockAuthorService },
-        { provide: ErrorPresentationService, useValue: { present: () => {} } },
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatAutocompleteModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                MatFormFieldModule,
+                MatInputModule
+            ],
+            declarations: [SelectAuthorComponent],
+            providers: [
+                { provide: AuthorService, useValue: mockAuthorService },
+                { provide: ErrorPresentationService, useValue: { present: () => { } } },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(SelectAuthorComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(SelectAuthorComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

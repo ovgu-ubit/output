@@ -1,6 +1,6 @@
 import { ImportProgress, isImportStopping } from 'src/app/shared/import-progress';
 import { shareReplay, tap, finalize } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { ReportService } from 'src/app/administration/services/report.service';
 import { Observable, Subject, firstValueFrom, from, map, takeUntil } from 'rxjs';
@@ -16,6 +16,7 @@ import { CsvFormatComponent } from '../../components/csv-format/csv-format.compo
   selector: 'app-import',
   templateUrl: './import.component.html',
   styleUrls: ['./import.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class ImportComponent implements OnInit, OnDestroy {

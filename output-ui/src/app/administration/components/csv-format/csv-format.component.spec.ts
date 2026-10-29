@@ -8,7 +8,7 @@ import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { ConfigService } from '../../services/config.service';
 import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('CsvFormatComponent', () => {
@@ -25,7 +25,7 @@ describe('CsvFormatComponent', () => {
         { provide: MAT_DIALOG_DATA, useValue: { path: 'test.csv', csvFormat: null } },
         { provide: ImportService, useValue: { getCSVMappings: () => of([]), setCSVMapping: () => of({}), deleteCSVMapping: () => of({}) } },
         { provide: ConfigService, useValue: { get: () => of({ value: {} }) } },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

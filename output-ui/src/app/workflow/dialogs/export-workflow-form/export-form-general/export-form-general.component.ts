@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -13,6 +13,7 @@ import { EXPORT_ENTITY_OPTIONS } from '../../../export-entity-options';
   templateUrl: './export-form-general.component.html',
   styleUrl: './export-form-general.component.css',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [SharedModule]
 })
 export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
 import {  OACategoryIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { OaCategoryFormComponent } from '../../../form/oa-category-form/oa-categ
     selector: 'app-oa-categories',
     templateUrl: './oa-categories.component.html',
     styleUrls: ['./oa-categories.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnInit {

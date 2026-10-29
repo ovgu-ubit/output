@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { PublicationDuplicateService } from 'src/app/services/entities/duplicate.service';
 import { Observable, catchError, concatMap, of } from 'rxjs';
@@ -12,6 +12,7 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confi
     selector: 'app-duplicate-dialog',
     templateUrl: './duplicate-dialog.component.html',
     styleUrl: './duplicate-dialog.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DuplicateDialogComponent implements OnInit {

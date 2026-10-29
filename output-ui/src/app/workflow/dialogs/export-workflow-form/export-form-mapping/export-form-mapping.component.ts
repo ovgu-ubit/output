@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -12,6 +12,7 @@ import { getExportEntityDetails } from '../../../export-entity-options';
   selector: 'app-export-form-mapping',
   imports: [SharedModule],
   templateUrl: './export-form-mapping.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './export-form-mapping.component.css',
 })
 export class ExportFormMappingComponent implements OnInit, WorkflowFormPage {

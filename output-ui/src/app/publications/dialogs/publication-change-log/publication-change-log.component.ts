@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import {  PublicationChange  } from '@output/interfaces';
@@ -26,6 +26,7 @@ type PublicationChangeEntry = {
   imports: [SharedModule],
   templateUrl: './publication-change-log.component.html',
   styleUrls: ['./publication-change-log.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: true
 })
 export class PublicationChangeLogComponent implements OnChanges {

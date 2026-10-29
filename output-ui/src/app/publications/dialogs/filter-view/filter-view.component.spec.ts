@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { CompareOperation, getPublicationFilterOperationsForType } from '@output/interfaces';
@@ -13,167 +13,167 @@ import { CompareOperation, getPublicationFilterOperationsForType } from '@output
 import { FilterViewComponent } from './filter-view.component';
 
 describe('FilterViewComponent', () => {
-  let component: FilterViewComponent;
-  let fixture: ComponentFixture<FilterViewComponent>;
+    let component: FilterViewComponent;
+    let fixture: ComponentFixture<FilterViewComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
-
-  const mockPublicationService = {
-    getFilters: jasmine.createSpy('getFilters').and.returnValue(of([])),
-    getReportingYears: jasmine.createSpy('getReportingYears').and.returnValue(of([]))
-  };
-
-  const mockConfigService = {
-    get: jasmine.createSpy('get').and.returnValue(of({ value: {} }))
-  };
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ 
-        FilterViewComponent, 
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        SharedModule
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { hideSavedFilters: true } },
-        { provide: PublicationService, useValue: mockPublicationService },
-        { provide: ConfigService, useValue: mockConfigService },
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(FilterViewComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should expose contract year as a numeric filter key', () => {
-    expect(component.keys).toContain(jasmine.objectContaining({
-      key: 'contract_year',
-      label: 'Vertragsjahr',
-      type: 'year'
-    }));
-  });
-
-  it('should sort filter fields alphabetically by label', () => {
-    const labels = component.keys.map((field) => field.label);
-
-    expect(labels).toEqual([...labels].sort((first, second) => first.localeCompare(second, 'de')));
-  });
-
-  it('should use the shared operator matrix for field types', () => {
-    const availableOpsFor = (field: string) => {
-      component.getFiltersControls()[0].get('field').setValue(field);
-      return component.compareOps.filter((op) => component.display(0, op)).map((op) => op.op);
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
     };
 
-    expect(availableOpsFor('title')).toEqual(getPublicationFilterOperationsForType('string'));
-    expect(availableOpsFor('contract_year')).toEqual(getPublicationFilterOperationsForType('year'));
-    expect(availableOpsFor('locked')).toEqual(getPublicationFilterOperationsForType('boolean'));
-  });
+    const mockPublicationService = {
+        getFilters: vi.fn().mockName('getFilters').mockReturnValue(of([])),
+        getReportingYears: vi.fn().mockName('getReportingYears').mockReturnValue(of([]))
+    };
 
-  it('should reset the default operator when contract year is selected', () => {
-    const filter = component.getFiltersControls()[0];
+    const mockConfigService = {
+        get: vi.fn().mockName('get').mockReturnValue(of({ value: {} }))
+    };
 
-    expect(filter.get('compare_operator').value).toBe(CompareOperation.INCLUDES);
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                FilterViewComponent,
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                SharedModule
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { hideSavedFilters: true } },
+                { provide: PublicationService, useValue: mockPublicationService },
+                { provide: ConfigService, useValue: mockConfigService },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    filter.get('field').setValue('contract_year');
-    filter.get('value').setValue('2026');
-
-    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
-      key: 'contract_year',
-      comp: CompareOperation.EQUALS,
-      value: 2026
-    }));
-  });
-
-  it('should pass comma separated string values as array for IN filters', () => {
-    const filter = component.getFiltersControls()[0];
-
-    filter.get('field').setValue('title');
-    filter.get('compare_operator').setValue(CompareOperation.IN);
-    filter.get('value').setValue('alpha, beta,gamma');
-
-    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
-      key: 'title',
-      comp: CompareOperation.IN,
-      value: ['alpha', 'beta', 'gamma']
-    }));
-  });
-
-  it('should pass comma separated numeric values as number array for IN filters', () => {
-    const filter = component.getFiltersControls()[0];
-
-    filter.get('field').setValue('contract_year');
-    filter.get('compare_operator').setValue(CompareOperation.IN);
-    filter.get('value').setValue('2024,2025');
-
-    expect(component.getFilter().expressions[0]).toEqual(jasmine.objectContaining({
-      key: 'contract_year',
-      comp: CompareOperation.IN,
-      value: [2024, 2025]
-    }));
-  });
-
-  it('should reject non-integer ID values and not apply the filter', () => {
-    const filter = component.getFiltersControls()[0];
-    filter.get('field').setValue('id');
-    filter.get('value').setValue('1a');
-
-    expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
-
-    component.action();
-
-    expect(mockDialogRef.close).not.toHaveBeenCalled();
-  });
-
-  it('should reject invalid values in an ID list', () => {
-    const filter = component.getFiltersControls()[0];
-    filter.get('field').setValue('author_id');
-    filter.get('compare_operator').setValue(CompareOperation.IN);
-    filter.get('value').setValue('1, 2a');
-
-    expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
-  });
-
-  it('should allow decimal values for numeric fields', () => {
-    const filter = component.getFiltersControls()[0];
-    filter.get('field').setValue('cost_approach');
-    filter.get('value').setValue('12.5');
-
-    expect(filter.get('value').valid).toBeTrue();
-  });
-
-  it('should apply the filter instead of adding a row when the form is submitted', () => {
-    const filter = component.getFiltersControls()[0];
-    filter.get('field').setValue('title');
-    filter.get('value').setValue('Angular');
-
-    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
-    form.dispatchEvent(new Event('submit'));
-
-    expect(component.getFiltersControls().length).toBe(1);
-    expect(mockDialogRef.close).toHaveBeenCalledWith({
-      filter: {
-        expressions: [jasmine.objectContaining({
-          key: 'title',
-          comp: CompareOperation.INCLUDES,
-          value: 'Angular'
-        })]
-      },
-      paths: []
+        fixture = TestBed.createComponent(FilterViewComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
     });
-  });
+
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
+
+    it('should expose contract year as a numeric filter key', () => {
+        expect(component.keys).toContainEqual(expect.objectContaining({
+            key: 'contract_year',
+            label: 'Vertragsjahr',
+            type: 'year'
+        }));
+    });
+
+    it('should sort filter fields alphabetically by label', () => {
+        const labels = component.keys.map((field) => field.label);
+
+        expect(labels).toEqual([...labels].sort((first, second) => first.localeCompare(second, 'de')));
+    });
+
+    it('should use the shared operator matrix for field types', () => {
+        const availableOpsFor = (field: string) => {
+            component.getFiltersControls()[0].get('field').setValue(field);
+            return component.compareOps.filter((op) => component.display(0, op)).map((op) => op.op);
+        };
+
+        expect(availableOpsFor('title')).toEqual(getPublicationFilterOperationsForType('string'));
+        expect(availableOpsFor('contract_year')).toEqual(getPublicationFilterOperationsForType('year'));
+        expect(availableOpsFor('locked')).toEqual(getPublicationFilterOperationsForType('boolean'));
+    });
+
+    it('should reset the default operator when contract year is selected', () => {
+        const filter = component.getFiltersControls()[0];
+
+        expect(filter.get('compare_operator').value).toBe(CompareOperation.INCLUDES);
+
+        filter.get('field').setValue('contract_year');
+        filter.get('value').setValue('2026');
+
+        expect(component.getFilter().expressions[0]).toEqual(expect.objectContaining({
+            key: 'contract_year',
+            comp: CompareOperation.EQUALS,
+            value: 2026
+        }));
+    });
+
+    it('should pass comma separated string values as array for IN filters', () => {
+        const filter = component.getFiltersControls()[0];
+
+        filter.get('field').setValue('title');
+        filter.get('compare_operator').setValue(CompareOperation.IN);
+        filter.get('value').setValue('alpha, beta,gamma');
+
+        expect(component.getFilter().expressions[0]).toEqual(expect.objectContaining({
+            key: 'title',
+            comp: CompareOperation.IN,
+            value: ['alpha', 'beta', 'gamma']
+        }));
+    });
+
+    it('should pass comma separated numeric values as number array for IN filters', () => {
+        const filter = component.getFiltersControls()[0];
+
+        filter.get('field').setValue('contract_year');
+        filter.get('compare_operator').setValue(CompareOperation.IN);
+        filter.get('value').setValue('2024,2025');
+
+        expect(component.getFilter().expressions[0]).toEqual(expect.objectContaining({
+            key: 'contract_year',
+            comp: CompareOperation.IN,
+            value: [2024, 2025]
+        }));
+    });
+
+    it('should reject non-integer ID values and not apply the filter', () => {
+        const filter = component.getFiltersControls()[0];
+        filter.get('field').setValue('id');
+        filter.get('value').setValue('1a');
+
+        expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
+
+        component.action();
+
+        expect(mockDialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it('should reject invalid values in an ID list', () => {
+        const filter = component.getFiltersControls()[0];
+        filter.get('field').setValue('author_id');
+        filter.get('compare_operator').setValue(CompareOperation.IN);
+        filter.get('value').setValue('1, 2a');
+
+        expect(filter.get('value').getError('publicationFilterValue')).toBe('integer');
+    });
+
+    it('should allow decimal values for numeric fields', () => {
+        const filter = component.getFiltersControls()[0];
+        filter.get('field').setValue('cost_approach');
+        filter.get('value').setValue('12.5');
+
+        expect(filter.get('value').valid).toBe(true);
+    });
+
+    it('should apply the filter instead of adding a row when the form is submitted', () => {
+        const filter = component.getFiltersControls()[0];
+        filter.get('field').setValue('title');
+        filter.get('value').setValue('Angular');
+
+        const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+        form.dispatchEvent(new Event('submit'));
+
+        expect(component.getFiltersControls().length).toBe(1);
+        expect(mockDialogRef.close).toHaveBeenCalledWith({
+            filter: {
+                expressions: [expect.objectContaining({
+                        key: 'title',
+                        comp: CompareOperation.INCLUDES,
+                        value: 'Angular'
+                    })]
+            },
+            paths: []
+        });
+    });
 });

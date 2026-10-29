@@ -1,22 +1,26 @@
 <h1 mat-dialog-title>Update-Konfiguration</h1>
 <mat-dialog-content>
-<table style="width: 100%;">
+  <table style="width: 100%;">
     <tr>
-        <th>Feld</th>
-        <th>Verhalten</th>
+      <th>Feld</th>
+      <th>Verhalten</th>
     </tr>
-    <tr *ngFor="let key of this.keys" style="border-bottom: 1px solid #ddd;">
+    @for (key of this.keys; track key) {
+      <tr style="border-bottom: 1px solid #ddd;">
         <td>{{key}}</td>
         <!--<td>{{this.getValue(key)}}</td>-->
         <td>
-            <mat-select [(ngModel)]="this.mapping[key]">
-                <mat-option *ngFor="let option of this.getOptions(), let idx = index" [value]="idx">{{this.getText(option)}}</mat-option>
-            </mat-select>
+          <mat-select [(ngModel)]="this.mapping[key]">
+            @for (option of this.getOptions(); track option; let idx = $index) {
+              <mat-option [value]="idx">{{this.getText(option)}}</mat-option>
+            }
+          </mat-select>
         </td>
-    </tr>
-</table>
+      </tr>
+    }
+  </table>
 </mat-dialog-content>
 <mat-dialog-actions>
-<button mat-raised-button class="primary-button" (click)="action()">Konfiguration ändern</button>&nbsp;
-<button mat-raised-button class="secondary-button" (click)="abort()">Abbrechen</button>
+  <button mat-raised-button class="primary-button" (click)="action()">Konfiguration ändern</button>&nbsp;
+  <button mat-raised-button class="secondary-button" (click)="abort()">Abbrechen</button>
 </mat-dialog-actions>
