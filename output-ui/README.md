@@ -16,7 +16,7 @@ Run `ng build` to build the project. The build artifacts will be stored in the `
 
 ## Running unit tests
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Run `npm test` to execute the unit tests via Vitest in headless Chromium. The script automatically checks and prepares the required browser. For a single run, use `npm test -- --watch=false`.
 
 ## Running end-to-end tests
 
