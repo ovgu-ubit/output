@@ -153,6 +153,8 @@ npm test
 
 Use `npm run test:api` or `npm run test:ui` to run one suite. Run `npm test` inside `output-ui` to use the frontend test watcher.
 
+Backend tests use Jest with NestJS 12's ESM packages. They require Node.js 24.9 or newer; the backend test scripts enable `--experimental-vm-modules` automatically. GitHub Actions uses Node.js 24.
+
 ### frontend test browser
 
 Frontend tests use Vitest with headless Chromium, including checks for table layout and line wrapping. `npm test` in `output-ui` and `npm run test:ui` in the repository root check the browser before starting and automatically install or repair the matching version when it is missing. No separate browser installation is needed on Windows or macOS.

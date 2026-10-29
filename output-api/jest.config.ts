@@ -11,7 +11,7 @@ const config: Config = {
   collectCoverageFrom: ['src/**/*.service.ts', 'src/**/*.controller.ts'],
   coverageDirectory: 'coverage',
   transform: {
-    '^.+\\.(t|j)s$': [
+    '^.+\\.tsx?$': [
       'ts-jest',
       {
         tsconfig: 'tsconfig.spec.json',
