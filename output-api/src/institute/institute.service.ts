@@ -93,40 +93,124 @@ export class InstituteService {
         }));
     }
 
-    public async index(reporting_year: number, canReadNetCosts = false): Promise<InstituteIndex[]> {
-        const result:InstituteIndex[] = [];
+    public async index(reporting_year: number | null, canReadNetCosts = false): Promise<InstituteIndex[]> {
+        const parameters: Date[] = [];
+        let dateCondition: (publicationAlias: string) => string;
 
-        const instIDs = (await this.repository.find({ relations: { authors: true } }))
-        for (const inst of instIDs) {
-            let query = this.repository.createQueryBuilder("institute")
-                .innerJoin("institute_closure", "ic", "ic.id_descendant = institute.id",)
-                .leftJoin("author_publication", "aut_pub", "aut_pub.\"instituteId\" = institute.id")
-                .leftJoin("publication", "pub", "aut_pub.\"publicationId\" = pub.id")
-                .leftJoin("author_institutes_institute", "aut_inst", "aut_inst.\"instituteId\" = institute.id")
-                .select("COUNT(distinct pub.id)", "pub_count")
-                .addSelect("COUNT(distinct (CASE WHEN \"aut_pub\".\"corresponding\" THEN pub.id ELSE NULL END))", "pub_count_corr")
-                .addSelect("COUNT(distinct aut_inst.\"authorId\")", "author_count_total")
-                .addSelect("COUNT(distinct id_descendant)-1", "sub_inst_count")
-                .where("ic.id_ancestor = :id", { id: inst.id })
-
-            if (reporting_year) {
-                const beginDate = new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0));
-                const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
-                query = query
-                    .addSelect(canReadNetCosts ? this.buildCorrespondingInstituteNetCostsSelect('pub_cost.pub_date between :beginDate and :endDate') : "NULL", "net_costs")
-                    .andWhere('(pub is NULL or pub_date between :beginDate and :endDate)', { beginDate, endDate })
-            }
-            else {
-                query = query
-                    .addSelect(canReadNetCosts ? this.buildCorrespondingInstituteNetCostsSelect('pub_cost.pub_date IS NULL and pub_cost.pub_date_print IS NULL and pub_cost.pub_date_accepted IS NULL and pub_cost.pub_date_submitted IS NULL') : "NULL", "net_costs")
-                    .andWhere('(pub is NULL or (pub_date IS NULL and pub_date_print IS NULL and pub_date_accepted IS NULL and pub_date_submitted IS NULL))')
-            }
-            //console.log(query.getSql());
-            const res = await query.getRawOne() as InstituteIndex;
-            result.push({ ...res, sub_inst_count: res.sub_inst_count < 0 ? 0 : res.sub_inst_count, id: inst.id, label: inst.label, short_label: inst.short_label, author_count: inst.authors?.length, opus_id: inst.opus_id });
+        if (reporting_year) {
+            parameters.push(
+                new Date(Date.UTC(reporting_year, 0, 1, 0, 0, 0, 0)),
+                new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999)),
+            );
+            dateCondition = (publicationAlias) => `${publicationAlias}.pub_date BETWEEN $1 AND $2`;
+        } else {
+            dateCondition = (publicationAlias) => `${publicationAlias}.pub_date IS NULL
+                AND ${publicationAlias}.pub_date_print IS NULL
+                AND ${publicationAlias}.pub_date_accepted IS NULL
+                AND ${publicationAlias}.pub_date_submitted IS NULL`;
         }
 
-        return result;
+        const costCtes = canReadNetCosts ? `,
+            publication_cost AS (
+                SELECT invoice_amounts.publication_id,
+                    SUM(invoice_amounts.gross_amount) AS net_costs
+                FROM (${invoiceAmountsSql()}) invoice_amounts
+                GROUP BY invoice_amounts.publication_id
+            ),
+            corresponding_authorship AS (
+                SELECT corresponding_author_publication."publicationId" AS publication_id,
+                    COUNT(*) AS authorship_count
+                FROM author_publication corresponding_author_publication
+                WHERE corresponding_author_publication."corresponding" IS TRUE
+                GROUP BY corresponding_author_publication."publicationId"
+            )` : '';
+        const costJoins = canReadNetCosts ? `
+                LEFT JOIN publication_cost
+                    ON publication_cost.publication_id = publication.id
+                LEFT JOIN corresponding_authorship
+                    ON corresponding_authorship.publication_id = publication.id` : '';
+        const netCostsSelect = canReadNetCosts
+            ? `COALESCE(SUM(CASE
+                    WHEN author_publication."corresponding" IS TRUE
+                        AND ${dateCondition('publication')}
+                    THEN COALESCE(publication_cost.net_costs, 0)
+                        / NULLIF(corresponding_authorship.authorship_count, 0)
+                    ELSE 0
+                END), 0)`
+            : 'NULL::double precision';
+
+        const query = `
+            WITH direct_authors AS (
+                SELECT author_institute."instituteId" AS institute_id,
+                    COUNT(DISTINCT author_institute."authorId")::integer AS author_count
+                FROM author_institutes_institute author_institute
+                GROUP BY author_institute."instituteId"
+            ),
+            eligible_descendants AS (
+                SELECT institute_closure.id_ancestor AS institute_id,
+                    institute_closure.id_descendant AS descendant_id
+                FROM institute_closure
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM author_publication any_authorship
+                    WHERE any_authorship."instituteId" = institute_closure.id_descendant
+                ) OR EXISTS (
+                    SELECT 1
+                    FROM author_publication eligible_authorship
+                    LEFT JOIN publication eligible_publication
+                        ON eligible_publication.id = eligible_authorship."publicationId"
+                    WHERE eligible_authorship."instituteId" = institute_closure.id_descendant
+                        AND (eligible_publication.id IS NULL
+                            OR (${dateCondition('eligible_publication')}))
+                )
+            ),
+            tree_stats AS (
+                SELECT eligible_descendants.institute_id,
+                    GREATEST(COUNT(DISTINCT eligible_descendants.descendant_id) - 1, 0)::integer AS sub_inst_count,
+                    COUNT(DISTINCT author_institute."authorId")::integer AS author_count_total
+                FROM eligible_descendants
+                LEFT JOIN author_institutes_institute author_institute
+                    ON author_institute."instituteId" = eligible_descendants.descendant_id
+                GROUP BY eligible_descendants.institute_id
+            )
+            ${costCtes},
+            publication_stats AS (
+                SELECT institute_closure.id_ancestor AS institute_id,
+                    COUNT(DISTINCT CASE
+                        WHEN ${dateCondition('publication')}
+                        THEN publication.id
+                    END)::integer AS pub_count,
+                    COUNT(DISTINCT CASE
+                        WHEN author_publication."corresponding" IS TRUE
+                            AND ${dateCondition('publication')}
+                        THEN publication.id
+                    END)::integer AS pub_count_corr,
+                    ${netCostsSelect} AS net_costs
+                FROM institute_closure
+                LEFT JOIN author_publication
+                    ON author_publication."instituteId" = institute_closure.id_descendant
+                LEFT JOIN publication
+                    ON publication.id = author_publication."publicationId"
+                ${costJoins}
+                GROUP BY institute_closure.id_ancestor
+            )
+            SELECT institute.id,
+                institute.label,
+                institute.short_label,
+                institute.opus_id,
+                COALESCE(direct_authors.author_count, 0)::integer AS author_count,
+                COALESCE(tree_stats.author_count_total, 0)::integer AS author_count_total,
+                COALESCE(tree_stats.sub_inst_count, 0)::integer AS sub_inst_count,
+                COALESCE(publication_stats.pub_count, 0)::integer AS pub_count,
+                COALESCE(publication_stats.pub_count_corr, 0)::integer AS pub_count_corr,
+                publication_stats.net_costs
+            FROM institute
+            LEFT JOIN direct_authors ON direct_authors.institute_id = institute.id
+            LEFT JOIN tree_stats ON tree_stats.institute_id = institute.id
+            LEFT JOIN publication_stats ON publication_stats.institute_id = institute.id
+            ORDER BY institute.id`;
+
+        return this.dataSource.query(query, parameters) as Promise<InstituteIndex[]>;
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {
@@ -304,29 +388,4 @@ export class InstituteService {
         return resolvedMinutes * 60 * 1000;
     }
 
-    private buildCorrespondingInstituteNetCostsSelect(publicationDateCondition: string): string {
-        return `COALESCE((
-            SELECT SUM(COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0))
-            FROM institute cost_institute
-            INNER JOIN institute_closure cost_ic ON cost_ic.id_descendant = cost_institute.id
-            INNER JOIN author_publication author_publication_net_cost ON author_publication_net_cost."instituteId" = cost_institute.id
-            INNER JOIN publication pub_cost ON pub_cost.id = author_publication_net_cost."publicationId"
-            LEFT JOIN (
-                SELECT invoice_amounts.publication_id AS "publicationId",
-                    SUM(invoice_amounts.gross_amount) AS net_costs
-                FROM (${invoiceAmountsSql()}) invoice_amounts
-                GROUP BY invoice_amounts.publication_id
-            ) publication_cost ON publication_cost."publicationId" = pub_cost.id
-            INNER JOIN (
-                SELECT corresponding_author_publication."publicationId" AS "publicationId",
-                    COUNT(*) AS authorship_count
-                FROM author_publication corresponding_author_publication
-                WHERE corresponding_author_publication."corresponding" = true
-                GROUP BY corresponding_author_publication."publicationId"
-            ) corresponding_authorship ON corresponding_authorship."publicationId" = pub_cost.id
-            WHERE cost_ic.id_ancestor = :id
-                AND author_publication_net_cost."corresponding" = true
-                AND ${publicationDateCondition}
-        ), 0)`;
-    }
 }

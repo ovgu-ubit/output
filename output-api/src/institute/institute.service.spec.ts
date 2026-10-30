@@ -13,34 +13,6 @@ import { AppConfigService } from '../config/app-config.service';
 import { AliasLookupService } from '../common/alias-lookup.service';
 import { EditLockOwnerStore } from '../common/edit-lock';
 
-const createQueryBuilderMock = (rawOneResult: unknown = {}) => {
-    const calls: Record<string, unknown[][]> = {
-        addSelect: [],
-        leftJoin: [],
-        select: [],
-    };
-
-    const qb: any = {};
-    qb.innerJoin = jest.fn(() => qb);
-    qb.leftJoin = jest.fn((...args) => {
-        calls.leftJoin.push(args);
-        return qb;
-    });
-    qb.select = jest.fn((...args) => {
-        calls.select.push(args);
-        return qb;
-    });
-    qb.addSelect = jest.fn((...args) => {
-        calls.addSelect.push(args);
-        return qb;
-    });
-    qb.where = jest.fn(() => qb);
-    qb.andWhere = jest.fn(() => qb);
-    qb.getRawOne = jest.fn().mockResolvedValue(rawOneResult);
-
-    return { queryBuilder: qb, calls };
-};
-
 describe('InstituteService', () => {
     let service: InstituteService;
     let repository: jest.Mocked<Partial<Repository<Institute>>>;
@@ -49,7 +21,7 @@ describe('InstituteService', () => {
     let authorRepository: jest.Mocked<Partial<Repository<Author>>>;
     let aliasRepository: jest.Mocked<Partial<Repository<AliasInstitute>>>;
     let configService: { get: jest.Mock };
-    let dataSource: { transaction: jest.Mock };
+    let dataSource: { transaction: jest.Mock; query: jest.Mock };
 
     beforeEach(async () => {
         EditLockOwnerStore.clear();
@@ -77,6 +49,7 @@ describe('InstituteService', () => {
             get: jest.fn(),
         };
         dataSource = {
+            query: jest.fn(),
             transaction: jest.fn().mockImplementation(async (cb) => {
                 const managerMock = {
                     save: jest.fn().mockImplementation(async (entity, obj) => {
@@ -236,22 +209,30 @@ describe('InstituteService', () => {
     });
 
     it('adds reader-gated corresponding authorship net costs to the institute index', async () => {
-        const { queryBuilder, calls } = createQueryBuilderMock({
+        dataSource.query.mockResolvedValue([{
+            id: 11,
+            label: 'Institute',
             pub_count: 1,
             pub_count_corr: 1,
             author_count_total: 2,
             sub_inst_count: 0,
             net_costs: 150,
-        });
-        repository.find.mockResolvedValue([{ id: 11, label: 'Institute', authors: [] } as Institute]);
-        (repository as any).createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+        }]);
 
         const result = await service.index(2025, true);
 
-        const netCostSelect = calls.addSelect.find((call) => call[1] === 'net_costs')?.[0] as string;
-        expect(netCostSelect).toContain('COALESCE(publication_cost.net_costs, 0) / NULLIF(corresponding_authorship.authorship_count, 0)');
-        expect(netCostSelect).toContain('author_publication_net_cost."corresponding" = true');
-        expect(netCostSelect).toContain('cost_ic.id_ancestor = :id');
+        expect(dataSource.query).toHaveBeenCalledTimes(1);
+        const [sql, parameters] = dataSource.query.mock.calls[0];
+        expect(sql).toContain('WITH direct_authors AS');
+        expect(sql).toContain('publication_cost AS');
+        expect(sql).toContain('corresponding_authorship AS');
+        expect(sql).toContain('COALESCE(publication_cost.net_costs, 0)');
+        expect(sql).toContain('/ NULLIF(corresponding_authorship.authorship_count, 0)');
+        expect(sql).toContain('publication.pub_date BETWEEN $1 AND $2');
+        expect(parameters).toEqual([
+            new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0)),
+            new Date(Date.UTC(2025, 11, 31, 23, 59, 59, 999)),
+        ]);
         expect(result[0]).toEqual(expect.objectContaining({
             id: 11,
             label: 'Institute',
@@ -260,20 +241,27 @@ describe('InstituteService', () => {
     });
 
     it('does not add the institute net cost subquery for non-reader index calls', async () => {
-        const { queryBuilder, calls } = createQueryBuilderMock({
-            pub_count: 1,
-            pub_count_corr: 1,
-            author_count_total: 2,
-            sub_inst_count: 0,
-        });
-        repository.find.mockResolvedValue([{ id: 11, label: 'Institute', authors: [] } as Institute]);
-        (repository as any).createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+        dataSource.query.mockResolvedValue([]);
 
         await service.index(2025, false);
 
-        expect(calls.addSelect).toEqual(expect.arrayContaining([
-            ['NULL', 'net_costs'],
-        ]));
+        const [sql] = dataSource.query.mock.calls[0];
+        expect(sql).toContain('NULL::double precision AS net_costs');
+        expect(sql).not.toContain('publication_cost AS');
+        expect(sql).not.toContain('corresponding_authorship AS');
+    });
+
+    it('uses the missing-date definition without date parameters', async () => {
+        dataSource.query.mockResolvedValue([]);
+
+        await service.index(null, true);
+
+        const [sql, parameters] = dataSource.query.mock.calls[0];
+        expect(sql).toContain('publication.pub_date IS NULL');
+        expect(sql).toContain('publication.pub_date_print IS NULL');
+        expect(sql).toContain('publication.pub_date_accepted IS NULL');
+        expect(sql).toContain('publication.pub_date_submitted IS NULL');
+        expect(parameters).toEqual([]);
     });
 
     it('clears references and aliases before deleting institutes', async () => {
