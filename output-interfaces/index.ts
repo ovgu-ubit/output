@@ -3,6 +3,7 @@ export * from './ApiError';
 export * from './Authorization';
 export * from './Config';
 export * from './Import';
+export * from './IndexPage';
 export * from './InvoiceIndex';
 export * from './InvoiceCosts';
 export * from './Publication';

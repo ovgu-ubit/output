@@ -5,7 +5,7 @@ import { PublicationController } from './PublicationController';
 describe('PublicationController', () => {
     let controller: PublicationController;
     let publicationService: { saveOne: jest.Mock; getDuplicateEntries: jest.Mock; getPublicationOrFail: jest.Mock; getPublicationChanges: jest.Mock; combine: jest.Mock };
-    let publicationIndexService: { getAllForReportingYear: jest.Mock; getIndexEntries: jest.Mock; getReportingYears: jest.Mock; filterIndex: jest.Mock };
+    let publicationIndexService: { getAllForReportingYear: jest.Mock; getIndexEntries: jest.Mock; getIndexPage: jest.Mock; getReportingYears: jest.Mock; filterIndex: jest.Mock };
     let publicationFilterService: { listDefinitions: jest.Mock; applyPaths: jest.Mock };
 
     beforeEach(() => {
@@ -19,6 +19,7 @@ describe('PublicationController', () => {
         publicationIndexService = {
             getAllForReportingYear: jest.fn(),
             getIndexEntries: jest.fn(),
+            getIndexPage: jest.fn(),
             getReportingYears: jest.fn(),
             filterIndex: jest.fn(),
         };
@@ -116,6 +117,17 @@ describe('PublicationController', () => {
         await expect(controller.index(2026, undefined, { user: { read: true } } as any)).resolves.toEqual([]);
 
         expect(publicationIndexService.getIndexEntries).toHaveBeenCalledWith(2026, undefined, true);
+    });
+
+    it('delegates paginated index requests without changing legacy endpoints', async () => {
+        const body = { page: 2, page_size: 20, sort: [], paths: [], all_reporting_years: false, soft: false };
+        const page = { items: [{ id: 1 }], total: 41, page: 2, page_size: 20 };
+        publicationIndexService.getIndexPage.mockResolvedValue(page);
+
+        await expect(controller.indexPage(body as any, { user: { read: true } } as any)).resolves.toEqual(page);
+
+        expect(publicationIndexService.getIndexPage).toHaveBeenCalledWith(body, true);
+        expect(publicationIndexService.getIndexEntries).not.toHaveBeenCalled();
     });
 
     it('normalizes reader permission objects for reporting-year lookups', async () => {

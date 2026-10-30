@@ -67,6 +67,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   id;
   viewConfig: ViewConfig;
   reporting_year: number | null;
+  private viewConfigApplied = false;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
@@ -86,6 +87,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   get dataSource2() { return this.tableData.dataSource2; }
   get searchControl() { return this.tableData.searchControl; }
   get filterControls() { return this.tableData.filterControls; }
+  get rowCount() { return this.tableData.serverSide ? this.tableData.total : this.dataSource.filteredData.length; }
 
   public ngOnInit(): void {
     this.tableData.init(this.serviceClass, this.parent, this.headers);
@@ -100,24 +102,36 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
     let ob$: Observable<any> = this.parent.preProcessing ? this.parent.preProcessing() : of(null);
 
-    ob$ = ob$.pipe(concatMap(data => {
-      return this.store.select(selectReportingYear).pipe(concatMap(data => {
-        if (data !== undefined) {
-          return of(data)
-        } else {
-          return this.configService.get("reporting_year").pipe(map(e => e?.value));
-        }
-      }), map(data => {
-        this.setReportingYear(data, this.parent.indexOptions?.allReportingYears === true);
-        let col = this.headers.find(e => e.colName === 'pub_count');
-        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
-        col = this.headers.find(e => e.colName === 'pub_count_corr')
-        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
-        col = this.headers.find(e => e.colName === 'net_costs')
-        if (col && !this.publication_table) col.colTitle += ' ' + (data ? data : 'ohne Datum')
-        col = this.headers.find(e => e.colName === 'invoice_count');
-        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum');
-      }), concatMap(data => this.updateData()))
+    ob$ = ob$.pipe(concatMap(() => {
+      const viewConfig$ = this.publication_table
+        ? this.store.select(selectViewConfig).pipe(take(1))
+        : of(undefined);
+      return viewConfig$.pipe(
+        map(viewConfig => {
+          if (viewConfig && !this.viewConfigApplied) {
+            this.viewConfig = viewConfig;
+            this.setViewConfig(viewConfig);
+            this.viewConfigApplied = true;
+          }
+        }),
+        concatMap(() => this.store.select(selectReportingYear).pipe(
+          concatMap(data => data !== undefined
+            ? of(data)
+            : this.configService.get("reporting_year").pipe(map(e => e?.value))),
+          map(data => {
+            this.setReportingYear(data, this.parent.indexOptions?.allReportingYears === true);
+            let col = this.headers.find(e => e.colName === 'pub_count');
+            if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+            col = this.headers.find(e => e.colName === 'pub_count_corr')
+            if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+            col = this.headers.find(e => e.colName === 'net_costs')
+            if (col && !this.publication_table) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+            col = this.headers.find(e => e.colName === 'invoice_count');
+            if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum');
+          }),
+          concatMap(() => this.updateData()),
+        )),
+      );
     }));
 
     ob$ = merge(ob$, this.route.queryParamMap.pipe(map(params => {
@@ -125,8 +139,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         this.id = params.get('id');
       }
     })))
-
-    if (this.publication_table) ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(take(1), map(data => this.viewConfig = data)));
 
     this.pageForm = this.formBuilder.group({
       pageNumber: ['', [Validators.required, Validators.pattern("^[0-9]*$")]]
@@ -136,14 +148,22 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.errorPresentation.present(err, { action: 'load', entity: this.name });
       return of(null)
     }), takeUntil(this.destroy$)).subscribe(() => {
-        if (this.dataSource) this.dataSource.paginator = this.paginator;
-        if (this.dataSource2) this.dataSource2.paginator = this.paginator2;
+        if (this.tableData.serverSide) this.syncServerPaginators();
+        else {
+          if (this.dataSource) this.dataSource.paginator = this.paginator;
+          if (this.dataSource2) this.dataSource2.paginator = this.paginator2;
+        }
     });
 
     this.searchControl.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(data => {
       if (!data && this.tableData.columnFilter) return;
       if (data) this.tableData.columnFilter = false;
-      this.tableData.doFilter(data);
+      if (this.tableData.serverSide) {
+        this.tableData.resetPage();
+        this.reloadServerData();
+      } else {
+        this.tableData.doFilter(data);
+      }
     });
 
     window.onbeforeunload = () => this.ngOnDestroy();
@@ -176,9 +196,15 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
             this.tableData.filterValues.forEach((val, key) => {
               (filter as any)[key] = val?.trim().toLocaleLowerCase();
             });
-            this.dataSource.filter = JSON.stringify(filter);
-            this.dataSource2.filter = JSON.stringify(filter);
+            if (this.tableData.serverSide) {
+              this.tableData.resetPage();
+              this.reloadServerData();
+            } else {
+              this.dataSource.filter = JSON.stringify(filter);
+              this.dataSource2.filter = JSON.stringify(filter);
+            }
           });
+        this.tableData.filterControls[e].setValue(this.tableData.filterValues.get(e) ?? '', { emitEvent: false });
       });
       this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
       if (this.id) {
@@ -216,8 +242,11 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       concatMap(data => this.parent.afterDataLoaded ? this.parent.afterDataLoaded(data) : of(undefined)),
       map(() => {
         this.selection.clear();
-        this.dataSource.paginator = this.paginator;
-        this.dataSource2.paginator = this.paginator2;
+        if (this.tableData.serverSide) this.syncServerPaginators();
+        else {
+          this.dataSource.paginator = this.paginator;
+          this.dataSource2.paginator = this.paginator2;
+        }
         this.cdr.detectChanges();
       })
     );
@@ -327,7 +356,12 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   announceSortChange(sortState: Sort) {
     this.tableData.announceSortChange(sortState);
-    this.dataSource.paginator = this.paginator;
+    if (this.tableData.serverSide) {
+      this.tableData.resetPage();
+      this.reloadServerData();
+    } else {
+      this.dataSource.paginator = this.paginator;
+    }
   }
 
   renderHeader(col): { text: string, asc: boolean } {
@@ -344,18 +378,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   goToPage() {
-    let page = null;
-    if (this.paginator.length <= this.pageForm.controls.pageNumber.value * this.paginator.pageSize) {
-        page = Math.floor(this.paginator.length / this.paginator.pageSize);
-    } else {
-        page = this.pageForm.controls.pageNumber.value;
-    }
-    
-    if (Number.isNaN(page) || !Number.isInteger(Number(page))) {
+    const requestedPage = Number(this.pageForm.controls.pageNumber.value);
+    if (!Number.isInteger(requestedPage) || requestedPage < 1) {
       this.pageForm.controls.pageNumber.setValue('');
       return;
     }
-    this.paginator.pageIndex = Number(page) - 1;
+    const lastPageIndex = Math.max(0, Math.ceil(this.paginator.length / this.paginator.pageSize) - 1);
+    this.paginator.pageIndex = Math.min(requestedPage - 1, lastPageIndex);
     this.paginator.page.next({
       pageIndex: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
@@ -388,6 +417,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.tableData.sort_state = [];
     this.tableData.filterValues = new Map<string, string>();
     this.tableData.columnFilter = false;
+    this.tableData.setPage(0, 10);
 
     this.searchControl.setValue('', { emitEvent: false });
     Object.values(this.filterControls).forEach(control => {
@@ -406,7 +436,27 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     }
   }
 
+  resetPage(): void {
+    this.tableData.resetPage();
+    this.syncServerPaginators();
+  }
+
   setViewConfig(viewConfig: ViewConfig) {
+    if (this.tableData.serverSide) {
+      this.tableData.sort_state = viewConfig.sortState ?? [];
+      this.tableData.filterValues = viewConfig.filterColumn instanceof Map
+        ? new Map(viewConfig.filterColumn)
+        : new Map(Object.entries(viewConfig.filterColumn ?? {}));
+      const searchValue = viewConfig.filterValue ?? '';
+      this.tableData.columnFilter = !searchValue;
+      this.searchControl.setValue(searchValue, { emitEvent: false });
+      for (const col of this.headerNames) {
+        this.filterControls[col]?.setValue(this.tableData.filterValues.get(col) ?? '', { emitEvent: false });
+      }
+      this.tableData.setPage(viewConfig.page ?? 0, viewConfig.pageSize ?? 10);
+      this.syncServerPaginators();
+      return;
+    }
     this.paginator.pageIndex = viewConfig.page !== null && viewConfig.page !== undefined ? viewConfig.page : this.paginator.pageIndex;
     this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize;
     this.paginator.page.next({
@@ -453,7 +503,29 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.paginator.pageSize = event.pageSize;
     this.paginator2.pageSize = event.pageSize;
 
+    if (this.tableData.serverSide) {
+      this.tableData.setPage(event.pageIndex, event.pageSize);
+      this.reloadServerData();
+      return;
+    }
+
     this.dataSource.paginator = this.paginator;
     this.dataSource._updateChangeSubscription();
+  }
+
+  private reloadServerData(): void {
+    this.updateData().pipe(catchError(err => {
+      this.errorPresentation.present(err, { action: 'load', entity: this.name });
+      return of(null);
+    }), takeUntil(this.destroy$)).subscribe();
+  }
+
+  private syncServerPaginators(): void {
+    for (const paginator of [this.paginator, this.paginator2]) {
+      if (!paginator) continue;
+      paginator.length = this.tableData.total;
+      paginator.pageIndex = this.tableData.page;
+      paginator.pageSize = this.tableData.pageSize;
+    }
   }
 }

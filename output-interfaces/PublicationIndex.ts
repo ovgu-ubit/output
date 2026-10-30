@@ -1,4 +1,13 @@
 import { InvoiceCounts } from './InvoiceIndex';
+import { IndexPage, IndexPageRequest } from './IndexPage';
+import { SearchFilter } from './Config';
+
+export const PUBLICATION_INDEX_COLUMNS = [
+    'id', 'locked', 'title', 'doi', 'authors', 'authors_inst', 'corr_author', 'corr_inst',
+    'greater_entity', 'publisher', 'pub_date', 'link', 'data_source', 'edit_date', 'status',
+    'oa_category', 'pub_type', 'contract', 'net_costs', 'import_date', 'locked_status',
+] as const;
+export type PublicationIndexColumn = typeof PUBLICATION_INDEX_COLUMNS[number];
 
 export interface PublicationIndex {
     id: number;
@@ -7,6 +16,8 @@ export interface PublicationIndex {
     authors: string;
     authors_inst: string;
     corr_author: string;
+    corr_inst?: string;
+    /** Legacy name retained for source compatibility; the API field is corr_inst. */
     corr_institute: string;
     greater_entity: string;
     publisher: string;
@@ -17,12 +28,25 @@ export interface PublicationIndex {
     locked: boolean;
     status: number;
     oa_category: string;
+    pub_type?: string;
+    /** Legacy name retained for source compatibility; the API field is pub_type. */
     publication_type: string;
     contract: string;
     /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     import_date: Date;
+    locked_status?: string;
 }
+
+export interface PublicationIndexPageRequest extends IndexPageRequest<PublicationIndexColumn> {
+    reporting_year?: number | null;
+    all_reporting_years?: boolean;
+    soft?: boolean;
+    filter?: SearchFilter;
+    paths?: string[];
+}
+
+export type PublicationIndexPage = IndexPage<PublicationIndex>;
 
 export interface AuthorIndex {
 	id: number;

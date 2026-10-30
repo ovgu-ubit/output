@@ -17,15 +17,21 @@ describe('TableComponent', () => {
             updateData: vi.fn().mockName('updateData').mockReturnValue(of([])),
             doFilter: vi.fn().mockName('doFilter'),
             announceSortChange: vi.fn().mockName('announceSortChange'),
+            setPage: vi.fn().mockName('setPage'),
+            resetPage: vi.fn().mockName('resetPage'),
             sort_state: [],
             filterValues: new Map(),
             searchControl: { valueChanges: of(''), value: '', setValue: vi.fn().mockName('setValue') },
             filterControls: {},
             columnFilter: false,
-            dataSource: { filter: '', data: [], _updateChangeSubscription: vi.fn().mockName('_updateChangeSubscription') },
-            dataSource2: { filter: '', data: [] },
+            dataSource: { filter: '', data: [], filteredData: [], _updateChangeSubscription: vi.fn().mockName('_updateChangeSubscription') },
+            dataSource2: { filter: '', data: [], filteredData: [] },
             loading: false,
-            filterName: false
+            filterName: false,
+            serverSide: false,
+            total: 0,
+            page: 0,
+            pageSize: 10,
         };
 
         const tableActionServiceMock = {

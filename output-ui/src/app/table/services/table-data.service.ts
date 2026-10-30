@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { Sort, SortDirection } from '@angular/material/sort';
 import { FormControl } from '@angular/forms';
-import { map, Observable, Subject, takeUntil } from 'rxjs';
+import { finalize, map, Observable, Subject } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { TableHeader, TableParent } from 'src/app/table/table.interface';
-import {  Entity  } from '@output/interfaces';
+import { Entity, IndexColumnFilters, IndexPageRequest, IndexSortCriterion } from '@output/interfaces';
 import { ViewConfig } from 'src/app/services/redux';
 
 @Injectable()
@@ -21,12 +21,19 @@ export class TableDataService<T extends Entity, E extends Entity> {
   public columnFilter = false;
   public loading = true;
   public filterName = false;
+  public total = 0;
+  public page = 0;
+  public pageSize = 10;
 
   private serviceClass: EntityService<E, T>;
   private parent: TableParent<T>;
   private reporting_year: number | null;
   private headers: TableHeader[];
   private destroy$ = new Subject<void>();
+
+  public get serverSide(): boolean {
+    return typeof this.parent?.loadPage === 'function';
+  }
 
   init(
     serviceClass: EntityService<E, T>,
@@ -42,7 +49,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
     this.headers = headers ?? [];
     this.dataSource.filterPredicate = this.getFilterPredicate();
     this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
-    this.sortData();
+    if (!this.serverSide) this.sortData();
   }
 
   setReportingYear(year: number | null) {
@@ -68,23 +75,33 @@ export class TableDataService<T extends Entity, E extends Entity> {
     this.dataSource.filterPredicate = this.getFilterPredicate();
     this.dataSource2.filterPredicate = this.dataSource.filterPredicate;
 
-    this.sortData();
+    if (!this.serverSide) this.sortData();
     
     return data;
   }
 
   public updateData(): Observable<T[]> {
     this.loading = true;
-    return this.serviceClass.index(this.reporting_year, this.parent.indexOptions).pipe(
+    const source = this.serverSide
+      ? this.parent.loadPage!(this.pageRequest(), this.reporting_year).pipe(map(result => {
+          this.total = result.total;
+          this.page = result.page;
+          this.pageSize = result.page_size;
+          return result.items;
+        }))
+      : this.serviceClass.index(this.reporting_year, this.parent.indexOptions);
+
+    return source.pipe(
       map(data => {
-        this.loading = false;
         this.update(data);
         return data;
-      })
+      }),
+      finalize(() => this.loading = false),
     );
   }
 
   public doFilter(value: string) {
+    if (this.serverSide) return;
     if (value !== null && value !== undefined) {
       const filterValue = value.trim().toLocaleLowerCase();
       this.dataSource.filter = filterValue;
@@ -96,8 +113,48 @@ export class TableDataService<T extends Entity, E extends Entity> {
     this.sort_state = this.sort_state.filter(e => e.key !== sortState.active);
     if (sortState?.direction) {
       this.sort_state.push({ key: sortState.active, dir: sortState.direction });
-      this.sortData();
+      if (!this.serverSide) this.sortData();
     }
+  }
+
+  public setPage(page: number, pageSize: number): void {
+    this.page = page;
+    this.pageSize = pageSize;
+  }
+
+  public resetPage(): void {
+    this.page = 0;
+  }
+
+  private pageRequest(): IndexPageRequest<string> {
+    const sort: IndexSortCriterion<string>[] = this.sort_state
+      .filter(entry => !!entry.dir)
+      .map(entry => ({
+        key: entry.key === 'edit' ? 'locked' : entry.key,
+        direction: entry.dir as 'asc' | 'desc',
+      }));
+    const column_filters: IndexColumnFilters<string> = {};
+    if (this.columnFilter) this.filterValues.forEach((value, key) => {
+        const normalized = this.normalizeColumnFilter(key, value);
+        if (normalized) column_filters[key] = normalized;
+      });
+    const q = this.searchControl.value?.trim();
+
+    return {
+      page: this.page,
+      page_size: this.pageSize,
+      sort,
+      q: q || undefined,
+      column_filters,
+    };
+  }
+
+  private normalizeColumnFilter(key: string, value: string): string {
+    let normalized = value?.trim() ?? '';
+    const type = this.headers.find(header => header.colName === key)?.type;
+    if (type === 'number') normalized = normalized.replaceAll('.', '');
+    if (type === 'euro') normalized = normalized.replaceAll(' €', '').replace(',', '.');
+    return normalized;
   }
 
   private sortData() {

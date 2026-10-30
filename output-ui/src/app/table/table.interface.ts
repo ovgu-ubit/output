@@ -1,10 +1,12 @@
 import { Observable } from "rxjs";
+import { IndexPage, IndexPageRequest } from '@output/interfaces';
 
 export interface TableParent<T> {
   buttons: TableButton[];
   rowActions?: TableRowAction<T>[];
   preProcessing?: (() => Observable<void>),
   afterDataLoaded?: ((data: T[]) => Observable<void>),
+  loadPage?: ((request: IndexPageRequest<string>, reportingYear: number | null) => Observable<IndexPage<T>>),
   indexOptions?:any;
   not_editable?:boolean;
   not_selectable?:boolean;

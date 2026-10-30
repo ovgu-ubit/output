@@ -17,3 +17,12 @@ export abstract class AbstractFilterService<T> {
 
     abstract getName(): string;
 }
+
+/** Optional database representation used when a filter must run before pagination. */
+export interface SqlFilterService {
+    getSqlPredicate(entityAlias: string): string;
+}
+
+export function supportsSqlFiltering(service: unknown): service is SqlFilterService {
+    return typeof (service as Partial<SqlFilterService>)?.getSqlPredicate === 'function';
+}
