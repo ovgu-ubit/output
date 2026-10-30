@@ -3,6 +3,28 @@
   width: 1%;
 }
 
+.table-loading-container {
+  position: relative;
+  min-height: 8rem;
+}
+
+.table-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: wait;
+}
+
+.table-loading-overlay .spinner-border {
+  position: sticky;
+  top: 40vh;
+  margin-top: 6rem;
+}
+
 .pageInput {
   width: 150px;
 }

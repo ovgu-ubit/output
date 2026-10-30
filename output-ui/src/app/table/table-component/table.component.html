@@ -1,10 +1,11 @@
-@if (this.loading) {
-  <div class="d-flex justify-content-center">
-    <div class="spinner-border" role="status">
+<div class="table-loading-container" [attr.aria-busy]="this.loading">
+  @if (this.loading) {
+    <div class="table-loading-overlay" role="status" aria-live="polite" aria-label="Tabelle wird geladen">
+      <div class="spinner-border" aria-hidden="true">
+      </div>
     </div>
-  </div>
-}
-<div class="jumbotron" [hidden]="this.loading">
+  }
+<div class="jumbotron">
   <div class="container-fluid">
 
     <mat-toolbar class="secondary-toolbar" style="display: flex;justify-content: space-between;">
@@ -60,6 +61,7 @@
       </mat-toolbar>
 
     </div>
+  </div>
 
 
     <div class="container-fluid">
