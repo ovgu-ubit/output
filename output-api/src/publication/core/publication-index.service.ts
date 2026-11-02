@@ -21,7 +21,8 @@ import {
     Brackets,
     ILike,
     Repository,
-    SelectQueryBuilder
+    SelectQueryBuilder,
+    WhereExpressionBuilder,
 } from 'typeorm';
 import { createInvalidRequestHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
@@ -291,7 +292,7 @@ export class PublicationIndexService {
 
         const filterContext = this.createFilterContext();
         let indexQuery = await this.indexQuery(filterContext, canReadNetCosts);
-        if (request.filter) indexQuery = await this.filter(request.filter, indexQuery, filterContext);
+        if (request.filter) indexQuery = await this.filter(request.filter, indexQuery, filterContext, true);
 
         if (request.soft) {
             indexQuery = indexQuery.withDeleted().andWhere('publication.delete_date IS NOT NULL');
@@ -417,8 +418,9 @@ export class PublicationIndexService {
         filter: SearchFilter,
         indexQuery: SelectQueryBuilder<Publication>,
         filterContext = this.createFilterContext(),
+        groupExpressions = false,
     ): Promise<SelectQueryBuilder<Publication>> {
-        let first = true;
+        const predicates: { clause: string; parameters?: Record<string, unknown>; operation: JoinOperation }[] = [];
         let filterIndex = 0;
         if (filter) for (const expr of filter.expressions) {
             let compareOperation = expr.comp;
@@ -437,21 +439,23 @@ export class PublicationIndexService {
             const predicate = this.buildFilterPredicate(expr.key, compareOperation, filterValue, `filter_${filterIndex}`, filterContext);
             filterIndex++;
             const clause = expr.op === JoinOperation.AND_NOT ? `NOT (${predicate.clause})` : predicate.clause;
-
-            if (first) {
-                indexQuery = indexQuery.where(clause, predicate.parameters);
-                first = false;
-                continue;
-            }
-
-            switch (expr.op) {
-                case JoinOperation.AND:
-                case JoinOperation.AND_NOT:
-                    indexQuery = indexQuery.andWhere(clause, predicate.parameters);
-                    break;
-                case JoinOperation.OR:
-                    indexQuery = indexQuery.orWhere(clause, predicate.parameters);
-                    break;
+            predicates.push({ clause, parameters: predicate.parameters, operation: expr.op });
+        }
+        const applyExpressions = (where: WhereExpressionBuilder): void => {
+            predicates.forEach((predicate, index) => {
+                if (index === 0) where.where(predicate.clause, predicate.parameters);
+                else if (predicate.operation === JoinOperation.OR) where.orWhere(predicate.clause, predicate.parameters);
+                else if (predicate.operation === JoinOperation.AND || predicate.operation === JoinOperation.AND_NOT) {
+                    where.andWhere(predicate.clause, predicate.parameters);
+                }
+            });
+        };
+        if (predicates.length) {
+            if (groupExpressions) {
+                // Scope restrictions must apply to the entire extended filter, including OR branches.
+                indexQuery.where(new Brackets(applyExpressions));
+            } else {
+                applyExpressions(indexQuery);
             }
         }
         return this.applyRequestedJoins(indexQuery, filterContext);

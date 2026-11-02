@@ -5,6 +5,8 @@ import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
 import { ChangeDetectorRef, SimpleChange } from '@angular/core';
 import { TableRowAction } from '../table.interface';
+import { CompareOperation, JoinOperation } from '@output/interfaces';
+import { setViewConfig } from 'src/app/services/redux';
 
 describe('TableComponent', () => {
     function createComponent() {
@@ -181,6 +183,41 @@ describe('TableComponent', () => {
         expect(titleFilter.value).toBe('');
         expect(tableDataServiceMock.filterValues.size).toBe(0);
         expect(tableDataServiceMock.columnFilter).toBe(false);
+    });
+
+    it.each([2026, null])('opens total publication counts across all years (selected year: %s)', async reportingYear => {
+        const { component } = createComponent();
+        component.filter_key = 'author_id';
+        component.reporting_year = reportingYear;
+
+        await component.showPubs(42, 'pub_count_total');
+
+        expect((component as any).store.dispatch).toHaveBeenLastCalledWith(setViewConfig({ viewConfig: {
+            sortState: [],
+            filterColumn: new Map(),
+            allReportingYears: true,
+            filter: { filter: { expressions: [{
+                op: JoinOperation.AND, key: 'author_id', comp: CompareOperation.EQUALS, value: 42,
+            }] } },
+        } }));
+        expect((component as any).router.navigateByUrl).toHaveBeenCalledWith('publications');
+    });
+
+    it.each(['pub_count', 'pub_count_corr'])('keeps the reporting-year scope for %s drilldowns', async field => {
+        const { component } = createComponent();
+        component.filter_key = 'author_id';
+        component.reporting_year = 2026;
+
+        await component.showPubs(42, field);
+
+        expect((component as any).store.dispatch).toHaveBeenLastCalledWith(setViewConfig({ viewConfig: expect.objectContaining({
+            allReportingYears: false,
+            filter: { filter: { expressions: [
+                expect.objectContaining({ key: field === 'pub_count_corr' ? 'author_id_corr' : 'author_id', value: 42 }),
+                expect.objectContaining({ key: 'pub_date', comp: CompareOperation.GREATER_THAN }),
+                expect.objectContaining({ key: 'pub_date', comp: CompareOperation.SMALLER_THAN }),
+            ] } },
+        }) }));
     });
 
     for (const filter of ['contract_id', 'cost_center_id', 'cost_type_id'] as const) {

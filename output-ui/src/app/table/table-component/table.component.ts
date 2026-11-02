@@ -287,6 +287,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     let viewConfig: ViewConfig = {
       sortState: [],
       filterColumn: new Map<string, string>(),
+      allReportingYears: field === 'pub_count_total',
       filter: {
         filter: {
           expressions: [{

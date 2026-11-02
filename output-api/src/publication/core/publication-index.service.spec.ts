@@ -1,6 +1,8 @@
 import { publicationGrossAmountSql } from '../../invoice/invoice-costs';
 import { PublicationIndexService } from './publication-index.service';
 import { Publication } from './Publication.entity';
+import { CompareOperation, JoinOperation, PublicationIndexPageRequest } from '@output/interfaces';
+import { DataSource, SelectQueryBuilder } from 'typeorm';
 
 describe('PublicationIndexService', () => {
     let service: PublicationIndexService;
@@ -200,6 +202,43 @@ describe('PublicationIndexService', () => {
                 all_reporting_years: true,
                 sort: [{ key: 'doi', direction: 'asc' }],
             })).rejects.toMatchObject({ status: 400 });
+        });
+
+        it.each([
+            { reporting_year: 2026 },
+            { reporting_year: null },
+            { soft: true },
+            { all_reporting_years: true, paths: ['missing-institute'] },
+            { reporting_year: 2026, paths: ['missing-institute'] },
+        ] as PublicationIndexPageRequest[])('groups OR expressions before applying scopes %#', async scope => {
+            // A real query builder verifies SQL precedence and parameter binding without a database connection.
+            const database = new DataSource({ type: 'postgres' });
+            const source = new SelectQueryBuilder<Publication>(database)
+                .select('publication.id', 'id')
+                .from('publication', 'publication');
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(pageQuery().query);
+            publicationFilterService.applyPathsToQuery.mockImplementation(query => {
+                if (scope.paths?.length) query.andWhere('publication.id <> :path_excluded', { path_excluded: 7 });
+                return query;
+            });
+
+            await service.getIndexPage({
+                ...scope,
+                filter: { expressions: [
+                    { key: 'title', comp: CompareOperation.EQUALS, value: 'Alpha', op: JoinOperation.AND },
+                    { key: 'doi', comp: CompareOperation.EQUALS, value: '10.1234/beta', op: JoinOperation.OR },
+                ] },
+            });
+
+            const sql = source.getQuery().replace(/"/g, '');
+            expect(sql).toContain('WHERE (publication.title = :filter_0 OR publication.doi = :filter_1) AND');
+            expect(source.getParameters()).toMatchObject({ filter_0: 'Alpha', filter_1: '10.1234/beta' });
+            if (scope.soft) expect(sql).toContain('AND publication.delete_date IS NOT NULL');
+            else if (!scope.all_reporting_years) {
+                expect(sql).toContain(scope.reporting_year === null ? 'AND publication.pub_date IS NULL' : 'AND (publication.pub_date >= :pageBeginDate');
+            }
+            if (scope.paths?.length) expect(sql).toContain('AND publication.id <> :path_excluded');
         });
     });
 });
