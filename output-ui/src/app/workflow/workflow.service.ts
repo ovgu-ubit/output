@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { EntityService } from 'src/app/services/entities/service.interface';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../services/runtime-config.service';
 import {  SearchFilter  } from '@output/interfaces';
 import {  ExportWorkflow, ImportWorkflow, ImportWorkflowTestResult, ValidationWorkflow, Workflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
@@ -8,11 +8,12 @@ import { catchError, concatMap, firstValueFrom, forkJoin, interval, map, Observa
 import {  UpdateMapping  } from '@output/interfaces';
 import { ImportStopResponse } from '@output/interfaces';
 import { ImportProgress } from '../shared/import-progress';
+import { IndexPage, WorkflowIndexPageRequest, WorkflowIndexState } from '@output/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
-export class WorkflowService implements EntityService<Workflow, Workflow> {
+export class WorkflowService implements IndexEntityService<Workflow, Workflow> {
 
 
   constructor(private http: HttpClient, private runtimeConfigService: RuntimeConfigService) { }
@@ -21,13 +22,20 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true })
       .pipe(concatMap((workflows) => this.attachLatestReports(workflows)));
   }
-  public index(reporting_year: number, options?: { type: 'draft' | 'published' | 'archived' }) {
-    if (options) {
-      return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import?type=' + options.type, { withCredentials: true })
-        .pipe(concatMap((workflows) => this.attachLatestReports(workflows)));
-    }
-    return this.http.get<ImportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/import', { withCredentials: true })
-      .pipe(concatMap((workflows) => this.attachLatestReports(workflows)));
+  public indexPage(request: WorkflowIndexPageRequest, options?: { type?: WorkflowIndexState }) {
+    return this.workflowPage<ImportWorkflow>('import', request, options);
+  }
+  public exportIndexPage(request: WorkflowIndexPageRequest, options?: { type?: WorkflowIndexState }) {
+    return this.workflowPage<ExportWorkflow>('export', request, options);
+  }
+  public validationIndexPage(request: WorkflowIndexPageRequest, options?: { type?: WorkflowIndexState }) {
+    return this.workflowPage<ValidationWorkflow>('validation', request, options);
+  }
+  private workflowPage<T extends Workflow>(type: 'import' | 'export' | 'validation', request: WorkflowIndexPageRequest, options?: { type?: WorkflowIndexState }) {
+    return this.http.post<IndexPage<T>>(
+      this.runtimeConfigService.getValue('api') + `workflow/${type}/index-page`,
+      { ...request, type: options?.type ?? request.type }, { withCredentials: true },
+    );
   }
   public getOne(id: number) {
     return this.http.get<ImportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/import/' + id, { withCredentials: true });
@@ -159,13 +167,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     return this.http.get<ExportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/export', { withCredentials: true })
       .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.EXPORT, '/workflow/publication_export')));
   }
-  public getExports(options?: { type: 'draft' | 'published' | 'archived' }) {
-    if (options) {
-      return this.http.get<ExportWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/export?type=' + options.type, { withCredentials: true })
-        .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.EXPORT, '/workflow/publication_export')));
-    }
-    return this.getAllExports();
-  }
+
   public getOneExport(id: number) {
     return this.http.get<ExportWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/export/' + id, { withCredentials: true });
   }
@@ -200,13 +202,7 @@ export class WorkflowService implements EntityService<Workflow, Workflow> {
     return this.http.get<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation', { withCredentials: true })
       .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.VALIDATION, '/workflow/publication_validation')));
   }
-  public getValidations(options?: { type: 'draft' | 'published' | 'archived' }) {
-    if (options) {
-      return this.http.get<ValidationWorkflow[]>(this.runtimeConfigService.getValue("api") + 'workflow/validation?type=' + options.type, { withCredentials: true })
-        .pipe(concatMap((workflows) => this.attachLatestReports(workflows, WorkflowType.VALIDATION, '/workflow/publication_validation')));
-    }
-    return this.getAllValidations();
-  }
+
   public getOneValidation(id: number) {
     return this.http.get<ValidationWorkflow>(this.runtimeConfigService.getValue("api") + 'workflow/validation/' + id, { withCredentials: true });
   }

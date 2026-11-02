@@ -2,21 +2,18 @@ import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  Role  } from '@output/interfaces';
-import { EntityService } from 'src/app/services/entities/service.interface';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class RoleService implements EntityService<Role, Role> {
+export class RoleService implements IndexEntityService<Role, Role> {
   
   constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
   public getAll() {
     return this.http.get<Role[]>(this.runtimeConfigService.getValue("api") + 'role', { withCredentials: true });
-  }
-  public index(reporting_year:number) {
-    return this.getAll();
   }
   public indexPage(request: ReportingYearIndexPageRequest) {
     return this.http.post<IndexPage<Role>>(

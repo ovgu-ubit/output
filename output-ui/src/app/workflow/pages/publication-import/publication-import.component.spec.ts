@@ -19,14 +19,14 @@ import { Subject, of, throwError } from 'rxjs';
 describe('PublicationImportComponent', () => {
     let component: PublicationImportComponent;
     let fixture: ComponentFixture<PublicationImportComponent>;
-    let workflowService: MockedObject<Pick<WorkflowService, 'index' | 'isLocked' | 'importWorkflow' | 'run' | 'getProgress' | 'getStatus' | 'stopImport'>>;
+    let workflowService: MockedObject<Pick<WorkflowService, 'indexPage' | 'isLocked' | 'importWorkflow' | 'run' | 'getProgress' | 'getStatus' | 'stopImport'>>;
     let configService: MockedObject<Pick<ConfigService, 'get'>>;
     let snackBar: MockedObject<Pick<MatSnackBar, 'open'>>;
     let errorPresentation: MockedObject<Pick<ErrorPresentationService, 'present'>>;
 
     beforeEach(async () => {
         workflowService = {
-            index: vi.fn().mockName("WorkflowService.index"),
+            indexPage: vi.fn().mockName("WorkflowService.indexPage"),
             isLocked: vi.fn().mockName("WorkflowService.isLocked"),
             importWorkflow: vi.fn().mockName("WorkflowService.importWorkflow"),
             run: vi.fn().mockName("WorkflowService.run"),
@@ -34,7 +34,7 @@ describe('PublicationImportComponent', () => {
             getStatus: vi.fn().mockName("WorkflowService.getStatus"),
             stopImport: vi.fn().mockName("WorkflowService.stopImport")
         };
-        workflowService.index.mockReturnValue(of([]));
+        workflowService.indexPage.mockReturnValue(of({ items: [], total: 0, page: 0, page_size: 10 }));
         workflowService.isLocked.mockReturnValue(of(false));
         workflowService.importWorkflow.mockReturnValue(of({} as ImportWorkflow));
         workflowService.run.mockReturnValue(of({ status: 'started', dry_run: false }));
@@ -222,7 +222,7 @@ describe('PublicationImportComponent', () => {
         const workflow = { id: 11, label: 'Test' } as ImportWorkflow;
         workflowService.getStatus.mockReturnValue(of({ progress: -1, status: 'running' }));
         workflowService.getProgress.mockReturnValue(new Subject());
-        component.table.dataSource.data = [workflow];
+        component.table.tableData.update([workflow]);
         component.afterDataLoaded([workflow]).subscribe();
         fixture.detectChanges();
         const button = fixture.nativeElement.querySelector('button[aria-label="Workflow stoppen"]') as HTMLButtonElement;

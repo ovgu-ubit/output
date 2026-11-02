@@ -113,6 +113,7 @@ export class PublicationValidationComponent implements TableParent<ValidationWor
         break;
     }
 
+    this.table.resetPage();
     this.table.updateData().subscribe();
   }
 

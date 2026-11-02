@@ -45,6 +45,7 @@ export class DuplicatesComponent implements TableParent<PublicationDuplicate>, O
       verticalPosition: 'top'
     });
     this.indexOptions = { soft }
+    this.table.resetPage();
     this.table.updateData().subscribe()
   }
 

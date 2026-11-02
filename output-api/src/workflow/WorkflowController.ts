@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiConsumes, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import {  SearchFilter, UpdateMapping  } from '@output/interfaces';
 import {  ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType  } from '@output/interfaces';
@@ -16,6 +16,8 @@ import { WorkflowReportService } from "./workflow-report.service";
 import { createInvalidRequestHttpException } from "../common/api-error";
 import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-policy";
 import { ApiImportStop } from './import-stop-api';
+import { WorkflowIndexPageRequestDto } from './dto/workflow-index-page.dto';
+import { IndexPageDto } from '../common/dto/index-page.dto';
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -26,6 +28,30 @@ export class WorkflowController {
     private configService: AppConfigService,
     private workflowService: WorkflowService,
     private workflowReportService: WorkflowReportService) { }
+
+  @Post('import/index-page')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiResponse({ status: 201, type: IndexPageDto })
+  importIndexPage(@Body() body: WorkflowIndexPageRequestDto) {
+    return this.workflowService.getImportPage(body);
+  }
+
+  @Post('export/index-page')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiResponse({ status: 201, type: IndexPageDto })
+  exportIndexPage(@Body() body: WorkflowIndexPageRequestDto) {
+    return this.workflowService.getExportPage(body);
+  }
+
+  @Post('validation/index-page')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiResponse({ status: 201, type: IndexPageDto })
+  validationIndexPage(@Body() body: WorkflowIndexPageRequestDto) {
+    return this.workflowService.getValidationPage(body);
+  }
 
   @Get("import")
   @UseGuards(AccessGuard)

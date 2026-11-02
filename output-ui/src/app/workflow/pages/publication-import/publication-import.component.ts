@@ -198,6 +198,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
         break;
     }
 
+    this.table.resetPage();
     this.table.updateData().subscribe();
   }
 

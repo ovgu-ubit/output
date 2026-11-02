@@ -1,21 +1,22 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EntityService } from 'src/app/services/entities/service.interface';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import {  ValidationWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { WorkflowService } from './workflow.service';
+import { WorkflowIndexPageRequest, WorkflowIndexState } from '@output/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
-export class ValidationWorkflowService implements EntityService<ValidationWorkflow, ValidationWorkflow> {
+export class ValidationWorkflowService implements IndexEntityService<ValidationWorkflow, ValidationWorkflow> {
   constructor(private api: WorkflowService) { }
 
   getAll(): Observable<ValidationWorkflow[]> {
     return this.api.getAllValidations();
   }
 
-  index(_reporting_year: number, options?: { type: 'draft' | 'published' | 'archived' }): Observable<ValidationWorkflow[]> {
-    return this.api.getValidations(options);
+  indexPage(request: WorkflowIndexPageRequest, options?: { type?: WorkflowIndexState }) {
+    return this.api.validationIndexPage(request, options);
   }
 
   getOne(id: number): Observable<ValidationWorkflow> {

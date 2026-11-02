@@ -15,7 +15,6 @@ describe('TableComponent', () => {
             destroy: vi.fn().mockName('destroy'),
             update: vi.fn().mockName('update'),
             updateData: vi.fn().mockName('updateData').mockReturnValue(of([])),
-            doFilter: vi.fn().mockName('doFilter'),
             announceSortChange: vi.fn().mockName('announceSortChange'),
             setPage: vi.fn().mockName('setPage'),
             resetPage: vi.fn().mockName('resetPage'),
@@ -24,11 +23,9 @@ describe('TableComponent', () => {
             searchControl: { valueChanges: of(''), value: '', setValue: vi.fn().mockName('setValue') },
             filterControls: {},
             columnFilter: false,
-            dataSource: { filter: '', data: [], filteredData: [], _updateChangeSubscription: vi.fn().mockName('_updateChangeSubscription') },
-            dataSource2: { filter: '', data: [], filteredData: [] },
+            dataSource: [],
             loading: false,
             filterName: false,
-            serverSide: false,
             total: 0,
             page: 0,
             pageSize: 10,
@@ -178,16 +175,12 @@ describe('TableComponent', () => {
         tableDataServiceMock.filterControls = { title: titleFilter };
         tableDataServiceMock.filterValues = new Map([['title', 'angular']]);
         tableDataServiceMock.columnFilter = true;
-        tableDataServiceMock.dataSource.filter = JSON.stringify({ title: 'angular' });
-        tableDataServiceMock.dataSource2.filter = JSON.stringify({ title: 'angular' });
 
         component.resetView();
 
         expect(titleFilter.value).toBe('');
         expect(tableDataServiceMock.filterValues.size).toBe(0);
         expect(tableDataServiceMock.columnFilter).toBe(false);
-        expect(tableDataServiceMock.dataSource.filter).toBe('');
-        expect(tableDataServiceMock.dataSource2.filter).toBe('');
     });
 
     for (const filter of ['contract_id', 'cost_center_id', 'cost_type_id'] as const) {

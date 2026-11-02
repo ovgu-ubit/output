@@ -1,10 +1,8 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { ComponentType } from '@angular/cdk/portal';
-import { Location } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort } from '@angular/material/sort';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -12,7 +10,7 @@ import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subjec
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
+import { EntityFormComponent, IndexEntityService } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
 import { TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
 import {  CompareOperation, JoinOperation  } from '@output/interfaces';
@@ -31,7 +29,6 @@ import { TableActionService } from '../services/table-action.service';
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
 
-  @Input() data: Array<T>;
   @Input() wide?: boolean;
   @Input() headers: TableHeader[];
   @Input() id_col: number;
@@ -50,7 +47,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() deleteable? = true;
 
   @Input() parent: TableParent<T>;
-  @Input() serviceClass: EntityService<E, T>;
+  @Input() serviceClass: IndexEntityService<E, T>;
   @Input() formComponent: ComponentType<EntityFormComponent<E>>;
 
   @ViewChild('paginatorTop') paginator: MatPaginator;
@@ -84,10 +81,9 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   get loading() { return this.tableData.loading; }
   get dataSource() { return this.tableData.dataSource; }
-  get dataSource2() { return this.tableData.dataSource2; }
   get searchControl() { return this.tableData.searchControl; }
   get filterControls() { return this.tableData.filterControls; }
-  get rowCount() { return this.tableData.serverSide ? this.tableData.total : this.dataSource.filteredData.length; }
+  get rowCount() { return this.tableData.total; }
 
   public ngOnInit(): void {
     this.tableData.init(this.serviceClass, this.parent, this.headers);
@@ -148,22 +144,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.errorPresentation.present(err, { action: 'load', entity: this.name });
       return of(null)
     }), takeUntil(this.destroy$)).subscribe(() => {
-        if (this.tableData.serverSide) this.syncServerPaginators();
-        else {
-          if (this.dataSource) this.dataSource.paginator = this.paginator;
-          if (this.dataSource2) this.dataSource2.paginator = this.paginator2;
-        }
+        this.syncPaginators();
     });
 
     this.searchControl.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(data => {
       if (!data && this.tableData.columnFilter) return;
       if (data) this.tableData.columnFilter = false;
-      if (this.tableData.serverSide) {
-        this.tableData.resetPage();
-        this.reloadServerData();
-      } else {
-        this.tableData.doFilter(data);
-      }
+      this.tableData.resetPage();
+      this.reloadData();
     });
 
     window.onbeforeunload = () => this.ngOnDestroy();
@@ -192,17 +180,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
             this.tableData.columnFilter = true;
             this.searchControl.setValue('');
             this.tableData.filterValues.set(e, value);
-            let filter = new Object();
-            this.tableData.filterValues.forEach((val, key) => {
-              (filter as any)[key] = val?.trim().toLocaleLowerCase();
-            });
-            if (this.tableData.serverSide) {
-              this.tableData.resetPage();
-              this.reloadServerData();
-            } else {
-              this.dataSource.filter = JSON.stringify(filter);
-              this.dataSource2.filter = JSON.stringify(filter);
-            }
+            this.tableData.resetPage();
+            this.reloadData();
           });
         this.tableData.filterControls[e].setValue(this.tableData.filterValues.get(e) ?? '', { emitEvent: false });
       });
@@ -211,13 +190,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         this.edit({ id: this.id });
         this.id = undefined;
       }
-    }
-    if (changes['data'] && changes['data'].currentValue) {
-      this.tableData.update(changes['data'].currentValue);
-      this.selection.clear();
-      this.dataSource.paginator = this.paginator;
-      this.dataSource2.paginator = this.paginator2;
-      if (this.viewConfig) this.setViewConfig(this.viewConfig);
     }
   }
 
@@ -242,11 +214,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       concatMap(data => this.parent.afterDataLoaded ? this.parent.afterDataLoaded(data) : of(undefined)),
       map(() => {
         this.selection.clear();
-        if (this.tableData.serverSide) this.syncServerPaginators();
-        else {
-          this.dataSource.paginator = this.paginator;
-          this.dataSource2.paginator = this.paginator2;
-        }
+        this.syncPaginators();
         this.cdr.detectChanges();
       })
     );
@@ -356,12 +324,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   announceSortChange(sortState: Sort) {
     this.tableData.announceSortChange(sortState);
-    if (this.tableData.serverSide) {
-      this.tableData.resetPage();
-      this.reloadServerData();
-    } else {
-      this.dataSource.paginator = this.paginator;
-    }
+    this.tableData.resetPage();
+    this.reloadData();
   }
 
   renderHeader(col): { text: string, asc: boolean } {
@@ -423,8 +387,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     Object.values(this.filterControls).forEach(control => {
       control.setValue('', { emitEvent: false });
     });
-    this.dataSource.filter = '';
-    this.dataSource2.filter = '';
 
     if (this.paginator) {
       this.paginator.pageIndex = 0;
@@ -438,54 +400,22 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   resetPage(): void {
     this.tableData.resetPage();
-    this.syncServerPaginators();
+    this.syncPaginators();
   }
 
   setViewConfig(viewConfig: ViewConfig) {
-    if (this.tableData.serverSide) {
-      this.tableData.sort_state = viewConfig.sortState ?? [];
-      this.tableData.filterValues = viewConfig.filterColumn instanceof Map
-        ? new Map(viewConfig.filterColumn)
-        : new Map(Object.entries(viewConfig.filterColumn ?? {}));
-      const searchValue = viewConfig.filterValue ?? '';
-      this.tableData.columnFilter = !searchValue;
-      this.searchControl.setValue(searchValue, { emitEvent: false });
-      for (const col of this.headerNames) {
-        this.filterControls[col]?.setValue(this.tableData.filterValues.get(col) ?? '', { emitEvent: false });
-      }
-      this.tableData.setPage(viewConfig.page ?? 0, viewConfig.pageSize ?? 10);
-      this.syncServerPaginators();
-      return;
+    this.tableData.sort_state = viewConfig.sortState ?? [];
+    this.tableData.filterValues = viewConfig.filterColumn instanceof Map
+      ? new Map(viewConfig.filterColumn)
+      : new Map(Object.entries(viewConfig.filterColumn ?? {}));
+    const searchValue = viewConfig.filterValue ?? '';
+    this.tableData.columnFilter = !searchValue;
+    this.searchControl.setValue(searchValue, { emitEvent: false });
+    for (const col of this.headerNames) {
+      this.filterControls[col]?.setValue(this.tableData.filterValues.get(col) ?? '', { emitEvent: false });
     }
-    this.paginator.pageIndex = viewConfig.page !== null && viewConfig.page !== undefined ? viewConfig.page : this.paginator.pageIndex;
-    this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize;
-    this.paginator.page.next({
-      pageIndex: this.paginator.pageIndex,
-      pageSize: this.paginator.pageSize,
-      length: this.dataSource.data.length
-    });
-
-    this.paginator2.pageIndex = viewConfig.page ? viewConfig.page : this.paginator2.pageIndex;
-    this.paginator2.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator2.pageSize;
-    this.paginator2.page.next({
-      pageIndex: this.paginator2.pageIndex,
-      pageSize: this.paginator2.pageSize,
-      length: this.dataSource2?.data.length
-    });
-    
-    let searchValue = viewConfig.filterValue ? viewConfig.filterValue : '';
-    if (searchValue) this.tableData.columnFilter = false;
-    else this.tableData.columnFilter = true;
-    this.searchControl.setValue(searchValue);
-    
-    this.tableData.filterValues = viewConfig.filterColumn;
-    if (this.tableData.filterValues.get) {
-        for (let col of this.headerNames) {
-            if (this.tableData.filterValues.get(col)) this.filterControls[col].setValue(this.tableData.filterValues.get(col));
-            else this.filterControls[col].setValue('');
-        }
-    }
-    this.tableData.sort_state = viewConfig.sortState;
+    this.tableData.setPage(viewConfig.page ?? 0, viewConfig.pageSize ?? 10);
+    this.syncPaginators();
   }
 
   isButtonDisabled(e: TableButton) {
@@ -503,24 +433,18 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.paginator.pageSize = event.pageSize;
     this.paginator2.pageSize = event.pageSize;
 
-    if (this.tableData.serverSide) {
-      this.tableData.setPage(event.pageIndex, event.pageSize);
-      this.reloadServerData();
-      return;
-    }
-
-    this.dataSource.paginator = this.paginator;
-    this.dataSource._updateChangeSubscription();
+    this.tableData.setPage(event.pageIndex, event.pageSize);
+    this.reloadData();
   }
 
-  private reloadServerData(): void {
+  private reloadData(): void {
     this.updateData().pipe(catchError(err => {
       this.errorPresentation.present(err, { action: 'load', entity: this.name });
       return of(null);
     }), takeUntil(this.destroy$)).subscribe();
   }
 
-  private syncServerPaginators(): void {
+  private syncPaginators(): void {
     for (const paginator of [this.paginator, this.paginator2]) {
       if (!paginator) continue;
       paginator.length = this.tableData.total;

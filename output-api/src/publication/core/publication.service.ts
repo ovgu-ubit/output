@@ -13,6 +13,8 @@ import { PublicationRelationService } from '../relations/publication-relation.se
 import { Publication } from './Publication.entity';
 import { PublicationDuplicate } from './PublicationDuplicate.entity';
 import { PublicationChangeService } from './publication-change.service';
+import { PublicationDuplicateIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../../common/index-page';
 
 interface SavePublicationOptions {
     workflowReport?: IWorkflowReport;
@@ -58,6 +60,17 @@ export class PublicationService {
     public getDuplicateEntries(id: number, soft?: boolean) {
         if (hasProvidedEntityId(id)) return this.getDuplicates(id);
         return this.getAllDuplicates(soft);
+    }
+
+    public getDuplicatePage(request: PublicationDuplicateIndexPageRequest) {
+        const query = this.dataSource.getRepository(PublicationDuplicate).createQueryBuilder('duplicate')
+            .select('duplicate.id', 'id')
+            .addSelect('duplicate.id_first', 'id_first')
+            .addSelect('duplicate.id_second', 'id_second')
+            .addSelect('duplicate.description', 'description')
+            .addSelect('duplicate.delete_date', 'delete_date');
+        if (request.soft) query.withDeleted().where('duplicate.delete_date IS NOT NULL');
+        return paginateIndexQuery<PublicationDuplicate>(query, request);
     }
 
     public saveDuplicateEntry(duplicate: PublicationDuplicate) {

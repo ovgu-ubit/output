@@ -1,5 +1,7 @@
 ﻿import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
 
+import { IndexPageRequest } from './IndexPage';
+
 export interface Entity {
     id?: number;
     locked_at?: Date;
@@ -63,6 +65,10 @@ export interface Publication extends Identifiable<Publication> {
     supplements?: PublicationSupplement[];
     duplicates?: PublicationDuplicate[];
     not_budget_relevant?: boolean;
+}
+
+export interface PublicationDuplicateIndexPageRequest extends IndexPageRequest<'id' | 'id_first' | 'id_second' | 'description' | 'delete_date'> {
+    soft?: boolean;
 }
 
 export interface PublicationDuplicate {

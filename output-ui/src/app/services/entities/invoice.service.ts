@@ -15,9 +15,6 @@ export class InvoiceService implements EntityService<Invoice, Invoice>{
   public getAll():Observable<Invoice[]> {
     throw "not yet implemented";
   }
-  public index():Observable<Invoice[]> {
-    throw "not yet implemented";
-  }
   public getInvForPub(pub:Publication) {
     return this.http.get<Invoice[]>(this.runtimeConfigService.getValue("api") + 'invoice?pub_id='+pub.id, { withCredentials: true });
   }
