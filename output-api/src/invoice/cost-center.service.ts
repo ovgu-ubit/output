@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { addInvoiceAmounts } from './invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +21,19 @@ export class CostCenterService extends AbstractEntityService<CostCenter> {
     }
 
     public async getCostCenterIndex(reporting_year: number, canReadNetCosts = false, canReadInvoices = false): Promise<CostCenterIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts, canReadInvoices);
+        const rows = await query.getRawMany<CostCenterIndex>();
+        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false, canReadInvoices = false): Promise<IndexPage<CostCenterIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts, canReadInvoices);
+        const result = await paginateIndexQuery<CostCenterIndex>(query, request);
+        if (canReadInvoices) result.items = normalizeInvoiceCounts(result.items);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false, canReadInvoices = false) {
         // Preserve "undated" for invoices independently of the legacy publication-year fallback.
         const invoiceReportingYear = reporting_year;
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
@@ -52,8 +67,7 @@ export class CostCenterService extends AbstractEntityService<CostCenter> {
         }
 
         if (canReadInvoices) addInvoiceCounts(query, 'cost_center_id', invoiceReportingYear);
-        const rows = await query.getRawMany<CostCenterIndex>();
-        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
+        return query;
     }
 
     public findOrSave(title: string, dryRun = false): Observable<CostCenter> {

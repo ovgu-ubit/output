@@ -1,5 +1,15 @@
 import { CompareOperation, SearchFilter, SearchFilterValue } from "./Config";
 import { Publication } from "./Publication";
+import { IndexPageRequest } from './IndexPage';
+
+export type WorkflowIndexState = 'draft' | 'published' | 'archived';
+export type WorkflowIndexColumn = 'id' | 'workflow_id' | 'label' | 'version' | 'created_at' | 'modified_at'
+    | 'published_at' | 'deleted_at' | 'description' | 'locked_at' | 'strategy_type' | 'source_entity'
+    | 'source_entity_label' | 'target' | 'last_run_status' | 'last_run_finished_at' | 'last_run_report_id' | 'last_run_log_link';
+
+export interface WorkflowIndexPageRequest extends IndexPageRequest<WorkflowIndexColumn> {
+    type?: WorkflowIndexState;
+}
 
 export interface ImportRunStatus {
     progress: number;
@@ -45,6 +55,12 @@ export const EXPORT_ENTITY_TYPES = [
 ] as const;
 
 export type ExportEntityType = typeof EXPORT_ENTITY_TYPES[number];
+
+export const EXPORT_ENTITY_LABELS: Record<ExportEntityType, string> = {
+    publication: 'Publikationen', author: 'Personen', institute: 'Institute', greater_entity: 'Größere Einheiten',
+    publisher: 'Verlage', contract: 'Verträge', funder: 'Förderer', oa_category: 'OA-Kategorien',
+    pub_type: 'Publikationsarten', cost_center: 'Kostenstellen', cost_type: 'Kostenarten',
+};
 
 export function isExportEntityType(value: unknown): value is ExportEntityType {
     return typeof value === 'string' && EXPORT_ENTITY_TYPES.some((type) => type === value);

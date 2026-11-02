@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
@@ -113,6 +115,18 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async index(reporting_year: number): Promise<GreaterEntityIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year);
+        const rows = await query.getRawMany<GreaterEntityIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest): Promise<IndexPage<GreaterEntityIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year);
+        const result = await paginateIndexQuery<GreaterEntityIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number) {
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("greater_entity", "ge")
@@ -156,7 +170,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<GreaterEntityIndex[]>;
+        return query;
     }
 
     public async combine(id1: number, ids: number[]) {

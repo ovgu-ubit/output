@@ -6,6 +6,8 @@ import { AppConfigService } from '../../config/app-config.service';
 import { AbstractEntityService } from '../../common/abstract-entity.service';
 import { createInvalidRequestHttpException, createUniqueConstraintHttpException } from '../../common/api-error';
 import { hasProvidedEntityId } from '../../common/entity-id';
+import { IndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../../common/index-page';
 
 @Injectable()
 export class StatusService extends AbstractEntityService<Status> {
@@ -14,6 +16,14 @@ export class StatusService extends AbstractEntityService<Status> {
         configService: AppConfigService,
     ) {
         super(repository, configService);
+    }
+
+    public indexPage(request: IndexPageRequest) {
+        const query = this.repository.createQueryBuilder('status')
+            .select('status.id', 'id')
+            .addSelect('status.label', 'label')
+            .addSelect('status.description', 'description');
+        return paginateIndexQuery<Status>(query, request);
     }
 
     public async create(status: DeepPartial<Status>): Promise<Status> {

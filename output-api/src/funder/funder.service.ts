@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
@@ -60,6 +62,18 @@ export class FunderService extends AbstractEntityService<Funder> {
     }
 
     public async index(reporting_year: number): Promise<FunderIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year);
+        const rows = await query.getRawMany<FunderIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest): Promise<IndexPage<FunderIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year);
+        const result = await paginateIndexQuery<FunderIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number) {
         let query = this.repository.createQueryBuilder("funder")
             .select("funder.id", "id")
             .addSelect("funder.label", "label")
@@ -83,7 +97,7 @@ export class FunderService extends AbstractEntityService<Funder> {
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<FunderIndex[]>;
+        return query;
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {

@@ -1,3 +1,4 @@
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards,Param} from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
@@ -23,6 +24,20 @@ export class InvoiceController {
         private costTypeService: CostTypeService,
         private costCenterService: CostCenterService,
     ) { }
+
+    @Post('cost_center/index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto })
+    costCenterIndexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.costCenterService.indexPage(body, !!request?.['user']?.['read'], canReadInvoices(request?.['user']));
+    }
+
+    @Post('cost_type/index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto })
+    costTypeIndexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.costTypeService.indexPage(body, !!request?.['user']?.['read'], canReadInvoices(request?.['user']));
+    }
 
     @Get()
     @UseGuards(AccessGuard)

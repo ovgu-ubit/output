@@ -1,17 +1,21 @@
 import { publicationGrossAmountSql } from '../../invoice/invoice-costs';
 import { PublicationIndexService } from './publication-index.service';
 import { Publication } from './Publication.entity';
+import { CompareOperation, JoinOperation, PublicationIndexPageRequest } from '@output/interfaces';
+import { DataSource, SelectQueryBuilder } from 'typeorm';
 
 describe('PublicationIndexService', () => {
     let service: PublicationIndexService;
-    let pubRepository: { find: jest.Mock; createQueryBuilder: jest.Mock };
+    let pubRepository: { find: jest.Mock; createQueryBuilder: jest.Mock; manager: { createQueryBuilder: jest.Mock } };
     let configService: { get: jest.Mock };
     let instituteService: { findInstituteIdsIncludingSubInstitutes: jest.Mock };
+    let publicationFilterService: { applyPathsToQuery: jest.Mock };
 
     beforeEach(() => {
         pubRepository = {
             find: jest.fn(),
             createQueryBuilder: jest.fn(),
+            manager: { createQueryBuilder: jest.fn() },
         };
         configService = {
             get: jest.fn(),
@@ -19,11 +23,15 @@ describe('PublicationIndexService', () => {
         instituteService = {
             findInstituteIdsIncludingSubInstitutes: jest.fn(),
         };
+        publicationFilterService = {
+            applyPathsToQuery: jest.fn((query) => query),
+        };
 
         service = new PublicationIndexService(
             pubRepository as any,
             configService as any,
             instituteService as any,
+            publicationFilterService as any,
         );
     });
 
@@ -121,6 +129,116 @@ describe('PublicationIndexService', () => {
             await service.indexQuery(undefined, false);
 
             expect(queryBuilder.addSelect).not.toHaveBeenCalledWith(expect.any(String), 'net_costs');
+        });
+    });
+
+    describe('getIndexPage', () => {
+        const sourceQuery = () => ({
+            expressionMap: { selects: [{ aliasName: 'id' }, { aliasName: 'title' }, { aliasName: 'status' }] },
+            getQuery: jest.fn().mockReturnValue('SELECT publication.id AS id FROM publication publication'),
+            getParameters: jest.fn().mockReturnValue({}),
+            andWhere: jest.fn().mockReturnThis(),
+            withDeleted: jest.fn().mockReturnThis(),
+        });
+
+        const pageQuery = () => {
+            const count: any = {
+                select: jest.fn().mockReturnThis(),
+                getRawOne: jest.fn().mockResolvedValue({ total: '23' }),
+            };
+            const query: any = {
+                select: jest.fn().mockReturnThis(),
+                from: jest.fn().mockReturnThis(),
+                setParameters: jest.fn().mockReturnThis(),
+                andWhere: jest.fn().mockReturnThis(),
+                clone: jest.fn().mockReturnValue(count),
+                addOrderBy: jest.fn().mockReturnThis(),
+                offset: jest.fn().mockReturnThis(),
+                limit: jest.fn().mockReturnThis(),
+                getRawMany: jest.fn().mockResolvedValue([{ id: 7, title: 'Alpha', status: 1 }]),
+            };
+            return { query, count };
+        };
+
+        it('returns a stable page and applies table search, filters and multi-sort', async () => {
+            const source = sourceQuery();
+            const wrapper = pageQuery();
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source as any);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(wrapper.query);
+
+            const result = await service.getIndexPage({
+                page: 1,
+                page_size: 10,
+                all_reporting_years: true,
+                q: 'Alpha',
+                column_filters: { title: 'Beta*' },
+                sort: [{ key: 'status', direction: 'desc' }],
+                paths: ['missing-inst_auth'],
+            });
+
+            expect(publicationFilterService.applyPathsToQuery).toHaveBeenCalledWith(source, ['missing-inst_auth']);
+            expect(wrapper.query.andWhere).toHaveBeenCalledTimes(2);
+            expect(wrapper.query.andWhere.mock.calls[1][1]).toEqual({ index_column_filter_0: 'Beta%' });
+            expect(wrapper.query.addOrderBy).toHaveBeenNthCalledWith(1, 'publication_index."status"', 'DESC', 'NULLS LAST');
+            expect(wrapper.query.addOrderBy).toHaveBeenNthCalledWith(2, 'publication_index."id"', 'ASC');
+            expect(wrapper.query.offset).toHaveBeenCalledWith(10);
+            expect(wrapper.query.limit).toHaveBeenCalledWith(10);
+            expect(result).toEqual({
+                items: [{ id: 7, title: 'Alpha', status: 1 }],
+                total: 23,
+                page: 1,
+                page_size: 10,
+            });
+        });
+
+        it('rejects columns that are not part of the configured projection', async () => {
+            const source = sourceQuery();
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source as any);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(pageQuery().query);
+
+            await expect(service.getIndexPage({
+                page: 0,
+                page_size: 10,
+                all_reporting_years: true,
+                sort: [{ key: 'doi', direction: 'asc' }],
+            })).rejects.toMatchObject({ status: 400 });
+        });
+
+        it.each([
+            { reporting_year: 2026 },
+            { reporting_year: null },
+            { soft: true },
+            { all_reporting_years: true, paths: ['missing-institute'] },
+            { reporting_year: 2026, paths: ['missing-institute'] },
+        ] as PublicationIndexPageRequest[])('groups OR expressions before applying scopes %#', async scope => {
+            // A real query builder verifies SQL precedence and parameter binding without a database connection.
+            const database = new DataSource({ type: 'postgres' });
+            const source = new SelectQueryBuilder<Publication>(database)
+                .select('publication.id', 'id')
+                .from('publication', 'publication');
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(pageQuery().query);
+            publicationFilterService.applyPathsToQuery.mockImplementation(query => {
+                if (scope.paths?.length) query.andWhere('publication.id <> :path_excluded', { path_excluded: 7 });
+                return query;
+            });
+
+            await service.getIndexPage({
+                ...scope,
+                filter: { expressions: [
+                    { key: 'title', comp: CompareOperation.EQUALS, value: 'Alpha', op: JoinOperation.AND },
+                    { key: 'doi', comp: CompareOperation.EQUALS, value: '10.1234/beta', op: JoinOperation.OR },
+                ] },
+            });
+
+            const sql = source.getQuery().replace(/"/g, '');
+            expect(sql).toContain('WHERE (publication.title = :filter_0 OR publication.doi = :filter_1) AND');
+            expect(source.getParameters()).toMatchObject({ filter_0: 'Alpha', filter_1: '10.1234/beta' });
+            if (scope.soft) expect(sql).toContain('AND publication.delete_date IS NOT NULL');
+            else if (!scope.all_reporting_years) {
+                expect(sql).toContain(scope.reporting_year === null ? 'AND publication.pub_date IS NULL' : 'AND (publication.pub_date >= :pageBeginDate');
+            }
+            if (scope.paths?.length) expect(sql).toContain('AND publication.id <> :path_excluded');
         });
     });
 });

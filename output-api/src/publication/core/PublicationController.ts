@@ -3,6 +3,7 @@ import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
 import {  SearchFilter  } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
+import { PublicationIndexPage } from '@output/interfaces';
 import { Publication } from "./Publication.entity";
 import { Permissions } from "../../authorization/permission.decorator";
 import { PublicationFilterService } from "./publication-filter.service";
@@ -11,6 +12,9 @@ import { PublicationService } from "./publication.service";
 import { PublicationDuplicate } from "./PublicationDuplicate.entity";
 import { AccessGuard } from "../../authorization/access.guard";
 import { assertCreateRequestHasNoId } from "../../common/entity-id";
+import { PublicationIndexPageRequestDto, PublicationIndexPageDto } from './dto/publication-index-page.dto';
+import { DuplicateIndexPageRequestDto } from './dto/duplicate-index-page.dto';
+import { IndexPageDto } from '../../common/dto/index-page.dto';
 
 @Controller("publications")
 @ApiTags("publications")
@@ -85,6 +89,13 @@ export class PublicationController {
     @UseGuards(AccessGuard)
     async index(@Query('yop') yop: number, @Query('soft') soft?: boolean, @Req() request?: Request): Promise<PublicationIndex[]> {
         return this.publicationIndexService.getIndexEntries(yop, soft, !!request?.['user']?.['read']);
+    }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 200, type: PublicationIndexPageDto })
+    async indexPage(@Body() body: PublicationIndexPageRequestDto, @Req() request?: Request): Promise<PublicationIndexPage> {
+        return this.publicationIndexService.getIndexPage(body, !!request?.['user']?.['read']);
     }
 
     @Post()
@@ -181,6 +192,14 @@ export class PublicationController {
     @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     duplicates(@Query('id') id: number, @Query('soft') soft?:boolean) {
         return this.publicationService.getDuplicateEntries(id, soft);
+    }
+
+    @Post('duplicates/index-page')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'reader', app: 'output' }, { role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @ApiResponse({ status: 201, type: IndexPageDto })
+    duplicateIndexPage(@Body() body: DuplicateIndexPageRequestDto) {
+        return this.publicationService.getDuplicatePage(body);
     }
 
     @Put('duplicates')

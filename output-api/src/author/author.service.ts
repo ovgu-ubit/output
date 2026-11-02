@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { invoiceAmountsSql } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -213,6 +215,18 @@ export class AuthorService extends AbstractEntityService<Author> {
     }
 
     public async index(reporting_year: number, canReadNetCosts = false): Promise<AuthorIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts);
+        const rows = await query.getRawMany<AuthorIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false): Promise<IndexPage<AuthorIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts);
+        const result = await paginateIndexQuery<AuthorIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false) {
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("author", "author")
@@ -301,7 +315,7 @@ export class AuthorService extends AbstractEntityService<Author> {
 
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<AuthorIndex[]>;
+        return query;
     }
 
     public override async delete(auts: Author[]) {

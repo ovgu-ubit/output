@@ -33,7 +33,8 @@ describe('PublicationsComponent', () => {
 
     const mockPublicationService = {
         getFilters: vi.fn().mockName('getFilters').mockReturnValue(of([])),
-        updateAll: vi.fn().mockName('updateAll').mockReturnValue(of(0))
+        updateAll: vi.fn().mockName('updateAll').mockReturnValue(of(0)),
+        indexPage: vi.fn().mockName('indexPage').mockReturnValue(of({ items: [], total: 0, page: 0, page_size: 10 })),
     };
 
     const mockStatusService = {
@@ -92,6 +93,32 @@ describe('PublicationsComponent', () => {
 
     it('should create', () => {
         expect(component).toBeTruthy();
+    });
+
+    it('should combine table state and publication filters in page requests', () => {
+        component.indexOptions = {
+            soft: false,
+            allReportingYears: true,
+            filter: { expressions: [] },
+            paths: ['missing-invoice'],
+        };
+
+        component.loadPage({
+            page: 1,
+            page_size: 20,
+            sort: [{ key: 'title', direction: 'asc' }, { key: 'unsupported', direction: 'desc' }],
+            column_filters: { publisher: 'Springer', unsupported: 'ignored' },
+        }, 2025).subscribe();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            page: 1,
+            page_size: 20,
+            reporting_year: 2025,
+            all_reporting_years: true,
+            paths: ['missing-invoice'],
+            sort: [{ key: 'title', direction: 'asc' }],
+            column_filters: { publisher: 'Springer' },
+        }));
     });
 
     it('should roundtrip JSON encoded filter links with array values', () => {
@@ -190,6 +217,7 @@ describe('PublicationsComponent', () => {
         component.table = {
             reporting_year: 2025,
             setReportingYear: setTableReportingYear,
+            resetPage: vi.fn(),
             getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
             updateData: () => of([]),
         } as any;
@@ -213,6 +241,7 @@ describe('PublicationsComponent', () => {
         component.table = {
             reporting_year: 2025,
             setReportingYear: setTableReportingYear,
+            resetPage: vi.fn(),
             getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: false }),
             updateData: () => of([]),
         } as any;
@@ -234,6 +263,7 @@ describe('PublicationsComponent', () => {
     it('should preserve all reporting years when advanced filters are cleared', () => {
         const updateData = vi.fn().mockName('updateData').mockReturnValue(of([]));
         component.table = {
+            resetPage: vi.fn(),
             getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
             updateData,
         } as any;

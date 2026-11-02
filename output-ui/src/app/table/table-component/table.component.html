@@ -1,22 +1,23 @@
-@if (this.loading) {
-  <div class="d-flex justify-content-center">
-    <div class="spinner-border" role="status">
+<div class="table-loading-container" [attr.aria-busy]="this.loading">
+  @if (this.loading) {
+    <div class="table-loading-overlay" role="status" aria-live="polite" aria-label="Tabelle wird geladen">
+      <div class="spinner-border" aria-hidden="true">
+      </div>
     </div>
-  </div>
-}
-<div class="jumbotron" [hidden]="this.loading">
+  }
+<div class="jumbotron">
   <div class="container-fluid">
 
     <mat-toolbar class="secondary-toolbar" style="display: flex;justify-content: space-between;">
       <span>
         @if (!this.icon) {
           <h4>
-            <mat-icon>book</mat-icon> {{getName()}} ({{ this.dataSource.data.length }})
+            <mat-icon>book</mat-icon> {{getName()}} ({{ rowCount }})
           </h4>
         }
         @if (this.icon) {
           <h4>
-            <mat-icon>{{this.icon}}</mat-icon> {{getName()}} ({{ this.dataSource.data.length }})
+            <mat-icon>{{this.icon}}</mat-icon> {{getName()}} ({{ rowCount }})
           </h4>
         }
       </span>
@@ -60,6 +61,7 @@
       </mat-toolbar>
 
     </div>
+  </div>
 
 
     <div class="container-fluid">
@@ -82,7 +84,7 @@
           </mat-form-field>
 
         </form>
-        <mat-paginator #paginatorTop [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons
+        <mat-paginator #paginatorTop [length]="rowCount" [pageSize]="10" [pageSizeOptions]="[5, 10, 20, 100]" showFirstLastButtons
           (page)="handlePage($event)">
         </mat-paginator>
       </div>
@@ -255,7 +257,7 @@
           </table>
         </div>
         <div style="display: flex; justify-content: flex-end;">
-          <mat-paginator #paginatorBottom [pageSize]="10" showFirstLastButtons (page)="handlePage($event)">
+          <mat-paginator #paginatorBottom [length]="rowCount" [pageSize]="10" showFirstLastButtons (page)="handlePage($event)">
           </mat-paginator>
         </div>
       </div>

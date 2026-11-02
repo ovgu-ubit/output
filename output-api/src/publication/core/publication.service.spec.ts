@@ -20,6 +20,7 @@ import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
 import { PublicationChangeService } from './publication-change.service';
 import { PublicationChange } from './PublicationChange.entity';
 import { PublicationIndexService } from './publication-index.service';
+import { PublicationFilterService } from './publication-filter.service';
 import { PublicationRelationService } from '../relations/publication-relation.service';
 
 const expectApiError = async (
@@ -174,6 +175,10 @@ describe('PublicationService', () => {
                 { provide: getRepositoryToken(WorkflowReport), useValue: workflowReportRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
+                {
+                    provide: PublicationFilterService,
+                    useValue: { applyPathsToQuery: jest.fn((query) => query) },
+                },
                 { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
@@ -883,6 +888,7 @@ describe('PublicationService', () => {
                 pubRepository as any,
                 configService as any,
                 instituteService as any,
+                { applyPathsToQuery: jest.fn((query) => query) } as any,
             );
         });
 

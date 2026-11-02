@@ -1,22 +1,23 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EntityService } from 'src/app/services/entities/service.interface';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import {  SearchFilter  } from '@output/interfaces';
 import {  ExportWorkflow, WorkflowReport, WorkflowType  } from '@output/interfaces';
 import { WorkflowService } from './workflow.service';
+import { WorkflowIndexPageRequest, WorkflowIndexState } from '@output/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
-export class ExportWorkflowService implements EntityService<ExportWorkflow, ExportWorkflow> {
+export class ExportWorkflowService implements IndexEntityService<ExportWorkflow, ExportWorkflow> {
   constructor(private api: WorkflowService) { }
 
   getAll(): Observable<ExportWorkflow[]> {
     return this.api.getAllExports();
   }
 
-  index(_reporting_year: number, options?: { type: 'draft' | 'published' | 'archived' }): Observable<ExportWorkflow[]> {
-    return this.api.getExports(options);
+  indexPage(request: WorkflowIndexPageRequest, options?: { type?: WorkflowIndexState }) {
+    return this.api.exportIndexPage(request, options);
   }
 
   getOne(id: number): Observable<ExportWorkflow> {

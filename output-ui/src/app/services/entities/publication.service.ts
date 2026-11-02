@@ -1,28 +1,24 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { EntityService } from 'src/app/services/entities/service.interface';
-import {  SearchFilter  } from '@output/interfaces';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import {  Publication  } from '@output/interfaces';
-import {  PublicationIndex  } from '@output/interfaces';
+import { PublicationIndex, PublicationIndexPage, PublicationIndexPageRequest } from '@output/interfaces';
 import {  PublicationChange  } from '@output/interfaces';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class PublicationService implements EntityService<Publication, PublicationIndex> {
+export class PublicationService implements IndexEntityService<Publication, PublicationIndex> {
 
   constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
-  public index(yop: number | null, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean}) {
-    if (options?.soft) return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?soft=true', { withCredentials: true });
-    if (options?.allReportingYears || options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) {
-      return this.http.post<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', {
-        filter: options.filter ?? { expressions: [] },
-        paths: options.paths ?? [],
-      }, { withCredentials: true });
-    }
-    return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?yop=' + yop, { withCredentials: true });
+  public indexPage(request: PublicationIndexPageRequest) {
+    return this.http.post<PublicationIndexPage>(
+      this.runtimeConfigService.getValue("api") + 'publications/index-page',
+      request,
+      { withCredentials: true },
+    );
   }
   public getAll() {
     return this.http.get<Publication[]>(this.runtimeConfigService.getValue("api") + 'publications', { withCredentials: true });

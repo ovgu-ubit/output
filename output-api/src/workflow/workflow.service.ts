@@ -24,6 +24,9 @@ import { ValidationWorkflow } from './ValidationWorkflow.entity';
 import { WorkflowReportService } from './workflow-report.service';
 import { hasProvidedEntityId } from '../common/entity-id';
 import { createEntityLockedHttpException, createInvalidRequestHttpException, createNotFoundHttpException, createUniqueConstraintHttpException, createWorkflowRunningHttpException } from '../common/api-error';
+import { EXPORT_ENTITY_LABELS, IndexPage, WorkflowIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
+import { WorkflowReport } from './WorkflowReport.entity';
 
 type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     repository: Repository<TWorkflow>;
@@ -69,6 +72,64 @@ export class WorkflowService {
 
     getValidations(type?: 'draft' | 'published' | 'archived') {
         return this.validationRepository.find(this.getWorkflowOptions(type));
+    }
+
+    getImportPage(request: WorkflowIndexPageRequest): Promise<IndexPage<ImportWorkflow>> {
+        return this.getWorkflowPage(this.importRepository, WorkflowType.IMPORT, request);
+    }
+
+    getExportPage(request: WorkflowIndexPageRequest): Promise<IndexPage<ExportWorkflow>> {
+        return this.getWorkflowPage(this.exportRepository, WorkflowType.EXPORT, request);
+    }
+
+    getValidationPage(request: WorkflowIndexPageRequest): Promise<IndexPage<ValidationWorkflow>> {
+        return this.getWorkflowPage(this.validationRepository, WorkflowType.VALIDATION, request);
+    }
+
+    private getWorkflowPage<T extends Workflow>(repository: Repository<T>, type: WorkflowType, request: WorkflowIndexPageRequest): Promise<IndexPage<T>> {
+        const query = repository.createQueryBuilder('workflow').withDeleted()
+            .select('workflow.id', 'id');
+        for (const column of ['workflow_id', 'label', 'version', 'created_at', 'modified_at', 'published_at', 'deleted_at', 'description', 'locked_at']) {
+            query.addSelect(`workflow.${column}`, column);
+        }
+        if (request.type === 'archived') query.where('workflow.deleted_at IS NOT NULL');
+        else {
+            query.where('workflow.deleted_at IS NULL');
+            if (request.type === 'draft') query.andWhere('workflow.published_at IS NULL');
+            if (request.type === 'published') query.andWhere('workflow.published_at IS NOT NULL');
+        }
+
+        if (type === WorkflowType.VALIDATION) query.addSelect('workflow.target', 'target');
+        else query.addSelect('workflow.strategy_type', 'strategy_type');
+        if (type === WorkflowType.EXPORT) {
+            query.addSelect('workflow.source_entity', 'source_entity');
+            const cases = Object.entries(EXPORT_ENTITY_LABELS).map(([entity, label], index) => {
+                query.setParameter(`index_entity_${index}`, entity).setParameter(`index_label_${index}`, label);
+                return `WHEN :index_entity_${index} THEN :index_label_${index}`;
+            });
+            query.addSelect(`CASE COALESCE(workflow.source_entity, 'publication') ${cases.join(' ')} END`, 'source_entity_label');
+        }
+
+        const reportKey = type === WorkflowType.IMPORT ? 'workflowId' : type === WorkflowType.EXPORT ? 'exportWorkflowId' : 'validationWorkflowId';
+        query.leftJoin(subquery => subquery
+            .from(WorkflowReport, 'report')
+            .select(`report."${reportKey}"`, 'workflow_id')
+            .addSelect('report.id', 'id')
+            .addSelect('report.status', 'status')
+            .addSelect('report.finished_at', 'finished_at')
+            .distinctOn([`report."${reportKey}"`])
+            .where('report.workflow_type = :indexWorkflowType', { indexWorkflowType: type })
+            .orderBy(`report."${reportKey}"`, 'ASC')
+            .addOrderBy('report.started_at', 'DESC')
+            .addOrderBy('report.id', 'DESC'),
+        'last_report', 'last_report.workflow_id = workflow.id AND workflow.published_at IS NOT NULL AND workflow.deleted_at IS NULL');
+        const logPath = type === WorkflowType.IMPORT ? '/workflow/publication_import' : type === WorkflowType.EXPORT ? '/workflow/publication_export' : '/workflow/publication_validation';
+        query.addSelect('last_report.status', 'last_run_status')
+            .addSelect('last_report.finished_at', 'last_run_finished_at')
+            .addSelect('last_report.id', 'last_run_report_id')
+            .addSelect("CASE WHEN last_report.id IS NOT NULL THEN CONCAT(CAST(:indexLogPath AS text), '/', workflow.id, '/logs/', last_report.id) END", 'last_run_log_link')
+            .setParameter('indexLogPath', logPath);
+        return paginateIndexQuery<T, T>(query, request);
     }
 
     async getImport(id?: number, lock = true, user?: string) {

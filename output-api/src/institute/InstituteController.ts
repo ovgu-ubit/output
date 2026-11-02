@@ -1,3 +1,4 @@
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Body, Controller, Delete, Get, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
@@ -13,6 +14,13 @@ import { assertCreateRequestHasNoId } from "../common/entity-id";
 export class InstituteController {
 
     constructor(private instService: InstituteService) { }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.instService.indexPage(body, !!request?.['user']?.['read']);
+    }
 
     @Get()
     @UseGuards(AccessGuard)

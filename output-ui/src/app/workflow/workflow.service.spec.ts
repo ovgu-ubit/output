@@ -61,6 +61,17 @@ describe('WorkflowService', () => {
         expect(http.get).toHaveBeenCalledWith(`http://api/workflow/${WorkflowType.EXPORT}/7/workflow-reports?limit=5&offset=10`, { withCredentials: true });
     });
 
+    it.each([
+        ['indexPage', 'import'], ['exportIndexPage', 'export'], ['validationIndexPage', 'validation'],
+    ] as const)('loads %s with paging and lifecycle scope without report fan-out', async (method, path) => {
+        const page = { items: [{ id: 7, last_run_status: 'finished' }], total: 25, page: 2, page_size: 10 };
+        http.post.mockReturnValue(of(page));
+        const query = { page: 2, page_size: 10, q: 'finished', sort: [{ key: 'last_run_status' as const, direction: 'asc' as const }] };
+        expect(await firstValueFrom<unknown>(service[method](query, { type: 'published' }))).toEqual(page);
+        expect(http.post).toHaveBeenCalledWith(`http://api/workflow/${path}/index-page`, { ...query, type: 'published' }, { withCredentials: true });
+        expect(http.get).not.toHaveBeenCalled();
+    });
+
     it('starts an import with the supplied quick-start parameters', async () => {
         http.post.mockReturnValue(of({ status: 'started', dry_run: false }));
 

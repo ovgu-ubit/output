@@ -4,7 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, concatMap, map, merge } from 'rxjs';
+import { concatMap, forkJoin, map, take } from 'rxjs';
+import { PUBLICATION_INDEX_COLUMNS } from '@output/interfaces/PublicationIndex';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ConfigService} from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -12,7 +13,16 @@ import { StatusService } from 'src/app/services/entities/status.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import {  CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression  } from '@output/interfaces';
+import {
+  CompareOperation,
+  IndexColumnFilters,
+  IndexPageRequest,
+  IndexSortCriterion,
+  JoinOperation,
+  PublicationIndexColumn,
+  SearchFilter,
+  SearchFilterExpression,
+} from '@output/interfaces';
 import {  Publication  } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
 import { FilterViewComponent } from '../../dialogs/filter-view/filter-view.component';
@@ -62,8 +72,31 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   ];
   viewConfig: ViewConfig;
 
+  loadPage(request: IndexPageRequest<string>, reportingYear: number | null) {
+    const sort = request.sort?.filter(
+      (criterion): criterion is IndexSortCriterion<PublicationIndexColumn> => this.isPublicationIndexColumn(criterion.key),
+    );
+    const columnFilters = Object.fromEntries(
+      Object.entries(request.column_filters ?? {}).filter(([key]) => this.isPublicationIndexColumn(key)),
+    ) as IndexColumnFilters<PublicationIndexColumn>;
+    return this.publicationService.indexPage({
+      ...request,
+      sort,
+      column_filters: columnFilters,
+      reporting_year: reportingYear,
+      soft: this.indexOptions?.soft === true,
+      filter: this.indexOptions?.filter,
+      paths: this.indexOptions?.paths ?? [],
+      all_reporting_years: this.indexOptions?.allReportingYears === true,
+    });
+  }
+
+  private isPublicationIndexColumn(key: string): key is PublicationIndexColumn {
+    return PUBLICATION_INDEX_COLUMNS.includes(key as PublicationIndexColumn);
+  }
+
   preProcessing() {
-    let ob$: Observable<any> = this.enrichService.getEnrichs().pipe(map(data => {
+    const enrichs$ = this.enrichService.getEnrichs().pipe(map(data => {
       let sub_buttons = data.map(e => {
         return {
           title: e.label, action_function: function () {
@@ -76,7 +109,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       })
     }))
 
-    ob$ = merge(ob$, this.configService.get("pub_index_columns").pipe(concatMap(data => {
+    const columns$ = this.configService.get("pub_index_columns").pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
       if (data.value["title"]) headers.push({ colName: 'title', colTitle: 'Titel' })
       if (data.value["doi"]) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
@@ -107,19 +140,19 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
         let header = this.headers.find(e => e.colName === 'authors_inst')
         if (header) header.colTitle = 'Personen ' + this.institution;
       }))
-    })))
+    }))
 
-    ob$ = merge(ob$, this.statusService.getAll().pipe(map(statuses => {
+    const statuses$ = this.statusService.getAll().pipe(map(statuses => {
       this.statusDescriptions = new Map(
         statuses
           .filter(status => status.id !== undefined && status.label)
           .map(status => [status.id!, status.label])
       );
-    })));
+    }));
 
-    ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
+    const view$ = this.store.select(selectViewConfig).pipe(take(1), concatMap(viewConfig => {
       this.viewConfig = viewConfig ?? initialState.viewConfig;
-      return this.route.queryParamMap.pipe(map(params => {
+      return this.route.queryParamMap.pipe(take(1), map(params => {
         const queryView = this.queryToFilter(params);
         if (queryView) {
           this.viewConfig = {
@@ -136,9 +169,9 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
           allReportingYears: this.viewConfig.allReportingYears === true,
         }
       }));
-    })));
+    }));
 
-    return ob$;
+    return forkJoin([enrichs$, columns$, statuses$, view$]).pipe(map(() => undefined));
   }
 
   getStatusDescription(status: number): string | null {
@@ -170,6 +203,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
           allReportingYears: result.allReportingYears,
         };
         this.table.setReportingYear(result.reportingYear, result.allReportingYears);
+        this.table.resetPage();
         if (!result.allReportingYears) {
           this.store.dispatch(setReportingYear({ reporting_year: result.reportingYear }));
         }
@@ -268,6 +302,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
             paths: result.paths,
             allReportingYears: this.viewConfig.allReportingYears === true,
           }
+          this.table.resetPage();
           this.table.updateData().subscribe();
         } else {
           this.indexOptions = {
@@ -276,6 +311,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
             paths: result.paths,
             allReportingYears: this.viewConfig.allReportingYears === true,
           };
+          this.table.resetPage();
           this.persistViewConfig();
           this.table.updateData().subscribe();
         }
@@ -299,6 +335,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       paths: null,
       allReportingYears: false,
     }
+    this.table.resetPage();
     this.table.updateData().subscribe()
   }
 

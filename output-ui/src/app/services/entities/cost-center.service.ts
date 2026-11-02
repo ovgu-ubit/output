@@ -1,23 +1,27 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  CostCenter, CostType  } from '@output/interfaces';
 import {  CostCenterIndex  } from '@output/interfaces';
-import { EntityService } from 'src/app/services/entities/service.interface';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class CostCenterService implements EntityService<CostCenter, CostCenterIndex> {
+export class CostCenterService implements IndexEntityService<CostCenter, CostCenterIndex> {
 
   constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
   public getAll() {
     return this.http.get<CostCenter[]>(this.runtimeConfigService.getValue("api") + 'invoice/cost_center', { withCredentials: true });
   }
-  public index(reporting_year:number) {
-    return this.http.get<CostCenterIndex[]>(this.runtimeConfigService.getValue("api") + 'invoice/cost_center/index?reporting_year='+reporting_year, { withCredentials: true });
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<CostCenterIndex>>(
+      this.runtimeConfigService.getValue('api') + 'invoice/cost_center/index-page', request, { withCredentials: true },
+    );
   }
+
   public getOne(id:number) {
     return this.http.get<CostCenter>(this.runtimeConfigService.getValue("api") + 'invoice/cost_center/'+id, { withCredentials: true });
   }

@@ -1,7 +1,6 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { CompareOperation, JoinOperation } from '@output/interfaces';
 import { RuntimeConfigService } from '../runtime-config.service';
 import { PublicationService } from './publication.service';
 
@@ -25,41 +24,23 @@ describe('PublicationService', () => {
 
   afterEach(() => httpTesting.verify());
 
-  it('should load all reporting years through the filter endpoint', () => {
-    service.index(2025, { allReportingYears: true }).subscribe();
-
-    const request = httpTesting.expectOne('http://localhost/publications/filter');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      filter: { expressions: [] },
-      paths: [],
-    });
-    request.flush([]);
-  });
-
-  it('should continue loading extended filters across all reporting years', () => {
-    const filter = {
-      expressions: [{
-        op: JoinOperation.AND,
-        key: 'title',
-        comp: CompareOperation.INCLUDES,
-        value: 'Angular',
-      }],
+  it('should load a publication page from the paginated endpoint', () => {
+    const body = {
+      page: 2,
+      page_size: 20,
+      reporting_year: 2025,
+      sort: [{ key: 'title' as const, direction: 'asc' as const }],
+      q: 'Angular',
     };
 
-    service.index(2025, { filter }).subscribe();
+    service.indexPage(body).subscribe(page => {
+      expect(page).toEqual({ items: [], total: 41, page: 2, page_size: 20 });
+    });
 
-    const request = httpTesting.expectOne('http://localhost/publications/filter');
+    const request = httpTesting.expectOne('http://localhost/publications/index-page');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body.filter).toEqual(filter);
-    request.flush([]);
-  });
-
-  it('should use the reporting-year endpoint for the regular view', () => {
-    service.index(2025).subscribe();
-
-    const request = httpTesting.expectOne('http://localhost/publications/publicationIndex?yop=2025');
-    expect(request.request.method).toBe('GET');
-    request.flush([]);
+    expect(request.request.body).toEqual(body);
+    expect(request.request.withCredentials).toBe(true);
+    request.flush({ items: [], total: 41, page: 2, page_size: 20 });
   });
 });

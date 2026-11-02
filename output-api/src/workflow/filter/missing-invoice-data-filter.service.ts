@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { AbstractFilterService, FilterService } from "./abstract-filter.service";
+import { AbstractFilterService, FilterService, SqlFilterService } from "./abstract-filter.service";
 import { PublicationService } from "../../publication/core/publication.service";
 import {  PublicationIndex  } from '@output/interfaces';
 import { Publication } from "../../publication/core/Publication.entity";
 
 @FilterService({path: 'missing-invoice'})
 @Injectable()
-export class MissingInvoiceDataService extends AbstractFilterService<PublicationIndex|Publication>{
+export class MissingInvoiceDataService extends AbstractFilterService<PublicationIndex|Publication> implements SqlFilterService {
 
     constructor(private pubService: PublicationService) {super()}
 
@@ -22,5 +22,14 @@ export class MissingInvoiceDataService extends AbstractFilterService<Publication
 
     getName() {
         return 'Fehlende Rechnungsinformationen bei corr. Publikationen'
+    }
+
+    getSqlPredicate(entityAlias: string): string {
+        return `EXISTS (SELECT 1 FROM author_publication corresponding_author
+                WHERE corresponding_author."publicationId" = ${entityAlias}.id
+                    AND corresponding_author."corresponding" IS TRUE)
+            AND NOT EXISTS (SELECT 1 FROM invoice missing_invoice
+                WHERE missing_invoice."publicationId" = ${entityAlias}.id)
+            AND ${entityAlias}."contractId" IS NULL`;
     }
 }

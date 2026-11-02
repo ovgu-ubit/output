@@ -1,9 +1,8 @@
 import { Observable } from "rxjs";
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 
 export interface EntityService<T, E> {
     getAll():Observable<T[]>;
-
-    index(reporting_year: number | null, options?:any):Observable<E[]>;
 
     getOne(id:number):Observable<T>;
     
@@ -14,6 +13,11 @@ export interface EntityService<T, E> {
     delete(ids:number[],soft?:boolean):Observable<T[]>;
     
     combine?(id1: number, ids: number[], options?: any):any;
+}
+
+/** Every index table is backed by a paginated endpoint; forms only require EntityService. */
+export interface IndexEntityService<T, E> extends EntityService<T, E> {
+    indexPage(request: ReportingYearIndexPageRequest, options?: any): Observable<IndexPage<E>>;
 }
 
 export interface EntityFormComponent<T> {

@@ -36,7 +36,7 @@ describe('Invoice links in master-data tables', () => {
             present: vi.fn().mockName("ErrorPresentationService.present")
         };
         store = { select: vi.fn().mockName('select').mockImplementation(() => of(reportingYear)), dispatch: vi.fn().mockName('dispatch') };
-        const index = () => of(rows).pipe(delay(0));
+        const indexPage = () => of({ items: rows, total: rows.length, page: 0, page_size: 10 }).pipe(delay(0));
         const authorization = new CookieTokenService({
             check: () => role !== 'anonymous',
             get: () => JSON.stringify({ id: 'test', permissions: [{ appname: 'output', rolename: role }] }),
@@ -50,9 +50,9 @@ describe('Invoice links in master-data tables', () => {
                 { provide: ConfigService, useValue: { get: () => of({ value: 2026 }) } },
                 { provide: AuthorizationService, useValue: authorization },
                 { provide: ErrorPresentationService, useValue: errors },
-                { provide: ContractService, useValue: { index } },
-                { provide: CostCenterService, useValue: { index } },
-                { provide: CostTypeService, useValue: { index } },
+                { provide: ContractService, useValue: { indexPage } },
+                { provide: CostCenterService, useValue: { indexPage } },
+                { provide: CostTypeService, useValue: { indexPage } },
             ],
         }).compileComponents();
     });

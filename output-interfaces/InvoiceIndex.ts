@@ -1,4 +1,5 @@
 import { InvoiceKind } from './Publication';
+import { IndexPage, IndexPagingRequest, IndexSortDirection } from './IndexPage';
 
 export type InvoiceIndexEntityFilter = 'contract_id' | 'cost_center_id' | 'cost_type_id';
 
@@ -55,12 +56,9 @@ export interface InvoiceIndex {
     context: InvoiceContext;
 }
 
-export interface InvoiceIndexQuery {
-    page?: number;
-    page_size?: number;
+export interface InvoiceIndexQuery extends IndexPagingRequest {
     sort?: InvoiceIndexSortField;
-    sort_dir?: 'asc' | 'desc';
-    q?: string;
+    sort_dir?: IndexSortDirection;
     invoice_kind?: InvoiceKind;
     invoice_year?: number;
     booking_year?: number;
@@ -81,9 +79,4 @@ export interface InvoiceIndexQuery {
     context?: InvoiceContext;
 }
 
-export interface InvoiceIndexPage {
-    items: InvoiceIndex[];
-    total: number;
-    page: number;
-    page_size: number;
-}
+export interface InvoiceIndexPage extends IndexPage<InvoiceIndex> { }

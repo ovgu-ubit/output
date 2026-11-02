@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { AbstractFilterService, FilterService } from "./abstract-filter.service";
+import { AbstractFilterService, FilterService, SqlFilterService } from "./abstract-filter.service";
 import {  PublicationIndex  } from '@output/interfaces';
 import { PublicationService } from "../../publication/core/publication.service";
 import { Publication } from "../../publication/core/Publication.entity";
 
 @FilterService({path: 'missing-inst_auth'})
 @Injectable()
-export class MissingInstAuthorFilterService extends AbstractFilterService<PublicationIndex|Publication>{
+export class MissingInstAuthorFilterService extends AbstractFilterService<PublicationIndex|Publication> implements SqlFilterService {
 
     constructor(private pubService: PublicationService) {super()}
 
@@ -21,5 +21,10 @@ export class MissingInstAuthorFilterService extends AbstractFilterService<Public
 
     getName() {
         return 'Kein*e Autor*in der Institution zugeordnet'
+    }
+
+    getSqlPredicate(entityAlias: string): string {
+        return `NOT EXISTS (SELECT 1 FROM author_publication missing_author
+            WHERE missing_author."publicationId" = ${entityAlias}.id)`;
     }
 }

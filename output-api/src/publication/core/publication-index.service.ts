@@ -7,8 +7,12 @@ import {
     getPublicationFilterFieldDefinition,
     isPublicationFilterOperationAllowed,
     JoinOperation,
+    IndexPage,
+    PUBLICATION_INDEX_COLUMNS,
     PublicationFilterFieldType,
     PublicationIndex,
+    PublicationIndexColumn,
+    PublicationIndexPageRequest,
     SearchFilter,
     SearchFilterValue,
 } from '@output/interfaces';
@@ -17,12 +21,15 @@ import {
     Brackets,
     ILike,
     Repository,
-    SelectQueryBuilder
+    SelectQueryBuilder,
+    WhereExpressionBuilder,
 } from 'typeorm';
 import { createInvalidRequestHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
 import { Publication } from './Publication.entity';
+import { PublicationFilterService } from './publication-filter.service';
+import { indexLikePattern, validateIndexPageBounds } from '../../common/index-page';
 
 export interface GetAllPublicationOptions {
     serializeDates?: boolean;
@@ -57,6 +64,7 @@ export class PublicationIndexService {
         @InjectRepository(Publication) private pubRepository: Repository<Publication>,
         private configService: AppConfigService,
         private instService: InstituteService,
+        private publicationFilterService: PublicationFilterService,
     ) { }
 
     public async getAllForReportingYear(yop: number | null | undefined, reader = false) {
@@ -274,17 +282,145 @@ export class PublicationIndexService {
         return query.getRawMany() as Promise<PublicationIndex[]>;
     }
 
+    public async getIndexPage(
+        request: PublicationIndexPageRequest,
+        canReadNetCosts = false,
+    ): Promise<IndexPage<PublicationIndex>> {
+        const page = request.page ?? 0;
+        const pageSize = request.page_size ?? 10;
+        validateIndexPageBounds(page, pageSize);
+
+        const filterContext = this.createFilterContext();
+        let indexQuery = await this.indexQuery(filterContext, canReadNetCosts);
+        if (request.filter) indexQuery = await this.filter(request.filter, indexQuery, filterContext, true);
+
+        if (request.soft) {
+            indexQuery = indexQuery.withDeleted().andWhere('publication.delete_date IS NOT NULL');
+        } else if (!request.all_reporting_years) {
+            const configuredYear = request.reporting_year === undefined
+                ? Number(await this.configService.get('reporting_year'))
+                : request.reporting_year;
+            indexQuery = this.applyReportingYearScope(
+                indexQuery,
+                configuredYear !== null && Number.isFinite(Number(configuredYear)) ? Number(configuredYear) : null,
+            );
+        }
+        indexQuery = this.publicationFilterService.applyPathsToQuery(indexQuery, request.paths);
+
+        const selectedColumns = this.getSelectedIndexColumns(indexQuery);
+        const pageQuery = this.pubRepository.manager.createQueryBuilder()
+            .select('publication_index.*')
+            .from(`(${indexQuery.getQuery()})`, 'publication_index')
+            .setParameters(indexQuery.getParameters());
+
+        if (request.q?.trim()) {
+            const pattern = indexLikePattern(request.q);
+            pageQuery.andWhere(new Brackets(where => {
+                selectedColumns.forEach((column, index) => {
+                    const clause = `${this.indexColumnExpression(column)} ILIKE :index_search ESCAPE '\\'`;
+                    if (index === 0) where.where(clause);
+                    else where.orWhere(clause);
+                });
+            }), { index_search: pattern });
+        }
+
+        for (const [index, [column, value]] of Object.entries(request.column_filters ?? {}).entries()) {
+            if (typeof value !== 'string') throw createInvalidRequestHttpException(`Invalid filter value for index column: ${column}`);
+            if (!value.trim()) continue;
+            this.assertSelectedIndexColumn(column, selectedColumns);
+            pageQuery.andWhere(
+                `${this.indexColumnExpression(column)} ILIKE :index_column_filter_${index} ESCAPE '\\'`,
+                { [`index_column_filter_${index}`]: indexLikePattern(value) },
+            );
+        }
+
+        const countQuery = pageQuery.clone().select('COUNT(*)', 'total');
+        const sort = request.sort ?? [];
+        const sortedColumns = new Set<string>();
+        for (const criterion of sort) {
+            this.assertSelectedIndexColumn(criterion.key, selectedColumns);
+            if (!['asc', 'desc'].includes(criterion.direction)) {
+                throw createInvalidRequestHttpException(`Invalid sort direction for index column: ${criterion.key}`);
+            }
+            if (sortedColumns.has(criterion.key)) continue;
+            pageQuery.addOrderBy(
+                `publication_index."${criterion.key}"`,
+                criterion.direction === 'asc' ? 'ASC' : 'DESC',
+                criterion.direction === 'asc' ? 'NULLS FIRST' : 'NULLS LAST',
+            );
+            sortedColumns.add(criterion.key);
+        }
+        if (!sortedColumns.has('id')) pageQuery.addOrderBy('publication_index."id"', 'ASC');
+        pageQuery.offset(page * pageSize).limit(pageSize);
+
+        const [items, count] = await Promise.all([
+            pageQuery.getRawMany<PublicationIndex>(),
+            countQuery.getRawOne<{ total: string }>(),
+        ]);
+        return {
+            items,
+            total: Number(count?.total ?? 0),
+            page,
+            page_size: pageSize,
+        };
+    }
+
     public async filterIndex(filter: SearchFilter, canReadNetCosts = false) {
         const filterContext = this.createFilterContext();
         return (await this.filter(filter, await this.indexQuery(filterContext, canReadNetCosts), filterContext)).getRawMany();
+    }
+
+    private applyReportingYearScope(
+        query: SelectQueryBuilder<Publication>,
+        reportingYear: number | null,
+    ): SelectQueryBuilder<Publication> {
+        if (reportingYear) {
+            const beginDate = new Date(Date.UTC(reportingYear, 0, 1, 0, 0, 0, 0));
+            const endDate = new Date(Date.UTC(reportingYear, 11, 31, 23, 59, 59, 999));
+            return query.andWhere(new Brackets(year => year
+                .where('publication.pub_date >= :pageBeginDate AND publication.pub_date <= :pageEndDate')
+                .orWhere(new Brackets(fallback => fallback
+                    .where('publication.pub_date IS NULL')
+                    .andWhere(new Brackets(date => date
+                        .where('publication.pub_date_print >= :pageBeginDate AND publication.pub_date_print <= :pageEndDate')
+                        .orWhere('publication.pub_date_accepted >= :pageBeginDate AND publication.pub_date_accepted <= :pageEndDate')
+                        .orWhere('publication.pub_date_submitted >= :pageBeginDate AND publication.pub_date_submitted <= :pageEndDate'))))),
+            ), { pageBeginDate: beginDate, pageEndDate: endDate });
+        }
+        return query
+            .andWhere('publication.pub_date IS NULL')
+            .andWhere('publication.pub_date_print IS NULL')
+            .andWhere('publication.pub_date_accepted IS NULL')
+            .andWhere('publication.pub_date_submitted IS NULL');
+    }
+
+    private getSelectedIndexColumns(query: SelectQueryBuilder<Publication>): PublicationIndexColumn[] {
+        const allowed = new Set<string>(PUBLICATION_INDEX_COLUMNS);
+        return query.expressionMap.selects
+            .map(select => select.aliasName)
+            .filter((column): column is PublicationIndexColumn => !!column && allowed.has(column));
+    }
+
+    private assertSelectedIndexColumn(column: string, selectedColumns: PublicationIndexColumn[]): asserts column is PublicationIndexColumn {
+        if (!PUBLICATION_INDEX_COLUMNS.includes(column as PublicationIndexColumn)) {
+            throw createInvalidRequestHttpException(`Unsupported index column: ${column}`);
+        }
+        if (!selectedColumns.includes(column as PublicationIndexColumn)) {
+            throw createInvalidRequestHttpException(`Index column is not available in the current projection: ${column}`);
+        }
+    }
+
+    private indexColumnExpression(column: string): string {
+        return `COALESCE(CAST(publication_index."${column}" AS text), '')`;
     }
 
     public async filter(
         filter: SearchFilter,
         indexQuery: SelectQueryBuilder<Publication>,
         filterContext = this.createFilterContext(),
+        groupExpressions = false,
     ): Promise<SelectQueryBuilder<Publication>> {
-        let first = true;
+        const predicates: { clause: string; parameters?: Record<string, unknown>; operation: JoinOperation }[] = [];
         let filterIndex = 0;
         if (filter) for (const expr of filter.expressions) {
             let compareOperation = expr.comp;
@@ -303,21 +439,23 @@ export class PublicationIndexService {
             const predicate = this.buildFilterPredicate(expr.key, compareOperation, filterValue, `filter_${filterIndex}`, filterContext);
             filterIndex++;
             const clause = expr.op === JoinOperation.AND_NOT ? `NOT (${predicate.clause})` : predicate.clause;
-
-            if (first) {
-                indexQuery = indexQuery.where(clause, predicate.parameters);
-                first = false;
-                continue;
-            }
-
-            switch (expr.op) {
-                case JoinOperation.AND:
-                case JoinOperation.AND_NOT:
-                    indexQuery = indexQuery.andWhere(clause, predicate.parameters);
-                    break;
-                case JoinOperation.OR:
-                    indexQuery = indexQuery.orWhere(clause, predicate.parameters);
-                    break;
+            predicates.push({ clause, parameters: predicate.parameters, operation: expr.op });
+        }
+        const applyExpressions = (where: WhereExpressionBuilder): void => {
+            predicates.forEach((predicate, index) => {
+                if (index === 0) where.where(predicate.clause, predicate.parameters);
+                else if (predicate.operation === JoinOperation.OR) where.orWhere(predicate.clause, predicate.parameters);
+                else if (predicate.operation === JoinOperation.AND || predicate.operation === JoinOperation.AND_NOT) {
+                    where.andWhere(predicate.clause, predicate.parameters);
+                }
+            });
+        };
+        if (predicates.length) {
+            if (groupExpressions) {
+                // Scope restrictions must apply to the entire extended filter, including OR branches.
+                indexQuery.where(new Brackets(applyExpressions));
+            } else {
+                applyExpressions(indexQuery);
             }
         }
         return this.applyRequestedJoins(indexQuery, filterContext);
