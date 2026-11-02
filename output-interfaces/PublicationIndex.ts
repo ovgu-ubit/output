@@ -1,5 +1,5 @@
 import { InvoiceCounts } from './InvoiceIndex';
-import { IndexPage, IndexPageRequest } from './IndexPage';
+import { IndexPage, ReportingYearIndexPageRequest } from './IndexPage';
 import { SearchFilter } from './Config';
 
 export const PUBLICATION_INDEX_COLUMNS = [
@@ -38,8 +38,7 @@ export interface PublicationIndex {
     locked_status?: string;
 }
 
-export interface PublicationIndexPageRequest extends IndexPageRequest<PublicationIndexColumn> {
-    reporting_year?: number | null;
+export interface PublicationIndexPageRequest extends ReportingYearIndexPageRequest<PublicationIndexColumn> {
     all_reporting_years?: boolean;
     soft?: boolean;
     filter?: SearchFilter;

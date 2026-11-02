@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EntityService } from 'src/app/services/entities/service.interface';
@@ -18,6 +19,12 @@ export class AuthorService implements EntityService<Author, AuthorIndex> {
 
   public index(reporting_year: number) {
     return this.http.get<AuthorIndex[]>(this.runtimeConfigService.getValue("api") + 'authors/index?reporting_year=' + reporting_year, { withCredentials: true });
+  }
+
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<AuthorIndex>>(
+      this.runtimeConfigService.getValue('api') + 'authors/index-page', request, { withCredentials: true },
+    );
   }
 
   public getOne(id: number) {

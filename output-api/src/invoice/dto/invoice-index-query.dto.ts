@@ -2,15 +2,12 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { INVOICE_CONTEXTS, INVOICE_INDEX_SORT_FIELDS, InvoiceContext, InvoiceIndexQuery, InvoiceIndexSortField, InvoiceKind } from '@output/interfaces';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsDateString, IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IndexPagingRequestDto } from '../../common/dto/index-page.dto';
 
-export class InvoiceIndexQueryDto implements InvoiceIndexQuery {
-    @ApiPropertyOptional({ default: 0, minimum: 0 })
-    @Type(() => Number) @IsInt() @Min(0) @Max(1000000)
-    page = 0;
-
+export class InvoiceIndexQueryDto extends IndexPagingRequestDto implements InvoiceIndexQuery {
     @ApiPropertyOptional({ default: 50, minimum: 1, maximum: 200 })
     @Type(() => Number) @IsInt() @Min(1) @Max(200)
-    page_size = 50;
+    override page_size = 50;
 
     @ApiPropertyOptional({ enum: INVOICE_INDEX_SORT_FIELDS, default: 'date' })
     @IsIn(INVOICE_INDEX_SORT_FIELDS)
@@ -22,7 +19,7 @@ export class InvoiceIndexQueryDto implements InvoiceIndexQuery {
 
     @ApiPropertyOptional({ maxLength: 200, description: 'Search invoice number, publication, cost center and contract labels.' })
     @IsOptional() @IsString() @MaxLength(200)
-    q?: string;
+    declare q?: string;
 
     @ApiPropertyOptional({ enum: InvoiceKind })
     @IsOptional() @IsEnum(InvoiceKind)

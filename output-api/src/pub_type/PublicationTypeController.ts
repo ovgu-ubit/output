@@ -1,3 +1,5 @@
+import { ApiResponse } from '@nestjs/swagger';
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
@@ -14,6 +16,13 @@ export class PublicationTypeController extends AbstractCrudController<Publicatio
 
     constructor(pubTypeService:PublicationTypeService) {
         super(pubTypeService);
+    }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.service.indexPage(body, !!request?.['user']?.['read']);
     }
 
     @Get("index")

@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { addInvoiceAmounts, allocatedCostItemGrossAmountSql } from './invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +21,19 @@ export class CostTypeService extends AbstractEntityService<CostType> {
     }
 
     public async getCostTypeIndex(reporting_year: number, canReadNetCosts = false, canReadInvoices = false): Promise<CostTypeIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts, canReadInvoices);
+        const rows = await query.getRawMany<CostTypeIndex>();
+        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false, canReadInvoices = false): Promise<IndexPage<CostTypeIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts, canReadInvoices);
+        const result = await paginateIndexQuery<CostTypeIndex>(query, request);
+        if (canReadInvoices) result.items = normalizeInvoiceCounts(result.items);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false, canReadInvoices = false) {
         // Preserve "undated" for invoices independently of the legacy publication-year fallback.
         const invoiceReportingYear = reporting_year;
         if (!reporting_year || Number.isNaN(reporting_year)) reporting_year = Number(await this.appConfigService.get('reporting_year'));
@@ -49,8 +64,7 @@ export class CostTypeService extends AbstractEntityService<CostType> {
         }
 
         if (canReadInvoices) addInvoiceCounts(query, 'cost_type_id', invoiceReportingYear);
-        const rows = await query.getRawMany<CostTypeIndex>();
-        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
+        return query;
     }
 
     public findOrSave(title: string, dryRun = false): Observable<CostType> {

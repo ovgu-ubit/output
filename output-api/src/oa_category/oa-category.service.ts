@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { addInvoiceAmounts } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,6 +32,18 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
     }
 
     public async index(reporting_year: number, canReadNetCosts = false): Promise<OACategoryIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts);
+        const rows = await query.getRawMany<OACategoryIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false): Promise<IndexPage<OACategoryIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts);
+        const result = await paginateIndexQuery<OACategoryIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false) {
         let query = this.repository.createQueryBuilder("oacat")
             .leftJoin("oacat.publications", "publication")
             .select("oacat.id", "id")
@@ -61,7 +75,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<OACategoryIndex[]>;
+        return query;
     }
 
     public async combine(id1: number, ids: number[]) {

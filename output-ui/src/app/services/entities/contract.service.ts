@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  ContractIndex  } from '@output/interfaces';
@@ -18,6 +19,12 @@ export class ContractService implements EntityService<Contract, ContractIndex> {
 
   public index(reporting_year: number) {
     return this.http.get<ContractIndex[]>(this.runtimeConfigService.getValue("api") + 'contract/index?reporting_year=' + reporting_year, { withCredentials: true });
+  }
+
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<ContractIndex>>(
+      this.runtimeConfigService.getValue('api') + 'contract/index-page', request, { withCredentials: true },
+    );
   }
 
   public getOne(id: number) {

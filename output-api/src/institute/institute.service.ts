@@ -15,6 +15,8 @@ import { AuthorPublication } from '../publication/relations/AuthorPublication.en
 import { AliasInstitute } from './AliasInstitute.entity';
 import { Institute } from './Institute.entity';
 import { hasProvidedEntityId } from '../common/entity-id';
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexSql } from '../common/index-page';
 
 const INSTITUTE_LOCK_SCOPE = 'institute';
 
@@ -94,6 +96,20 @@ export class InstituteService {
     }
 
     public async index(reporting_year: number | null, canReadNetCosts = false): Promise<InstituteIndex[]> {
+        const { query, parameters } = this.buildIndexSql(reporting_year, canReadNetCosts);
+        return this.dataSource.query(query, parameters) as Promise<InstituteIndex[]>;
+    }
+
+    public indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false): Promise<IndexPage<InstituteIndex>> {
+        const { query, parameters } = this.buildIndexSql(request.reporting_year, canReadNetCosts);
+        return paginateIndexSql<InstituteIndex>(
+            (sql, values) => this.dataSource.query(sql, values), query, parameters,
+            ['id', 'label', 'short_label', 'opus_id', 'author_count', 'author_count_total', 'sub_inst_count', 'pub_count', 'pub_count_corr', 'net_costs'],
+            request,
+        );
+    }
+
+    private buildIndexSql(reporting_year: number | null, canReadNetCosts: boolean) {
         const parameters: Date[] = [];
         let dateCondition: (publicationAlias: string) => string;
 
@@ -210,7 +226,7 @@ export class InstituteService {
             LEFT JOIN publication_stats ON publication_stats.institute_id = institute.id
             ORDER BY institute.id`;
 
-        return this.dataSource.query(query, parameters) as Promise<InstituteIndex[]>;
+        return { query, parameters };
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {

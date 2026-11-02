@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { addInvoiceAmounts } from '../invoice/invoice-costs';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -242,6 +244,19 @@ export class ContractService extends AbstractEntityService<Contract> {
     }
 
     public async index(reporting_year: number, canReadNetCosts = false, canReadInvoices = false): Promise<ContractIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts, canReadInvoices);
+        const rows = await query.getRawMany<ContractIndex>();
+        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false, canReadInvoices = false): Promise<IndexPage<ContractIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts, canReadInvoices);
+        const result = await paginateIndexQuery<ContractIndex>(query, request);
+        if (canReadInvoices) result.items = normalizeInvoiceCounts(result.items);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false, canReadInvoices = false) {
         let query = this.repository.createQueryBuilder('contract')
             .leftJoin('contract.publisher', 'publisher')
             .leftJoin('contract.publications', 'publication')
@@ -279,8 +294,7 @@ export class ContractService extends AbstractEntityService<Contract> {
         }
 
         if (canReadInvoices) addInvoiceCounts(query, 'contract_id', reporting_year);
-        const rows = await query.getRawMany<ContractIndex>();
-        return canReadInvoices ? normalizeInvoiceCounts(rows) : rows;
+        return query;
     }
 
     public async combine(id1: number, ids: number[], alias_strings?: string[]) {

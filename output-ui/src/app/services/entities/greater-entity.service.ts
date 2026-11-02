@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  GreaterEntity  } from '@output/interfaces';
@@ -15,6 +16,12 @@ export class GreaterEntityService implements EntityService<GreaterEntity,Greater
   public getAll() {
     return this.http.get<GreaterEntity[]>(this.runtimeConfigService.getValue("api") + 'greater_entity', { withCredentials: true });
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<GreaterEntityIndex>>(
+      this.runtimeConfigService.getValue('api') + 'greater_entity/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id:number) {
     return this.http.get<GreaterEntity>(this.runtimeConfigService.getValue("api") + 'greater_entity/one?id='+id, { withCredentials: true });
   }

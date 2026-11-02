@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { TableDataService } from './table-data.service';
 
 describe('TableDataService', () => {
@@ -55,5 +55,64 @@ describe('TableDataService', () => {
         expect(service.total).toBe(41);
         expect(service.dataSource.data).toEqual([{ id: 21, title: 'Angular' }]);
         expect(service.dataSource.paginator).toBeFalsy();
+    });
+
+    it('uses an entity page endpoint instead of loading the entire index', () => {
+        const index = vi.fn();
+        const indexPage = vi.fn().mockReturnValue(of({ items: [{ id: 5 }], total: 51, page: 1, page_size: 10 }));
+        service.init({ index, indexPage } as any, { buttons: [] }, [{ colName: 'label', colTitle: 'Name' }]);
+        service.setReportingYear(2026);
+        service.setPage(1, 10);
+        service.searchControl.setValue('Test');
+        service.announceSortChange({ active: 'label', direction: 'asc' });
+        service.announceSortChange({ active: 'edit', direction: 'asc' });
+        service.updateData().subscribe();
+
+        expect(index).not.toHaveBeenCalled();
+        expect(indexPage).toHaveBeenCalledWith({
+            reporting_year: 2026, page: 1, page_size: 10, q: 'Test',
+            sort: [{ key: 'label', direction: 'asc' }], column_filters: {},
+        });
+        expect(service.total).toBe(51);
+        expect(service.dataSource.data).toEqual([{ id: 5 }]);
+    });
+
+    it('cancels stale searches so they cannot replace the latest results', () => {
+        const stale = new Subject<any>();
+        const current = new Subject<any>();
+        const indexPage = vi.fn().mockReturnValueOnce(stale).mockReturnValueOnce(current);
+        service.init({ indexPage } as any, { buttons: [] }, []);
+        service.updateData().subscribe();
+        service.searchControl.setValue('new');
+        service.updateData().subscribe();
+        expect(stale.observed).toBe(false);
+        expect(service.loading).toBe(true);
+        current.next({ items: [{ id: 2 }], total: 1, page: 0, page_size: 10 });
+        current.complete();
+        stale.next({ items: [{ id: 1 }], total: 1, page: 0, page_size: 10 });
+        expect(service.dataSource.data).toEqual([{ id: 2 }]);
+        expect(service.loading).toBe(false);
+    });
+
+    it('reloads the last valid page after its final row was deleted', () => {
+        const indexPage = vi.fn()
+            .mockReturnValueOnce(of({ items: [], total: 10, page: 1, page_size: 10 }))
+            .mockReturnValueOnce(of({ items: [{ id: 1 }], total: 10, page: 0, page_size: 10 }));
+        service.init({ indexPage } as any, { buttons: [] }, []);
+        service.setPage(1, 10);
+        service.updateData().subscribe();
+        expect(indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0 }));
+        expect(service.page).toBe(0);
+        expect(service.dataSource.data).toEqual([{ id: 1 }]);
+    });
+
+    it('ends the loading state after errors and permits a subsequent request', () => {
+        const indexPage = vi.fn().mockReturnValueOnce(throwError(() => new Error('offline')))
+            .mockReturnValueOnce(of({ items: [], total: 0, page: 0, page_size: 10 }));
+        service.init({ indexPage } as any, { buttons: [] }, []);
+        service.updateData().subscribe({ error: () => undefined });
+        expect(service.loading).toBe(false);
+        service.updateData().subscribe();
+        expect(indexPage).toHaveBeenCalledTimes(2);
     });
 });

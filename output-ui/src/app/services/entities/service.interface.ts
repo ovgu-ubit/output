@@ -1,9 +1,12 @@
 import { Observable } from "rxjs";
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 
 export interface EntityService<T, E> {
     getAll():Observable<T[]>;
 
     index(reporting_year: number | null, options?:any):Observable<E[]>;
+
+    indexPage?(request: ReportingYearIndexPageRequest): Observable<IndexPage<E>>;
 
     getOne(id:number):Observable<T>;
     

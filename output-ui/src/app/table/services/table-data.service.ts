@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { Sort, SortDirection } from '@angular/material/sort';
 import { FormControl } from '@angular/forms';
-import { finalize, map, Observable, Subject } from 'rxjs';
+import { defer, finalize, map, Observable, of, Subject, switchMap, takeUntil } from 'rxjs';
 import { EntityService } from 'src/app/services/entities/service.interface';
 import { TableHeader, TableParent } from 'src/app/table/table.interface';
-import { Entity, IndexColumnFilters, IndexPageRequest, IndexSortCriterion } from '@output/interfaces';
+import { Entity, IndexColumnFilters, IndexPage, IndexPageRequest, IndexSortCriterion } from '@output/interfaces';
 import { ViewConfig } from 'src/app/services/redux';
 
 @Injectable()
@@ -30,9 +30,10 @@ export class TableDataService<T extends Entity, E extends Entity> {
   private reporting_year: number | null;
   private headers: TableHeader[];
   private destroy$ = new Subject<void>();
+  private reload$ = new Subject<void>();
 
   public get serverSide(): boolean {
-    return typeof this.parent?.loadPage === 'function';
+    return typeof this.parent?.loadPage === 'function' || typeof this.serviceClass?.indexPage === 'function';
   }
 
   init(
@@ -59,6 +60,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
   destroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    this.reload$.complete();
   }
 
   public update(data: T[], viewConfig?: ViewConfig) {
@@ -81,23 +83,38 @@ export class TableDataService<T extends Entity, E extends Entity> {
   }
 
   public updateData(): Observable<T[]> {
-    this.loading = true;
-    const source = this.serverSide
-      ? this.parent.loadPage!(this.pageRequest(), this.reporting_year).pipe(map(result => {
-          this.total = result.total;
-          this.page = result.page;
-          this.pageSize = result.page_size;
-          return result.items;
-        }))
-      : this.serviceClass.index(this.reporting_year, this.parent.indexOptions);
+    return defer(() => {
+      this.reload$.next();
+      this.loading = true;
+      const request = this.pageRequest();
+      const source = this.serverSide
+        ? this.loadPage(request).pipe(
+            switchMap(result => {
+              const lastPage = Math.max(0, Math.ceil(result.total / result.page_size) - 1);
+              return result.page > lastPage ? this.loadPage({ ...request, page: lastPage }) : of(result);
+            }),
+            map(result => {
+              this.total = result.total;
+              this.page = result.page;
+              this.pageSize = result.page_size;
+              return result.items;
+            }),
+          )
+        : this.serviceClass.index(this.reporting_year, this.parent.indexOptions);
 
-    return source.pipe(
-      map(data => {
-        this.update(data);
-        return data;
-      }),
-      finalize(() => this.loading = false),
-    );
+      return source.pipe(
+        map(data => this.update(data)),
+        finalize(() => this.loading = false),
+        takeUntil(this.reload$),
+        takeUntil(this.destroy$),
+      );
+    });
+  }
+
+  private loadPage(request: IndexPageRequest): Observable<IndexPage<T>> {
+    return this.parent.loadPage
+      ? this.parent.loadPage(request, this.reporting_year)
+      : this.serviceClass.indexPage!({ ...request, reporting_year: this.reporting_year });
   }
 
   public doFilter(value: string) {
@@ -128,7 +145,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
 
   private pageRequest(): IndexPageRequest<string> {
     const sort: IndexSortCriterion<string>[] = this.sort_state
-      .filter(entry => !!entry.dir)
+      .filter(entry => !!entry.dir && (entry.key !== 'edit' || this.headers.some(header => header.colName === 'locked') || !!this.parent.loadPage))
       .map(entry => ({
         key: entry.key === 'edit' ? 'locked' : entry.key,
         direction: entry.dir as 'asc' | 'desc',

@@ -1,14 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PublicationIndex, PublicationIndexColumn, PublicationIndexPage, PublicationIndexPageRequest, SearchFilter } from '@output/interfaces';
-import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
-import { IndexPageRequestDto } from '../../../common/dto/index-page.dto';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
+import { ReportingYearIndexPageRequestDto } from '../../../common/dto/index-page.dto';
 
-export class PublicationIndexPageRequestDto extends IndexPageRequestDto<PublicationIndexColumn> implements PublicationIndexPageRequest {
-    @ApiPropertyOptional({ type: Number, nullable: true, minimum: 1, maximum: 9999 })
-    @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(9999)
-    reporting_year?: number | null;
-
+export class PublicationIndexPageRequestDto extends ReportingYearIndexPageRequestDto<PublicationIndexColumn> implements PublicationIndexPageRequest {
     @ApiPropertyOptional({ default: false })
     @IsOptional() @IsBoolean()
     all_reporting_years = false;

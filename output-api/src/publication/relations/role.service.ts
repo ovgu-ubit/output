@@ -4,6 +4,8 @@ import { ILike, Repository } from 'typeorm';
 import { Role } from './Role.entity';
 import { AppConfigService } from '../../config/app-config.service';
 import { AbstractEntityService } from '../../common/abstract-entity.service';
+import { IndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../../common/index-page';
 
 @Injectable()
 export class RoleService extends AbstractEntityService<Role> {
@@ -12,6 +14,13 @@ export class RoleService extends AbstractEntityService<Role> {
         configService: AppConfigService,
     ) {
         super(repository, configService);
+    }
+
+    public indexPage(request: IndexPageRequest) {
+        const query = this.repository.createQueryBuilder('role')
+            .select('role.id', 'id')
+            .addSelect('role.label', 'label');
+        return paginateIndexQuery<Role>(query, request);
     }
 
     public async findOrSave(label: string, dryRun = false): Promise<Role> {

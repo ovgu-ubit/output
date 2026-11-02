@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  CostType  } from '@output/interfaces';
@@ -18,6 +19,12 @@ export class CostTypeService implements EntityService<CostType, CostType> {
   public index(reporting_year:number) {
     return this.http.get<CostTypeIndex[]>(this.runtimeConfigService.getValue("api") + 'invoice/cost_type_index?reporting_year='+reporting_year, { withCredentials: true });
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<CostTypeIndex>>(
+      this.runtimeConfigService.getValue('api') + 'invoice/cost_type/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id:number) {
     return this.http.get<CostType>(this.runtimeConfigService.getValue("api") + 'invoice/cost_type/'+id, { withCredentials: true });
   }

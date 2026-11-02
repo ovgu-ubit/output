@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  PublicationType  } from '@output/interfaces';
@@ -15,6 +16,12 @@ export class PublicationTypeService implements EntityService<PublicationType, Pu
   public getAll() {
     return this.http.get<PublicationType[]>(this.runtimeConfigService.getValue("api") + 'pub_type', { withCredentials: true });
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<PublicationTypeIndex>>(
+      this.runtimeConfigService.getValue('api') + 'pub_type/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id: number) {
     return this.http.get<PublicationType>(this.runtimeConfigService.getValue("api") + 'pub_type/one?id=' + id, { withCredentials: true });
   }

@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  InstituteIndex  } from '@output/interfaces';
@@ -18,6 +19,12 @@ export class InstituteService implements EntityService<Institute,InstituteIndex>
 
   public index(yop:number) {
     return this.http.get<InstituteIndex[]>(this.runtimeConfigService.getValue("api") + 'institute/index?reporting_year='+yop, { withCredentials: true });
+  }
+
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<InstituteIndex>>(
+      this.runtimeConfigService.getValue('api') + 'institute/index-page', request, { withCredentials: true },
+    );
   }
 
   public getOne(id:number) {

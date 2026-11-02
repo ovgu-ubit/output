@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  OA_Category  } from '@output/interfaces';
@@ -15,6 +16,12 @@ export class OACategoryService implements EntityService<OA_Category, OACategoryI
   public getAll() {
     return this.http.get<OA_Category[]>(this.runtimeConfigService.getValue("api") + 'oa_cat', { withCredentials: true });
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<OACategoryIndex>>(
+      this.runtimeConfigService.getValue('api') + 'oa_cat/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id: number) {
     return this.http.get<OA_Category>(this.runtimeConfigService.getValue("api") + 'oa_cat/one?id=' + id, { withCredentials: true });
   }

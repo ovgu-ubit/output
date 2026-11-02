@@ -28,6 +28,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
 import { Publication } from './Publication.entity';
 import { PublicationFilterService } from './publication-filter.service';
+import { indexLikePattern, validateIndexPageBounds } from '../../common/index-page';
 
 export interface GetAllPublicationOptions {
     serializeDates?: boolean;
@@ -286,7 +287,7 @@ export class PublicationIndexService {
     ): Promise<IndexPage<PublicationIndex>> {
         const page = request.page ?? 0;
         const pageSize = request.page_size ?? 10;
-        this.validatePageBounds(page, pageSize);
+        validateIndexPageBounds(page, pageSize);
 
         const filterContext = this.createFilterContext();
         let indexQuery = await this.indexQuery(filterContext, canReadNetCosts);
@@ -312,7 +313,7 @@ export class PublicationIndexService {
             .setParameters(indexQuery.getParameters());
 
         if (request.q?.trim()) {
-            const pattern = this.toIndexLikePattern(request.q);
+            const pattern = indexLikePattern(request.q);
             pageQuery.andWhere(new Brackets(where => {
                 selectedColumns.forEach((column, index) => {
                     const clause = `${this.indexColumnExpression(column)} ILIKE :index_search ESCAPE '\\'`;
@@ -328,7 +329,7 @@ export class PublicationIndexService {
             this.assertSelectedIndexColumn(column, selectedColumns);
             pageQuery.andWhere(
                 `${this.indexColumnExpression(column)} ILIKE :index_column_filter_${index} ESCAPE '\\'`,
-                { [`index_column_filter_${index}`]: this.toIndexLikePattern(value) },
+                { [`index_column_filter_${index}`]: indexLikePattern(value) },
             );
         }
 
@@ -410,25 +411,6 @@ export class PublicationIndexService {
 
     private indexColumnExpression(column: string): string {
         return `COALESCE(CAST(publication_index."${column}" AS text), '')`;
-    }
-
-    private toIndexLikePattern(value: string): string {
-        const trimmed = value.trim();
-        const escaped = trimmed.replace(/[\\%_]/g, '\\$&');
-        if (trimmed.includes('*') || trimmed.includes('?')) {
-            const wildcardPattern = escaped.replace(/\*/g, '%').replace(/\?/g, '_');
-            return wildcardPattern.endsWith('%') ? wildcardPattern : wildcardPattern + '%';
-        }
-        return `%${escaped}%`;
-    }
-
-    private validatePageBounds(page: number, pageSize: number): void {
-        if (!Number.isInteger(page) || page < 0 || page > 1000000) {
-            throw createInvalidRequestHttpException('page must be an integer between 0 and 1000000.');
-        }
-        if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 200) {
-            throw createInvalidRequestHttpException('page_size must be an integer between 1 and 200.');
-        }
     }
 
     public async filter(

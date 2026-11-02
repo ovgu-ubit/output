@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {  Publisher  } from '@output/interfaces';
@@ -15,6 +16,12 @@ export class PublisherService implements EntityService<Publisher, PublisherIndex
   public getAll() {
     return this.http.get<Publisher[]>(this.runtimeConfigService.getValue("api") + 'publisher', { withCredentials: true });
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<PublisherIndex>>(
+      this.runtimeConfigService.getValue('api') + 'publisher/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id: number) {
     return this.http.get<Publisher>(this.runtimeConfigService.getValue("api") + 'publisher/one?id=' + id, { withCredentials: true });
   }

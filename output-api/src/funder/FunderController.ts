@@ -1,3 +1,5 @@
+import { ApiResponse } from '@nestjs/swagger';
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import {  FunderIndex  } from '@output/interfaces';
@@ -13,6 +15,13 @@ export class FunderController extends AbstractCrudController<Funder, FunderServi
 
     constructor(funderService: FunderService) {
         super(funderService);
+    }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto) {
+        return this.service.indexPage(body);
     }
 
     @Get("index")

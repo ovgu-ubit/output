@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  FunderIndex  } from '@output/interfaces';
@@ -15,6 +16,12 @@ export class FunderService implements EntityService<Funder, FunderIndex> {
   public getAll() {
     return this.http.get<Funder[]>(this.runtimeConfigService.getValue("api") + 'funder', { withCredentials: true });
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<FunderIndex>>(
+      this.runtimeConfigService.getValue('api') + 'funder/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id: number) {
     return this.http.get<Funder>(this.runtimeConfigService.getValue("api") + 'funder/one?id=' + id, { withCredentials: true });
   }

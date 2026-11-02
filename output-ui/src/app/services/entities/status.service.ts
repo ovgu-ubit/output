@@ -1,3 +1,4 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {  Status  } from '@output/interfaces';
@@ -17,6 +18,12 @@ export class StatusService implements EntityService<Status, Status> {
   public index(reporting_year:number) {
     return this.getAll();
   }
+  public indexPage(request: ReportingYearIndexPageRequest) {
+    return this.http.post<IndexPage<Status>>(
+      this.runtimeConfigService.getValue('api') + 'status/index-page', request, { withCredentials: true },
+    );
+  }
+
   public getOne(id:number) {
     return this.http.get<Status>(this.runtimeConfigService.getValue("api") + 'status/one?id='+id, { withCredentials: true });
   }
