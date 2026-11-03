@@ -53,10 +53,32 @@ describe('TableDataService', () => {
 
         expect(indexPage).toHaveBeenCalledWith({
             reporting_year: 2026, page: 1, page_size: 10, q: 'Test',
+            search_columns: ['label'],
             sort: [{ key: 'label', direction: 'asc' }], column_filters: {},
         }, undefined);
         expect(service.total).toBe(51);
         expect(service.dataSource).toEqual([{ id: 5 }]);
+    });
+
+    it('uses the same columns for global and column search and ignores stale metric filters', () => {
+        const indexPage = vi.fn().mockReturnValue(of({ items: [], total: 0, page: 0, page_size: 10 }));
+        service.init({ indexPage } as any, { buttons: [] }, [
+            { colName: 'id', colTitle: 'ID', type: 'number' },
+            { colName: 'label', colTitle: 'Name' },
+            { colName: 'pub_count', colTitle: 'Publikationen', type: 'pubs' },
+            { colName: 'author_count', colTitle: 'Personen', type: 'number', filterable: false },
+            { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+            { colName: 'date', colTitle: 'Datum', type: 'date' },
+        ]);
+        service.searchControl.setValue('123');
+        service.columnFilter = true;
+        service.filterValues = new Map([['label', 'Name'], ['pub_count', '2'], ['author_count', '3'], ['net_costs', '100'], ['removed', 'old']]);
+        service.announceSortChange({ active: 'pub_count', direction: 'desc' });
+        service.updateData().subscribe();
+        expect(indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            q: '123', search_columns: ['id', 'label'], column_filters: { label: 'Name' },
+            sort: [{ key: 'pub_count', direction: 'desc' }],
+        }), undefined);
     });
 
     it('cancels stale searches so they cannot replace the latest results', () => {
@@ -96,5 +118,36 @@ describe('TableDataService', () => {
         expect(service.loading).toBe(false);
         service.updateData().subscribe();
         expect(indexPage).toHaveBeenCalledTimes(2);
+    });
+
+    it('notifies OnPush consumers on start, response and completion', () => {
+        const response = new Subject<any>();
+        service.init({ indexPage: () => response } as any, { buttons: [] }, []);
+        const states: { loading: boolean; rows: any[] }[] = [];
+        service.stateChanges$.subscribe(() => states.push({ loading: service.loading, rows: service.dataSource }));
+        service.updateData().subscribe();
+        response.next({ items: [{ id: 1 }], total: 1, page: 0, page_size: 10 });
+        response.complete();
+        expect(states).toEqual([
+            { loading: true, rows: [] },
+            { loading: true, rows: [{ id: 1 }] },
+            { loading: false, rows: [{ id: 1 }] },
+        ]);
+    });
+
+    it('notifies consumers when a request fails synchronously or is unsubscribed', () => {
+        const changed = vi.fn();
+        service.stateChanges$.subscribe(changed);
+        service.init({ indexPage: () => { throw new Error('invalid request'); } } as any, { buttons: [] }, []);
+        service.updateData().subscribe({ error: () => undefined });
+        expect(service.loading).toBe(false);
+        expect(changed).toHaveBeenCalledTimes(2);
+
+        service.init({ indexPage: () => new Subject() } as any, { buttons: [] }, []);
+        const subscription = service.updateData().subscribe();
+        expect(service.loading).toBe(true);
+        subscription.unsubscribe();
+        expect(service.loading).toBe(false);
+        expect(changed).toHaveBeenCalledTimes(4);
     });
 });

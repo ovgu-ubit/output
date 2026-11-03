@@ -26,6 +26,8 @@ describe('SQL index pagination', () => {
 
     it.each([
         { page: -1 }, { page_size: 201 }, { page_size: 0 },
+        { search_columns: ['missing'] }, { search_columns: ['id; DROP TABLE example'] },
+        { search_columns: 'label' }, { search_columns: [3] },
         { sort: [{ key: 'id; DROP TABLE example', direction: 'asc' }] },
         { sort: [{ key: 'label', direction: 'sideways' }] },
         { column_filters: { private_field: 'secret' } },
@@ -34,6 +36,28 @@ describe('SQL index pagination', () => {
         const execute = jest.fn();
         await expect(paginateIndexSql(execute, sql, [], columns, request as never)).rejects.toMatchObject({ status: 400 });
         expect(execute).not.toHaveBeenCalled();
+    });
+
+    it('limits global search to filterable UI columns while retaining metric sorting', async () => {
+        const execute = jest.fn().mockResolvedValue([]);
+        await paginateIndexSql(execute, sql, [2026], columns, {
+            q: '123', search_columns: ['label', 'label'], sort: [{ key: 'pub_count', direction: 'desc' }],
+        });
+        for (const [statement] of execute.mock.calls) {
+            expect(statement).toContain('CAST(index_row."label" AS text)');
+            expect(statement).not.toContain('CAST(index_row."pub_count" AS text)');
+            expect(statement).not.toContain('CAST(index_row."id" AS text)');
+        }
+        expect(execute.mock.calls[0][0]).toContain('ORDER BY index_row."pub_count" DESC');
+    });
+
+    it('does not expand an empty search selection to all columns', async () => {
+        const execute = jest.fn().mockResolvedValue([]);
+        await paginateIndexSql(execute, sql, [], columns, { q: '123', search_columns: [] });
+        for (const [statement] of execute.mock.calls) {
+            expect(statement).toContain('index_row WHERE FALSE');
+            expect(statement).not.toContain('ILIKE');
+        }
     });
 
     it('binds user input without interpolating it into SQL', async () => {

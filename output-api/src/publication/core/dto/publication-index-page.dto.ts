@@ -12,11 +12,11 @@ export class PublicationIndexPageRequestDto extends ReportingYearIndexPageReques
     @IsOptional() @IsBoolean()
     soft = false;
 
-    @ApiPropertyOptional({ type: Object })
+    @ApiPropertyOptional({ type: Object, description: 'Extended filters ignore reporting_year. Explicit date expressions still apply.' })
     @IsOptional() @IsObject()
     filter?: SearchFilter;
 
-    @ApiPropertyOptional({ type: [String], default: [] })
+    @ApiPropertyOptional({ type: [String], default: [], description: 'Active saved filter paths ignore reporting_year.' })
     @IsOptional() @IsArray() @IsString({ each: true })
     paths: string[] = [];
 }

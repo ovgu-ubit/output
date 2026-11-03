@@ -6,25 +6,30 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
+import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, Subscription, take, takeUntil } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { EntityFormComponent, IndexEntityService } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
-import { TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
+import { isTableColumnFilterable, TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
 import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import {  Entity  } from '@output/interfaces';
 import { InvoiceIndexEntityFilter, InvoiceIndexQuery } from '@output/interfaces';
 import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
 
+type TableButtonView = Omit<TableButton, 'sub_buttons'> & {
+  disabled: boolean;
+  sub_buttons?: (NonNullable<TableButton['sub_buttons']>[number] & { disabled: boolean })[];
+};
+
 @Component({
     selector: 'appTable',
     templateUrl: './table.component.html',
     styleUrls: ['../table-appearance.css', './table.component.css'],
     standalone: false,
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [TableDataService, TableActionService]
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
@@ -59,6 +64,13 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   trunc: number = 60;
   headerNames = [];
   headerNamesFilter = [];
+  canEdit = false;
+  buttons: TableButtonView[] = [];
+  sortHeaders: Record<string, { text: string; asc: boolean }> = {};
+  readonly trackRow = (_index: number, row: T) => row.id;
+  private readonly roles = new Map<string, boolean>();
+  private readonly filterSubscriptions = new Map<string, Subscription>();
+  private parentChanges?: Subscription;
 
   destroy$ = new Subject();
   id;
@@ -86,6 +98,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   get rowCount() { return this.tableData.total; }
 
   public ngOnInit(): void {
+    this.tableData.stateChanges$.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
     this.tableData.init(this.serviceClass, this.parent, this.headers);
     this.tableAction.init({
       serviceClass: this.serviceClass,
@@ -99,6 +112,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     let ob$: Observable<any> = this.parent.preProcessing ? this.parent.preProcessing() : of(null);
 
     ob$ = ob$.pipe(concatMap(() => {
+      this.refreshPresentation();
+      this.cdr.markForCheck();
       const viewConfig$ = this.publication_table
         ? this.store.select(selectViewConfig).pipe(take(1))
         : of(undefined);
@@ -164,17 +179,51 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['headers'] && this.headers) {
-      this.tableData.setHeaders(this.headers);
+    if (changes['parent']) {
+      this.parentChanges?.unsubscribe();
+      this.parentChanges = this.parent.viewChanges$?.pipe(takeUntil(this.destroy$)).subscribe(() => {
+        this.refreshPresentation();
+        this.cdr.markForCheck();
+      });
+    }
+    if ((changes['headers'] || changes['parent']) && this.headers) {
+      this.refreshPresentation();
+      if (this.id) {
+        this.edit({ id: this.id });
+        this.id = undefined;
+      }
+    }
+  }
+
+  private refreshPresentation(): void {
+    this.roles.clear();
+    this.canEdit = this.hasRole(['writer', 'admin']);
+    this.buttons = (this.parent.buttons ?? []).map(button => ({
+      ...button,
+      disabled: !!button.roles && !this.hasRole(button.roles),
+      sub_buttons: button.sub_buttons?.map(subButton => ({
+        ...subButton, disabled: !!subButton.roles && !this.hasRole(subButton.roles),
+      })),
+    }));
+    if (this.headers) {
       this.headerNames = this.headers
-        .filter(col => !col.roles || col.roles.some(role => this.tokenService.hasRole(role)))
+        .filter(col => !col.roles || this.hasRole(col.roles))
         .map(x => x.colName);
+      this.tableData.setHeaders(this.headers.filter(col => this.headerNames.includes(col.colName)));
       this.headerNames.unshift('edit');
       if (!this.parent.not_selectable) this.headerNames.unshift('select');
       
-      this.headerNames.map(e => {
-        this.tableData.filterControls[e] = new FormControl('');
-        this.tableData.filterControls[e].valueChanges
+      for (const [key, subscription] of this.filterSubscriptions) {
+        if (this.headerNames.includes(key)) continue;
+        subscription.unsubscribe();
+        this.filterSubscriptions.delete(key);
+        delete this.tableData.filterControls[key];
+      }
+      this.headerNames.forEach(e => {
+        if (!this.tableData.filterControls[e]) {
+          this.tableData.filterControls[e] = new FormControl(this.tableData.filterValues.get(e) ?? '');
+        }
+        if (!this.filterSubscriptions.has(e)) this.filterSubscriptions.set(e, this.tableData.filterControls[e].valueChanges
           .pipe(debounceTime(300), takeUntil(this.destroy$))
           .subscribe(value => {
             this.tableData.columnFilter = true;
@@ -182,15 +231,11 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
             this.tableData.filterValues.set(e, value);
             this.tableData.resetPage();
             this.reloadData();
-          });
-        this.tableData.filterControls[e].setValue(this.tableData.filterValues.get(e) ?? '', { emitEvent: false });
+          }));
       });
       this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
-      if (this.id) {
-        this.edit({ id: this.id });
-        this.id = undefined;
-      }
     }
+    this.refreshSortHeaders();
   }
 
   getName(): string {
@@ -215,7 +260,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       map(() => {
         this.selection.clear();
         this.syncPaginators();
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       })
     );
   }
@@ -304,7 +349,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterAvailable(col: TableHeader) {
-    return (col.type !== 'pubs' && col.type !== 'invoices' && col.type !== 'date' && col.type !== 'datetime' && col.type !== 'route-link');
+    return isTableColumnFilterable(col);
   }
 
   invoiceQueryParams(id: number, field: string): InvoiceIndexQuery {
@@ -325,21 +370,15 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   announceSortChange(sortState: Sort) {
     this.tableData.announceSortChange(sortState);
+    this.refreshSortHeaders();
     this.tableData.resetPage();
     this.reloadData();
   }
 
-  renderHeader(col): { text: string, asc: boolean } {
-    let sort = { text: '', asc: null };
-    for (let i = 0; i < this.tableData.sort_state.length; i++) {
-      if (this.tableData.sort_state[i].key === col.colName) {
-        sort.text = (i + 1) + "";
-        if (this.tableData.sort_state[i].dir === 'asc') (sort as any).asc = true;
-        else (sort as any).asc = false;
-        break;
-      }
-    }
-    return sort;
+  private refreshSortHeaders(): void {
+    this.sortHeaders = Object.fromEntries(this.tableData.sort_state.map((sort, index) => [
+      sort.key, { text: String(index + 1), asc: sort.dir === 'asc' },
+    ]));
   }
 
   goToPage() {
@@ -380,6 +419,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     };
 
     this.tableData.sort_state = [];
+    this.refreshSortHeaders();
     this.tableData.filterValues = new Map<string, string>();
     this.tableData.columnFilter = false;
     this.tableData.setPage(0, 10);
@@ -397,15 +437,18 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.paginator2.pageIndex = 0;
       this.paginator2.pageSize = 10;
     }
+    this.cdr.markForCheck();
   }
 
   resetPage(): void {
     this.tableData.resetPage();
     this.syncPaginators();
+    this.cdr.markForCheck();
   }
 
   setViewConfig(viewConfig: ViewConfig) {
     this.tableData.sort_state = viewConfig.sortState ?? [];
+    this.refreshSortHeaders();
     this.tableData.filterValues = viewConfig.filterColumn instanceof Map
       ? new Map(viewConfig.filterColumn)
       : new Map(Object.entries(viewConfig.filterColumn ?? {}));
@@ -417,14 +460,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     }
     this.tableData.setPage(viewConfig.page ?? 0, viewConfig.pageSize ?? 10);
     this.syncPaginators();
+    this.cdr.markForCheck();
   }
 
-  isButtonDisabled(e: TableButton) {
-    return e.roles && !this.hasRole(e.roles);
-  }
-
-  hasRole(roles: string[]) {
-    return roles.some(r => this.tokenService.hasRole(r));
+  private hasRole(roles: string[]): boolean {
+    return roles.some(role => {
+      if (!this.roles.has(role)) this.roles.set(role, this.tokenService.hasRole(role));
+      return this.roles.get(role);
+    });
   }
 
   public handlePage(event: PageEvent) {

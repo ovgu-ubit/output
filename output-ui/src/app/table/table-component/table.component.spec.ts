@@ -31,6 +31,7 @@ describe('TableComponent', () => {
             total: 0,
             page: 0,
             pageSize: 10,
+            stateChanges$: of(),
         };
 
         const tableActionServiceMock = {
@@ -55,7 +56,7 @@ describe('TableComponent', () => {
         }, {
             present: vi.fn().mockName("ErrorPresentationService.present")
         }, tableDataServiceMock as any, tableActionServiceMock as any, {
-            detectChanges: vi.fn().mockName("ChangeDetectorRef.detectChanges")
+            markForCheck: vi.fn().mockName("ChangeDetectorRef.markForCheck")
         }] as unknown as ConstructorParameters<typeof TableComponent>;
         const component = new TableComponent(...dependencies);
 
@@ -148,6 +149,34 @@ describe('TableComponent', () => {
         });
 
         expect(tableDataServiceMock.setHeaders).toHaveBeenCalledWith(component.headers);
+    });
+
+    it('reuses column controls and unsubscribes removed columns, including pending searches', () => {
+        vi.useFakeTimers();
+        try {
+            const { component, tableDataServiceMock } = createComponent();
+            component.headers = [{ colName: 'title', colTitle: 'Titel' }];
+            component.ngOnChanges({ headers: new SimpleChange(undefined, component.headers, true) });
+            const titleControl = component.filterControls['title'];
+            titleControl.setValue('pending');
+
+            component.headers = [{ colName: 'title', colTitle: 'Neuer Titel' }];
+            component.ngOnChanges({ headers: new SimpleChange(undefined, component.headers, false) });
+            expect(component.filterControls['title']).toBe(titleControl);
+            expect(titleControl.value).toBe('pending');
+            vi.advanceTimersByTime(300);
+            expect(tableDataServiceMock.updateData).toHaveBeenCalledTimes(1);
+
+            titleControl.setValue('removed');
+            component.headers = [{ colName: 'id', colTitle: 'ID' }];
+            component.ngOnChanges({ headers: new SimpleChange(undefined, component.headers, false) });
+            vi.advanceTimersByTime(300);
+            expect(component.filterControls['title']).toBeUndefined();
+            expect(tableDataServiceMock.updateData).toHaveBeenCalledTimes(1);
+            component.ngOnDestroy();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('syncs the reporting year and labels the all-years publication view', () => {

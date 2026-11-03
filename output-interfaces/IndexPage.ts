@@ -16,6 +16,8 @@ export interface IndexPagingRequest {
 
 /** Common zero-based paging, searching and sorting contract for index endpoints. */
 export interface IndexPageRequest<TColumn extends string = string> extends IndexPagingRequest {
+    /** Restrict q to the UI columns with a column filter. Omitted for legacy callers; [] matches no rows. */
+    search_columns?: TColumn[];
     sort?: IndexSortCriterion<TColumn>[];
     column_filters?: IndexColumnFilters<TColumn>;
 }
