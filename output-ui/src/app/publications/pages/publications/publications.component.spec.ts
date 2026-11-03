@@ -123,6 +123,38 @@ describe('PublicationsComponent', () => {
         }));
     });
 
+    it.each([
+        { filter: { expressions: [{ key: 'title', comp: CompareOperation.INCLUDES, value: 'Alpha', op: JoinOperation.AND }] }, paths: [] },
+        { filter: { expressions: [] }, paths: ['missing-invoice'] },
+    ])('should search all years for advanced filters and restore the selected scope when cleared %#', result => {
+        const selectedView = { sortState: [], filterColumn: new Map(), allReportingYears: false };
+        component.viewConfig = selectedView;
+        component.indexOptions = { soft: false, allReportingYears: false };
+        const resetPage = vi.fn();
+        component.table = {
+            reporting_year: 2026,
+            resetPage,
+            getViewConfig: () => selectedView,
+            updateData: () => component.loadPage({ page: 0, page_size: 10 }, 2026),
+        } as any;
+        const dialog = vi.spyOn(component.dialog, 'open').mockReturnValue({ afterClosed: () => of(result) } as any);
+
+        component.extendedFilters();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            reporting_year: 2026, all_reporting_years: true, filter: result.filter, paths: result.paths,
+        }));
+        expect(component.indexOptions.allReportingYears).toBe(false);
+        expect(resetPage).toHaveBeenCalledOnce();
+
+        dialog.mockReturnValue({ afterClosed: () => of({ filter: { expressions: [] }, paths: [] }) } as any);
+        component.extendedFilters();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            reporting_year: 2026, all_reporting_years: false, filter: { expressions: [] }, paths: [],
+        }));
+    });
+
     it('should roundtrip JSON encoded filter links with array values', () => {
         component.indexOptions = {
             soft: false,

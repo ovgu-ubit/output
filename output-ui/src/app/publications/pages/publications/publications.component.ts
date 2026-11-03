@@ -80,6 +80,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       Object.entries(request.column_filters ?? {}).filter(([key]) => this.isPublicationIndexColumn(key)),
     ) as IndexColumnFilters<PublicationIndexColumn>;
     const searchColumns = request.search_columns?.filter(key => this.isPublicationIndexColumn(key)) as PublicationIndexColumn[] | undefined;
+    const hasExtendedFilters = !!this.indexOptions?.filter?.expressions?.length || !!this.indexOptions?.paths?.length;
     return this.publicationService.indexPage({
       ...request,
       sort,
@@ -89,7 +90,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       soft: this.indexOptions?.soft === true,
       filter: this.indexOptions?.filter,
       paths: this.indexOptions?.paths ?? [],
-      all_reporting_years: this.indexOptions?.allReportingYears === true,
+      all_reporting_years: this.indexOptions?.allReportingYears === true || hasExtendedFilters,
     });
   }
 

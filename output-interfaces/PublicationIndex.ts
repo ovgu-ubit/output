@@ -41,6 +41,7 @@ export interface PublicationIndex {
 export interface PublicationIndexPageRequest extends ReportingYearIndexPageRequest<PublicationIndexColumn> {
     all_reporting_years?: boolean;
     soft?: boolean;
+    /** Active expression or path filters ignore reporting_year; explicit date expressions still apply. */
     filter?: SearchFilter;
     paths?: string[];
 }

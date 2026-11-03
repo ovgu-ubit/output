@@ -293,10 +293,11 @@ export class PublicationIndexService {
         const filterContext = this.createFilterContext();
         let indexQuery = await this.indexQuery(filterContext, canReadNetCosts);
         if (request.filter) indexQuery = await this.filter(request.filter, indexQuery, filterContext, true);
+        const hasExtendedFilters = !!request.filter?.expressions?.length || !!request.paths?.length;
 
         if (request.soft) {
             indexQuery = indexQuery.withDeleted().andWhere('publication.delete_date IS NOT NULL');
-        } else if (!request.all_reporting_years) {
+        } else if (!request.all_reporting_years && !hasExtendedFilters) {
             const configuredYear = request.reporting_year === undefined
                 ? Number(await this.configService.get('reporting_year'))
                 : request.reporting_year;

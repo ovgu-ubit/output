@@ -259,13 +259,47 @@ describe('PublicationIndexService', () => {
             });
 
             const sql = source.getQuery().replace(/"/g, '');
-            expect(sql).toContain('WHERE (publication.title = :filter_0 OR publication.doi = :filter_1) AND');
+            expect(sql).toContain('WHERE (publication.title = :filter_0 OR publication.doi = :filter_1)');
             expect(source.getParameters()).toMatchObject({ filter_0: 'Alpha', filter_1: '10.1234/beta' });
             if (scope.soft) expect(sql).toContain('AND publication.delete_date IS NOT NULL');
-            else if (!scope.all_reporting_years) {
-                expect(sql).toContain(scope.reporting_year === null ? 'AND publication.pub_date IS NULL' : 'AND (publication.pub_date >= :pageBeginDate');
-            }
+            expect(sql).not.toContain(':pageBeginDate');
+            expect(sql).not.toContain('publication.pub_date IS NULL');
             if (scope.paths?.length) expect(sql).toContain('AND publication.id <> :path_excluded');
+        });
+
+        it.each([2026, null, undefined])('ignores the reporting year for saved filter paths (%s)', async reporting_year => {
+            const source = new SelectQueryBuilder<Publication>(new DataSource({ type: 'postgres' }))
+                .select('publication.id', 'id').from('publication', 'publication');
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(pageQuery().query);
+            await service.getIndexPage({ reporting_year, all_reporting_years: false, paths: ['missing-institute'] });
+            expect(source.getQuery()).not.toContain('pub_date');
+            expect(configService.get).not.toHaveBeenCalled();
+            expect(publicationFilterService.applyPathsToQuery).toHaveBeenCalledWith(source, ['missing-institute']);
+        });
+
+        it('honors explicit date expressions independently of the reporting year', async () => {
+            const source = new SelectQueryBuilder<Publication>(new DataSource({ type: 'postgres' }))
+                .select('publication.id', 'id').from('publication', 'publication');
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(pageQuery().query);
+            await service.getIndexPage({ reporting_year: 2026, filter: { expressions: [
+                { key: 'pub_date', comp: CompareOperation.GREATER_THAN, value: '2020-01-01', op: JoinOperation.AND },
+                { key: 'pub_date', comp: CompareOperation.SMALLER_THAN, value: '2021-01-01', op: JoinOperation.AND },
+            ] } });
+            expect(source.getQuery()).toContain('publication.pub_date > :filter_0');
+            expect(source.getQuery()).toContain('publication.pub_date < :filter_1');
+            expect(source.getParameters()).toMatchObject({ filter_0: '2020-01-01', filter_1: '2021-01-01' });
+            expect(source.getQuery()).not.toContain(':pageBeginDate');
+        });
+
+        it.each([2026, null])('keeps the reporting-year scope for ordinary table searches (%s)', async reporting_year => {
+            const source = new SelectQueryBuilder<Publication>(new DataSource({ type: 'postgres' }))
+                .select('publication.id', 'id').from('publication', 'publication');
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(pageQuery().query);
+            await service.getIndexPage({ reporting_year, filter: { expressions: [] }, paths: [], q: 'Alpha', column_filters: { id: '7' } });
+            expect(source.getQuery()).toContain(reporting_year ? ':pageBeginDate' : 'publication.pub_date IS NULL');
         });
     });
 });
