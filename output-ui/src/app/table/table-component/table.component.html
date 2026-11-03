@@ -23,38 +23,38 @@
       </span>
       <span>
         <div mat-dialog-actions align="end" style="display:flex; flex-flow: row wrap;gap: 5px;">
-          @for (button of this.parent.buttons; track button) {
+          @for (button of buttons; track $index) {
             @if (button.sub_buttons && button.sub_buttons.length > 0) {
-              <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="this.isButtonDisabled(button)"
+              <button mat-raised-button [matMenuTriggerFor]="buttonMenu" [disabled]="button.disabled"
                 [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}<mat-icon>
               keyboard_arrow_down</mat-icon></button>
               <mat-menu #buttonMenu="matMenu" xPosition="before">
-                @for (sub_button of button.sub_buttons; track sub_button; let idx = $index) {
+                @for (sub_button of button.sub_buttons; track $index; let idx = $index) {
                   <button mat-menu-item (click)="sub_button.action_function()"
-                  [disabled]="this.isButtonDisabled(sub_button)">{{sub_button.title}}</button>
+                  [disabled]="sub_button.disabled">{{sub_button.title}}</button>
                 }
               </mat-menu>
             }
             @if ((!button.sub_buttons || button.sub_buttons.length === 0) && button.icon) {
-              <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)"
+              <button mat-raised-button (click)="button.action_function()" [disabled]="button.disabled"
                 [matTooltip]="button.tooltip" [matTooltipShowDelay]="800"><mat-icon>{{button.title}}</mat-icon></button>
               }
               @if ((!button.sub_buttons || button.sub_buttons.length === 0) && !button.icon) {
-                <button mat-raised-button (click)="button.action_function()" [disabled]="this.isButtonDisabled(button)"
+                <button mat-raised-button (click)="button.action_function()" [disabled]="button.disabled"
                 [matTooltip]="button.tooltip" [matTooltipShowDelay]="800">{{button.title}}</button>
               }
             }
             @if (!this.parent.not_editable) {
               <button mat-raised-button (click)="this.addFunction()"
-              [disabled]="!this.hasRole(['writer','admin'])">Hinzufügen</button>
+              [disabled]="!canEdit">Hinzufügen</button>
             }
             @if (!this.parent.not_editable && this.deleteable) {
               <button mat-raised-button (click)="this.delete()"
-              [disabled]="!this.hasRole(['writer','admin'])">Löschen</button>
+              [disabled]="!canEdit">Löschen</button>
             }
             @if (this.serviceClass.combine && !this.parent.not_editable) {
               <button mat-raised-button (click)="this.combine()"
-              [disabled]="!this.hasRole(['writer','admin'])">Zusammenführen</button>
+              [disabled]="!canEdit">Zusammenführen</button>
             }
           </div>
         </span>
@@ -89,7 +89,7 @@
         </mat-paginator>
       </div>
       <div class="mat-elevation-z8">
-        <table mat-table class="table" [class.table-wide]="this.wide" [dataSource]="this.dataSource" matSort
+        <table mat-table class="table" [class.table-wide]="this.wide" [dataSource]="this.dataSource" [trackBy]="trackRow" matSort
           (matSortChange)="announceSortChange($event)">
 
           <ng-container matColumnDef="select" sticky>
@@ -111,18 +111,18 @@
               @if (this.publication_table) {
                 <div class="numbered-sort-header">
                   <div style="display: flex;flex-direction: column;">
-                    <mat-icon [ngClass]="{'top': true, 'active':renderHeader({colName: 'edit'}).asc }">arrow_drop_up</mat-icon>
+                    <mat-icon [ngClass]="{'top': true, 'active':sortHeaders['edit']?.asc }">arrow_drop_up</mat-icon>
                     <mat-icon
-                    [ngClass]="{'bottom': true, 'active':renderHeader({colName: 'edit'}).asc === false }">arrow_drop_down</mat-icon>
+                    [ngClass]="{'bottom': true, 'active':sortHeaders['edit']?.asc === false }">arrow_drop_down</mat-icon>
                   </div>
-                  <div>{{renderHeader({colName: 'edit'}).text}}</div>
+                  <div>{{sortHeaders['edit']?.text}}</div>
                 </div>
               }
             </th>
             <td mat-cell *matCellDef="let row" class="row-actions-cell">
               <button mat-icon-button (click)="this.editFunction(row)" matTooltip="Element untersuchen"
                 [matTooltipShowDelay]="800">
-                @if (((this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin')) && !row.locked)) {
+                @if (canEdit && !row.locked) {
                   <mat-icon
                   >edit</mat-icon>
                 } @else {
@@ -147,17 +147,17 @@
             </th>
           </ng-container>
 
-          @for (col of headers; track col; let idx = $index) {
+          @for (col of headers; track col.colName; let idx = $index) {
             <ng-container [matColumnDef]="col.colName">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
                 {{col.colTitle}}
                 <div class="numbered-sort-header">
                   <div style="display: flex;flex-direction: column;">
-                    <mat-icon [ngClass]="{'top': true, 'active':renderHeader(col).asc }">arrow_drop_up</mat-icon>
+                    <mat-icon [ngClass]="{'top': true, 'active':sortHeaders[col.colName]?.asc }">arrow_drop_up</mat-icon>
                     <mat-icon
-                    [ngClass]="{'bottom': true, 'active':renderHeader(col).asc === false }">arrow_drop_down</mat-icon>
+                    [ngClass]="{'bottom': true, 'active':sortHeaders[col.colName]?.asc === false }">arrow_drop_down</mat-icon>
                   </div>
-                  <div>{{renderHeader(col).text}}</div>
+                  <div>{{sortHeaders[col.colName]?.text}}</div>
                 </div>
               </th>
               @if (!col.type || col.type === 'string') {

@@ -29,6 +29,10 @@ export class IndexPagingRequestDto implements IndexPagingRequest {
 
 /** Reusable transport DTO for zero-based index pagination. */
 export class IndexPageRequestDto<TColumn extends string = string> extends IndexPagingRequestDto implements IndexPageRequest<TColumn> {
+    @ApiPropertyOptional({ type: [String], description: 'Columns searched by q. An empty array matches no rows; omitted uses all projected columns.' })
+    @IsOptional() @IsArray() @ArrayMaxSize(100) @IsString({ each: true }) @MaxLength(100, { each: true })
+    search_columns?: TColumn[];
+
     @ApiPropertyOptional({ type: [IndexSortCriterionDto], default: [] })
     @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => IndexSortCriterionDto)
     sort: IndexSortCriterionDto<TColumn>[] = [];

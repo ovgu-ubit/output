@@ -29,7 +29,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
 import { Publication } from './Publication.entity';
 import { PublicationFilterService } from './publication-filter.service';
-import { indexLikePattern, validateIndexPageBounds } from '../../common/index-page';
+import { indexLikePattern, indexSearchColumns, validateIndexPageBounds } from '../../common/index-page';
 
 export interface GetAllPublicationOptions {
     serializeDates?: boolean;
@@ -308,6 +308,7 @@ export class PublicationIndexService {
         indexQuery = this.publicationFilterService.applyPathsToQuery(indexQuery, request.paths);
 
         const selectedColumns = this.getSelectedIndexColumns(indexQuery);
+        const searchColumns = indexSearchColumns(request, selectedColumns);
         const pageQuery = this.pubRepository.manager.createQueryBuilder()
             .select('publication_index.*')
             .from(`(${indexQuery.getQuery()})`, 'publication_index')
@@ -315,13 +316,16 @@ export class PublicationIndexService {
 
         if (request.q?.trim()) {
             const pattern = indexLikePattern(request.q);
-            pageQuery.andWhere(new Brackets(where => {
-                selectedColumns.forEach((column, index) => {
-                    const clause = `${this.indexColumnExpression(column)} ILIKE :index_search ESCAPE '\\'`;
-                    if (index === 0) where.where(clause);
-                    else where.orWhere(clause);
-                });
-            }), { index_search: pattern });
+            if (!searchColumns.length) pageQuery.andWhere('FALSE');
+            else {
+                pageQuery.andWhere(new Brackets(where => {
+                    searchColumns.forEach((column, index) => {
+                        const clause = `${this.indexColumnExpression(column)} ILIKE :index_search ESCAPE '\\'`;
+                        if (index === 0) where.where(clause);
+                        else where.orWhere(clause);
+                    });
+                }), { index_search: pattern });
+            }
         }
 
         for (const [index, [column, value]] of Object.entries(request.column_filters ?? {}).entries()) {

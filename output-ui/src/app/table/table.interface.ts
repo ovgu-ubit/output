@@ -6,6 +6,8 @@ export interface TableParent<T> {
   rowActions?: TableRowAction<T>[];
   preProcessing?: (() => Observable<void>),
   afterDataLoaded?: ((data: T[]) => Observable<void>),
+  /** Notify the table when asynchronous actions change rows, buttons or configuration. */
+  viewChanges$?: Observable<void>;
   loadPage?: ((request: IndexPageRequest<string>, reportingYear: number | null) => Observable<IndexPage<T>>),
   indexOptions?:any;
   not_editable?:boolean;
@@ -25,7 +27,13 @@ export interface TableHeader {
   colTitle: string,
   type?: string,
   roles?: string[],
+  filterable?: boolean,
   tooltip?: string | ((row: any) => string)
+}
+
+/** Column filters and global search must use the same column selection. */
+export function isTableColumnFilterable(col: TableHeader): boolean {
+  return col.filterable !== false && !['pubs', 'invoices', 'euro', 'date', 'datetime', 'route-link'].includes(col.type);
 }
 
 export interface TableButton {

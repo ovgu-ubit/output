@@ -204,6 +204,33 @@ describe('PublicationIndexService', () => {
             })).rejects.toMatchObject({ status: 400 });
         });
 
+        it('searches only the columns with UI filters', async () => {
+            const source = sourceQuery();
+            const wrapper = pageQuery();
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(source as any);
+            pubRepository.manager.createQueryBuilder.mockReturnValue(wrapper.query);
+            await service.getIndexPage({ all_reporting_years: true, q: 'Alpha', search_columns: ['title'] });
+            const where = { where: jest.fn(), orWhere: jest.fn() };
+            wrapper.query.andWhere.mock.calls[0][0].whereFactory(where);
+            expect(where.where).toHaveBeenCalledTimes(1);
+            expect(where.where).toHaveBeenCalledWith(expect.stringContaining('publication_index."title"'));
+            expect(where.orWhere).not.toHaveBeenCalled();
+        });
+
+        it('does not search any columns when none have UI filters', async () => {
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(sourceQuery() as any);
+            const wrapper = pageQuery();
+            pubRepository.manager.createQueryBuilder.mockReturnValue(wrapper.query);
+            await service.getIndexPage({ all_reporting_years: true, q: 'Alpha', search_columns: [] });
+            expect(wrapper.query.andWhere).toHaveBeenCalledWith('FALSE');
+        });
+
+        it('rejects search columns outside the permitted projection', async () => {
+            jest.spyOn(service, 'indexQuery').mockResolvedValue(sourceQuery() as any);
+            await expect(service.getIndexPage({ q: 'Alpha', all_reporting_years: true, search_columns: ['net_costs'] }))
+                .rejects.toMatchObject({ status: 400 });
+        });
+
         it.each([
             { reporting_year: 2026 },
             { reporting_year: null },

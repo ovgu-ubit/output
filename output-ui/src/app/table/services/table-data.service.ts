@@ -3,7 +3,7 @@ import { Sort, SortDirection } from '@angular/material/sort';
 import { FormControl } from '@angular/forms';
 import { defer, finalize, map, Observable, of, Subject, switchMap, takeUntil } from 'rxjs';
 import { IndexEntityService } from 'src/app/services/entities/service.interface';
-import { TableHeader, TableParent } from 'src/app/table/table.interface';
+import { isTableColumnFilterable, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { Entity, IndexColumnFilters, IndexPage, IndexPageRequest, IndexSortCriterion } from '@output/interfaces';
 
 @Injectable()
@@ -20,6 +20,8 @@ export class TableDataService<T extends Entity, E extends Entity> {
   public total = 0;
   public page = 0;
   public pageSize = 10;
+  private readonly stateChanges = new Subject<void>();
+  public readonly stateChanges$ = this.stateChanges.asObservable();
 
   private serviceClass: IndexEntityService<E, T>;
   private parent: TableParent<T>;
@@ -50,6 +52,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
     this.destroy$.next();
     this.destroy$.complete();
     this.reload$.complete();
+    this.stateChanges.complete();
   }
 
   public update(data: T[]) {
@@ -60,6 +63,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
     }
     
     this.dataSource = data;
+    this.stateChanges.next();
     return data;
   }
 
@@ -67,8 +71,9 @@ export class TableDataService<T extends Entity, E extends Entity> {
     return defer(() => {
       this.reload$.next();
       this.loading = true;
+      this.stateChanges.next();
       const request = this.pageRequest();
-      const source = this.loadPage(request).pipe(
+      const source = defer(() => this.loadPage(request)).pipe(
         switchMap(result => {
           const lastPage = Math.max(0, Math.ceil(result.total / result.page_size) - 1);
           return result.page > lastPage ? this.loadPage({ ...request, page: lastPage }) : of(result);
@@ -83,7 +88,10 @@ export class TableDataService<T extends Entity, E extends Entity> {
 
       return source.pipe(
         map(data => this.update(data)),
-        finalize(() => this.loading = false),
+        finalize(() => {
+          this.loading = false;
+          this.stateChanges.next();
+        }),
         takeUntil(this.reload$),
         takeUntil(this.destroy$),
       );
@@ -120,7 +128,9 @@ export class TableDataService<T extends Entity, E extends Entity> {
         direction: entry.dir as 'asc' | 'desc',
       }));
     const column_filters: IndexColumnFilters<string> = {};
+    const searchColumns = this.headers.filter(isTableColumnFilterable).map(header => header.colName);
     if (this.columnFilter) this.filterValues.forEach((value, key) => {
+        if (!searchColumns.includes(key)) return;
         const normalized = this.normalizeColumnFilter(key, value);
         if (normalized) column_filters[key] = normalized;
       });
@@ -131,6 +141,7 @@ export class TableDataService<T extends Entity, E extends Entity> {
       page_size: this.pageSize,
       sort,
       q: q || undefined,
+      ...(q ? { search_columns: searchColumns } : {}),
       column_filters,
     };
   }

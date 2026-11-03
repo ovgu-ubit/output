@@ -108,6 +108,7 @@ describe('PublicationsComponent', () => {
             page_size: 20,
             sort: [{ key: 'title', direction: 'asc' }, { key: 'unsupported', direction: 'desc' }],
             column_filters: { publisher: 'Springer', unsupported: 'ignored' },
+            search_columns: ['title', 'unsupported'],
         }, 2025).subscribe();
 
         expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
@@ -118,6 +119,7 @@ describe('PublicationsComponent', () => {
             paths: ['missing-invoice'],
             sort: [{ key: 'title', direction: 'asc' }],
             column_filters: { publisher: 'Springer' },
+            search_columns: ['title'],
         }));
     });
 

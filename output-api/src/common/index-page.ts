@@ -21,6 +21,18 @@ export function indexLikePattern(value: string): string {
     return `%${escaped}%`;
 }
 
+export function indexSearchColumns(request: IndexPageRequest, columns: readonly string[]): string[] {
+    const requested = request.search_columns ?? columns;
+    if (!Array.isArray(requested)) throw createInvalidRequestHttpException('search_columns must be an array.');
+    const allowed = new Set(columns);
+    for (const column of requested) {
+        if (typeof column !== 'string' || !allowed.has(column) || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column)) {
+            throw createInvalidRequestHttpException(`Unsupported search column: ${column}`);
+        }
+    }
+    return [...new Set(requested)];
+}
+
 /** Page a trusted SQL projection, never an already materialized result array. */
 export async function paginateIndexSql<T>(
     execute: (sql: string, parameters: unknown[]) => Promise<unknown>,
@@ -40,6 +52,7 @@ export async function paginateIndexSql<T>(
     };
     columns.forEach(assertColumn);
     assertColumn('id');
+    const searchColumns = indexSearchColumns(request, columns);
     const values = [...parameters];
     const bind = (value: unknown): string => {
         values.push(value);
@@ -48,8 +61,10 @@ export async function paginateIndexSql<T>(
     const textColumn = (column: string): string => `COALESCE(CAST(index_row."${column}" AS text), '')`;
     const predicates: string[] = [];
     if (request.q?.trim()) {
-        const parameter = bind(indexLikePattern(request.q));
-        predicates.push(`(${columns.map(column => `${textColumn(column)} ILIKE ${parameter} ESCAPE '\\'`).join(' OR ')})`);
+        if (searchColumns.length) {
+            const parameter = bind(indexLikePattern(request.q));
+            predicates.push(`(${searchColumns.map(column => `${textColumn(column)} ILIKE ${parameter} ESCAPE '\\'`).join(' OR ')})`);
+        } else predicates.push('FALSE');
     }
     for (const [column, value] of Object.entries(request.column_filters ?? {})) {
         assertColumn(column);

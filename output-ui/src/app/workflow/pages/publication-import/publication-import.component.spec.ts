@@ -77,6 +77,36 @@ describe('PublicationImportComponent', () => {
         expect(component).toBeTruthy();
     });
 
+    it('renders asynchronous progress and action changes with an OnPush table', async () => {
+        fixture.autoDetectChanges();
+        const workflow = { id: 12, label: 'Crossref', last_run_status: 'running', strategy_type: ImportStrategy.URL_DOI } as ImportWorkflow;
+        const progress = new Subject<{ progress: number; status: string }>();
+        workflowService.indexPage.mockReturnValue(of({ items: [workflow], total: 1, page: 0, page_size: 10 }));
+        workflowService.getStatus.mockReturnValue(of({ progress: 25, status: 'running' }));
+        workflowService.getProgress.mockReturnValue(progress);
+        component.table.updateData().subscribe();
+        await fixture.whenStable();
+
+        const action = (icon: string) => Array.from(fixture.nativeElement.querySelectorAll('.row-actions-cell button') as NodeListOf<HTMLButtonElement>)
+            .find(button => button.querySelector('mat-icon')?.textContent?.trim() === icon);
+        expect(action('play_arrow')?.disabled).toBe(true);
+        expect(action('stop')?.disabled).toBe(false);
+
+        progress.next({ progress: 50, status: 'stopping' });
+        await fixture.whenStable();
+        expect(fixture.nativeElement.querySelector('td.mat-column-last_run_status').textContent).toBe('stopping');
+        expect(action('stop')?.disabled).toBe(true);
+        expect(action('stop')?.getAttribute('aria-label')).toBe('Wird gestoppt…');
+
+        workflowService.getStatus.mockReturnValue(of({ progress: 0, status: 'finished' }));
+        progress.next({ progress: 0, status: 'finished' });
+        progress.complete();
+        await fixture.whenStable();
+        expect(fixture.nativeElement.querySelector('td.mat-column-last_run_status').textContent).toBe('finished');
+        expect(action('play_arrow')?.disabled).toBe(false);
+        expect(action('stop')).toBeUndefined();
+    });
+
     it('quick-starts an active URL workflow with the configured reporting year', () => {
         const workflow: ImportWorkflow = {
             id: 7,

@@ -89,6 +89,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
   private readonly staleWorkflowIds = new Set<number>();
   private readonly stopRequestedDuringStart = new Set<number>();
   private readonly workflowRows = new Map<number, ImportWorkflow>();
+  readonly viewChanges$ = new Subject<void>();
   private readonly destroy$ = new Subject<void>();
   private pendingFileWorkflow?: ImportWorkflow;
   private destroyed = false;
@@ -103,12 +104,14 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     this.destroyed = true;
     this.destroy$.next();
     this.destroy$.complete();
+    this.viewChanges$.complete();
   }
 
   afterDataLoaded(workflows: ImportWorkflow[]): Observable<void> {
     if (this.indexOptions.type !== 'published') return of(undefined);
 
     const workflowIds = workflows.flatMap(workflow => workflow.id ? [workflow.id] : []);
+    this.workflowRows.clear();
     workflows.forEach(workflow => this.workflowRows.set(workflow.id, workflow));
     this.availableWorkflowIds.clear();
     if (!workflowIds.length) return of(undefined);
@@ -145,6 +148,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
         this.availableWorkflowIds.delete(workflowId);
         this.monitorWorkflow(workflowId);
       })),
+      tap(() => this.viewChanges$.next()),
       map(() => undefined)
     );
   }
@@ -274,6 +278,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     const id = workflow.id;
     if (!id || !this.stoppableWorkflowIds.has(id) || this.stoppingWorkflowIds.has(id)) return;
     this.stoppingWorkflowIds.add(id);
+    this.viewChanges$.next();
     this.workflowService.stopImport(id).pipe(takeUntil(this.destroy$)).subscribe({
       next: result => {
         if (result.state === 'stopping') {
@@ -281,10 +286,12 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
           if (this.startingWorkflowIds.has(id)) this.stopRequestedDuringStart.add(id);
           this._snackBar.open('Stopp angefordert. Begonnene Datensätze werden noch abgeschlossen.', 'OK', { duration: 4500 });
         }
+        this.viewChanges$.next();
         this.monitorWorkflow(id);
       },
       error: error => {
         this.stoppingWorkflowIds.delete(id);
+        this.viewChanges$.next();
         this.errorPresentation.present(error, { action: 'run', entity: 'Import-Workflow', fallbackMessage: 'Workflow konnte nicht gestoppt werden.' });
       },
     });
@@ -300,6 +307,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
     this.stoppableWorkflowIds.delete(workflowId);
     this.workflowRows.set(workflowId, workflow);
     this.availableWorkflowIds.delete(workflowId);
+    this.viewChanges$.next();
     let started = false;
 
     const execute = (reportingYear?: number) => defer(() => {
@@ -331,6 +339,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
           this.runningWorkflowIds.delete(workflowId);
           this.availableWorkflowIds.add(workflowId);
         }
+        this.viewChanges$.next();
       }),
       takeUntil(this.destroy$),
     ).subscribe({
@@ -370,6 +379,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
             if (this.startingWorkflowIds.has(workflowId)) this.stopRequestedDuringStart.add(workflowId);
           }
         }
+        this.viewChanges$.next();
       }),
       filter(status => status.progress === 0 && (!this.startingWorkflowIds.has(workflowId) || this.seenActiveWorkflowIds.has(workflowId))),
       take(1),
@@ -384,6 +394,7 @@ export class PublicationImportComponent implements TableParent<ImportWorkflow>, 
           this.seenActiveWorkflowIds.delete(workflowId);
         }
         if (completed) this.availableWorkflowIds.add(workflowId);
+        this.viewChanges$.next();
         if (!this.destroyed) this.refreshTable();
       }),
       takeUntil(this.destroy$),
