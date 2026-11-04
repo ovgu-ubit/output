@@ -143,6 +143,24 @@ To start both backend and frontend together, use:
 
 > $ npm run dev
 
+The development proxy reads the backend port (`APP_PORT`) and protocol (`APP_SSL`) from `output-api/env.dev`. It uses `CONFIG_DIR/env.${NODE_ENV}` instead when these environment variables are set (`NODE_ENV` defaults to `dev`; relative `CONFIG_DIR` paths are resolved from `output-api`, just like in the backend). If no port is configured, it uses `3003`.
+
+Environment variables override values from the file. `PORT` takes precedence over `APP_PORT`, matching the backend. For example, start only the frontend against a backend on port 3010 without editing tracked files:
+
+```sh
+npm exec -- cross-env APP_PORT=3010 npm --workspace output-ui start
+```
+
+Or start both applications on the same backend port:
+
+```sh
+npm exec -- cross-env APP_PORT=3010 npm run dev
+```
+
+In PowerShell, you can also set `$env:APP_PORT = '3010'` before running `npm start` inside `output-ui` (or `npm run dev:ui` from the repository root). The backend must listen on the selected port. Restart the frontend dev server after changing proxy settings or the environment file.
+
+For Swagger UI at `http://localhost:4200/api/swagger`, set `APP_BASE_PATH=/api` in the backend environment file and restart the backend after changing it. Swagger uses this value as the server URL for its API requests; an empty value sends requests to `/authors/index-page` instead of `/api/authors/index-page`.
+
 ### tests
 
 Run backend and frontend tests once from the repository root:
