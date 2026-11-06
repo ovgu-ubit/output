@@ -3,11 +3,11 @@ import { ImportExecutionService } from './import-execution.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import 'multer';
-import { Between, In, IsNull, LessThan, Not, Repository } from 'typeorm';
+import { Between, In, IsNull, LessThan, Not, Raw, Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import {  SearchFilter, UpdateMapping  } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
-import {  ExportWorkflow as IExportWorkflow, ImportStrategy, ImportWorkflowTestResult, Workflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
+import {  ExportWorkflow as IExportWorkflow, ExportStrategy, ImportStrategy, ImportWorkflowTestResult, Workflow, WorkflowReportItemLevel, WorkflowType  } from '@output/interfaces';
 import { EditLockOwnerStore } from '../common/edit-lock';
 import { AppConfigService } from '../config/app-config.service';
 import { Publication } from '../publication/core/Publication.entity';
@@ -27,6 +27,7 @@ import { createEntityLockedHttpException, createInvalidRequestHttpException, cre
 import { EXPORT_ENTITY_LABELS, IndexPage, WorkflowIndexPageRequest } from '@output/interfaces';
 import { paginateIndexQuery } from '../common/index-page';
 import { WorkflowReport } from './WorkflowReport.entity';
+import { EXPORT_ENDPOINT_NAME_INDEX } from './export/export-endpoint-index';
 
 type SaveWorkflowOptions<TWorkflow extends Workflow> = {
     repository: Repository<TWorkflow>;
@@ -202,16 +203,42 @@ export class WorkflowService {
     }
 
     async saveExport(workflow: ExportWorkflow, user?: string, useProvidedVersionOnCreate = false) {
-        return this.saveWorkflow(workflow, user, {
-            repository: this.exportRepository,
-            workflowType: WorkflowType.EXPORT,
-            validate: validateExportWorkflow,
-            createDefaults: (draft) => ({
-                strategy_type: draft.strategy_type,
-            }),
-            reportWorkflowType: WorkflowType.EXPORT,
-            useProvidedVersionOnCreate,
-        });
+        try {
+            return await this.saveWorkflow(workflow, user, {
+                repository: this.exportRepository,
+                workflowType: WorkflowType.EXPORT,
+                validate: async draft => {
+                    const validated = validateExportWorkflow(draft);
+                    if (validated.strategy_type === ExportStrategy.ENDPOINT && validated.published_at && !validated.deleted_at) {
+                        const duplicate = await this.exportRepository.findOne({ where: {
+                            id: Not(validated.id),
+                            published_at: Not(IsNull()),
+                            deleted_at: IsNull(),
+                            strategy: Raw(alias => `${alias} ->> 'endpoint_name' = :endpointName`, { endpointName: validated.strategy.endpoint_name }),
+                        } });
+                        if (duplicate) throw this.exportEndpointNameConflict();
+                    }
+                    return validated;
+                },
+                createDefaults: (draft) => ({
+                    strategy_type: draft.strategy_type,
+                }),
+                reportWorkflowType: WorkflowType.EXPORT,
+                useProvidedVersionOnCreate,
+            });
+        } catch (error) {
+            const failure = error as { constraint?: string; driverError?: { constraint?: string } };
+            if ((failure?.constraint ?? failure?.driverError?.constraint) === EXPORT_ENDPOINT_NAME_INDEX) {
+                throw this.exportEndpointNameConflict();
+            }
+            throw error;
+        }
+    }
+
+    private exportEndpointNameConflict() {
+        return createUniqueConstraintHttpException('An active export endpoint already uses this name.', [{
+            path: 'strategy.endpoint_name', code: 'unique', message: 'An active export endpoint already uses this name.',
+        }]);
     }
 
     async importValidation(file: Express.Multer.File) {

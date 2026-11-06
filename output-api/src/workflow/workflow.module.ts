@@ -67,6 +67,9 @@ import { WorkflowController } from './WorkflowController';
 import { ValidationService } from './validation.service';
 import { WorkflowReportService } from './workflow-report.service';
 import { ExportSourceService } from './export/export-source.service';
+import { ExportEndpointController } from './ExportEndpointController';
+import { ExportEndpointService } from './export/export-endpoint.service';
+import { ExportEndpointGuard } from './export/export-endpoint.guard';
 
 @Module({
   imports: [
@@ -92,11 +95,13 @@ import { ExportSourceService } from './export/export-source.service';
     ImportController,
     EnrichController,
     ExportController,
+    ExportEndpointController,
     PlausibilityController,
     WorkflowController
   ],
   providers: [
     ImportExecutionService,
+    ExportEndpointService, ExportEndpointGuard,
     ReportItemService,
     CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,
     CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,

@@ -21,6 +21,7 @@ import { PublisherDOI } from "./publisher/PublisherDOI.entity";
 import { AliasPublisher } from "./publisher/AliasPublisher.entity";
 import { Role } from "./publication/relations/Role.entity";
 import { Language } from "./publication/lookups/Language.entity";
+import { CREATE_EXPORT_ENDPOINT_NAME_INDEX } from './workflow/export/export-endpoint-index';
 
 @Injectable()
 export class InitService {
@@ -51,6 +52,7 @@ export class InitService {
         // Drop database schema:
         console.log("sync new schema")
         await this.dataSource.synchronize(true);
+        await this.dataSource.query(CREATE_EXPORT_ENDPOINT_NAME_INDEX);
         await this.markMigrationsAsExecuted();
         console.log("...creating sample data")
         // Init values:   

@@ -1,0 +1,51 @@
+.workflow-toolbar-title {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workflow-toolbar-title h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workflow-status {
+  align-items: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.status-chip {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 16px;
+  min-height: 22px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.status-active {
+  border-color: rgba(129, 199, 132, 0.75);
+  color: rgba(200, 230, 201, 0.98);
+}
+
+.status-draft {
+  border-color: rgba(189, 189, 189, 0.55);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.status-archived {
+  border-color: rgba(255, 183, 77, 0.70);
+  color: rgba(255, 224, 178, 0.98);
+}
