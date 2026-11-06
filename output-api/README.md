@@ -37,6 +37,9 @@ The JSON body uses the same filter structure as `POST /publications/filter`:
 ```
 
 Both fields are optional; an empty body exports all publications. Field filters and named filter paths run before the mapping.
+Soft-deleted publications are excluded by default. An explicit `delete_date` expression includes them in the selection,
+and the complete filter then determines which publications are exported. For `delete_date`, `EQUALS` with `null` selects active
+publications; negating that expression with `AND_NOT` selects deleted publications.
 The workflow fixes the mapping and output format (JSON, XML, CSV or XLSX).
 JSONata runs once per publication with the existing `params.cfg` context.
 Public endpoints use the full export data, including invoices and internal fields; their saved mapping controls the response.
