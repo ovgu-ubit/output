@@ -17,7 +17,7 @@ import { ExportFormFacade } from './export-form-facade.service';
 @Component({
   selector: 'app-export-workflow-form',
   templateUrl: './export-workflow-form.component.html',
-  styleUrl: './export-workflow-form.component.css',
+  styleUrls: ['../workflow-status.css', './export-workflow-form.component.css'],
   standalone: true,
   imports: [
     SharedModule,

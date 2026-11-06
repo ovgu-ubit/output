@@ -2,26 +2,23 @@
 [label]="getLabel()"></app-breadcrump>
 <div class="import-workflow-layout">
   <mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
-    <div style="display: flex;gap: 10px">
+    <div class="workflow-toolbar-title">
       @if ((this.facade.import$ | async)?.id) {
         <h1>{{(this.facade.import$ | async)?.label}}, Version {{(this.facade.import$ | async)?.version}}</h1>
       } @else {
         <h1>Neuer Import</h1>
       }
-      <mat-chip-set>
+      <div class="workflow-status" role="status" aria-label="Workflow-Status">
         @if (!(this.facade.import$ | async)?.published_at) {
-          <mat-chip class="status-chip status-draft"
-          >Entwurf</mat-chip>
+          <span class="status-chip status-draft">Entwurf</span>
         }
         @if ((this.facade.import$ | async)?.published_at && !(this.facade.import$ | async)?.deleted_at) {
-          <mat-chip class="status-chip status-active"
-          >Aktiv</mat-chip>
+          <span class="status-chip status-active">Aktiv</span>
         }
         @if ((this.facade.import$ | async)?.deleted_at) {
-          <mat-chip class="status-chip status-archived"
-          >Archiviert</mat-chip>
+          <span class="status-chip status-archived">Archiviert</span>
         }
-      </mat-chip-set>
+      </div>
     </div>
     <div style="display: flex;justify-content: flex-end;">
       <button mat-icon-button (click)="this.export()"

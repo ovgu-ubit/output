@@ -136,6 +136,7 @@ export class PublicationIndexService {
             .leftJoinAndSelect("publication.identifiers", "identifier")
             .leftJoinAndSelect("authorPublications.author", "author")
             .leftJoinAndSelect("authorPublications.institute", "institute")
+            .leftJoinAndSelect("authorPublications.role", "role")
             .leftJoinAndSelect("publication.invoices", "invoice")
             .leftJoinAndSelect("invoice.cost_items", "cost_item")
             .leftJoinAndSelect("invoice.cost_center", "cost_center")

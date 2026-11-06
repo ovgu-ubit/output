@@ -22,6 +22,9 @@
                 </mat-select>
                 <mat-error>Bitte wählen Sie eine gültige Entitätsklasse.</mat-error>
             </mat-form-field>
+            @if (isEndpoint) {
+            <p>Endpoint-Exporte unterstützen derzeit ausschließlich Publikationen.</p>
+            }
             @if (sourceChanged) {
             <p role="status">Die Entitätsklasse wurde geändert. Das Mapping bleibt erhalten; bitte passen Sie es an die neue Quelle an.</p>
             }

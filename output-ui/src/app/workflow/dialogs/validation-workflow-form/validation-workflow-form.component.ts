@@ -17,7 +17,7 @@ import { ValidationFormFacade } from './validation-form-facade.service';
 @Component({
   selector: 'app-validation-workflow-form',
   templateUrl: './validation-workflow-form.component.html',
-  styleUrl: './validation-workflow-form.component.css',
+  styleUrls: ['../workflow-status.css', './validation-workflow-form.component.css'],
   standalone: true,
   imports: [
     SharedModule,

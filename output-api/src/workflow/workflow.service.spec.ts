@@ -1044,6 +1044,68 @@ describe('WorkflowService', () => {
         });
     });
 
+    it('publishes endpoint workflows when the endpoint name is available', async () => {
+        const draft = {
+            id: 28, workflow_id: 'wf-endpoint', label: 'Endpoint', version: 2, mapping: '$',
+            strategy_type: ExportStrategy.ENDPOINT, strategy: { format: 'json', endpoint_name: 'publications' },
+            published_at: null, locked_at: null,
+        };
+        exportRepository.findOneBy!.mockResolvedValueOnce(draft as ExportWorkflow).mockResolvedValueOnce(null);
+        exportRepository.findOne!.mockResolvedValue(null);
+        exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);
+
+        expect(await service.saveExport({ id: 28, published_at: new Date() })).toMatchObject({
+            published_at: expect.any(Date), version: 2, strategy: { access: 'authenticated', endpoint_name: 'publications' },
+        });
+        expect(exportRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({
+            published_at: expect.anything(), deleted_at: expect.anything(), strategy: expect.anything(),
+        }) }));
+    });
+
+    it('rejects publication of a duplicate endpoint name with field details', async () => {
+        exportRepository.findOneBy!.mockResolvedValueOnce({
+            id: 28, workflow_id: 'wf-endpoint', label: 'Endpoint', version: 1, mapping: '$',
+            strategy_type: ExportStrategy.ENDPOINT, strategy: { format: 'json', endpoint_name: 'publications' },
+            published_at: null, locked_at: null,
+        } as ExportWorkflow).mockResolvedValueOnce(null);
+        exportRepository.findOne!.mockResolvedValue({ id: 29 } as ExportWorkflow);
+
+        await expect(service.saveExport({ id: 28, published_at: new Date() })).rejects.toMatchObject({
+            response: { statusCode: 409, details: [{ path: 'strategy.endpoint_name', code: 'unique', message: expect.any(String) }] },
+        });
+        expect(exportRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('maps concurrent endpoint name conflicts from the database to field errors', async () => {
+        exportRepository.save!.mockRejectedValue({ driverError: { code: '23505', constraint: 'UQ_workflow_export_endpoint_name' } });
+        await expect(service.saveExport({
+            workflow_id: 'wf-endpoint', label: 'Endpoint', strategy_type: ExportStrategy.ENDPOINT,
+            strategy: { format: 'json', endpoint_name: 'publications' },
+        })).rejects.toMatchObject({ response: { statusCode: 409, details: [expect.objectContaining({ path: 'strategy.endpoint_name' })] } });
+    });
+
+    it('archives endpoint workflows without reserving their name', async () => {
+        exportRepository.findOneBy!.mockResolvedValue({
+            id: 28, workflow_id: 'wf-endpoint', label: 'Endpoint', version: 1, mapping: '$',
+            strategy_type: ExportStrategy.ENDPOINT, strategy: { format: 'json', endpoint_name: 'publications', access: 'public' },
+            published_at: new Date(), locked_at: null,
+        } as ExportWorkflow);
+        exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);
+        expect(await service.saveExport({ id: 28, deleted_at: new Date() })).toMatchObject({ deleted_at: expect.any(Date) });
+        expect(exportRepository.findOne).not.toHaveBeenCalled();
+    });
+
+    it('preserves endpoint settings and mapping when importing a new draft version', async () => {
+        exportRepository.findOne!.mockResolvedValue(null);
+        exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);
+        const saved = await service.importExport({ buffer: Buffer.from(JSON.stringify({
+            workflow_id: 'wf-endpoint', label: 'Endpoint', version: 2, mapping: '{"title":title}',
+            strategy_type: ExportStrategy.ENDPOINT, strategy: { format: 'csv', endpoint_name: 'publications', access: 'public', delimiter: ';', quote_char: '"' },
+        })) } as Express.Multer.File);
+        expect(saved).toMatchObject({ version: 2, source_entity: 'publication', strategy: { endpoint_name: 'publications', access: 'public', format: 'csv' }, mapping: '{"title":title}' });
+        expect(saved.published_at).toBeUndefined();
+    });
+
     it('imports incomplete export drafts with a configured strategy', async () => {
         exportRepository.findOne!.mockResolvedValue(null);
         exportRepository.save!.mockImplementation(async workflow => workflow as ExportWorkflow);

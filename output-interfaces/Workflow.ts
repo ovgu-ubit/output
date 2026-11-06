@@ -191,7 +191,27 @@ export enum ImportStrategy {
 }
 
 export enum ExportStrategy {
-    HTTP_RESPONSE
+    HTTP_RESPONSE = 0,
+    ENDPOINT = 1,
+}
+
+export type ExportEndpointAccess = 'authenticated' | 'public';
+
+export interface ExportEndpointStrategy {
+    endpoint_name: string;
+    access: ExportEndpointAccess;
+    format: ExportFormat;
+    disposition?: ExportDisposition;
+    delimiter?: string;
+    quote_char?: string;
+    root_name?: string;
+    item_name?: string;
+    sheet_name?: string;
+}
+
+export interface ExportEndpointRequest {
+    filter?: SearchFilter;
+    paths?: string[];
 }
 
 export enum WorkflowReportItemLevel {

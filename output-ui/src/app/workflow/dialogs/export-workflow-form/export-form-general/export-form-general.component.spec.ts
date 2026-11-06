@@ -4,7 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { MatSelectHarness } from '@angular/material/select/testing';
 import { BehaviorSubject, of, Subject } from 'rxjs';
-import { ExportWorkflow } from '@output/interfaces';
+import { ExportStrategy, ExportWorkflow } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ExportFormFacade } from '../export-form-facade.service';
 import { ExportFormMappingComponent } from '../export-form-mapping/export-form-mapping.component';
@@ -84,6 +84,17 @@ describe('Export workflow entity selection', () => {
             expect(await select.isDisabled()).toBe(true);
         });
     }
+
+    it('limits endpoint workflows to publications even if the source control is changed programmatically', async () => {
+        workflow.next({ ...workflow.value, strategy_type: ExportStrategy.ENDPOINT, source_entity: 'publication' });
+        fixture.detectChanges();
+        const select = await TestbedHarnessEnvironment.loader(fixture).getHarness(MatSelectHarness);
+        expect(await select.isDisabled()).toBe(true);
+        expect(component.entityOptions.map(option => option.value)).toEqual(['publication']);
+        component.form.controls.source_entity.setValue('author');
+        expect(await component.persistFormToBackend()).toBe(true);
+        expect(workflow.value.source_entity).toBe('publication');
+    });
 
     it('shows source-specific mapping help without changing the expression', () => {
         workflow.next({ ...workflow.value, source_entity: 'contract' });
