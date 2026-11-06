@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { generateKeyPairSync } from 'node:crypto';
-import { ExportStrategy } from '@output/interfaces';
+import { CompareOperation, ExportStrategy, JoinOperation } from '@output/interfaces';
 import * as XLSX from 'xlsx';
 import { configureApplication } from '../src/application-bootstrap';
 import { AccessGuard } from '../src/authorization/access.guard';
@@ -19,6 +19,7 @@ import { InstituteService } from '../src/institute/institute.service';
 import { InvoiceService } from '../src/invoice/invoice.service';
 import { OACategoryService } from '../src/oa_category/oa-category.service';
 import { PublicationFilterService } from '../src/publication/core/publication-filter.service';
+import { PublicationService } from '../src/publication/core/publication.service';
 import { PublicationTypeService } from '../src/pub_type/publication-type.service';
 import { PublisherService } from '../src/publisher/publisher.service';
 import { ExportEndpointController } from '../src/workflow/ExportEndpointController';
@@ -28,6 +29,9 @@ import { ExportEndpointService } from '../src/workflow/export/export-endpoint.se
 import { ExportSourceService } from '../src/workflow/export/export-source.service';
 import { JSONataExportService } from '../src/workflow/export/jsonata-export.service';
 import { AbstractFilterService, FilterService } from '../src/workflow/filter/abstract-filter.service';
+import { MissingInvoiceDataService } from '../src/workflow/filter/missing-invoice-data-filter.service';
+import { MissingInstFilterService } from '../src/workflow/filter/missing-inst-filter.service';
+import { MissingInstAuthorFilterService } from '../src/workflow/filter/missing-inst-author-filter.service';
 import { WorkflowReportService } from '../src/workflow/workflow-report.service';
 import { createInvalidRequestHttpException } from '../src/common/api-error';
 
@@ -51,6 +55,9 @@ describe('Publication export endpoints (HTTP)', () => {
     const reports = new Map<number, any>();
     const source = { load: jest.fn() };
     const repository = { findOne: jest.fn() };
+    const publicationRepository = { find: jest.fn() };
+    const publicationLookup = new PublicationService(publicationRepository as never,
+        {} as never, {} as never, {} as never, {} as never);
     const reporting = {
         createReport: jest.fn(async data => {
             const report = { ...data, id: reports.size + 1 };
@@ -97,7 +104,10 @@ describe('Publication export endpoints (HTTP)', () => {
             providers: [
                 ExportEndpointService, ExportEndpointGuard, AccessGuard, JSONataExportService,
                 PublicationFilterService, JwtService,
-                { provide: 'Filters', useValue: [new SecondPublicationFilter()] },
+                { provide: 'Filters', useValue: [
+                    new SecondPublicationFilter(), new MissingInvoiceDataService(publicationLookup),
+                    new MissingInstFilterService(publicationLookup), new MissingInstAuthorFilterService(publicationLookup),
+                ] },
                 { provide: getRepositoryToken(ExportWorkflow), useValue: repository },
                 { provide: ExportSourceService, useValue: source },
                 { provide: WorkflowReportService, useValue: reporting },
@@ -122,6 +132,7 @@ describe('Publication export endpoints (HTTP)', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        publicationRepository.find.mockReset();
         definitions.clear();
         reports.clear();
         repository.findOne.mockImplementation(async ({ where }) => {
@@ -163,6 +174,42 @@ describe('Publication export endpoints (HTTP)', () => {
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual([{ title: 'Second' }]);
         expect(source.load).toHaveBeenCalledWith('publication', filter);
+    });
+
+    it.each([
+        { paths: ['missing-invoice'] },
+        { paths: ['missing-institute'] },
+        { paths: ['missing-inst_auth'] },
+        { paths: ['missing-invoice', 'missing-institute'] },
+    ])('exports explicitly selected deleted publications through $paths', async ({ paths }) => {
+        const filter = { expressions: [{
+            op: JoinOperation.AND_NOT, key: 'delete_date', comp: CompareOperation.EQUALS, value: null,
+        }] };
+        const records = [
+            {
+                id: 101, title: 'Deleted match', delete_date: new Date('2026-01-01'), invoices: [], contract: null,
+                authorPublications: paths.includes('missing-inst_auth') ? [] : [{ corresponding: true, institute: null }],
+            },
+            {
+                id: 102, title: 'Deleted non-match', delete_date: new Date('2026-01-01'), contract: null,
+                authorPublications: [{ corresponding: true, institute: { id: 1 } }],
+                invoices: paths.length === 1 && paths[0] === 'missing-invoice' ? [{ id: 7 }] : [],
+            },
+        ];
+        source.load.mockResolvedValueOnce(records);
+        publicationRepository.find.mockImplementation(async options => {
+            const record = records.find(record => record.id === options.where.id);
+            return record && (!record.delete_date || options.withDeleted) ? [record] : [];
+        });
+
+        const response = await request('publications', { filter, paths });
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual([{ title: 'Deleted match' }]);
+        expect(source.load).toHaveBeenCalledWith('publication', filter);
+        expect([...reports.values()][0]).toMatchObject({
+            status: 'Successful export', summary: { count_export: 1 },
+        });
     });
 
     it.each(['reader', 'writer', 'admin', 'publication_writer'])('authenticates existing %s cookies', async role => {
