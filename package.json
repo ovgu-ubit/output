@@ -28,9 +28,6 @@
   "overrides": {
     "babel-plugin-istanbul@8": {
       "test-exclude": "^8.0.0"
-    },
-    "typeorm@^0.3.28": {
-      "glob": "^13.0.6"
     }
   },
   "devDependencies": {
@@ -96,6 +93,7 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "cross-env": "^10.1.0",
+    "dotenv": "^18.0.3",
     "echarts": "^6.0.0",
     "express": "^5.2.1",
     "https": "^1.0.0",
@@ -114,7 +112,7 @@
     "service": "^0.1.4",
     "swagger-ui-express": "^5.0.1",
     "tslib": "^2.3.0",
-    "typeorm": "^0.3.28",
+    "typeorm": "^1.1.2",
     "xlsx": "npm:@e965/xlsx@0.20.3",
     "xml-js": "^1.6.11",
     "zod": "^4.3.6",

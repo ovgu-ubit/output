@@ -1,6 +1,6 @@
 # Third Party Notices
 
-Stand: 2026-10-29
+Stand: 2026-11-09
 
 Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erzeugt. Sie enthält die tatsächlich aufgelösten npm-Pakete, die über die zentralen Root-Abhängigkeiten des Workspaces erreichbar sind. Interne Workspace-Pakete sind nicht als Drittanbieter-Komponenten aufgeführt.
 
@@ -28,13 +28,11 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | --- | --- | --- | --- | --- | --- |
 | @ampproject/remapping | 2.3.0 | Apache-2.0 | workspace (transitive) | node_modules/@ampproject/remapping |  |
 | @angular-devkit/architect | 0.2202.5 | MIT | workspace (transitive) | node_modules/@angular-devkit/architect |  |
-| @angular-devkit/core | 22.2.3 | MIT | workspace (transitive) | node_modules/@angular-devkit/schematics-cli/node_modules/@angular-devkit/core<br>node_modules/@nestjs/cli/node_modules/@angular-devkit/core |  |
-| @angular-devkit/core | 22.2.4 | MIT | workspace (transitive) | node_modules/@nestjs/schematics/node_modules/@angular-devkit/core |  |
 | @angular-devkit/core | 22.2.5 | MIT | workspace (transitive) | node_modules/@angular-devkit/architect/node_modules/@angular-devkit/core<br>node_modules/@angular-devkit/schematics/node_modules/@angular-devkit/core<br>node_modules/@angular/cli/node_modules/@angular-devkit/core<br>node_modules/@schematics/angular/node_modules/@angular-devkit/core |  |
-| @angular-devkit/schematics | 22.2.3 | MIT | workspace (transitive) | node_modules/@angular-devkit/schematics-cli/node_modules/@angular-devkit/schematics<br>node_modules/@nestjs/cli/node_modules/@angular-devkit/schematics |  |
-| @angular-devkit/schematics | 22.2.4 | MIT | workspace (transitive) | node_modules/@nestjs/schematics/node_modules/@angular-devkit/schematics |  |
+| @angular-devkit/core | 22.2.6 | MIT | workspace (transitive) | node_modules/@angular-devkit/core |  |
 | @angular-devkit/schematics | 22.2.5 | MIT | workspace (transitive) | node_modules/@angular-devkit/schematics |  |
-| @angular-devkit/schematics-cli | 22.2.3 | MIT | workspace (transitive) | node_modules/@angular-devkit/schematics-cli |  |
+| @angular-devkit/schematics | 22.2.6 | MIT | workspace (transitive) | node_modules/@angular-devkit/schematics-cli/node_modules/@angular-devkit/schematics<br>node_modules/@nestjs/cli/node_modules/@angular-devkit/schematics<br>node_modules/@nestjs/schematics/node_modules/@angular-devkit/schematics |  |
+| @angular-devkit/schematics-cli | 22.2.6 | MIT | workspace (transitive) | node_modules/@angular-devkit/schematics-cli |  |
 | @angular/animations | 22.2.3 | MIT | workspace (runtime) | node_modules/@angular/animations |  |
 | @angular/build | 22.2.5 | MIT | workspace (dev) | node_modules/@angular/build |  |
 | @angular/cdk | 22.2.4 | MIT | workspace (runtime) | node_modules/@angular/cdk |  |
@@ -105,6 +103,8 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | @borewit/text-codec | 0.2.3 | MIT | workspace (transitive) | node_modules/@borewit/text-codec |  |
 | @bramus/specificity | 2.4.3 | MIT | workspace (transitive) | node_modules/@bramus/specificity |  |
 | @bufbuild/protobuf | 2.16.0 | (Apache-2.0 AND BSD-3-Clause) | workspace (transitive) | node_modules/@bufbuild/protobuf |  |
+| @cacheable/memory | 2.2.0 | MIT | workspace (transitive) | node_modules/@cacheable/memory |  |
+| @cacheable/utils | 2.5.0 | MIT | workspace (transitive) | node_modules/@cacheable/utils |  |
 | @colors/colors | 1.5.0 | MIT | workspace (transitive) | node_modules/@colors/colors |  |
 | @cspotcode/source-map-support | 0.8.1 | MIT | workspace (transitive) | node_modules/@cspotcode/source-map-support |  |
 | @csstools/color-helpers | 6.1.2 | MIT-0 | workspace (transitive) | node_modules/@csstools/color-helpers |  |
@@ -153,11 +153,11 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | @eslint-community/eslint-utils | 4.9.1 | MIT | workspace (transitive) | node_modules/@eslint-community/eslint-utils |  |
 | @eslint-community/regexpp | 4.12.2 | MIT | workspace (transitive) | node_modules/@eslint-community/regexpp |  |
 | @eslint/config-array | 0.23.5 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/config-array |  |
-| @eslint/config-helpers | 0.6.0 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/config-helpers |  |
+| @eslint/config-helpers | 0.7.0 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/config-helpers |  |
 | @eslint/core | 1.2.1 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/core |  |
 | @eslint/js | 10.0.1 | MIT | workspace (dev) | node_modules/@eslint/js |  |
 | @eslint/object-schema | 3.0.5 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/object-schema |  |
-| @eslint/plugin-kit | 0.7.2 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/plugin-kit |  |
+| @eslint/plugin-kit | 0.7.3 | Apache-2.0 | workspace (transitive) | node_modules/@eslint/plugin-kit |  |
 | @exodus/bytes | 1.16.0 | MIT | workspace (transitive) | node_modules/@exodus/bytes |  |
 | @harperfast/extended-iterable | 1.0.5 | Apache-2.0 | workspace (transitive) | node_modules/@harperfast/extended-iterable |  |
 | @humanfs/core | 0.19.2 | Apache-2.0 | workspace (transitive) | node_modules/@humanfs/core |  |
@@ -178,12 +178,13 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | @inquirer/number | 4.2.6 | MIT | workspace (transitive) | node_modules/@inquirer/number |  |
 | @inquirer/password | 5.2.5 | MIT | workspace (transitive) | node_modules/@inquirer/password |  |
 | @inquirer/prompts | 8.7.2 | MIT | workspace (transitive) | node_modules/@inquirer/prompts |  |
-| @inquirer/prompts | 8.7.3 | MIT | workspace (transitive) | node_modules/@nestjs/cli/node_modules/@inquirer/prompts |  |
+| @inquirer/prompts | 8.7.5 | MIT | workspace (transitive) | node_modules/@nestjs/cli/node_modules/@inquirer/prompts |  |
 | @inquirer/rawlist | 5.3.8 | MIT | workspace (transitive) | node_modules/@inquirer/rawlist |  |
 | @inquirer/search | 4.3.6 | MIT | workspace (transitive) | node_modules/@inquirer/search |  |
 | @inquirer/select | 5.2.8 | MIT | workspace (transitive) | node_modules/@inquirer/select |  |
 | @inquirer/type | 4.1.1 | MIT | workspace (transitive) | node_modules/@angular/build/node_modules/@inquirer/type |  |
 | @inquirer/type | 4.2.1 | MIT | workspace (transitive) | node_modules/@inquirer/type |  |
+| @isaacs/nonrecursive-glob-match | 1.1.0 | BlueOak-1.0.0 | workspace (transitive) | node_modules/@isaacs/nonrecursive-glob-match |  |
 | @istanbuljs/load-nyc-config | 1.1.0 | ISC | workspace (transitive) | node_modules/@istanbuljs/load-nyc-config |  |
 | @istanbuljs/schema | 0.1.6 | MIT | workspace (transitive) | node_modules/@istanbuljs/schema |  |
 | @jest/console | 30.5.2 | MIT | workspace (transitive) | node_modules/@jest/console |  |
@@ -211,6 +212,8 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | @jridgewell/sourcemap-codec | 1.6.0 | MIT | workspace (transitive) | node_modules/@jridgewell/sourcemap-codec |  |
 | @jridgewell/trace-mapping | 0.3.31 | MIT | workspace (transitive) | node_modules/@jridgewell/trace-mapping |  |
 | @jridgewell/trace-mapping | 0.3.9 | MIT | workspace (transitive) | node_modules/@cspotcode/source-map-support/node_modules/@jridgewell/trace-mapping |  |
+| @keyv/bigmap | 1.3.1 | MIT | workspace (transitive) | node_modules/@keyv/bigmap |  |
+| @keyv/serialize | 1.1.1 | MIT | workspace (transitive) | node_modules/@keyv/serialize |  |
 | @listr2/prompt-adapter-inquirer | 4.2.7 | MIT | workspace (transitive) | node_modules/@listr2/prompt-adapter-inquirer |  |
 | @lmdb/lmdb-darwin-arm64 | 3.5.6 | MIT | workspace (transitive) | node_modules/@lmdb/lmdb-darwin-arm64 |  |
 | @lmdb/lmdb-darwin-x64 | 3.5.6 | MIT | workspace (transitive) | node_modules/@lmdb/lmdb-darwin-x64 |  |
@@ -249,7 +252,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | @napi-rs/nice-win32-x64-msvc | 1.1.1 | MIT | workspace (transitive) | node_modules/@napi-rs/nice-win32-x64-msvc |  |
 | @napi-rs/wasm-runtime | 1.2.5 | MIT | workspace (transitive) | node_modules/@napi-rs/wasm-runtime |  |
 | @nestjs/axios | 12.0.1 | MIT | workspace (runtime) | node_modules/@nestjs/axios |  |
-| @nestjs/cli | 12.0.11 | MIT | workspace (runtime) | node_modules/@nestjs/cli |  |
+| @nestjs/cli | 12.0.12 | MIT | workspace (runtime) | node_modules/@nestjs/cli |  |
 | @nestjs/common | 12.3.2 | MIT | workspace (runtime) | node_modules/@nestjs/common |  |
 | @nestjs/config | 12.0.1 | MIT | workspace (runtime) | node_modules/@nestjs/config |  |
 | @nestjs/core | 12.3.2 | MIT | workspace (runtime) | node_modules/@nestjs/core |  |
@@ -258,7 +261,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | @nestjs/passport | 12.0.0 | MIT | workspace (runtime) | node_modules/@nestjs/passport |  |
 | @nestjs/platform-express | 12.3.2 | MIT | workspace (runtime) | node_modules/@nestjs/platform-express |  |
 | @nestjs/schedule | 12.0.2 | MIT | workspace (runtime) | node_modules/@nestjs/schedule |  |
-| @nestjs/schematics | 12.0.12 | MIT | workspace (transitive) | node_modules/@nestjs/schematics |  |
+| @nestjs/schematics | 12.0.13 | MIT | workspace (transitive) | node_modules/@nestjs/schematics |  |
 | @nestjs/serve-static | 12.1.1 | MIT | workspace (runtime) | node_modules/@nestjs/serve-static |  |
 | @nestjs/swagger | 12.0.5 | MIT | workspace (runtime) | node_modules/@nestjs/swagger |  |
 | @nestjs/testing | 12.3.2 | MIT | workspace (dev) | node_modules/@nestjs/testing |  |
@@ -421,14 +424,13 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | ajv-formats | 3.0.1 | MIT | workspace (transitive) | node_modules/ajv-formats |  |
 | ansi-escapes | 4.3.2 | MIT | workspace (transitive) | node_modules/ansi-escapes |  |
 | ansi-escapes | 7.3.0 | MIT | workspace (transitive) | node_modules/log-update/node_modules/ansi-escapes |  |
-| ansi-regex | 5.0.1 | MIT | workspace (transitive) | node_modules/jest-cli/node_modules/ansi-regex<br>node_modules/string-length/node_modules/ansi-regex<br>node_modules/string-width/node_modules/ansi-regex<br>node_modules/typeorm/node_modules/ansi-regex<br>node_modules/wrap-ansi/node_modules/ansi-regex |  |
+| ansi-regex | 5.0.1 | MIT | workspace (transitive) | node_modules/jest-cli/node_modules/ansi-regex<br>node_modules/string-length/node_modules/ansi-regex<br>node_modules/string-width/node_modules/ansi-regex<br>node_modules/wrap-ansi/node_modules/ansi-regex |  |
 | ansi-regex | 6.2.2 | MIT | workspace (transitive) | node_modules/ansi-regex |  |
 | ansi-styles | 4.3.0 | MIT | workspace (transitive) | node_modules/ansi-styles |  |
 | ansi-styles | 5.2.0 | MIT | workspace (transitive) | node_modules/pretty-format/node_modules/ansi-styles |  |
 | ansi-styles | 6.2.3 | MIT | workspace (transitive) | node_modules/cliui/node_modules/ansi-styles<br>node_modules/listr2/node_modules/ansi-styles<br>node_modules/log-update/node_modules/ansi-styles<br>node_modules/slice-ansi/node_modules/ansi-styles |  |
-| ansis | 4.4.0 | ISC | workspace (transitive) | node_modules/ansis |  |
+| ansis | 4.5.0 | ISC | workspace (transitive) | node_modules/ansis |  |
 | anymatch | 3.1.3 | ISC | workspace (transitive) | node_modules/anymatch |  |
-| app-root-path | 3.1.0 | MIT | workspace (transitive) | node_modules/app-root-path |  |
 | append-field | 1.0.0 | MIT | workspace (transitive) | node_modules/append-field |  |
 | arg | 4.1.3 | MIT | workspace (transitive) | node_modules/arg |  |
 | argparse | 1.0.10 | MIT | workspace (transitive) | node_modules/@istanbuljs/load-nyc-config/node_modules/argparse |  |
@@ -436,7 +438,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | array-timsort | 1.0.3 | MIT | workspace (transitive) | node_modules/array-timsort |  |
 | assertion-error | 2.0.1 | MIT | workspace (transitive) | node_modules/assertion-error |  |
 | asynckit | 0.4.0 | MIT | workspace (transitive) | node_modules/asynckit |  |
-| available-typed-arrays | 1.0.7 | MIT | workspace (transitive) | node_modules/available-typed-arrays |  |
 | axios | 1.20.0 | MIT | workspace (runtime) | node_modules/axios |  |
 | babel-jest | 30.5.2 | MIT | workspace (transitive) | node_modules/babel-jest |  |
 | babel-plugin-istanbul | 8.0.2 | BSD-3-Clause | workspace (transitive) | node_modules/babel-plugin-istanbul |  |
@@ -444,7 +445,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | babel-preset-current-node-syntax | 1.2.0 | MIT | workspace (transitive) | node_modules/babel-preset-current-node-syntax |  |
 | babel-preset-jest | 30.5.0 | MIT | workspace (transitive) | node_modules/babel-preset-jest |  |
 | balanced-match | 4.0.4 | MIT | workspace (transitive) | node_modules/balanced-match |  |
-| base64-js | 1.5.1 | MIT | workspace (transitive) | node_modules/base64-js |  |
 | baseline-browser-mapping | 2.11.21 | Apache-2.0 | workspace (transitive) | node_modules/baseline-browser-mapping |  |
 | beasties | 0.5.4 | Apache-2.0 | workspace (transitive) | node_modules/beasties |  |
 | bidi-js | 1.1.0 | MIT | workspace (transitive) | node_modules/bidi-js |  |
@@ -456,12 +456,11 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | browserslist | 4.28.9 | MIT | workspace (transitive) | node_modules/browserslist |  |
 | bs-logger | 0.2.6 | MIT | workspace (transitive) | node_modules/bs-logger |  |
 | bser | 2.1.1 | Apache-2.0 | workspace (transitive) | node_modules/bser |  |
-| buffer | 6.0.3 | MIT | workspace (transitive) | node_modules/buffer |  |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause | workspace (transitive) | node_modules/buffer-equal-constant-time |  |
 | buffer-from | 1.1.2 | MIT | workspace (transitive) | node_modules/buffer-from |  |
 | busboy | 1.6.0 | MIT | workspace (transitive) | node_modules/busboy | Manuell geprüft: package.json enthält licenses[0].type=MIT und LICENSE-Datei. |
 | bytes | 3.1.2 | MIT | workspace (transitive) | node_modules/bytes |  |
-| call-bind | 1.0.9 | MIT | workspace (transitive) | node_modules/call-bind |  |
+| cacheable | 2.5.0 | MIT | workspace (transitive) | node_modules/cacheable |  |
 | call-bind-apply-helpers | 1.0.2 | MIT | workspace (transitive) | node_modules/call-bind-apply-helpers |  |
 | call-bound | 1.0.4 | MIT | workspace (transitive) | node_modules/call-bound |  |
 | callsites | 3.1.0 | MIT | workspace (transitive) | node_modules/callsites |  |
@@ -473,7 +472,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | chalk | 5.6.2 | MIT | workspace (transitive) | node_modules/concurrently/node_modules/chalk<br>node_modules/ora/node_modules/chalk |  |
 | char-regex | 1.0.2 | MIT | workspace (transitive) | node_modules/char-regex |  |
 | chardet | 2.2.0 | MIT | workspace (transitive) | node_modules/chardet |  |
-| chokidar | 5.0.0 | MIT | workspace (transitive) | node_modules/@angular/build/node_modules/chokidar<br>node_modules/@angular/compiler-cli/node_modules/chokidar<br>node_modules/@nestjs/cli/node_modules/chokidar<br>node_modules/sass/node_modules/chokidar |  |
+| chokidar | 5.0.0 | MIT | workspace (transitive) | node_modules/chokidar |  |
 | ci-info | 4.4.0 | MIT | workspace (transitive) | node_modules/ci-info |  |
 | cjs-module-lexer | 2.3.0 | MIT | workspace (transitive) | node_modules/cjs-module-lexer |  |
 | class-transformer | 0.5.1 | MIT | workspace (runtime) | node_modules/class-transformer |  |
@@ -483,7 +482,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | cli-table3 | 0.6.5 | MIT | workspace (transitive) | node_modules/cli-table3 |  |
 | cli-truncate | 6.1.1 | MIT | workspace (transitive) | node_modules/cli-truncate |  |
 | cli-width | 4.1.0 | ISC | workspace (transitive) | node_modules/cli-width |  |
-| cliui | 8.0.1 | ISC | workspace (transitive) | node_modules/jest-cli/node_modules/cliui<br>node_modules/typeorm/node_modules/cliui |  |
+| cliui | 8.0.1 | ISC | workspace (transitive) | node_modules/jest-cli/node_modules/cliui |  |
 | cliui | 9.0.1 | ISC | workspace (transitive) | node_modules/cliui |  |
 | co | 4.6.0 | MIT | workspace (transitive) | node_modules/co |  |
 | collect-v8-coverage | 1.0.3 | MIT | workspace (transitive) | node_modules/collect-v8-coverage |  |
@@ -514,13 +513,12 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | css-what | 8.0.0 | BSD-2-Clause | workspace (transitive) | node_modules/css-what |  |
 | daemon | 1.1.0 | MIT | workspace (transitive) | node_modules/daemon | Manuell geprüft: LICENSE-Datei enthält MIT-Lizenztext. |
 | data-urls | 8.0.0 | MIT | workspace (transitive) | node_modules/data-urls |  |
-| dayjs | 1.11.21 | MIT | workspace (transitive) | node_modules/dayjs |  |
+| dayjs | 1.11.23 | MIT | workspace (transitive) | node_modules/dayjs |  |
 | debug | 4.4.3 | MIT | workspace (transitive) | node_modules/debug |  |
 | decimal.js | 10.6.0 | MIT | workspace (transitive) | node_modules/decimal.js |  |
 | dedent | 1.7.2 | MIT | workspace (transitive) | node_modules/dedent |  |
 | deep-is | 0.1.4 | MIT | workspace (transitive) | node_modules/deep-is |  |
 | deepmerge | 4.3.1 | MIT | workspace (transitive) | node_modules/deepmerge |  |
-| define-data-property | 1.1.4 | MIT | workspace (transitive) | node_modules/define-data-property |  |
 | delayed-stream | 1.0.0 | MIT | workspace (transitive) | node_modules/delayed-stream |  |
 | depd | 2.0.0 | MIT | workspace (transitive) | node_modules/depd |  |
 | detect-libc | 2.1.2 | Apache-2.0 | workspace (transitive) | node_modules/detect-libc |  |
@@ -530,9 +528,8 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | domelementtype | 3.0.0 | BSD-2-Clause | workspace (transitive) | node_modules/domelementtype |  |
 | domhandler | 6.0.1 | BSD-2-Clause | workspace (transitive) | node_modules/domhandler |  |
 | domutils | 4.0.2 | BSD-2-Clause | workspace (transitive) | node_modules/domutils |  |
-| dotenv | 16.6.1 | BSD-2-Clause | workspace (transitive) | node_modules/typeorm/node_modules/dotenv |  |
 | dotenv | 17.4.2 | BSD-2-Clause | workspace (transitive) | node_modules/dotenv-expand/node_modules/dotenv |  |
-| dotenv | 18.0.3 | BSD-2-Clause | workspace (transitive) | node_modules/dotenv |  |
+| dotenv | 18.0.3 | BSD-2-Clause | workspace (runtime) | node_modules/dotenv |  |
 | dotenv-expand | 13.0.0 | BSD-2-Clause | workspace (transitive) | node_modules/dotenv-expand |  |
 | dunder-proto | 1.0.1 | MIT | workspace (transitive) | node_modules/dunder-proto |  |
 | ecdsa-sig-formatter | 1.0.11 | Apache-2.0 | workspace (transitive) | node_modules/ecdsa-sig-formatter |  |
@@ -559,7 +556,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | escape-html | 1.0.3 | MIT | workspace (transitive) | node_modules/escape-html |  |
 | escape-string-regexp | 2.0.0 | MIT | workspace (transitive) | node_modules/stack-utils/node_modules/escape-string-regexp |  |
 | escape-string-regexp | 4.0.0 | MIT | workspace (transitive) | node_modules/escape-string-regexp |  |
-| eslint | 10.6.0 | MIT | workspace (dev) | node_modules/eslint |  |
+| eslint | 10.14.0 | MIT | workspace (dev) | node_modules/eslint |  |
 | eslint-scope | 9.1.2 | BSD-2-Clause | workspace (transitive) | node_modules/eslint-scope |  |
 | eslint-visitor-keys | 3.4.3 | Apache-2.0 | workspace (transitive) | node_modules/@eslint-community/eslint-utils/node_modules/eslint-visitor-keys |  |
 | eslint-visitor-keys | 5.0.1 | Apache-2.0 | workspace (transitive) | node_modules/eslint-visitor-keys |  |
@@ -587,16 +584,15 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | fb-watchman | 2.0.2 | Apache-2.0 | workspace (transitive) | node_modules/fb-watchman |  |
 | fdir | 6.5.0 | MIT | workspace (transitive) | node_modules/fdir |  |
 | fflate | 0.8.3 | MIT | workspace (transitive) | node_modules/fflate |  |
-| file-entry-cache | 8.0.0 | MIT | workspace (transitive) | node_modules/file-entry-cache |  |
+| file-entry-cache | 11.1.5 | MIT | workspace (transitive) | node_modules/file-entry-cache |  |
 | file-type | 22.2.0 | MIT | workspace (transitive) | node_modules/file-type |  |
 | finalhandler | 2.1.1 | MIT | workspace (transitive) | node_modules/finalhandler |  |
 | find-up | 4.1.0 | MIT | workspace (transitive) | node_modules/@istanbuljs/load-nyc-config/node_modules/find-up<br>node_modules/pkg-dir/node_modules/find-up |  |
 | find-up | 5.0.0 | MIT | workspace (transitive) | node_modules/find-up |  |
-| flat-cache | 4.0.1 | MIT | workspace (transitive) | node_modules/flat-cache |  |
+| flat-cache | 6.1.23 | MIT | workspace (transitive) | node_modules/flat-cache |  |
 | flatted | 3.4.4 | ISC | workspace (transitive) | node_modules/flatted |  |
 | flru | 1.0.2 | MIT | workspace (transitive) | node_modules/flru |  |
-| follow-redirects | 1.16.1 | MIT | workspace (transitive) | node_modules/follow-redirects |  |
-| for-each | 0.3.5 | MIT | workspace (transitive) | node_modules/for-each |  |
+| follow-redirects | 1.16.2 | MIT | workspace (transitive) | node_modules/follow-redirects |  |
 | form-data | 4.0.6 | MIT | workspace (transitive) | node_modules/form-data |  |
 | forwarded | 0.2.0 | MIT | workspace (transitive) | node_modules/forwarded |  |
 | fresh | 2.0.0 | MIT | workspace (transitive) | node_modules/fresh |  |
@@ -610,16 +606,19 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | get-proto | 1.0.1 | MIT | workspace (transitive) | node_modules/get-proto |  |
 | get-stream | 6.0.1 | MIT | workspace (transitive) | node_modules/get-stream |  |
 | glob | 13.0.6 | BlueOak-1.0.0 | workspace (transitive) | node_modules/glob |  |
+| glob | 14.0.4 | BlueOak-1.0.0 | workspace (transitive) | node_modules/rimraf/node_modules/glob |  |
 | glob-parent | 6.0.2 | ISC | workspace (transitive) | node_modules/glob-parent |  |
 | globals | 17.7.0 | MIT | workspace (dev) | node_modules/globals |  |
 | gopd | 1.2.0 | MIT | workspace (transitive) | node_modules/gopd |  |
 | graceful-fs | 4.2.11 | ISC | workspace (transitive) | node_modules/graceful-fs |  |
 | handlebars | 4.7.10 | MIT | workspace (transitive) | node_modules/handlebars |  |
 | has-flag | 4.0.0 | MIT | workspace (transitive) | node_modules/has-flag |  |
-| has-property-descriptors | 1.0.2 | MIT | workspace (transitive) | node_modules/has-property-descriptors |  |
 | has-symbols | 1.1.0 | MIT | workspace (transitive) | node_modules/has-symbols |  |
 | has-tostringtag | 1.0.2 | MIT | workspace (transitive) | node_modules/has-tostringtag |  |
+| hashery | 1.5.1 | MIT | workspace (transitive) | node_modules/hashery |  |
 | hasown | 2.0.4 | MIT | workspace (transitive) | node_modules/hasown |  |
+| hookified | 1.15.1 | MIT | workspace (transitive) | node_modules/hookified |  |
+| hookified | 2.2.0 | MIT | workspace (transitive) | node_modules/qified/node_modules/hookified |  |
 | hosted-git-info | 10.1.1 | ISC | workspace (transitive) | node_modules/hosted-git-info |  |
 | html-encoding-sniffer | 7.0.0 | MIT | workspace (transitive) | node_modules/html-encoding-sniffer |  |
 | html-escaper | 2.0.2 | MIT | workspace (transitive) | node_modules/html-escaper |  |
@@ -640,7 +639,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | inherits | 2.0.4 | ISC | workspace (transitive) | node_modules/inherits |  |
 | ipaddr.js | 1.9.1 | MIT | workspace (transitive) | node_modules/ipaddr.js |  |
 | is-arrayish | 0.2.1 | MIT | workspace (transitive) | node_modules/is-arrayish |  |
-| is-callable | 1.2.7 | MIT | workspace (transitive) | node_modules/is-callable |  |
 | is-extglob | 2.1.1 | MIT | workspace (transitive) | node_modules/is-extglob |  |
 | is-fullwidth-code-point | 3.0.0 | MIT | workspace (transitive) | node_modules/string-width/node_modules/is-fullwidth-code-point |  |
 | is-fullwidth-code-point | 5.1.0 | MIT | workspace (transitive) | node_modules/is-fullwidth-code-point |  |
@@ -650,10 +648,8 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | is-potential-custom-element-name | 1.0.1 | MIT | workspace (transitive) | node_modules/is-potential-custom-element-name |  |
 | is-promise | 4.0.0 | MIT | workspace (transitive) | node_modules/is-promise |  |
 | is-stream | 2.0.1 | MIT | workspace (transitive) | node_modules/is-stream |  |
-| is-typed-array | 1.1.15 | MIT | workspace (transitive) | node_modules/is-typed-array |  |
 | is-unicode-supported | 2.1.0 | MIT | workspace (transitive) | node_modules/is-unicode-supported |  |
 | isarray | 1.0.0 | MIT | workspace (transitive) | node_modules/mysql/node_modules/isarray |  |
-| isarray | 2.0.5 | MIT | workspace (transitive) | node_modules/isarray |  |
 | isexe | 2.0.0 | ISC | workspace (transitive) | node_modules/isexe |  |
 | istanbul-lib-coverage | 3.2.2 | BSD-3-Clause | workspace (transitive) | node_modules/istanbul-lib-coverage |  |
 | istanbul-lib-instrument | 6.0.3 | BSD-3-Clause | workspace (dev) | node_modules/istanbul-lib-instrument |  |
@@ -692,7 +688,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | js-yaml | 5.5.0 | MIT | workspace (transitive) | node_modules/@nestjs/swagger/node_modules/js-yaml |  |
 | jsdom | 30.1.3 | MIT | workspace (dev) | node_modules/jsdom |  |
 | jsesc | 3.1.0 | MIT | workspace (transitive) | node_modules/jsesc |  |
-| json-buffer | 3.0.1 | MIT | workspace (transitive) | node_modules/json-buffer |  |
 | json-parse-even-better-errors | 2.3.1 | MIT | workspace (transitive) | node_modules/parse-json/node_modules/json-parse-even-better-errors |  |
 | json-schema-traverse | 0.4.1 | MIT | workspace (transitive) | node_modules/eslint/node_modules/json-schema-traverse |  |
 | json-schema-traverse | 1.0.0 | MIT | workspace (transitive) | node_modules/json-schema-traverse |  |
@@ -703,7 +698,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | jsonwebtoken | 9.0.3 | MIT | workspace (transitive) | node_modules/jsonwebtoken |  |
 | jwa | 2.0.1 | MIT | workspace (transitive) | node_modules/jwa |  |
 | jws | 4.0.1 | MIT | workspace (transitive) | node_modules/jws |  |
-| keyv | 4.5.4 | MIT | workspace (transitive) | node_modules/keyv |  |
+| keyv | 5.6.0 | MIT | workspace (transitive) | node_modules/keyv |  |
 | leven | 3.1.0 | MIT | workspace (transitive) | node_modules/leven |  |
 | levn | 0.4.1 | MIT | workspace (transitive) | node_modules/levn |  |
 | libphonenumber-js | 1.12.43 | MIT | workspace (transitive) | node_modules/libphonenumber-js |  |
@@ -736,7 +731,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | log-symbols | 7.0.1 | MIT | workspace (transitive) | node_modules/log-symbols |  |
 | log-update | 8.0.0 | MIT | workspace (transitive) | node_modules/log-update |  |
 | lru-cache | 11.5.1 | BlueOak-1.0.0 | workspace (transitive) | node_modules/path-scurry/node_modules/lru-cache |  |
-| lru-cache | 11.5.3 | BlueOak-1.0.0 | workspace (transitive) | node_modules/@asamuzakjp/css-color/node_modules/lru-cache<br>node_modules/@asamuzakjp/dom-selector/node_modules/lru-cache<br>node_modules/hosted-git-info/node_modules/lru-cache<br>node_modules/jsdom/node_modules/lru-cache |  |
+| lru-cache | 11.5.3 | BlueOak-1.0.0 | workspace (transitive) | node_modules/@asamuzakjp/css-color/node_modules/lru-cache<br>node_modules/@asamuzakjp/dom-selector/node_modules/lru-cache<br>node_modules/hosted-git-info/node_modules/lru-cache<br>node_modules/jsdom/node_modules/lru-cache<br>node_modules/rimraf/node_modules/lru-cache |  |
 | lru-cache | 5.1.1 | ISC | workspace (transitive) | node_modules/lru-cache |  |
 | luxon | 3.7.2 | MIT | workspace (transitive) | node_modules/luxon |  |
 | magic-string | 1.4.1 | MIT | workspace (transitive) | node_modules/magic-string |  |
@@ -756,6 +751,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | mimic-fn | 2.1.0 | MIT | workspace (transitive) | node_modules/mimic-fn |  |
 | mimic-function | 5.0.1 | MIT | workspace (transitive) | node_modules/mimic-function |  |
 | minimatch | 10.2.6 | BlueOak-1.0.0 | workspace (transitive) | node_modules/minimatch |  |
+| minimatch | 11.0.5 | BlueOak-1.0.0 | workspace (transitive) | node_modules/@nestjs/cli/node_modules/minimatch<br>node_modules/rimraf/node_modules/minimatch |  |
 | minimist | 1.2.8 | MIT | workspace (transitive) | node_modules/minimist |  |
 | minipass | 7.1.3 | BlueOak-1.0.0 | workspace (transitive) | node_modules/minipass |  |
 | moment | 2.31.0 | MIT | workspace (runtime) | node_modules/moment |  |
@@ -813,6 +809,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | path-exists | 4.0.0 | MIT | workspace (transitive) | node_modules/path-exists |  |
 | path-key | 3.1.1 | MIT | workspace (transitive) | node_modules/path-key |  |
 | path-scurry | 2.0.2 | BlueOak-1.0.0 | workspace (transitive) | node_modules/path-scurry |  |
+| path-scurry | 3.0.0 | BlueOak-1.0.0 | workspace (transitive) | node_modules/rimraf/node_modules/path-scurry |  |
 | path-to-regexp | 8.4.2 | MIT | workspace (transitive) | node_modules/path-to-regexp |  |
 | pathe | 2.0.3 | MIT | workspace (transitive) | node_modules/pathe |  |
 | pause | 0.0.1 | MIT | workspace (transitive) | node_modules/pause | Manuell geprüft: Readme.md enthält MIT-Lizenztext. |
@@ -834,7 +831,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | playwright-core | 1.64.1 | Apache-2.0 | workspace (transitive) | node_modules/playwright-core |  |
 | pluralize | 8.0.0 | MIT | workspace (transitive) | node_modules/pluralize |  |
 | pngjs | 7.0.0 | MIT | workspace (transitive) | node_modules/pngjs |  |
-| possible-typed-array-names | 1.1.0 | MIT | workspace (transitive) | node_modules/possible-typed-array-names |  |
 | postcss | 8.5.32 | MIT | workspace (transitive) | node_modules/postcss |  |
 | postcss-media-query-parser | 0.2.3 | MIT | workspace (transitive) | node_modules/postcss-media-query-parser |  |
 | postcss-safe-parser | 7.1.0 | MIT | workspace (transitive) | node_modules/postcss-safe-parser |  |
@@ -851,6 +847,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | proxy-from-env | 2.1.0 | MIT | workspace (transitive) | node_modules/proxy-from-env |  |
 | punycode | 2.3.1 | MIT | workspace (transitive) | node_modules/tr46/node_modules/punycode<br>node_modules/uri-js/node_modules/punycode |  |
 | pure-rand | 7.0.1 | MIT | workspace (transitive) | node_modules/pure-rand |  |
+| qified | 0.10.1 | MIT | workspace (transitive) | node_modules/qified |  |
 | qs | 6.16.2 | BSD-3-Clause | workspace (transitive) | node_modules/qs |  |
 | qs | 6.17.0 | BSD-3-Clause | workspace (transitive) | node_modules/body-parser/node_modules/qs |  |
 | range-parser | 1.2.1 | MIT | workspace (transitive) | node_modules/range-parser |  |
@@ -858,14 +855,14 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | react-is | 18.3.1 | MIT | workspace (transitive) | node_modules/@jest/react-is-18 |  |
 | react-is | 19.3.0 | MIT | workspace (transitive) | node_modules/@jest/react-is-19 |  |
 | readable-stream | 2.3.7 | MIT | workspace (transitive) | node_modules/mysql/node_modules/readable-stream |  |
-| readdirp | 5.1.1 | MIT | workspace (transitive) | node_modules/@angular/build/node_modules/readdirp<br>node_modules/@angular/compiler-cli/node_modules/readdirp<br>node_modules/@nestjs/cli/node_modules/readdirp<br>node_modules/sass/node_modules/readdirp |  |
+| readdirp | 5.1.1 | MIT | workspace (transitive) | node_modules/readdirp |  |
 | reflect-metadata | 0.2.2 | Apache-2.0 | workspace (runtime) | node_modules/reflect-metadata |  |
 | require-directory | 2.1.1 | MIT | workspace (transitive) | node_modules/require-directory |  |
 | require-from-string | 2.0.2 | MIT | workspace (transitive) | node_modules/require-from-string |  |
 | resolve-cwd | 3.0.0 | MIT | workspace (transitive) | node_modules/resolve-cwd |  |
 | resolve-from | 5.0.0 | MIT | workspace (transitive) | node_modules/@istanbuljs/load-nyc-config/node_modules/resolve-from<br>node_modules/resolve-cwd/node_modules/resolve-from |  |
 | restore-cursor | 5.1.0 | MIT | workspace (transitive) | node_modules/restore-cursor |  |
-| rimraf | 6.1.3 | BlueOak-1.0.0 | workspace (dev) | node_modules/rimraf |  |
+| rimraf | 6.1.4 | BlueOak-1.0.0 | workspace (dev) | node_modules/rimraf |  |
 | rolldown | 1.2.15 | MIT | workspace (transitive) | node_modules/rolldown |  |
 | router | 2.2.0 | MIT | workspace (transitive) | node_modules/router |  |
 | rxjs | 7.8.2 | Apache-2.0 | workspace (runtime) | node_modules/rxjs |  |
@@ -899,9 +896,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | send | 1.2.1 | MIT | workspace (transitive) | node_modules/send |  |
 | serve-static | 2.2.1 | MIT | workspace (transitive) | node_modules/serve-static |  |
 | service | 0.1.4 | NOASSERTION | workspace (runtime) | node_modules/service | Manuell geprüft: package.json und README.md enthalten kein Lizenzfeld bzw. keinen Lizenzhinweis. |
-| set-function-length | 1.2.2 | MIT | workspace (transitive) | node_modules/set-function-length |  |
 | setprototypeof | 1.2.0 | ISC | workspace (transitive) | node_modules/setprototypeof |  |
-| sha.js | 2.4.12 | (MIT AND BSD-3-Clause) | workspace (transitive) | node_modules/sha.js |  |
 | shebang-command | 2.0.0 | MIT | workspace (transitive) | node_modules/shebang-command |  |
 | shebang-regex | 3.0.0 | MIT | workspace (transitive) | node_modules/shebang-regex |  |
 | shell-quote | 1.12.0 | MIT | workspace (transitive) | node_modules/shell-quote |  |
@@ -932,8 +927,8 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | string-length | 4.0.2 | MIT | workspace (transitive) | node_modules/string-length |  |
 | string-width | 4.2.3 | MIT | workspace (transitive) | node_modules/string-width |  |
 | string-width | 7.2.0 | MIT | workspace (transitive) | node_modules/cliui/node_modules/string-width<br>node_modules/yargs/node_modules/string-width |  |
-| string-width | 8.3.0 | MIT | workspace (transitive) | node_modules/@angular/cli/node_modules/string-width<br>node_modules/cli-truncate/node_modules/string-width<br>node_modules/listr2/node_modules/string-width<br>node_modules/log-update/node_modules/string-width<br>node_modules/ora/node_modules/string-width |  |
-| strip-ansi | 6.0.1 | MIT | workspace (transitive) | node_modules/jest-cli/node_modules/strip-ansi<br>node_modules/string-length/node_modules/strip-ansi<br>node_modules/string-width/node_modules/strip-ansi<br>node_modules/typeorm/node_modules/strip-ansi<br>node_modules/wrap-ansi/node_modules/strip-ansi |  |
+| string-width | 8.3.0 | MIT | workspace (transitive) | node_modules/@angular/cli/node_modules/string-width<br>node_modules/cli-truncate/node_modules/string-width<br>node_modules/listr2/node_modules/string-width<br>node_modules/log-update/node_modules/string-width<br>node_modules/ora/node_modules/string-width<br>node_modules/typeorm/node_modules/string-width |  |
+| strip-ansi | 6.0.1 | MIT | workspace (transitive) | node_modules/jest-cli/node_modules/strip-ansi<br>node_modules/string-length/node_modules/strip-ansi<br>node_modules/string-width/node_modules/strip-ansi<br>node_modules/wrap-ansi/node_modules/strip-ansi |  |
 | strip-ansi | 7.2.0 | MIT | workspace (transitive) | node_modules/strip-ansi |  |
 | strip-bom | 3.0.0 | MIT | workspace (transitive) | node_modules/tsconfig-paths/node_modules/strip-bom |  |
 | strip-bom | 4.0.0 | MIT | workspace (transitive) | node_modules/strip-bom |  |
@@ -955,7 +950,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | tinyrainbow | 3.2.0 | MIT | workspace (transitive) | node_modules/tinyrainbow |  |
 | tldts | 7.4.19 | MIT | workspace (transitive) | node_modules/tldts |  |
 | tldts-core | 7.4.19 | MIT | workspace (transitive) | node_modules/tldts-core |  |
-| to-buffer | 1.2.2 | MIT | workspace (transitive) | node_modules/to-buffer |  |
 | toidentifier | 1.0.1 | MIT | workspace (transitive) | node_modules/toidentifier |  |
 | token-types | 6.1.2 | MIT | workspace (transitive) | node_modules/token-types |  |
 | totalist | 3.0.1 | MIT | workspace (transitive) | node_modules/totalist |  |
@@ -974,8 +968,7 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | type-fest | 4.41.0 | (MIT OR CC0-1.0) | workspace (transitive) | node_modules/ts-jest/node_modules/type-fest |  |
 | type-is | 1.6.18 | MIT | workspace (transitive) | node_modules/multer/node_modules/type-is |  |
 | type-is | 2.1.0 | MIT | workspace (transitive) | node_modules/type-is |  |
-| typed-array-buffer | 1.0.3 | MIT | workspace (transitive) | node_modules/typed-array-buffer |  |
-| typeorm | 0.3.31 | MIT | workspace (runtime) | node_modules/typeorm |  |
+| typeorm | 1.1.2 | MIT | workspace (runtime) | node_modules/typeorm |  |
 | typescript | 6.0.3 | Apache-2.0 | workspace (dev) | node_modules/typescript |  |
 | typescript-eslint | 8.72.1 | MIT | workspace (dev) | node_modules/typescript-eslint |  |
 | uglify-js | 3.19.3 | BSD-2-Clause | workspace (transitive) | node_modules/uglify-js |  |
@@ -990,7 +983,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | uri-js | 4.4.1 | BSD-2-Clause | workspace (transitive) | node_modules/uri-js |  |
 | util-deprecate | 1.0.2 | MIT | workspace (transitive) | node_modules/util-deprecate |  |
 | utils-merge | 1.0.1 | MIT | workspace (transitive) | node_modules/utils-merge |  |
-| uuid | 11.1.1 | MIT | workspace (transitive) | node_modules/uuid |  |
 | v8-compile-cache-lib | 3.0.1 | MIT | workspace (transitive) | node_modules/v8-compile-cache-lib |  |
 | v8-to-istanbul | 9.3.0 | ISC | workspace (transitive) | node_modules/v8-to-istanbul |  |
 | validate-npm-package-name | 8.0.0 | ISC | workspace (transitive) | node_modules/validate-npm-package-name |  |
@@ -1007,7 +999,6 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | whatwg-mimetype | 5.0.0 | MIT | workspace (transitive) | node_modules/whatwg-mimetype |  |
 | whatwg-url | 17.3.0 | MIT | workspace (transitive) | node_modules/whatwg-url |  |
 | which | 2.0.2 | ISC | workspace (transitive) | node_modules/which |  |
-| which-typed-array | 1.1.22 | MIT | workspace (transitive) | node_modules/which-typed-array |  |
 | why-is-node-running | 3.2.1 | MIT | workspace (transitive) | node_modules/why-is-node-running |  |
 | word-wrap | 1.2.5 | MIT | workspace (transitive) | node_modules/word-wrap |  |
 | wordwrap | 1.0.0 | MIT | workspace (transitive) | node_modules/wordwrap |  |
@@ -1024,11 +1015,12 @@ Diese zentrale Drittanbieter-Lizenzübersicht wurde aus `package-lock.json` erze
 | xxhash-wasm | 1.1.0 | MIT | workspace (transitive) | node_modules/xxhash-wasm |  |
 | y18n | 5.0.8 | ISC | workspace (transitive) | node_modules/y18n |  |
 | yallist | 3.1.1 | ISC | workspace (transitive) | node_modules/yallist |  |
-| yargs | 17.7.3 | MIT | workspace (transitive) | node_modules/jest-cli/node_modules/yargs<br>node_modules/typeorm/node_modules/yargs |  |
+| yargs | 17.7.3 | MIT | workspace (transitive) | node_modules/jest-cli/node_modules/yargs |  |
 | yargs | 18.0.0 | MIT | workspace (transitive) | node_modules/yargs |  |
 | yargs | 18.1.0 | MIT | workspace (transitive) | node_modules/@angular/cli/node_modules/yargs |  |
+| yargs | 18.2.0 | MIT | workspace (transitive) | node_modules/typeorm/node_modules/yargs |  |
 | yargs-parser | 21.1.1 | ISC | workspace (transitive) | node_modules/yargs-parser |  |
-| yargs-parser | 22.0.0 | ISC | workspace (transitive) | node_modules/@angular/cli/node_modules/yargs-parser<br>node_modules/yargs/node_modules/yargs-parser |  |
+| yargs-parser | 22.0.0 | ISC | workspace (transitive) | node_modules/@angular/cli/node_modules/yargs-parser<br>node_modules/typeorm/node_modules/yargs-parser<br>node_modules/yargs/node_modules/yargs-parser |  |
 | yn | 3.1.1 | MIT | workspace (transitive) | node_modules/yn |  |
 | yocto-queue | 0.1.0 | MIT | workspace (transitive) | node_modules/yocto-queue |  |
 | yoctocolors | 2.2.0 | MIT | workspace (transitive) | node_modules/yoctocolors |  |

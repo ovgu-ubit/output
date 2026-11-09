@@ -21,7 +21,7 @@ export class Funder implements IFunder {
     @Column({ nullable: true })
     third_party?: boolean;
 
-    @ManyToMany(() => Publication, (pub) => pub.funders)
+    @ManyToMany(() => Publication, (pub) => pub.funders, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
     publications?: Publication[]
 
     @OneToMany(() => AliasFunder, ai => ai.element, { cascade : true })

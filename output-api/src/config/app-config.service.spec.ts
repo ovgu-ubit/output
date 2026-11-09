@@ -151,7 +151,7 @@ describe('AppConfigService', () => {
         await service.normalizeAtomicArrayValues(['ror_id', 'openalex_id']);
 
         expect(repository.find).toHaveBeenCalledWith({
-            select: ['id', 'key', 'value'],
+            select: { id: true, key: true, value: true },
             where: { key: expect.anything() }
         });
         const findArgs = repository.find.mock.calls[0][0] as any;

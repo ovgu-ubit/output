@@ -49,7 +49,7 @@ export class InvoiceService {
     }
 
     public getForPub(pub: Publication) {
-        return this.repository.find({ where: { publication: pub } });
+        return this.repository.find({ where: { publication: { id: pub.id } } });
     }
 
     public async save(inv: Invoice[], user?: string) {

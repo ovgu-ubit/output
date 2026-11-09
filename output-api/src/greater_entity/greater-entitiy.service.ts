@@ -101,7 +101,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             if (flag && !dryRun) await this.repository.save(result)
 
             //find associated ids
-            const ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
+            const ids = await this.idRepository.find({ where: { entity: { id: result.id } }, relations: { entity: true } })
             if (ge.identifiers && ge.identifiers.length > 0) {
                 ids2save = ge.identifiers.filter(i => !ids.find(e => e.value === i.value));
             }
