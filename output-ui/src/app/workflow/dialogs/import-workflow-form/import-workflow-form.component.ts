@@ -17,7 +17,7 @@ import { ImportFormFacade } from './import-form-facade.service';
 @Component({
   selector: 'app-import-workflow-form',
   templateUrl: './import-workflow-form.component.html',
-  styleUrl: './import-workflow-form.component.css',
+  styleUrls: ['../workflow-status.css', './import-workflow-form.component.css'],
   standalone: true,
   imports: [
     SharedModule,

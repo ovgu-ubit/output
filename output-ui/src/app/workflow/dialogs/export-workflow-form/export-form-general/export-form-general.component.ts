@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
-import {  ExportWorkflow  } from '@output/interfaces';
+import {  ExportStrategy, ExportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';
@@ -19,7 +19,13 @@ import { EXPORT_ENTITY_OPTIONS } from '../../../export-entity-options';
 export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
   public form: FormGroup;
   entity: ExportWorkflow;
-  readonly entityOptions = EXPORT_ENTITY_OPTIONS;
+  get isEndpoint(): boolean {
+    return this.entity?.strategy_type === ExportStrategy.ENDPOINT;
+  }
+
+  get entityOptions() {
+    return this.isEndpoint ? EXPORT_ENTITY_OPTIONS.filter(option => option.value === 'publication') : EXPORT_ENTITY_OPTIONS;
+  }
 
   get sourceChanged(): boolean {
     return !!this.entity && this.form?.get('source_entity')?.value !== (this.entity.source_entity ?? 'publication');
@@ -50,6 +56,12 @@ export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
       .subscribe((e) => {
         this.entity = e;
         this.form.patchValue({ ...e, source_entity: e.source_entity ?? 'publication' }, { emitEvent: false });
+        if (this.isEndpoint) {
+          this.form.controls.source_entity.setValue('publication', { emitEvent: false });
+          this.form.controls.source_entity.disable({ emitEvent: false });
+        } else {
+          this.form.controls.source_entity.enable({ emitEvent: false });
+        }
         this.form.markAsPristine();
         if (this.entity.published_at || this.entity.deleted_at) this.form.disable();
       });
@@ -72,7 +84,7 @@ export class ExportFormGeneralComponent implements OnInit, WorkflowFormPage {
       id: this.form.get('id')?.value,
       label: this.form.get('label')?.value,
       description: this.form.get('description')?.value,
-      source_entity: this.form.get('source_entity')?.value,
+      source_entity: this.isEndpoint ? 'publication' : this.form.get('source_entity')?.value,
     };
     this.facade.patch(res);
 

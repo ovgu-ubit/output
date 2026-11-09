@@ -3,7 +3,7 @@
     <mat-label>Strategie</mat-label>
     <mat-select formControlName="strategy">
       @for (s of strategies; track s) {
-        <mat-option [value]="s.value">
+        <mat-option [value]="s.value" [disabled]="s.value === endpointStrategy && !isPublicationSource">
           {{ s.label }}
         </mat-option>
       }
@@ -13,6 +13,21 @@
 <mat-card class="content">
   <mat-card-content>
     <form class="form" [formGroup]="strategyForm">
+      @if (isEndpoint) {
+        <mat-form-field appearance="fill">
+          <mat-label>Endpunktname</mat-label>
+          <input matInput formControlName="endpoint_name" maxlength="100" placeholder="publikationen">
+          <mat-hint>Kleinbuchstaben, Ziffern und Bindestriche; Beginn mit einem Buchstaben.</mat-hint>
+          <mat-error>Bitte einen gültigen, eindeutigen Endpunktnamen eingeben (maximal 100 Zeichen).</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label>Zugriff</mat-label>
+          <mat-select formControlName="access">
+            <mat-option value="authenticated">Mit Output-Anmeldung (Leseberechtigung)</mat-option>
+            <mat-option value="public">Öffentlich</mat-option>
+          </mat-select>
+        </mat-form-field>
+      }
       <mat-form-field appearance="fill">
         <mat-label>Format</mat-label>
         <mat-select formControlName="format">
@@ -24,8 +39,8 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="fill">
-        <mat-label>Disposition</mat-label>
+      <mat-form-field appearance="fill" subscriptSizing="dynamic">
+        <mat-label>Antwortverhalten</mat-label>
         <mat-select formControlName="disposition">
           @for (disposition of dispositions; track disposition) {
             <mat-option [value]="disposition.value">
@@ -33,6 +48,9 @@
             </mat-option>
           }
         </mat-select>
+        @if (isEndpoint) {
+          <mat-hint>Steuert Anzeige oder Download im Browser. Die API-Antwort enthält dieselben Daten.</mat-hint>
+        }
       </mat-form-field>
 
       @if (selectedFormat === 'csv') {
@@ -66,6 +84,21 @@
         </mat-form-field>
       }
     </form>
+    @if (isEndpoint) {
+      <p role="status">{{ endpointStatus }}</p>
+      <p>Das gespeicherte Mapping bestimmt die Ausgabe aus den vollständigen Publikationsdaten einschließlich Rechnungen und internen Feldern.</p>
+      <section class="endpoint-info" aria-labelledby="endpoint-address-label">
+        <p id="endpoint-address-label" class="endpoint-info-label">POST-Endpunkt</p>
+        <div class="endpoint-address">
+          <code class="endpoint-method">POST</code>
+          <code class="endpoint-url">{{ endpointUrl || 'Endpunktnamen eingeben.' }}</code>
+          <button mat-stroked-button type="button" [cdkCopyToClipboard]="endpointUrl" [disabled]="!endpointUrl">URL kopieren</button>
+        </div>
+        <p class="endpoint-info-label">Request-Body (application/json)</p>
+        <pre class="endpoint-request"><code>{{ endpointRequestExample }}</code></pre>
+        <button mat-stroked-button type="button" [cdkCopyToClipboard]="endpointRequestExample">Request-Beispiel kopieren</button>
+      </section>
+    }
   </mat-card-content>
   @if (!this.entity?.published_at && !this.entity?.deleted_at) {
     <mat-card-actions style="display: flex;flex-direction: row;gap:5px">

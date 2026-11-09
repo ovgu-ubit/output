@@ -136,6 +136,7 @@ export class PublicationIndexService {
             .leftJoinAndSelect("publication.identifiers", "identifier")
             .leftJoinAndSelect("authorPublications.author", "author")
             .leftJoinAndSelect("authorPublications.institute", "institute")
+            .leftJoinAndSelect("authorPublications.role", "role")
             .leftJoinAndSelect("publication.invoices", "invoice")
             .leftJoinAndSelect("invoice.cost_items", "cost_item")
             .leftJoinAndSelect("invoice.cost_center", "cost_center")
@@ -160,6 +161,12 @@ export class PublicationIndexService {
         ]);
 
         query = await this.filter(filter, query, filterContext);
+
+        if (filter?.expressions?.some(expression => expression.key === 'delete_date')) {
+            // Change only the root publication scope, after relation joins have
+            // already applied their own soft-delete restrictions.
+            query.withDeleted();
+        }
 
         const res = await query.getMany();
         if (!options?.serializeDates) return res;
@@ -650,6 +657,10 @@ export class PublicationIndexService {
                     [`${parameterPrefix}_endDate`]: endDate,
                 }
             };
+        }
+
+        if (key === 'delete_date' && value === null) {
+            return { clause: 'publication.delete_date IS NULL' };
         }
 
         if (key === 'pub_date' && !value) {

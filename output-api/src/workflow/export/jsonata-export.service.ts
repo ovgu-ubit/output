@@ -106,6 +106,7 @@ export class JSONataExportService extends AbstractExportService {
         filterServices?: AbstractFilterService<PublicationIndex | Publication>[],
         by_user?: string,
         withMasterData?: boolean,
+        applyPublicationPaths?: (publications: Publication[], paths: string[]) => Promise<Publication[]>,
     ) {
         if (!this.exportDefinition?.mapping) {
             throw createInvalidRequestHttpException('JSONata export workflow is not configured.');
@@ -135,11 +136,15 @@ export class JSONataExportService extends AbstractExportService {
             }
             let entities = await this.sourceService.load(source, source === 'publication' ? filter?.filter : undefined);
             if (source === 'publication' && filter) {
-                const configuredFilterServices = (await this.configService.get('filter_services')) ?? [];
-                for (const path of filter.paths ?? []) {
-                    const serviceIndex = configuredFilterServices.findIndex((entry) => entry.path === path);
-                    if (serviceIndex === -1 || !filterServices?.[serviceIndex]) continue;
-                    entities = await filterServices[serviceIndex].filter(entities as Publication[]) as Publication[];
+                if (applyPublicationPaths) {
+                    entities = await applyPublicationPaths(entities as Publication[], filter.paths ?? []);
+                } else {
+                    const configuredFilterServices = (await this.configService.get('filter_services')) ?? [];
+                    for (const path of filter.paths ?? []) {
+                        const serviceIndex = configuredFilterServices.findIndex((entry) => entry.path === path);
+                        if (serviceIndex === -1 || !filterServices?.[serviceIndex]) continue;
+                        entities = await filterServices[serviceIndex].filter(entities as Publication[]) as Publication[];
+                    }
                 }
             }
 

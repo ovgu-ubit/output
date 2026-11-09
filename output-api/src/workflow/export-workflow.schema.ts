@@ -3,7 +3,7 @@ import { EXPORT_ENTITY_TYPES, ExportStrategy } from '@output/interfaces';
 import { ExportWorkflow } from "./ExportWorkflow.entity";
 import { createValidationHttpException } from "../common/api-error";
 
-const StrategyTypeSchema = z.enum(["HTTP_RESPONSE"]);
+const StrategyTypeSchema = z.enum(["HTTP_RESPONSE", "ENDPOINT"]);
 
 const StrategyTypeFromNumber = (value: unknown) => {
   if (typeof value !== "number" || !Number.isInteger(value)) return value;
@@ -11,6 +11,8 @@ const StrategyTypeFromNumber = (value: unknown) => {
   switch (value) {
     case ExportStrategy.HTTP_RESPONSE:
       return "HTTP_RESPONSE";
+    case ExportStrategy.ENDPOINT:
+      return "ENDPOINT";
     default:
       return value;
   }
@@ -20,6 +22,7 @@ const StrategyTypeToEnum = (value: unknown): ExportStrategy | unknown => {
   if (value === "HTTP_RESPONSE" || value === ExportStrategy.HTTP_RESPONSE) {
     return ExportStrategy.HTTP_RESPONSE;
   }
+  if (value === "ENDPOINT" || value === ExportStrategy.ENDPOINT) return ExportStrategy.ENDPOINT;
   return value;
 };
 
@@ -45,45 +48,56 @@ const AllowedStrategyKeysByFormat: Record<string, Set<string>> = {
   xlsx: new Set(["format", "disposition", "sheet_name"]),
 };
 
-const HttpResponseStrategyBaseSchema = z.object({
-  disposition: DispositionSchema.optional(),
-});
+const EndpointSettings = {
+  endpoint_name: z.string().min(1).max(100).regex(/^[a-z][a-z0-9-]*$/),
+  access: z.enum(['authenticated', 'public']).default('authenticated'),
+};
 
-const JsonStrategySchema = HttpResponseStrategyBaseSchema.extend({
-  format: z.literal("json"),
-}).strict();
+const createResponseStrategySchema = (extra: z.ZodRawShape = {}) => {
+  const HttpResponseStrategyBaseSchema = z.object({
+    ...extra,
+    disposition: DispositionSchema.optional(),
+  });
 
-const XmlStrategySchema = HttpResponseStrategyBaseSchema.extend({
-  format: z.literal("xml"),
-  root_name: XmlNameSchema,
-  item_name: XmlNameSchema,
-}).strict();
+  const JsonStrategySchema = HttpResponseStrategyBaseSchema.extend({
+    format: z.literal("json"),
+  }).strict();
 
-const CsvStrategySchema = HttpResponseStrategyBaseSchema.extend({
-  format: z.literal("csv"),
-  delimiter: z.string().min(1),
-  quote_char: z.string().min(1),
-}).strict();
+  const XmlStrategySchema = HttpResponseStrategyBaseSchema.extend({
+    format: z.literal("xml"),
+    root_name: XmlNameSchema,
+    item_name: XmlNameSchema,
+  }).strict();
 
-const XlsxStrategySchema = HttpResponseStrategyBaseSchema.extend({
-  format: z.literal("xlsx"),
-  sheet_name: SheetNameSchema,
-}).superRefine((strategy, ctx) => {
-  if (strategy.disposition === "inline") {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["disposition"],
-      message: "disposition must be attachment when format is xlsx",
-    });
-  }
-}).strict();
+  const CsvStrategySchema = HttpResponseStrategyBaseSchema.extend({
+    format: z.literal("csv"),
+    delimiter: z.string().min(1),
+    quote_char: z.string().min(1),
+  }).strict();
 
-const HttpResponseStrategySchema = z.discriminatedUnion("format", [
-  JsonStrategySchema,
-  XmlStrategySchema,
-  CsvStrategySchema,
-  XlsxStrategySchema,
-]);
+  const XlsxStrategySchema = HttpResponseStrategyBaseSchema.extend({
+    format: z.literal("xlsx"),
+    sheet_name: SheetNameSchema,
+  }).superRefine((strategy, ctx) => {
+    if (strategy.disposition === "inline") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["disposition"],
+        message: "disposition must be attachment when format is xlsx",
+      });
+    }
+  }).strict();
+
+  return z.discriminatedUnion("format", [
+    JsonStrategySchema,
+    XmlStrategySchema,
+    CsvStrategySchema,
+    XlsxStrategySchema,
+  ]);
+};
+
+const HttpResponseStrategySchema = createResponseStrategySchema();
+const EndpointStrategySchema = createResponseStrategySchema(EndpointSettings);
 
 const SourceEntitySchema = z.object({
   source_entity: z.enum(EXPORT_ENTITY_TYPES).default('publication'),
@@ -127,6 +141,11 @@ export const ExportWorkflowSourceSchema = z.preprocess((obj) => {
   Base.extend({
     strategy_type: z.literal("HTTP_RESPONSE"),
     strategy: HttpResponseStrategySchema,
+  }),
+  Base.extend({
+    strategy_type: z.literal("ENDPOINT"),
+    source_entity: z.literal('publication').default('publication'),
+    strategy: EndpointStrategySchema,
   }),
 ]));
 

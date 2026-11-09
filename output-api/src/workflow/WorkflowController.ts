@@ -3,7 +3,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import {  SearchFilter, UpdateMapping  } from '@output/interfaces';
-import {  ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType  } from '@output/interfaces';
+import {  ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
@@ -18,6 +18,7 @@ import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-
 import { ApiImportStop } from './import-stop-api';
 import { WorkflowIndexPageRequestDto } from './dto/workflow-index-page.dto';
 import { IndexPageDto } from '../common/dto/index-page.dto';
+import { createExportResponse } from './export/export-response';
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -191,23 +192,7 @@ export class WorkflowController {
   ) {
     const workflow = await this.workflowService.getExport(id, false);
     const result = await this.workflowService.startExport(id, filter, req.user?.username, withMasterData);
-    const strategy = workflow.strategy ?? {};
-    const format = (strategy.format ?? 'json') as ExportFormat;
-    const disposition = (strategy.disposition ?? (format === 'xlsx' ? 'attachment' : 'inline')) as ExportDisposition;
-    const contentType = this.getExportContentType(format);
-
-    res.setHeader('Content-Type', contentType);
-    const filename = this.buildExportFilename(workflow.label, workflow.version, format);
-    res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
-
-    if (Buffer.isBuffer(result)) {
-      return new StreamableFile(result, {
-        type: contentType,
-        disposition: `${disposition}; filename="${filename}"`
-      });
-    }
-
-    return result;
+    return createExportResponse(workflow, result, res);
   }
 
   @Post("validation/:id/run")
@@ -565,25 +550,6 @@ export class WorkflowController {
             cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
         };*/
     return this.workflowService.setUpdateMapping(id, mapping);
-  }
-
-  private getExportContentType(format: ExportFormat) {
-    switch (format) {
-      case 'xml':
-        return 'application/xml; charset=utf-8';
-      case 'csv':
-        return 'text/csv; charset=utf-8';
-      case 'xlsx':
-        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      case 'json':
-      default:
-        return 'application/json; charset=utf-8';
-    }
-  }
-
-  private buildExportFilename(label?: string, version?: number, format: ExportFormat = 'json') {
-    const safeLabel = this.sanitizeFilenamePart(label ?? 'Export');
-    return `${safeLabel}_v${version ?? 1}_${this.formatFilenameTimestamp()}.${format}`;
   }
 
   private buildWorkflowDefinitionFilename(prefix: string, label?: string, version?: number) {
