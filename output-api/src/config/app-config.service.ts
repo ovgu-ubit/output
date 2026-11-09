@@ -72,7 +72,7 @@ export class AppConfigService {
     public async normalizeAtomicArrayValues(keys: string[]) {
         if (!keys.length) return;
         const rows = await this.repository.find({
-            select: ['id', 'key', 'value'],
+            select: { id: true, key: true, value: true },
             where: { key: In(keys) }
         });
         const updates = rows
@@ -93,12 +93,12 @@ export class AppConfigService {
     async reconcileDefaults(defaults: Record<string, unknown>, descriptions: Record<string, string>, scopes: Record<string, ConfigScope> = {}) {
         // schon vorhandene holen
         const existing = await this.repository.find({
-            select: ['id', 'key', 'scope']
+            select: { id: true, key: true, scope: true }
         });
         const have = existing.map((r) => `${r.key}`);
 
         const existingNull = await this.repository.find({
-            select: ['id', 'key', 'scope'],
+            select: { id: true, key: true, scope: true },
             where: {value: IsNull()}
         });
         //reconcile defaults for null values

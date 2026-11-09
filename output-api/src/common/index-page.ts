@@ -101,5 +101,5 @@ export function paginateIndexQuery<T, E extends ObjectLiteral = ObjectLiteral>(
 ): Promise<IndexPage<T>> {
     const [sql, parameters] = query.getQueryAndParameters();
     const columns = query.expressionMap.selects.map(select => select.aliasName).filter((column): column is string => !!column);
-    return paginateIndexSql<T>((statement, values) => query.connection.query(statement, values), sql, parameters, columns, request);
+    return paginateIndexSql<T>((statement, values) => query.dataSource.query(statement, values), sql, parameters, columns, request);
 }
