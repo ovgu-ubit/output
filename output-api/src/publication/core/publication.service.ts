@@ -20,6 +20,8 @@ import { paginateIndexQuery } from '../../common/index-page';
 
 interface SavePublicationOptions {
     applyTags?: boolean;
+    /** Explicit additive assignments from trusted import code, never mapped publication fields. */
+    addTagIds?: number[];
     workflowReport?: IWorkflowReport;
     by_user?: string;
     dry_change?: boolean;
@@ -65,15 +67,28 @@ export class PublicationService {
         return this.tags!.mutate(value, user);
     }
 
+    public planImportTags(labels: unknown, publicationId?: number) {
+        return this.tags!.planImportTags(labels, publicationId);
+    }
+
     private async prepareTagWrites(publications: Publication[], options: SavePublicationOptions, manager: EntityManager) {
         const writes = new Map<Publication, number[]>();
         if (!this.tags) return writes;
+        const additions = this.tags.ids(options?.addTagIds ?? []);
         for (const publication of publications) {
             if (options?.applyTags && publication.tag_ids !== undefined) writes.set(publication, this.tags.ids(publication.tag_ids));
         }
-        await this.tags.validateTags([...new Set([...writes.values()].flat())].sort((a, b) => a - b), manager);
+        await this.tags.validateTags([...new Set([...writes.values()].flat().concat(additions))].sort((a, b) => a - b), manager);
         const ids = [...new Set(publications.map(pub => pub.id).filter((id): id is number => hasProvidedEntityId(id)))].sort((a, b) => a - b);
         const existing = await this.tags.lockPublications(ids, options?.by_user, manager);
+        if (additions.length) {
+            this.tags.assertAssignmentsEditable(existing);
+            await this.tags.attach(existing, manager);
+            for (const publication of publications) {
+                const current = writes.get(publication) ?? existing.find(stored => stored.id === publication.id)?.tags?.map(tag => tag.id!) ?? [];
+                writes.set(publication, [...new Set([...current, ...additions])].sort((a, b) => a - b));
+            }
+        }
         // Unlocking and editing can be saved together, as in the publication form.
         this.tags.assertAssignmentsEditable(existing.filter(stored => [...writes.keys()]
             .some(input => input.id === stored.id && input.locked !== false)));

@@ -33,8 +33,11 @@ import { ReportItemService } from '../report-item.service';
 import { AbstractImportService } from './abstract-import';
 import { WorkflowReportService } from '../workflow-report.service';
 import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
+import type { ImportTagPlan } from '../../publication/tags/publication-tag.service';
 
 export interface JSONataParsedObject {
+    /** Additive assignment of existing catalogue labels, evaluated separately for each record. */
+    tags?: string[];
     title?: string;
     doi?: string;
     oa_category?: string;
@@ -1226,6 +1229,19 @@ export class JSONataImportService extends AbstractImportService {
 
     protected getDOI(element: JSONataParsedObject): string {
         return element.doi;
+    }
+
+    protected override async getImportTagPlan(element: JSONataParsedObject, publication?: Publication): Promise<ImportTagPlan | undefined> {
+        if (element.tags == null || (Array.isArray(element.tags) && !element.tags.length)
+            || publication?.locked || publication?.delete_date) return undefined;
+        const plan = await this.publicationService.planImportTags(element.tags, publication?.id);
+        if (plan.missingLabels.length) {
+            await this.writeReport({ type: 'warning', timestamp: new Date(), origin: 'publication-tags',
+                publication_id: publication?.id, publication_doi: element.doi, publication_title: element.title,
+                text: `Unknown publication tags were skipped: ${plan.missingLabels.join(', ')}`,
+            });
+        }
+        return plan;
     }
     protected getTitle(element: JSONataParsedObject): string {
         return element.title;

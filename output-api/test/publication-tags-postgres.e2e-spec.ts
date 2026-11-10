@@ -187,4 +187,40 @@ integration('Publication tags on isolated PostgreSQL', () => {
         await publications.delete([{ id }], false);
         expect(await source.getRepository(PublicationTagAssignment).count()).toBe(0);
     });
+
+    it('resolves import labels and adds tags atomically without replacing existing assignments', async () => {
+        await tags.mutate({ publication_ids: [id], add_tag_ids: [first.id!] }, 'alice');
+        const plan = await publications.planImportTags([' AFFILIATION PRÜFEN ', 'Unknown', second.label], id);
+        expect(plan.missingLabels).toEqual(['Unknown']);
+        expect(plan.addTagIds).toEqual([second.id]);
+        expect(await source.getRepository(PublicationTagAssignment).count()).toBe(1);
+        expect(await source.getRepository(PublicationTag).count()).toBe(2);
+        await publications.save([{ id, title: 'Imported update' }], { by_user: 'importer', addTagIds: plan.addTagIds });
+        expect((await publications.getPublicationOrFail(id, true, false)).tags).toHaveLength(2);
+        const history = await publications.getPublicationChanges(id);
+        expect(history.some(change => JSON.stringify(change.patch_data).includes('Affiliation prüfen'))).toBe(true);
+        const repeat = await publications.planImportTags([second.label], id);
+        expect(repeat.addTagIds).toEqual([]);
+    });
+
+    it('assigns import tags to new publications and rejects stale tags without partial publication writes', async () => {
+        const plan = await publications.planImportTags([second.label]);
+        const [created] = await publications.save([{ title: 'New import', dataSource: 'test' }], { by_user: 'importer', addTagIds: plan.addTagIds });
+        expect((await publications.getPublicationOrFail(created.id!, true, false)).tags).toEqual([second]);
+        await tags.delete([first.id!], 'alice');
+        await expect(publications.save([{ id, title: 'Must roll back' }], { by_user: 'importer', addTagIds: [first.id!] }))
+            .rejects.toMatchObject({ status: 404 });
+        expect((await source.getRepository(Publication).findOneByOrFail({ id })).title).toBe('Example');
+    });
+
+    it('does not overwrite a lock acquired after import lookup', async () => {
+        const plan = await publications.planImportTags([second.label], id);
+        await source.getRepository(Publication).update(id, { locked: true });
+        await expect(publications.save([{ id, title: 'Must roll back', locked: false }], { by_user: 'importer', addTagIds: plan.addTagIds }))
+            .rejects.toMatchObject({ status: 409 });
+        const stored = await publications.getPublicationOrFail(id, true, false);
+        expect(stored.locked).toBe(true);
+        expect(stored.title).toBe('Example');
+        expect(stored.tags).toEqual([]);
+    });
 });

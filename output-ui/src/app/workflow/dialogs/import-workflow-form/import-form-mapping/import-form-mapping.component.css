@@ -36,3 +36,11 @@
   flex-direction: row;
   gap: 5px;
 }
+
+.mapping-tag-catalog {
+  margin-bottom: 1rem;
+}
+
+.mapping-tag-catalog p {
+  margin: 0 0 0.5rem;
+}

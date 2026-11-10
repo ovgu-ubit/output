@@ -10,6 +10,12 @@ import { PublicationChange } from '../core/PublicationChange.entity';
 import { PublicationTag } from './PublicationTag.entity';
 import { PublicationTagAssignment } from './PublicationTagAssignment.entity';
 
+export interface ImportTagPlan {
+    tags: PublicationTag[];
+    addTagIds: number[];
+    missingLabels: string[];
+}
+
 @Injectable()
 export class PublicationTagService {
     constructor(private readonly source: DataSource, private readonly config: AppConfigService) { }
@@ -61,6 +67,25 @@ export class PublicationTagService {
             throw createInvalidRequestHttpException('Expected an array of non-negative integer IDs.');
         }
         return [...new Set(value as number[])].sort((a, b) => a - b);
+    }
+
+    /** Resolve mapping labels without creating catalogue entries or changing assignments. */
+    async planImportTags(value: unknown, publicationId?: number): Promise<ImportTagPlan> {
+        if (!Array.isArray(value) || value.some(label => typeof label !== 'string' || !label.trim())) {
+            throw createInvalidRequestHttpException('tags must be an array of existing tag labels.', [
+                { path: 'tags', code: 'array', message: 'Expected a list of non-empty tag labels.' },
+            ]);
+        }
+        const labels = new Map<string, string>((value as string[]).map(label => [label.trim().toLowerCase(), label.trim()]));
+        const matched = labels.size ? await this.source.getRepository(PublicationTag).createQueryBuilder('tag')
+            .where('LOWER(BTRIM(tag.label)) IN (:...labels)', { labels: [...labels.keys()] }).getMany() : [];
+        const current = publicationId === undefined ? [] : (await this.attach<Publication>([{ id: publicationId }]))[0].tags ?? [];
+        const combined = new Map([...current, ...matched].map(tag => [tag.id, tag]));
+        return {
+            tags: [...combined.values()].sort((a, b) => a.label.localeCompare(b.label, 'de')),
+            addTagIds: matched.filter(tag => !current.some(existing => existing.id === tag.id)).map(tag => tag.id!).sort((a, b) => a - b),
+            missingLabels: [...labels].filter(([key]) => !matched.some(tag => tag.label.toLowerCase() === key)).map(([, label]) => label),
+        };
     }
 
     async attach<T extends { id?: number; tags?: PublicationTag[] }>(publications: T[], manager = this.source.manager): Promise<T[]> {
