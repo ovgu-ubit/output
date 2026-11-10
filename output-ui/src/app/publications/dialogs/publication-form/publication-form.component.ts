@@ -1,4 +1,3 @@
-import { PublicationTagSelectComponent } from 'src/app/shared/publication-tag-select/publication-tag-select.component';
 import { AfterViewInit, Component, Inject, Injectable, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -31,6 +30,7 @@ import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
 import { AuthorPublication, getInvoiceGrossAmount, Invoice, Publication, PublicationSupplement, PublicationTag, Status } from '@output/interfaces';
+import { PublicationTagSelectionDialogComponent, PublicationTagSelectionResult } from '../publication-tag-selection-dialog/publication-tag-selection-dialog.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -78,7 +78,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
-  @ViewChild(PublicationTagSelectComponent) tagSelect?: PublicationTagSelectComponent;
+  private tagCatalog: PublicationTag[] = [];
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
   @ViewChild(IdTableComponent) idTable: IdTableComponent<Publication>;
@@ -341,12 +341,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   }
 
   get publicationTags(): PublicationTag[] {
-    const tags = new Map([...(this.pub?.tags ?? []), ...(this.tagSelect?.tags ?? [])].map(tag => [tag.id, tag]));
+    const tags = new Map([...(this.pub?.tags ?? []), ...this.tagCatalog].map(tag => [tag.id, tag]));
     return (this.form.get('tag_ids').value as number[] ?? []).map(id => tags.get(id) ?? { id, label: `Gelöschter Tag #${id}` });
   }
 
   setTagIds(ids: number[]) {
     if (this.tagsReadonly) return;
+    const current = this.form.get('tag_ids').value as number[];
+    if (current.length === ids.length && current.every(id => ids.includes(id))) return;
     this.form.get('tag_ids').setValue(ids);
     this.form.get('tag_ids').markAsDirty();
     this.form.markAsDirty();
@@ -356,8 +358,23 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.setTagIds((this.form.get('tag_ids').value as number[]).filter(value => value !== id));
   }
 
+  openTagSelection() {
+    if (this.tagsReadonly) return;
+    this.dialog.open<PublicationTagSelectionDialogComponent, { ids: number[] }, PublicationTagSelectionResult>(
+      PublicationTagSelectionDialogComponent, {
+        width: '520px', maxWidth: 'calc(100vw - 32px)', maxHeight: '90vh', autoFocus: 'input', disableClose: true,
+        data: { ids: [...this.form.get('tag_ids').value] },
+      },
+    ).afterClosed().subscribe(result => {
+      if (!result) return;
+      this.tagCatalog = [...new Map([...this.tagCatalog, ...result.tags].map(tag => [tag.id, tag])).values()];
+      if (result.ids !== undefined) this.setTagIds(result.ids);
+    });
+  }
+
   get tagsReadonly(): boolean {
-    return this.disabled || this.saving || !!this.pub?.locked;
+    return this.disabled || this.loading || this.saving || !!this.pub?.locked
+      || !['publication_writer', 'writer', 'admin'].some(role => this.tokenService.hasRole(role));
   }
 
   setPublisher(event) {

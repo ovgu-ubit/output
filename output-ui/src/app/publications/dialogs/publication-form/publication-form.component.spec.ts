@@ -4,7 +4,7 @@ import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angu
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
@@ -27,6 +27,7 @@ import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
 import { PublicationFormComponent, PubValidator } from './publication-form.component';
 import { PublicationChangeLogComponent } from '../publication-change-log/publication-change-log.component';
+import { PublicationTagSelectionDialogComponent, PublicationTagSelectionResult } from '../publication-tag-selection-dialog/publication-tag-selection-dialog.component';
 
 describe('PublicationFormComponent', () => {
     beforeEach(() => {
@@ -63,35 +64,92 @@ describe('PublicationFormComponent', () => {
         expect(toolbar.textContent).not.toContain('Review');
     });
 
-    it('updates toolbar chips immediately after autocomplete selection', () => {
+    it('opens the autocomplete in a separate dialog and updates toolbar chips after applying the selection', () => {
         component.pub = { ...component.pub, tags: [{ id: 2, label: 'Existing' }] };
         component.form.get('tag_ids').setValue([2]);
+        const selection = new Subject<PublicationTagSelectionResult>();
+        const open = vi.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({ afterClosed: () => selection } as any);
         fixture.detectChanges();
-        component.tagSelect.tags = [{ id: 3, label: 'New selection', color: '#ffcc00' }];
-        component.tagSelect.add(3);
+        expect(fixture.nativeElement.querySelector('app-publication-tag-select')).toBeNull();
+        fixture.nativeElement.querySelector('app-window-toolbar [aria-label="Tags hinzufügen"]').click();
+        expect(open).toHaveBeenCalledWith(PublicationTagSelectionDialogComponent, expect.objectContaining({
+            data: { ids: [2] }, autoFocus: 'input',
+        }));
+        expect(component.form.get('tag_ids').value).toEqual([2]);
+        expect(component.form.get('tag_ids').dirty).toBe(false);
+        selection.next({ ids: [2, 3], tags: [{ id: 3, label: 'New selection', color: '#ffcc00' }] });
+        selection.complete();
         fixture.detectChanges();
         expect(fixture.nativeElement.querySelector('app-window-toolbar').textContent).toContain('New selection');
         expect(component.form.get('tag_ids').value).toEqual([2, 3]);
+        expect((component as any).buildPublicationPayload().tag_ids).toEqual([2, 3]);
     });
 
-    it('edits tags through the input and hides editing controls in readonly mode', () => {
+    it('adds a tag through the real dialog autocomplete and saves it back to the publication draft', async () => {
+        vi.spyOn(TestBed.inject(PublicationTagService), 'getAll').mockReturnValue(of([{ id: 3, label: 'Review metadata' }]));
+        fixture.nativeElement.querySelector('[aria-label="Tags hinzufügen"]').click();
+        await vi.runOnlyPendingTimersAsync();
+        const input = document.querySelector('mat-dialog-container app-publication-tag-select input') as HTMLInputElement;
+        expect(input).not.toBeNull();
+        expect(document.activeElement).toBe(input);
+        input.value = 'Review';
+        input.dispatchEvent(new Event('input'));
+        await vi.runOnlyPendingTimersAsync();
+        const option = document.querySelector('mat-option') as HTMLElement;
+        expect(option.textContent).toContain('Review metadata');
+        option.click();
+        await vi.runOnlyPendingTimersAsync();
+        expect(component.form.get('tag_ids').value).toEqual([]);
+        (document.querySelector('mat-dialog-container [aria-label="Publikations-Tags speichern"]') as HTMLButtonElement).click();
+        await vi.runOnlyPendingTimersAsync();
+        fixture.detectChanges();
+        expect(component.form.get('tag_ids').value).toEqual([3]);
+        expect(fixture.nativeElement.querySelector('app-window-toolbar').textContent).toContain('Review metadata');
+        expect((component as any).buildPublicationPayload().tag_ids).toEqual([3]);
+    });
+
+    it('keeps assignments unchanged on cancellation while refreshing edited catalogue labels', () => {
         const tag = { id: 2, label: 'Review' };
         component.pub = { ...component.pub, tags: [tag] };
         component.form.get('tag_ids').setValue([2]);
-        const edit = vi.spyOn(component.tagSelect, 'edit').mockImplementation(() => {});
+        vi.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({ afterClosed: () => of({
+            tags: [{ id: 2, label: 'Updated review', color: '#ffcc00' }],
+        }) } as any);
         fixture.detectChanges();
         const toolbar = fixture.nativeElement.querySelector('app-window-toolbar');
         expect(toolbar.querySelector('[aria-label="Tag Review bearbeiten"]')).toBeNull();
-        component.tagSelect.tags = [tag];
-        component.tagSelect.search.setValue('Review');
+        component.openTagSelection();
         fixture.detectChanges();
-        fixture.nativeElement.querySelector('[aria-label="Tag bearbeiten"]').click();
-        expect(edit).toHaveBeenCalledWith(tag);
+        expect(toolbar.textContent).toContain('Updated review');
+        expect(component.form.get('tag_ids').value).toEqual([2]);
+        expect(component.form.get('tag_ids').dirty).toBe(false);
+        expect((component as any).buildPublicationPayload().tag_ids).toBeUndefined();
         component.disable();
         fixture.detectChanges();
-        expect(toolbar.querySelector('[aria-label="Tag Review entfernen"]')).toBeNull();
-        expect(toolbar.querySelector('[aria-label="Tag Review bearbeiten"]')).toBeNull();
-        expect(toolbar.textContent).toContain('Review');
+        expect(toolbar.querySelector('[aria-label="Tag Updated review entfernen"]')).toBeNull();
+        expect(toolbar.querySelector('[aria-label="Tags hinzufügen"]')).toBeNull();
+        expect(toolbar.textContent).toContain('Updated review');
+    });
+
+    it('does not mark unchanged tag selections as dirty', () => {
+        component.form.get('tag_ids').setValue([2]);
+        vi.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({ afterClosed: () => of({
+            ids: [2], tags: [{ id: 2, label: 'Review' }],
+        }) } as any);
+        component.openTagSelection();
+        expect(component.form.get('tag_ids').dirty).toBe(false);
+        expect((component as any).buildPublicationPayload().tag_ids).toBeUndefined();
+    });
+
+    it('preserves pending tag labels when a later dialog is cancelled before loading', () => {
+        vi.spyOn(TestBed.inject(MatDialog), 'open')
+            .mockReturnValueOnce({ afterClosed: () => of({ ids: [3], tags: [{ id: 3, label: 'Pending tag' }] }) } as any)
+            .mockReturnValueOnce({ afterClosed: () => of({ tags: [] }) } as any);
+        component.openTagSelection();
+        component.openTagSelection();
+        fixture.detectChanges();
+        expect(component.form.get('tag_ids').value).toEqual([3]);
+        expect(fixture.nativeElement.querySelector('app-window-toolbar').textContent).toContain('Pending tag');
     });
 
     it('prevents tag changes on locked publications and enables them after unlocking', () => {
@@ -99,9 +157,12 @@ describe('PublicationFormComponent', () => {
         component.form.get('tag_ids').setValue([2]);
         component.setLock(true);
         fixture.detectChanges();
-        expect(component.tagSelect.readonly).toBe(true);
+        const open = vi.spyOn(TestBed.inject(MatDialog), 'open');
+        expect(fixture.nativeElement.querySelector('[aria-label="Tags hinzufügen"]')).toBeNull();
         expect(fixture.nativeElement.querySelector('[aria-label="Tag Review entfernen"]')).toBeNull();
         expect(fixture.nativeElement.querySelector('app-publication-tag-select input')).toBeNull();
+        component.openTagSelection();
+        expect(open).not.toHaveBeenCalled();
         component.setTagIds([3]);
         component.removeTag(2);
         expect(component.form.get('tag_ids').value).toEqual([2]);
@@ -109,10 +170,23 @@ describe('PublicationFormComponent', () => {
         component.pub.locked = false;
         component.setLock(false);
         fixture.detectChanges();
-        expect(component.tagSelect.readonly).toBe(false);
+        expect(fixture.nativeElement.querySelector('[aria-label="Tags hinzufügen"]')).not.toBeNull();
         component.removeTag(2);
         expect(component.form.get('tag_ids').value).toEqual([]);
         expect(component.form.get('tag_ids').dirty).toBe(true);
+    });
+
+    it('does not offer tag editing to readers', () => {
+        mockAuthService.hasRole.mockImplementation(role => role === 'reader');
+        component.pub = { ...component.pub, tags: [{ id: 2, label: 'Review' }] };
+        component.form.get('tag_ids').setValue([2]);
+        const open = vi.spyOn(TestBed.inject(MatDialog), 'open');
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector('app-window-toolbar').textContent).toContain('Review');
+        expect(fixture.nativeElement.querySelector('[aria-label="Tags hinzufügen"]')).toBeNull();
+        expect(fixture.nativeElement.querySelector('[aria-label="Tag Review entfernen"]')).toBeNull();
+        component.openTagSelection();
+        expect(open).not.toHaveBeenCalled();
     });
 
     it('uses the booking amount including zero, otherwise adds net amounts and VAT', () => {
@@ -159,6 +233,7 @@ describe('PublicationFormComponent', () => {
     };
 
     beforeEach(async () => {
+        mockAuthService.hasRole.mockReturnValue(true);
         TestBed.configureTestingModule({
             imports: [
                 NoopAnimationsModule,

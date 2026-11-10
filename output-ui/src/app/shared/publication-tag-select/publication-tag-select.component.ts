@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -59,12 +59,13 @@ export class PublicationTagSelectComponent implements OnInit {
   search = new FormControl('', { nonNullable: true });
   loading = true;
   error = '';
-  constructor(private service: PublicationTagService, private dialog: MatDialog, private auth: AuthorizationService) { }
+  constructor(private service: PublicationTagService, private dialog: MatDialog, private auth: AuthorizationService,
+    private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.service.getAll().subscribe({
-      next: tags => { this.tags = tags; this.loading = false; },
-      error: () => { this.loading = false; this.error = 'Tags konnten nicht geladen werden.'; },
+      next: tags => { this.tags = tags; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.loading = false; this.error = 'Tags konnten nicht geladen werden.'; this.cdr.markForCheck(); },
     });
   }
 
@@ -100,6 +101,7 @@ export class PublicationTagSelectComponent implements OnInit {
       if (!isPersistedEntityDialogResult<PublicationTag>(result)) return;
       this.tags = [...this.tags.filter(value => value.id !== result.entity.id), result.entity]
         .sort((a, b) => a.label.localeCompare(b.label, 'de'));
+      this.cdr.markForCheck();
       if (result.mode === 'create') this.add(result.entity.id!);
     });
   }

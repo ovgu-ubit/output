@@ -10,12 +10,12 @@ import { PublicationTag } from '@output/interfaces';
   imports: [MatChipsModule, MatIconModule, MatTooltipModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mat-chip [removable]="removable" (removed)="removed.emit()" [matTooltip]="tag.description || tag.label"
+    <mat-chip [removable]="removable" (removed)="removed.emit()"
       [style.background-color]="background" [style.color]="foreground"
       [style.--mat-chip-elevated-container-color]="background"
       [style.--mat-chip-label-text-color]="foreground"
       [style.--mat-chip-with-trailing-icon-trailing-icon-color]="foreground">
-      {{tag.label}}
+      <span [matTooltip]="tag.description || tag.label">{{tag.label}}</span>
       @if (removable) {
         <button type="button" matChipRemove [style.color]="foreground"
           [attr.aria-label]="'Tag ' + tag.label + ' entfernen'" matTooltip="Tag entfernen">

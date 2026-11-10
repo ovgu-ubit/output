@@ -114,7 +114,7 @@ describe('ImportFormMappingComponent', () => {
         expect(component.form.get('fields.tags')?.value).toBe(condition);
         expect(component.activeMappingFields.map(field => field.key)).toContain('tags');
         fixture.detectChanges();
-        expect(fixture.nativeElement.textContent).toContain('Liste vorhandener Tag-Bezeichnungen');
+        expect(fixture.nativeElement.textContent).toContain('Verfügbare Tag-Bezeichnungen');
         await component.persistFormToBackend();
         expect(facadeStub.patch).toHaveBeenCalledWith({ mapping: `{\n  "title": $.title,\n  "tags": ${condition}\n}` });
     });

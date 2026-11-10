@@ -1,10 +1,16 @@
 <app-window-toolbar name="Publikation" [disabled]="this.disabled" [parent]="this"
 [lockable]="true" [maximizeable]="true">
-  <mat-chip-set windowToolbarTags aria-label="Publikations-Tags">
-    @for (tag of publicationTags; track tag.id) {
-      <app-publication-tag-chip [tag]="tag" [removable]="!tagsReadonly" (removed)="removeTag(tag.id!)" />
+  <div windowToolbarTags class="publication-toolbar-tags">
+    <mat-chip-set aria-label="Publikations-Tags">
+      @for (tag of publicationTags; track tag.id) {
+        <app-publication-tag-chip [tag]="tag" [removable]="!tagsReadonly" (removed)="removeTag(tag.id!)" />
+      }
+    </mat-chip-set>
+    @if (!tagsReadonly) {
+      <button type="button" mat-icon-button (click)="openTagSelection()" aria-label="Tags hinzufügen"
+        matTooltip="Tags hinzufügen" [matTooltipShowDelay]="800"><mat-icon>add</mat-icon></button>
     }
-  </mat-chip-set>
+  </div>
 </app-window-toolbar>
 
 @if (this.loading) {
@@ -102,10 +108,6 @@
         </mat-form-field>
       }
 
-      @if (tokenService.hasRole('reader') || tokenService.hasRole('writer') || tokenService.hasRole('admin') || tokenService.hasRole('publication_writer')) {
-        <app-publication-tag-select [ids]="form.get('tag_ids').value || []" [readonly]="tagsReadonly"
-          [showChips]="false" [manageCatalog]="true" (idsChange)="setTagIds($event)" />
-      }
       <mat-accordion class="publication-panel-grid" multi="true">
         <mat-expansion-panel formGroupName="author_info">
           <mat-expansion-panel-header>

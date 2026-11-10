@@ -5,6 +5,18 @@
     min-height: 0;
 }
 
+.publication-toolbar-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.publication-toolbar-tags > button {
+    flex-shrink: 0;
+}
+
 mat-form-field {
     font-size:14px;
     width: 100%;

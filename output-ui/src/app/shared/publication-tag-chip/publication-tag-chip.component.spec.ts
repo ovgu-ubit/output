@@ -32,4 +32,32 @@ describe('Publication tag colors', () => {
     fixture.nativeElement.querySelector('[aria-label="Tag Review entfernen"]').click();
     expect(remove).toHaveBeenCalledOnce();
   });
+
+  it('shows only the appropriate tooltip when moving between the label and remove button', async () => {
+    const fixture = TestBed.createComponent(PublicationTagChipComponent);
+    fixture.componentRef.setInput('tag', { id: 1, label: 'Review', description: 'Beleg nachfordern' });
+    fixture.componentRef.setInput('removable', true);
+    fixture.detectChanges();
+    const chip = fixture.nativeElement.querySelector('mat-chip');
+    const textLabel = chip.querySelector('.mdc-evolution-chip__text-label');
+    const label = textLabel.querySelector('span') ?? textLabel;
+    const remove = fixture.nativeElement.querySelector('[aria-label="Tag Review entfernen"]');
+    const tooltipTexts = () => {
+      fixture.detectChanges();
+      return [...document.querySelectorAll('.mat-mdc-tooltip-surface')].map(tooltip => tooltip.textContent.trim());
+    };
+
+    chip.dispatchEvent(new MouseEvent('mouseenter'));
+    label.dispatchEvent(new MouseEvent('mouseenter'));
+    await vi.waitFor(() => expect(tooltipTexts()).toEqual(['Beleg nachfordern']));
+    label.dispatchEvent(new MouseEvent('mouseleave', { relatedTarget: remove }));
+    remove.dispatchEvent(new MouseEvent('mouseenter'));
+    await vi.waitFor(() => expect(tooltipTexts()).toEqual(['Tag entfernen']));
+    remove.dispatchEvent(new MouseEvent('mouseleave', { relatedTarget: label }));
+    label.dispatchEvent(new MouseEvent('mouseenter'));
+    await vi.waitFor(() => expect(tooltipTexts()).toEqual(['Beleg nachfordern']));
+    label.dispatchEvent(new MouseEvent('mouseleave'));
+    chip.dispatchEvent(new MouseEvent('mouseleave'));
+    await vi.waitFor(() => expect(tooltipTexts()).toEqual([]));
+  });
 });
