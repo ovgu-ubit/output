@@ -13,6 +13,7 @@ import { PublicationTagAssignment } from '../src/publication/tags/PublicationTag
 import { PublicationTagService } from '../src/publication/tags/publication-tag.service';
 import { PublicationTags1794220000000 } from '../src/migrations/1794220000000-publication_tags';
 import { EditLockOwnerStore } from '../src/common/edit-lock';
+import { masterMergeFixtures, MasterMergeFixture } from './helpers/master-merge-fixtures';
 
 // Opt in only with a disposable local PostgreSQL database named output_tags_test*.
 const url = process.env.PUBLICATION_TAGS_TEST_URL;
@@ -25,6 +26,8 @@ integration('Publication tags on isolated PostgreSQL', () => {
     let first: PublicationTag;
     let second: PublicationTag;
     let id: number;
+    let masterMerges: MasterMergeFixture[];
+    let masterSequence = 0;
     const expression = (value: number | number[], op = JoinOperation.AND) => ({
         key: 'tag_id', comp: Array.isArray(value) ? CompareOperation.IN : CompareOperation.EQUALS, value, op,
     });
@@ -36,7 +39,7 @@ integration('Publication tags on isolated PostgreSQL', () => {
         }
         void PublicationTagAssignment;
         source = new DataSource({ type: 'postgres', url,
-            entities: getMetadataArgsStorage().tables.map(table => table.target as Function),
+            entities: getMetadataArgsStorage().tables.map(table => table.target).filter(target => typeof target === 'function'),
             migrations: [PublicationTags1794220000000],
         });
         await source.initialize();
@@ -52,6 +55,7 @@ integration('Publication tags on isolated PostgreSQL', () => {
         const changes = new PublicationChangeService(source.getRepository(Publication), source.getRepository(PublicationChange), source.getRepository(WorkflowReport), tags);
         publications = new PublicationService(source.getRepository(Publication), config, changes, source, new PublicationRelationService(source), tags);
         index = new PublicationIndexService(source.getRepository(Publication), config, {} as any, { applyPathsToQuery: query => query } as any, tags);
+        masterMerges = masterMergeFixtures(source, publications, config);
     }, 30000);
 
     beforeEach(async () => {
@@ -69,6 +73,74 @@ integration('Publication tags on isolated PostgreSQL', () => {
         expect(await source.query("SELECT to_regclass('public.publication_tag') AS table_name")).toEqual([{ table_name: null }]);
         await source.runMigrations();
         await source.destroy();
+    });
+
+    describe.each(['author', 'institute', 'funder', 'publisher', 'publication_type', 'oa_category', 'greater_entity', 'contract'])('%s merge ownership', name => {
+        let fixture: MasterMergeFixture;
+        let primary: { id: number };
+        let duplicate: { id: number };
+
+        beforeEach(async () => {
+            fixture = masterMerges.find(value => value.name === name)!;
+            primary = await fixture.create(`Primary ${++masterSequence}`);
+            duplicate = await fixture.create(`Duplicate ${++masterSequence}`);
+        });
+
+        it('accepts locks acquired by opening both records as the current writer', async () => {
+            await fixture.open(primary.id, 'alice');
+            await fixture.open(duplicate.id, 'alice');
+            await expect(fixture.merge(primary.id, [duplicate.id], 'alice')).resolves.toMatchObject({ id: primary.id });
+            expect(await fixture.repository.existsBy({ id: duplicate.id })).toBe(false);
+        });
+
+        it.each(['primary', 'duplicate'])('rejects a foreign active lock on the %s before changing records', async position => {
+            await fixture.open(position === 'primary' ? primary.id : duplicate.id, 'bob');
+            await expect(fixture.merge(primary.id, [duplicate.id], 'alice')).rejects.toMatchObject({ status: 409 });
+            expect(await fixture.repository.existsBy({ id: primary.id })).toBe(true);
+            expect(await fixture.repository.existsBy({ id: duplicate.id })).toBe(true);
+            expect(EditLockOwnerStore.getOwner(name, position === 'primary' ? primary.id : duplicate.id)).toBe('bob');
+        });
+
+        it('allows expired locks', async () => {
+            await fixture.open(duplicate.id, 'bob');
+            await fixture.repository.update(duplicate.id, { locked_at: new Date(Date.now() - 6 * 60000) });
+            await expect(fixture.merge(primary.id, [duplicate.id], 'alice')).resolves.toMatchObject({ id: primary.id });
+        });
+    });
+
+    describe.each(['funder', 'publisher', 'publication_type', 'oa_category', 'greater_entity', 'contract'])('%s merge publication locks', name => {
+        it.each(['alice', 'bob'])('handles linked publications owned by %s atomically and preserves their tags', async owner => {
+            const fixture = masterMerges.find(value => value.name === name)!;
+            const primary = await fixture.create(`Primary ${++masterSequence}`);
+            const duplicate = await fixture.create(`Duplicate ${++masterSequence}`);
+            const laterDuplicate = await fixture.create(`Later duplicate ${++masterSequence}`);
+            const field = fixture.publicationField!;
+            const relation = (id: number) => field === 'funders' ? [{ id }] : { id };
+            const [firstPublication] = await publications.saveOne({ title: 'First link', dataSource: 'test', [field]: relation(duplicate.id) }, 'alice');
+            const [laterPublication] = await publications.saveOne({ title: 'Later link', dataSource: 'test', [field]: relation(laterDuplicate.id) }, 'alice');
+            await tags.mutate({ publication_ids: [firstPublication.id!, laterPublication.id!], add_tag_ids: [first.id!] }, 'alice');
+            await fixture.open(primary.id, 'alice');
+            await fixture.open(duplicate.id, 'alice');
+            await fixture.open(laterDuplicate.id, 'alice');
+            await publications.getPublicationOrFail(firstPublication.id!, true, true, 'alice');
+            await publications.getPublicationOrFail(laterPublication.id!, true, true, owner);
+            const historyCount = await source.getRepository(PublicationChange).count();
+
+            const merge = fixture.merge(primary.id, [duplicate.id, laterDuplicate.id], 'alice');
+            if (owner === 'alice') await expect(merge).resolves.toMatchObject({ id: primary.id });
+            else await expect(merge).rejects.toMatchObject({ status: 409 });
+            for (const [publicationId, originalId] of [[firstPublication.id!, duplicate.id], [laterPublication.id!, laterDuplicate.id]]) {
+                const stored = await publications.getPublicationOrFail(publicationId, true, false);
+                const assigned = field === 'funders' ? stored.funders!.map(value => value.id) : [stored[field].id];
+                expect(assigned).toEqual([owner === 'alice' ? primary.id : originalId]);
+                expect(stored.tags).toEqual([first]);
+            }
+            if (owner === 'bob') {
+                expect(await fixture.repository.existsBy({ id: duplicate.id })).toBe(true);
+                expect(await fixture.repository.existsBy({ id: laterDuplicate.id })).toBe(true);
+                expect(await source.getRepository(PublicationChange).count()).toBe(historyCount);
+            }
+        });
     });
 
     it('enforces case-insensitive uniqueness in PostgreSQL', async () => {

@@ -117,8 +117,11 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
         return query;
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        return mergeEntities<PublicationType>({
+    public async combine(id1: number, ids: number[], alias_strings?: string[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<PublicationType>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -131,12 +134,12 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                    await manager.getRepository(AliasPubType).delete({ elementId: In(duplicateIds) });
                 }
 
                 await defaultDelete();
             },
-        });
+        }));
     }
 
     public async delete(insts: PublicationType[]) {

@@ -229,9 +229,11 @@ export class InstituteService {
         return { query, parameters };
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
+    public async combine(id1: number, ids: number[], alias_strings?: string[], user?: string) {
         return this.dataSource.transaction(async (manager) => {
             return mergeEntities<Institute>({
+                by_user: user,
+                editLockTimeoutMs: await this.getLockTimeoutMs(),
                 repository: this.repository,
                 primaryId: id1,
                 duplicateIds: ids,

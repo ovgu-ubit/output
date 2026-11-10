@@ -1,6 +1,7 @@
 import { ApiResponse } from '@nestjs/swagger';
 import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Request } from "express";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { GreaterEntityService } from "./greater-entitiy.service";
 import {  GreaterEntityIndex  } from '@output/interfaces';
@@ -44,7 +45,7 @@ export class GreaterEntityController extends AbstractCrudController<GreaterEntit
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        return this.service.combine(id1,ids);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Req() request?: Request) {
+        return this.service.combine(id1, ids, request?.['user']?.['username']);
     }
 }

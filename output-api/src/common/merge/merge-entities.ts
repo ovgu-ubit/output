@@ -1,6 +1,7 @@
 import { DeepPartial, EntityManager, FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Author } from '../../author/Author.entity';
-import { createInternalErrorHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../api-error';
+import { createEntityLockedHttpException, createInternalErrorHttpException, createNotFoundHttpException, createPersistenceHttpException } from '../api-error';
+import { EditLockOwnerStore, isExpiredEditLock } from '../edit-lock';
 import { PublicationService } from '../../publication/core/publication.service';
 import { AuthorPublication } from '../../publication/relations/AuthorPublication.entity';
 
@@ -46,6 +47,8 @@ export interface MergeOptions<TEntity extends { id?: number | null }, TAccumulat
     afterSave?: (context: MergeAfterSaveContext<TEntity, TAccumulator>) => Promise<void> | void;
     validate?: (context: MergeValidationContext<TEntity>) => Promise<void> | void;
     manager?: EntityManager;
+    by_user?: string;
+    editLockTimeoutMs?: number;
 }
 
 export async function mergeEntities<TEntity extends { id?: number | null }, TAccumulator = TEntity>(options: MergeOptions<TEntity, TAccumulator>) {
@@ -63,6 +66,24 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
     } = options;
 
     const repo = manager ? manager.getRepository(repository.target) : repository;
+
+    if (options.editLockTimeoutMs !== undefined) {
+        if (!manager) throw createInternalErrorHttpException();
+        const scope = repo.metadata?.tableName ?? 'entity';
+        const ids = [...new Set([primaryId, ...duplicateIds])].sort((a, b) => a - b);
+        for (const id of ids) {
+            const entity = await repo.findOne({
+                where: { id } as FindOptionsWhere<TEntity>,
+                lock: { mode: 'pessimistic_write' },
+            });
+            if (!entity) throw createNotFoundHttpException(notFoundMessage);
+            const lockedAt = (entity as TEntity & { locked_at?: Date | null }).locked_at;
+            if (lockedAt && !isExpiredEditLock(lockedAt, options.editLockTimeoutMs)
+                && (!options.by_user || EditLockOwnerStore.getOwner(scope, id) !== options.by_user)) {
+                throw createEntityLockedHttpException();
+            }
+        }
+    }
 
     const primaryFindOptions = {...primaryOptions, where: { id: primaryId } as FindOptionsWhere<TEntity>}
     const primary = await repo.findOne(primaryFindOptions);
@@ -111,7 +132,7 @@ export async function mergeEntities<TEntity extends { id?: number | null }, TAcc
                     return obj
                 }) ?? [];
                 if (pubs.length > 0) {
-                    await mergeContext.service.save(pubs, { manager });
+                    await mergeContext.service.save(pubs, { manager, by_user: options.by_user });
                 }
             } else if (key === 'authorPublications') {
                 for (const ap of duplicate[key] ?? []) {

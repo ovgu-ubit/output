@@ -173,8 +173,11 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         return query;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        return mergeEntities<GreaterEntity>({
+    public async combine(id1: number, ids: number[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<GreaterEntity>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -186,12 +189,12 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                    await manager.getRepository(GEIdentifier).delete({ entity: { id: In(duplicateIds) } });
                 }
 
                 await defaultDelete();
             },
-        });
+        }));
     }
 
     public async delete(insts: GreaterEntity[]) {
