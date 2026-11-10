@@ -15,6 +15,7 @@ export interface State {
 
 export interface ViewConfig {
   showTags?: boolean;
+  showTagsDefault?: boolean;
   sortState: { key: string, dir: SortDirection }[];
   page?: number;
   pageSize?: number;

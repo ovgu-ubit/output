@@ -109,6 +109,22 @@ integration('Publication tags on isolated PostgreSQL', () => {
         expect(await source.getRepository(PublicationChange).count()).toBe(count);
     });
 
+    it('uses the configured tag column in legacy and paginated indexes without a visibility override', async () => {
+        await tags.mutate({ publication_ids: [id], add_tag_ids: [first.id!] }, 'alice');
+
+        const legacy = await index.getIndexEntries(2026, false, true);
+        const page = await index.getIndexPage({ all_reporting_years: true }, true);
+        expect(legacy.find(publication => publication.id === id)?.tags).toEqual([first]);
+        expect(page.items.find(publication => publication.id === id)?.tags).toEqual([first]);
+
+        const hidden = await index.getIndexPage({ all_reporting_years: true, include_tags: false }, true);
+        const publicIndex = await index.getIndexEntries(2026, false, false);
+        const publicPage = await index.getIndexPage({ all_reporting_years: true }, false);
+        for (const publication of [...hidden.items, ...publicIndex, ...publicPage.items]) {
+            expect(publication).not.toHaveProperty('tags');
+        }
+    });
+
     it('loads tags for a visible page in one batch', async () => {
         const others = await publications.save([{ title: 'Two', dataSource: 'test' }, { title: 'Three', dataSource: 'test' }], { by_user: 'alice' });
         await tags.mutate({ publication_ids: [id, ...others.map(pub => pub.id!)], add_tag_ids: [first.id!] }, 'alice');

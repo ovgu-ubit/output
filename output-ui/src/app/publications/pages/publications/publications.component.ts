@@ -50,6 +50,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   indexOptions?: { soft: boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean };
 
   showTags = false;
+  private configuredShowTags = false;
   viewChanges$ = new Subject<void>();
   soft_deletes = false;
   statusDescriptions = new Map<number, string>();
@@ -59,7 +60,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     {
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
-        { title: 'Tag-Spalte ein-/ausblenden', action_function: this.toggleTags.bind(this), roles: ['reader', 'writer', 'admin'] },
+        { title: 'Tag-Spalte ein-/ausblenden', action_function: this.toggleTags.bind(this), roles: ['reader', 'publication_writer', 'writer', 'admin'] },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
         { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this), roles: ['writer', 'admin'] },
         { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
@@ -142,7 +143,8 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
       if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
-      this.showTags = this.canReadTags && data.value['tags'] === true;
+      this.configuredShowTags = data.value['tags'] === true;
+      this.showTags = this.canReadTags && this.configuredShowTags;
       this.headers = headers;
       this.updateTagHeader();
       return this.configService.get("institution_short_label").pipe(map(data => {
@@ -182,7 +184,10 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     }));
 
     return forkJoin([enrichs$, columns$, statuses$, view$]).pipe(map(() => {
-      this.showTags = this.canReadTags && (this.viewConfig?.showTags ?? this.showTags);
+      // A saved visibility choice only applies to the configuration it was made for.
+      const savedShowTags = this.viewConfig?.showTagsDefault === this.configuredShowTags
+        ? this.viewConfig.showTags : undefined;
+      this.showTags = this.canReadTags && (savedShowTags ?? this.configuredShowTags);
       this.updateTagHeader();
       return undefined;
     }));
@@ -234,7 +239,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
 
   private updateTagHeader() {
     this.headers = this.headers.filter(header => header.colName !== 'tags');
-    if (this.showTags && this.canReadTags) this.headers.push({ colName: 'tags', colTitle: 'Tags', type: 'tags', roles: ['reader', 'writer', 'admin'] });
+    if (this.showTags && this.canReadTags) this.headers.push({ colName: 'tags', colTitle: 'Tags', type: 'tags', roles: ['reader', 'publication_writer', 'writer', 'admin'] });
   }
 
   toggleTags() {
@@ -243,6 +248,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.updateTagHeader();
     this.table.headers = this.headers;
     this.viewChanges$.next();
+    this.persistViewConfig();
     this.table.resetPage();
     this.table.updateData().subscribe();
   }
@@ -300,6 +306,10 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
     this.viewConfig = initialState.viewConfig
+    this.showTags = this.canReadTags && this.configuredShowTags;
+    this.updateTagHeader();
+    this.table.headers = this.headers;
+    this.viewChanges$.next();
     this.indexOptions = {
       soft: false,
       filter: null,
@@ -462,6 +472,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.viewConfig = {
       ...this.table.getViewConfig(),
       showTags: this.showTags,
+      showTagsDefault: this.configuredShowTags,
       filter: {
         filter: this.indexOptions?.filter,
         paths: this.indexOptions?.paths,
