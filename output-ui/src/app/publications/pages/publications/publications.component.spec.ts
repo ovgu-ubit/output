@@ -136,27 +136,24 @@ describe('PublicationsComponent', () => {
         expect(fixture.nativeElement.querySelector('td.mat-column-tags app-publication-tag-chip')?.textContent).toContain('Prüfen');
     });
 
-    it('retains an explicit tag visibility choice while the configured default is unchanged', async () => {
-        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags: true } : {} }));
+    it.each([true, false])('uses tags: %s from configuration regardless of saved visibility', async tags => {
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags } : {} }));
         TestBed.inject(MockStore).setState({ viewConfigReducer: {
-            viewConfig: { sortState: [], filterColumn: new Map(), showTags: false, showTagsDefault: true }, valid_from: new Date(),
+            viewConfig: { sortState: [], filterColumn: new Map(), showTags: !tags, showTagsDefault: tags }, valid_from: new Date(),
         } });
 
         await firstValueFrom(component.preProcessing());
         component.loadPage({ page: 0, page_size: 10 }, 2026).subscribe();
 
-        expect(component.showTags).toBe(false);
-        expect(component.headers.some(header => header.colName === 'tags')).toBe(false);
-        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: false }));
+        expect(component.showTags).toBe(tags);
+        expect(component.headers.some(header => header.colName === 'tags')).toBe(tags);
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: tags }));
     });
 
-    it('restores the configured tag visibility when resetting the view', async () => {
+    it('keeps the configured tag column when resetting the view', async () => {
         mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags: true } : 2026 }));
         await firstValueFrom(component.preProcessing());
         fixture.detectChanges();
-        component.toggleTags();
-        expect(component.showTags).toBe(false);
-
         component.resetView();
         fixture.detectChanges();
 

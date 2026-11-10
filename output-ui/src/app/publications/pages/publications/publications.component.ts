@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { concatMap, forkJoin, map, Subject, take } from 'rxjs';
+import { concatMap, forkJoin, map, take } from 'rxjs';
 import { PUBLICATION_INDEX_COLUMNS } from '@output/interfaces/PublicationIndex';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ConfigService} from 'src/app/administration/services/config.service';
@@ -50,8 +50,6 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   indexOptions?: { soft: boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean };
 
   showTags = false;
-  private configuredShowTags = false;
-  viewChanges$ = new Subject<void>();
   soft_deletes = false;
   statusDescriptions = new Map<number, string>();
 
@@ -60,7 +58,6 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     {
       title: 'Anzeigeoptionen', action_function: () => { }, sub_buttons: [
         { title: 'Berichtsjahr ändern', action_function: this.changeReportingYear.bind(this) },
-        { title: 'Tag-Spalte ein-/ausblenden', action_function: this.toggleTags.bind(this), roles: ['reader', 'publication_writer', 'writer', 'admin'] },
         { title: 'Ansicht zurücksetzen', action_function: this.resetView.bind(this) },
         { title: 'Soft-Deletes verwalten', action_function: this.softdeletes.bind(this), roles: ['writer', 'admin'] },
         { title: 'Link zur aktuellen Ansicht erzeugen', action_function: this.createLink.bind(this) },
@@ -143,10 +140,9 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
       if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
-      this.configuredShowTags = data.value['tags'] === true;
-      this.showTags = this.canReadTags && this.configuredShowTags;
+      this.showTags = this.canReadTags && data.value['tags'] === true;
+      if (this.showTags) headers.push({ colName: 'tags', colTitle: 'Tags', type: 'tags', roles: ['reader', 'publication_writer', 'writer', 'admin'] });
       this.headers = headers;
-      this.updateTagHeader();
       return this.configService.get("institution_short_label").pipe(map(data => {
         this.institution = data.value
         let header = this.headers.find(e => e.colName === 'authors_inst')
@@ -183,14 +179,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       }));
     }));
 
-    return forkJoin([enrichs$, columns$, statuses$, view$]).pipe(map(() => {
-      // A saved visibility choice only applies to the configuration it was made for.
-      const savedShowTags = this.viewConfig?.showTagsDefault === this.configuredShowTags
-        ? this.viewConfig.showTags : undefined;
-      this.showTags = this.canReadTags && (savedShowTags ?? this.configuredShowTags);
-      this.updateTagHeader();
-      return undefined;
-    }));
+    return forkJoin([enrichs$, columns$, statuses$, view$]).pipe(map(() => undefined));
   }
 
   getStatusDescription(status: number): string | null {
@@ -199,7 +188,6 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
 
   ngOnDestroy(): void {
     if (this.table) this.persistViewConfig();
-    this.viewChanges$.complete();
   }
 
   changeReportingYear() {
@@ -235,22 +223,6 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
 
   get canReadTags() {
     return ['reader', 'writer', 'admin', 'publication_writer'].some(role => this.tokenService?.hasRole(role));
-  }
-
-  private updateTagHeader() {
-    this.headers = this.headers.filter(header => header.colName !== 'tags');
-    if (this.showTags && this.canReadTags) this.headers.push({ colName: 'tags', colTitle: 'Tags', type: 'tags', roles: ['reader', 'publication_writer', 'writer', 'admin'] });
-  }
-
-  toggleTags() {
-    if (!this.canReadTags) return;
-    this.showTags = !this.showTags;
-    this.updateTagHeader();
-    this.table.headers = this.headers;
-    this.viewChanges$.next();
-    this.persistViewConfig();
-    this.table.resetPage();
-    this.table.updateData().subscribe();
   }
 
   lockSelected() {
@@ -306,10 +278,6 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
     this.viewConfig = initialState.viewConfig
-    this.showTags = this.canReadTags && this.configuredShowTags;
-    this.updateTagHeader();
-    this.table.headers = this.headers;
-    this.viewChanges$.next();
     this.indexOptions = {
       soft: false,
       filter: null,
@@ -471,8 +439,6 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   private persistViewConfig(): void {
     this.viewConfig = {
       ...this.table.getViewConfig(),
-      showTags: this.showTags,
-      showTagsDefault: this.configuredShowTags,
       filter: {
         filter: this.indexOptions?.filter,
         paths: this.indexOptions?.paths,
