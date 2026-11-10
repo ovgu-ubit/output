@@ -14,6 +14,9 @@ import { PublicationTagService } from '../src/publication/tags/publication-tag.s
 import { PublicationTags1794220000000 } from '../src/migrations/1794220000000-publication_tags';
 import { EditLockOwnerStore } from '../src/common/edit-lock';
 import { masterMergeFixtures, MasterMergeFixture } from './helpers/master-merge-fixtures';
+import { ExcelExportService } from '../src/workflow/export/excel-export.service';
+import { ExportSourceService } from '../src/workflow/export/export-source.service';
+import * as XLSX from 'xlsx';
 
 // Opt in only with a disposable local PostgreSQL database named output_tags_test*.
 const url = process.env.PUBLICATION_TAGS_TEST_URL;
@@ -263,6 +266,31 @@ integration('Publication tags on isolated PostgreSQL', () => {
         expect((await index.getIndexPage({ all_reporting_years: true }, false)).items.every(pub => pub.tags === undefined)).toBe(true);
         await tags.delete([first.id!], 'alice');
         expect((await index.getIndexPage({ ...request, filter: { expressions: [expression(first.id!)] } }, true)).total).toBe(0);
+    });
+
+    it('exports tag-selected publications through Excel and mapped sources without exposing tag data', async () => {
+        await publications.saveOne({ title: 'Untagged', dataSource: 'test' }, 'alice');
+        await tags.mutate({ publication_ids: [id], add_tag_ids: [first.id!, second.id!] }, 'alice');
+        const filter = { expressions: [expression([first.id!, second.id!])] };
+        const unused = {} as never;
+        const loader = new ExportSourceService(index, unused, unused, unused, unused, unused, unused, unused, unused, unused);
+        const records = await loader.load('publication', filter);
+        expect(records.map(record => record.id)).toEqual([id]);
+        expect(records[0]).not.toHaveProperty('tags', expect.anything());
+        expect(JSON.stringify(records)).not.toContain(first.label);
+
+        const exporter = new ExcelExportService(index,
+            { createReport: async () => 'report', finish: () => undefined } as never,
+            { get: async () => [] } as never, { getCostTypes: async () => [] } as never,
+            unused, unused, unused, unused, unused, unused, unused, unused);
+        const workbook = XLSX.read(await exporter.export({ filter, paths: [] }), { type: 'buffer' });
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets.Publikationen);
+        expect(rows).toEqual([expect.objectContaining({ id })]);
+        expect(JSON.stringify(rows)).not.toContain(first.label);
+        expect(JSON.stringify(rows)).not.toContain('"tags"');
+
+        await expect(index.getAll(filter)).rejects.toMatchObject({ status: 403 });
+        await expect(index.getIndexPage({ filter, all_reporting_years: true }, false)).rejects.toMatchObject({ status: 403 });
     });
 
     it.each([

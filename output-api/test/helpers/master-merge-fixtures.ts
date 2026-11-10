@@ -80,7 +80,7 @@ export function masterMergeFixtures(source: DataSource, publications: Publicatio
             merge: (id, duplicates, user) => contracts.combine(id, duplicates, undefined, user) },
     ];
     return definitions.map(({ entity, publicationField, open, merge }) => {
-        const repository = entity === Institute ? source.getTreeRepository(Institute) : source.getRepository(entity);
+        const repository: Repository<ObjectLiteral> = entity === Institute ? source.getTreeRepository(Institute) : source.getRepository(entity);
         return {
             name: repository.metadata.tableName, repository, publicationField,
             create: async label => {

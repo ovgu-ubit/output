@@ -34,6 +34,8 @@ import { indexLikePattern, indexSearchColumns, validateIndexPageBounds } from '.
 
 export interface GetAllPublicationOptions {
     serializeDates?: boolean;
+    /** Internal query capability; tag objects are not included in export results. */
+    canReadTags?: boolean;
 }
 
 interface FilterPredicate {
@@ -164,6 +166,7 @@ export class PublicationIndexService {
             'cost_type',
         ]);
 
+        filterContext.canReadTags = options?.canReadTags === true;
         query = await this.filter(filter, query, filterContext);
 
         if (filter?.expressions?.some(expression => expression.key === 'delete_date')) {

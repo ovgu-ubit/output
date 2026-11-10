@@ -49,7 +49,7 @@ describe('JSONataExportService', () => {
     beforeEach(() => {
         publicationService = {
             getAll: jest.fn(async (_filter, options) => {
-                expect(options).toEqual({ serializeDates: true });
+                expect(options).toEqual({ serializeDates: true, canReadTags: true });
                 return [
                     {
                         id: 1,
@@ -309,7 +309,7 @@ describe('JSONataExportService', () => {
 
         const result = await service.export({ filter: fieldFilter, paths: ['selected'] }, [filterService as any]);
 
-        expect(publicationService.getAll).toHaveBeenCalledWith(fieldFilter, { serializeDates: true });
+        expect(publicationService.getAll).toHaveBeenCalledWith(fieldFilter, { serializeDates: true, canReadTags: true });
         expect(filterService.filter).toHaveBeenCalledTimes(1);
         expect(JSON.parse(result as string)).toEqual([{ title: 'Second' }]);
     });

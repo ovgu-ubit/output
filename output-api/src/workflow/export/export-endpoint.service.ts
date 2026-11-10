@@ -3,7 +3,7 @@ import { ModuleRef } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ExportStrategy } from '@output/interfaces';
 import { IsNull, Not, Raw, Repository } from 'typeorm';
-import { createNotFoundHttpException } from '../../common/api-error';
+import { createForbiddenHttpException, createNotFoundHttpException } from '../../common/api-error';
 import { PublicationFilterService } from '../../publication/core/publication-filter.service';
 import { ExportWorkflow } from '../ExportWorkflow.entity';
 import { validateExportWorkflow } from '../export-workflow.schema';
@@ -32,6 +32,9 @@ export class ExportEndpointService {
 
     async run(workflow: ExportWorkflow, body: unknown, username?: string): Promise<string | Buffer> {
         const filter = parseExportEndpointRequest(body);
+        if (workflow.strategy.access === 'public' && filter.filter.expressions.some(expression => expression.key === 'tag_id')) {
+            throw createForbiddenHttpException('Tag filters are internal.');
+        }
         const exporter = await this.moduleRef.create(JSONataExportService);
         await exporter.setUp(workflow);
         return exporter.export(filter, undefined, username, false,
