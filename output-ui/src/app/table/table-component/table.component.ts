@@ -197,7 +197,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   private refreshPresentation(): void {
     this.roles.clear();
-    this.canEdit = this.hasRole(['writer', 'admin']);
+    this.canEdit = this.hasRole(this.publication_table ? ['publication_writer', 'writer', 'admin'] : ['writer', 'admin']);
     this.buttons = (this.parent.buttons ?? []).map(button => ({
       ...button,
       disabled: !!button.roles && !this.hasRole(button.roles),

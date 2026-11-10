@@ -8,6 +8,10 @@ export class PublicationIndexPageRequestDto extends ReportingYearIndexPageReques
     @IsOptional() @IsBoolean()
     all_reporting_years = false;
 
+    @ApiPropertyOptional({ default: false, description: 'Include internal publication tags.' })
+    @IsOptional() @IsBoolean()
+    include_tags?: boolean;
+
     @ApiPropertyOptional({ default: false, description: 'Return soft-deleted publications; reporting-year scope is ignored.' })
     @IsOptional() @IsBoolean()
     soft = false;

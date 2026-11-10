@@ -1,5 +1,11 @@
 <app-window-toolbar name="Publikation" [disabled]="this.disabled" [parent]="this"
-[lockable]="true" [maximizeable]="true"></app-window-toolbar>
+[lockable]="true" [maximizeable]="true">
+  <mat-chip-set windowToolbarTags aria-label="Publikations-Tags">
+    @for (tag of publicationTags; track tag.id) {
+      <app-publication-tag-chip [tag]="tag" [removable]="!tagsReadonly" (removed)="removeTag(tag.id!)" />
+    }
+  </mat-chip-set>
+</app-window-toolbar>
 
 @if (this.loading) {
   <div class="d-flex justify-content-center">
@@ -96,6 +102,10 @@
         </mat-form-field>
       }
 
+      @if (tokenService.hasRole('reader') || tokenService.hasRole('writer') || tokenService.hasRole('admin') || tokenService.hasRole('publication_writer')) {
+        <app-publication-tag-select [ids]="form.get('tag_ids').value || []" [readonly]="tagsReadonly"
+          [showChips]="false" [manageCatalog]="true" (idsChange)="setTagIds($event)" />
+      }
       <mat-accordion class="publication-panel-grid" multi="true">
         <mat-expansion-panel formGroupName="author_info">
           <mat-expansion-panel-header>

@@ -1,6 +1,9 @@
-<mat-toolbar class="primary-toolbar" style="display: flex;justify-content: space-between;">
-  <h1>{{this.name}}</h1>
-  <div style="display: flex;justify-content: flex-end;">
+<mat-toolbar class="primary-toolbar window-toolbar">
+  <div class="window-toolbar-heading">
+    <h1>{{this.name}}</h1>
+    <ng-content select="[windowToolbarTags]"></ng-content>
+  </div>
+  <div class="window-toolbar-actions">
     @if (this.maximizeable) {
       <button mat-icon-button (click)="this.parent.toggleMaximize()"
         [matTooltip]="this.parent.isMaximized ? 'Fenster wiederherstellen' : 'Fenster maximieren'"
@@ -27,12 +30,15 @@
     @if (!this.disabled) {
       <div>
         <button mat-icon-button (click)="this.parent.action()" [matTooltip]="this.name + ' speichern'"
+          [attr.aria-label]="this.name + ' speichern'"
           [matTooltipShowDelay]="800"><mat-icon>save</mat-icon></button>
           <button mat-icon-button (click)="this.parent.abort()" matTooltip="Abbrechen"
+            aria-label="Abbrechen"
             [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
           </div>
         } @else {
           <button mat-icon-button (click)="this.parent.close()" matTooltip="Schließen"
+            aria-label="Schließen"
             [matTooltipShowDelay]="800"><mat-icon>close</mat-icon></button>
           }
         </div>

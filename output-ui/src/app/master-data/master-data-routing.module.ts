@@ -14,7 +14,10 @@ import { RolesComponent } from './pages/roles/roles.component';
 import { StatusesComponent } from './pages/statuses/statuses.component';
 import { AuthorsComponent } from './pages/authors/authors.component';
 
+import { PublicationTagsComponent } from './pages/publication-tags/publication-tags.component';
+
 const routes: Routes = [
+    { path: 'publication-tags', component: PublicationTagsComponent, canActivate: [LoginGuard], data: { roles: ['admin'] } },
     { path: '', component: InstitutionsComponent, canActivate: [LoginGuard], data: { roles: null} },
     { path: 'authors', component: AuthorsComponent, canActivate: [LoginGuard], data: { roles: null } },
     { path: 'institutions', component: InstitutionsComponent, canActivate: [LoginGuard], data: { roles: null } },

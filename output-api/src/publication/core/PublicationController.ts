@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
-import {  SearchFilter  } from '@output/interfaces';
+import { PublicationTagMutation, SearchFilter } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
 import { PublicationIndexPage } from '@output/interfaces';
 import { Publication } from "./Publication.entity";
@@ -123,6 +123,18 @@ export class PublicationController {
     @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
     async update(@Body() body: Publication[] | Publication, @Req() request: Request) {
         return this.publicationService.updateEntries(body, request['user']?.['username']);
+    }
+
+    @Put('tags')
+    @UseGuards(AccessGuard)
+    @Permissions([{ role: 'publication_writer', app: 'output' }, { role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
+    @ApiBody({ schema: { type: 'object', required: ['publication_ids'], properties: {
+        publication_ids: { type: 'array', items: { type: 'integer' } },
+        add_tag_ids: { type: 'array', items: { type: 'integer' } },
+        remove_tag_ids: { type: 'array', items: { type: 'integer' } },
+    } } })
+    mutateTags(@Body() body: PublicationTagMutation, @Req() request: Request) {
+        return this.publicationService.mutateTags(body, request['user']?.['username']);
     }
 
     @Delete()

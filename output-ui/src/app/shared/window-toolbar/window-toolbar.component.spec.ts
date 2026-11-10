@@ -12,12 +12,12 @@ describe('WindowToolbarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
+        WindowToolbarComponent,
         NoopAnimationsModule,
         MatIconModule,
         MatToolbarModule,
         MatTooltipModule
-      ],
-      declarations: [ WindowToolbarComponent ]
+      ]
     })
     .compileComponents();
 

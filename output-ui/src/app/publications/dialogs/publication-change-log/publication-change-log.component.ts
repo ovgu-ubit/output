@@ -40,6 +40,7 @@ export class PublicationChangeLogComponent implements OnChanges {
   errorMessage = '';
 
   private readonly keyLabels: Record<string, string> = {
+    tags: 'Publikations-Tags',
     authors: 'Autor*innen',
     title: 'Titel',
     doi: 'DOI',

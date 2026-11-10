@@ -95,6 +95,6 @@ Nutze folgende Beispiele als Vorlage, wie du Aufgaben interpretieren sollst:
   - Für lokale Entwicklung `.env.dev` verwenden (nicht committen).
 
 - Migrationen:
-  - Neue Migrationen in `apps/output-api/src/migrations` ablegen.
+  - Neue Migrationen in `output-api/src/migrations` ablegen.
   - Naming-Konvention: `TIMESTAMP-meaningful-name.ts`.
 

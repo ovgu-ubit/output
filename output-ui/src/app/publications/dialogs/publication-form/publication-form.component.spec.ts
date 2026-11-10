@@ -17,6 +17,7 @@ import { OACategoryService } from 'src/app/services/entities/oa-category.service
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
+import { PublicationTagService } from 'src/app/services/entities/publication-tag.service';
 import { StatusService } from 'src/app/services/entities/status.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
@@ -36,6 +37,83 @@ describe('PublicationFormComponent', () => {
     });
     let component: PublicationFormComponent;
     let fixture: ComponentFixture<PublicationFormComponent>;
+
+    it('sends tag_ids only after an explicit selection change', () => {
+        component.pub = { id: 1, title: 'Example', tags: [{ id: 2, label: 'Review' }] };
+        component.edit = true;
+        component.form.get('tag_ids').setValue([2]);
+        expect((component as any).buildPublicationPayload().tag_ids).toBeUndefined();
+        component.form.get('tag_ids').setValue([]);
+        component.form.get('tag_ids').markAsDirty();
+        expect((component as any).buildPublicationPayload().tag_ids).toEqual([]);
+    });
+
+    it('shows tags in the toolbar and removes assignments through the chip', () => {
+        component.pub = { ...component.pub, tags: [{ id: 2, label: 'Review', color: '#000000' }] };
+        component.form.get('tag_ids').setValue([2]);
+        fixture.detectChanges();
+        const toolbar = fixture.nativeElement.querySelector('app-window-toolbar');
+        expect(toolbar.textContent).toContain('Review');
+        expect(fixture.nativeElement.querySelectorAll('app-publication-tag-chip')).toHaveLength(1);
+        toolbar.querySelector('[aria-label="Tag Review entfernen"]').click();
+        fixture.detectChanges();
+        expect(component.form.get('tag_ids').value).toEqual([]);
+        expect(component.form.get('tag_ids').dirty).toBe(true);
+        expect((component as any).buildPublicationPayload().tag_ids).toEqual([]);
+        expect(toolbar.textContent).not.toContain('Review');
+    });
+
+    it('updates toolbar chips immediately after autocomplete selection', () => {
+        component.pub = { ...component.pub, tags: [{ id: 2, label: 'Existing' }] };
+        component.form.get('tag_ids').setValue([2]);
+        fixture.detectChanges();
+        component.tagSelect.tags = [{ id: 3, label: 'New selection', color: '#ffcc00' }];
+        component.tagSelect.add(3);
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector('app-window-toolbar').textContent).toContain('New selection');
+        expect(component.form.get('tag_ids').value).toEqual([2, 3]);
+    });
+
+    it('edits tags through the input and hides editing controls in readonly mode', () => {
+        const tag = { id: 2, label: 'Review' };
+        component.pub = { ...component.pub, tags: [tag] };
+        component.form.get('tag_ids').setValue([2]);
+        const edit = vi.spyOn(component.tagSelect, 'edit').mockImplementation(() => {});
+        fixture.detectChanges();
+        const toolbar = fixture.nativeElement.querySelector('app-window-toolbar');
+        expect(toolbar.querySelector('[aria-label="Tag Review bearbeiten"]')).toBeNull();
+        component.tagSelect.tags = [tag];
+        component.tagSelect.search.setValue('Review');
+        fixture.detectChanges();
+        fixture.nativeElement.querySelector('[aria-label="Tag bearbeiten"]').click();
+        expect(edit).toHaveBeenCalledWith(tag);
+        component.disable();
+        fixture.detectChanges();
+        expect(toolbar.querySelector('[aria-label="Tag Review entfernen"]')).toBeNull();
+        expect(toolbar.querySelector('[aria-label="Tag Review bearbeiten"]')).toBeNull();
+        expect(toolbar.textContent).toContain('Review');
+    });
+
+    it('prevents tag changes on locked publications and enables them after unlocking', () => {
+        component.pub = { ...component.pub, locked: true, tags: [{ id: 2, label: 'Review' }] };
+        component.form.get('tag_ids').setValue([2]);
+        component.setLock(true);
+        fixture.detectChanges();
+        expect(component.tagSelect.readonly).toBe(true);
+        expect(fixture.nativeElement.querySelector('[aria-label="Tag Review entfernen"]')).toBeNull();
+        expect(fixture.nativeElement.querySelector('app-publication-tag-select input')).toBeNull();
+        component.setTagIds([3]);
+        component.removeTag(2);
+        expect(component.form.get('tag_ids').value).toEqual([2]);
+        expect(component.form.get('tag_ids').dirty).toBe(false);
+        component.pub.locked = false;
+        component.setLock(false);
+        fixture.detectChanges();
+        expect(component.tagSelect.readonly).toBe(false);
+        component.removeTag(2);
+        expect(component.form.get('tag_ids').value).toEqual([]);
+        expect(component.form.get('tag_ids').dirty).toBe(true);
+    });
 
     it('uses the booking amount including zero, otherwise adds net amounts and VAT', () => {
         const items = [{ euro_value: 100, vat: 19 }, { euro_value: 50, vat: 3.5 }];
@@ -94,6 +172,7 @@ describe('PublicationFormComponent', () => {
             ],
             declarations: [PublicationFormComponent],
             providers: [
+                { provide: PublicationTagService, useValue: { getAll: () => of([]) } },
                 FormBuilder,
                 PubValidator,
                 { provide: MatDialogRef, useValue: mockDialogRef },

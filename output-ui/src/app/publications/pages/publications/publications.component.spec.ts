@@ -91,6 +91,19 @@ describe('PublicationsComponent', () => {
         await vi.runOnlyPendingTimersAsync();
     });
 
+    it('does not request internal tag columns after switching to public access', () => {
+        mockAuthService.hasRole.mockReturnValue(false);
+        mockPublicationService.indexPage.mockClear();
+        try {
+            component.showTags = true;
+            component.loadPage({ page: 0, page_size: 10, sort: [{ key: 'tags', direction: 'asc' }],
+                search_columns: ['title', 'tags'], column_filters: { tags: 'Review' } }, 2026).subscribe();
+            expect(mockPublicationService.indexPage).toHaveBeenCalledWith(expect.objectContaining({
+                include_tags: false, sort: [], search_columns: ['title'], column_filters: {},
+            }));
+        } finally { mockAuthService.hasRole.mockReturnValue(true); }
+    });
+
     it('should create', () => {
         expect(component).toBeTruthy();
     });
