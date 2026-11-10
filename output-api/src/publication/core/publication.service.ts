@@ -30,6 +30,7 @@ interface SavePublicationOptions {
 
 interface CombinePublicationOptions {
     ignoreLocks?: boolean;
+    by_user?: string;
 }
 
 const PUBLICATION_LOCK_SCOPE = 'publication';
@@ -256,7 +257,7 @@ export class PublicationService {
             const mergedTagIds = [...new Set(tagged.flatMap(pub => pub.tags?.map(tag => tag.id!) ?? []))].sort((a, b) => a - b);
             if (this.tags) {
                 await this.tags.validateTags(mergedTagIds, manager);
-                await this.tags.lockPublications([...new Set([id1, ...ids])].sort((a, b) => a - b), undefined, manager);
+                await this.tags.lockPublications([...new Set([id1, ...ids])].sort((a, b) => a - b), options?.by_user, manager);
                 const current = await this.tags.attach<Publication>([{ id: id1 }, ...ids.map(id => ({ id }))], manager);
                 const currentIds = [...new Set(current.flatMap(pub => pub.tags?.map(tag => tag.id!) ?? []))].sort((a, b) => a - b);
                 if (JSON.stringify(currentIds) !== JSON.stringify(mergedTagIds)) {

@@ -103,12 +103,12 @@ describe('PublicationController', () => {
         expect(publicationService.getDuplicateEntries).toHaveBeenCalledWith(0, undefined);
     });
 
-    it('passes the ignoreLocks flag to publication combine', async () => {
+    it.each([false, true])('passes the authenticated user and ignoreLocks: %s to publication combine', async ignoreLocks => {
         publicationService.combine.mockResolvedValue({ id: 1 });
 
-        await expect(controller.combine(1, [2], true)).resolves.toEqual({ id: 1 });
+        await expect(controller.combine(1, [2], ignoreLocks, { user: { username: 'alice' } } as any)).resolves.toEqual({ id: 1 });
 
-        expect(publicationService.combine).toHaveBeenCalledWith(1, [2], undefined, { ignoreLocks: true });
+        expect(publicationService.combine).toHaveBeenCalledWith(1, [2], undefined, { ignoreLocks, by_user: 'alice' });
     });
 
     it('passes reader access to publication index lookups', async () => {

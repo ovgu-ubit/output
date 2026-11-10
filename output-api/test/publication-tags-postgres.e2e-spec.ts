@@ -193,6 +193,40 @@ integration('Publication tags on isolated PostgreSQL', () => {
         expect((await index.getIndexPage({ ...request, filter: { expressions: [expression(first.id!)] } }, true)).total).toBe(0);
     });
 
+    it.each([
+        { tagged: false, ignoreLocks: false }, { tagged: false, ignoreLocks: true },
+        { tagged: true, ignoreLocks: false }, { tagged: true, ignoreLocks: true },
+    ])('merges publications opened by the current writer: %p', async ({ tagged, ignoreLocks }) => {
+        const [other] = await publications.saveOne({ title: 'Duplicate', dataSource: 'test' }, 'alice');
+        if (tagged) {
+            await tags.mutate({ publication_ids: [id], add_tag_ids: [first.id!] }, 'alice');
+            await tags.mutate({ publication_ids: [other.id!], add_tag_ids: [second.id!] }, 'alice');
+        }
+        if (ignoreLocks) await source.getRepository(Publication).update(id, { locked: true });
+        await publications.getPublicationOrFail(id, true, true, 'alice');
+        await publications.getPublicationOrFail(other.id!, true, true, 'alice');
+
+        await expect(publications.combine(id, [other.id!], undefined, { by_user: 'alice', ignoreLocks }))
+            .resolves.toMatchObject({ id });
+        expect((await publications.getPublicationOrFail(id, true, false)).tags).toHaveLength(tagged ? 2 : 0);
+        expect(await source.getRepository(Publication).existsBy({ id: other.id })).toBe(false);
+    });
+
+    it.each([false, true])('rejects another writer\'s active merge edit lock with ignoreLocks: %s without partial changes', async ignoreLocks => {
+        const [other] = await publications.saveOne({ title: 'Duplicate', dataSource: 'test' }, 'alice');
+        await tags.mutate({ publication_ids: [id], add_tag_ids: [first.id!] }, 'alice');
+        await tags.mutate({ publication_ids: [other.id!], add_tag_ids: [second.id!] }, 'alice');
+        await publications.getPublicationOrFail(id, true, true, 'alice');
+        await publications.getPublicationOrFail(other.id!, true, true, 'bob');
+        const historyCount = await source.getRepository(PublicationChange).count();
+
+        await expect(publications.combine(id, [other.id!], undefined, { by_user: 'alice', ignoreLocks }))
+            .rejects.toMatchObject({ status: 409 });
+        expect((await publications.getPublicationOrFail(id, true, false)).tags).toEqual([first]);
+        expect((await publications.getPublicationOrFail(other.id!, true, false)).tags).toEqual([second]);
+        expect(await source.getRepository(PublicationChange).count()).toBe(historyCount);
+    });
+
     it('unites tags during publication merge and cleans assignments on physical deletion', async () => {
         const [other] = await publications.saveOne({ title: 'Duplicate', dataSource: 'test' }, 'alice');
         await tags.mutate({ publication_ids: [id], add_tag_ids: [first.id!] }, 'alice');

@@ -161,8 +161,11 @@ export class PublicationController {
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('ignoreLocks') ignoreLocks?: boolean) {
-        return this.publicationService.combine(id1, ids, undefined, { ignoreLocks: ignoreLocks === true });
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('ignoreLocks') ignoreLocks?: boolean, @Req() request?: Request) {
+        return this.publicationService.combine(id1, ids, undefined, {
+            ignoreLocks: ignoreLocks === true,
+            by_user: request?.['user']?.['username'],
+        });
     }
 
     @Post('filter')
