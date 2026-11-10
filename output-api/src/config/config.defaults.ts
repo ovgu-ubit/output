@@ -38,6 +38,7 @@ export const CONFIG_DEFAULTS = {
       peer_reviewed: false
     },
     pub_index_columns: {
+        tags: false,
         title: true,
         doi: true,
         link: false,

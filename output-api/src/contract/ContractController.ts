@@ -149,7 +149,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
         },
     })
     @ApiResponse({ status: 200, description: 'The contracts were combined successfully.' })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        return this.service.combine(id1,ids);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Req() request?: Request) {
+        return this.service.combine(id1, ids, undefined, request?.['user']?.['username']);
     }
 }

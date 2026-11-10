@@ -48,6 +48,25 @@
                     [placeholder]="field.placeholder ?? ''"
                   ></textarea>
                 </mat-form-field>
+                @if (field.hint) { <p>{{field.hint}}</p> }
+                @if (field.key === 'tags') {
+                  <div class="mapping-tag-catalog" aria-live="polite">
+                    <p>Verfügbare Tag-Bezeichnungen:</p>
+                    @if (tagsLoading) {
+                      <p>Tag-Bezeichnungen werden geladen …</p>
+                    } @else if (tagsLoadFailed) {
+                      <p>Tag-Bezeichnungen konnten nicht geladen werden.</p>
+                    } @else if (availableTags.length === 0) {
+                      <p>Noch keine Tags im Katalog vorhanden.</p>
+                    } @else {
+                      <mat-chip-set aria-label="Verfügbare Tag-Bezeichnungen">
+                        @for (tag of availableTags; track tag.id) {
+                          <app-publication-tag-chip [tag]="tag" />
+                        }
+                      </mat-chip-set>
+                    }
+                  </div>
+                }
               </div>
             </mat-expansion-panel>
           }

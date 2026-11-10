@@ -180,6 +180,7 @@ export const PUBLICATION_FILTER_OPERATIONS_BY_TYPE: Record<PublicationFilterFiel
 };
 
 export const PUBLICATION_FILTER_FIELD_DEFINITIONS: PublicationFilterFieldDefinition[] = [
+    { key: 'tag_id', label: 'Publikations-Tag', type: 'id' },
     { key: 'id', label: 'ID', type: 'id' },
     { key: 'title', label: 'Titel', type: 'string' },
     { key: 'doi', label: 'DOI', type: 'string' },

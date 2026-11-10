@@ -1,15 +1,17 @@
 import { InvoiceCounts } from './InvoiceIndex';
 import { IndexPage, ReportingYearIndexPageRequest } from './IndexPage';
 import { SearchFilter } from './Config';
+import { PublicationTag } from './PublicationTag';
 
 export const PUBLICATION_INDEX_COLUMNS = [
     'id', 'locked', 'title', 'doi', 'authors', 'authors_inst', 'corr_author', 'corr_inst',
     'greater_entity', 'publisher', 'pub_date', 'link', 'data_source', 'edit_date', 'status',
-    'oa_category', 'pub_type', 'contract', 'net_costs', 'import_date', 'locked_status',
+    'oa_category', 'pub_type', 'contract', 'net_costs', 'import_date', 'locked_status', 'tags',
 ] as const;
 export type PublicationIndexColumn = typeof PUBLICATION_INDEX_COLUMNS[number];
 
 export interface PublicationIndex {
+    tags?: PublicationTag[];
     id: number;
     title: string;
     doi: string;
@@ -40,6 +42,7 @@ export interface PublicationIndex {
 
 export interface PublicationIndexPageRequest extends ReportingYearIndexPageRequest<PublicationIndexColumn> {
     all_reporting_years?: boolean;
+    include_tags?: boolean;
     soft?: boolean;
     /** Active expression or path filters ignore reporting_year; explicit date expressions still apply. */
     filter?: SearchFilter;

@@ -168,6 +168,25 @@ describe('Publication export endpoints (HTTP)', () => {
         expect([...reports.values()]).toEqual([expect.objectContaining({ status: 'Successful export', summary: expect.objectContaining({ count_export: 2 }) })]);
     });
 
+    it('rejects tag filters on public export endpoints before loading any data', async () => {
+        const filter = { expressions: [{ op: JoinOperation.AND, key: 'tag_id', comp: CompareOperation.EQUALS, value: 7 }] };
+        const response = await request('publications', { filter });
+        expect(response.status).toBe(403);
+        expect(source.load).not.toHaveBeenCalled();
+        expect(reporting.createReport).not.toHaveBeenCalled();
+    });
+
+    it('passes tag filters to the exporter after authenticating an internal user', async () => {
+        define('protected', { strategy: { endpoint_name: 'protected', format: 'json', access: 'authenticated' } });
+        source.load.mockResolvedValue([publications[1]]);
+        const filter = { expressions: [{ op: JoinOperation.AND, key: 'tag_id', comp: CompareOperation.EQUALS, value: 7 }] };
+        const response = await request('protected', { filter }, cookieFor('reader'));
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual([{ title: 'Second' }]);
+        expect(verify).toHaveBeenCalled();
+        expect(source.load).toHaveBeenCalledWith('publication', filter);
+    });
+
     it('applies field filters and named paths before mapping', async () => {
         const filter = { expressions: [{ op: 0, key: 'title', comp: 0, value: 'Second' }] };
         const response = await request('publications', { filter, paths: ['second'] });

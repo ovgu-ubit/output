@@ -1,3 +1,4 @@
+import { PublicationWrite } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { IndexEntityService } from 'src/app/services/entities/service.interface';
@@ -29,13 +30,13 @@ export class PublicationService implements IndexEntityService<Publication, Publi
   public getChanges(id: number) {
     return this.http.get<PublicationChange[]>(this.runtimeConfigService.getValue("api") + 'publications/changes?id=' + id, { withCredentials: true });
   }
-  public update(pub: Publication) {
+  public update(pub: PublicationWrite) {
     return this.http.put<Publication>(this.runtimeConfigService.getValue("api") + 'publications', {...pub, edit_date:undefined}, { withCredentials: true });
   }
-  public updateAll(pubs: Publication[]) {
+  public updateAll(pubs: PublicationWrite[]) {
     return this.http.put<Publication[]>(this.runtimeConfigService.getValue("api") + 'publications', pubs.map(pub => ({...pub, edit_date:undefined})), { withCredentials: true });
   }
-  public add(pub: Publication) {
+  public add(pub: PublicationWrite) {
     return this.http.post<Publication>(this.runtimeConfigService.getValue("api") + 'publications', pub, { withCredentials: true });
   }
   public delete(ids: number[], soft?:boolean) {

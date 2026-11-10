@@ -96,8 +96,8 @@ export class InstituteController {
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
-        return this.instService.combine(id1, ids, aliases);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[], @Req() request?: Request) {
+        return this.instService.combine(id1, ids, aliases, request?.['user']?.['username']);
     }
 
     @Get('subs/:id')

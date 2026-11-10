@@ -66,7 +66,12 @@
           @if (isBoolean(i)) {
             <mat-checkbox formControlName="value" style="align-self: center; margin-bottom: 15px;">Wahr</mat-checkbox>
           }
-          @if (!date(i) && !isBoolean(i)) {
+          @if (isTag(i)) {
+            <app-publication-tag-select [ids]="tagIds(filter)" [multiple]="filter.get('compare_operator').value === inOperation"
+              (idsChange)="setTagIds(filter, $event)" />
+            @if (filter.get('value').invalid && filter.get('value').touched) { <span role="alert">Bitte wählen Sie einen Tag.</span> }
+          }
+          @if (!date(i) && !isBoolean(i) && !isTag(i)) {
             <mat-form-field>
               <mat-label>Suchwert</mat-label>
               <input matInput formControlName="value" placeholder="zu suchender Wert">

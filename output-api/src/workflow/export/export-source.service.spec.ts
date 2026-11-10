@@ -1,4 +1,4 @@
-import { EXPORT_ENTITY_TYPES } from '@output/interfaces';
+import { CompareOperation, EXPORT_ENTITY_TYPES, JoinOperation } from '@output/interfaces';
 import { ExportSourceService } from './export-source.service';
 
 describe('ExportSourceService', () => {
@@ -36,15 +36,15 @@ describe('ExportSourceService', () => {
         expect(await service.load(source)).toBe(records);
         expect(loader).toHaveBeenCalledTimes(1);
         Object.values(loaders).filter(other => other !== loader).forEach(other => expect(other).not.toHaveBeenCalled());
-        if (source === 'publication') expect(loader).toHaveBeenCalledWith(undefined, { serializeDates: true });
+        if (source === 'publication') expect(loader).toHaveBeenCalledWith(undefined, { serializeDates: true, canReadTags: true });
         if (source === 'author') expect(loader).toHaveBeenCalledWith({ rights: { read: true } });
     });
 
-    it('passes field filters through to publication loading', async () => {
+    it('passes tag filters through to trusted publication loading', async () => {
         publication.getAll.mockResolvedValue([]);
-        const filter = { expressions: [] };
+        const filter = { expressions: [{ op: JoinOperation.AND, key: 'tag_id', comp: CompareOperation.EQUALS, value: 7 }] };
         await service.load('publication', filter);
-        expect(publication.getAll).toHaveBeenCalledWith(filter, { serializeDates: true });
+        expect(publication.getAll).toHaveBeenCalledWith(filter, { serializeDates: true, canReadTags: true });
     });
 
     it.each(['invoice', 'toString', '__proto__'])('rejects unlisted sources: %s', (source) => {

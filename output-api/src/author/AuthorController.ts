@@ -54,7 +54,7 @@ export class AuthorController extends AbstractCrudController<Author, AuthorServi
     })
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
-        return this.service.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[], @Req() request?: Request) {
+        return this.service.combineAuthors(id1, ids, aliases_first_name, aliases_last_name, request?.['user']?.['username']);
     }
 }

@@ -1,5 +1,6 @@
 import { publicationGrossAmountSql } from '../../invoice/invoice-costs';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { PublicationTagService } from '../tags/publication-tag.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
     CompareOperation,
@@ -24,7 +25,7 @@ import {
     SelectQueryBuilder,
     WhereExpressionBuilder,
 } from 'typeorm';
-import { createInvalidRequestHttpException } from '../../common/api-error';
+import { createForbiddenHttpException, createInvalidRequestHttpException } from '../../common/api-error';
 import { AppConfigService } from '../../config/app-config.service';
 import { InstituteService } from '../../institute/institute.service';
 import { Publication } from './Publication.entity';
@@ -33,6 +34,8 @@ import { indexLikePattern, indexSearchColumns, validateIndexPageBounds } from '.
 
 export interface GetAllPublicationOptions {
     serializeDates?: boolean;
+    /** Internal query capability; tag objects are not included in export results. */
+    canReadTags?: boolean;
 }
 
 interface FilterPredicate {
@@ -54,6 +57,7 @@ type PublicationFilterJoin =
     | 'publisher';
 
 interface PublicationFilterContext {
+    canReadTags?: boolean;
     joinedRelations: Set<string>;
     requestedJoins: Set<PublicationFilterJoin>;
 }
@@ -65,6 +69,7 @@ export class PublicationIndexService {
         private configService: AppConfigService,
         private instService: InstituteService,
         private publicationFilterService: PublicationFilterService,
+        @Optional() private readonly tags?: PublicationTagService,
     ) { }
 
     public async getAllForReportingYear(yop: number | null | undefined, reader = false) {
@@ -94,6 +99,7 @@ export class PublicationIndexService {
             }
         });
 
+        if (canRead) await this.tags?.attach(publications);
         return this.filterAuthorInternalRemarks(publications, canRead);
     }
 
@@ -160,6 +166,7 @@ export class PublicationIndexService {
             'cost_type',
         ]);
 
+        filterContext.canReadTags = options?.canReadTags === true;
         query = await this.filter(filter, query, filterContext);
 
         if (filter?.expressions?.some(expression => expression.key === 'delete_date')) {
@@ -176,8 +183,10 @@ export class PublicationIndexService {
     public async indexQuery(
         filterContext = this.createFilterContext(),
         canReadNetCosts = false,
+        includeTags?: boolean,
     ): Promise<SelectQueryBuilder<Publication>> {
         const pubIndexColumns = (await this.configService.get("pub_index_columns")) ?? {};
+        filterContext.canReadTags = canReadNetCosts;
         let query = this.pubRepository.createQueryBuilder("publication")
             .leftJoin("publication.authorPublications", "authorPublications")
             .leftJoin("authorPublications.author", "author")
@@ -186,6 +195,10 @@ export class PublicationIndexService {
             .addSelect("publication.locked", "locked")
             .groupBy("publication.id");
 
+        if (canReadNetCosts && (includeTags ?? pubIndexColumns["tags"])) {
+            query.addSelect(`(SELECT STRING_AGG(t.label, '; ' ORDER BY t.label) FROM publication_tag_assignment a
+                JOIN publication_tag t ON t.id = a.tag_id WHERE a.publication_id = publication.id)`, 'tags');
+        }
         if (pubIndexColumns["title"]) {
             query = query.addSelect("publication.title", "title").addGroupBy("publication.title");
         }
@@ -278,7 +291,7 @@ export class PublicationIndexService {
                 .andWhere('publication.pub_date_accepted IS NULL')
                 .andWhere('publication.pub_date_submitted IS NULL');
         }
-        return query.getRawMany() as Promise<PublicationIndex[]>;
+        return this.hydrateTags(await query.getRawMany(), canReadNetCosts);
     }
 
     public async softIndex(canReadNetCosts = false): Promise<PublicationIndex[]> {
@@ -286,19 +299,23 @@ export class PublicationIndexService {
             .withDeleted()
             .where("publication.delete_date is not null");
 
-        return query.getRawMany() as Promise<PublicationIndex[]>;
+        return this.hydrateTags(await query.getRawMany(), canReadNetCosts);
     }
 
     public async getIndexPage(
         request: PublicationIndexPageRequest,
         canReadNetCosts = false,
     ): Promise<IndexPage<PublicationIndex>> {
+        if (!canReadNetCosts && (request.include_tags || request.search_columns?.includes('tags') || request.sort?.some(sort => sort.key === 'tags')
+            || Object.prototype.hasOwnProperty.call(request.column_filters ?? {}, 'tags'))) {
+            throw createForbiddenHttpException('Tags are internal.');
+        }
         const page = request.page ?? 0;
         const pageSize = request.page_size ?? 10;
         validateIndexPageBounds(page, pageSize);
 
         const filterContext = this.createFilterContext();
-        let indexQuery = await this.indexQuery(filterContext, canReadNetCosts);
+        let indexQuery = await this.indexQuery(filterContext, canReadNetCosts, request.include_tags);
         if (request.filter) indexQuery = await this.filter(request.filter, indexQuery, filterContext, true);
         const hasExtendedFilters = !!request.filter?.expressions?.length || !!request.paths?.length;
 
@@ -370,7 +387,7 @@ export class PublicationIndexService {
             countQuery.getRawOne<{ total: string }>(),
         ]);
         return {
-            items,
+            items: await this.hydrateTags(items, canReadNetCosts),
             total: Number(count?.total ?? 0),
             page,
             page_size: pageSize,
@@ -379,7 +396,12 @@ export class PublicationIndexService {
 
     public async filterIndex(filter: SearchFilter, canReadNetCosts = false) {
         const filterContext = this.createFilterContext();
-        return (await this.filter(filter, await this.indexQuery(filterContext, canReadNetCosts), filterContext)).getRawMany();
+        return this.hydrateTags(await (await this.filter(filter, await this.indexQuery(filterContext, canReadNetCosts), filterContext)).getRawMany(), canReadNetCosts);
+    }
+
+    private async hydrateTags(rows: PublicationIndex[], internal: boolean): Promise<PublicationIndex[]> {
+        if (internal && rows.some(row => Object.prototype.hasOwnProperty.call(row, 'tags'))) await this.tags?.attach(rows);
+        return rows;
     }
 
     private applyReportingYearScope(
@@ -437,6 +459,7 @@ export class PublicationIndexService {
         if (filter) for (const expr of filter.expressions) {
             let compareOperation = expr.comp;
             let filterValue: SearchFilterValue = expr.value;
+            if (expr.key === 'tag_id' && !filterContext.canReadTags) throw createForbiddenHttpException('Tag filters are internal.');
             this.validateFilterExpression(expr.key, compareOperation);
             this.validateFilterValue(expr.key, expr.value);
 
@@ -647,6 +670,9 @@ export class PublicationIndexService {
         parameterPrefix: string,
         filterContext: PublicationFilterContext,
     ): FilterPredicate {
+        if (key === 'tag_id') {
+            return this.tagPredicate([this.normalizeIntegerValue(value, key)], parameterPrefix);
+        }
         if (key === 'invoice_year') {
             const { beginDate, endDate } = this.getYearDateRange(this.normalizeIntegerValue(value, 'invoice_year'));
             this.requestJoin(filterContext, 'invoice');
@@ -777,6 +803,7 @@ export class PublicationIndexService {
         parameterPrefix: string,
         filterContext: PublicationFilterContext,
     ): FilterPredicate {
+        if (key === 'tag_id') return this.tagPredicate(this.normalizeIntegerValues(value, key), parameterPrefix);
         const values = this.normalizeInValues(value);
         if (values.length === 0) return { clause: '1 = 0' };
 
@@ -841,6 +868,13 @@ export class PublicationIndexService {
     private normalizeInValues(value: SearchFilterValue) {
         if (Array.isArray(value)) return value.filter((entry) => entry !== undefined && entry !== null);
         return value === undefined || value === null ? [] : [value];
+    }
+
+    private tagPredicate(ids: number[], parameter: string): FilterPredicate {
+        if (!ids.length) return { clause: 'FALSE' };
+        return { clause: `EXISTS (SELECT 1 FROM publication_tag_assignment tag_filter
+            WHERE tag_filter.publication_id = publication.id AND tag_filter.tag_id IN (:...${parameter}))`,
+            parameters: { [parameter]: ids } };
     }
 
     private buildAuthorPublicationExistsInPredicate(
@@ -947,10 +981,11 @@ export class PublicationIndexService {
             case 'second_pub':
             case 'secound_pub':
                 return 'publication.second_pub';
-            default:
+            default: {
                 const fieldDefinition = getPublicationFilterFieldDefinition(key);
                 if (fieldDefinition && fieldDefinition.key !== 'invoice_year') return `publication.${fieldDefinition.key}`;
                 throw createInvalidRequestHttpException(`Unsupported filter key: ${key}`);
+            }
         }
     }
 

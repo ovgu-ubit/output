@@ -4,7 +4,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { MockStore, provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { CompareOperation, JoinOperation } from '@output/interfaces';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -59,6 +59,9 @@ describe('PublicationsComponent', () => {
     };
 
     beforeEach(async () => {
+        mockConfigService.get.mockReturnValue(of({ value: {} }));
+        mockPublicationService.indexPage.mockReturnValue(of({ items: [], total: 0, page: 0, page_size: 10 }));
+        mockAuthService.hasRole.mockReturnValue(true);
         TestBed.configureTestingModule({
             imports: [
                 NoopAnimationsModule,
@@ -91,8 +94,72 @@ describe('PublicationsComponent', () => {
         await vi.runOnlyPendingTimersAsync();
     });
 
+    it('does not request internal tag columns after switching to public access', () => {
+        mockAuthService.hasRole.mockReturnValue(false);
+        mockPublicationService.indexPage.mockClear();
+        try {
+            component.showTags = true;
+            component.loadPage({ page: 0, page_size: 10, sort: [{ key: 'tags', direction: 'asc' }],
+                search_columns: ['title', 'tags'], column_filters: { tags: 'Review' } }, 2026).subscribe();
+            expect(mockPublicationService.indexPage).toHaveBeenCalledWith(expect.objectContaining({
+                include_tags: false, sort: [], search_columns: ['title'], column_filters: {},
+            }));
+        } finally { mockAuthService.hasRole.mockReturnValue(true); }
+    });
+
     it('should create', () => {
         expect(component).toBeTruthy();
+    });
+
+    it.each([
+        { role: 'reader', savedView: { showTags: false } },
+        { role: 'publication_writer', savedView: { showTags: false, showTagsDefault: false } },
+    ])('shows configured tags despite an outdated saved view %#', async ({ role, savedView }) => {
+        mockAuthService.hasRole.mockImplementation(requiredRole => requiredRole === role);
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns'
+            ? { title: true, tags: true } : key === 'reporting_year' ? 2026 : 'Test' }));
+        TestBed.inject(MockStore).setState({ viewConfigReducer: {
+            viewConfig: { sortState: [], filterColumn: new Map(), ...savedView }, valid_from: new Date(),
+        } });
+        mockPublicationService.indexPage.mockReturnValue(of({
+            items: [{ id: 1, title: 'Tagged publication', tags: [{ id: 1, label: 'Prüfen', color: '#ffcc00' }] }],
+            total: 1, page: 0, page_size: 10,
+        }));
+
+        await firstValueFrom(component.preProcessing());
+        fixture.detectChanges();
+        await firstValueFrom(component.table.updateData());
+        fixture.detectChanges();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: true }));
+        expect(fixture.nativeElement.querySelector('th.mat-column-tags')?.textContent).toContain('Tags');
+        expect(fixture.nativeElement.querySelector('td.mat-column-tags app-publication-tag-chip')?.textContent).toContain('Prüfen');
+    });
+
+    it.each([true, false])('uses tags: %s from configuration regardless of saved visibility', async tags => {
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags } : {} }));
+        TestBed.inject(MockStore).setState({ viewConfigReducer: {
+            viewConfig: { sortState: [], filterColumn: new Map(), showTags: !tags, showTagsDefault: tags }, valid_from: new Date(),
+        } });
+
+        await firstValueFrom(component.preProcessing());
+        component.loadPage({ page: 0, page_size: 10 }, 2026).subscribe();
+
+        expect(component.showTags).toBe(tags);
+        expect(component.headers.some(header => header.colName === 'tags')).toBe(tags);
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: tags }));
+    });
+
+    it('keeps the configured tag column when resetting the view', async () => {
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags: true } : 2026 }));
+        await firstValueFrom(component.preProcessing());
+        fixture.detectChanges();
+        component.resetView();
+        fixture.detectChanges();
+
+        expect(component.showTags).toBe(true);
+        expect(fixture.nativeElement.querySelector('th.mat-column-tags')).not.toBeNull();
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: true }));
     });
 
     it('should combine table state and publication filters in page requests', () => {

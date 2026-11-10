@@ -42,8 +42,8 @@ export class PublicationTypeController extends AbstractCrudController<Publicatio
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
-        return this.service.combine(id1,ids, aliases);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[], @Req() request?: Request) {
+        return this.service.combine(id1, ids, aliases, request?.['user']?.['username']);
     }
 
     

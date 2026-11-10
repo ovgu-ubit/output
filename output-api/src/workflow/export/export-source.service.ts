@@ -44,7 +44,7 @@ export class ExportSourceService {
 
     public load(source: ExportEntityType, filter?: SearchFilter): Promise<ExportSourceEntity[]> {
         const loaders: Record<ExportEntityType, () => Promise<ExportSourceEntity[]>> = {
-            publication: () => this.publicationService.getAll(filter, { serializeDates: true }),
+            publication: () => this.publicationService.getAll(filter, { serializeDates: true, canReadTags: true }),
             author: () => this.authorService.getForExport({ rights: { [EntityAccessRight.Read]: true } }),
             institute: () => this.instituteService.get(),
             greater_entity: () => this.greaterEntityService.get(),

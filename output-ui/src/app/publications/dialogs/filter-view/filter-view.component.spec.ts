@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { ConfigService } from 'src/app/administration/services/config.service';
+import { PublicationTagService } from 'src/app/services/entities/publication-tag.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
@@ -39,6 +40,7 @@ describe('FilterViewComponent', () => {
                 SharedModule
             ],
             providers: [
+                { provide: PublicationTagService, useValue: { getAll: () => of([]) } },
                 FormBuilder,
                 { provide: MatDialogRef, useValue: mockDialogRef },
                 { provide: MAT_DIALOG_DATA, useValue: { hideSavedFilters: true } },
@@ -53,6 +55,18 @@ describe('FilterViewComponent', () => {
         fixture = TestBed.createComponent(FilterViewComponent);
         component = fixture.componentInstance;
         fixture.detectChanges();
+    });
+
+    it('keeps tag filters out of workflow contexts and round-trips stable IDs including deleted tags', () => {
+        expect(component.keys.some(key => key.key === 'tag_id')).toBe(false);
+        component.data.allowTagFilters = true;
+        expect((component as any).getVisibleFilterFields().some(key => key.key === 'tag_id')).toBe(true);
+        const filter = component.getFiltersControls()[0];
+        filter.get('field').setValue('tag_id');
+        filter.get('compare_operator').setValue(CompareOperation.IN);
+        component.setTagIds(filter, [7, 99]);
+        expect(component.getFilter().expressions[0]).toEqual(expect.objectContaining({ key: 'tag_id', comp: CompareOperation.IN, value: [7, 99] }));
+        expect(component.tagIds(filter)).toEqual([7, 99]);
     });
 
     it('should create', () => {

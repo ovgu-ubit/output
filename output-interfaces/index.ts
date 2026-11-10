@@ -7,6 +7,7 @@ export * from './IndexPage';
 export * from './InvoiceIndex';
 export * from './InvoiceCosts';
 export * from './Publication';
+export * from './PublicationTag';
 export * from './PublicationIndex';
 export * from './Statistics';
 export * from './Workflow';

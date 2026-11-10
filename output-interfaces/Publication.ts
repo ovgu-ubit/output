@@ -1,6 +1,7 @@
 ﻿import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
 
 import { IndexPageRequest } from './IndexPage';
+import { PublicationTag } from './PublicationTag';
 
 export interface Entity {
     id?: number;
@@ -18,6 +19,7 @@ export interface PublicationSupplement extends Entity {
 }
 
 export interface Publication extends Identifiable<Publication> {
+    tags?: PublicationTag[];
     authorPublications?: AuthorPublication[];
     pub_type?: PublicationType
     oa_category?: OA_Category

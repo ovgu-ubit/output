@@ -1,5 +1,17 @@
 <app-window-toolbar name="Publikation" [disabled]="this.disabled" [parent]="this"
-[lockable]="true" [maximizeable]="true"></app-window-toolbar>
+[lockable]="true" [maximizeable]="true">
+  <div windowToolbarTags class="publication-toolbar-tags">
+    <mat-chip-set aria-label="Publikations-Tags">
+      @for (tag of publicationTags; track tag.id) {
+        <app-publication-tag-chip [tag]="tag" [removable]="!tagsReadonly" (removed)="removeTag(tag.id!)" />
+      }
+    </mat-chip-set>
+    @if (!tagsReadonly) {
+      <button type="button" mat-icon-button (click)="openTagSelection()" aria-label="Tags hinzufügen"
+        matTooltip="Tags hinzufügen" [matTooltipShowDelay]="800"><mat-icon>add</mat-icon></button>
+    }
+  </div>
+</app-window-toolbar>
 
 @if (this.loading) {
   <div class="d-flex justify-content-center">

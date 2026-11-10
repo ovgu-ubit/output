@@ -1,5 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, Optional, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -25,6 +25,7 @@ import {
 } from '@output/interfaces';
 import {  Publication  } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
+import { AuthorizationService } from 'src/app/security/authorization.service';
 import { FilterViewComponent } from '../../dialogs/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
 import { ReportingYearFormComponent, ReportingYearSelection } from '../../dialogs/reporting-year-form/reporting-year-form.component';
@@ -41,13 +42,14 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService,
-    private statusService: StatusService) { }
+    private statusService: StatusService, @Optional() public tokenService?: AuthorizationService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
 
   indexOptions?: { soft: boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean };
 
+  showTags = false;
   soft_deletes = false;
   statusDescriptions = new Map<number, string>();
 
@@ -87,6 +89,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       column_filters: columnFilters,
       search_columns: searchColumns,
       reporting_year: reportingYear,
+      include_tags: this.canReadTags && this.showTags,
       soft: this.indexOptions?.soft === true,
       filter: this.indexOptions?.filter,
       paths: this.indexOptions?.paths ?? [],
@@ -95,7 +98,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   }
 
   private isPublicationIndexColumn(key: string): key is PublicationIndexColumn {
-    return PUBLICATION_INDEX_COLUMNS.includes(key as PublicationIndexColumn);
+    return PUBLICATION_INDEX_COLUMNS.includes(key as PublicationIndexColumn) && (key !== 'tags' || (this.canReadTags && this.showTags));
   }
 
   preProcessing() {
@@ -137,6 +140,8 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
       if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
+      this.showTags = this.canReadTags && data.value['tags'] === true;
+      if (this.showTags) headers.push({ colName: 'tags', colTitle: 'Tags', type: 'tags', roles: ['reader', 'publication_writer', 'writer', 'admin'] });
       this.headers = headers;
       return this.configService.get("institution_short_label").pipe(map(data => {
         this.institution = data.value
@@ -216,6 +221,10 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     });
   }
 
+  get canReadTags() {
+    return ['reader', 'writer', 'admin', 'publication_writer'].some(role => this.tokenService?.hasRole(role));
+  }
+
   lockSelected() {
     if (this.table.selection.selected.length === 0) return;
     let save = []
@@ -291,7 +300,8 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       maxHeight: '800px',
       disableClose: false,
       data: {
-        viewConfig: this.viewConfig
+        viewConfig: this.viewConfig,
+        allowTagFilters: ['reader', 'writer', 'admin', 'publication_writer'].some(role => this.tokenService?.hasRole(role)),
       }
     });
     dialogRef.afterClosed().subscribe(result => {

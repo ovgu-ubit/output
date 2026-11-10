@@ -189,9 +189,11 @@ export class AuthorService extends AbstractEntityService<Author> {
         return compact[15] === expected;
     }
 
-    public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
+    public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[], user?: string) {
         return this.dataSource.transaction(async (manager) => {
             return mergeEntities<Author>({
+                by_user: user,
+                editLockTimeoutMs: await this.getLockTimeoutMs(),
                 repository: this.repository,
                 primaryId: id1,
                 duplicateIds: ids,

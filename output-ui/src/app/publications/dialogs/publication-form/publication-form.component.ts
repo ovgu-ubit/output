@@ -29,7 +29,8 @@ import { isPersistedEntityDialogResult } from 'src/app/services/entities/service
 import { StatusService } from 'src/app/services/entities/status.service';
 import { ConfirmDialogComponent, ConfirmDialogModel } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { IdTableComponent } from 'src/app/shared/id-table/id-table.component';
-import { AuthorPublication, getInvoiceGrossAmount, Invoice, Publication, PublicationSupplement, Status } from '@output/interfaces';
+import { AuthorPublication, getInvoiceGrossAmount, Invoice, Publication, PublicationSupplement, PublicationTag, Status } from '@output/interfaces';
+import { PublicationTagSelectionDialogComponent, PublicationTagSelectionResult } from '../publication-tag-selection-dialog/publication-tag-selection-dialog.component';
 
 @Injectable({ providedIn: 'root' })
 export class PubValidator {
@@ -77,6 +78,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['date', 'costs', 'edit', 'delete'];
   displayedColumnsAuthors: string[] = ['edit', 'name', 'corr', 'institute', 'role', 'delete'];
 
+  private tagCatalog: PublicationTag[] = [];
   @ViewChild('tableInvoice') table: MatTable<Invoice>;
   @ViewChild('table') tableAuthors: MatTable<AuthorPublication>;
   @ViewChild(IdTableComponent) idTable: IdTableComponent<Publication>;
@@ -165,6 +167,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       delete_date: [''],
       dataSource: [''],
       status: [''],
+      tag_ids: [[]],
       author_info: this.formBuilder.group({
         authors: [''],
       }),
@@ -288,6 +291,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     return this.publicationService.getOne(id).pipe(map(data => {
       this.pub = data;
       this.form.patchValue(data);
+      this.form.get('tag_ids').setValue(data.tags?.map(tag => tag.id) ?? []);
       this.form.get('author_info').patchValue(data);
       this.form.get('biblio_info').patchValue(data);
       this.form.get('oa_info').patchValue(data);
@@ -308,14 +312,14 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
         if (this.pub?.locked_finance) this.form.get('finance_info').disable();
       }
 
-      if (this.pub.locked_at && (this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
+      if (this.pub.locked_at && (this.tokenService.hasRole('publication_writer') || this.tokenService.hasRole('writer') || this.tokenService.hasRole('admin'))) {
         this.disable();
         this._snackBar.open('Publikation wird leider gerade durch einen anderen Nutzer bearbeitet', 'Ok.', {
           duration: 5000,
           panelClass: ['warning-snackbar'],
           verticalPosition: 'top'
         });
-      } else if (!this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
+      } else if (!this.tokenService.hasRole('publication_writer') && !this.tokenService.hasRole('writer') && !this.tokenService.hasRole('admin')) {
         this.disable();
       }
       this.loading = false;
@@ -334,6 +338,43 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
   disable() {
     this.disabled = true;
     this.form.disable();
+  }
+
+  get publicationTags(): PublicationTag[] {
+    const tags = new Map([...(this.pub?.tags ?? []), ...this.tagCatalog].map(tag => [tag.id, tag]));
+    return (this.form.get('tag_ids').value as number[] ?? []).map(id => tags.get(id) ?? { id, label: `Gelöschter Tag #${id}` });
+  }
+
+  setTagIds(ids: number[]) {
+    if (this.tagsReadonly) return;
+    const current = this.form.get('tag_ids').value as number[];
+    if (current.length === ids.length && current.every(id => ids.includes(id))) return;
+    this.form.get('tag_ids').setValue(ids);
+    this.form.get('tag_ids').markAsDirty();
+    this.form.markAsDirty();
+  }
+
+  removeTag(id: number) {
+    this.setTagIds((this.form.get('tag_ids').value as number[]).filter(value => value !== id));
+  }
+
+  openTagSelection() {
+    if (this.tagsReadonly) return;
+    this.dialog.open<PublicationTagSelectionDialogComponent, { ids: number[] }, PublicationTagSelectionResult>(
+      PublicationTagSelectionDialogComponent, {
+        width: '520px', maxWidth: 'calc(100vw - 32px)', maxHeight: '90vh', autoFocus: 'input', disableClose: true,
+        data: { ids: [...this.form.get('tag_ids').value] },
+      },
+    ).afterClosed().subscribe(result => {
+      if (!result) return;
+      this.tagCatalog = [...new Map([...this.tagCatalog, ...result.tags].map(tag => [tag.id, tag])).values()];
+      if (result.ids !== undefined) this.setTagIds(result.ids);
+    });
+  }
+
+  get tagsReadonly(): boolean {
+    return this.disabled || this.loading || this.saving || !!this.pub?.locked
+      || !['publication_writer', 'writer', 'admin'].some(role => this.tokenService.hasRole(role));
   }
 
   setPublisher(event) {
@@ -680,6 +721,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
       add_info: this.form.get('add_info').getRawValue(),
       dataSource: this.form.get('dataSource').getRawValue(),
       status: this.form.get('status').getRawValue(),
+      ...(this.form.get('tag_ids').dirty ? { tag_ids: this.form.get('tag_ids').getRawValue() } : {}),
     };
 
     let publication: Publication & Record<string, unknown>;

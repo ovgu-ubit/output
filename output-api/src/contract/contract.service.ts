@@ -297,8 +297,11 @@ export class ContractService extends AbstractEntityService<Contract> {
         return query;
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        const merged = await mergeEntities<Contract>({
+    public async combine(id1: number, ids: number[], alias_strings?: string[], user?: string) {
+        const merged = await this.dataSource.transaction(async manager => mergeEntities<Contract>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -311,23 +314,24 @@ export class ContractService extends AbstractEntityService<Contract> {
             },
             afterSave: async ({ saved, duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    const duplicateComponents = await this.contractComponentRepository.find({
+                    const components = manager.getRepository(ContractComponent);
+                    const duplicateComponents = await components.find({
                         where: { contract: { id: In(duplicateIds) } } as FindOptionsWhere<ContractComponent>,
                     });
 
                     if (duplicateComponents.length > 0) {
-                        await this.contractComponentRepository.save(duplicateComponents.map(component => ({
+                        await components.save(duplicateComponents.map(component => ({
                             id: component.id,
                             contract: { id: saved.id } as Contract,
                         })));
                     }
 
-                    await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                    await manager.getRepository(ContractIdentifier).delete({ entity: { id: In(duplicateIds) } });
                 }
 
                 await defaultDelete();
             },
-        });
+        }));
 
         return this.one(merged.id);
     }

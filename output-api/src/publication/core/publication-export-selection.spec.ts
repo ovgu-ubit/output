@@ -77,4 +77,22 @@ describe('Publication export deletion scope', () => {
         expect(where()).toBe('publication.delete_date IS NULL OR publication.title = :filter_1');
         expect(query.expressionMap.withDeleted).toBe(true);
     });
+
+    it.each([undefined, { canReadTags: false }])('rejects tag filters without a trusted read context: %p', async options => {
+        await expect(service.getAll({ expressions: [
+            { op: JoinOperation.AND, key: 'tag_id', comp: CompareOperation.EQUALS, value: 7 },
+        ] }, options)).rejects.toMatchObject({ status: 403 });
+        expect(query.getMany).not.toHaveBeenCalled();
+    });
+
+    it('accepts tag filters in trusted exports while retaining the ordinary selection scope', async () => {
+        await service.getAll({ expressions: [
+            { op: JoinOperation.AND, key: 'tag_id', comp: CompareOperation.IN, value: [7, 8] },
+        ] }, { canReadTags: true });
+        const sql = query.getQuery().replace(/"/g, '');
+        expect(sql).toContain('EXISTS');
+        expect(sql).toContain('publication_tag_assignment');
+        expect(sql).toContain('publication.delete_date IS NULL');
+        expect(query.getParameters()).toMatchObject({ filter_0: [7, 8] });
+    });
 });

@@ -78,8 +78,11 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
         return query;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        return mergeEntities<OA_Category>({
+    public async combine(id1: number, ids: number[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<OA_Category>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -88,7 +91,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
                 field: 'oa_category',
                 service: this.publicationService
             },
-        });
+        }));
     }
 
     public async delete(insts: OA_Category[]) {

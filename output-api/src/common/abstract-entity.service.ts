@@ -321,7 +321,7 @@ export abstract class AbstractEntityService<TEntity extends LockableEntity> {
         });
     }
 
-    private async getLockTimeoutMs(): Promise<number> {
+    protected async getLockTimeoutMs(): Promise<number> {
         const timeoutInMinutes = Number(await this.configService.get('lock_timeout'));
         const resolvedMinutes = Number.isFinite(timeoutInMinutes) && timeoutInMinutes >= 0 ? timeoutInMinutes : 5;
         return resolvedMinutes * 60 * 1000;

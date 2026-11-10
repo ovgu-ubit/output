@@ -33,6 +33,7 @@ import { WorkflowReport } from '../WorkflowReport.entity';
 import { WorkflowReportService } from '../workflow-report.service';
 import { PublicationRelationService } from '../../publication/relations/publication-relation.service';
 import { PublicationIndexService } from '../../publication/core/publication-index.service';
+import type { ImportTagPlan } from '../../publication/tags/publication-tag.service';
 
 export function ImportService(meta: { path: string }): ClassDecorator {
     return (target) => Reflect.defineMetadata("import_service", meta, target);
@@ -409,6 +410,7 @@ export abstract class AbstractImportService {
             await this.writeReport({ type: 'info', publication_doi: this.getDOI(item), publication_title: this.getTitle(item), timestamp: new Date(), origin: 'importTest', text: 'Publication not imported due to import test fail' })
             return null;
         }
+        const importTags = await this.getImportTagPlan(item);
         let remark = '';
         // process author objects
         const authors_entities: { author: Author, corresponding: boolean, affiliation: string, institute: Institute, role: Role }[] = [];
@@ -565,13 +567,19 @@ export abstract class AbstractImportService {
         }
         if (!this.dryRun) {
             //save publication object and assign authorships
-            const pub_ent = (await this.publicationService.save([obj], { workflowReport: this.workflowReport })) [0];
+            const pub_ent = (await this.publicationService.save([obj], { workflowReport: this.workflowReport,
+                ...(importTags?.addTagIds.length ? { addTagIds: importTags.addTagIds } : {}),
+            })) [0];
             for (const aut of authors_entities) {
                 await this.publicationRelationService.saveAuthorPublication(aut.author, pub_ent, aut.corresponding, aut.affiliation, aut.institute, aut.role);
             }
 
+            if (importTags) pub_ent.tags = importTags.tags;
             return pub_ent;
-        } else return obj;
+        } else {
+            if (importTags?.tags.length) obj.tags = importTags.tags;
+            return obj;
+        }
     }
 
     /**
@@ -582,6 +590,7 @@ export abstract class AbstractImportService {
      */
     async mapUpdate(element: any, orig: Publication): Promise<{ pub: Publication, fields: string[] }> {
         if (this.isStopRequested()) return null;
+        const importTags = await this.getImportTagPlan(element, orig);
         const optionalFields = await this.getOptionalFields();
         const fields = [];
         let text = "";
@@ -1112,12 +1121,19 @@ export abstract class AbstractImportService {
         orig = res.pub;
         fields.push(...res.fields)
 
+        if (importTags?.addTagIds.length) fields.push('tags');
         let pub_ent: Publication;
         if (fields.length > 0) {
             if (!this.dryRun) {
-                pub_ent = (await this.publicationService.save([orig], { workflowReport: this.workflowReport }))[0];
+                pub_ent = (await this.publicationService.save([orig], { workflowReport: this.workflowReport,
+                    ...(importTags?.addTagIds.length ? { addTagIds: importTags.addTagIds } : {}),
+                }))[0];
+                if (importTags) pub_ent.tags = importTags.tags;
                 return { pub: pub_ent, fields };
-            } else return { pub: orig, fields }
+            } else {
+                if (importTags?.addTagIds.length) orig.tags = importTags.tags;
+                return { pub: orig, fields };
+            }
         } else return { pub: orig, fields }
     }
 
@@ -1128,6 +1144,10 @@ export abstract class AbstractImportService {
      */
     protected finalize(orig: Publication, element: any): { fields: string[], pub: Publication } {
         return { fields: [], pub: orig };
+    }
+
+    protected async getImportTagPlan(_item: unknown, _publication?: Publication): Promise<ImportTagPlan | undefined> {
+        return undefined;
     }
 
     protected normalizeCostApproachCurrency(currency?: string): string {

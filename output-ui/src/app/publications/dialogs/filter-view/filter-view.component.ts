@@ -31,6 +31,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
 export class FilterViewComponent implements OnInit {
 
   form: FormGroup;
+  readonly inOperation = CompareOperation.IN;
   filters: { path: string, label: string }[];
   selected = [];
 
@@ -204,6 +205,18 @@ export class FilterViewComponent implements OnInit {
     return res;
   }
 
+  tagIds(filter: FormGroup): number[] {
+    const value = filter.get('value').value;
+    return (Array.isArray(value) ? value : String(value ?? '').split(',')).filter(v => v !== '').map(Number);
+  }
+
+  setTagIds(filter: FormGroup, ids: number[]) {
+    filter.get('value').setValue(filter.get('compare_operator').value === CompareOperation.IN ? ids : ids[0] ?? '');
+    filter.get('value').markAsTouched();
+  }
+
+  isTag(idx: number) { return this.getFiltersControls()[idx].get('field').value === 'tag_id'; }
+
   getValue(key, value, compareOperator?: CompareOperation): any {
     if (compareOperator === CompareOperation.IN) return this.getListValue(key, value);
 
@@ -357,6 +370,7 @@ export class FilterViewComponent implements OnInit {
 
   private getVisibleFilterFields(): PublicationFilterFieldDefinition[] {
     return PUBLICATION_FILTER_FIELD_DEFINITIONS
+      .filter(field => field.key !== 'tag_id' || this.data?.allowTagFilters === true)
       .filter((field) => !field.optionalField || this.optional_fields[field.optionalField] === true)
       .sort((first, second) => first.label.localeCompare(second.label, 'de'));
   }

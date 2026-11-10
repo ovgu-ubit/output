@@ -22,6 +22,7 @@ import { PublicationChange } from './PublicationChange.entity';
 import { PublicationIndexService } from './publication-index.service';
 import { PublicationFilterService } from './publication-filter.service';
 import { PublicationRelationService } from '../relations/publication-relation.service';
+import { PublicationTagService } from '../tags/publication-tag.service';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -351,6 +352,31 @@ describe('PublicationService', () => {
         expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 61 }));
         expect(deleteRelationsSpy).toHaveBeenCalledWith([62], expect.anything());
         expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([62], expect.anything());
+        expect(pubRepository.delete).toHaveBeenCalledWith([62]);
+    });
+
+    it.each([false, true])('accepts the current user\'s edit locks when merging untagged publications with ignoreLocks: %s', async ignoreLocks => {
+        const primary = { id: 61, title: 'Primary', locked: ignoreLocks, locked_at: new Date() } as Publication;
+        const duplicate = { id: 62, title: 'Duplicate', locked_at: new Date() } as Publication;
+        EditLockOwnerStore.setOwner('publication', primary.id!, 'alice');
+        EditLockOwnerStore.setOwner('publication', duplicate.id!, 'alice');
+        const query = {
+            withDeleted: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(), setLock: jest.fn().mockReturnThis(),
+            getMany: jest.fn().mockResolvedValue([primary, duplicate]),
+        };
+        pubRepository.createQueryBuilder = jest.fn().mockReturnValue(query);
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => where.id === 61 ? primary : duplicate);
+        pubRepository.save.mockImplementation(async publication => publication as Publication);
+        jest.spyOn(publicationRelationService, 'deletePublicationRelations').mockResolvedValue(undefined);
+        const tags = new PublicationTagService(dataSource as any, configService as any);
+        jest.spyOn(tags, 'attach').mockImplementation(async publications => publications);
+        jest.spyOn(tags, 'mutateInMerge').mockResolvedValue(undefined);
+        const serviceWithTags = new PublicationService(pubRepository as Repository<Publication>, configService as any,
+            publicationChangeService, dataSource as any, publicationRelationService, tags);
+
+        await expect(serviceWithTags.combine(61, [62], undefined, { ignoreLocks, by_user: 'alice' }))
+            .resolves.toMatchObject({ id: 61 });
         expect(pubRepository.delete).toHaveBeenCalledWith([62]);
     });
 
