@@ -560,6 +560,7 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     this.form.get('oa_info').get('oa_status').disable();
     this.form.get('oa_info').get('is_journal_oa').disable();
     this.form.get('oa_info').get('best_oa_host').disable();
+    this.form.markAsDirty();
   }
 
   setLock(flag: boolean) {
@@ -661,14 +662,18 @@ export class PublicationFormComponent implements OnInit, AfterViewInit {
     return value;
   }
 
+  get supplementsReadonly(): boolean {
+    return this.disabled || !!this.pub?.locked || !!this.pub?.locked_biblio;
+  }
+
   deleteSuppl(elem) {
-    if (this.disabled) return;
+    if (this.supplementsReadonly) return;
     if (elem.id) this.pub.supplements = this.pub.supplements.filter(e => e.id !== elem.id);
     else this.pub.supplements = this.pub.supplements.filter(e => e.link !== elem.link);
   }
 
   addSuppl() {
-    if (this.disabled || this.supplForm.invalid) return;
+    if (this.supplementsReadonly || this.supplForm.invalid) return;
     if (!this.pub.supplements) this.pub.supplements = [];
     this.pub.supplements.push({
       link: this.supplForm.get('link').value,
