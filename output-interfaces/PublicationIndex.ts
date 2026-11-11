@@ -1,10 +1,25 @@
+import { InvoiceCounts } from './InvoiceIndex';
+import { IndexPage, ReportingYearIndexPageRequest } from './IndexPage';
+import { SearchFilter } from './Config';
+import { PublicationTag } from './PublicationTag';
+
+export const PUBLICATION_INDEX_COLUMNS = [
+    'id', 'locked', 'title', 'doi', 'authors', 'authors_inst', 'corr_author', 'corr_inst',
+    'greater_entity', 'publisher', 'pub_date', 'link', 'data_source', 'edit_date', 'status',
+    'oa_category', 'pub_type', 'contract', 'net_costs', 'import_date', 'locked_status', 'tags',
+] as const;
+export type PublicationIndexColumn = typeof PUBLICATION_INDEX_COLUMNS[number];
+
 export interface PublicationIndex {
+    tags?: PublicationTag[];
     id: number;
     title: string;
     doi: string;
     authors: string;
     authors_inst: string;
     corr_author: string;
+    corr_inst?: string;
+    /** Legacy name retained for source compatibility; the API field is corr_inst. */
     corr_institute: string;
     greater_entity: string;
     publisher: string;
@@ -15,11 +30,26 @@ export interface PublicationIndex {
     locked: boolean;
     status: number;
     oa_category: string;
+    pub_type?: string;
+    /** Legacy name retained for source compatibility; the API field is pub_type. */
     publication_type: string;
     contract: string;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     import_date: Date;
+    locked_status?: string;
 }
+
+export interface PublicationIndexPageRequest extends ReportingYearIndexPageRequest<PublicationIndexColumn> {
+    all_reporting_years?: boolean;
+    include_tags?: boolean;
+    soft?: boolean;
+    /** Active expression or path filters ignore reporting_year; explicit date expressions still apply. */
+    filter?: SearchFilter;
+    paths?: string[];
+}
+
+export type PublicationIndexPage = IndexPage<PublicationIndex>;
 
 export interface AuthorIndex {
 	id: number;
@@ -29,6 +59,7 @@ export interface AuthorIndex {
 	pub_count: number;
 	pub_count_corr: number;
     pub_count_total: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
 	institutes?: string;
 }
@@ -41,10 +72,11 @@ export interface InstituteIndex {
 	author_count_total: number;
 	pub_count: number;
 	pub_count_corr: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
 	sub_inst_count: number;
 }
-export interface ContractIndex {
+export interface ContractIndex extends Partial<InvoiceCounts> {
 	id: number;
     publisher: string;
     label: string;
@@ -52,6 +84,7 @@ export interface ContractIndex {
     end_date?: Date;
     invoice_amount?: number;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
@@ -82,6 +115,7 @@ export interface PublicationTypeIndex {
     label: string;
     review: boolean;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
@@ -90,21 +124,24 @@ export interface OACategoryIndex {
     label: string;
     is_oa: boolean;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
-export interface CostCenterIndex {
+export interface CostCenterIndex extends Partial<InvoiceCounts> {
     id?: number;
     number?: string;
     label: string;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }
-export interface CostTypeIndex {
+export interface CostTypeIndex extends Partial<InvoiceCounts> {
     id?: number;
     label: string;
 	pub_count: number;
+    /** Gross costs: booking amount per invoice, otherwise items including VAT. Legacy field name. */
     net_costs?: number;
     pub_count_total: number;
 }

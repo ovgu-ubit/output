@@ -1,3 +1,4 @@
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Request } from "express";
 import { Author } from "./Author.entity";
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
@@ -13,6 +14,13 @@ export class AuthorController extends AbstractCrudController<Author, AuthorServi
 
     constructor(authorService: AuthorService) {
         super(authorService);
+    }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.service.indexPage(body, !!request?.['user']?.['read']);
     }
 
     @Get('index')
@@ -46,7 +54,7 @@ export class AuthorController extends AbstractCrudController<Author, AuthorServi
     })
     @UseGuards(AccessGuard)
     @Permissions([{ role: 'writer', app: 'output' }, { role: 'admin', app: 'output' }])
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[]) {
-        return this.service.combineAuthors(id1, ids, aliases_first_name, aliases_last_name);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases_first_name') aliases_first_name?: string[], @Body('aliases_last_name') aliases_last_name?: string[], @Req() request?: Request) {
+        return this.service.combineAuthors(id1, ids, aliases_first_name, aliases_last_name, request?.['user']?.['username']);
     }
 }

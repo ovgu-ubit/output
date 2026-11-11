@@ -3,7 +3,7 @@ import { AUTH_SERVICE } from './authorization.service';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { AppConfigModule } from '../config/app-config.module';
-import { ModuleRef, Reflector } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import path = require('path');
 import * as fs from 'fs';
 import { AppConfigService } from '../config/app-config.service';
@@ -31,9 +31,9 @@ export class AuthorizationModule {
         AccessGuard,
         {
         provide: AUTH_SERVICE,
-        inject: [AppConfigService, ModuleRef],
+        inject: [AppConfigService, Reflector, JwtService, HttpService, DemoAuthService],
 
-        useFactory: async (cfg: AppConfigService, ref: ModuleRef) => {
+        useFactory: async (cfg: AppConfigService, reflector: Reflector, jwt: JwtService, http: HttpService, demoAuthService: DemoAuthService) => {
           const rel = await cfg.get('AUTH_SERVICE_PATH')!;
           const exported = await cfg.get('AUTH_SERVICE_EXPORT')!;
           const abs = path.isAbsolute(rel) ? rel : path.resolve(process.cwd(), "dist/src/"+rel+".js");
@@ -51,15 +51,7 @@ export class AuthorizationModule {
             throw new Error(`Export ${exported} in ${abs} ist keine Klasse/Funktion.`);
           }
 
-          const [reflector, configSvc, jwt, http, demoAuthService] = await Promise.all([
-          ref.resolve(Reflector, undefined, { strict: false }),
-          ref.resolve(AppConfigService, undefined, { strict: false }),
-          ref.resolve(JwtService, undefined, { strict: false }),
-          ref.resolve(HttpService, undefined, { strict: false }),
-          ref.resolve(DemoAuthService, undefined, { strict: false }),
-]);
-          // Wenn die Klasse @Injectable-abhängigkeiten hat, löst ModuleRef.create() diese auf:
-          const instance = new Impl(reflector, configSvc, jwt, http, demoAuthService)//await ref.create(Impl as any);
+          const instance = new Impl(reflector, cfg, jwt, http, demoAuthService);
 
           // Sanity-Check auf das erwartete API
           if (typeof (instance as any)?.verify !== 'function') {

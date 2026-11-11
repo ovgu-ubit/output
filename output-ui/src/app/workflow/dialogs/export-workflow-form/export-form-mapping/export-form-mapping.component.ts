@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -6,16 +6,22 @@ import {  ExportWorkflow  } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ExportFormFacade } from '../export-form-facade.service';
+import { getExportEntityDetails } from '../../../export-entity-options';
 
 @Component({
   selector: 'app-export-form-mapping',
   imports: [SharedModule],
   templateUrl: './export-form-mapping.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './export-form-mapping.component.css',
 })
 export class ExportFormMappingComponent implements OnInit, WorkflowFormPage {
   form: FormGroup;
   entity: ExportWorkflow;
+
+  get sourceDetails() {
+    return getExportEntityDetails(this.entity?.source_entity);
+  }
 
   constructor(
     private facade: ExportFormFacade,

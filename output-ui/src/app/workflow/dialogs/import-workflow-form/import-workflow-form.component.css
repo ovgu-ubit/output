@@ -54,34 +54,6 @@ mat-nav-list a.active::before {
   max-width: 1100px;
 }
 
-.status-chip.mat-mdc-chip {
-  height: 22px;               /* deutlich kleiner */
-  padding: 0 8px;             /* weniger “Wurstigkeit” */
-  border-radius: 999px;
-
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-/* Wichtig: Text-Label im MDC-Chip explizit stylen */
-:host ::ng-deep .status-chip .mdc-evolution-chip__text-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  color: rgba(255, 255, 255, 0.92);
-  line-height: 22px;          /* vertikal schön zentriert */
-}
-
-/* Statusfarben */
-.status-active.mat-mdc-chip { border-color: rgba(129, 199, 132, 0.75); }
-:host ::ng-deep .status-active .mdc-evolution-chip__text-label { color: rgba(200, 230, 201, 0.98) !important; }
-
-.status-draft.mat-mdc-chip { border-color: rgba(189, 189, 189, 0.55); }
-:host ::ng-deep .status-draft .mdc-evolution-chip__text-label { color: rgba(255, 255, 255, 0.72) !important; }
-
-.status-archived.mat-mdc-chip { border-color: rgba(255, 183, 77, 0.70); }
-:host ::ng-deep .status-archived .mdc-evolution-chip__text-label { color: rgba(255, 224, 178, 0.98) !important; }
-
 .mat-icon {
   font-size: 20px;
   width: 20px;

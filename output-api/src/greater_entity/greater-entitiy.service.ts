@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindManyOptions, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
@@ -99,7 +101,7 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             if (flag && !dryRun) await this.repository.save(result)
 
             //find associated ids
-            const ids = await this.idRepository.find({ where: { entity: result }, relations: { entity: true } })
+            const ids = await this.idRepository.find({ where: { entity: { id: result.id } }, relations: { entity: true } })
             if (ge.identifiers && ge.identifiers.length > 0) {
                 ids2save = ge.identifiers.filter(i => !ids.find(e => e.value === i.value));
             }
@@ -113,6 +115,18 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
     }
 
     public async index(reporting_year: number): Promise<GreaterEntityIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year);
+        const rows = await query.getRawMany<GreaterEntityIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest): Promise<IndexPage<GreaterEntityIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year);
+        const result = await paginateIndexQuery<GreaterEntityIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number) {
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("greater_entity", "ge")
@@ -156,11 +170,14 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<GreaterEntityIndex[]>;
+        return query;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        return mergeEntities<GreaterEntity>({
+    public async combine(id1: number, ids: number[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<GreaterEntity>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -172,12 +189,12 @@ export class GreaterEntityService extends AbstractEntityService<GreaterEntity> {
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    await this.idRepository.delete({ entity: { id: In(duplicateIds) } });
+                    await manager.getRepository(GEIdentifier).delete({ entity: { id: In(duplicateIds) } });
                 }
 
                 await defaultDelete();
             },
-        });
+        }));
     }
 
     public async delete(insts: GreaterEntity[]) {

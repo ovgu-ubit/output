@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
 import {  GreaterEntityIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { GreaterEntityFormComponent } from '../../../form/greater-entity-form/gr
     selector: 'app-greater-entities',
     templateUrl: './greater-entities.component.html',
     styleUrls: ['./greater-entities.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class GreaterEntitiesComponent implements TableParent<GreaterEntityIndex>, OnInit {

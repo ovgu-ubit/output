@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild } from '@angular/core';
+import { Component, Inject, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import {  Contract, ContractComponent, ContractModel  } from '@output/interfaces';
 import { ContractService } from 'src/app/services/entities/contract.service';
@@ -9,6 +9,7 @@ import { ContractComponentFormComponent } from '../contract-component-form/contr
     selector: 'app-contract-form',
     templateUrl: './contract-form.component.html',
     styleUrls: ['./contract-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ContractFormComponent {

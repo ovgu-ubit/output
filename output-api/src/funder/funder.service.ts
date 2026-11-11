@@ -1,3 +1,5 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
@@ -28,6 +30,10 @@ export class FunderService extends AbstractEntityService<Funder> {
         return { aliases: true };
     }
 
+    public getForExport() {
+        return this.repository.find({ relations: this.getFindOneRelations() });
+    }
+
     public override async save(entity: DeepPartial<Funder>, user?: string) {
         return this.dataSource.transaction(async (manager) => {
             const aliases = entity.aliases;
@@ -56,6 +62,18 @@ export class FunderService extends AbstractEntityService<Funder> {
     }
 
     public async index(reporting_year: number): Promise<FunderIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year);
+        const rows = await query.getRawMany<FunderIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest): Promise<IndexPage<FunderIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year);
+        const result = await paginateIndexQuery<FunderIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number) {
         let query = this.repository.createQueryBuilder("funder")
             .select("funder.id", "id")
             .addSelect("funder.label", "label")
@@ -79,11 +97,14 @@ export class FunderService extends AbstractEntityService<Funder> {
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<FunderIndex[]>;
+        return query;
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        return mergeEntities<Funder>({
+    public async combine(id1: number, ids: number[], alias_strings?: string[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<Funder>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -96,12 +117,12 @@ export class FunderService extends AbstractEntityService<Funder> {
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                    await manager.getRepository(AliasFunder).delete({ elementId: In(duplicateIds) });
                 }
 
                 await defaultDelete();
             },
-        });
+        }));
     }
 
     public async delete(insts: Funder[]) {

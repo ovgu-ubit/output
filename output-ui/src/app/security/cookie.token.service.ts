@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Location } from '@angular/common';
+import { hasApplicationRole } from '@output/interfaces';
 import { MatDialog } from '@angular/material/dialog';
 import { CookieService } from 'ngx-cookie-service';
 import { AuthorizationService } from './authorization.service';
@@ -42,7 +43,7 @@ export class CookieTokenService extends AuthorizationService {
 
   public override hasRole(rolename: string) {
     if (!this.runtimeConfigService.getValue('security')) return true;
-    else return this.getUser() && this.getPermissions()?.some((v, i, a) => (v['appname'] === 'output' && v['rolename'] === rolename) || (v['appname'] === null && v['rolename'] === 'admin'));
+    return !!this.getUser() && hasApplicationRole(this.getPermissions(), 'output', rolename);
   }
 
   public override login(state) {

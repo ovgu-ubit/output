@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -14,6 +14,7 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
   selector: 'app-publication-export',
   templateUrl: './publication-export.component.html',
   styleUrl: './publication-export.component.css',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class PublicationExportComponent implements TableParent<ExportWorkflow>, OnInit {
@@ -27,6 +28,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'version', colTitle: 'Version', type: 'number' },
+    { colName: 'source_entity_label', colTitle: 'Entitätsklasse' },
   ];
 
   draft_headers: TableHeader[] = [
@@ -87,7 +89,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
   }
 
   add() {
-    this.router.navigate(['/workflow/publication_export/new/overview']);
+    this.router.navigate(['/workflow/publication_export/new/general']);
   }
 
   getLink() {
@@ -95,7 +97,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
   }
 
   getLabel() {
-    return '/Workflows/Publikationsexport';
+    return '/Workflows/Export';
   }
 
   change(event: any) {
@@ -114,6 +116,7 @@ export class PublicationExportComponent implements TableParent<ExportWorkflow>, 
         break;
     }
 
+    this.table.resetPage();
     this.table.updateData().subscribe();
   }
 

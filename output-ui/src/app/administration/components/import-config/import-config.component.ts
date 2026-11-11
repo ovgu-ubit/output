@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ImportService } from 'src/app/administration/services/import.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
@@ -11,6 +11,7 @@ import { WorkflowService } from 'src/app/workflow/workflow.service';
   templateUrl: './import-config.component.html',
   styleUrls: ['./import-config.component.css'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [SharedModule]
 })
 export class ImportConfigComponent implements OnInit {

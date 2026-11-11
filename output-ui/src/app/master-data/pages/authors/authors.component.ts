@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { AuthorService } from 'src/app/services/entities/author.service';
 import {  AuthorIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { AuthorFormComponent } from 'src/app/form/author-form/author-form.compon
     selector: 'app-authors',
     templateUrl: './authors.component.html',
     styleUrls: ['./authors.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
@@ -26,7 +27,7 @@ export class AuthorsComponent implements TableParent<AuthorIndex>, OnInit {
     { colName: 'institutes', colTitle: 'Institute' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
     { colName: 'pub_count_corr', colTitle: 'Anzahl Publikationen (corr.)', type: 'pubs' },
-    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' },
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 

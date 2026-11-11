@@ -1,4 +1,4 @@
-import { Component, inject, Input, ViewChild } from '@angular/core';
+import { Component, inject, Input, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import {  Identifiable, IIdentifier  } from '@output/interfaces';
@@ -7,6 +7,7 @@ import {  Identifiable, IIdentifier  } from '@output/interfaces';
     selector: 'app-id-table',
     templateUrl: './id-table.component.html',
     styleUrl: './id-table.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class IdTableComponent<T extends Identifiable<T>> {

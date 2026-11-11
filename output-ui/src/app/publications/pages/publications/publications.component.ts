@@ -1,10 +1,11 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnDestroy, Optional, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, concatMap, map, merge } from 'rxjs';
+import { concatMap, forkJoin, map, take } from 'rxjs';
+import { PUBLICATION_INDEX_COLUMNS } from '@output/interfaces/PublicationIndex';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { ConfigService} from 'src/app/administration/services/config.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -12,31 +13,43 @@ import { StatusService } from 'src/app/services/entities/status.service';
 import { ViewConfig, initialState, resetReportingYear, resetViewConfig, selectViewConfig, setReportingYear, setViewConfig } from 'src/app/services/redux';
 import { TableComponent } from 'src/app/table/table-component/table.component';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
-import {  CompareOperation, JoinOperation, SearchFilter, SearchFilterExpression  } from '@output/interfaces';
+import {
+  CompareOperation,
+  IndexColumnFilters,
+  IndexPageRequest,
+  IndexSortCriterion,
+  JoinOperation,
+  PublicationIndexColumn,
+  SearchFilter,
+  SearchFilterExpression,
+} from '@output/interfaces';
 import {  Publication  } from '@output/interfaces';
 import {  PublicationIndex  } from '@output/interfaces';
+import { AuthorizationService } from 'src/app/security/authorization.service';
 import { FilterViewComponent } from '../../dialogs/filter-view/filter-view.component';
 import { PublicationFormComponent } from '../../dialogs/publication-form/publication-form.component';
-import { ReportingYearFormComponent } from '../../dialogs/reporting-year-form/reporting-year-form.component';
+import { ReportingYearFormComponent, ReportingYearSelection } from '../../dialogs/reporting-year-form/reporting-year-form.component';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Component({
     selector: 'app-publications',
     templateUrl: './publications.component.html',
     styleUrls: ['./publications.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PublicationsComponent implements OnDestroy, TableParent<PublicationIndex> {
   constructor(public publicationService: PublicationService, public dialog: MatDialog, private route: ActivatedRoute,
     private _snackBar: MatSnackBar, private store: Store, private enrichService: EnrichService,
     private clipboard: Clipboard, private configService:ConfigService, private runtimeConfigService:RuntimeConfigService,
-    private statusService: StatusService) { }
+    private statusService: StatusService, @Optional() public tokenService?: AuthorizationService) { }
 
   name = 'Publikationen des Jahres ';
   institution = '';
 
-  indexOptions?: { soft: boolean, filter: SearchFilter, paths?: string[] };
+  indexOptions?: { soft: boolean, filter?: SearchFilter, paths?: string[], allReportingYears?: boolean };
 
+  showTags = false;
   soft_deletes = false;
   statusDescriptions = new Map<number, string>();
 
@@ -61,8 +74,35 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   ];
   viewConfig: ViewConfig;
 
+  loadPage(request: IndexPageRequest<string>, reportingYear: number | null) {
+    const sort = request.sort?.filter(
+      (criterion): criterion is IndexSortCriterion<PublicationIndexColumn> => this.isPublicationIndexColumn(criterion.key),
+    );
+    const columnFilters = Object.fromEntries(
+      Object.entries(request.column_filters ?? {}).filter(([key]) => this.isPublicationIndexColumn(key)),
+    ) as IndexColumnFilters<PublicationIndexColumn>;
+    const searchColumns = request.search_columns?.filter(key => this.isPublicationIndexColumn(key)) as PublicationIndexColumn[] | undefined;
+    const hasExtendedFilters = !!this.indexOptions?.filter?.expressions?.length || !!this.indexOptions?.paths?.length;
+    return this.publicationService.indexPage({
+      ...request,
+      sort,
+      column_filters: columnFilters,
+      search_columns: searchColumns,
+      reporting_year: reportingYear,
+      include_tags: this.canReadTags && this.showTags,
+      soft: this.indexOptions?.soft === true,
+      filter: this.indexOptions?.filter,
+      paths: this.indexOptions?.paths ?? [],
+      all_reporting_years: this.indexOptions?.allReportingYears === true || hasExtendedFilters,
+    });
+  }
+
+  private isPublicationIndexColumn(key: string): key is PublicationIndexColumn {
+    return PUBLICATION_INDEX_COLUMNS.includes(key as PublicationIndexColumn) && (key !== 'tags' || (this.canReadTags && this.showTags));
+  }
+
   preProcessing() {
-    let ob$: Observable<any> = this.enrichService.getEnrichs().pipe(map(data => {
+    const enrichs$ = this.enrichService.getEnrichs().pipe(map(data => {
       let sub_buttons = data.map(e => {
         return {
           title: e.label, action_function: function () {
@@ -75,7 +115,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       })
     }))
 
-    ob$ = merge(ob$, this.configService.get("pub_index_columns").pipe(concatMap(data => {
+    const columns$ = this.configService.get("pub_index_columns").pipe(concatMap(data => {
       let headers: TableHeader[] = [{ colName: 'id', colTitle: 'ID', type: 'number' }];
       if (data.value["title"]) headers.push({ colName: 'title', colTitle: 'Titel' })
       if (data.value["doi"]) headers.push({ colName: 'doi', colTitle: 'DOI', type: 'doi' })
@@ -87,7 +127,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["greater_entity"]) headers.push({ colName: 'greater_entity', colTitle: 'Größere Einheit' })
       if (data.value["publisher"]) headers.push({ colName: 'publisher', colTitle: 'Verlag' })
       if (data.value["contract"]) headers.push({ colName: 'contract', colTitle: 'Vertrag' })
-      if (data.value["net_costs"]) headers.push({ colName: 'net_costs', colTitle: 'Kosten', type: 'euro' })
+      if (data.value["net_costs"]) headers.push({ colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' })
       if (data.value["oa_category"]) headers.push({ colName: 'oa_category', colTitle: 'OA-Kategorie' })
       if (data.value["locked_status"]) headers.push({ colName: 'locked_status', colTitle: 'Sperrstatus' })
       if (data.value["status"]) headers.push({
@@ -100,33 +140,46 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       if (data.value["edit_date"]) headers.push({ colName: 'edit_date', colTitle: 'Zul. geändert', type: 'datetime' })
       if (data.value["import_date"]) headers.push({ colName: 'import_date', colTitle: 'Hinzugefügt', type: 'datetime' })
       if (data.value["data_source"]) headers.push({ colName: 'data_source', colTitle: 'Datenquelle' })
+      this.showTags = this.canReadTags && data.value['tags'] === true;
+      if (this.showTags) headers.push({ colName: 'tags', colTitle: 'Tags', type: 'tags', roles: ['reader', 'publication_writer', 'writer', 'admin'] });
       this.headers = headers;
       return this.configService.get("institution_short_label").pipe(map(data => {
         this.institution = data.value
         let header = this.headers.find(e => e.colName === 'authors_inst')
         if (header) header.colTitle = 'Personen ' + this.institution;
       }))
-    })))
+    }))
 
-    ob$ = merge(ob$, this.statusService.getAll().pipe(map(statuses => {
+    const statuses$ = this.statusService.getAll().pipe(map(statuses => {
       this.statusDescriptions = new Map(
         statuses
           .filter(status => status.id !== undefined && status.label)
           .map(status => [status.id!, status.label])
       );
-    })));
+    }));
 
-    ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(concatMap(viewConfig => {
-      this.viewConfig = viewConfig;
-      return this.route.queryParamMap.pipe(map(params => {
-        let filter = this.queryToFilter(params);
-        if (filter) this.viewConfig = { ...this.viewConfig, filter }
+    const view$ = this.store.select(selectViewConfig).pipe(take(1), concatMap(viewConfig => {
+      this.viewConfig = viewConfig ?? initialState.viewConfig;
+      return this.route.queryParamMap.pipe(take(1), map(params => {
+        const queryView = this.queryToFilter(params);
+        if (queryView) {
+          this.viewConfig = {
+            ...this.viewConfig,
+            filter: { filter: queryView.filter, paths: queryView.paths },
+            allReportingYears: queryView.allReportingYears,
+          };
+        }
 
-        this.indexOptions = { soft: false, filter: this.viewConfig.filter?.filter, paths: this.viewConfig.filter?.paths }
+        this.indexOptions = {
+          soft: false,
+          filter: this.viewConfig.filter?.filter,
+          paths: this.viewConfig.filter?.paths,
+          allReportingYears: this.viewConfig.allReportingYears === true,
+        }
       }));
-    })));
+    }));
 
-    return ob$;
+    return forkJoin([enrichs$, columns$, statuses$, view$]).pipe(map(() => undefined));
   }
 
   getStatusDescription(status: number): string | null {
@@ -134,11 +187,7 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
   }
 
   ngOnDestroy(): void {
-    if (this.table) {
-      this.store.dispatch(setViewConfig({
-        viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
-      }))
-    }
+    if (this.table) this.persistViewConfig();
   }
 
   changeReportingYear() {
@@ -146,16 +195,34 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       width: '400px',
       disableClose: true,
       data: {
-        reporting_year: this.table?.reporting_year
+        reporting_year: this.table?.reporting_year,
+        allReportingYears: this.indexOptions?.allReportingYears === true,
       }
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: ReportingYearSelection | undefined) => {
       if (result !== undefined) {
-        this.table.reporting_year = result;
-        this.store.dispatch(setReportingYear({ reporting_year: this.table.reporting_year }))
+        this.indexOptions = {
+          ...this.indexOptions,
+          soft: false,
+          allReportingYears: result.allReportingYears,
+        };
+        this.viewConfig = {
+          ...this.viewConfig,
+          allReportingYears: result.allReportingYears,
+        };
+        this.table.setReportingYear(result.reportingYear, result.allReportingYears);
+        this.table.resetPage();
+        if (!result.allReportingYears) {
+          this.store.dispatch(setReportingYear({ reporting_year: result.reportingYear }));
+        }
+        this.persistViewConfig();
         this.table.updateData().subscribe();
       }
     });
+  }
+
+  get canReadTags() {
+    return ['reader', 'writer', 'admin', 'publication_writer'].some(role => this.tokenService?.hasRole(role));
   }
 
   lockSelected() {
@@ -214,13 +281,15 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     this.indexOptions = {
       soft: false,
       filter: null,
-      paths: null
+      paths: null,
+      allReportingYears: false,
     }
     this.table.resetView();
     this.configService.get("reporting_year").pipe(concatMap(data => {
-      this.table.reporting_year = data?.value;
-      if (data) this.name = 'Publikationen des Jahres ' + data.value;
-      else this.name = 'Publikationen ohne Datumsangabe'
+      const reportingYear = data?.value ?? null;
+      this.table.setReportingYear(reportingYear, false);
+      if (reportingYear) this.name = 'Publikationen des Jahres ' + reportingYear;
+      else this.name = 'Publikationen ohne Datumsangabe';
       return this.table.updateData();
     })).subscribe();
   }
@@ -231,7 +300,8 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
       maxHeight: '800px',
       disableClose: false,
       data: {
-        viewConfig: this.viewConfig
+        viewConfig: this.viewConfig,
+        allowTagFilters: ['reader', 'writer', 'admin', 'publication_writer'].some(role => this.tokenService?.hasRole(role)),
       }
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -242,10 +312,22 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
           this.indexOptions = {
             soft: false,
             filter: result.filter,
-            paths: result.paths
+            paths: result.paths,
+            allReportingYears: this.viewConfig.allReportingYears === true,
           }
+          this.table.resetPage();
           this.table.updateData().subscribe();
-        } else this.resetView()
+        } else {
+          this.indexOptions = {
+            soft: false,
+            filter: result.filter,
+            paths: result.paths,
+            allReportingYears: this.viewConfig.allReportingYears === true,
+          };
+          this.table.resetPage();
+          this.persistViewConfig();
+          this.table.updateData().subscribe();
+        }
       }
     })
   }
@@ -259,18 +341,19 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     });
     this.store.dispatch(resetViewConfig())
     this.store.dispatch(resetReportingYear())
+    this.viewConfig = initialState.viewConfig;
     this.indexOptions = {
       soft: true,
       filter: null,
-      paths: null
+      paths: null,
+      allReportingYears: false,
     }
+    this.table.resetPage();
     this.table.updateData().subscribe()
   }
 
   createLink() {
-    this.store.dispatch(setViewConfig({
-      viewConfig: { ...this.table.getViewConfig(), filter: { filter: this.indexOptions?.filter, paths: this.indexOptions?.paths } }
-    }))
+    this.persistViewConfig();
     let link = this.runtimeConfigService.getValue('self') + 'publications' + this.filterToQuery()
     if (this.clipboard.copy(link)) {
       this._snackBar.open(`Link wurde in die Zwischenablage kopiert`, 'Super!', {
@@ -290,19 +373,22 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
     if (this.indexOptions.paths) for (let path of this.indexOptions.paths) {
       params.append('path', path);
     }
+    if (this.indexOptions.allReportingYears) params.set('allReportingYears', 'true');
     const query = params.toString();
     return query ? `?${query}` : '';
   }
 
-  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[] } {
+  queryToFilter(paramMap: ParamMap): { filter: SearchFilter, paths: string[], allReportingYears: boolean } {
     let res = {
       filter: {
         expressions: []
-      }, paths: []
+      },
+      paths: [],
+      allReportingYears: paramMap.get('allReportingYears') === 'true',
     };
     let filters = paramMap.getAll('filter');
     res.paths = paramMap.getAll('path');
-    let flag = res.paths.length > 0;
+    let flag = res.paths.length > 0 || res.allReportingYears;
     for (let e of filters) {
       let expr = this.parseFilterQueryExpression(e);
       if (!expr) continue;
@@ -348,6 +434,18 @@ export class PublicationsComponent implements OnDestroy, TableParent<Publication
 
   getLabel() {
     return '/Publikationen'
+  }
+
+  private persistViewConfig(): void {
+    this.viewConfig = {
+      ...this.table.getViewConfig(),
+      filter: {
+        filter: this.indexOptions?.filter,
+        paths: this.indexOptions?.paths,
+      },
+      allReportingYears: this.indexOptions?.allReportingYears === true,
+    };
+    this.store.dispatch(setViewConfig({ viewConfig: this.viewConfig }));
   }
 
 }

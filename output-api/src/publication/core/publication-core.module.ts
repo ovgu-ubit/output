@@ -20,12 +20,18 @@ import { MissingInvoiceDataService } from '../../workflow/filter/missing-invoice
 import { MissingInstFilterService } from '../../workflow/filter/missing-inst-filter.service';
 import { MissingInstAuthorFilterService } from '../../workflow/filter/missing-inst-author-filter.service';
 import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
+import { PublicationTag } from '../tags/PublicationTag.entity';
+import { PublicationTagAssignment } from '../tags/PublicationTagAssignment.entity';
+import { PublicationTagService } from '../tags/publication-tag.service';
+import { PublicationTagController } from '../tags/PublicationTagController';
 
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Publication,
+      PublicationTag,
+      PublicationTagAssignment,
       PublicationChange,
       PublicationIdentifier,
       PublicationSupplement,
@@ -38,8 +44,8 @@ import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
     AppConfigModule,
     DiscoveryModule
   ],
-  controllers: [PublicationController],
-  providers: [PublicationService, PublicationChangeService, PublicationFilterService, PublicationIndexService, MissingInstAuthorFilterService, MissingInstFilterService, MissingInvoiceDataService,
+  controllers: [PublicationController, PublicationTagController],
+  providers: [PublicationTagService, PublicationService, PublicationChangeService, PublicationFilterService, PublicationIndexService, MissingInstAuthorFilterService, MissingInstFilterService, MissingInvoiceDataService,
     {
       provide: 'Filters',
       inject: [DiscoveryService, ModuleRef],

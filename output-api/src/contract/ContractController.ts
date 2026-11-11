@@ -1,3 +1,4 @@
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Body, Controller, Delete, Get, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -6,6 +7,7 @@ import { Contract } from './Contract.entity';
 import {  ContractIndex  } from '@output/interfaces';
 import { Permissions } from '../authorization/permission.decorator';
 import { AccessGuard } from '../authorization/access.guard';
+import { canReadInvoices } from '../authorization/invoice-read-access';
 import { AbstractCrudController } from '../common/abstract-crud.controller';
 import { createNotFoundHttpException } from '../common/api-error';
 import { ContractComponent } from './ContractComponent.entity';
@@ -18,13 +20,20 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
         super(contractService);
     }
 
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.service.indexPage(body, !!request?.['user']?.['read'], canReadInvoices(request?.['user']));
+    }
+
     @Get('index')
     @UseGuards(AccessGuard)
     @ApiOperation({ summary: 'List contract index entries' })
-    @ApiQuery({ name: 'reporting_year', required: false, type: Number, description: 'Reporting year used to aggregate publication counts.' })
+    @ApiQuery({ name: 'reporting_year', required: false, type: Number, description: 'Year for publication counts (publication date) and invoice counts (invoice date). Invoice counts are only returned to invoice readers.' })
     @ApiResponse({ status: 200, description: 'Contract index entries for the requested reporting year.' })
     async index(@Query('reporting_year') reporting_year: number, @Req() request: Request): Promise<ContractIndex[]> {
-        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false);
+        return await this.service.index(reporting_year, request['user'] ? request['user']['read'] : false, canReadInvoices(request['user']));
     }
 
     @Get('component')
@@ -140,7 +149,7 @@ export class ContractController extends AbstractCrudController<Contract, Contrac
         },
     })
     @ApiResponse({ status: 200, description: 'The contracts were combined successfully.' })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[]) {
-        return this.service.combine(id1,ids);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Req() request?: Request) {
+        return this.service.combine(id1, ids, undefined, request?.['user']?.['username']);
     }
 }

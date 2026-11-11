@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImportFormTestComponent } from './import-form-test.component';
 import { ImportFormFacade } from '../import-form-facade.service';
 import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -20,7 +20,7 @@ describe('ImportFormTestComponent', () => {
       imports: [ImportFormTestComponent, NoopAnimationsModule],
       providers: [
         { provide: ImportFormFacade, useValue: mockFacade },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting()
       ]
     })

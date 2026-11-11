@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import {  PublisherIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { PublisherFormComponent } from '../../../form/publisher-form/publisher-f
     selector: 'app-publishers',
     templateUrl: './publishers.component.html',
     styleUrls: ['./publishers.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PublishersComponent implements TableParent<PublisherIndex>, OnInit {

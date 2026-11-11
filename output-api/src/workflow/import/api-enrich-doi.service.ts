@@ -1,3 +1,4 @@
+import { EMPTY } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { Observable, catchError, mergeAll, of, queueScheduler, scheduled } from 'rxjs';
@@ -43,7 +44,6 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
-    private publicationsUpdate = [];
     private processedPublications = 0;
     private errors = 0;
 
@@ -89,7 +89,8 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
 
     private request(doi: string): Observable<any> {
         const url = this.createUrl(doi);
-        return this.http.get(url).pipe(catchError((error, caught) => {
+        return this.getImportRequest(this.http, url).pipe(catchError((error, caught) => {
+            if (this.isStopRequested()) return EMPTY;
             if (error.response?.status === 404) {
                 this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'import', text: 'Not found: ' + doi })
             } else if (error.response?.status === 422) {
@@ -109,7 +110,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         await this.init();
         this.progress = -1;
@@ -131,7 +132,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
         //console.log('Started enrich ' + this.name + ' for ' + publications.length + ' publications');
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting enrich with where clause ${JSON.stringify(this.whereClause)} by user ${by_user}` + (dryRun ? " (simulated) " : "")  })
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${publications.length} elements found` })
-        scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)).subscribe({
+        this.subscribeImport(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)), {
             next: async (data: any) => {
                 if (data) {
                     const item = this.getData(data);
@@ -158,7 +159,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                     //console.log(this.publicationsUpdate.length + ' pubs update to DB, ' + this.errors + ' errors');
                     //finalize
                     this.progress = 0;
-                    this.reportService.finish(this.report, {
+                    this.finishLegacyRun(this.report, {
                         status: 'Successfull enrich on ' + new Date(),
                         count_import: 0,
                         count_update: this.publicationsUpdate.length
@@ -170,7 +171,7 @@ export abstract class ApiEnrichDOIService extends AbstractImportService {
                 if (err.response) console.log(err.response.status + ': ' + err.response.statusText)
                 this.progress = 0;
                 this.status_text = 'Error while enriching on ' + new Date();
-                this.reportService.finish(this.report, {
+                this.finishLegacyRun(this.report, {
                     status: 'Error while importing on ' + new Date(),
                     count_import: 0,
                     count_update: this.publicationsUpdate.length

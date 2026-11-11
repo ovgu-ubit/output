@@ -1,5 +1,6 @@
 import { DataSource, Repository } from "typeorm";
 import { InitService } from "./init.service";
+import { CREATE_EXPORT_ENDPOINT_NAME_INDEX } from './workflow/export/export-endpoint-index';
 
 type InitRepositories = ConstructorParameters<typeof InitService> extends [DataSource, ...infer Repositories]
     ? Repositories
@@ -19,6 +20,7 @@ function createService(dataSourceOverrides: Partial<DataSource> = {}) {
     const dataSource = {
         migrations: [{ name: "InitialMigration", timestamp: 1 }],
         synchronize: jest.fn().mockResolvedValue(undefined),
+        query: jest.fn().mockResolvedValue(undefined),
         runMigrations: jest.fn().mockResolvedValue([{ name: "InitialMigration" }]),
         ...dataSourceOverrides,
     } as unknown as DataSource;
@@ -45,6 +47,9 @@ describe("InitService", () => {
 
         expect(dataSource.synchronize).toHaveBeenCalledWith(true);
         expect(dataSource.runMigrations).toHaveBeenCalledWith({ fake: true, transaction: "all" });
+        expect(dataSource.query).toHaveBeenCalledWith(CREATE_EXPORT_ENDPOINT_NAME_INDEX);
+        expect((dataSource.query as jest.Mock).mock.invocationCallOrder[0])
+            .toBeLessThan((dataSource.runMigrations as jest.Mock).mock.invocationCallOrder[0]);
         expect((dataSource.synchronize as jest.Mock).mock.invocationCallOrder[0])
             .toBeLessThan((dataSource.runMigrations as jest.Mock).mock.invocationCallOrder[0]);
     });

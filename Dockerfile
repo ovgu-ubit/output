@@ -1,6 +1,6 @@
 # -------- Base Image for Building -------
 # Use the official Node.js image as the base image
-FROM node:22 AS build
+FROM node:24 AS build
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app/
@@ -23,7 +23,7 @@ RUN npm prune --omit=dev
 
 # ------------ Runtime Image -------------
 # Use the official Node.js image as the base image
-FROM node:22 AS runtime
+FROM node:24 AS runtime
 
 # ---- Backend ----
 WORKDIR /usr/src/app

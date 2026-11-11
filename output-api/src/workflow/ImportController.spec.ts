@@ -34,10 +34,16 @@ describe('ImportController', () => {
   let controller: ImportController;
   let configService: { get: jest.Mock };
   let csvService: {
+    bindExecution: jest.Mock;
+    notifyStop: jest.Mock;
+    finalizeExecution: jest.Mock;
     setUp: jest.Mock;
     import: jest.Mock;
   };
   let excelService: {
+    bindExecution: jest.Mock;
+    notifyStop: jest.Mock;
+    finalizeExecution: jest.Mock;
     setUp: jest.Mock;
     import: jest.Mock;
   };
@@ -47,10 +53,16 @@ describe('ImportController', () => {
       get: jest.fn().mockResolvedValue(undefined),
     };
     csvService = {
+      bindExecution: jest.fn(),
+      notifyStop: jest.fn(async () => undefined),
+      finalizeExecution: jest.fn(async () => undefined),
       setUp: jest.fn(),
       import: jest.fn().mockReturnValue({ started: true }),
     };
     excelService = {
+      bindExecution: jest.fn(),
+      notifyStop: jest.fn(async () => undefined),
+      finalizeExecution: jest.fn(async () => undefined),
       setUp: jest.fn(),
       import: jest.fn().mockReturnValue({ started: true }),
     };

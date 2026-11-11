@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { PublicationTagService } from '../tags/publication-tag.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
 import { createNotFoundHttpException } from '../../common/api-error';
@@ -14,6 +15,7 @@ export class PublicationChangeService {
         @InjectRepository(Publication) private publicationRepository: Repository<Publication>,
         @InjectRepository(PublicationChange) private publicationChangeRepository: Repository<PublicationChange>,
         @InjectRepository(WorkflowReport) private workflowReportRepository: Repository<WorkflowReport>,
+        @Optional() private readonly tags?: PublicationTagService,
     ) { }
 
     async createPublicationChange(options: PublicationChange, manager?: EntityManager): Promise<PublicationChange> {
@@ -106,6 +108,7 @@ export class PublicationChangeService {
             withDeleted: true
         });
 
+        await this.tags?.attach(existing, manager ?? this.publicationRepository.manager);
         return new Map(existing.map((publication) => [publication.id, publication]));
     }
 
@@ -129,6 +132,9 @@ export class PublicationChangeService {
             const beforeValue = beforeSnapshot?.[key];
             const afterValue = afterSnapshot?.[key];
 
+            // Catalogue renames do not change publication membership.
+            if (key === 'tags' && Array.isArray(beforeValue) && Array.isArray(afterValue)
+                && JSON.stringify(beforeValue.map(tag => tag.id)) === JSON.stringify(afterValue.map(tag => tag.id))) continue;
             if (!beforeSnapshot && !this.hasPublicationChangeValue(afterValue)) continue;
             if (this.arePublicationChangeValuesEqual(beforeValue, afterValue)) continue;
 
@@ -155,6 +161,7 @@ export class PublicationChangeService {
 
     private buildPublicationChangeSnapshot(publication: Publication) {
         return {
+            tags: publication.tags?.map(tag => ({ id: tag.id, label: tag.label })).sort((a, b) => a.id! - b.id!) ?? [],
             authors: publication.authors,
             title: publication.title,
             doi: publication.doi,

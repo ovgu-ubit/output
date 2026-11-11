@@ -1,5 +1,5 @@
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {  Config  } from '@output/interfaces';
@@ -14,6 +14,7 @@ interface EditableConfig extends Config {
   selector: 'app-config',
   templateUrl: './config.component.html',
   styleUrls: ['./config.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class ConfigComponent implements OnInit {

@@ -1,4 +1,7 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { ApiResponse } from '@nestjs/swagger';
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Request } from "express";
 import { ApiBody, ApiTags } from "@nestjs/swagger";
 import { Publisher } from "./Publisher.entity";
 import {  PublisherIndex  } from '@output/interfaces';
@@ -13,6 +16,13 @@ export class PublisherController extends AbstractCrudController<Publisher, Publi
 
     constructor(publisherService:PublisherService) {
         super(publisherService);
+    }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto) {
+        return this.service.indexPage(body);
     }
 
     @Get("index")
@@ -31,7 +41,7 @@ export class PublisherController extends AbstractCrudController<Publisher, Publi
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
-        return this.service.combine(id1,ids,aliases);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[], @Req() request?: Request) {
+        return this.service.combine(id1, ids, aliases, request?.['user']?.['username']);
     }
 }

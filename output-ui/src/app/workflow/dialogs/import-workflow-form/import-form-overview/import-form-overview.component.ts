@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, takeUntil } from 'rxjs';
 import {  ImportWorkflow, WorkflowReport  } from '@output/interfaces';
@@ -10,6 +10,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
   standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-overview.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './import-form-overview.component.css',
 })
 export class ImportFormOverviewComponent implements OnInit {

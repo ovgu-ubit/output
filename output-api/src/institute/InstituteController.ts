@@ -1,3 +1,4 @@
+import { ReportingYearIndexPageRequestDto, IndexPageDto } from '../common/dto/index-page.dto';
 import { Body, Controller, Delete, Get, Post, Put, Query, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiBody, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
@@ -13,6 +14,13 @@ import { assertCreateRequestHasNoId } from "../common/entity-id";
 export class InstituteController {
 
     constructor(private instService: InstituteService) { }
+
+    @Post('index-page')
+    @UseGuards(AccessGuard)
+    @ApiResponse({ status: 201, type: IndexPageDto, description: 'Filtered, sorted index page. The reporting year scopes aggregate values.' })
+    indexPage(@Body() body: ReportingYearIndexPageRequestDto, @Req() request: Request) {
+        return this.instService.indexPage(body, !!request?.['user']?.['read']);
+    }
 
     @Get()
     @UseGuards(AccessGuard)
@@ -88,8 +96,8 @@ export class InstituteController {
             }
         }
     })
-    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[]) {
-        return this.instService.combine(id1, ids, aliases);
+    async combine(@Body('id1') id1: number, @Body('ids') ids: number[], @Body('aliases') aliases?:string[], @Req() request?: Request) {
+        return this.instService.combine(id1, ids, aliases, request?.['user']?.['username']);
     }
 
     @Get('subs/:id')

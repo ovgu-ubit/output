@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
 import {  ValidationWorkflow  } from '@output/interfaces';
@@ -12,6 +12,7 @@ import { ValidationFormFacade } from '../validation-form-facade.service';
   templateUrl: './validation-form-general.component.html',
   styleUrl: './validation-form-general.component.css',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [SharedModule]
 })
 export class ValidationFormGeneralComponent implements OnInit, WorkflowFormPage {

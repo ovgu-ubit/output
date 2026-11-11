@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -17,7 +17,7 @@ import { ImportFormFacade } from './import-form-facade.service';
 @Component({
   selector: 'app-import-workflow-form',
   templateUrl: './import-workflow-form.component.html',
-  styleUrl: './import-workflow-form.component.css',
+  styleUrls: ['../workflow-status.css', './import-workflow-form.component.css'],
   standalone: true,
   imports: [
     SharedModule,
@@ -26,6 +26,7 @@ import { ImportFormFacade } from './import-form-facade.service';
     MatListModule,
     MatToolbarModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [ImportFormFacade]
 })
 export class ImportWorkflowFormComponent implements OnInit, AfterViewInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
@@ -11,6 +11,7 @@ import { CostItemFormComponent } from '../cost-item-form/cost-item-form.componen
     selector: 'app-invoice-form',
     templateUrl: './invoice-form.component.html',
     styleUrls: ['./invoice-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class InvoiceFormComponent extends AbstractFormComponent<Invoice> implements OnInit, AfterViewInit {

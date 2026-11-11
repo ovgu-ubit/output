@@ -15,8 +15,17 @@ describe('FunderService', () => {
     let publicationService: { save: jest.Mock };
     let dataSource: { transaction: jest.Mock };
 
+    it('loads funder export aliases without publications', async () => {
+        repository.find!.mockResolvedValue([]);
+        expect(await service.getForExport()).toEqual([]);
+        expect(repository.find).toHaveBeenCalledWith({ relations: { aliases: true } });
+        expect(repository.find).toHaveBeenCalledTimes(1);
+        expect(repository.findOne).not.toHaveBeenCalled();
+    });
+
     beforeEach(async () => {
         repository = {
+            find: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
             delete: jest.fn(),

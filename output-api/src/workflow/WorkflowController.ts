@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req, Res, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiConsumes, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import {  SearchFilter, UpdateMapping  } from '@output/interfaces';
-import {  ExportDisposition, ExportFormat, ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType  } from '@output/interfaces';
+import {  ExportStrategy, ExportWorkflow as IExportWorkflow, ImportWorkflowTestResult, ImportStrategy, ValidationWorkflow as IValidationWorkflow, WorkflowType  } from '@output/interfaces';
 import { AccessGuard } from "../authorization/access.guard";
 import { Permissions } from "../authorization/permission.decorator";
 import { AppConfigService } from "../config/app-config.service";
@@ -15,6 +15,10 @@ import { WorkflowService } from "./workflow.service";
 import { WorkflowReportService } from "./workflow-report.service";
 import { createInvalidRequestHttpException } from "../common/api-error";
 import { assertDemoUploadAllowed, isDemoModeValue } from "../common/demo-upload-policy";
+import { ApiImportStop } from './import-stop-api';
+import { WorkflowIndexPageRequestDto } from './dto/workflow-index-page.dto';
+import { IndexPageDto } from '../common/dto/index-page.dto';
+import { createExportResponse } from './export/export-response';
 
 @Controller("workflow")
 @ApiTags("workflow")
@@ -25,6 +29,30 @@ export class WorkflowController {
     private configService: AppConfigService,
     private workflowService: WorkflowService,
     private workflowReportService: WorkflowReportService) { }
+
+  @Post('import/index-page')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiResponse({ status: 201, type: IndexPageDto })
+  importIndexPage(@Body() body: WorkflowIndexPageRequestDto) {
+    return this.workflowService.getImportPage(body);
+  }
+
+  @Post('export/index-page')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiResponse({ status: 201, type: IndexPageDto })
+  exportIndexPage(@Body() body: WorkflowIndexPageRequestDto) {
+    return this.workflowService.getExportPage(body);
+  }
+
+  @Post('validation/index-page')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiResponse({ status: 201, type: IndexPageDto })
+  validationIndexPage(@Body() body: WorkflowIndexPageRequestDto) {
+    return this.workflowService.getValidationPage(body);
+  }
 
   @Get("import")
   @UseGuards(AccessGuard)
@@ -142,6 +170,16 @@ export class WorkflowController {
     return this.workflowService.startImport(id, reporting_year, ids, file, update, req.user?.username, !!dryRun);
   }
 
+  @Post('import/:id/stop')
+  @UseGuards(AccessGuard)
+  @Permissions([{ role: 'admin', app: 'output' }])
+  @ApiImportStop()
+  async stop_import(@Param('id', ParseIntPipe) id: number, @Req() req, @Res({ passthrough: true }) res: Response) {
+    const result = await this.workflowService.stopImport(id, req.user?.username);
+    res.status(result.state === 'stopping' ? 202 : 200);
+    return result;
+  }
+
   @Post("export/:id/run")
   @UseGuards(AccessGuard)
   @Permissions([{ role: 'admin', app: 'output' }])
@@ -154,23 +192,7 @@ export class WorkflowController {
   ) {
     const workflow = await this.workflowService.getExport(id, false);
     const result = await this.workflowService.startExport(id, filter, req.user?.username, withMasterData);
-    const strategy = workflow.strategy ?? {};
-    const format = (strategy.format ?? 'json') as ExportFormat;
-    const disposition = (strategy.disposition ?? (format === 'xlsx' ? 'attachment' : 'inline')) as ExportDisposition;
-    const contentType = this.getExportContentType(format);
-
-    res.setHeader('Content-Type', contentType);
-    const filename = this.buildExportFilename(workflow.label, workflow.version, format);
-    res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
-
-    if (Buffer.isBuffer(result)) {
-      return new StreamableFile(result, {
-        type: contentType,
-        disposition: `${disposition}; filename="${filename}"`
-      });
-    }
-
-    return result;
+    return createExportResponse(workflow, result, res);
   }
 
   @Post("validation/:id/run")
@@ -353,12 +375,13 @@ export class WorkflowController {
         workflow_id: 'export-workflow-id',
         version: 1,
         label: 'JSONata Export',
+        source_entity: 'publication',
         strategy_type: ExportStrategy.HTTP_RESPONSE,
         strategy: {
           format: 'json',
           disposition: 'inline'
         },
-        mapping: '{ "items": publications.{ "id": id, "title": title, "doi": doi } }'
+        mapping: '{ "id": id, "title": title, "doi": doi }'
       } satisfies IExportWorkflow
     }
   })
@@ -527,25 +550,6 @@ export class WorkflowController {
             cost_approach: UpdateOptions.REPLACE_IF_EMPTY,
         };*/
     return this.workflowService.setUpdateMapping(id, mapping);
-  }
-
-  private getExportContentType(format: ExportFormat) {
-    switch (format) {
-      case 'xml':
-        return 'application/xml; charset=utf-8';
-      case 'csv':
-        return 'text/csv; charset=utf-8';
-      case 'xlsx':
-        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      case 'json':
-      default:
-        return 'application/json; charset=utf-8';
-    }
-  }
-
-  private buildExportFilename(label?: string, version?: number, format: ExportFormat = 'json') {
-    const safeLabel = this.sanitizeFilenamePart(label ?? 'Export');
-    return `${safeLabel}_v${version ?? 1}_${this.formatFilenameTimestamp()}.${format}`;
   }
 
   private buildWorkflowDefinitionFilename(prefix: string, label?: string, version?: number) {

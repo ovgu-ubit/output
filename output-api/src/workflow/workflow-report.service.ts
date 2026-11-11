@@ -135,6 +135,20 @@ export class WorkflowReportService {
         return this.toRunStatus(latestReport);
     }
 
+    async interruptLatestOpenImport(workflowId: number, user?: string): Promise<import('@output/interfaces').ImportStopResponse> {
+        const query = this.workflowReportRepository.createQueryBuilder('report')
+            .where('report.workflow_type = :workflowType', { workflowType: WorkflowType.IMPORT })
+            .andWhere('report.finished_at IS NULL')
+            .orderBy('report.started_at', 'DESC').addOrderBy('report.id', 'DESC');
+        this.applyWorkflowIdFilter(query, WorkflowType.IMPORT, workflowId);
+        const report = await query.getOne();
+        if (!report) return { state: 'not-running' };
+        await this.write(report.id, { level: WorkflowReportItemLevel.INFO, code: 'import-interrupted',
+            message: `Orphaned import report closed by ${user ?? 'system'}; no active execution exists in this backend.` });
+        await this.finish(report.id, { status: 'interrupted', summary: report.summary });
+        return { state: 'interrupted', reportId: report.id };
+    }
+
     async getReports(
         workflowId: number,
         workflowType: WorkflowType = WorkflowType.IMPORT,

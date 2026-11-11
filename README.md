@@ -11,7 +11,7 @@ General information can be found in the [Wiki](https://github.com/ovgu-ubit/outp
 
 ## Installation <a name="installation"></a>
 ### Requirements
-- Node.JS 22
+- Node.JS 24
 - Installed Postgres DBMS with an existing given database with owner rights for the given user
 
 ### Workspace setup
@@ -142,6 +142,55 @@ Run the frontend from the repository root. This keeps `output-interfaces` in wat
 To start both backend and frontend together, use:
 
 > $ npm run dev
+
+The development proxy reads the backend port (`APP_PORT`) and protocol (`APP_SSL`) from `output-api/env.dev`. It uses `CONFIG_DIR/env.${NODE_ENV}` instead when these environment variables are set (`NODE_ENV` defaults to `dev`; relative `CONFIG_DIR` paths are resolved from `output-api`, just like in the backend). If no port is configured, it uses `3003`.
+
+Environment variables override values from the file. `PORT` takes precedence over `APP_PORT`, matching the backend. For example, start only the frontend against a backend on port 3010 without editing tracked files:
+
+```sh
+npm exec -- cross-env APP_PORT=3010 npm --workspace output-ui start
+```
+
+Or start both applications on the same backend port:
+
+```sh
+npm exec -- cross-env APP_PORT=3010 npm run dev
+```
+
+In PowerShell, you can also set `$env:APP_PORT = '3010'` before running `npm start` inside `output-ui` (or `npm run dev:ui` from the repository root). The backend must listen on the selected port. Restart the frontend dev server after changing proxy settings or the environment file.
+
+For Swagger UI at `http://localhost:4200/api/swagger`, set `APP_BASE_PATH=/api` in the backend environment file and restart the backend after changing it. Swagger uses this value as the server URL for its API requests; an empty value sends requests to `/authors/index-page` instead of `/api/authors/index-page`.
+
+### tests
+
+Run backend and frontend tests once from the repository root:
+
+```sh
+npm test
+```
+
+Use `npm run test:api` or `npm run test:ui` to run one suite. Run `npm test` inside `output-ui` to use the frontend test watcher.
+
+Backend tests use Jest with NestJS 12's ESM packages. They require Node.js 24.9 or newer; the backend test scripts enable `--experimental-vm-modules` automatically. GitHub Actions uses Node.js 24.
+
+Scoped dependency overrides keep Babel's coverage tooling on `test-exclude` 8 and TypeORM 0.3 on `glob` 13, replacing deprecated transitive packages. Revisit these overrides when the upstream packages update their dependency ranges.
+
+Run `npm run test:e2e` from the repository root or `output-api` for the backend HTTP regression tests. This builds the backend and tests the full module graph against both TypeScript sources and compiled CommonJS output. Configuration startup, dynamic authorization providers, JWT cookies, CORS, JSON/form parsers, multipart imports, Swagger and the API error envelope are covered. Database and import services are mocked; no external database or additional test packages are required. The pull request workflow runs these checks as well.
+
+### frontend test browser
+
+Frontend tests use Vitest with headless Chromium, including checks for table layout and line wrapping. `npm test` in `output-ui` and `npm run test:ui` in the repository root check the browser before starting and automatically install or repair the matching version when it is missing. No separate browser installation is needed on Windows or macOS.
+
+The default browser location is `node_modules/.cache/output-ui-playwright` in this workspace. Setup and tests use the same location, including when `PLAYWRIGHT_BROWSERS_PATH` is explicitly configured.
+
+On Linux, install the browser and required system libraries once from the repository root:
+
+```sh
+npm run test:ui:setup -- --with-deps
+npm run test:ui
+```
+
+The pull request workflow runs this setup after `npm ci` and then executes the frontend tests on Linux and Windows.
 
 ### build frontend distributables
 Build frontend distributables from the repository root:

@@ -1,4 +1,4 @@
-import { Component, inject, Input, ViewChild } from '@angular/core';
+import { Component, inject, Input, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import {  Alias, Aliasable  } from '@output/interfaces';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatTable, MatTableDataSource } from '@angular/material/table';
@@ -7,6 +7,7 @@ import { MatTable, MatTableDataSource } from '@angular/material/table';
     selector: 'app-alias-table',
     templateUrl: './alias-table.component.html',
     styleUrl: './alias-table.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AliasTableComponent<T extends Aliasable<T>> {

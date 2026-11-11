@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, map, merge } from 'rxjs';
@@ -80,6 +80,7 @@ type TreemapTooltipParams = {
   selector: 'app-statistics-year',
   templateUrl: './statistics-year.component.html',
   styleUrls: ['./statistics-year.component.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class StatisticsYearComponent implements OnInit {

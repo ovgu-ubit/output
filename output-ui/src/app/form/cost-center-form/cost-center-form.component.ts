@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CostCenterService } from 'src/app/services/entities/cost-center.service';
 
@@ -6,6 +6,7 @@ import { CostCenterService } from 'src/app/services/entities/cost-center.service
     selector: 'app-cost-center-form',
     templateUrl: './cost-center-form.component.html',
     styleUrls: ['./cost-center-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CostCenterFormComponent implements OnInit {

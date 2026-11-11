@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { RoleService } from 'src/app/services/entities/role.service';
 import {  Role  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { RoleFormComponent } from '../../../form/role-form/role-form.component';
     selector: 'app-roles',
     templateUrl: './roles.component.html',
     styleUrls: ['./roles.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class RolesComponent implements TableParent<Role>, OnInit {

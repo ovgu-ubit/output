@@ -49,6 +49,29 @@ describe('WorkflowReportService', () => {
         );
     });
 
+    it('closes only the newest open import report as interrupted and preserves its summary', async () => {
+        const summary = { count_import: 3 };
+        const report = { id: 71, summary };
+        const query = {
+            where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(), addOrderBy: jest.fn().mockReturnThis(),
+            getOne: jest.fn(async () => report),
+        };
+        workflowReportRepository.createQueryBuilder.mockReturnValue(query);
+        workflowReportRepository.findOneBy.mockResolvedValue(report);
+        expect(await service.interruptLatestOpenImport(12, 'alice')).toEqual({ state: 'interrupted', reportId: 71 });
+        expect(query.andWhere).toHaveBeenCalledWith('report.finished_at IS NULL');
+        expect(query.andWhere).toHaveBeenCalledWith('report.workflowId = :workflowId', { workflowId: 12 });
+        expect(workflowReportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+            id: 71, status: 'interrupted', summary, progress: 0, finished_at: expect.any(Date),
+        }));
+        expect(workflowReportItemRepository.save).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('alice') }));
+        query.getOne.mockResolvedValue(undefined);
+        workflowReportRepository.save.mockClear();
+        expect(await service.interruptLatestOpenImport(12, 'alice')).toEqual({ state: 'not-running' });
+        expect(workflowReportRepository.save).not.toHaveBeenCalled();
+    });
+
     it('stores export workflow references with workflow_type', async () => {
         const exportWorkflow = { id: 17, label: 'Export WF', version: 2 };
 

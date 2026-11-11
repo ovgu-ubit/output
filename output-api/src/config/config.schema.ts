@@ -30,6 +30,7 @@ export const ConfigSchemas = z.object({
     peer_reviewed: z.boolean()
   }).default(CONFIG_DEFAULTS.optional_fields),
   pub_index_columns: z.object({
+    tags: z.boolean().default(CONFIG_DEFAULTS.pub_index_columns.tags),
     title: z.boolean(),
     doi: z.boolean(),
     link: z.boolean(),

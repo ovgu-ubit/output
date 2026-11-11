@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatSelect } from '@angular/material/select';
@@ -25,6 +25,7 @@ type PercentageSeriesPoint = {
     selector: 'app-statistics',
     templateUrl: './statistics.component.html',
     styleUrls: ['./statistics.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class StatisticsComponent implements OnInit {

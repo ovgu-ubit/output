@@ -20,7 +20,9 @@ import { WorkflowReport } from '../../workflow/WorkflowReport.entity';
 import { PublicationChangeService } from './publication-change.service';
 import { PublicationChange } from './PublicationChange.entity';
 import { PublicationIndexService } from './publication-index.service';
+import { PublicationFilterService } from './publication-filter.service';
 import { PublicationRelationService } from '../relations/publication-relation.service';
+import { PublicationTagService } from '../tags/publication-tag.service';
 
 const expectApiError = async (
     promise: Promise<unknown>,
@@ -174,6 +176,10 @@ describe('PublicationService', () => {
                 { provide: getRepositoryToken(WorkflowReport), useValue: workflowReportRepository },
                 { provide: AppConfigService, useValue: configService },
                 { provide: InstituteService, useValue: { findOrSave: jest.fn() } },
+                {
+                    provide: PublicationFilterService,
+                    useValue: { applyPathsToQuery: jest.fn((query) => query) },
+                },
                 { provide: DataSource, useValue: dataSource },
             ],
         }).compile();
@@ -346,6 +352,31 @@ describe('PublicationService', () => {
         expect(pubRepository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 61 }));
         expect(deleteRelationsSpy).toHaveBeenCalledWith([62], expect.anything());
         expect(deletePublicationChangesForPublicationsSpy).toHaveBeenCalledWith([62], expect.anything());
+        expect(pubRepository.delete).toHaveBeenCalledWith([62]);
+    });
+
+    it.each([false, true])('accepts the current user\'s edit locks when merging untagged publications with ignoreLocks: %s', async ignoreLocks => {
+        const primary = { id: 61, title: 'Primary', locked: ignoreLocks, locked_at: new Date() } as Publication;
+        const duplicate = { id: 62, title: 'Duplicate', locked_at: new Date() } as Publication;
+        EditLockOwnerStore.setOwner('publication', primary.id!, 'alice');
+        EditLockOwnerStore.setOwner('publication', duplicate.id!, 'alice');
+        const query = {
+            withDeleted: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(), setLock: jest.fn().mockReturnThis(),
+            getMany: jest.fn().mockResolvedValue([primary, duplicate]),
+        };
+        pubRepository.createQueryBuilder = jest.fn().mockReturnValue(query);
+        pubRepository.findOne.mockImplementation(async ({ where }: any) => where.id === 61 ? primary : duplicate);
+        pubRepository.save.mockImplementation(async publication => publication as Publication);
+        jest.spyOn(publicationRelationService, 'deletePublicationRelations').mockResolvedValue(undefined);
+        const tags = new PublicationTagService(dataSource as any, configService as any);
+        jest.spyOn(tags, 'attach').mockImplementation(async publications => publications);
+        jest.spyOn(tags, 'mutateInMerge').mockResolvedValue(undefined);
+        const serviceWithTags = new PublicationService(pubRepository as Repository<Publication>, configService as any,
+            publicationChangeService, dataSource as any, publicationRelationService, tags);
+
+        await expect(serviceWithTags.combine(61, [62], undefined, { ignoreLocks, by_user: 'alice' }))
+            .resolves.toMatchObject({ id: 61 });
         expect(pubRepository.delete).toHaveBeenCalledWith([62]);
     });
 
@@ -883,6 +914,7 @@ describe('PublicationService', () => {
                 pubRepository as any,
                 configService as any,
                 instituteService as any,
+                { applyPathsToQuery: jest.fn((query) => query) } as any,
             );
         });
 
@@ -1055,6 +1087,36 @@ describe('PublicationService', () => {
                     key: 'author_id',
                     comp: CompareOperation.GREATER_THAN,
                     value: 42,
+                }]
+            }
+        ];
+
+        for (const filter of invalidFilters) {
+            const queryBuilder = createQueryBuilderMock();
+            await expectApiError(publicationIndexService.filter(filter, queryBuilder as any), {
+                statusCode: 400,
+                code: ApiErrorCode.INVALID_REQUEST,
+            });
+            expect(queryBuilder.where).not.toHaveBeenCalled();
+        }
+    });
+
+    it('rejects invalid numeric filter values', async () => {
+        const invalidFilters: SearchFilter[] = [
+            {
+                expressions: [{
+                    op: JoinOperation.AND,
+                    key: 'id',
+                    comp: CompareOperation.EQUALS,
+                    value: '1a',
+                }]
+            },
+            {
+                expressions: [{
+                    op: JoinOperation.AND,
+                    key: 'contract_year',
+                    comp: CompareOperation.EQUALS,
+                    value: 2024.5,
                 }]
             }
         ];

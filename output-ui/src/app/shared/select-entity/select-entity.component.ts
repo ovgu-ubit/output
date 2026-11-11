@@ -1,5 +1,5 @@
 import { ComponentType } from '@angular/cdk/portal';
-import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -14,6 +14,7 @@ import { ConfirmDialogComponent, ConfirmDialogModel } from '../confirm-dialog/co
     selector: 'app-select-entity',
     templateUrl: './select-entity.component.html',
     styleUrl: './select-entity.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectEntityComponent<T extends Entity> implements OnInit, OnChanges {

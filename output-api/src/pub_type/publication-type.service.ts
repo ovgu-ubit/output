@@ -1,3 +1,6 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
+import { addInvoiceAmounts } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, DeepPartial, FindOptionsRelations, ILike, In, Repository } from 'typeorm';
@@ -24,6 +27,10 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
     protected override getFindOneRelations(): FindOptionsRelations<PublicationType> {
         return { aliases: true };
+    }
+
+    public getForExport() {
+        return this.repository.find({ relations: this.getFindOneRelations() });
     }
 
     public override async save(entity: DeepPartial<PublicationType>, user?: string) {
@@ -64,6 +71,18 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
     }
 
     public async index(reporting_year: number, canReadNetCosts = false): Promise<PublicationTypeIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts);
+        const rows = await query.getRawMany<PublicationTypeIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false): Promise<IndexPage<PublicationTypeIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts);
+        const result = await paginateIndexQuery<PublicationTypeIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false) {
         let query = this.repository.createQueryBuilder("type")
             .leftJoin("type.publications", "publication")
             .select("type.id", "id")
@@ -76,8 +95,8 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
 
         if (canReadNetCosts) {
             query = query
-                .leftJoin("publication.invoices", "invoice")
-                .leftJoin("invoice.cost_items", "cost_item")
+                .leftJoin("publication.invoices", "invoice");
+            query = addInvoiceAmounts(query)
         }
 
         if (reporting_year) {
@@ -85,21 +104,24 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
-                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN COALESCE(invoice_amounts.gross_amount, 0) ELSE 0 END)" : "NULL", "net_costs")
                 .setParameters({ beginDate, endDate })
         }
         else {
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count")
-                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN COALESCE(invoice_amounts.gross_amount, 0) ELSE 0 END)" : "NULL", "net_costs")
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<PublicationTypeIndex[]>;
+        return query;
     }
 
-    public async combine(id1: number, ids: number[], alias_strings?: string[]) {
-        return mergeEntities<PublicationType>({
+    public async combine(id1: number, ids: number[], alias_strings?: string[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<PublicationType>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -112,12 +134,12 @@ export class PublicationTypeService extends AbstractEntityService<PublicationTyp
             },
             afterSave: async ({ duplicateIds, defaultDelete }) => {
                 if (duplicateIds.length > 0) {
-                    await this.aliasRepository.delete({ elementId: In(duplicateIds) });
+                    await manager.getRepository(AliasPubType).delete({ elementId: In(duplicateIds) });
                 }
 
                 await defaultDelete();
             },
-        });
+        }));
     }
 
     public async delete(insts: PublicationType[]) {

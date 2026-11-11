@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -11,6 +11,7 @@ import { LogDialogComponent } from 'src/app/administration/components/log-dialog
     selector: 'app-plausibility',
     templateUrl: './plausibility.component.html',
     styleUrls: ['./plausibility.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PlausibilityComponent implements OnInit {

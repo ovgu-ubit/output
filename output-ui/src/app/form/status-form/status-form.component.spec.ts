@@ -9,7 +9,7 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { provideRouter } from '@angular/router';
@@ -19,65 +19,65 @@ import { StatusFormComponent } from './status-form.component';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 describe('StatusFormComponent', () => {
-  let component: StatusFormComponent;
-  let fixture: ComponentFixture<StatusFormComponent>;
+    let component: StatusFormComponent;
+    let fixture: ComponentFixture<StatusFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  const mockStatusService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([])),
-    getOne: jasmine.createSpy('getOne').and.returnValue(of({}))
-  };
+    const mockStatusService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([])),
+        getOne: vi.fn().mockName('getOne').mockReturnValue(of({}))
+    };
 
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
 
-  const mockErrorService = {
-    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
-    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
-    present: jasmine.createSpy('present')
-  };
+    const mockErrorService = {
+        clearFieldErrors: vi.fn().mockName('clearFieldErrors'),
+        applyFieldErrors: vi.fn().mockName('applyFieldErrors'),
+        present: vi.fn().mockName('present')
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ 
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        StatusFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: StatusService, useValue: mockStatusService },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        { provide: ErrorPresentationService, useValue: mockErrorService },
-        { provide: PublisherService, useValue: {} },
-        { provide: CostTypeService, useValue: {} },
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([]),
-        provideStore({})
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                StatusFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: StatusService, useValue: mockStatusService },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                { provide: ErrorPresentationService, useValue: mockErrorService },
+                { provide: PublisherService, useValue: {} },
+                { provide: CostTypeService, useValue: {} },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                provideRouter([]),
+                provideStore({})
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(StatusFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(StatusFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

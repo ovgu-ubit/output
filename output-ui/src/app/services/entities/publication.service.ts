@@ -1,23 +1,25 @@
+import { PublicationWrite } from '@output/interfaces';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { EntityService } from 'src/app/services/entities/service.interface';
-import {  SearchFilter  } from '@output/interfaces';
+import { IndexEntityService } from 'src/app/services/entities/service.interface';
 import {  Publication  } from '@output/interfaces';
-import {  PublicationIndex  } from '@output/interfaces';
+import { PublicationIndex, PublicationIndexPage, PublicationIndexPageRequest } from '@output/interfaces';
 import {  PublicationChange  } from '@output/interfaces';
 import { RuntimeConfigService } from '../runtime-config.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class PublicationService implements EntityService<Publication, PublicationIndex> {
+export class PublicationService implements IndexEntityService<Publication, PublicationIndex> {
 
   constructor(private http: HttpClient, private runtimeConfigService:RuntimeConfigService) { }
 
-  public index(yop: number, options?: {soft?:boolean, filter?: SearchFilter, paths?: string[]}) {
-    if (options?.soft) return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?soft=true', { withCredentials: true });
-    if (options?.filter?.expressions?.length > 0 || options?.paths?.length > 0) return this.http.post<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/filter', { filter: options.filter, paths: options.paths }, { withCredentials: true });
-    return this.http.get<PublicationIndex[]>(this.runtimeConfigService.getValue("api") + 'publications/publicationIndex?yop=' + yop, { withCredentials: true });
+  public indexPage(request: PublicationIndexPageRequest) {
+    return this.http.post<PublicationIndexPage>(
+      this.runtimeConfigService.getValue("api") + 'publications/index-page',
+      request,
+      { withCredentials: true },
+    );
   }
   public getAll() {
     return this.http.get<Publication[]>(this.runtimeConfigService.getValue("api") + 'publications', { withCredentials: true });
@@ -28,20 +30,20 @@ export class PublicationService implements EntityService<Publication, Publicatio
   public getChanges(id: number) {
     return this.http.get<PublicationChange[]>(this.runtimeConfigService.getValue("api") + 'publications/changes?id=' + id, { withCredentials: true });
   }
-  public update(pub: Publication) {
+  public update(pub: PublicationWrite) {
     return this.http.put<Publication>(this.runtimeConfigService.getValue("api") + 'publications', {...pub, edit_date:undefined}, { withCredentials: true });
   }
-  public updateAll(pubs: Publication[]) {
+  public updateAll(pubs: PublicationWrite[]) {
     return this.http.put<Publication[]>(this.runtimeConfigService.getValue("api") + 'publications', pubs.map(pub => ({...pub, edit_date:undefined})), { withCredentials: true });
   }
-  public add(pub: Publication) {
+  public add(pub: PublicationWrite) {
     return this.http.post<Publication>(this.runtimeConfigService.getValue("api") + 'publications', pub, { withCredentials: true });
   }
   public delete(ids: number[], soft?:boolean) {
     return this.http.delete<Publication[]>(this.runtimeConfigService.getValue("api") + 'publications', { withCredentials: true, body: { publications: ids.map(e => ({ id: e })), soft } });
   }
   public getReportingYears() {
-    return this.http.get<number[]>(this.runtimeConfigService.getValue("api") + 'publications/reporting_year', { withCredentials: true });
+    return this.http.get<Array<{ year: string | null }>>(this.runtimeConfigService.getValue("api") + 'publications/reporting_year', { withCredentials: true });
   }
   public combine(id1: number, ids: number[], options?: { ignoreLocks?: boolean }) {
     return this.http.post(this.runtimeConfigService.getValue("api") + 'publications/combine', { id1, ids, ignoreLocks: options?.ignoreLocks === true }, { withCredentials: true });

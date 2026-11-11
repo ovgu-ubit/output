@@ -51,8 +51,23 @@ describe('InvoiceController', () => {
 
         const result = await controller.cost_type_index(2025, { user: { read: true } } as any);
 
-        expect(costTypeService.getCostTypeIndex).toHaveBeenCalledWith(2025, true);
+        expect(costTypeService.getCostTypeIndex).toHaveBeenCalledWith(2025, true, true);
         expect(result).toEqual([{ id: 1, label: 'APC', net_costs: 50 }]);
+    });
+
+    it.each(['reader', 'writer', 'admin', 'publication_writer'])('includes invoice counts for output %s in both cost indexes', async rolename => {
+        const request = { user: { read: true, permissions: [{ appname: 'output', rolename }] } } as any;
+        await controller.cost_type_index(2026, request);
+        await controller.ccIndex(2026, request);
+        expect(costTypeService.getCostTypeIndex).toHaveBeenCalledWith(2026, true, true);
+        expect(costCenterService.getCostCenterIndex).toHaveBeenCalledWith(2026, true, true);
+    });
+
+    it('does not expose counts to anonymous users in either cost index', async () => {
+        await controller.cost_type_index(2026, {} as any);
+        await controller.ccIndex(2026, {} as any);
+        expect(costTypeService.getCostTypeIndex).toHaveBeenLastCalledWith(2026, false, false);
+        expect(costCenterService.getCostCenterIndex).toHaveBeenLastCalledWith(2026, false, false);
     });
 
     it('forwards writer flag and username when loading one invoice', async () => {
@@ -178,7 +193,7 @@ describe('InvoiceController', () => {
 
         const result = await controller.ccIndex(2025, { user: { read: true } } as any);
 
-        expect(costCenterService.getCostCenterIndex).toHaveBeenCalledWith(2025, true);
+        expect(costCenterService.getCostCenterIndex).toHaveBeenCalledWith(2025, true, true);
         expect(result).toEqual([{ id: 9, label: 'Center', net_costs: 75 }]);
     });
 

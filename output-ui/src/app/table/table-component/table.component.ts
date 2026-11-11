@@ -1,35 +1,39 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { ComponentType } from '@angular/cdk/portal';
-import { Location } from '@angular/common';
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, Sort } from '@angular/material/sort';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, take, takeUntil } from 'rxjs';
+import { catchError, concatMap, debounceTime, map, merge, Observable, of, Subject, Subscription, take, takeUntil } from 'rxjs';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
 import { ConfigService } from 'src/app/administration/services/config.service';
 import { AuthorizationService } from 'src/app/security/authorization.service';
-import { EntityFormComponent, EntityService } from 'src/app/services/entities/service.interface';
+import { EntityFormComponent, IndexEntityService } from 'src/app/services/entities/service.interface';
 import { resetViewConfig, selectReportingYear, selectViewConfig, setViewConfig, ViewConfig } from 'src/app/services/redux';
-import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
+import { isTableColumnFilterable, TableButton, TableHeader, TableParent, TableRowAction } from 'src/app/table/table.interface';
 import {  CompareOperation, JoinOperation  } from '@output/interfaces';
 import {  Entity  } from '@output/interfaces';
+import { InvoiceIndexEntityFilter, InvoiceIndexQuery } from '@output/interfaces';
 import { TableDataService } from '../services/table-data.service';
 import { TableActionService } from '../services/table-action.service';
+
+type TableButtonView = Omit<TableButton, 'sub_buttons'> & {
+  disabled: boolean;
+  sub_buttons?: (NonNullable<TableButton['sub_buttons']>[number] & { disabled: boolean })[];
+};
 
 @Component({
     selector: 'appTable',
     templateUrl: './table.component.html',
-    styleUrls: ['./table.component.css'],
+    styleUrls: ['../table-appearance.css', './table.component.css'],
     standalone: false,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [TableDataService, TableActionService]
 })
 export class TableComponent<T extends Entity, E extends Entity> implements OnInit, OnDestroy, OnChanges {
 
-  @Input() data: Array<T>;
   @Input() wide?: boolean;
   @Input() headers: TableHeader[];
   @Input() id_col: number;
@@ -41,13 +45,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   @Input() combineAlias? = true;
   @Input() softDelete? = false;
   @Input() filter_key? = "";
+  @Input() invoice_filter_key?: InvoiceIndexEntityFilter;
 
   @Input() editFunction? = this.edit.bind(this);
   @Input() addFunction? = this.add.bind(this);
   @Input() deleteable? = true;
 
   @Input() parent: TableParent<T>;
-  @Input() serviceClass: EntityService<E, T>;
+  @Input() serviceClass: IndexEntityService<E, T>;
   @Input() formComponent: ComponentType<EntityFormComponent<E>>;
 
   @ViewChild('paginatorTop') paginator: MatPaginator;
@@ -59,11 +64,19 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   trunc: number = 60;
   headerNames = [];
   headerNamesFilter = [];
+  canEdit = false;
+  buttons: TableButtonView[] = [];
+  sortHeaders: Record<string, { text: string; asc: boolean }> = {};
+  readonly trackRow = (_index: number, row: T) => row.id;
+  private readonly roles = new Map<string, boolean>();
+  private readonly filterSubscriptions = new Map<string, Subscription>();
+  private parentChanges?: Subscription;
 
   destroy$ = new Subject();
   id;
   viewConfig: ViewConfig;
-  reporting_year: number;
+  reporting_year: number | null;
+  private viewConfigApplied = false;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
@@ -80,11 +93,12 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   get loading() { return this.tableData.loading; }
   get dataSource() { return this.tableData.dataSource; }
-  get dataSource2() { return this.tableData.dataSource2; }
   get searchControl() { return this.tableData.searchControl; }
   get filterControls() { return this.tableData.filterControls; }
+  get rowCount() { return this.tableData.total; }
 
   public ngOnInit(): void {
+    this.tableData.stateChanges$.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
     this.tableData.init(this.serviceClass, this.parent, this.headers);
     this.tableAction.init({
       serviceClass: this.serviceClass,
@@ -97,27 +111,38 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
     let ob$: Observable<any> = this.parent.preProcessing ? this.parent.preProcessing() : of(null);
 
-    ob$ = ob$.pipe(concatMap(data => {
-      return this.store.select(selectReportingYear).pipe(concatMap(data => {
-        if (data !== undefined) {
-          return of(data)
-        } else {
-          return this.configService.get("reporting_year").pipe(map(e => e?.value));
-        }
-      }), map(data => {
-        this.reporting_year = data;
-        this.tableData.setReportingYear(data);
-        if (this.publication_table) {
-          if (this.reporting_year) this.name = 'Publikationen des Jahres ' + this.reporting_year;
-          else this.name = 'Publikationen ohne Datumsangabe'
-        }
-        let col = this.headers.find(e => e.colName === 'pub_count');
-        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
-        col = this.headers.find(e => e.colName === 'pub_count_corr')
-        if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
-        col = this.headers.find(e => e.colName === 'net_costs')
-        if (col && !this.publication_table) col.colTitle += ' ' + (data ? data : 'ohne Datum')
-      }), concatMap(data => this.updateData()))
+    ob$ = ob$.pipe(concatMap(() => {
+      this.refreshPresentation();
+      this.cdr.markForCheck();
+      const viewConfig$ = this.publication_table
+        ? this.store.select(selectViewConfig).pipe(take(1))
+        : of(undefined);
+      return viewConfig$.pipe(
+        map(viewConfig => {
+          if (viewConfig && !this.viewConfigApplied) {
+            this.viewConfig = viewConfig;
+            this.setViewConfig(viewConfig);
+            this.viewConfigApplied = true;
+          }
+        }),
+        concatMap(() => this.store.select(selectReportingYear).pipe(
+          concatMap(data => data !== undefined
+            ? of(data)
+            : this.configService.get("reporting_year").pipe(map(e => e?.value))),
+          map(data => {
+            this.setReportingYear(data, this.parent.indexOptions?.allReportingYears === true);
+            let col = this.headers.find(e => e.colName === 'pub_count');
+            if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+            col = this.headers.find(e => e.colName === 'pub_count_corr')
+            if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+            col = this.headers.find(e => e.colName === 'net_costs')
+            if (col && !this.publication_table) col.colTitle += ' ' + (data ? data : 'ohne Datum')
+            col = this.headers.find(e => e.colName === 'invoice_count');
+            if (col) col.colTitle += ' ' + (data ? data : 'ohne Datum');
+          }),
+          concatMap(() => this.updateData()),
+        )),
+      );
     }));
 
     ob$ = merge(ob$, this.route.queryParamMap.pipe(map(params => {
@@ -125,8 +150,6 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
         this.id = params.get('id');
       }
     })))
-
-    if (this.publication_table) ob$ = merge(ob$, this.store.select(selectViewConfig).pipe(take(1), map(data => this.viewConfig = data)));
 
     this.pageForm = this.formBuilder.group({
       pageNumber: ['', [Validators.required, Validators.pattern("^[0-9]*$")]]
@@ -136,14 +159,14 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.errorPresentation.present(err, { action: 'load', entity: this.name });
       return of(null)
     }), takeUntil(this.destroy$)).subscribe(() => {
-        if (this.dataSource) this.dataSource.paginator = this.paginator;
-        if (this.dataSource2) this.dataSource2.paginator = this.paginator2;
+        this.syncPaginators();
     });
 
     this.searchControl.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(data => {
       if (!data && this.tableData.columnFilter) return;
       if (data) this.tableData.columnFilter = false;
-      this.tableData.doFilter(data);
+      this.tableData.resetPage();
+      this.reloadData();
     });
 
     window.onbeforeunload = () => this.ngOnDestroy();
@@ -156,59 +179,112 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['headers'] && this.headers) {
-      this.tableData.setHeaders(this.headers);
-      this.headerNames = this.headers.map(x => x.colName);
-      this.headerNames.unshift('edit');
-      if (!this.parent.not_selectable) this.headerNames.unshift('select');
-      
-      this.headerNames.map(e => {
-        this.tableData.filterControls[e] = new FormControl('');
-        this.tableData.filterControls[e].valueChanges
-          .pipe(debounceTime(300), takeUntil(this.destroy$))
-          .subscribe(value => {
-            this.tableData.columnFilter = true;
-            this.searchControl.setValue('');
-            this.tableData.filterValues.set(e, value);
-            let filter = new Object();
-            this.tableData.filterValues.forEach((val, key) => {
-              (filter as any)[key] = val?.trim().toLocaleLowerCase();
-            });
-            this.dataSource.filter = JSON.stringify(filter);
-            this.dataSource2.filter = JSON.stringify(filter);
-          });
+    if (changes['parent']) {
+      this.parentChanges?.unsubscribe();
+      this.parentChanges = this.parent.viewChanges$?.pipe(takeUntil(this.destroy$)).subscribe(() => {
+        this.refreshPresentation();
+        this.cdr.markForCheck();
       });
-      this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
+    }
+    if ((changes['headers'] || changes['parent']) && this.headers) {
+      this.refreshPresentation();
       if (this.id) {
         this.edit({ id: this.id });
         this.id = undefined;
       }
     }
-    if (changes['data'] && changes['data'].currentValue) {
-      this.tableData.update(changes['data'].currentValue);
-      this.selection.clear();
-      this.dataSource.paginator = this.paginator;
-      this.dataSource2.paginator = this.paginator2;
-      if (this.viewConfig) this.setViewConfig(this.viewConfig);
+  }
+
+  private refreshPresentation(): void {
+    this.roles.clear();
+    this.canEdit = this.hasRole(this.publication_table ? ['publication_writer', 'writer', 'admin'] : ['writer', 'admin']);
+    this.buttons = (this.parent.buttons ?? []).map(button => ({
+      ...button,
+      disabled: !!button.roles && !this.hasRole(button.roles),
+      sub_buttons: button.sub_buttons?.map(subButton => ({
+        ...subButton, disabled: !!subButton.roles && !this.hasRole(subButton.roles),
+      })),
+    }));
+    if (this.headers) {
+      this.headerNames = this.headers
+        .filter(col => !col.roles || this.hasRole(col.roles))
+        .map(x => x.colName);
+      this.tableData.setHeaders(this.headers.filter(col => this.headerNames.includes(col.colName)));
+      this.headerNames.unshift('edit');
+      if (!this.parent.not_selectable) this.headerNames.unshift('select');
+      
+      for (const [key, subscription] of this.filterSubscriptions) {
+        if (this.headerNames.includes(key)) continue;
+        subscription.unsubscribe();
+        this.filterSubscriptions.delete(key);
+        delete this.tableData.filterControls[key];
+      }
+      this.headerNames.forEach(e => {
+        if (!this.tableData.filterControls[e]) {
+          this.tableData.filterControls[e] = new FormControl(this.tableData.filterValues.get(e) ?? '');
+        }
+        if (!this.filterSubscriptions.has(e)) this.filterSubscriptions.set(e, this.tableData.filterControls[e].valueChanges
+          .pipe(debounceTime(300), takeUntil(this.destroy$))
+          .subscribe(value => {
+            this.tableData.columnFilter = true;
+            this.searchControl.setValue('');
+            this.tableData.filterValues.set(e, value);
+            this.tableData.resetPage();
+            this.reloadData();
+          }));
+      });
+      this.headerNamesFilter = this.headerNames.map(x => x + "-filter");
     }
+    this.refreshSortHeaders();
   }
 
   getName(): string {
+    if (this.tableData.filterName && this.publication_table) return 'Gefilterte Publikationen';
     if (this.tableData.filterName) return "Gefilterte " + this.name.substring(0, this.name.indexOf(" "));
     else return this.name;
   }
 
+  setReportingYear(reportingYear: number | null, allReportingYears = false): void {
+    this.reporting_year = reportingYear;
+    this.tableData.setReportingYear(reportingYear);
+
+    if (!this.publication_table) return;
+    if (allReportingYears) this.name = 'Alle Publikationen';
+    else if (reportingYear) this.name = 'Publikationen des Jahres ' + reportingYear;
+    else this.name = 'Publikationen ohne Datumsangabe';
+  }
+
   public updateData() {
-    return this.tableData.updateData().pipe(map(() => {
-      this.selection.clear();
-      this.dataSource.paginator = this.paginator;
-      this.dataSource2.paginator = this.paginator2;
-      this.cdr.detectChanges();
-    }));
+    return this.tableData.updateData().pipe(
+      concatMap(data => this.parent.afterDataLoaded ? this.parent.afterDataLoaded(data) : of(undefined)),
+      map(() => {
+        this.selection.clear();
+        this.syncPaginators();
+        this.cdr.markForCheck();
+      })
+    );
   }
 
   edit(row: any) {
     this.tableAction.edit(row, () => this.updateData());
+  }
+
+  runRowAction(event: Event, action: TableRowAction<T>, row: T): void {
+    event.stopPropagation();
+    if (!this.isRowActionVisible(action, row) || this.isRowActionDisabled(action, row)) return;
+    action.action(row);
+  }
+
+  isRowActionVisible(action: TableRowAction<T>, row: T): boolean {
+    return action.visible ? action.visible(row) : true;
+  }
+
+  isRowActionDisabled(action: TableRowAction<T>, row: T): boolean {
+    return action.disabled ? action.disabled(row) : false;
+  }
+
+  getRowActionTooltip(action: TableRowAction<T>, row: T): string {
+    return typeof action.tooltip === 'function' ? action.tooltip(row) : action.tooltip;
   }
 
   add() {
@@ -256,6 +332,7 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     let viewConfig: ViewConfig = {
       sortState: [],
       filterColumn: new Map<string, string>(),
+      allReportingYears: field === 'pub_count_total',
       filter: {
         filter: {
           expressions: [{
@@ -272,7 +349,17 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
   }
 
   filterAvailable(col: TableHeader) {
-    return (col.type !== 'pubs' && col.type !== 'date' && col.type !== 'datetime' && col.type !== 'route-link');
+    return isTableColumnFilterable(col);
+  }
+
+  invoiceQueryParams(id: number, field: string): InvoiceIndexQuery {
+    if (!this.invoice_filter_key) return {};
+    const params: InvoiceIndexQuery = { [this.invoice_filter_key]: id };
+    if (field === 'invoice_count') {
+      if (this.reporting_year) params.invoice_year = Number(this.reporting_year);
+      else params.invoice_date_missing = true;
+    }
+    return params;
   }
 
   public getCellTooltip(row: T, col: TableHeader): string | null {
@@ -283,35 +370,25 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
 
   announceSortChange(sortState: Sort) {
     this.tableData.announceSortChange(sortState);
-    this.dataSource.paginator = this.paginator;
+    this.refreshSortHeaders();
+    this.tableData.resetPage();
+    this.reloadData();
   }
 
-  renderHeader(col): { text: string, asc: boolean } {
-    let sort = { text: '', asc: null };
-    for (let i = 0; i < this.tableData.sort_state.length; i++) {
-      if (this.tableData.sort_state[i].key === col.colName) {
-        sort.text = (i + 1) + "";
-        if (this.tableData.sort_state[i].dir === 'asc') (sort as any).asc = true;
-        else (sort as any).asc = false;
-        break;
-      }
-    }
-    return sort;
+  private refreshSortHeaders(): void {
+    this.sortHeaders = Object.fromEntries(this.tableData.sort_state.map((sort, index) => [
+      sort.key, { text: String(index + 1), asc: sort.dir === 'asc' },
+    ]));
   }
 
   goToPage() {
-    let page = null;
-    if (this.paginator.length <= this.pageForm.controls.pageNumber.value * this.paginator.pageSize) {
-        page = Math.floor(this.paginator.length / this.paginator.pageSize);
-    } else {
-        page = this.pageForm.controls.pageNumber.value;
-    }
-    
-    if (Number.isNaN(page) || !Number.isInteger(Number(page))) {
+    const requestedPage = Number(this.pageForm.controls.pageNumber.value);
+    if (!Number.isInteger(requestedPage) || requestedPage < 1) {
       this.pageForm.controls.pageNumber.setValue('');
       return;
     }
-    this.paginator.pageIndex = Number(page) - 1;
+    const lastPageIndex = Math.max(0, Math.ceil(this.paginator.length / this.paginator.pageSize) - 1);
+    this.paginator.pageIndex = Math.min(requestedPage - 1, lastPageIndex);
     this.paginator.page.next({
       pageIndex: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
@@ -326,7 +403,8 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       page: this.paginator.pageIndex,
       pageSize: this.paginator.pageSize,
       filterValue: this.searchControl.value,
-      filterColumn: this.tableData.filterValues
+      filterColumn: this.tableData.filterValues,
+      allReportingYears: this.parent.indexOptions?.allReportingYears === true,
     };
     return res;
   }
@@ -341,15 +419,15 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     };
 
     this.tableData.sort_state = [];
+    this.refreshSortHeaders();
     this.tableData.filterValues = new Map<string, string>();
     this.tableData.columnFilter = false;
+    this.tableData.setPage(0, 10);
 
     this.searchControl.setValue('', { emitEvent: false });
     Object.values(this.filterControls).forEach(control => {
       control.setValue('', { emitEvent: false });
     });
-    this.dataSource.filter = '';
-    this.dataSource2.filter = '';
 
     if (this.paginator) {
       this.paginator.pageIndex = 0;
@@ -359,46 +437,37 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
       this.paginator2.pageIndex = 0;
       this.paginator2.pageSize = 10;
     }
+    this.cdr.markForCheck();
+  }
+
+  resetPage(): void {
+    this.tableData.resetPage();
+    this.syncPaginators();
+    this.cdr.markForCheck();
   }
 
   setViewConfig(viewConfig: ViewConfig) {
-    this.paginator.pageIndex = viewConfig.page !== null && viewConfig.page !== undefined ? viewConfig.page : this.paginator.pageIndex;
-    this.paginator.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator.pageSize;
-    this.paginator.page.next({
-      pageIndex: this.paginator.pageIndex,
-      pageSize: this.paginator.pageSize,
-      length: this.dataSource.data.length
-    });
-
-    this.paginator2.pageIndex = viewConfig.page ? viewConfig.page : this.paginator2.pageIndex;
-    this.paginator2.pageSize = viewConfig.pageSize ? viewConfig.pageSize : this.paginator2.pageSize;
-    this.paginator2.page.next({
-      pageIndex: this.paginator2.pageIndex,
-      pageSize: this.paginator2.pageSize,
-      length: this.dataSource2?.data.length
-    });
-    
-    let searchValue = viewConfig.filterValue ? viewConfig.filterValue : '';
-    if (searchValue) this.tableData.columnFilter = false;
-    else this.tableData.columnFilter = true;
-    this.searchControl.setValue(searchValue);
-    
-    this.tableData.filterValues = viewConfig.filterColumn;
-    if (this.tableData.filterValues.get) {
-        for (let col of this.headerNames) {
-            if (this.tableData.filterValues.get(col)) this.filterControls[col].setValue(this.tableData.filterValues.get(col));
-            else this.filterControls[col].setValue('');
-        }
+    this.tableData.sort_state = viewConfig.sortState ?? [];
+    this.refreshSortHeaders();
+    this.tableData.filterValues = viewConfig.filterColumn instanceof Map
+      ? new Map(viewConfig.filterColumn)
+      : new Map(Object.entries(viewConfig.filterColumn ?? {}));
+    const searchValue = viewConfig.filterValue ?? '';
+    this.tableData.columnFilter = !searchValue;
+    this.searchControl.setValue(searchValue, { emitEvent: false });
+    for (const col of this.headerNames) {
+      this.filterControls[col]?.setValue(this.tableData.filterValues.get(col) ?? '', { emitEvent: false });
     }
-    this.tableData.sort_state = viewConfig.sortState;
+    this.tableData.setPage(viewConfig.page ?? 0, viewConfig.pageSize ?? 10);
+    this.syncPaginators();
+    this.cdr.markForCheck();
   }
 
-  isButtonDisabled(e: TableButton) {
-    return e.roles && !this.hasRole(e.roles);
-  }
-
-  hasRole(roles: string[]) {
-    return roles.some(r => this.tokenService.hasRole(r));
+  private hasRole(roles: string[]): boolean {
+    return roles.some(role => {
+      if (!this.roles.has(role)) this.roles.set(role, this.tokenService.hasRole(role));
+      return this.roles.get(role);
+    });
   }
 
   public handlePage(event: PageEvent) {
@@ -408,7 +477,23 @@ export class TableComponent<T extends Entity, E extends Entity> implements OnIni
     this.paginator.pageSize = event.pageSize;
     this.paginator2.pageSize = event.pageSize;
 
-    this.dataSource.paginator = this.paginator;
-    this.dataSource._updateChangeSubscription();
+    this.tableData.setPage(event.pageIndex, event.pageSize);
+    this.reloadData();
+  }
+
+  private reloadData(): void {
+    this.updateData().pipe(catchError(err => {
+      this.errorPresentation.present(err, { action: 'load', entity: this.name });
+      return of(null);
+    }), takeUntil(this.destroy$)).subscribe();
+  }
+
+  private syncPaginators(): void {
+    for (const paginator of [this.paginator, this.paginator2]) {
+      if (!paginator) continue;
+      paginator.length = this.tableData.total;
+      paginator.pageIndex = this.tableData.page;
+      paginator.pageSize = this.tableData.pageSize;
+    }
   }
 }

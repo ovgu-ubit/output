@@ -1,14 +1,12 @@
 {
    "compilerOptions": {
       "lib": [
-         "es2015",
-         "dom",
-         "es6",
-         "es7"
+         "ES2023",
+         "DOM"
       ],
       "target": "ES2023",
-      "module": "Node16",
-      "moduleResolution": "node16",
+      "module": "NodeNext",
+      "moduleResolution": "nodenext",
       "outDir": "./dist",
       "rootDir": "./",
       "emitDecoratorMetadata": true,
@@ -16,7 +14,6 @@
       "sourceMap": true,
       "incremental": true,
       "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
       "skipLibCheck": true,
       "strict": false,
       "types": ["node", "multer"]

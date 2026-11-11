@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { FunderService } from 'src/app/services/entities/funder.service';
 import {  FunderIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { FunderFormComponent } from '../../../form/funder-form/funder-form.compo
     selector: 'app-funders',
     templateUrl: './funders.component.html',
     styleUrls: ['./funders.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class FundersComponent implements TableParent<FunderIndex>, OnInit {

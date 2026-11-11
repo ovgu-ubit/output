@@ -6,6 +6,7 @@ import { Publication } from '../../publication/core/Publication.entity';
 import {  PublicationIndex  } from '@output/interfaces';
 import { AbstractFilterService } from '../filter/abstract-filter.service';
 import { AuthorService } from '../../author/author.service';
+import { EntityAccessRight } from '../../common/abstract-entity.service';
 
 @ExportService({path: 'author'})
 @Injectable()
@@ -26,9 +27,9 @@ export class AuthorExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Export',this.name, by_user);
 
-        const pubs = await this.service.get();
+        const pubs = await this.service.get({ rights: { [EntityAccessRight.Read]: true } });
 
-        let res = "id;title;first_name;last_name;orcid;gnd_id;institutes\n";
+        let res = "id;title;first_name;last_name;orcid;gnd_id;institutes;internal_remark\n";
         for (const pub of pubs) {
             res+=this.format(pub.id);
             res+=this.format(pub.title);
@@ -37,6 +38,7 @@ export class AuthorExportService extends AbstractExportService {
             res+=this.format(pub.orcid);
             res+=this.format(pub.gnd_id);
             res+=this.format(pub.institutes?.map(x => x.label).join(' | '));
+            res+=this.format(pub.internal_remark);
             res=res.slice(0,res.length-1);
             res+='\n';
         }

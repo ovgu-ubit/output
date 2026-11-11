@@ -1,10 +1,10 @@
-import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { provideMockStore } from '@ngrx/store/testing';
-import { of } from 'rxjs';
+import { MockStore, provideMockStore } from '@ngrx/store/testing';
+import { firstValueFrom, of } from 'rxjs';
 import { CompareOperation, JoinOperation } from '@output/interfaces';
 import { AuthorizationService } from 'src/app/security/authorization.service';
 import { PublicationService } from 'src/app/services/entities/publication.service';
@@ -13,130 +13,396 @@ import { ConfigService } from 'src/app/administration/services/config.service';
 import { EnrichService } from 'src/app/administration/services/enrich.service';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { TableModule } from 'src/app/table/table.module';
+import { setReportingYear } from 'src/app/services/redux';
 
 import { PublicationsComponent } from './publications.component';
 
 describe('PublicationsComponent', () => {
-  let component: PublicationsComponent;
-  let fixture: ComponentFixture<PublicationsComponent>;
+    beforeEach(() => {
+        vi.useFakeTimers({ advanceTimeDelta: 1, shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+    let component: PublicationsComponent;
+    let fixture: ComponentFixture<PublicationsComponent>;
 
-  const mockPublicationService = {
-    getFilters: jasmine.createSpy('getFilters').and.returnValue(of([])),
-    updateAll: jasmine.createSpy('updateAll').and.returnValue(of(0))
-  };
-
-  const mockStatusService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([]))
-  };
-
-  const mockConfigService = {
-    get: jasmine.createSpy('get').and.returnValue(of({ value: {} }))
-  };
-
-  const mockEnrichService = {
-    getEnrichs: jasmine.createSpy('getEnrichs').and.returnValue(of([])),
-    startID: jasmine.createSpy('startID').and.returnValue(of({}))
-  };
-
-  const mockRuntimeConfigService = {
-    getValue: jasmine.createSpy('getValue').and.returnValue('http://localhost/')
-  };
-
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
-
-  beforeEach(fakeAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        MatSnackBarModule,
-        MatTooltipModule,
-        SharedModule,
-        TableModule
-      ],
-      declarations: [ PublicationsComponent ],
-      providers: [
-        provideMockStore({}),
-        { provide: PublicationService, useValue: mockPublicationService },
-        { provide: StatusService, useValue: mockStatusService },
-        { provide: ConfigService, useValue: mockConfigService },
-        { provide: EnrichService, useValue: mockEnrichService },
-        { provide: RuntimeConfigService, useValue: mockRuntimeConfigService },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([])
-      ]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(PublicationsComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-    tick();
-    fixture.detectChanges();
-  }));
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should roundtrip JSON encoded filter links with array values', () => {
-    component.indexOptions = {
-      soft: false,
-      filter: {
-        expressions: [{
-          op: JoinOperation.AND,
-          key: 'title',
-          comp: CompareOperation.IN,
-          value: ['alpha,beta', 'gamma'],
-        }]
-      },
-      paths: ['missing-invoice']
+    const mockPublicationService = {
+        getFilters: vi.fn().mockName('getFilters').mockReturnValue(of([])),
+        updateAll: vi.fn().mockName('updateAll').mockReturnValue(of(0)),
+        indexPage: vi.fn().mockName('indexPage').mockReturnValue(of({ items: [], total: 0, page: 0, page_size: 10 })),
     };
 
-    const query = component.filterToQuery();
-    const params = new URLSearchParams(query.slice(1));
-    const roundtrip = component.queryToFilter(convertToParamMap({
-      filter: params.getAll('filter'),
-      path: params.getAll('path'),
-    }));
+    const mockStatusService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([]))
+    };
 
-    expect(roundtrip.filter.expressions[0]).toEqual(jasmine.objectContaining({
-      op: JoinOperation.AND,
-      key: 'title',
-      comp: CompareOperation.IN,
-      value: ['alpha,beta', 'gamma'],
-    }));
-    expect(roundtrip.paths).toEqual(['missing-invoice']);
-  });
+    const mockConfigService = {
+        get: vi.fn().mockName('get').mockReturnValue(of({ value: {} }))
+    };
 
-  it('should read legacy comma separated filter links', () => {
-    const result = component.queryToFilter(convertToParamMap({
-      filter: [`${JoinOperation.AND},title,${CompareOperation.EQUALS},alpha,beta`],
-      path: ['missing-invoice'],
-    }));
+    const mockEnrichService = {
+        getEnrichs: vi.fn().mockName('getEnrichs').mockReturnValue(of([])),
+        startID: vi.fn().mockName('startID').mockReturnValue(of({}))
+    };
 
-    expect(result.filter.expressions[0]).toEqual(jasmine.objectContaining({
-      op: JoinOperation.AND,
-      key: 'title',
-      comp: CompareOperation.EQUALS,
-      value: 'alpha,beta',
-    }));
-    expect(result.paths).toEqual(['missing-invoice']);
-  });
+    const mockRuntimeConfigService = {
+        getValue: vi.fn().mockName('getValue').mockReturnValue('http://localhost/')
+    };
 
-  it('should read links that only contain saved filter paths', () => {
-    const result = component.queryToFilter(convertToParamMap({
-      path: ['missing-invoice'],
-    }));
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
 
-    expect(result.filter.expressions).toEqual([]);
-    expect(result.paths).toEqual(['missing-invoice']);
-  });
+    beforeEach(async () => {
+        mockConfigService.get.mockReturnValue(of({ value: {} }));
+        mockPublicationService.indexPage.mockReturnValue(of({ items: [], total: 0, page: 0, page_size: 10 }));
+        mockAuthService.hasRole.mockReturnValue(true);
+        TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                MatSnackBarModule,
+                MatTooltipModule,
+                SharedModule,
+                TableModule
+            ],
+            declarations: [PublicationsComponent],
+            providers: [
+                provideMockStore({}),
+                { provide: PublicationService, useValue: mockPublicationService },
+                { provide: StatusService, useValue: mockStatusService },
+                { provide: ConfigService, useValue: mockConfigService },
+                { provide: EnrichService, useValue: mockEnrichService },
+                { provide: RuntimeConfigService, useValue: mockRuntimeConfigService },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                provideRouter([])
+            ]
+        })
+            .compileComponents();
+
+        fixture = TestBed.createComponent(PublicationsComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(0);
+        fixture.detectChanges();
+        await vi.runOnlyPendingTimersAsync();
+    });
+
+    it('does not request internal tag columns after switching to public access', () => {
+        mockAuthService.hasRole.mockReturnValue(false);
+        mockPublicationService.indexPage.mockClear();
+        try {
+            component.showTags = true;
+            component.loadPage({ page: 0, page_size: 10, sort: [{ key: 'tags', direction: 'asc' }],
+                search_columns: ['title', 'tags'], column_filters: { tags: 'Review' } }, 2026).subscribe();
+            expect(mockPublicationService.indexPage).toHaveBeenCalledWith(expect.objectContaining({
+                include_tags: false, sort: [], search_columns: ['title'], column_filters: {},
+            }));
+        } finally { mockAuthService.hasRole.mockReturnValue(true); }
+    });
+
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
+
+    it.each([
+        { role: 'reader', savedView: { showTags: false } },
+        { role: 'publication_writer', savedView: { showTags: false, showTagsDefault: false } },
+    ])('shows configured tags despite an outdated saved view %#', async ({ role, savedView }) => {
+        mockAuthService.hasRole.mockImplementation(requiredRole => requiredRole === role);
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns'
+            ? { title: true, tags: true } : key === 'reporting_year' ? 2026 : 'Test' }));
+        TestBed.inject(MockStore).setState({ viewConfigReducer: {
+            viewConfig: { sortState: [], filterColumn: new Map(), ...savedView }, valid_from: new Date(),
+        } });
+        mockPublicationService.indexPage.mockReturnValue(of({
+            items: [{ id: 1, title: 'Tagged publication', tags: [{ id: 1, label: 'Prüfen', color: '#ffcc00' }] }],
+            total: 1, page: 0, page_size: 10,
+        }));
+
+        await firstValueFrom(component.preProcessing());
+        fixture.detectChanges();
+        await firstValueFrom(component.table.updateData());
+        fixture.detectChanges();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: true }));
+        expect(fixture.nativeElement.querySelector('th.mat-column-tags')?.textContent).toContain('Tags');
+        expect(fixture.nativeElement.querySelector('td.mat-column-tags app-publication-tag-chip')?.textContent).toContain('Prüfen');
+    });
+
+    it.each([true, false])('uses tags: %s from configuration regardless of saved visibility', async tags => {
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags } : {} }));
+        TestBed.inject(MockStore).setState({ viewConfigReducer: {
+            viewConfig: { sortState: [], filterColumn: new Map(), showTags: !tags, showTagsDefault: tags }, valid_from: new Date(),
+        } });
+
+        await firstValueFrom(component.preProcessing());
+        component.loadPage({ page: 0, page_size: 10 }, 2026).subscribe();
+
+        expect(component.showTags).toBe(tags);
+        expect(component.headers.some(header => header.colName === 'tags')).toBe(tags);
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: tags }));
+    });
+
+    it('keeps the configured tag column when resetting the view', async () => {
+        mockConfigService.get.mockImplementation(key => of({ value: key === 'pub_index_columns' ? { tags: true } : 2026 }));
+        await firstValueFrom(component.preProcessing());
+        fixture.detectChanges();
+        component.resetView();
+        fixture.detectChanges();
+
+        expect(component.showTags).toBe(true);
+        expect(fixture.nativeElement.querySelector('th.mat-column-tags')).not.toBeNull();
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({ include_tags: true }));
+    });
+
+    it('should combine table state and publication filters in page requests', () => {
+        component.indexOptions = {
+            soft: false,
+            allReportingYears: true,
+            filter: { expressions: [] },
+            paths: ['missing-invoice'],
+        };
+
+        component.loadPage({
+            page: 1,
+            page_size: 20,
+            sort: [{ key: 'title', direction: 'asc' }, { key: 'unsupported', direction: 'desc' }],
+            column_filters: { publisher: 'Springer', unsupported: 'ignored' },
+            search_columns: ['title', 'unsupported'],
+        }, 2025).subscribe();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            page: 1,
+            page_size: 20,
+            reporting_year: 2025,
+            all_reporting_years: true,
+            paths: ['missing-invoice'],
+            sort: [{ key: 'title', direction: 'asc' }],
+            column_filters: { publisher: 'Springer' },
+            search_columns: ['title'],
+        }));
+    });
+
+    it.each([
+        { filter: { expressions: [{ key: 'title', comp: CompareOperation.INCLUDES, value: 'Alpha', op: JoinOperation.AND }] }, paths: [] },
+        { filter: { expressions: [] }, paths: ['missing-invoice'] },
+    ])('should search all years for advanced filters and restore the selected scope when cleared %#', result => {
+        const selectedView = { sortState: [], filterColumn: new Map(), allReportingYears: false };
+        component.viewConfig = selectedView;
+        component.indexOptions = { soft: false, allReportingYears: false };
+        const resetPage = vi.fn();
+        component.table = {
+            reporting_year: 2026,
+            resetPage,
+            getViewConfig: () => selectedView,
+            updateData: () => component.loadPage({ page: 0, page_size: 10 }, 2026),
+        } as any;
+        const dialog = vi.spyOn(component.dialog, 'open').mockReturnValue({ afterClosed: () => of(result) } as any);
+
+        component.extendedFilters();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            reporting_year: 2026, all_reporting_years: true, filter: result.filter, paths: result.paths,
+        }));
+        expect(component.indexOptions.allReportingYears).toBe(false);
+        expect(resetPage).toHaveBeenCalledOnce();
+
+        dialog.mockReturnValue({ afterClosed: () => of({ filter: { expressions: [] }, paths: [] }) } as any);
+        component.extendedFilters();
+
+        expect(mockPublicationService.indexPage).toHaveBeenLastCalledWith(expect.objectContaining({
+            reporting_year: 2026, all_reporting_years: false, filter: { expressions: [] }, paths: [],
+        }));
+    });
+
+    it('should roundtrip JSON encoded filter links with array values', () => {
+        component.indexOptions = {
+            soft: false,
+            filter: {
+                expressions: [{
+                        op: JoinOperation.AND,
+                        key: 'title',
+                        comp: CompareOperation.IN,
+                        value: ['alpha,beta', 'gamma'],
+                    }]
+            },
+            paths: ['missing-invoice']
+        };
+
+        const query = component.filterToQuery();
+        const params = new URLSearchParams(query.slice(1));
+        const roundtrip = component.queryToFilter(convertToParamMap({
+            filter: params.getAll('filter'),
+            path: params.getAll('path'),
+        }));
+
+        expect(roundtrip.filter.expressions[0]).toEqual(expect.objectContaining({
+            op: JoinOperation.AND,
+            key: 'title',
+            comp: CompareOperation.IN,
+            value: ['alpha,beta', 'gamma'],
+        }));
+        expect(roundtrip.paths).toEqual(['missing-invoice']);
+    });
+
+    it('should read legacy comma separated filter links', () => {
+        const result = component.queryToFilter(convertToParamMap({
+            filter: [`${JoinOperation.AND},title,${CompareOperation.EQUALS},alpha,beta`],
+            path: ['missing-invoice'],
+        }));
+
+        expect(result.filter.expressions[0]).toEqual(expect.objectContaining({
+            op: JoinOperation.AND,
+            key: 'title',
+            comp: CompareOperation.EQUALS,
+            value: 'alpha,beta',
+        }));
+        expect(result.paths).toEqual(['missing-invoice']);
+    });
+
+    it('should read links that only contain saved filter paths', () => {
+        const result = component.queryToFilter(convertToParamMap({
+            path: ['missing-invoice'],
+        }));
+
+        expect(result.filter.expressions).toEqual([]);
+        expect(result.paths).toEqual(['missing-invoice']);
+    });
+
+    it('should roundtrip the all-reporting-years mode in links', () => {
+        component.indexOptions = {
+            soft: false,
+            allReportingYears: true,
+        };
+
+        const query = component.filterToQuery();
+        const params = new URLSearchParams(query.slice(1));
+        const result = component.queryToFilter(convertToParamMap({
+            allReportingYears: params.get('allReportingYears'),
+        }));
+
+        expect(params.get('allReportingYears')).toBe('true');
+        expect(result.allReportingYears).toBe(true);
+        expect(result.filter.expressions).toEqual([]);
+        expect(result.paths).toEqual([]);
+    });
+
+    it('should restore the all-reporting-years mode from the view config', () => {
+        const store = TestBed.inject(MockStore);
+        store.setState({
+            viewConfigReducer: {
+                viewConfig: {
+                    sortState: [],
+                    filterColumn: new Map(),
+                    allReportingYears: true,
+                },
+                valid_from: new Date(),
+            },
+        });
+
+        const subscription = component.preProcessing().subscribe();
+
+        expect(component.indexOptions?.allReportingYears).toBe(true);
+        subscription.unsubscribe();
+    });
+
+    it('should switch to all reporting years and preserve the selected year', () => {
+        const setTableReportingYear = vi.fn().mockName('setReportingYear');
+        component.table = {
+            reporting_year: 2025,
+            setReportingYear: setTableReportingYear,
+            resetPage: vi.fn(),
+            getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+            updateData: () => of([]),
+        } as any;
+        component.viewConfig = { sortState: [], filterColumn: new Map() };
+        component.indexOptions = { soft: false, allReportingYears: false };
+        vi.spyOn(component.dialog, 'open').mockReturnValue({
+            afterClosed: () => of({ reportingYear: 2025, allReportingYears: true }),
+        } as any);
+        const store = TestBed.inject(MockStore);
+        vi.spyOn(store, 'dispatch').mockReturnValue(undefined);
+
+        component.changeReportingYear();
+
+        expect(component.indexOptions.allReportingYears).toBe(true);
+        expect(setTableReportingYear).toHaveBeenCalledWith(2025, true);
+        expect(store.dispatch).not.toHaveBeenCalledWith(setReportingYear({ reporting_year: 2025 }));
+    });
+
+    it('should leave the all-reporting-years mode when a year is selected', () => {
+        const setTableReportingYear = vi.fn().mockName('setReportingYear');
+        component.table = {
+            reporting_year: 2025,
+            setReportingYear: setTableReportingYear,
+            resetPage: vi.fn(),
+            getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: false }),
+            updateData: () => of([]),
+        } as any;
+        component.viewConfig = { sortState: [], filterColumn: new Map(), allReportingYears: true };
+        component.indexOptions = { soft: false, allReportingYears: true };
+        vi.spyOn(component.dialog, 'open').mockReturnValue({
+            afterClosed: () => of({ reportingYear: 2024, allReportingYears: false }),
+        } as any);
+        const store = TestBed.inject(MockStore);
+        vi.spyOn(store, 'dispatch').mockReturnValue(undefined);
+
+        component.changeReportingYear();
+
+        expect(component.indexOptions.allReportingYears).toBe(false);
+        expect(setTableReportingYear).toHaveBeenCalledWith(2024, false);
+        expect(store.dispatch).toHaveBeenCalledWith(setReportingYear({ reporting_year: 2024 }));
+    });
+
+    it('should preserve all reporting years when advanced filters are cleared', () => {
+        const updateData = vi.fn().mockName('updateData').mockReturnValue(of([]));
+        component.table = {
+            resetPage: vi.fn(),
+            getViewConfig: () => ({ sortState: [], filterColumn: new Map(), allReportingYears: true }),
+            updateData,
+        } as any;
+        component.viewConfig = {
+            sortState: [],
+            filterColumn: new Map(),
+            allReportingYears: true,
+            filter: {
+                filter: {
+                    expressions: [{
+                            op: JoinOperation.AND,
+                            key: 'title',
+                            comp: CompareOperation.INCLUDES,
+                            value: 'Angular',
+                        }],
+                },
+                paths: ['missing-invoice'],
+            },
+        };
+        component.indexOptions = {
+            soft: false,
+            allReportingYears: true,
+            filter: component.viewConfig.filter.filter,
+            paths: component.viewConfig.filter.paths,
+        };
+        vi.spyOn(component.dialog, 'open').mockReturnValue({
+            afterClosed: () => of({ filter: { expressions: [] }, paths: [] }),
+        } as any);
+
+        component.extendedFilters();
+
+        expect(component.indexOptions).toEqual(expect.objectContaining({
+            soft: false,
+            allReportingYears: true,
+            filter: { expressions: [] },
+            paths: [],
+        }));
+        expect(component.viewConfig.allReportingYears).toBe(true);
+        expect(updateData).toHaveBeenCalled();
+    });
 });

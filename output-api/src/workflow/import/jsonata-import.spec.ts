@@ -523,6 +523,63 @@ describe('JSONataImportService workflow report status', () => {
             status: 'Error while importing',
         }));
     });
+
+    it('logs a safe failed enrich URL and continues with remaining DOI requests', async () => {
+        const failedRequest = {
+            message: 'Request failed with status code 404',
+            code: 'ERR_BAD_REQUEST',
+            response: {
+                status: 404,
+                statusText: 'Not Found',
+                headers: {
+                    'x-rate-limit-limit': '10',
+                    'x-rate-limit-interval': '1s',
+                    'x-concurrency-limit': '3',
+                },
+            },
+        };
+        (service as any).publicationService = {
+            get: jest.fn(async () => [
+                { doi: '10.123/missing', locked: false },
+                { doi: '10.123/found', locked: false },
+            ]),
+        };
+        (service as any).publicationIndexService.getPubwithDOIorTitle.mockResolvedValue({
+            id: 42,
+            locked: true,
+        });
+        (service as any).importDefinition = {
+            strategy: {
+                url_doi: 'https://api.crossref.test/works/[doi]?mailto=[SECRET_CROSSREF]',
+                get_doi_item: '$.message',
+            },
+        };
+        (service as any).url_doi = 'https://api.crossref.test/works/[doi]?mailto=real-secret';
+        (service as any).delayInMs = 0;
+        (service as any).parallelCalls = 1;
+        http.get.mockImplementation((url: string) => url.includes('/missing')
+            ? throwError(() => failedRequest)
+            : of({ data: { message: { DOI: '10.123/found', title: 'Found' } } }));
+        jest.spyOn(service as any, 'getDataEnrich').mockResolvedValue({
+            doi: '10.123/found',
+            title: 'Found',
+        });
+
+        await service.enrich('tester', false);
+        await new Promise((resolve) => setTimeout(resolve, 25));
+
+        expect(http.get).toHaveBeenCalledTimes(2);
+        expect(workflowReportService.write).toHaveBeenCalledWith(11, expect.objectContaining({
+            level: 'error',
+            message: expect.stringContaining(
+                'Error retrieving enrich data from URL https://api.crossref.test/works/10.123/missing?mailto=[SECRET_CROSSREF]'
+            ),
+        }));
+        expect(workflowReportService.write.mock.calls.flat().join(' ')).not.toContain('real-secret');
+        expect(workflowReportService.finish).toHaveBeenCalledWith(11, expect.objectContaining({
+            status: 'Successfull enrich',
+        }));
+    });
 });
 
 describe('JSONataImportService optional_fields config usage', () => {
@@ -620,5 +677,84 @@ describe('JSONataImportService optional_fields config usage', () => {
         );
 
         expect(configService.get.mock.calls.filter(([key]) => key === 'optional_fields')).toHaveLength(1);
+    });
+});
+
+
+describe('JSONataImportService per-record tag mapping', () => {
+    const review = { id: 2, label: 'Rechnung fehlt' };
+    let service: JSONataImportService;
+    let publications: { save: jest.Mock; planImportTags: jest.Mock };
+    let reports: { write: jest.Mock };
+
+    beforeEach(() => {
+        publications = {
+            save: jest.fn(async pubs => pubs.map(pub => ({ ...pub, id: pub.id ?? 100 }))),
+            planImportTags: jest.fn(async () => ({ tags: [review], addTagIds: [2], missingLabels: [] })),
+        };
+        reports = { write: jest.fn(async () => undefined) };
+        service = new JSONataImportService(
+            publications as any, { findOrSave: jest.fn() } as any, createPublicationRelationServiceMock() as any,
+            { findOrSave: jest.fn() } as any, { findOrSave: jest.fn() } as any,
+            { findOrSave: jest.fn(async () => null) } as any,
+            { findOrSave: jest.fn(async () => null), findByDOI: jest.fn(async () => null) } as any,
+            { findOrSave: () => of(null) } as any, { findOrSave: () => of(null) } as any,
+            { findOrSaveCT: () => of(null), findOrSaveCC: () => of(null) } as any,
+            { write: jest.fn() } as any, { findOrSave: () => of(null) } as any,
+            { findOrSave: jest.fn(async () => null) } as any, { findOrSave: jest.fn(async () => null) } as any,
+            { get: async () => ({}) } as any, reports as any, {} as any,
+        );
+        (service as any).workflowReport = { id: 7 };
+        (service as any).updateMapping = Object.fromEntries(Object.keys(service.getUpdateMapping()).map(key => [key, UpdateOptions.IGNORE]));
+        jest.spyOn(service as any, 'importTest').mockResolvedValue(true);
+    });
+
+    it('evaluates conditional tag expressions independently for each new record', async () => {
+        (service as any).importConfig = '{"title": title, "pub_date": date, "tags": $count(invoices) = 0 ? ["Rechnung fehlt"] : []}';
+        await service.mapNew(await service.transform({ title: 'Needs invoice', date: '2026-01-01', invoices: [] }));
+        await service.mapNew(await service.transform({ title: 'Has invoice', date: '2026-01-01', invoices: [{ number: '1' }] }));
+        expect(publications.planImportTags).toHaveBeenCalledTimes(1);
+        expect(publications.planImportTags).toHaveBeenCalledWith(['Rechnung fehlt'], undefined);
+        expect(publications.save.mock.calls[0][1]).toEqual({ workflowReport: { id: 7 }, addTagIds: [2] });
+        expect(publications.save.mock.calls[1][1]).toEqual({ workflowReport: { id: 7 } });
+    });
+
+    it('updates existing publications when only a new tag assignment changes', async () => {
+        const result = await service.mapUpdate({ tags: ['Rechnung fehlt'] }, { id: 4 } as any);
+        expect(result.fields).toEqual(['tags']);
+        expect(result.pub.tags).toEqual([review]);
+        expect(publications.save).toHaveBeenCalledWith([{ id: 4 }], { workflowReport: { id: 7 }, addTagIds: [2] });
+    });
+
+    it('does not save unchanged tag assignments or interpret an empty list as removal', async () => {
+        publications.planImportTags.mockResolvedValue({ tags: [review], addTagIds: [], missingLabels: [] });
+        expect((await service.mapUpdate({ tags: ['Rechnung fehlt'] }, { id: 4 } as any)).fields).toEqual([]);
+        expect((await service.mapUpdate({ tags: [] }, { id: 4 } as any)).fields).toEqual([]);
+        expect(publications.save).not.toHaveBeenCalled();
+    });
+
+    it('previews tags for new and updated publications without writing assignments', async () => {
+        (service as any).dryRun = true;
+        expect((await service.mapNew({ title: 'Preview', pub_date: '2026-01-01', tags: ['Rechnung fehlt'] })).tags).toEqual([review]);
+        const update = await service.mapUpdate({ tags: ['Rechnung fehlt'] }, { id: 4 } as any);
+        expect(update.pub.tags).toEqual([review]);
+        expect(update.fields).toContain('tags');
+        expect(publications.save).not.toHaveBeenCalled();
+    });
+
+    it('warns about unknown labels while retaining resolvable tags', async () => {
+        publications.planImportTags.mockResolvedValue({ tags: [review], addTagIds: [2], missingLabels: ['Unknown'] });
+        await service.mapNew({ title: 'Example', pub_date: '2026-01-01', tags: ['Rechnung fehlt', 'Unknown'] });
+        expect(reports.write).toHaveBeenCalledWith(7, expect.objectContaining({
+            code: 'publication-tags', message: expect.stringContaining('Unknown'),
+        }));
+        expect(publications.save.mock.calls[0][1].addTagIds).toEqual([2]);
+    });
+
+    it.each([{ locked: true }, { delete_date: new Date() }])('does not assign tags to unavailable publications: %p', async state => {
+        const result = await service.mapUpdate({ tags: ['Rechnung fehlt'] }, { id: 4, ...state } as any);
+        expect(result.fields).toEqual([]);
+        expect(publications.planImportTags).not.toHaveBeenCalled();
+        expect(publications.save).not.toHaveBeenCalled();
     });
 });

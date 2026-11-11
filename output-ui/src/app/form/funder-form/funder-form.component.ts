@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { FunderService } from 'src/app/services/entities/funder.service';
 
@@ -6,6 +6,7 @@ import { FunderService } from 'src/app/services/entities/funder.service';
     selector: 'app-funder-form',
     templateUrl: './funder-form.component.html',
     styleUrls: ['./funder-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class FunderFormComponent implements OnInit {

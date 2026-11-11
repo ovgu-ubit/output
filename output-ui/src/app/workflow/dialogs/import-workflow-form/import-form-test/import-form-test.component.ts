@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
 import {  ImportWorkflow, ImportWorkflowTestResult, ImportStrategy  } from '@output/interfaces';
 import { ImportFormFacade } from '../import-form-facade.service';
@@ -22,6 +22,7 @@ type FormattedIssueError = {
   standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-test.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './import-form-test.component.css',
 })
 export class ImportFormTestComponent implements OnInit {

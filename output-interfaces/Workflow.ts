@@ -1,5 +1,30 @@
 import { CompareOperation, SearchFilter, SearchFilterValue } from "./Config";
 import { Publication } from "./Publication";
+import { IndexPageRequest } from './IndexPage';
+
+export type WorkflowIndexState = 'draft' | 'published' | 'archived';
+export type WorkflowIndexColumn = 'id' | 'workflow_id' | 'label' | 'version' | 'created_at' | 'modified_at'
+    | 'published_at' | 'deleted_at' | 'description' | 'locked_at' | 'strategy_type' | 'source_entity'
+    | 'source_entity_label' | 'target' | 'last_run_status' | 'last_run_finished_at' | 'last_run_report_id' | 'last_run_log_link';
+
+export interface WorkflowIndexPageRequest extends IndexPageRequest<WorkflowIndexColumn> {
+    type?: WorkflowIndexState;
+}
+
+export interface ImportRunStatus {
+    progress: number;
+    status: string;
+    runId?: string;
+    stopRequested: boolean;
+    stale?: boolean;
+    reportId?: number;
+}
+
+export interface ImportStopResponse {
+    state: 'stopping' | 'not-running' | 'interrupted';
+    runId?: string;
+    reportId?: number;
+}
 
 export interface Workflow {
     id?: number;
@@ -24,7 +49,25 @@ export interface ImportWorkflow extends Workflow {
     strategy?: any;
 }
 
+export const EXPORT_ENTITY_TYPES = [
+    'publication', 'author', 'institute', 'greater_entity', 'publisher', 'contract',
+    'funder', 'oa_category', 'pub_type', 'cost_center', 'cost_type',
+] as const;
+
+export type ExportEntityType = typeof EXPORT_ENTITY_TYPES[number];
+
+export const EXPORT_ENTITY_LABELS: Record<ExportEntityType, string> = {
+    publication: 'Publikationen', author: 'Personen', institute: 'Institute', greater_entity: 'Größere Einheiten',
+    publisher: 'Verlage', contract: 'Verträge', funder: 'Förderer', oa_category: 'OA-Kategorien',
+    pub_type: 'Publikationsarten', cost_center: 'Kostenstellen', cost_type: 'Kostenarten',
+};
+
+export function isExportEntityType(value: unknown): value is ExportEntityType {
+    return typeof value === 'string' && EXPORT_ENTITY_TYPES.some((type) => type === value);
+}
+
 export interface ExportWorkflow extends Workflow {
+    source_entity?: ExportEntityType;
     strategy_type?: ExportStrategy;
     strategy?: any;
 }
@@ -148,7 +191,27 @@ export enum ImportStrategy {
 }
 
 export enum ExportStrategy {
-    HTTP_RESPONSE
+    HTTP_RESPONSE = 0,
+    ENDPOINT = 1,
+}
+
+export type ExportEndpointAccess = 'authenticated' | 'public';
+
+export interface ExportEndpointStrategy {
+    endpoint_name: string;
+    access: ExportEndpointAccess;
+    format: ExportFormat;
+    disposition?: ExportDisposition;
+    delimiter?: string;
+    quote_char?: string;
+    root_name?: string;
+    item_name?: string;
+    sheet_name?: string;
+}
+
+export interface ExportEndpointRequest {
+    filter?: SearchFilter;
+    paths?: string[];
 }
 
 export enum WorkflowReportItemLevel {

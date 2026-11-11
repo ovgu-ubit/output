@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { OACategoryService } from 'src/app/services/entities/oa-category.service';
 import {  OACategoryIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { OaCategoryFormComponent } from '../../../form/oa-category-form/oa-categ
     selector: 'app-oa-categories',
     templateUrl: './oa-categories.component.html',
     styleUrls: ['./oa-categories.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnInit {
@@ -21,7 +22,7 @@ export class OaCategoriesComponent implements TableParent<OACategoryIndex>, OnIn
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'is_oa', colTitle: 'Open-Access?', type: 'boolean' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
-    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' },
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 

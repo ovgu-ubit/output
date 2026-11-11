@@ -48,8 +48,6 @@ export class PubMedImportService extends AbstractImportService {
     parallelCalls = 1;
     affiliation_tags;
 
-    private newPublications: Publication[] = [];
-    private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
 
@@ -84,12 +82,12 @@ export class PubMedImportService extends AbstractImportService {
 
     request(id: number): Observable<any> {
         const url = this.url_fetch + `?db=pubmed&id=${id}`;
-        return this.http.get(url, { responseType: 'document' }).pipe(delay(this.delay));
+        return this.getImportRequest(this.http, url, { responseType: 'document' }).pipe(delay(this.delay));
     }
     search(offset?: number): Observable<any> {
         let url = this.url_search + `?db=pubmed&term=${this.year}:${this.year}[dp]+and+${this.searchText}&retmax=${this.max}`;
         if (offset) url += '&retstart=' + offset
-        return this.http.get(url, { responseType: 'document' }).pipe(concatMap(resp => {
+        return this.getImportRequest(this.http, url, { responseType: 'document' }).pipe(concatMap(resp => {
             const data = JSON.parse(xmljs.xml2json(resp.data, { compact: true }));
             //if (data['eSearchResult']['Count']['_text'] <= this.max) {
             this.numberOfPublications = Number(data['eSearchResult']['Count']['_text']);
@@ -102,7 +100,7 @@ export class PubMedImportService extends AbstractImportService {
             if (this.numberOfPublications <= 0) {
                 //finalize
                 this.progress = 0;
-                this.reportService.finish(this.report, {
+                this.finishLegacyRun(this.report, {
                     status: 'Nothing to import on' + new Date(),
                     count_import: 0,
                     count_update: 0
@@ -121,7 +119,7 @@ export class PubMedImportService extends AbstractImportService {
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         const tags = await this.configService.get('search_tags');
         this.searchText = '('
@@ -144,7 +142,7 @@ export class PubMedImportService extends AbstractImportService {
         this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with year ${this.year} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
 
         this.obs$ = [];
-        this.search().pipe(concatWith(scheduled(this.obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
+        this.subscribeImport(this.search().pipe(concatWith(scheduled(this.obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))), {
             next: async (data: any) => {
                 if (!data) return;
                 let pub = JSON.parse(xmljs.xml2json(data.data, { compact: true }));
@@ -191,7 +189,7 @@ export class PubMedImportService extends AbstractImportService {
                     if (this.progress === 1) {
                         //finalize
                         this.progress = 0;
-                        this.reportService.finish(this.report, {
+                        this.finishLegacyRun(this.report, {
                             status: 'Successfull import on ' + new Date(),
                             count_import: this.newPublications.length,
                             count_update: this.publicationsUpdate.length
@@ -210,7 +208,7 @@ export class PubMedImportService extends AbstractImportService {
                 });
                 this.progress = 0;
                 this.status_text = 'Error while importing on ' + new Date();
-                this.reportService.finish(this.report, {
+                this.finishLegacyRun(this.report, {
                     status: 'Error while importing on ' + new Date(),
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length

@@ -16,6 +16,14 @@ describe('PublicationTypeService', () => {
     let configService: { get: jest.Mock };
     let dataSource: { transaction: jest.Mock };
 
+    it('loads publication type export aliases without publications', async () => {
+        repository.find.mockResolvedValue([]);
+        expect(await service.getForExport()).toEqual([]);
+        expect(repository.find).toHaveBeenCalledWith({ relations: { aliases: true } });
+        expect(repository.find).toHaveBeenCalledTimes(1);
+        expect(repository.findOne).not.toHaveBeenCalled();
+    });
+
     beforeEach(async () => {
         repository = {
             save: jest.fn(),

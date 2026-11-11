@@ -1,3 +1,5 @@
+import { PublicationTagChipComponent } from './publication-tag-chip/publication-tag-chip.component';
+import { PublicationTagSelectComponent } from './publication-tag-select/publication-tag-select.component';
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -57,7 +59,6 @@ const DECLARATIONS = [
   ConfirmDialogComponent,
   SelectAuthorComponent,
   SelectEntityComponent,
-  WindowToolbarComponent,
   AliasTableComponent,
   IdTableComponent
 ];
@@ -65,6 +66,9 @@ const DECLARATIONS = [
 @NgModule({
   declarations: DECLARATIONS,
   imports: [
+    WindowToolbarComponent,
+    PublicationTagSelectComponent,
+    PublicationTagChipComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -74,6 +78,9 @@ const DECLARATIONS = [
     RouterModule
   ],
   exports: [
+    WindowToolbarComponent,
+    PublicationTagSelectComponent,
+    PublicationTagChipComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

@@ -43,6 +43,23 @@ describe('ContractService', () => {
     let greaterEntityService: { findOrSave: jest.Mock };
     let dataSource: { transaction: jest.Mock };
 
+    it('loads contract export details in bulk without publications or locks', async () => {
+        repository.find!.mockResolvedValue([]);
+        expect(await service.getForExport()).toEqual([]);
+        expect(repository.find).toHaveBeenCalledTimes(1);
+        expect(repository.find).toHaveBeenCalledWith({
+            relationLoadStrategy: 'query',
+            relations: {
+                publisher: true, identifiers: true,
+                components: {
+                    oa_categories: true, pub_types: true, greater_entities: true, cost_types: true,
+                    linked_invoices: { cost_center: true, cost_items: { cost_type: true } },
+                },
+            },
+        });
+        expect(repository.update).not.toHaveBeenCalled();
+    });
+
     beforeEach(async () => {
         repository = {
             findOne: jest.fn(),

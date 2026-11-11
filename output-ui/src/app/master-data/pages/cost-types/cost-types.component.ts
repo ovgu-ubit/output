@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import {  CostType  } from '@output/interfaces';
@@ -9,6 +9,7 @@ import {  CostTypeIndex  } from '@output/interfaces';
     selector: 'app-cost-types',
     templateUrl: './cost-types.component.html',
     styleUrls: ['./cost-types.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CostTypesComponent implements TableParent<CostTypeIndex>, OnInit {
@@ -21,8 +22,10 @@ export class CostTypesComponent implements TableParent<CostTypeIndex>, OnInit {
     { colName: 'id', colTitle: 'ID', type: 'number' },
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
-    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
-    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' }
+    { colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' },
+    { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
+    { colName: 'invoice_count', colTitle: 'Anzahl Rechnungen (Rechnungsdatum)', type: 'invoices', roles: ['reader', 'writer', 'admin'] },
+    { colName: 'invoice_count_total', colTitle: 'Anzahl Rechnungen insg.', type: 'invoices', roles: ['reader', 'writer', 'admin'] },
   ];
 
   constructor(public ctService: CostTypeService) { }

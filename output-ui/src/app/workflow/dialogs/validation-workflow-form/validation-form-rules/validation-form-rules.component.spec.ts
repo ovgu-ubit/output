@@ -8,67 +8,67 @@ import { ErrorPresentationService } from 'src/app/core/errors/error-presentation
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ValidationFormFacade } from '../validation-form-facade.service';
 import { ValidationFormRulesComponent } from './validation-form-rules.component';
-import {  CompareOperation  } from '@output/interfaces';
+import { CompareOperation } from '@output/interfaces';
 
 describe('ValidationFormRulesComponent', () => {
-  let component: ValidationFormRulesComponent;
-  let fixture: ComponentFixture<ValidationFormRulesComponent>;
+    let component: ValidationFormRulesComponent;
+    let fixture: ComponentFixture<ValidationFormRulesComponent>;
 
-  const mockFacade = {
-    validation$: of({ rules: [] }),
-    destroy$: of(),
-    patch: jasmine.createSpy('patch'),
-    save: jasmine.createSpy('save').and.returnValue(of({}))
-  };
+    const mockFacade = {
+        validation$: of({ rules: [] }),
+        destroy$: of(),
+        patch: vi.fn().mockName('patch'),
+        save: vi.fn().mockName('save').mockReturnValue(of({}))
+    };
 
-  const mockErrorPresentation = {
-    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
-    present: jasmine.createSpy('present')
-  };
+    const mockErrorPresentation = {
+        applyFieldErrors: vi.fn().mockName('applyFieldErrors'),
+        present: vi.fn().mockName('present')
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        ValidationFormRulesComponent,
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      providers: [
-        FormBuilder,
-        { provide: ValidationFormFacade, useValue: mockFacade },
-        { provide: ErrorPresentationService, useValue: mockErrorPresentation }
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                ValidationFormRulesComponent,
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            providers: [
+                FormBuilder,
+                { provide: ValidationFormFacade, useValue: mockFacade },
+                { provide: ErrorPresentationService, useValue: mockErrorPresentation }
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(ValidationFormRulesComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should correctly normalize boolean values to true/false', () => {
-    const group = component['formBuilder'].group({
-      path: ['locked'], // Assuming 'locked' is boolean
-      comp: [CompareOperation.EQUALS],
-      value: ['true']
+        fixture = TestBed.createComponent(ValidationFormRulesComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
     });
 
-    component.normalizeCompareOperator(group);
-    expect(group.get('value')?.value).toBe(true as any);
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 
-    group.get('value')?.setValue('false');
-    component.normalizeCompareOperator(group);
-    expect(group.get('value')?.value).toBe(false as any);
+    it('should correctly normalize boolean values to true/false', () => {
+        const group = component['formBuilder'].group({
+            path: ['locked'], // Assuming 'locked' is boolean
+            comp: [CompareOperation.EQUALS],
+            value: ['true']
+        });
 
-    group.get('value')?.setValue('some-invalid-value');
-    component.normalizeCompareOperator(group);
-    expect(group.get('value')?.value).toBe(false as any);
-  });
+        component.normalizeCompareOperator(group);
+        expect(group.get('value')?.value).toBe(true as any);
+
+        group.get('value')?.setValue('false');
+        component.normalizeCompareOperator(group);
+        expect(group.get('value')?.value).toBe(false as any);
+
+        group.get('value')?.setValue('some-invalid-value');
+        component.normalizeCompareOperator(group);
+        expect(group.get('value')?.value).toBe(false as any);
+    });
 });

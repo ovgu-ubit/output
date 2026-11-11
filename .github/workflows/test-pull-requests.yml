@@ -19,7 +19,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
@@ -32,8 +32,38 @@ jobs:
       - name: Run tests
         run: npm test -w output-api -- --watch=false
 
-      - name: Build
-        run: npm run build:api
+      - name: Build backend and run HTTP regression tests
+        run: npm run test:e2e
 
       - name: Build Docker image
         run: docker build -t output-ci-test .
+
+  test-frontend:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install test browser and system dependencies
+        run: npm run test:ui:setup -- --with-deps
+
+      - name: Run frontend tests
+        run: npm run test:ui

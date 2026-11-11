@@ -1,5 +1,8 @@
 ﻿import { Aliasable, AliasAuthorFirstName, AliasAuthorLastName } from './Alias';
 
+import { IndexPageRequest } from './IndexPage';
+import { PublicationTag } from './PublicationTag';
+
 export interface Entity {
     id?: number;
     locked_at?: Date;
@@ -16,6 +19,7 @@ export interface PublicationSupplement extends Entity {
 }
 
 export interface Publication extends Identifiable<Publication> {
+    tags?: PublicationTag[];
     authorPublications?: AuthorPublication[];
     pub_type?: PublicationType
     oa_category?: OA_Category
@@ -63,6 +67,10 @@ export interface Publication extends Identifiable<Publication> {
     supplements?: PublicationSupplement[];
     duplicates?: PublicationDuplicate[];
     not_budget_relevant?: boolean;
+}
+
+export interface PublicationDuplicateIndexPageRequest extends IndexPageRequest<'id' | 'id_first' | 'id_second' | 'description' | 'delete_date'> {
+    soft?: boolean;
 }
 
 export interface PublicationDuplicate {
@@ -205,6 +213,7 @@ export interface Invoice extends Entity {
     cost_center?: CostCenter
     cost_items?: CostItem[]
     publication?: Publication
+    contract_component?: ContractComponent;
     invoice_kind?: InvoiceKind;
     number?: string;
     date?: Date;

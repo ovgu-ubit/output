@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -22,6 +22,7 @@ type ExportPublicationFilter = { filter: SearchFilter, paths: string[] };
   selector: 'app-export-form-action',
   imports: [SharedModule, MatProgressBarModule],
   templateUrl: './export-form-action.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './export-form-action.component.css',
 })
 export class ExportFormActionComponent implements OnInit {
@@ -93,6 +94,10 @@ export class ExportFormActionComponent implements OnInit {
 
   get isDraft(): boolean {
     return !!this.entity && !this.entity.published_at && !this.entity.deleted_at;
+  }
+
+  get isPublicationSource(): boolean {
+    return (this.entity?.source_entity ?? 'publication') === 'publication';
   }
 
   get isPublished(): boolean {
@@ -213,7 +218,7 @@ export class ExportFormActionComponent implements OnInit {
     this.form.disable();
 
     const withMasterData = !!this.form.controls.withMasterData.value;
-    const publicationFilter = this.hasPublicationFilter
+    const publicationFilter = this.isPublicationSource && this.hasPublicationFilter
       ? this.clonePublicationFilter(this.publicationFilter)
       : undefined;
     this.exportWorkflowService

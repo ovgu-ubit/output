@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { TableButton, TableHeader, TableParent } from 'src/app/table/table.interface';
 import { PublicationTypeService } from 'src/app/services/entities/publication-type.service';
 import {  PublicationTypeIndex  } from '@output/interfaces';
@@ -8,6 +8,7 @@ import { PubTypeFormComponent } from '../../../form/pub-type-form/pub-type-form.
     selector: 'app-pub-types',
     templateUrl: './pub-types.component.html',
     styleUrls: ['./pub-types.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnInit {
@@ -21,7 +22,7 @@ export class PubTypesComponent implements TableParent<PublicationTypeIndex>, OnI
     { colName: 'label', colTitle: 'Bezeichnung' },
     { colName: 'review', colTitle: 'Begutachtet?', type: 'boolean' },
     { colName: 'pub_count', colTitle: 'Anzahl Publikationen', type: 'pubs' },
-    { colName: 'net_costs', colTitle: 'Kosten', type: 'euro' },
+    { colName: 'net_costs', colTitle: 'Kosten (brutto)', type: 'euro' },
     { colName: 'pub_count_total', colTitle: 'Anzahl Publikationen insg.', type: 'pubs' },
   ];
 

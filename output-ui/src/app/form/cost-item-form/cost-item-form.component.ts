@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {  CostItem  } from '@output/interfaces';
 
@@ -6,6 +6,7 @@ import {  CostItem  } from '@output/interfaces';
     selector: 'app-cost-item-form',
     templateUrl: './cost-item-form.component.html',
     styleUrls: ['./cost-item-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CostItemFormComponent {

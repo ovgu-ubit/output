@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom, interval, concatMap, Observable } from 'rxjs';
-import {  UpdateMapping  } from '@output/interfaces';
+import { UpdateMapping, ImportStopResponse } from '@output/interfaces';
+import { ImportProgress } from 'src/app/shared/import-progress';
 import { RuntimeConfigService } from 'src/app/services/runtime-config.service';
 
 @Injectable({
@@ -19,7 +20,7 @@ export class EnrichService {
     let res = [];
     let imports = await firstValueFrom(this.getEnrichs());
     for (let im of imports) {
-      let response = await firstValueFrom(this.http.get<{progress:number, status:string}>(this.runtimeConfigService.getValue("api") + 'enrich/'+im.path))
+      let response = await firstValueFrom(this.http.get<ImportProgress>(this.runtimeConfigService.getValue("api") + 'enrich/'+im.path))
       if (response?.progress != 0) res.push(im);
     }
     return res;
@@ -29,22 +30,25 @@ export class EnrichService {
     let res = [];
     let imports = await firstValueFrom(this.getEnrichs());
     for (let im of imports) {
-      let response = await firstValueFrom(this.http.get<{progress:number, status:string}>(this.runtimeConfigService.getValue("api") + 'enrich/'+im.path))
+      let response = await firstValueFrom(this.http.get<ImportProgress>(this.runtimeConfigService.getValue("api") + 'enrich/'+im.path))
       res.push(response.status);
     }
     return res;
   }
 
-  getProgress(import_path:string):Observable<{progress:number, status:string}> {
+  getProgress(import_path:string):Observable<ImportProgress> {
     let timer = interval(500);
     return timer.pipe(concatMap(data => {
       //console.log(new Date())
-      return this.http.get<{progress:number, status:string}>(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path)
+      return this.http.get<ImportProgress>(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path)
     }))
   }
 
   startYear(import_path:string, reporting_year:number, dryRun:boolean) {
     return this.http.post(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path, {reporting_year, dry_run: dryRun})
+  }
+  stop(path: string): Observable<ImportStopResponse> {
+    return this.http.post<ImportStopResponse>(this.runtimeConfigService.getValue('api') + `enrich/${encodeURIComponent(path)}/stop`, {}, { withCredentials: true });
   }
   startID(import_path:string, ids:number[], dryRun:boolean) {
     return this.http.post(this.runtimeConfigService.getValue("api") + 'enrich/'+import_path, {ids, dry_run: dryRun})

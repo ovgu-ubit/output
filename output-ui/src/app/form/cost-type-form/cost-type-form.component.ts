@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 
@@ -6,6 +6,7 @@ import { CostTypeService } from 'src/app/services/entities/cost-type.service';
     selector: 'app-cost-type-form',
     templateUrl: './cost-type-form.component.html',
     styleUrls: ['./cost-type-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CostTypeFormComponent implements OnInit {

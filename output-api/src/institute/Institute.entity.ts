@@ -26,7 +26,7 @@ export class Institute implements IInstitute {
     @Column({ nullable: true })
     opus_id?: string;
 
-    @ManyToMany(() => Author, (author) => author.institutes)
+    @ManyToMany(() => Author, (author) => author.institutes, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
     authors?: Author[]
 
     @OneToMany(() => AuthorPublication, authorPublication => authorPublication.institute, { cascade : true })

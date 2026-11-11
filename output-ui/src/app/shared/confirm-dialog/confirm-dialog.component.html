@@ -4,10 +4,12 @@
 
 <mat-dialog-content>
   {{message}} <br>
-  <mat-checkbox [(ngModel)]="soft_delete" matTooltip="D.h. diese Entität(en) werden bei künftigen Imports ignoriert"
-    *ngIf="this.soft">
-    Soft-Delete
-  </mat-checkbox>
+  @if (this.soft) {
+    <mat-checkbox [(ngModel)]="soft_delete" matTooltip="D.h. diese Entität(en) werden bei künftigen Imports ignoriert"
+      >
+      Soft-Delete
+    </mat-checkbox>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions>

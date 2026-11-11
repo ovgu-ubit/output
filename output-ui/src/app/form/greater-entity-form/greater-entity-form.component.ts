@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { GreaterEntityService } from 'src/app/services/entities/greater-entity.service';
 
@@ -6,6 +6,7 @@ import { GreaterEntityService } from 'src/app/services/entities/greater-entity.s
     selector: 'app-greater-entity-form',
     templateUrl: './greater-entity-form.component.html',
     styleUrls: ['./greater-entity-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class GreaterEntityFormComponent implements OnInit {

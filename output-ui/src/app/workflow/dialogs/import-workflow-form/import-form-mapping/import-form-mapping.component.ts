@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { filter, firstValueFrom, takeUntil } from 'rxjs';
-import {  ImportWorkflow  } from '@output/interfaces';
+import { ImportWorkflow, PublicationTag } from '@output/interfaces';
 import { ErrorPresentationService } from 'src/app/core/errors/error-presentation.service';
+import { PublicationTagService } from 'src/app/services/entities/publication-tag.service';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { WorkflowFormPage } from '../../workflow-form-page.interface';
 import { ImportFormFacade } from '../import-form-facade.service';
@@ -12,6 +13,7 @@ interface MappingFieldDefinition {
   label: string;
   rows?: number;
   placeholder?: string;
+  hint?: string;
 }
 
 interface ParsedMapping {
@@ -26,12 +28,16 @@ interface ParsedMapping {
   standalone: true,
   imports: [SharedModule],
   templateUrl: './import-form-mapping.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './import-form-mapping.component.css',
 })
 export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
   form: FormGroup;
   entity: ImportWorkflow;
   activeFieldKeys: string[] = [];
+  availableTags: PublicationTag[] = [];
+  tagsLoading = true;
+  tagsLoadFailed = false;
 
   readonly mappingFields: MappingFieldDefinition[] = [
     { key: 'title', label: 'Titel', placeholder: '$.title' },
@@ -44,6 +50,9 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
     { key: 'publisher', label: 'Verlag' },
     { key: 'contract', label: 'Vertrag' },
     { key: 'funder', label: 'Förderer', rows: 6 },
+    { key: 'tags', label: 'Publikations-Tags', rows: 4,
+      placeholder: '$count(invoices) = 0 ? ["Rechnung fehlt"] : []',
+      hint: 'Tags werden für neue und aktualisierte Publikationen ergänzt. [] oder ein ausgelassenes Feld lässt bestehende Tags unverändert. Unbekannte Bezeichnungen werden mit einer Warnung übersprungen.' },
     { key: 'pub_date', label: 'Publikationsdatum' },
     { key: 'pub_date_print', label: 'Publikationsdatum (print)' },
     { key: 'pub_date_accepted', label: 'Akzeptanzdatum' },
@@ -80,10 +89,21 @@ export class ImportFormMappingComponent implements OnInit, WorkflowFormPage {
     private facade: ImportFormFacade,
     private formBuilder: FormBuilder,
     private errorPresentation: ErrorPresentationService,
+    private tagService: PublicationTagService,
   ) { }
 
   ngOnInit(): void {
     this.form = this.createForm();
+    this.tagService.getAll().pipe(takeUntil(this.facade.destroy$)).subscribe({
+      next: tags => {
+        this.availableTags = [...tags].sort((first, second) => first.label.localeCompare(second.label, 'de'));
+        this.tagsLoading = false;
+      },
+      error: () => {
+        this.tagsLoading = false;
+        this.tagsLoadFailed = true;
+      },
+    });
 
     this.facade.import$
       .pipe(filter((e): e is ImportWorkflow => e != null), takeUntil(this.facade.destroy$))

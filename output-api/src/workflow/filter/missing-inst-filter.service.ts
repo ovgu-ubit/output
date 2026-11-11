@@ -1,19 +1,20 @@
 import { Injectable } from "@nestjs/common";
-import { AbstractFilterService, FilterService } from "./abstract-filter.service";
+import { AbstractFilterService, FilterService, SqlFilterService } from "./abstract-filter.service";
 import { PublicationService } from "../../publication/core/publication.service";
 import {  PublicationIndex  } from '@output/interfaces';
 import { Publication } from "../../publication/core/Publication.entity";
 
 @FilterService({path: 'missing-institute'})
 @Injectable()
-export class MissingInstFilterService extends AbstractFilterService<PublicationIndex|Publication>{
+export class MissingInstFilterService extends AbstractFilterService<PublicationIndex|Publication> implements SqlFilterService {
 
     constructor(private pubService: PublicationService) {super()}
 
     async filter(pubs:PublicationIndex[]|Publication[], options?:any):Promise<PublicationIndex[]|Publication[]> {
         const res = [];
         for (const pub of pubs) {
-            const pub_ent = (await this.pubService.get({where: {id: pub.id}, relations: {authorPublications: {institute:true}}}))[0];
+            const pub_ent = (await this.pubService.get({where: {id: pub.id}, withDeleted: true, relations: {authorPublications: {institute:true}}}))[0];
+            if (!pub_ent) continue;
             if (!pub_ent.authorPublications || pub_ent.authorPublications.length == 0) continue;
             let flag = false;
             for (const autPub of pub_ent.authorPublications) {
@@ -29,5 +30,11 @@ export class MissingInstFilterService extends AbstractFilterService<PublicationI
 
     getName() {
         return 'Fehlende Institutsangaben'
+    }
+
+    getSqlPredicate(entityAlias: string): string {
+        return `EXISTS (SELECT 1 FROM author_publication missing_institute
+            WHERE missing_institute."publicationId" = ${entityAlias}.id
+                AND missing_institute."instituteId" IS NULL)`;
     }
 }

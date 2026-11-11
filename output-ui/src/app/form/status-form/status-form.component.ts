@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Observable, map } from 'rxjs';
@@ -23,6 +23,7 @@ export function createUniqueValidator(statuses: Status[]): ValidatorFn {
     selector: 'app-status-form',
     templateUrl: './status-form.component.html',
     styleUrl: './status-form.component.css',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class StatusFormComponent implements OnInit {

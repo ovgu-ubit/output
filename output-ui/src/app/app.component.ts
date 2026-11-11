@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { catchError, exhaustMap, of, Subject, takeUntil, timer } from 'rxjs';
 import { BackendAvailabilityService } from './core/errors/backend-availability.service';
@@ -11,6 +12,7 @@ import { RuntimeConfigService } from './services/runtime-config.service';
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -28,13 +30,15 @@ export class AppComponent implements OnInit, OnDestroy {
     private configService: ConfigService,
     private runtimeConfigService: RuntimeConfigService,
     private errorPresentation: ErrorPresentationService,
-    private backendAvailability: BackendAvailabilityService) {
+    private backendAvailability: BackendAvailabilityService,
+    private browserTitle: Title) {
       this.runtimeConfigService.applyThemeFromConfig();
     }
 
   private destroy$ = new Subject<void>();
 
   ngOnInit(): void {
+    this.setApplicationTitle(this.title);
     this.user = this.tokenService.getUser();
     this.security = this.runtimeConfigService.getValue<boolean>("security");
     this.demoAuth = this.runtimeConfigService.getValue<string>("authorization_service") === "demo";
@@ -44,7 +48,7 @@ export class AppComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: data => {
         if (!data?.value) return;
-        this.title = 'Output.' + data.value
+        this.setApplicationTitle('Output.' + data.value);
       }
     });
     this.startBackendHeartbeat();
@@ -96,5 +100,10 @@ export class AppComponent implements OnInit, OnDestroy {
       fallbackMessage: 'Backend nicht erreichbar oder nicht betriebsbereit.',
       bypassBackendUnavailableSuppression: true,
     });
+  }
+
+  private setApplicationTitle(title: string): void {
+    this.title = title;
+    this.browserTitle.setTitle(title);
   }
 }

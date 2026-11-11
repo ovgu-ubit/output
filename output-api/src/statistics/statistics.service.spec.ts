@@ -222,7 +222,22 @@ describe('StatisticsService', () => {
         )).toThrow();
     });
 
-    it('rejects net-cost statistics when the caller lacks read permission', async () => {
+    it('sums one gross amount per invoice without multiplying bookings by position count', async () => {
+        const queryBuilder = createQueryBuilderMock();
+        repository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+        await service.publication_statistic(2026, STATISTIC.NET_COSTS, [], TIMEFRAME.CURRENT_YEAR);
+
+        expect(queryBuilder.addSelect).toHaveBeenCalledWith('sum(COALESCE(invoice_amounts.gross_amount, 0)) as value');
+        expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
+            expect.stringContaining('COALESCE(cost_invoice.booking_amount, SUM('),
+            'invoice_amounts',
+            'invoice_amounts.invoice_id = invoice.id',
+        );
+        expect(queryBuilder.leftJoin).not.toHaveBeenCalledWith('invoice.cost_items', expect.anything());
+    });
+
+    it('rejects gross-cost statistics when the caller lacks read permission', async () => {
         expect(() => service.getPublicationStatistic(
             2025,
             STATISTIC.NET_COSTS,

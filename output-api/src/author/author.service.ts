@@ -1,3 +1,6 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
+import { invoiceAmountsSql } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
@@ -42,6 +45,11 @@ export class AuthorService extends AbstractEntityService<Author> {
 
     public override async get(scope: EntityAccessScope = {}) {
         const authors = await super.get(scope);
+        return authors.map(author => this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read)));
+    }
+
+    public async getForExport(scope: EntityAccessScope = {}) {
+        const authors = await this.repository.find({ relations: this.getFindOneRelations() });
         return authors.map(author => this.filterInternalRemark(author, hasEntityAccess(scope, EntityAccessRight.Read)));
     }
 
@@ -181,9 +189,11 @@ export class AuthorService extends AbstractEntityService<Author> {
         return compact[15] === expected;
     }
 
-    public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[]) {
+    public async combineAuthors(id1: number, ids: number[], aliases_first_name?: string[], aliases_last_name?: string[], user?: string) {
         return this.dataSource.transaction(async (manager) => {
             return mergeEntities<Author>({
+                by_user: user,
+                editLockTimeoutMs: await this.getLockTimeoutMs(),
                 repository: this.repository,
                 primaryId: id1,
                 duplicateIds: ids,
@@ -207,6 +217,18 @@ export class AuthorService extends AbstractEntityService<Author> {
     }
 
     public async index(reporting_year: number, canReadNetCosts = false): Promise<AuthorIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts);
+        const rows = await query.getRawMany<AuthorIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false): Promise<IndexPage<AuthorIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts);
+        const result = await paginateIndexQuery<AuthorIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false) {
         let query = this.repository.manager.createQueryBuilder()
             .from((sq) => sq
                 .from("author", "author")
@@ -240,11 +262,10 @@ export class AuthorService extends AbstractEntityService<Author> {
 
                 authorPublicationQuery = authorPublicationQuery
                     .leftJoin((costQuery) => costQuery
-                        .from("invoice", "invoice")
-                        .leftJoin("cost_item", "cost_item", "cost_item.\"invoiceId\" = invoice.id")
-                        .select("invoice.\"publicationId\"", "publicationId")
-                        .addSelect("SUM(CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END)", "net_costs")
-                        .groupBy("invoice.\"publicationId\""),
+                        .from(`(${invoiceAmountsSql()})`, "invoice_amounts")
+                        .select("invoice_amounts.publication_id", "publicationId")
+                        .addSelect("SUM(invoice_amounts.gross_amount)", "net_costs")
+                        .groupBy("invoice_amounts.publication_id"),
                         "publication_cost",
                         "publication_cost.\"publicationId\" = publication.id")
                     .leftJoin((correspondingQuery) => correspondingQuery
@@ -296,7 +317,7 @@ export class AuthorService extends AbstractEntityService<Author> {
 
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<AuthorIndex[]>;
+        return query;
     }
 
     public override async delete(auts: Author[]) {

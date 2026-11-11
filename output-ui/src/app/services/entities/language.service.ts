@@ -15,9 +15,6 @@ export class LanguageService implements EntityService<Language, Language> {
   public getAll() {
     return this.http.get<Language[]>(this.runtimeConfigService.getValue("api") + 'language', { withCredentials: true });
   }
-  public index() {
-    return this.getAll();
-  }
   public getOne(id:number) {
     return this.http.get<Language>(this.runtimeConfigService.getValue("api") + 'language/one?id='+id, { withCredentials: true });
   }

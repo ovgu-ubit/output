@@ -1,4 +1,4 @@
-import { Component,Inject,OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { SharedModule } from 'src/app/shared/shared.module';
 
@@ -7,6 +7,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
     templateUrl: './log-dialog.component.html',
     styleUrls: ['./log-dialog.component.css'],
     imports: [SharedModule],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: true
 })
 export class LogDialogComponent implements OnInit {

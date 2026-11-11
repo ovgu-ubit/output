@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -17,7 +17,7 @@ import { ValidationFormFacade } from './validation-form-facade.service';
 @Component({
   selector: 'app-validation-workflow-form',
   templateUrl: './validation-workflow-form.component.html',
-  styleUrl: './validation-workflow-form.component.css',
+  styleUrls: ['../workflow-status.css', './validation-workflow-form.component.css'],
   standalone: true,
   imports: [
     SharedModule,
@@ -26,6 +26,7 @@ import { ValidationFormFacade } from './validation-form-facade.service';
     MatListModule,
     MatToolbarModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [ValidationFormFacade]
 })
 export class ValidationWorkflowFormComponent implements OnInit, AfterViewInit, OnDestroy {

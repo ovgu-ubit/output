@@ -37,8 +37,6 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
         super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
-    private newPublications: Publication[] = [];
-    private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
     private completeURL = '';
@@ -93,7 +91,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
      */
     protected request(offset: number): Observable<any> {
         const url = this.completeURL + `&${this.offset_name}=` + offset;
-        return this.http.get(url);
+        return this.getImportRequest(this.http, url);
     }
 
     /**
@@ -112,7 +110,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
      * main method for import and updates, retrieves elements from API and saves the mapped entities to the DB
      */
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The import is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The import is already running, check status for further information.');
         this.dryRun = dryRun;
         await this.init();
         this.progress = -1;
@@ -132,14 +130,14 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
         this.numberOfPublications = 0;
 
         const obs$ = [];
-        this.retrieveCountRequest().pipe(map(resp => {
+        this.subscribeImport(this.retrieveCountRequest().pipe(map(resp => {
             this.numberOfPublications = this.getNumber(resp);
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `Starting import with parameters ${this.params.map(e => e.key + ': ' + e.value).join('; ')} by user ${by_user}` + (dryRun ? " (simulated) " : "") })
             this.reportService.write(this.report, { type: 'info', timestamp: new Date(), origin: this.name, text: `${this.numberOfPublications} elements found` })
             if (this.numberOfPublications <= 0) {
                 //finalize
                 this.progress = 0;
-                this.reportService.finish(this.report, {
+                this.finishLegacyRun(this.report, {
                     status: 'Nothing to import on' + new Date(),
                     count_import: 0,
                     count_update: 0
@@ -153,11 +151,12 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                 obs$.push(this.request(offset));
             } while (offset + this.max_res <= this.numberOfPublications)
             return null;
-        }), concatWith(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))).subscribe({
+        }), concatWith(scheduled(obs$, queueScheduler).pipe(mergeAll(this.parallelCalls)))), {
             next: async (data: any) => {
                 if (!data) return;
                 try {
                     for (const [idx, pub] of this.getData(data).entries()) {
+                        if (this.isStopRequested()) break;
                         if (!this.getDOI(pub) && !this.getTitle(pub)) {
                             this.reportService.write(this.report, { type: 'warning', timestamp: new Date(), origin: 'mapNew', text: 'Publication without title or doi is not imported ' + this.getAuthors(pub) })
                             continue;
@@ -199,7 +198,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                     if (this.progress === 1) {
                         //finalize
                         this.progress = 0;
-                        this.reportService.finish(this.report, {
+                        this.finishLegacyRun(this.report, {
                             status: 'Successfull import on ' + new Date(),
                             count_import: this.newPublications.length,
                             count_update: this.publicationsUpdate.length
@@ -218,7 +217,7 @@ export abstract class ApiImportOffsetService extends AbstractImportService {
                 });
                 this.progress = 0;
                 this.status_text = 'Error while importing on ' + new Date();
-                this.reportService.finish(this.report, {
+                this.finishLegacyRun(this.report, {
                     status: 'Error while importing on ' + new Date(),
                     count_import: this.newPublications.length,
                     count_update: this.publicationsUpdate.length

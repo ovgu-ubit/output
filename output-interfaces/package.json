@@ -1,6 +1,7 @@
 {
   "name": "@output/interfaces",
   "version": "1.0.0",
+  "type": "commonjs",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

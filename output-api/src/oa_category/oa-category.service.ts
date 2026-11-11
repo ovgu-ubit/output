@@ -1,3 +1,6 @@
+import { IndexPage, ReportingYearIndexPageRequest } from '@output/interfaces';
+import { paginateIndexQuery } from '../common/index-page';
+import { addInvoiceAmounts } from '../invoice/invoice-costs';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { concatMap, defer, from, iif, Observable, of } from 'rxjs';
@@ -29,6 +32,18 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
     }
 
     public async index(reporting_year: number, canReadNetCosts = false): Promise<OACategoryIndex[]> {
+        const query = await this.buildIndexQuery(reporting_year, canReadNetCosts);
+        const rows = await query.getRawMany<OACategoryIndex>();
+        return rows;
+    }
+
+    public async indexPage(request: ReportingYearIndexPageRequest, canReadNetCosts = false): Promise<IndexPage<OACategoryIndex>> {
+        const query = await this.buildIndexQuery(request.reporting_year, canReadNetCosts);
+        const result = await paginateIndexQuery<OACategoryIndex>(query, request);
+        return result;
+    }
+
+    private async buildIndexQuery(reporting_year: number, canReadNetCosts = false) {
         let query = this.repository.createQueryBuilder("oacat")
             .leftJoin("oacat.publications", "publication")
             .select("oacat.id", "id")
@@ -41,8 +56,8 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
 
         if (canReadNetCosts) {
             query = query
-                .leftJoin("publication.invoices", "invoice")
-                .leftJoin("invoice.cost_items", "cost_item")
+                .leftJoin("publication.invoices", "invoice");
+            query = addInvoiceAmounts(query)
         }
 
         if (reporting_year) {
@@ -50,21 +65,24 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
             const endDate = new Date(Date.UTC(reporting_year, 11, 31, 23, 59, 59, 999));
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.pub_date between :beginDate and :endDate THEN publication.id ELSE NULL END)", "pub_count")
-                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.pub_date between :beginDate and :endDate THEN COALESCE(invoice_amounts.gross_amount, 0) ELSE 0 END)" : "NULL", "net_costs")
                 .setParameters({ beginDate, endDate })
         }
         else {
             query = query
                 .addSelect("COUNT(DISTINCT CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN publication.id ELSE NULL END)", "pub_count")
-                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN CASE WHEN cost_item.euro_value IS NULL THEN 0 ELSE cost_item.euro_value END ELSE 0 END)" : "NULL", "net_costs")
+                .addSelect(canReadNetCosts ? "SUM(CASE WHEN publication.id IS NOT NULL and publication.pub_date IS NULL and publication.pub_date_print IS NULL and publication.pub_date_accepted IS NULL and publication.pub_date_submitted IS NULL THEN COALESCE(invoice_amounts.gross_amount, 0) ELSE 0 END)" : "NULL", "net_costs")
         }
         //console.log(query.getSql());
 
-        return query.getRawMany() as Promise<OACategoryIndex[]>;
+        return query;
     }
 
-    public async combine(id1: number, ids: number[]) {
-        return mergeEntities<OA_Category>({
+    public async combine(id1: number, ids: number[], user?: string) {
+        return this.dataSource.transaction(async manager => mergeEntities<OA_Category>({
+            manager,
+            by_user: user,
+            editLockTimeoutMs: await this.getLockTimeoutMs(),
             repository: this.repository,
             primaryId: id1,
             duplicateIds: ids,
@@ -73,7 +91,7 @@ export class OACategoryService extends AbstractEntityService<OA_Category> {
                 field: 'oa_category',
                 service: this.publicationService
             },
-        });
+        }));
     }
 
     public async delete(insts: OA_Category[]) {

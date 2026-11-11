@@ -1,30 +1,42 @@
 <div [formGroup]="form">
-    <mat-form-field appearance="fill" style="width: 100%;">
-        <mat-label>{{this.name}}</mat-label>
-        <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="auto"
-            formControlName="input" (keydown.enter)="select($event.target)" #input_ent>
-        <button *ngIf="this.formComponent" type="button" matSuffix mat-icon-button (click)="select(input_ent)"
-            [matTooltip]="this.name+' bearbeiten'" [matTooltipShowDelay]="800" [disabled]="!input_ent.value">
-            <ng-container *ngIf="this.exists; else else3">
-                <mat-icon *ngIf="!this.disabled; else else2">edit</mat-icon>
-                <ng-template #else2><mat-icon>remove_red_eye</mat-icon></ng-template>
-            </ng-container>
-            <ng-template #else3><mat-icon>save</mat-icon></ng-template>
-        </button>
-        <button *ngIf="!this.disabled" type="button" matSuffix mat-icon-button (click)="this.clear()"><mat-icon>close</mat-icon></button>
-        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectedEnt($event)">
-            <mat-option *ngFor="let ent of this.filtered_ents | async" [value]="ent.label">
-                {{ent.label}}
-                <ng-container *ngIf="ent['identifiers'] && ent['identifiers'].length > 0">
-                    (<ng-container *ngFor="let ide of ent['identifiers']">{{ide.value}}&nbsp;</ng-container>)
-                </ng-container>
-                <ng-container *ngIf="ent['short_label']">
-                    ({{ent['short_label']}})
-                </ng-container>
-                <ng-container *ngIf="ent['number']">
-                    ({{ent['number']}})
-                </ng-container>
-            </mat-option>
-        </mat-autocomplete>
-    </mat-form-field>
+  <mat-form-field appearance="fill" style="width: 100%;">
+    <mat-label>{{this.name}}</mat-label>
+    <input type="text" placeholder="Auswählen oder Eingeben" matInput [matAutocomplete]="auto"
+      formControlName="input" (keydown.enter)="select($event.target)" #input_ent>
+    @if (this.formComponent) {
+      <button type="button" matSuffix mat-icon-button (click)="select(input_ent)"
+        [matTooltip]="this.name+' bearbeiten'" [matTooltipShowDelay]="800" [disabled]="!input_ent.value">
+        @if (this.exists) {
+          @if (!this.disabled) {
+            <mat-icon>edit</mat-icon>
+          } @else {
+            <mat-icon>remove_red_eye</mat-icon>
+          }
+        } @else {
+          <mat-icon>save</mat-icon>
+        }
+      </button>
+    }
+    @if (!this.disabled) {
+      <button type="button" matSuffix mat-icon-button (click)="this.clear()"><mat-icon>close</mat-icon></button>
+    }
+    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectedEnt($event)">
+      @for (ent of this.filtered_ents | async; track ent) {
+        <mat-option [value]="ent.label">
+          {{ent.label}}
+          @if (ent['identifiers'] && ent['identifiers'].length > 0) {
+            (@for (ide of ent['identifiers']; track ide) {
+            {{ide.value}}&nbsp;
+            })
+          }
+          @if (ent['short_label']) {
+            ({{ent['short_label']}})
+          }
+          @if (ent['number']) {
+            ({{ent['number']}})
+          }
+        </mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
 </div>

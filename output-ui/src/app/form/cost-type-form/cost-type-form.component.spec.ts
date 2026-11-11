@@ -9,68 +9,68 @@ import { AuthorizationService } from 'src/app/security/authorization.service';
 import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { PublisherService } from 'src/app/services/entities/publisher.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 import { CostTypeFormComponent } from './cost-type-form.component';
 import { AbstractFormComponent } from '../abstract-form/abstract-form.component';
 
 describe('CostTypeFormComponent', () => {
-  let component: CostTypeFormComponent;
-  let fixture: ComponentFixture<CostTypeFormComponent>;
+    let component: CostTypeFormComponent;
+    let fixture: ComponentFixture<CostTypeFormComponent>;
 
-  const mockDialogRef = {
-    close: jasmine.createSpy('close')
-  };
+    const mockDialogRef = {
+        close: vi.fn().mockName('close')
+    };
 
-  const mockAuthService = {
-    hasRole: jasmine.createSpy('hasRole').and.returnValue(true)
-  };
+    const mockAuthService = {
+        hasRole: vi.fn().mockName('hasRole').mockReturnValue(true)
+    };
 
-  const mockErrorService = {
-    clearFieldErrors: jasmine.createSpy('clearFieldErrors'),
-    applyFieldErrors: jasmine.createSpy('applyFieldErrors'),
-    present: jasmine.createSpy('present')
-  };
+    const mockErrorService = {
+        clearFieldErrors: vi.fn().mockName('clearFieldErrors'),
+        applyFieldErrors: vi.fn().mockName('applyFieldErrors'),
+        present: vi.fn().mockName('present')
+    };
 
-  const mockCostTypeService = {
-    getAll: jasmine.createSpy('getAll').and.returnValue(of([])),
-    getOne: jasmine.createSpy('getOne').and.returnValue(of({}))
-  };
+    const mockCostTypeService = {
+        getAll: vi.fn().mockName('getAll').mockReturnValue(of([])),
+        getOne: vi.fn().mockName('getOne').mockReturnValue(of({}))
+    };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        NoopAnimationsModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatSnackBarModule,
-        SharedModule
-      ],
-      declarations: [ 
-        CostTypeFormComponent,
-        AbstractFormComponent
-      ],
-      providers: [
-        FormBuilder,
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
-        { provide: AuthorizationService, useValue: mockAuthService },
-        { provide: ErrorPresentationService, useValue: mockErrorService },
-        { provide: CostTypeService, useValue: mockCostTypeService },
-        { provide: PublisherService, useValue: { getAll: () => of([]) } },
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
-    })
-    .compileComponents();
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                ReactiveFormsModule,
+                MatDialogModule,
+                MatSnackBarModule,
+                SharedModule
+            ],
+            declarations: [
+                CostTypeFormComponent,
+                AbstractFormComponent
+            ],
+            providers: [
+                FormBuilder,
+                { provide: MatDialogRef, useValue: mockDialogRef },
+                { provide: MAT_DIALOG_DATA, useValue: { entity: {} } },
+                { provide: AuthorizationService, useValue: mockAuthService },
+                { provide: ErrorPresentationService, useValue: mockErrorService },
+                { provide: CostTypeService, useValue: mockCostTypeService },
+                { provide: PublisherService, useValue: { getAll: () => of([]) } },
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting()
+            ]
+        })
+            .compileComponents();
 
-    fixture = TestBed.createComponent(CostTypeFormComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+        fixture = TestBed.createComponent(CostTypeFormComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, inject, Inject, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, inject, Inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatTable } from '@angular/material/table';
@@ -11,6 +11,7 @@ import { AbstractFormComponent } from '../abstract-form/abstract-form.component'
     selector: 'app-institute-form',
     templateUrl: './institute-form.component.html',
     styleUrls: ['./institute-form.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class InstituteFormComponent extends AbstractFormComponent<Institute> implements OnInit, AfterViewInit {

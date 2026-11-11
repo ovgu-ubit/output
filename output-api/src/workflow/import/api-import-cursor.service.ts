@@ -32,8 +32,6 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         super(publicationService, authorService, publicationRelationService, geService, funderService, publicationTypeService, publisherService, oaService, contractService, reportService, instService, languageService, roleService, invoiceService, configService, workflowReportService);
     }
 
-    private newPublications: Publication[] = [];
-    private publicationsUpdate = [];
     private numberOfPublications: number;
     private processedPublications = 0;
     private completeURL = '';
@@ -55,7 +53,7 @@ export abstract class ApiImportCursorService extends AbstractImportService {
     private request(cursor: string): Observable<any> {
         const url = this.completeURL + `${this.cursor_name}=` + cursor;
         console.log(url);
-        return this.http.get(url);
+        return this.getImportRequest(this.http, url);
     }
 
     private calls = new Subject<any>();
@@ -64,6 +62,7 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         const data = this.getData(resp);
         this.numberOfPublications = this.getNumber(resp);
         for (const [idx, pub] of data.entries()) {
+            if (this.isStopRequested()) break;
             const flag = await this.publicationIndexService.checkDOIorTitleAlreadyExists(this.getDOI(pub), this.getTitle(pub))
             const flag2 = this.newPublications.find(e => e.doi.trim().toLocaleLowerCase() === this.getDOI(pub).trim().toLocaleLowerCase());
             if (flag2) console.log(`Redundant publication with DOI ${this.getDOI(pub)} at position ${idx} of request ${data['config']?.url}`)
@@ -74,7 +73,7 @@ export abstract class ApiImportCursorService extends AbstractImportService {
                 const orig = await this.publicationIndexService.getPubwithDOIorTitle(this.getDOI(pub), this.getTitle(pub));
                 if (orig.locked || orig.delete_date) continue;
                 const pubUpd = await this.mapUpdate(pub, orig);
-                if (pubUpd) this.publicationsUpdate.push(pubUpd);
+                if (pubUpd?.pub) this.publicationsUpdate.push(pubUpd.pub);
             }
         }
         // Update Progress Value
@@ -83,11 +82,7 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         if (this.progress === 1) {
             console.log(this.newPublications.length + ' pubs import to DB');
             console.log(this.publicationsUpdate.length + ' pubs update to DB');
-            //insert new objects
-            if (!this.dryRun) await this.publicationService.save(this.newPublications, { workflowReport: this.workflowReport });
-            //update objects
-            if (!this.dryRun) await this.publicationService.save(this.publicationsUpdate, { workflowReport: this.workflowReport });
-            //finalize
+            // mapNew/mapUpdate have already persisted the individual records.
             this.progress = 0;
             this.status_text = 'Successfull import on ' + new Date();
         }
@@ -98,7 +93,7 @@ export abstract class ApiImportCursorService extends AbstractImportService {
     }
 
     public async import(update: boolean, by_user?: string, dryRun = false) {
-        if (this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
+        if (!this.execution && this.progress !== 0) throw createWorkflowRunningHttpException('The enrich is already running, check status for further information.');
         this.dryRun = dryRun;
         await this.init();
         this.progress = -1;
@@ -115,15 +110,18 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         this.publicationsUpdate = [];
         this.numberOfPublications = 0;
 
-        this.calls.pipe(
+        this.calls = new Subject<any>();
+        this.subscribeImport(this.calls.pipe(
             // margeMap allows to set concurrency level as second parameter
             concatMap(cursor => this.request(cursor))
-        ).subscribe(
+        ),
             {
                 next: async response => {
                     // do something with the response
                     await this.processResponse(response, update);
-                    if (this.progress !== 1) this.calls.next(this.getNextCursor(response));
+                    const cursor = this.getNextCursor(response);
+                    if (this.isStopRequested() || this.processedPublications >= this.numberOfPublications || !cursor) this.calls.complete();
+                    else this.calls.next(cursor);
                 },
                 error: err => {
                     // manage error occurrences
@@ -139,10 +137,5 @@ export abstract class ApiImportCursorService extends AbstractImportService {
         this.calls.next(this.cursor_init);
     }
 
-    public status() {
-        return {
-            progress: this.progress,
-            status: this.status_text
-        };
-    }
+    public status() { return super.status(); }
 }

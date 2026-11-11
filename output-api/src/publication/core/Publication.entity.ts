@@ -13,9 +13,16 @@ import { Invoice } from "../../invoice/Invoice.entity";
 import { PublicationType } from "../../pub_type/PublicationType.entity";
 import { Language } from "../lookups/Language.entity";
 import { PublicationChange } from "./PublicationChange.entity";
+import { PublicationTag } from '../tags/PublicationTag.entity';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 @Entity()
 export class Publication implements IPublication {
+    // Read projection and explicit HTTP write input, never ORM-managed relations.
+    @ApiPropertyOptional({ type: [PublicationTag], readOnly: true, description: 'Internal tag projection.' })
+    tags?: PublicationTag[];
+    @ApiPropertyOptional({ type: [Number], description: 'Omit to preserve tags; [] removes all tags. Applied only by publication HTTP writes.' })
+    tag_ids?: number[];
 
     @PrimaryGeneratedColumn()
     id?: number;

@@ -1,5 +1,6 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
+import { ImportExecutionService } from './import-execution.service';
 import { DiscoveryModule, DiscoveryService, ModuleRef } from '@nestjs/core';
 import { AuthorModule } from '../author/author.module';
 import { AppConfigModule } from '../config/app-config.module';
@@ -65,6 +66,10 @@ import { WorkflowReportItem } from './WorkflowReportItem.entity';
 import { WorkflowController } from './WorkflowController';
 import { ValidationService } from './validation.service';
 import { WorkflowReportService } from './workflow-report.service';
+import { ExportSourceService } from './export/export-source.service';
+import { ExportEndpointController } from './ExportEndpointController';
+import { ExportEndpointService } from './export/export-endpoint.service';
+import { ExportEndpointGuard } from './export/export-endpoint.guard';
 
 @Module({
   imports: [
@@ -90,10 +95,13 @@ import { WorkflowReportService } from './workflow-report.service';
     ImportController,
     EnrichController,
     ExportController,
+    ExportEndpointController,
     PlausibilityController,
     WorkflowController
   ],
   providers: [
+    ImportExecutionService,
+    ExportEndpointService, ExportEndpointGuard,
     ReportItemService,
     CSVImportService, ExcelImportService,BASEImportService,BibliographyImportService,CrossrefImportService,
     CSVImportService,OpenAccessMonitorImportService,OpenAlexImportService,PubMedImportService,ScopusImportService,
@@ -101,7 +109,7 @@ import { WorkflowReportService } from './workflow-report.service';
     CrossrefEnrichService, DOAJEnrichService, OpenAccessMonitorEnrichService, OpenAlexEnrichService, OpenAPCEnrichService, ScopusEnrichService, UnpaywallEnrichService, 
     DOIandTitleDuplicateCheck, PublisherDOIPrefixService,
     AuthorExportService, ContractExportService, CostCenterExportService, CostTypeExportService, ExcelExportService, FunderExportService, GreaterEntityExportService, InstituteExportService, JSONataExportService, JulichExportService, MasterExportService, OACatExportService, OpenAPCExportService, PubTypeExportService, PublisherExportService,
-    DiscoveryService, WorkflowService, WorkflowReportService, ValidationService,
+    DiscoveryService, WorkflowService, WorkflowReportService, ValidationService, ExportSourceService,
     {
       provide: 'Imports',
       inject: [DiscoveryService, ModuleRef],

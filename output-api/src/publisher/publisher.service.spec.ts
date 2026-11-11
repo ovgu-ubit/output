@@ -20,6 +20,14 @@ describe('PublisherService', () => {
     let publicationService: { save: jest.Mock };
     let configService: { get: jest.Mock };
 
+    it('loads publisher export aliases and DOI prefixes without publications', async () => {
+        repository.find!.mockResolvedValue([]);
+        expect(await service.getForExport()).toEqual([]);
+        expect(repository.find).toHaveBeenCalledWith({ relations: { aliases: true, doi_prefixes: true } });
+        expect(repository.find).toHaveBeenCalledTimes(1);
+        expect(repository.update).not.toHaveBeenCalled();
+    });
+
     beforeEach(async () => {
         repository = {
             save: jest.fn(),

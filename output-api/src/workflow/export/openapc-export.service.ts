@@ -26,7 +26,7 @@ export class OpenAPCExportService extends AbstractExportService {
         this.status_text = 'Started on ' + new Date();
         this.report = await this.reportService.createReport('Export', this.name, by_user);
 
-        let pubs = await this.publicationIndexService.getAll(filter?.filter);
+        let pubs = await this.publicationIndexService.getAll(filter?.filter, { canReadTags: true });
         if (filter) for (const path of filter.paths) {
             const so = (await this.configService.get('filter_services')).findIndex(e => e.path === path)
             if (so === -1) continue;

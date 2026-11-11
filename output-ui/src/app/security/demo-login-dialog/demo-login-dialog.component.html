@@ -18,7 +18,9 @@
       <input matInput type="password" formControlName="password" autocomplete="current-password">
     </mat-form-field>
 
-    <div class="demo-login-error" *ngIf="errorMessage">{{errorMessage}}</div>
+    @if (errorMessage) {
+      <div class="demo-login-error">{{errorMessage}}</div>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

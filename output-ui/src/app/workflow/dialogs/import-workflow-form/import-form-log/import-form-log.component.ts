@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { filter, switchMap, takeUntil } from 'rxjs';
 import {  ImportWorkflow, WorkflowReport, WorkflowReportItemLevel  } from '@output/interfaces';
@@ -11,6 +11,7 @@ import { ImportFormFacade } from '../import-form-facade.service';
   selector: 'app-import-form-log',
   imports: [SharedModule, PublicationChangeLogComponent],
   templateUrl: './import-form-log.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './import-form-log.component.css',
 })
 export class ImportFormLogComponent implements OnInit {

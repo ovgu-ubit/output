@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -17,7 +17,7 @@ import { ExportFormFacade } from './export-form-facade.service';
 @Component({
   selector: 'app-export-workflow-form',
   templateUrl: './export-workflow-form.component.html',
-  styleUrl: './export-workflow-form.component.css',
+  styleUrls: ['../workflow-status.css', './export-workflow-form.component.css'],
   standalone: true,
   imports: [
     SharedModule,
@@ -26,6 +26,7 @@ import { ExportFormFacade } from './export-form-facade.service';
     MatListModule,
     MatToolbarModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [ExportFormFacade]
 })
 export class ExportWorkflowFormComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -161,8 +162,8 @@ export class ExportWorkflowFormComponent implements OnInit, AfterViewInit, OnDes
   }
 
   getLabel(): string {
-    if (this.entity?.id) return '/Workflows/Publikationsexport/' + this.entity.label + ' (' + this.entity.version + ')';
-    return '/Workflows/Publikationsexport/Neuer Export';
+    if (this.entity?.id) return '/Workflows/Export/' + this.entity.label + ' (' + this.entity.version + ')';
+    return '/Workflows/Export/Neuer Export';
   }
 
   private async confirmSaveBeforeLeave(): Promise<boolean> {

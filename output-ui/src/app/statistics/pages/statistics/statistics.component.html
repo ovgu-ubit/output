@@ -22,9 +22,11 @@
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoInstitute"
             formControlName="institute" #input_inst>
           <mat-autocomplete #autoInstitute="matAutocomplete" (optionSelected)="selectedInst($event)">
-            <mat-option *ngFor="let inst of this.filtered_institutes | async" [value]="inst.label">
-              {{inst.label}} ({{inst.short_label}})
-            </mat-option>
+            @for (inst of this.filtered_institutes | async; track inst) {
+              <mat-option [value]="inst.label">
+                {{inst.label}} ({{inst.short_label}})
+              </mat-option>
+            }
           </mat-autocomplete>
         </mat-form-field>
 
@@ -33,9 +35,11 @@
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoPublisher"
             formControlName="publisher" #input_publ>
           <mat-autocomplete #autoPublisher="matAutocomplete" (optionSelected)="selectedPublisher($event)">
-            <mat-option *ngFor="let publ of this.filtered_publishers | async" [value]="publ.label">
-              {{publ.label}}
-            </mat-option>
+            @for (publ of this.filtered_publishers | async; track publ) {
+              <mat-option [value]="publ.label">
+                {{publ.label}}
+              </mat-option>
+            }
           </mat-autocomplete>
         </mat-form-field>
 
@@ -44,9 +48,11 @@
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoContract"
             formControlName="contract" #input_contr>
           <mat-autocomplete #autoContract="matAutocomplete" (optionSelected)="selectedContract($event)">
-            <mat-option *ngFor="let con of this.filtered_contracts | async" [value]="con.label">
-              {{con.label}}
-            </mat-option>
+            @for (con of this.filtered_contracts | async; track con) {
+              <mat-option [value]="con.label">
+                {{con.label}}
+              </mat-option>
+            }
           </mat-autocomplete>
         </mat-form-field>
 
@@ -54,8 +60,10 @@
           <mat-label>Nach OA-Kategorie filtern</mat-label>
           <mat-select #select_oa (selectionChange)="this.changeOA($event)">
             <mat-option></mat-option>
-            <mat-option *ngFor="let oa of this.oa_cats" [value]="oa.label">
+            @for (oa of this.oa_cats; track oa) {
+              <mat-option [value]="oa.label">
               {{oa.label}}</mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
@@ -63,8 +71,10 @@
           <mat-label>Nach Publikationstyp filtern</mat-label>
           <mat-select #select_PubType (selectionChange)="this.changePubType($event)">
             <mat-option></mat-option>
-            <mat-option *ngFor="let pt of this.pub_types" [value]="pt.label">
+            @for (pt of this.pub_types; track pt) {
+              <mat-option [value]="pt.label">
               {{pt.label}}</mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
@@ -95,9 +105,11 @@
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoInstitute1"
             formControlName="institute" #input_inst>
           <mat-autocomplete #autoInstitute1="matAutocomplete" (optionSelected)="selectedInst1($event)">
-            <mat-option *ngFor="let inst of this.filtered_institutes1 | async" [value]="inst.label">
-              {{inst.label}} ({{inst.short_label}})
-            </mat-option>
+            @for (inst of this.filtered_institutes1 | async; track inst) {
+              <mat-option [value]="inst.label">
+                {{inst.label}} ({{inst.short_label}})
+              </mat-option>
+            }
           </mat-autocomplete>
         </mat-form-field>
 
@@ -106,9 +118,11 @@
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoPublisher1"
             formControlName="publisher" #input_publ>
           <mat-autocomplete #autoPublisher1="matAutocomplete" (optionSelected)="selectedPublisher1($event)">
-            <mat-option *ngFor="let publ of this.filtered_publishers1 | async" [value]="publ.label">
-              {{publ.label}}
-            </mat-option>
+            @for (publ of this.filtered_publishers1 | async; track publ) {
+              <mat-option [value]="publ.label">
+                {{publ.label}}
+              </mat-option>
+            }
           </mat-autocomplete>
         </mat-form-field>
 
@@ -117,9 +131,11 @@
           <input type="text" placeholder="Auswählen" matInput [matAutocomplete]="autoContract1"
             formControlName="contract" #input_contr>
           <mat-autocomplete #autoContract1="matAutocomplete" (optionSelected)="selectedContract1($event)">
-            <mat-option *ngFor="let con of this.filtered_contracts1 | async" [value]="con.label">
-              {{con.label}}
-            </mat-option>
+            @for (con of this.filtered_contracts1 | async; track con) {
+              <mat-option [value]="con.label">
+                {{con.label}}
+              </mat-option>
+            }
           </mat-autocomplete>
         </mat-form-field>
 
@@ -127,8 +143,10 @@
           <mat-label>Nach OA-Kategorie filtern</mat-label>
           <mat-select #select_oa1 (selectionChange)="this.changeOA1($event)">
             <mat-option></mat-option>
-            <mat-option *ngFor="let oa of this.oa_cats" [value]="oa.label">
+            @for (oa of this.oa_cats; track oa) {
+              <mat-option [value]="oa.label">
               {{oa.label}}</mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
@@ -136,14 +154,16 @@
           <mat-label>Nach Publikationstyp filtern</mat-label>
           <mat-select #select_PubType1 (selectionChange)="this.changePubType1($event)">
             <mat-option></mat-option>
-            <mat-option *ngFor="let pt of this.pub_types" [value]="pt.label">
+            @for (pt of this.pub_types; track pt) {
+              <mat-option [value]="pt.label">
               {{pt.label}}</mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
         <button mat-raised-button type="submit" class="primary-button">Aktualisieren</button>&nbsp;
         <button mat-raised-button type="reset" class="secondary-button"
-          (click)="this.resetHighlight()">Zurücksetzen</button>
+        (click)="this.resetHighlight()">Zurücksetzen</button>
       </form>
 
     </div>
@@ -151,10 +171,10 @@
 </mat-accordion>
 
 <div echarts [options]="eChartOptions" (chartClick)="chooseEChartYear($event)"
-  style="width: 100%; height: 400px; display: block;"></div>
+style="width: 100%; height: 400px; display: block;"></div>
 
 <div echarts [options]="eChartOptions1" (chartClick)="chooseEChartYear($event)"
-  style="width: 100%; height: 400px; display: block;"></div>
+style="width: 100%; height: 400px; display: block;"></div>
 
 <div echarts [options]="eChartOptions2" (chartClick)="chooseEChartYear($event)"
-  style="width: 100%; height: 400px; display: block;"></div>
+style="width: 100%; height: 400px; display: block;"></div>

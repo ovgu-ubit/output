@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -26,6 +26,7 @@ interface ValidationFieldOption {
   templateUrl: './validation-form-rules.component.html',
   styleUrl: './validation-form-rules.component.css',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [SharedModule]
 })
 export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
@@ -341,10 +342,6 @@ export class ValidationFormRulesComponent implements OnInit, WorkflowFormPage {
     if (fieldType === 'boolean' && typeof value !== 'boolean') {
       group.get('value')?.setValue(value === true || String(value).toLowerCase() === 'true');
     }
-  }
-
-  trackByIndex(index: number): number {
-    return index;
   }
 
   private showSaveError(error: unknown) {
