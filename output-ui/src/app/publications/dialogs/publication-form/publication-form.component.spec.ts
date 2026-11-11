@@ -25,6 +25,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
+import { ConfirmDialogComponent } from 'src/app/shared/confirm-dialog/confirm-dialog.component';
 import { PublicationFormComponent, PubValidator } from './publication-form.component';
 import { PublicationChangeLogComponent } from '../publication-change-log/publication-change-log.component';
 import { PublicationTagSelectionDialogComponent, PublicationTagSelectionResult } from '../publication-tag-selection-dialog/publication-tag-selection-dialog.component';
@@ -189,6 +190,127 @@ describe('PublicationFormComponent', () => {
         expect(open).not.toHaveBeenCalled();
     });
 
+    it('blocks identifier changes while locked and allows them again after unlocking', () => {
+        const identifier = { id: 7, type: 'PMID', value: '12345' };
+        component.pub = { ...component.pub, identifiers: [identifier] };
+        fixture.detectChanges();
+        component.idTable.idForm.setValue({ type: 'ISBN', value: '9781234567890' });
+
+        component.lock();
+        fixture.detectChanges();
+
+        expect(component.idTable.disabled).toBe(true);
+        expect(fixture.nativeElement.querySelector('app-id-table input')).toBeNull();
+        expect(fixture.nativeElement.querySelector('[matTooltip="Identifikator löschen"]').hidden).toBe(true);
+        component.idTable.addId();
+        component.idTable.deleteId(identifier);
+        expect(component.pub.identifiers).toEqual([identifier]);
+
+        component.lock();
+        fixture.detectChanges();
+
+        expect(component.idTable.disabled).toBe(false);
+        expect(fixture.nativeElement.querySelector('app-id-table input')).not.toBeNull();
+        const deleteButton = fixture.nativeElement.querySelector('[matTooltip="Identifikator löschen"]');
+        expect(deleteButton.hidden).toBe(false);
+        deleteButton.click();
+        fixture.nativeElement.querySelector('[matTooltip="Identifikator hinzufügen"]').click();
+        expect(component.pub.identifiers).toEqual([{ type: 'ISBN', value: '9781234567890' }]);
+    });
+
+    it.each(['publication', 'biblio', 'readonly'])(
+        'blocks supplement changes with the %s lock', (lock) => {
+            const supplement = { id: 7, link: 'https://example.test/existing' };
+            component.pub = { ...component.pub, supplements: [supplement] };
+            component.supplForm.setValue({ link: 'https://example.test/new' });
+            if (lock === 'readonly') component.disable();
+            else component.lock(lock === 'biblio' ? 'biblio' : undefined);
+            fixture.detectChanges();
+
+            expect(fixture.nativeElement.querySelector('input[placeholder="Link zur Ressource"]')).toBeNull();
+            expect(fixture.nativeElement.querySelector('[matTooltip="Ressource hinzufügen"]')).toBeNull();
+            expect(fixture.nativeElement.querySelector('[matTooltip="Ressource löschen"]').hidden).toBe(true);
+            component.addSuppl();
+            component.deleteSuppl(supplement);
+            expect(component.pub.supplements).toEqual([supplement]);
+        },
+    );
+
+    it('allows supplement changes after unlocking the publication and its bibliographic information', () => {
+        const supplement = { id: 7, link: 'https://example.test/existing' };
+        component.pub = { ...component.pub, supplements: [supplement] };
+        component.supplForm.setValue({ link: 'https://example.test/new' });
+        component.lock();
+        component.lock();
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector('input[placeholder="Link zur Ressource"]')).toBeNull();
+
+        component.lock('biblio');
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector('input[placeholder="Link zur Ressource"]')).not.toBeNull();
+        const deleteButton = fixture.nativeElement.querySelector('[matTooltip="Ressource löschen"]');
+        expect(deleteButton.hidden).toBe(false);
+        deleteButton.click();
+        fixture.nativeElement.querySelector('[matTooltip="Ressource hinzufügen"]').click();
+        expect(component.pub.supplements).toEqual([{ link: 'https://example.test/new' }]);
+    });
+
+    describe.each([
+        { area: undefined, field: 'locked' },
+        { area: 'author', field: 'locked_author' },
+        { area: 'biblio', field: 'locked_biblio' },
+        { area: 'oa', field: 'locked_oa' },
+        { area: 'finance', field: 'locked_finance' },
+    ])('$field changes', ({ area, field }) => {
+        it.each([false, true])('asks to save when aborting after changing the lock from %s', (locked) => {
+            if (locked) component.lock(area);
+            component.form.markAsPristine();
+            const confirmation = new Subject<boolean>();
+            const open = vi.spyOn(TestBed.inject(MatDialog), 'open').mockReturnValue({
+                afterClosed: () => confirmation,
+            } as any);
+            const save = vi.spyOn(component, 'action').mockResolvedValue(undefined);
+
+            component.lock(area);
+            component.abort();
+
+            expect(component.pub[field]).toBe(!locked);
+            expect(component.form.dirty).toBe(true);
+            expect(open).toHaveBeenCalledWith(ConfirmDialogComponent, expect.objectContaining({
+                data: expect.objectContaining({ title: 'Ungesicherte Änderungen' }),
+            }));
+            confirmation.next(true);
+            confirmation.complete();
+            expect(save).toHaveBeenCalledOnce();
+        });
+    });
+
+    it('keeps a loaded locked publication pristine and does not ask to save on abort', () => {
+        vi.spyOn(TestBed.inject(PublicationService), 'getOne').mockReturnValueOnce(of({
+            id: 1, title: 'Locked publication', locked: true,
+        }));
+        component.loadPub(1).subscribe();
+        const open = vi.spyOn(TestBed.inject(MatDialog), 'open');
+
+        component.abort();
+
+        expect(component.form.dirty).toBe(false);
+        expect(open).not.toHaveBeenCalled();
+        expect(mockDialogRef.close).toHaveBeenCalledWith({ id: 1, locked_at: null });
+    });
+
+    it('keeps lock state and form pristine when editing is disabled', () => {
+        component.disable();
+
+        component.lock();
+        component.lock('biblio');
+
+        expect(component.pub.locked).toBeFalsy();
+        expect(component.pub.locked_biblio).toBeFalsy();
+        expect(component.form.dirty).toBe(false);
+    });
+
     it('uses the booking amount including zero, otherwise adds net amounts and VAT', () => {
         const items = [{ euro_value: 100, vat: 19 }, { euro_value: 50, vat: 3.5 }];
         const costs = PublicationFormComponent.prototype.getCosts;
@@ -221,7 +343,7 @@ describe('PublicationFormComponent', () => {
     };
 
     const mockPubService = {
-        getOne: vi.fn().mockName('getOne').mockReturnValue(of({
+        getOne: vi.fn().mockName('getOne').mockImplementation(() => of({
             id: 1,
             title: 'Test Pub',
             authorPublications: [],

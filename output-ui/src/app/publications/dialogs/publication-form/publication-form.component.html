@@ -81,7 +81,7 @@
           </mat-panel-title>
         </mat-expansion-panel-header>
 
-        <app-id-table [disabled]="this.disabled" [entity]="this.pub"></app-id-table>
+        <app-id-table [disabled]="this.disabled || this.pub?.locked" [entity]="this.pub"></app-id-table>
       </mat-expansion-panel><br>
 
       <mat-form-field appearance="fill" style="width: 100%;">
@@ -319,22 +319,23 @@
                     <th mat-header-cell *matHeaderCellDef> </th>
                     <td mat-cell *matCellDef="let element"> <button matSuffix mat-icon-button type="button"
                       (click)="this.deleteSuppl(element)" matTooltip="Ressource löschen"
-                      [hidden]="this.disabled"><mat-icon>delete</mat-icon></button> </td>
+                      [hidden]="this.supplementsReadonly"><mat-icon>delete</mat-icon></button> </td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="['link', 'delete']"></tr>
                     <tr mat-row *matRowDef="let row; columns: ['link', 'delete'];"></tr>
                   </table>
                 }
 
-                <form [formGroup]="supplForm" style="width: 100%;display: flex;gap:5px;justify-content: space-around;">
-                  <mat-form-field style="width: 80%;">
-                    <mat-label>Link</mat-label>
-                    <input matInput placeholder="Link zur Ressource" formControlName="link" />
-                  </mat-form-field>
-                  <button matSuffix mat-icon-button type="button" (click)="this.addSuppl()"
-                    matTooltip="Ressource hinzufügen"
-                    [hidden]="this.disabled"><mat-icon>add</mat-icon></button>
+                @if (!this.supplementsReadonly) {
+                  <form [formGroup]="supplForm" style="width: 100%;display: flex;gap:5px;justify-content: space-around;">
+                    <mat-form-field style="width: 80%;">
+                      <mat-label>Link</mat-label>
+                      <input matInput placeholder="Link zur Ressource" formControlName="link" />
+                    </mat-form-field>
+                    <button matSuffix mat-icon-button type="button" (click)="this.addSuppl()"
+                      matTooltip="Ressource hinzufügen"><mat-icon>add</mat-icon></button>
                   </form>
+                }
 
                 </mat-expansion-panel><br>
 

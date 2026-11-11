@@ -17,14 +17,23 @@
         }
       </button>
     }
-    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selectedEnt($event)">
-      @for (ent of this.filtered_ents | async; track ent) {
-        <mat-option [value]="ent.last_name + ', '+ent.first_name">
-          {{ent.last_name}}, {{ent.first_name}} @if (ent.orcid) {
-          ({{ent.orcid}})
-        }
-      </mat-option>
-    }
-  </mat-autocomplete>
-</mat-form-field>
+    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayAuthor" (optionSelected)="selectedEnt($event)">
+      @for (ent of this.filtered_ents | async; track ent.id) {
+        <mat-option [value]="ent.id">
+          <span class="author-option-name">
+            {{ent.last_name}}, {{ent.first_name}}
+            @if (ent.orcid) { ({{ent.orcid}}) }
+          </span>
+          <span class="author-option-details">
+            Personen-ID: {{ent.id}} ·
+            @for (institute of ent.institutes; track institute.id) {
+              {{institute.label}}@if (!$last) {; }
+            } @empty {
+              Kein Institut hinterlegt
+            }
+          </span>
+        </mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
 </div>
