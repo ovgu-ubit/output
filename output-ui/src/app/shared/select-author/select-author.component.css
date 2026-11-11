@@ -1,0 +1,13 @@
+.author-option-name,
+.author-option-details {
+  display: block;
+  white-space: normal;
+}
+
+.author-option-details {
+  font-size: 0.85em;
+}
+
+mat-option {
+  padding-block: 8px;
+}

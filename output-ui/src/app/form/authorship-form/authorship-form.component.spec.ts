@@ -14,6 +14,8 @@ import { CostTypeService } from 'src/app/services/entities/cost-type.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
+import { By } from '@angular/platform-browser';
 
 import { AuthorshipFormComponent } from './authorship-form.component';
 
@@ -51,6 +53,8 @@ describe('AuthorshipFormComponent', () => {
     };
 
     beforeEach(async () => {
+        mockDialogRef.close.mockClear();
+        mockAuthorService.getAll.mockReturnValue(of([]));
         await TestBed.configureTestingModule({
             imports: [
                 NoopAnimationsModule,
@@ -84,5 +88,34 @@ describe('AuthorshipFormComponent', () => {
 
     it('should create', () => {
         expect(component).toBeTruthy();
+    });
+
+    it('saves the ID of the second selected person with an identical name and no ORCID', async () => {
+        const authors = [
+            { id: 11, last_name: 'Müller', first_name: 'Alex', institutes: [{ id: 1, label: 'Physik' }] },
+            { id: 22, last_name: 'Müller', first_name: 'Alex', institutes: [{ id: 2, label: 'Chemie' }] },
+        ];
+        mockAuthorService.getAll.mockReturnValue(of(authors));
+        const selector = fixture.debugElement.query(By.css('app-select-author'));
+        selector.componentInstance.updateEnts();
+        fixture.detectChanges();
+        const input = selector.nativeElement.querySelector('input') as HTMLInputElement;
+        input.value = 'Müller';
+        input.dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+        selector.query(By.directive(MatAutocompleteTrigger)).injector.get(MatAutocompleteTrigger).openPanel();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        const options = document.querySelectorAll<HTMLElement>('mat-option');
+        expect(options).toHaveLength(2);
+
+        options[1].click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        await component.action();
+
+        expect(mockDialogRef.close).toHaveBeenCalledWith(expect.objectContaining({
+            authorId: 22, author: authors[1],
+        }));
     });
 });
