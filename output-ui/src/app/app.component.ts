@@ -17,7 +17,7 @@ import { RuntimeConfigService } from './services/runtime-config.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   public title: string = 'Output';
-  public version = '2.2.3';
+  public version = '2.3.0';
   public user: string | null;
   public institution: string = '';
   public isLoading: boolean = true;

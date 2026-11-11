@@ -10,7 +10,7 @@ export function configureApplication(app: INestApplication, options: { basePath:
     const document = SwaggerModule.createDocument(app, new DocumentBuilder()
         .setTitle('Output API')
         .setDescription('The Output API description')
-        .setVersion('dev')
+        .setVersion('2.3.0')
         .addServer(options.basePath)
         .build(), {
         operationIdFactory: (_controllerKey, methodKey) => methodKey,
